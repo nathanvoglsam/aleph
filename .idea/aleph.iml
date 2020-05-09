@@ -5,6 +5,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-runtime/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-engine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-compile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-target/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-target-crate/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

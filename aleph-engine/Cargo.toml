@@ -1,11 +1,22 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
 [package]
 name = "aleph-engine"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies]
+aleph-runtime = { path = "../aleph-runtime", version = "0.1" }
 
-[dependencies.aleph-runtime]
-path = "../aleph-runtime"
-version = "0.1"
+[build-dependencies]
+aleph-target = { path = "../aleph-target", version = "1" }
+aleph-compile = { path = "../aleph-compile", version = "1" }

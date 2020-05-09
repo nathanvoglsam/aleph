@@ -1,6 +1,18 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
 [workspace]
 
 members = [
+    "aleph-compile",
+    "aleph-engine",
     "aleph-runtime",
-    "aleph-engine"
+    "aleph-target",
+    "aleph-target-crate",
 ]
