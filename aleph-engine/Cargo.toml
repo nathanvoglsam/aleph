@@ -15,8 +15,11 @@ authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-aleph-runtime = { path = "../aleph-runtime", version = "0.1" }
+erupt = "0.6"
+sdl2 = "0.34"
 
 [build-dependencies]
+cmake = "0.1"
 aleph-target = { path = "../aleph-target", version = "1" }
 aleph-compile = { path = "../aleph-compile", version = "1" }
+

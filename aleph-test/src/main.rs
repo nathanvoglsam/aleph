@@ -7,4 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+extern crate aleph_runtime;
 
+fn main() {
+
+}

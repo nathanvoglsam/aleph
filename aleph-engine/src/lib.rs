@@ -7,8 +7,5 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-extern crate aleph_runtime;
 
-fn main() {
-    println!("Hello, world!");
-}
+pub mod app;
