@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "aleph-runtime",
+    "aleph-engine"
+]
