@@ -8,7 +8,7 @@
 //
 
 //!
-//! # Nova-Build
+//! # Aleph-Build
 //!
 //! This crate provides a unified and simplified API for detecting the host and target platform and
 //! build profile. It provides a structure for representing a target or host platform and some

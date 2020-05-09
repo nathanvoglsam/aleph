@@ -10,6 +10,5 @@
 extern crate aleph_runtime;
 
 fn main() {
-    println!("{}", aleph_runtime::a_func());
     println!("Hello, world!");
 }

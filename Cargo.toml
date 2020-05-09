@@ -12,6 +12,7 @@
 members = [
     "aleph-compile",
     "aleph-engine",
+    "aleph-math",
     "aleph-runtime",
     "aleph-target",
     "aleph-target-crate",
