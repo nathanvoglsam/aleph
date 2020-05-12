@@ -9,6 +9,8 @@
 
 extern crate aleph_engine as aleph;
 
+use aleph::app::AppInfo;
+
 struct AlephAppLogic {}
 
 impl AlephAppLogic {
@@ -26,5 +28,11 @@ impl aleph::app::AppLogic for AlephAppLogic {
 }
 
 fn main() {
-    aleph::app::Engine::start(AlephAppLogic::new());
+    let app_info = AppInfo {
+        name: "AlephTest".to_string(),
+        major: 0,
+        minor: 1,
+        patch: 0,
+    };
+    aleph::app::Engine::start(app_info, AlephAppLogic::new());
 }

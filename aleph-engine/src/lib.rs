@@ -11,8 +11,13 @@
 // Crate Imports
 // =================================================================================================
 
-// Re-export the log crate
+// Re-export useful crates
 pub extern crate log;
+pub extern crate rayon;
+
+extern crate num_cpus;
+extern crate once_cell;
+extern crate parking_lot;
 
 // When on desktop we use env_logger
 #[cfg(not(target_os = "android"))]
@@ -32,4 +37,5 @@ pub mod app;
 // Internal Modules
 // =================================================================================================
 
+mod cpuid;
 mod logger;

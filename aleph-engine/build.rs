@@ -11,21 +11,15 @@ extern crate aleph_compile as compile;
 extern crate aleph_target as target;
 
 use cmake;
-use target::{Architecture, BuildType, Platform};
+use target::{Architecture, Platform};
 
 ///
 /// Gets the name of the dll/so file that will need to be copied around
 ///
 fn dll_name() -> &'static str {
     match target::build::target_platform() {
-        Platform::WindowsGNU | Platform::WindowsMSVC => match target::build::target_build_type() {
-            BuildType::Release => "SDL2.dll",
-            BuildType::Debug => "SDL2d.dll",
-        },
-        Platform::Linux | Platform::Android => match target::build::target_build_type() {
-            BuildType::Release => "libSDL2.so",
-            BuildType::Debug => "libSDL2d.so",
-        },
+        Platform::WindowsGNU | Platform::WindowsMSVC => "SDL2.dll",
+        Platform::Linux | Platform::Android => "libSDL2.so",
     }
 }
 
@@ -111,6 +105,9 @@ fn main() {
                 build.define("EXTRA_LIBS", "vcruntime");
             }
 
+            // Having this enabled is going to cause problems for linking so get rid of it
+            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+
             let out_dir = build.build();
 
             // We're going to need the output lib and bin dir
@@ -119,6 +116,9 @@ fn main() {
 
             // Give rustc the directory of where to find the lib files to link to
             println!("cargo:rustc-link-search=all={}", &lib_dir.display());
+
+            // Give rustc the directory of where to find the lib files to link to
+            println!("cargo:rustc-link-search=all={}", &bin_dir.display());
 
             // Copy the output dll file to the artifacts dir
             let source = bin_dir.join(dll_name());
@@ -150,7 +150,4 @@ fn main() {
             println!("cargo:rustc-link-search=all={}", lib_dir.display());
         }
     }
-
-    // We only need to build SDL once so only allow this to be called once
-    println!("cargo:rerun-if-changed=build.rs");
 }
