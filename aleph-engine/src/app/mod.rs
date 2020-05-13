@@ -18,6 +18,7 @@ pub use app_info::AppInfo;
 pub use app_logic::AppLogic;
 pub use engine::Engine;
 pub use engine::ENGINE_NAME;
+pub use engine::ENGINE_NAME_CSTR;
 pub use engine::ENGINE_VERSION_MAJOR;
 pub use engine::ENGINE_VERSION_MINOR;
 pub use engine::ENGINE_VERSION_PATCH;

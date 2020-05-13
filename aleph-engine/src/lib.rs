@@ -16,6 +16,7 @@ pub extern crate log;
 pub extern crate rayon;
 
 extern crate aleph_target_crate as target;
+extern crate console;
 extern crate num_cpus;
 extern crate once_cell;
 extern crate parking_lot;
@@ -34,11 +35,11 @@ extern crate android_logger;
 // =================================================================================================
 
 pub mod app;
+pub mod gpu;
 
 // =================================================================================================
 // Internal Modules
 // =================================================================================================
 
-mod cpuid;
-mod gpu;
-mod logger;
+pub(crate) mod cpuid;
+pub(crate) mod logger;

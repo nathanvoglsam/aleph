@@ -8,9 +8,15 @@
 //
 
 use crate::app::{AppInfo, AppLogic, WindowSettings};
+use crate::gpu;
+use erupt::extensions::ext_debug_utils::ExtDebugUtilsInstanceLoaderExt;
+use erupt::vk1_0::Vk10InstanceLoaderExt;
+use once_cell::sync::Lazy;
 use sdl2::event::Event;
+use std::ffi::CString;
 
 pub const ENGINE_NAME: &str = "AlephEngine";
+pub static ENGINE_NAME_CSTR: Lazy<CString> = Lazy::new(|| CString::new(ENGINE_NAME).unwrap());
 pub const ENGINE_VERSION_STRING: &str = "0.1.0";
 pub const ENGINE_VERSION_MAJOR: u32 = 0;
 pub const ENGINE_VERSION_MINOR: u32 = 1;
@@ -50,7 +56,7 @@ impl Engine {
         log::info!("Aleph Engine Starting");
 
         // Print info about the specific app to the log so we know what game and version we're on
-        app_info.log_info();
+        Engine::log_app_info(&app_info);
 
         // Print engine info to the log so we know what engine version we're running on
         Engine::log_engine_info();
@@ -58,7 +64,7 @@ impl Engine {
         // Print some system info to the log so we know what we were running on
         Engine::log_cpu_info();
 
-        // Initialized the thread pools
+        // Initialize the thread pools
         Engine::init_thread_pools();
 
         // -----------------------------------------------------------------------------------------
@@ -89,12 +95,15 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let core_loader = crate::gpu::load_vulkan_core();
+        let core_loader = gpu::init::load_vulkan_core();
 
         // Create the vulkan instance
-        let instance = crate::gpu::create_instance(&core_loader, &app_info, &window);
+        let instance = gpu::init::create_instance(&core_loader, &app_info, &window);
 
-        let _instance_loader = crate::gpu::load_vulkan_instance(&core_loader, instance);
+        // Load the vulkan instance functions
+        let instance_loader = gpu::init::load_vulkan_instance(&core_loader, instance);
+
+        let messenger = gpu::init::install_debug_messenger(&instance_loader);
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -115,8 +124,50 @@ impl Engine {
 
         log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
+
+        unsafe {
+            instance_loader.destroy_debug_utils_messenger_ext(messenger, None);
+            instance_loader.destroy_instance(None);
+        }
     }
 
+    ///
+    /// A thread pool for use for long running tasks so long running tasks wont have short running
+    /// tasks contend with workers
+    ///
+    pub fn long_running_pool() -> &'static rayon::ThreadPool {
+        &crate::app::LONG_RUNNING_THREAD_POOL
+            .get()
+            .expect("Aleph not Initialized")
+    }
+
+    ///
+    /// A thread pool for short running tasks so short running tasks wont contend for workers with
+    /// long running tasks
+    ///
+    pub fn short_running_pool() -> &'static rayon::ThreadPool {
+        &crate::app::SHORT_RUNNING_THREAD_POOL
+            .get()
+            .expect("Aleph not Initialized")
+    }
+
+    ///
+    /// Internal function for logging info about the game
+    ///
+    fn log_app_info(app_info: &AppInfo) {
+        log::info!("=== Game Info ===");
+        log::info!("Name    : {}", &app_info.name);
+        log::info!(
+            "Version : {}.{}.{}",
+            app_info.major,
+            app_info.minor,
+            app_info.patch
+        );
+    }
+
+    ///
+    /// Internal function for logging info about the engine
+    ///
     fn log_engine_info() {
         log::info!("=== Engine Info ===");
         log::info!("Name    : {}", ENGINE_NAME);
@@ -130,9 +181,23 @@ impl Engine {
             "Build   : {}",
             target::build::target_build_type().pretty_name()
         );
-        log::info!("=== Engine Info ===");
     }
 
+    ///
+    /// Internal function for logging info about the CPU that is being used
+    ///
+    fn log_cpu_info() {
+        log::info!("=== CPU INFO ===");
+        log::info!("CPU Vendor    : {}", crate::cpuid::cpu_vendor());
+        log::info!("CPU Brand     : {}", crate::cpuid::cpu_brand());
+        log::info!("Physical CPUs : {}", num_cpus::get_physical());
+        log::info!("Logical CPUs  : {}", num_cpus::get());
+        log::info!("System RAM    : {}MB", sdl2::cpuinfo::system_ram());
+    }
+
+    ///
+    /// Internal function for handling various events prior to the user part of the game loop
+    ///
     fn handle_pre_update(
         mut window: &mut sdl2::video::Window,
         mut event_pump: &mut sdl2::EventPump,
@@ -186,27 +251,8 @@ impl Engine {
     }
 
     ///
+    /// Internal function for initializing the global thread pools
     ///
-    ///
-    pub fn start_headless<T: Into<String>>(_: T, mut app: impl AppLogic) {
-        // First thing we do is initialize the log backend so everything can log from now on
-        crate::logger::init();
-        log::info!("Aleph Engine Starting Headless");
-
-        Engine::log_cpu_info();
-        Engine::init_thread_pools();
-
-        log::info!("Entering into AppLogic::on_init");
-        app.on_init();
-        log::info!("Exiting AppLogic::on_init");
-
-        app.on_update();
-
-        log::info!("Entering into AppLogic::on_exit");
-        app.on_exit();
-        log::info!("Exiting AppLogic::on_exit");
-    }
-
     fn init_thread_pools() {
         let long_threads;
         let short_threads;
@@ -268,35 +314,5 @@ impl Engine {
             "Short Running thread pool initialized with {} threads",
             short_threads
         );
-    }
-
-    fn log_cpu_info() {
-        log::info!("=== CPU INFO ===");
-        log::info!("CPU Vendor    : {}", crate::cpuid::cpu_vendor());
-        log::info!("CPU Brand     : {}", crate::cpuid::cpu_brand());
-        log::info!("Physical CPUs : {}", num_cpus::get_physical());
-        log::info!("Logical CPUs  : {}", num_cpus::get());
-        log::info!("System RAM    : {}MB", sdl2::cpuinfo::system_ram());
-        log::info!("=== CPU INFO ===");
-    }
-
-    ///
-    /// A thread pool for use for long running tasks so long running tasks wont have short running
-    /// tasks contend with workers
-    ///
-    pub fn long_running_pool() -> &'static rayon::ThreadPool {
-        &crate::app::LONG_RUNNING_THREAD_POOL
-            .get()
-            .expect("Aleph not Initialized")
-    }
-
-    ///
-    /// A thread pool for short running tasks so short running tasks wont contend for workers with
-    /// long running tasks
-    ///
-    pub fn short_running_pool() -> &'static rayon::ThreadPool {
-        &crate::app::SHORT_RUNNING_THREAD_POOL
-            .get()
-            .expect("Aleph not Initialized")
     }
 }

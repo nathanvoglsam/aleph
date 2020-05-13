@@ -35,12 +35,3 @@ pub struct AppInfo {
     ///
     pub patch: u32,
 }
-
-impl AppInfo {
-    pub fn log_info(&self) {
-        log::info!("=== Game Info ===");
-        log::info!("Name    : {}", &self.name);
-        log::info!("Version : {}.{}.{}", self.major, self.minor, self.patch);
-        log::info!("=== Game Info ===");
-    }
-}
