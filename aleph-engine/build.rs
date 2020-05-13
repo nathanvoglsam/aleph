@@ -9,8 +9,9 @@
 
 extern crate aleph_compile as compile;
 extern crate aleph_target as target;
+extern crate cmake;
 
-use cmake;
+
 use target::{Architecture, Platform};
 
 ///
@@ -51,7 +52,7 @@ fn android_compile_sdl2(arch: Architecture) {
     obj_dir.push("obj");
     let obj_dir = format!("NDK_OUT={}", obj_dir.display());
 
-    let mut lib_dir = out_dir.clone();
+    let mut lib_dir = out_dir;
     lib_dir.push("lib");
     let lib_dir = format!("NDK_LIBS_OUT={}", lib_dir.display());
 

@@ -16,7 +16,7 @@ pub enum Platform {
 }
 
 impl Platform {
-    pub fn print_host_cargo_cfg(&self) {
+    pub fn print_host_cargo_cfg(self) {
         match self {
             Platform::WindowsGNU => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_TARGET_is_gnu");
@@ -35,7 +35,7 @@ impl Platform {
         }
     }
 
-    pub fn print_target_cargo_cfg(&self) {
+    pub fn print_target_cargo_cfg(self) {
         match self {
             Platform::WindowsGNU => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_HOST_is_gnu");
@@ -55,7 +55,7 @@ impl Platform {
     }
 
     #[inline]
-    pub fn name(&self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "gnu",
             Platform::WindowsMSVC => "msvc",
@@ -65,7 +65,7 @@ impl Platform {
     }
 
     #[inline]
-    pub fn pretty_name(&self) -> &'static str {
+    pub fn pretty_name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "Windows GNU",
             Platform::WindowsMSVC => "Windows MSVC",
@@ -75,28 +75,28 @@ impl Platform {
     }
 
     #[inline]
-    pub fn is_windows(&self) -> bool {
-        *self == Platform::WindowsMSVC || *self == Platform::WindowsGNU
+    pub fn is_windows(self) -> bool {
+        self == Platform::WindowsMSVC || self == Platform::WindowsGNU
     }
 
     #[inline]
-    pub fn is_linux(&self) -> bool {
-        *self == Platform::Linux
+    pub fn is_linux(self) -> bool {
+        self == Platform::Linux
     }
 
     #[inline]
-    pub fn is_msvc(&self) -> bool {
-        *self == Platform::WindowsMSVC
+    pub fn is_msvc(self) -> bool {
+        self == Platform::WindowsMSVC
     }
 
     #[inline]
-    pub fn is_gnu(&self) -> bool {
-        *self == Platform::WindowsGNU
+    pub fn is_gnu(self) -> bool {
+        self == Platform::WindowsGNU
     }
 
     #[inline]
-    pub fn is_android(&self) -> bool {
-        *self == Platform::Android
+    pub fn is_android(self) -> bool {
+        self == Platform::Android
     }
 }
 

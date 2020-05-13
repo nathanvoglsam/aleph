@@ -17,7 +17,7 @@ pub enum Architecture {
 }
 
 impl Architecture {
-    pub fn print_host_cargo_cfg(&self) {
+    pub fn print_host_cargo_cfg(self) {
         match self {
             Architecture::X8664 => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_x86_64");
@@ -28,7 +28,7 @@ impl Architecture {
         }
     }
 
-    pub fn print_target_cargo_cfg(&self) {
+    pub fn print_target_cargo_cfg(self) {
         match self {
             Architecture::X8664 => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_x86_64");
@@ -40,7 +40,7 @@ impl Architecture {
     }
 
     #[inline]
-    pub fn name(&self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",
             Architecture::AARCH64 => "aarch64",
@@ -48,7 +48,7 @@ impl Architecture {
     }
 
     #[inline]
-    pub fn ndk_name(&self) -> &'static str {
+    pub fn ndk_name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",
             Architecture::AARCH64 => "arm64-v8a",
@@ -59,16 +59,16 @@ impl Architecture {
     /// Are we building for x86-64
     ///
     #[inline]
-    pub fn is_x86_64(&self) -> bool {
-        *self == Architecture::X8664
+    pub fn is_x86_64(self) -> bool {
+        self == Architecture::X8664
     }
 
     ///
     /// Are we building for aarch64 (ARM 64bit)
     ///
     #[inline]
-    pub fn is_aarch64(&self) -> bool {
-        *self == Architecture::AARCH64
+    pub fn is_aarch64(self) -> bool {
+        self == Architecture::AARCH64
     }
 }
 

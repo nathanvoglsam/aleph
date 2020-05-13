@@ -24,8 +24,7 @@ pub fn artifacts_dir() -> PathBuf {
 ///
 pub fn manifest_dir() -> PathBuf {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let manifest_dir = Path::new(&manifest_dir).to_path_buf();
-    manifest_dir
+    Path::new(&manifest_dir).to_path_buf()
 }
 
 ///
@@ -33,8 +32,7 @@ pub fn manifest_dir() -> PathBuf {
 ///
 pub fn cargo_out_dir() -> PathBuf {
     let out_dir = std::env::var("OUT_DIR").unwrap();
-    let out_dir = Path::new(&out_dir).to_path_buf();
-    out_dir
+    Path::new(&out_dir).to_path_buf()
 }
 
 ///

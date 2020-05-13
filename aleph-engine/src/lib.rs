@@ -18,6 +18,7 @@ pub extern crate rayon;
 extern crate num_cpus;
 extern crate once_cell;
 extern crate parking_lot;
+extern crate raw_window_handle;
 extern crate aleph_target_crate as target;
 
 // When on desktop we use env_logger
@@ -40,3 +41,4 @@ pub mod app;
 
 mod cpuid;
 mod logger;
+mod gpu;

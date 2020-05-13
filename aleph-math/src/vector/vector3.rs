@@ -130,7 +130,7 @@ impl<T: Real> Display for TVec3<T> {
             self.data[0],
             self.data[1],
             self.data[2],
-            precision = f.precision().unwrap_or(f.width().unwrap_or(4)),
+            precision = f.precision().unwrap_or_else(|| f.width().unwrap_or(4)),
         )
     }
 }
@@ -484,6 +484,7 @@ impl<T: Real> PartialEq<TVec3<T>> for TVec3<T> {
             && self.data[2] == other.data[2]
     }
 
+    #[allow(clippy::partialeq_ne_impl)]
     #[inline]
     fn ne(&self, other: &TVec3<T>) -> bool {
         self.data[0] != other.data[0]

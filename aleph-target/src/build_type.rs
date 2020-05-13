@@ -17,7 +17,7 @@ pub enum BuildType {
 }
 
 impl BuildType {
-    pub fn print_host_cargo_cfg(&self) {
+    pub fn print_host_cargo_cfg(self) {
         match self {
             BuildType::Release => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_release");
@@ -28,7 +28,7 @@ impl BuildType {
         }
     }
 
-    pub fn print_target_cargo_cfg(&self) {
+    pub fn print_target_cargo_cfg(self) {
         match self {
             BuildType::Release => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_release");
@@ -43,7 +43,7 @@ impl BuildType {
     /// Get the build type name
     ///
     #[inline]
-    pub fn name(&self) -> &'static str {
+    pub fn name(self) -> &'static str {
         match self {
             BuildType::Release => "release",
             BuildType::Debug => "debug",
@@ -51,7 +51,7 @@ impl BuildType {
     }
 
     #[inline]
-    pub fn pretty_name(&self) -> &'static str {
+    pub fn pretty_name(self) -> &'static str {
         match self {
             BuildType::Release => "Release",
             BuildType::Debug => "Debug",
@@ -59,13 +59,13 @@ impl BuildType {
     }
 
     #[inline]
-    pub fn is_release(&self) -> bool {
-        *self == BuildType::Release
+    pub fn is_release(self) -> bool {
+        self == BuildType::Release
     }
 
     #[inline]
-    pub fn is_debug(&self) -> bool {
-        *self == BuildType::Debug
+    pub fn is_debug(self) -> bool {
+        self == BuildType::Debug
     }
 }
 

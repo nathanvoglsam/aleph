@@ -20,6 +20,7 @@ use std::os::raw::c_char;
 ///
 /// Only need to look this up once so wrap it in a lazy static
 ///
+#[allow(clippy::identity_op)]
 static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
     if cfg!(target_arch = "x86_64") || cfg!(target_arch = "x86") {
         unsafe {
@@ -31,7 +32,7 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
                 data.push(__cpuid_count(i, 0));
             }
 
-            let mut vendor_buffer = [0u8; 0x20];
+            let mut vendor_buffer = [0u32; 8];
 
             let vendor_ptr = vendor_buffer.as_mut_ptr() as *mut u32;
             vendor_ptr.add(0).write(data[0].ebx);
@@ -41,8 +42,7 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
             let vendor = CStr::from_ptr(vendor_buffer.as_ptr() as *const c_char);
 
             let vendor = vendor.to_str().expect("Vendor String not UTF8");
-            let vendor = vendor.to_string();
-            vendor
+            vendor.to_string()
         }
     } else {
         String::from("Unknown CPU Vendor")
@@ -52,21 +52,22 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
 ///
 /// Only need to look this up once so wrap it in a lazy static
 ///
+#[allow(clippy::identity_op)]
 static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
     if cfg!(target_arch = "x86_64") || cfg!(target_arch = "x86") {
         unsafe {
             let mut data = Vec::new();
 
-            let n_ext_ids = __cpuid(0x80000000).eax;
+            let n_ext_ids = __cpuid(0x8000_0000).eax;
 
-            for i in 0x80000000..n_ext_ids {
+            for i in 0x8000_0000..n_ext_ids {
                 data.push(__cpuid_count(i, 0));
             }
 
-            if n_ext_ids > 0x80000000 {
-                let mut brand_buffer = [0u8; 0x40];
+            if n_ext_ids > 0x8000_0000 {
+                let mut brand_buffer = [0u32; 16];
 
-                let brand_ptr = brand_buffer.as_mut_ptr() as *mut u32;
+                let brand_ptr = brand_buffer.as_mut_ptr();
 
                 let offset = 0;
                 brand_ptr.add((offset * 4) + 0).write(data[offset + 2].eax);
@@ -88,10 +89,11 @@ static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
 
                 let brand = CStr::from_ptr(brand_buffer.as_ptr() as *const c_char);
 
-                let brand = brand.to_str().expect("brand String not UTF8");
-                let brand = brand.trim();
-                let brand = brand.to_string();
                 brand
+                    .to_str()
+                    .expect("brand String not UTF8")
+                    .trim()
+                    .to_string()
             } else {
                 "Unknown CPU".to_string()
             }

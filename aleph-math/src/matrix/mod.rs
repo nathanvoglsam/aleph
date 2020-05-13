@@ -196,13 +196,13 @@ impl<T: Real> TMat4x4<T> {
         let mut result = Self::identity();
 
         let col = result.get_column_ref_mut(0);
-        *col = *col * scale[0];
+        *col *= scale[0];
 
         let col = result.get_column_ref_mut(1);
-        *col = *col * scale[1];
+        *col *= scale[1];
 
         let col = result.get_column_ref_mut(2);
-        *col = *col * scale[2];
+        *col *= scale[2];
 
         result
     }
@@ -212,13 +212,13 @@ impl<T: Real> TMat4x4<T> {
     ///
     pub fn scale(&mut self, scale: TVec3<T>) {
         let col = self.get_column_ref_mut(0);
-        *col = *col * scale[0];
+        *col *= scale[0];
 
         let col = self.get_column_ref_mut(1);
-        *col = *col * scale[1];
+        *col *= scale[1];
 
         let col = self.get_column_ref_mut(2);
-        *col = *col * scale[2];
+        *col *= scale[2];
     }
 
     ///
@@ -362,7 +362,7 @@ impl<T: Real> Row for TMat4x4<T> {
 
 impl<T: Real> Display for TMat4x4<T> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        let precision = f.precision().unwrap_or(f.width().unwrap_or(4));
+        let precision = f.precision().unwrap_or_else(|| f.width().unwrap_or(4));
         for row in 0..4 {
             let row = self.get_row(row);
             let row_x = row[0];
@@ -614,6 +614,7 @@ impl<T: Real> PartialEq<TMat4x4<T>> for TMat4x4<T> {
             && self.get_column_ref(3) == other.get_column_ref(3)
     }
 
+    #[allow(clippy::partialeq_ne_impl)]
     fn ne(&self, other: &TMat4x4<T>) -> bool {
         self.get_column_ref(0) != other.get_column_ref(0)
             || self.get_column_ref(1) != other.get_column_ref(1)

@@ -104,7 +104,7 @@ impl<T: Real> Display for TVec2<T> {
             "[ {:precision$} {:precision$} ]",
             self.data[0],
             self.data[1],
-            precision = f.precision().unwrap_or(f.width().unwrap_or(4)),
+            precision = f.precision().unwrap_or_else(|| f.width().unwrap_or(4)),
         )
     }
 }
@@ -416,6 +416,7 @@ impl<T: Real> PartialEq<TVec2<T>> for TVec2<T> {
         self.data[0] == other.data[0] && self.data[1] == other.data[1]
     }
 
+    #[allow(clippy::partialeq_ne_impl)]
     #[inline]
     fn ne(&self, other: &TVec2<T>) -> bool {
         self.data[0] != other.data[0] || self.data[1] != other.data[1]

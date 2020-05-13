@@ -8,9 +8,7 @@
 //
 
 use crate::app::{AppInfo, AppLogic, WindowSettings};
-use erupt::vk1_0::Vk10CoreLoaderExt;
 use sdl2::event::Event;
-use std::ffi::{CStr, CString};
 
 pub const ENGINE_NAME: &str = "AlephEngine";
 pub const ENGINE_VERSION_STRING: &str = "0.1.0";
@@ -50,22 +48,12 @@ impl Engine {
         // First thing we do is initialize the log backend so everything can log from now on
         crate::logger::init();
         log::info!("Aleph Engine Starting");
-        log::info!("=== Game Info ===");
-        log::info!("Name    : {}", &app_info.name);
-        log::info!(
-            "Version : {}.{}.{}",
-            app_info.major,
-            app_info.minor,
-            app_info.patch
-        );
-        log::info!("=== Game Info ===");
-        log::info!("=== Engine Info ===");
-        log::info!("Name    : {}", ENGINE_NAME);
-        log::info!("Version : {}", ENGINE_VERSION_STRING);
-        log::info!("Arch    : {}", target::build::target_architecture().name());
-        log::info!("OS      : {}", target::build::target_platform().pretty_name());
-        log::info!("Build   : {}", target::build::target_build_type().pretty_name());
-        log::info!("=== Engine Info ===");
+
+        // Print info about the specific app to the log so we know what game and version we're on
+        app_info.log_info();
+
+        // Print engine info to the log so we know what engine version we're running on
+        Engine::log_engine_info();
 
         // Print some system info to the log so we know what we were running on
         Engine::log_cpu_info();
@@ -100,67 +88,13 @@ impl Engine {
         // Graphics Initialization
         // -----------------------------------------------------------------------------------------
 
-        // Load core vulkan functions
-        log::trace!("Initializing Vulkan Core Loader");
-        let mut core_loader =
-            erupt::CoreLoader::new().expect("Failed to create Vulkan core loader");
+        // Load core vulkan functions for creating an instance
+        let core_loader = crate::gpu::load_vulkan_core();
 
-        // Load vulkan 1.0 core functions
-        log::trace!("Initializing Vulkan 1.0");
-        core_loader.load_vk1_0().expect("Failed to load Vulkan 1.0");
-        log::trace!("Vulkan Loaded");
+        // Create the vulkan instance
+        let instance = crate::gpu::create_instance(&core_loader, &app_info, &window);
 
-        // Print vulkan version
-        let api_version = core_loader.instance_version();
-        log::info!("=== VULKAN INFO ===");
-        log::info!(
-            "Version: {}.{}.{}",
-            erupt::version_major(api_version),
-            erupt::version_minor(api_version),
-            erupt::version_patch(api_version)
-        );
-        log::info!("=== VULKAN INFO ===");
-
-        // Fill out ApplicationInfo for creating a vulkan instance
-        let app_name_cstr = CString::new(app_info.name.as_str()).unwrap();
-        let app_version = erupt::make_version(app_info.major, app_info.minor, app_info.patch);
-        let engine_name = unsafe { CStr::from_ptr(erupt::cstr!("AlephEngine")) };
-        let api_version = erupt::make_version(1, 0, 0);
-        let app_info = erupt::vk1_0::ApplicationInfoBuilder::new()
-            .application_name(&app_name_cstr)
-            .application_version(app_version)
-            .engine_name(engine_name)
-            .engine_version(ENGINE_VERSION_VK)
-            .api_version(api_version);
-
-        let mut extensions = erupt::utils::surface::enumerate_required_extensions(&window)
-            .expect("Failed to get required vulkan surface extensions");
-        extensions.push(erupt::extensions::ext_debug_utils::EXT_DEBUG_UTILS_EXTENSION_NAME);
-
-        let mut layers = Vec::new();
-        layers.push(erupt::cstr!("VK_LAYER_LUNARG_standard_validation"));
-
-        // Fill out InstanceCreateInfo for creating a vulkan instance
-        let create_info = erupt::vk1_0::InstanceCreateInfoBuilder::new()
-            .application_info(&app_info)
-            .enabled_extension_names(&extensions)
-            .enabled_layer_names(&layers);
-
-        // Construct the vulkan instance
-        log::info!("Creating Vulkan instance");
-        let instance = unsafe {
-            let instance = core_loader.create_instance(&create_info, None, None);
-            let instance = instance.expect("Failed to create Vulkan instance");
-            instance
-        };
-
-        // Load the vulkan function pointers
-        log::info!("Loading Vulkan functions");
-        let mut instance_loader = erupt::InstanceLoader::new(&core_loader, instance)
-            .expect("Failed to initialize Vulkan instance loader");
-        instance_loader
-            .load_vk1_0()
-            .expect("Failed to load vulkan functions");
+        let _instance_loader = crate::gpu::load_vulkan_instance(&core_loader, instance);
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -181,6 +115,16 @@ impl Engine {
 
         log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
+    }
+
+    fn log_engine_info() {
+        log::info!("=== Engine Info ===");
+        log::info!("Name    : {}", ENGINE_NAME);
+        log::info!("Version : {}", ENGINE_VERSION_STRING);
+        log::info!("Arch    : {}", target::build::target_architecture().name());
+        log::info!("OS      : {}", target::build::target_platform().pretty_name());
+        log::info!("Build   : {}", target::build::target_build_type().pretty_name());
+        log::info!("=== Engine Info ===");
     }
 
     fn handle_pre_update(
