@@ -24,7 +24,10 @@ pub const ENGINE_VERSION_VK: u32 = erupt::make_version(
 );
 
 ///
-/// The entry point for Aleph.
+/// A "namespace" struct that wraps a bunch of global stace into a struct for aesthetic and
+/// convenience purposes.
+///
+/// Also serves as the engine's entry point with the `start` function.
 ///
 pub struct Engine {}
 
@@ -59,6 +62,9 @@ impl Engine {
         log::info!("=== Engine Info ===");
         log::info!("Name    : {}", ENGINE_NAME);
         log::info!("Version : {}", ENGINE_VERSION_STRING);
+        log::info!("Arch    : {}", target::build::target_architecture().name());
+        log::info!("OS      : {}", target::build::target_platform().pretty_name());
+        log::info!("Build   : {}", target::build::target_build_type().pretty_name());
         log::info!("=== Engine Info ===");
 
         // Print some system info to the log so we know what we were running on
@@ -71,20 +77,21 @@ impl Engine {
         // SDL2 and Window Initialization
         // -----------------------------------------------------------------------------------------
 
+        // Init SDL2
         log::trace!("Initializing SDL2");
         let sdl_ctx = sdl2::init().expect("Failed to initialize SDL2");
 
-        log::trace!("Initializing SDL2 Video Subsystem");
         // Init SDL2 video subsystem
+        log::trace!("Initializing SDL2 Video Subsystem");
         let video_ctx = crate::app::Window::init_video(&sdl_ctx);
 
-        log::trace!("Initializing OS Window");
         // Init the window
+        log::trace!("Initializing OS Window");
         let mut window =
             crate::app::Window::init_window(&video_ctx, &app_info.name, &WindowSettings::default());
 
-        log::trace!("Initializing Event Pump");
         // Init the event pump
+        log::trace!("Initializing Event Pump");
         let mut event_pump = sdl_ctx
             .event_pump()
             .expect("Failed to init SDL2 event pump");

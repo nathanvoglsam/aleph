@@ -22,6 +22,7 @@ rayon = "1.3"
 once_cell = "1.3"
 num_cpus = "1.13"
 parking_lot = "0.10"
+aleph-target-crate = { path = "../aleph-target-crate", version = "1" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.8"

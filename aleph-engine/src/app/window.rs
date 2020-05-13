@@ -13,6 +13,10 @@ use parking_lot::{Mutex, RwLock};
 use sdl2::event::WindowEvent;
 use sdl2::video::FullscreenType;
 
+///
+/// Does what it sends on the tin, holds the most recently collected state of the window. For more
+/// info regarding "recently collected" see the documentation for `Window`
+///
 pub struct WindowState {
     pub(crate) title: String,
     pub(crate) current_width: u32,
@@ -22,6 +26,9 @@ pub struct WindowState {
     pub(crate) fullscreen: bool,
 }
 
+///
+/// Represents the set of possible state change requests the window can perform
+///
 pub enum WindowRequest {
     ChangeTitle(String),
     ChangeSize(u32, u32),
@@ -40,7 +47,37 @@ pub static WINDOW_REQUEST_QUEUE: Lazy<Mutex<Option<Vec<WindowRequest>>>> =
 pub static WINDOW_EVENTS: Lazy<RwLock<Option<Vec<WindowEvent>>>> = Lazy::new(|| RwLock::new(None));
 
 ///
-/// Global struct for the window
+/// A "namespace struct" similar to the `Engine` struct that is used to encapsulate the global
+/// window. A game is almost never ever going to need more than one window unless you're doing some
+/// super wacky stuff so rather than trying to support we embrace it and offer a cleaner interface.
+///
+/// The main drawback is that getting multiple windows working is going to be really janky to use
+/// but I think the benefits of having such a convenient thread-safe interface is worth it.
+///
+/// Another thing to be aware of is that almost every function publicly exposed here will panic if
+/// there is no window initialized. This can cause issues if running headless, hence the
+/// `window_loaded` function to gate it. You're not going to be touching the window much anyway
+/// outside of UI or input code so that probably shouldn't be shipping in a headless executable
+/// anyway. The engine will initialize it for you so unless you're doing something weird it wont be
+/// a problem regardless.
+///
+/// # Implementation Details
+///
+/// The window is only safe to directly touch on the main thread because reasons™. The window
+/// interface is thread-safe and accessible from any thread. To allow this the interface never
+/// directly touches the window.
+///
+/// Underlying the window interface is a global request queue and a global window state object. Both
+/// are gated behind locks. To change the window with one of the functions such as `set_title` a
+/// request is pushed onto the request queue. The change will then actually take place on the next
+/// frame.
+///
+/// At the beginning of each frame the main thread will consume the queued events and perform the
+/// changes requested then update the global window state.
+///
+/// Because of this the state readable from this interface will be one frame out of date. The result
+/// of a function like `set_title` will only be visible through the `title` function will only be
+/// visible on the frame after `set_title` is called.
 ///
 pub struct Window {}
 

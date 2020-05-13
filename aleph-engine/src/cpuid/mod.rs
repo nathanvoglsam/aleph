@@ -93,16 +93,21 @@ static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
                 let brand = brand.to_string();
                 brand
             } else {
-                "CPU BRAND NOT SUPPORTED".to_string()
+                "Unknown CPU".to_string()
             }
         }
     } else {
-        String::from("Unknown CPU Brand")
+        "Unknown CPU".to_string()
     }
 });
 
 ///
 /// Gets the vendor string for the current CPU
+///
+/// # Warning
+///
+/// At the moment this only works on x86 and x86_64. Otherwise it will just return an "Unknown CPU
+/// Vendor" string.
 ///
 pub fn cpu_vendor() -> &'static str {
     CPU_VENDOR_STRING.as_str()
@@ -110,6 +115,11 @@ pub fn cpu_vendor() -> &'static str {
 
 ///
 /// Gets the brand string for the current CPU
+///
+/// # Warning
+///
+/// At the moment this only works on x86 and x86_64 that support an extended part of the __cpuid
+/// instruction. Otherwise it will just return an "Unknown CPU" string.
 ///
 pub fn cpu_brand() -> &'static str {
     CPU_BRAND_STRING.as_str()
