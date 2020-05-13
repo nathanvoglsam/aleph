@@ -11,7 +11,6 @@ extern crate aleph_compile as compile;
 extern crate aleph_target as target;
 extern crate cmake;
 
-
 use target::{Architecture, Platform};
 
 ///

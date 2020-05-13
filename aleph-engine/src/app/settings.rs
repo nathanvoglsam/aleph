@@ -7,8 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use std::collections::HashMap;
 use std::any::Any;
+use std::collections::HashMap;
 
 ///
 /// A pure data struct that is used for describing the initial state of the OS window
@@ -63,7 +63,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             window: WindowSettings::default(),
-            other: HashMap::new()
+            other: HashMap::new(),
         }
     }
 }

@@ -122,8 +122,14 @@ impl Engine {
         log::info!("Name    : {}", ENGINE_NAME);
         log::info!("Version : {}", ENGINE_VERSION_STRING);
         log::info!("Arch    : {}", target::build::target_architecture().name());
-        log::info!("OS      : {}", target::build::target_platform().pretty_name());
-        log::info!("Build   : {}", target::build::target_build_type().pretty_name());
+        log::info!(
+            "OS      : {}",
+            target::build::target_platform().pretty_name()
+        );
+        log::info!(
+            "Build   : {}",
+            target::build::target_build_type().pretty_name()
+        );
         log::info!("=== Engine Info ===");
     }
 

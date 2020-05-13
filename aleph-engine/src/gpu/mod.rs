@@ -7,10 +7,10 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{ENGINE_VERSION_VK, AppInfo};
-use std::ffi::{CString, CStr};
+use crate::app::{AppInfo, ENGINE_VERSION_VK};
 use erupt::vk1_0::Vk10CoreLoaderExt;
 use raw_window_handle::HasRawWindowHandle;
+use std::ffi::{CStr, CString};
 
 ///
 /// Loads the core vulkan functions required for creating a VkInstance
@@ -18,8 +18,7 @@ use raw_window_handle::HasRawWindowHandle;
 pub fn load_vulkan_core() -> erupt::CoreLoader<libloading::Library> {
     // Load core vulkan functions
     log::trace!("Initializing Vulkan Core Loader");
-    let mut core_loader =
-        erupt::CoreLoader::new().expect("Failed to create Vulkan core loader");
+    let mut core_loader = erupt::CoreLoader::new().expect("Failed to create Vulkan core loader");
 
     // Load vulkan 1.0 core functions
     log::trace!("Loading Core Functions for Vulkan 1.0");
@@ -27,7 +26,11 @@ pub fn load_vulkan_core() -> erupt::CoreLoader<libloading::Library> {
     core_loader
 }
 
-pub fn create_instance<T>(core_loader: &erupt::CoreLoader<T>, app_info: &AppInfo, window: &impl HasRawWindowHandle) -> erupt::vk1_0::Instance {
+pub fn create_instance<T>(
+    core_loader: &erupt::CoreLoader<T>,
+    app_info: &AppInfo,
+    window: &impl HasRawWindowHandle,
+) -> erupt::vk1_0::Instance {
     // Fill out ApplicationInfo for creating a vulkan instance
     let app_name_cstr = CString::new(app_info.name.as_str()).unwrap();
     let app_version = erupt::make_version(app_info.major, app_info.minor, app_info.patch);
@@ -61,7 +64,10 @@ pub fn create_instance<T>(core_loader: &erupt::CoreLoader<T>, app_info: &AppInfo
     }
 }
 
-pub fn load_vulkan_instance<T>(core_loader: &erupt::CoreLoader<T>, instance: erupt::vk1_0::Instance) -> erupt::InstanceLoader {
+pub fn load_vulkan_instance<T>(
+    core_loader: &erupt::CoreLoader<T>,
+    instance: erupt::vk1_0::Instance,
+) -> erupt::InstanceLoader {
     // Load the vulkan instance function pointers
     log::info!("Loading Vulkan Instance functions");
     let mut instance_loader = erupt::InstanceLoader::new(core_loader, instance)
