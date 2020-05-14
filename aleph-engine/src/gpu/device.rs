@@ -31,18 +31,22 @@ impl DeviceBuilder {
         Self {}
     }
 
-    pub fn build(self, instance: &Arc<Instance>, surface: SurfaceKHR) -> Device {
+    pub fn build(self, instance: &Arc<Instance>, surface: SurfaceKHR) -> Arc<Device> {
+        log::trace!("Initializing Vulkan device");
         let instance_loader = instance.loader().clone();
 
         let features = PhysicalDeviceFeatures::default();
         let physical_device = Self::select_device(&instance_loader, &features, surface)
             .expect("Failed to select a physical device");
 
+        log::trace!("Checking swapchain support");
         let swapchain_support =
             Self::get_swapchain_support(&instance_loader, physical_device, surface);
 
+        log::trace!("Getting queue families");
         let queue_families = Self::get_queue_families(&instance_loader, physical_device, surface);
 
+        log::trace!("Getting GPU info");
         let device_props =
             unsafe { instance_loader.get_physical_device_properties(physical_device, None) };
 
@@ -126,6 +130,7 @@ impl DeviceBuilder {
             queue_create_infos.push(transfer_queue.unwrap());
         }
 
+        log::trace!("Creating Vulkan device");
         let device_create_info = DeviceCreateInfoBuilder::new()
             .enabled_features(&enabled_features)
             .enabled_extension_names(&enabled_extensions)
@@ -136,6 +141,7 @@ impl DeviceBuilder {
                 .expect("Failed to create vulkan device")
         };
 
+        log::trace!("Loading device functions");
         let mut device_loader =
             DeviceLoader::new(&instance_loader, device).expect("Failed to create device loader");
         device_loader
@@ -144,7 +150,7 @@ impl DeviceBuilder {
 
         let device_loader = Arc::new(device_loader);
 
-        Device {
+        let device = Device {
             info,
             _queue_families: queue_families,
             device_loader,
@@ -153,7 +159,8 @@ impl DeviceBuilder {
             transfer_queue: None,
             _swapchain_support: swapchain_support,
             _instance: instance.clone(),
-        }
+        };
+        Arc::new(device)
     }
 
     ///

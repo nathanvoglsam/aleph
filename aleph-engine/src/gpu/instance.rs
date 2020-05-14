@@ -175,7 +175,7 @@ impl<'a> InstanceBuilder<'a> {
             .enabled_layer_names(&layers);
 
         // Construct the vulkan instance
-        log::info!("Creating Vulkan instance");
+        log::trace!("Creating Vulkan instance");
         unsafe {
             let instance = core_loader.create_instance(&create_info, None, None);
             instance.expect("Failed to create Vulkan instance")
@@ -192,7 +192,7 @@ impl<'a> InstanceBuilder<'a> {
         debug: bool,
     ) -> erupt::InstanceLoader {
         // Load the vulkan instance function pointers
-        log::info!("Loading Vulkan Instance functions");
+        log::trace!("Loading Vulkan Instance functions");
         let mut instance_loader = erupt::InstanceLoader::new(core_loader, instance)
             .expect("Failed to initialize Vulkan instance loader");
         instance_loader
@@ -213,7 +213,7 @@ impl<'a> InstanceBuilder<'a> {
     ///
     ///
     fn install_debug_messenger(instance_loader: &erupt::InstanceLoader) -> DebugUtilsMessengerEXT {
-        log::info!("Installing VK_EXT_debug_utils messenger");
+        log::trace!("Installing VK_EXT_debug_utils messenger");
         let create_info = DebugUtilsMessengerCreateInfoEXTBuilder::new()
             .message_severity(
                 DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT

@@ -9,6 +9,7 @@
 
 use crate::app::{AppInfo, AppLogic, WindowSettings};
 use crate::gpu;
+use crate::gpu::GPUInfo;
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
@@ -93,7 +94,7 @@ impl Engine {
         let mut event_pump = sdl_ctx
             .event_pump()
             .expect("Failed to init SDL2 event pump");
-        log::info!("");
+        log::trace!("");
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
@@ -113,8 +114,9 @@ impl Engine {
                 .expect("Failed to create surface")
         };
 
-        log::trace!("Creating Vulkan device");
-        let _device = gpu::DeviceBuilder::new().build(&instance, surface);
+        let device = gpu::DeviceBuilder::new().build(&instance, surface);
+        Self::log_gpu_info(device.info());
+        log::info!("");
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -199,6 +201,21 @@ impl Engine {
         log::info!("Physical CPUs : {}", num_cpus::get_physical());
         log::info!("Logical CPUs  : {}", num_cpus::get());
         log::info!("System RAM    : {}MB", sdl2::cpuinfo::system_ram());
+    }
+
+    ///
+    /// Internal function for logging info about the CPU that is being used
+    ///
+    fn log_gpu_info(info: &GPUInfo) {
+        log::info!("=== GPU INFO ===");
+        log::info!("GPU Vendor    : {}", info.vendor_id.vendor_name());
+        log::info!("GPU Name      : {}", &info.device_name);
+        log::info!(
+            "API Version   : {}.{}.{}",
+            info.api_version_major,
+            info.api_version_minor,
+            info.api_version_patch
+        )
     }
 
     ///
