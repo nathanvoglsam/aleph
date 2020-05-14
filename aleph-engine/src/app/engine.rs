@@ -9,11 +9,10 @@
 
 use crate::app::{AppInfo, AppLogic, WindowSettings};
 use crate::gpu;
-use erupt::extensions::ext_debug_utils::ExtDebugUtilsInstanceLoaderExt;
-use erupt::vk1_0::Vk10InstanceLoaderExt;
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
+use std::sync::Arc;
 
 pub const ENGINE_NAME: &str = "AlephEngine";
 pub static ENGINE_NAME_CSTR: Lazy<CString> = Lazy::new(|| CString::new(ENGINE_NAME).unwrap());
@@ -54,18 +53,23 @@ impl Engine {
         // First thing we do is initialize the log backend so everything can log from now on
         crate::logger::init();
         log::info!("Aleph Engine Starting");
+        log::info!("");
 
         // Print info about the specific app to the log so we know what game and version we're on
         Engine::log_app_info(&app_info);
+        log::info!("");
 
         // Print engine info to the log so we know what engine version we're running on
         Engine::log_engine_info();
+        log::info!("");
 
         // Print some system info to the log so we know what we were running on
         Engine::log_cpu_info();
+        log::info!("");
 
         // Initialize the thread pools
         Engine::init_thread_pools();
+        log::info!("");
 
         // -----------------------------------------------------------------------------------------
         // SDL2 and Window Initialization
@@ -89,21 +93,28 @@ impl Engine {
         let mut event_pump = sdl_ctx
             .event_pump()
             .expect("Failed to init SDL2 event pump");
+        log::info!("");
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let core_loader = gpu::init::load_vulkan_core();
+        let instance = gpu::InstanceBuilder::new()
+            .debug(true)
+            .validation(true)
+            .surface(&window)
+            .build(&app_info);
+        let instance = Arc::new(instance);
 
-        // Create the vulkan instance
-        let instance = gpu::init::create_instance(&core_loader, &app_info, &window);
+        log::trace!("Creating Vulkan surface");
+        let surface = unsafe {
+            gpu::surface::create_surface(instance.loader(), &window, None)
+                .expect("Failed to create surface")
+        };
 
-        // Load the vulkan instance functions
-        let instance_loader = gpu::init::load_vulkan_instance(&core_loader, instance);
-
-        let messenger = gpu::init::install_debug_messenger(&instance_loader);
+        log::trace!("Creating Vulkan device");
+        let _device = gpu::DeviceBuilder::new().build(&instance, surface);
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -124,11 +135,6 @@ impl Engine {
 
         log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
-
-        unsafe {
-            instance_loader.destroy_debug_utils_messenger_ext(messenger, None);
-            instance_loader.destroy_instance(None);
-        }
     }
 
     ///

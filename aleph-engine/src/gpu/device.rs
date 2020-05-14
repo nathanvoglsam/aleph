@@ -1,0 +1,416 @@
+//
+//
+// This file is a part of Aleph
+//
+// <ALEPH_REPO_REPLACE>
+//
+// <ALEPH_LICENSE_REPLACE>
+//
+
+use crate::gpu::swapchain_support::SwapChainSupport;
+use crate::gpu::{GPUInfo, Instance, QueueFamily, QueueFamilyType, VendorID};
+use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
+use erupt::vk1_0::{
+    DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,
+    PhysicalDeviceType, Queue, QueueFlags, Vk10DeviceLoaderExt, Vk10InstanceLoaderExt, TRUE,
+};
+use erupt::{DeviceLoader, InstanceLoader};
+use std::ffi::CStr;
+use std::sync::Arc;
+
+///
+/// A builder wrapper for constructing a vulkan device
+///
+pub struct DeviceBuilder {}
+
+impl DeviceBuilder {
+    ///
+    /// Gets a new device builder
+    ///
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    pub fn build(self, instance: &Arc<Instance>, surface: SurfaceKHR) -> Device {
+        let instance_loader = instance.loader().clone();
+
+        let features = PhysicalDeviceFeatures::default();
+        let physical_device = Self::select_device(&instance_loader, &features, surface)
+            .expect("Failed to select a physical device");
+
+        let swapchain_support =
+            Self::get_swapchain_support(&instance_loader, physical_device, surface);
+
+        let queue_families = Self::get_queue_families(&instance_loader, physical_device, surface);
+
+        let device_props =
+            unsafe { instance_loader.get_physical_device_properties(physical_device, None) };
+
+        //let extension_props = unsafe {
+        //    instance_loader.enumerate_device_extension_properties(physical_device, None, None)
+        //};
+
+        let vendor_id = VendorID::from_raw(device_props.vendor_id);
+        let device_name = device_props.device_name.as_ptr();
+        let device_name = unsafe { CStr::from_ptr(device_name) };
+        let device_name = device_name.to_str().unwrap().to_string();
+        let api_version_major = erupt::version_major(device_props.api_version);
+        let api_version_minor = erupt::version_minor(device_props.api_version);
+        let api_version_patch = erupt::version_patch(device_props.api_version);
+        let info = GPUInfo {
+            vendor_id,
+            device_name,
+            api_version_major,
+            api_version_minor,
+            api_version_patch,
+        };
+
+        let enabled_features = PhysicalDeviceFeatures::default();
+
+        let mut enabled_extensions = Vec::new();
+        enabled_extensions.push(erupt::extensions::khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME);
+
+        // We're just going have a pre-allocated chunk of priorities bigger than we're ever going to
+        // need to slice from to send to vulkan. Saves allocating when we don't need to
+        static PRIORITIES: [f32; 128] = [1.0f32; 128];
+
+        // Find a general queue. We guarantee a general queue will exist for use in the Aleph
+        // renderer
+        let mut general_queue = None;
+        for family in queue_families.iter() {
+            if family.is_general() {
+                let info = DeviceQueueCreateInfoBuilder::new()
+                    .queue_family_index(family.queue_family_index)
+                    .queue_priorities(&PRIORITIES[0..1]);
+                general_queue = Some(info);
+                break;
+            }
+        }
+        let general_queue = general_queue.expect("Failed to find a general queue family");
+
+        // Find an async compute queue if there is one
+        let mut compute_queue = None;
+        for family in queue_families.iter() {
+            if family.is_async_compute() {
+                let info = DeviceQueueCreateInfoBuilder::new()
+                    .queue_family_index(family.queue_family_index)
+                    .queue_priorities(&PRIORITIES[0..1]);
+                compute_queue = Some(info);
+                break;
+            }
+        }
+
+        // Find a transfer queue if there is one
+        let mut transfer_queue = None;
+        for family in queue_families.iter() {
+            if family.is_transfer() {
+                let info = DeviceQueueCreateInfoBuilder::new()
+                    .queue_family_index(family.queue_family_index)
+                    .queue_priorities(&PRIORITIES[0..1]);
+                transfer_queue = Some(info);
+                break;
+            }
+        }
+
+        // Build the list of queues to create
+        let mut queue_create_infos = Vec::new();
+        queue_create_infos.push(general_queue);
+
+        // Create an async compute queue if we can
+        if compute_queue.is_some() {
+            queue_create_infos.push(compute_queue.unwrap());
+        }
+
+        // Create a transfer queue if we can
+        if transfer_queue.is_some() {
+            queue_create_infos.push(transfer_queue.unwrap());
+        }
+
+        let device_create_info = DeviceCreateInfoBuilder::new()
+            .enabled_features(&enabled_features)
+            .enabled_extension_names(&enabled_extensions)
+            .queue_create_infos(&queue_create_infos);
+        let device = unsafe {
+            instance_loader
+                .create_device(physical_device, &device_create_info, None, None)
+                .expect("Failed to create vulkan device")
+        };
+
+        let mut device_loader =
+            DeviceLoader::new(&instance_loader, device).expect("Failed to create device loader");
+        device_loader
+            .load_vk1_0()
+            .expect("Failed to load vulkan device functions");
+
+        let device_loader = Arc::new(device_loader);
+
+        Device {
+            info,
+            _queue_families: queue_families,
+            device_loader,
+            graphics_queue: Default::default(),
+            compute_queue: None,
+            transfer_queue: None,
+            _swapchain_support: swapchain_support,
+            _instance: instance.clone(),
+        }
+    }
+
+    ///
+    /// Chose the best available physical device
+    ///
+    fn select_device(
+        instance: &InstanceLoader,
+        features: &PhysicalDeviceFeatures,
+        surface: SurfaceKHR,
+    ) -> Option<PhysicalDevice> {
+        let devices = unsafe {
+            instance
+                .enumerate_physical_devices(None)
+                .expect("Failed to enumerate vulkan devices")
+        };
+        let mut scores: Vec<(PhysicalDevice, i32)> = Vec::new();
+
+        'device_loop: for device in devices.iter() {
+            let score = (*device, 0i32);
+
+            scores.push(score);
+
+            let score = scores.last_mut().unwrap();
+
+            let (props, feats, extns) = unsafe {
+                let props = instance.get_physical_device_properties(*device, None);
+                let feats = instance.get_physical_device_features(*device, None);
+                let extns = instance
+                    .enumerate_device_extension_properties(*device, None, None)
+                    .expect("Failed to list extension properties");
+                (props, feats, extns)
+            };
+
+            //let _name = unsafe { CStr::from_ptr(props.device_name.as_ptr()).to_str().unwrap() };
+
+            // Prioritize NVIDIA or AMD as they'll almost always be the fastest GPU available
+            // TODO: Update this when Intel Xe is less of a mystery
+            let vendor = VendorID::from_raw(props.vendor_id);
+            if vendor == VendorID::AMD || vendor == VendorID::NVIDIA {
+                score.1 += 10000;
+            }
+
+            // Get the name of the VK_KHR_surface extension as a rusty &str
+            let khr_surface_name = erupt::extensions::khr_surface::KHR_SURFACE_EXTENSION_NAME;
+            let khr_surface_name = unsafe { CStr::from_ptr(khr_surface_name) };
+            let khr_surface_name = khr_surface_name.to_str().unwrap();
+            for e in extns.iter() {
+                // Get the name of the extension we're currently checking as a &str
+                // May panic but shouldn't ever as the stringss will just be ASCII
+                let current_name = e.extension_name.as_ptr();
+                let current_name = unsafe { CStr::from_ptr(current_name) };
+                let current_name = current_name.to_str().unwrap();
+
+                if current_name == khr_surface_name {
+                    score.1 = -1_000_000;
+                    continue 'device_loop;
+                }
+            }
+
+            let swap_support = Self::get_swapchain_support(instance, *device, surface);
+
+            if swap_support.present_modes.is_empty() {
+                score.1 = -1_000_000;
+                continue;
+            }
+
+            if swap_support.formats.is_empty() {
+                score.1 = -1_000_000;
+                continue;
+            }
+
+            // This should never happen but always good to be safe
+            if props.api_version < erupt::make_version(1, 0, 0) {
+                score.1 = -100_000;
+                continue;
+            }
+
+            if props.device_type == PhysicalDeviceType::DISCRETE_GPU {
+                score.1 += 10000;
+            } else if props.device_type == PhysicalDeviceType::INTEGRATED_GPU {
+                score.1 += 1000;
+            }
+
+            // Tesselation shaders are very powerful so we would like to weight it pretty high
+            if features.tessellation_shader == TRUE && feats.tessellation_shader == TRUE {
+                score.1 += 3000
+            }
+
+            // Geometry shaders are pretty crap but may as well check for them
+            if features.geometry_shader == TRUE && feats.geometry_shader == TRUE {
+                score.1 += 3000
+            }
+        }
+
+        let mut final_device = (PhysicalDevice::null(), -100_000_000i32);
+
+        for score in scores.iter() {
+            if score.0 != PhysicalDevice::null() && score.1 > final_device.1 {
+                final_device = *score;
+            }
+        }
+
+        if final_device.0 == PhysicalDevice::null() && final_device.1 <= 0 {
+            return None;
+        }
+
+        Some(final_device.0)
+    }
+
+    ///
+    /// Returns whether the device supports the surface in use by ctx and additional information
+    /// about the devices swapchain abilities
+    ///
+    /// Returns Some(SwapChainSupport) if can present to surface and None if the device can not present
+    /// to the surface
+    ///
+    fn get_swapchain_support(
+        instance: &InstanceLoader,
+        device: PhysicalDevice,
+        surface: SurfaceKHR,
+    ) -> SwapChainSupport {
+        let formats = unsafe {
+            instance
+                .get_physical_device_surface_formats_khr(device, surface, None)
+                .expect("Failed to retrieve supported surface formats")
+        };
+        let present_modes = unsafe {
+            instance
+                .get_physical_device_surface_present_modes_khr(device, surface, None)
+                .expect("Failed to retrieve support present modes")
+        };
+
+        SwapChainSupport {
+            formats,
+            present_modes,
+        }
+    }
+
+    ///
+    /// Internal function for setting up the list of queue indices
+    ///
+    fn get_queue_families(
+        instance: &InstanceLoader,
+        physical_device: PhysicalDevice,
+        surface: SurfaceKHR,
+    ) -> Vec<QueueFamily> {
+        unsafe {
+            instance
+                .get_physical_device_queue_family_properties(physical_device, None)
+                .drain(..)
+                .enumerate()
+                .map(|(queue_family_index, family)| {
+                    let mut index = QueueFamily {
+                        queue_family_index: queue_family_index as u32,
+                        count: family.queue_count,
+                        family_type: QueueFamilyType::default(),
+                    };
+
+                    if instance
+                        .get_physical_device_surface_support_khr(
+                            physical_device,
+                            queue_family_index as u32,
+                            surface,
+                            None,
+                        )
+                        .expect("Failed to check for surface support")
+                    {
+                        index.family_type.set(QueueFamilyType::PRESENT);
+                    }
+
+                    if family.queue_flags.intersects(QueueFlags::GRAPHICS) {
+                        index.family_type.set(QueueFamilyType::GRAPHICS);
+                    }
+
+                    if family.queue_flags.intersects(QueueFlags::COMPUTE) {
+                        index.family_type.set(QueueFamilyType::COMPUTE);
+                    }
+
+                    if family.queue_flags.intersects(QueueFlags::TRANSFER) {
+                        index.family_type.set(QueueFamilyType::TRANSFER);
+                    }
+
+                    if family.queue_flags.intersects(QueueFlags::SPARSE_BINDING) {
+                        index.family_type.set(QueueFamilyType::SPARSE_BINDING);
+                    }
+
+                    index
+                })
+                .collect()
+        }
+    }
+}
+
+///
+///
+///
+pub struct Device {
+    info: GPUInfo,
+    _queue_families: Vec<QueueFamily>,
+    device_loader: Arc<DeviceLoader>,
+    graphics_queue: Queue,
+    compute_queue: Option<Queue>,
+    transfer_queue: Option<Queue>,
+    _swapchain_support: SwapChainSupport,
+    _instance: Arc<Instance>,
+}
+
+impl Device {
+    ///
+    /// Get a builder for constructing a device. Just a wrapper for `DeviceBuilder::new`
+    ///
+    pub fn builder() -> DeviceBuilder {
+        DeviceBuilder::new()
+    }
+
+    ///
+    /// Get a reference to the instance loader
+    ///
+    pub fn loader(&self) -> &Arc<DeviceLoader> {
+        &self.device_loader
+    }
+
+    ///
+    /// Gets the graphics queue we're using
+    ///
+    pub fn graphics_queue(&self) -> Queue {
+        self.graphics_queue
+    }
+
+    ///
+    /// Gets the compute queue we're using
+    ///
+    /// This will not always exist so don't assume it will (Intel iGPUs only have a single queue)
+    ///
+    pub fn compute_queue(&self) -> Option<Queue> {
+        self.compute_queue
+    }
+
+    ///
+    /// Gets the transfer queue we're using
+    ///
+    /// This will not always exist so don't assume it will (Intel iGPUs only have a single queue)
+    ///
+    pub fn transfer_queue(&self) -> Option<Queue> {
+        self.transfer_queue
+    }
+
+    ///
+    /// Returns the information about the GPU we collected while constructing the device
+    ///
+    pub fn info(&self) -> &GPUInfo {
+        &self.info
+    }
+}
+
+impl Drop for Device {
+    fn drop(&mut self) {
+        unsafe { self.device_loader.destroy_device(None) }
+    }
+}
