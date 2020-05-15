@@ -406,7 +406,7 @@ impl Swapchain {
             .pre_transform(capabilities.current_transform)
             .composite_alpha(CompositeAlphaFlagBitsKHR::OPAQUE_KHR)
             .image_sharing_mode(SharingMode::EXCLUSIVE)
-            .clipped(false)
+            .clipped(true)
             .old_swapchain(old_swapchain);
 
         log::trace!("Creating new swapchain");
