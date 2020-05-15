@@ -10,9 +10,11 @@
 use crate::app::{AppInfo, AppLogic, WindowSettings};
 use crate::gpu;
 use crate::gpu::GPUInfo;
+use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
+use std::time::Duration;
 
 pub const ENGINE_NAME: &str = "AlephEngine";
 pub static ENGINE_NAME_CSTR: Lazy<CString> = Lazy::new(|| CString::new(ENGINE_NAME).unwrap());
@@ -111,7 +113,15 @@ impl Engine {
         Self::log_gpu_info(device.info());
         log::info!("");
 
-        let swapchain = gpu::SwapchainBuilder::new().compatibility().build(&device);
+        let mut swapchain = gpu::SwapchainBuilder::new().compatibility().build(&device);
+
+        let create_info = SemaphoreCreateInfoBuilder::new();
+        let acquire_semaphore = unsafe {
+            device
+                .loader()
+                .create_semaphore(&create_info, None, None)
+                .expect("Failed to create acquire semaphore")
+        };
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -128,6 +138,23 @@ impl Engine {
             }
 
             app.on_update();
+
+            if swapchain.requires_rebuild() {
+                let _ = swapchain.rebuild();
+            }
+
+            let (i, _) = match swapchain.acquire_next(
+                Duration::from_millis(10),
+                acquire_semaphore,
+                Fence::null(),
+            ) {
+                Ok(v) => v,
+                Err(_) => {
+                    continue;
+                }
+            };
+
+            swapchain.present(device.general_queue(), i as usize, &[acquire_semaphore]);
         }
 
         log::trace!("Calling AppLogic::on_exit");

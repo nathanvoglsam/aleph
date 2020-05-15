@@ -24,6 +24,8 @@ pub use instance::Instance;
 pub use instance::InstanceBuilder;
 pub use queue_family::QueueFamily;
 pub use queue_family::QueueFamilyType;
+pub use swapchain::AcquireError;
+pub use swapchain::RebuildError;
 pub use swapchain::SwapChainSupport;
 pub use swapchain::Swapchain;
 pub use swapchain::SwapchainBuilder;

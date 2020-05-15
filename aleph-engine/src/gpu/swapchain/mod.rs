@@ -12,17 +12,24 @@ use erupt::extensions::khr_surface::{
     ColorSpaceKHR, CompositeAlphaFlagBitsKHR, PresentModeKHR, SurfaceFormatKHR, SurfaceKHR,
 };
 use erupt::extensions::khr_swapchain::{
-    KhrSwapchainDeviceLoaderExt, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
+    KhrSwapchainDeviceLoaderExt, PresentInfoKHRBuilder, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
 };
-use erupt::vk1_0::{Extent2D, Format, Image, ImageUsageFlags, SharingMode, Vk10DeviceLoaderExt};
+use erupt::vk1_0::{
+    Extent2D, Fence, Format, Image, ImageUsageFlags, Queue, Semaphore, SharingMode,
+    Vk10DeviceLoaderExt,
+};
 use std::sync::Arc;
 
+mod acquire_error;
 mod rebuild_error;
 mod support;
 
-use crate::app::Window;
+pub use acquire_error::AcquireError;
 pub use rebuild_error::RebuildError;
 pub use support::SwapChainSupport;
+
+use crate::app::Window;
+use std::time::Duration;
 
 ///
 /// Assign a score of "how much we want" this particular presentation mode if we dont care about
@@ -286,7 +293,115 @@ impl Swapchain {
     }
 
     ///
+    /// Get the list of images the swapchain owns
     ///
+    pub fn images(&self) -> &[Image] {
+        &self.images
+    }
+
+    ///
+    /// If the swapchain wants to be rebuilt
+    ///
+    pub fn requires_rebuild(&self) -> bool {
+        self.requires_rebuild
+    }
+
+    ///
+    /// This functions as a wrapper around the vkAcquireNextImage
+    ///
+    pub fn acquire_next(
+        &mut self,
+        timeout: Duration,
+        semaphore: Semaphore,
+        fence: Fence,
+    ) -> Result<(u32, Image), AcquireError> {
+        // If we require a rebuild just exit out immediately, there's no point even trying to do
+        // anything more
+        if self.requires_rebuild {
+            return Err(AcquireError::OutOfDate);
+        }
+
+        // Convert the duration to the units required by vkAcquireNextImage
+        let timeout = timeout.as_nanos() as u64;
+
+        let result = unsafe {
+            self.device.loader().acquire_next_image_khr(
+                self.swapchain,
+                timeout,
+                semaphore,
+                fence,
+                None,
+            )
+        };
+
+        // Type alias for brevity
+        type VkResult = erupt::vk1_0::Result;
+
+        if result.raw == VkResult::SUCCESS {
+            // Success, so return the index + image
+            let index = result.value.unwrap();
+            Ok((index, self.images[index as usize]))
+        } else if result.raw == VkResult::ERROR_OUT_OF_DATE_KHR {
+            // Swapchain out of date, mark as needing a rebuild and error out
+            self.requires_rebuild = true;
+            Err(AcquireError::OutOfDate)
+        } else if result.raw == VkResult::SUBOPTIMAL_KHR {
+            // Suboptimal will work but we should probably rebuild anyway so we queue up a rebuild
+            // for next frame but just keep going with this one
+            self.requires_rebuild = true;
+            let index = result.value.unwrap();
+            Ok((index, self.images[index as usize]))
+        } else if result.raw == VkResult::TIMEOUT {
+            // We hit the timeout specified and so can't yield a value, inform the caller about the
+            // timeout with the error code
+            Err(AcquireError::Timeout)
+        } else {
+            // Any other result is probably unrecoverable in a reasonable fashion so just panic and
+            // be done with it
+            panic!(
+                "Unhandled error when acquiring next swapchain image: {:?}",
+                result.raw
+            );
+        }
+    }
+
+    ///
+    /// this function is a wrapper around vkQueuePresent
+    ///
+    pub fn present(&mut self, queue: Queue, index: usize, semaphores: &[Semaphore]) {
+        let swapchains = [self.swapchain];
+        let image_indices = [index as u32];
+
+        let present_info = PresentInfoKHRBuilder::new()
+            .swapchains(&swapchains)
+            .wait_semaphores(semaphores)
+            .image_indices(&image_indices);
+
+        let result = unsafe { self.device.loader().queue_present_khr(queue, &present_info) };
+
+        // Type alias for brevity
+        type VkResult = erupt::vk1_0::Result;
+
+        if result.raw == VkResult::SUCCESS {
+            return;
+        } else if result.raw == VkResult::SUBOPTIMAL_KHR
+            || result.raw == VkResult::ERROR_OUT_OF_DATE_KHR
+        {
+            self.requires_rebuild = true;
+        } else {
+            // Any other result is probably unrecoverable in a reasonable fashion so just panic and
+            // be done with it
+            panic!(
+                "Unhandled error when presenting swapchain image: {:?}",
+                result.raw
+            );
+        }
+    }
+
+    ///
+    /// Rebuild the swapchain. We need to do this if the swapchain is no longer up to date, such as
+    /// if the window has resized or minimized. We need to recreate the swapchain to update the
+    /// resources and get the new set of images for the swapchain
     ///
     pub fn rebuild(&mut self) -> Result<(), RebuildError> {
         log::trace!("Attempting swapchain rebuild");
@@ -307,14 +422,14 @@ impl Swapchain {
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
         if capabilities.current_extent.width == 0 || capabilities.current_extent.height == 0 {
-            log::warn!("Swapchain current extent 0 when rebuilding swapchain");
+            log::error!("Swapchain current extent 0 when rebuilding swapchain");
             return Err(RebuildError::ExtentsZero);
         }
 
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
         if capabilities.max_image_extent.width == 0 || capabilities.max_image_extent.width == 0 {
-            log::warn!("Swapchain max extent 0 when rebuilding swapchain");
+            log::error!("Swapchain max extent 0 when rebuilding swapchain");
             return Err(RebuildError::ExtentsZero);
         }
 
@@ -431,8 +546,7 @@ impl Swapchain {
         self.swapchain = swapchain;
         self.requires_rebuild = false;
 
-        let null_handle = SwapchainKHR::null();
-        if old_swapchain != null_handle {
+        if old_swapchain != SwapchainKHR::null() {
             unsafe {
                 log::trace!("Destroying old swapchain");
                 self.device
