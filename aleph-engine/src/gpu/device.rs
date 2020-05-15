@@ -87,37 +87,44 @@ impl DeviceBuilder {
         // Find a general queue. We guarantee a general queue will exist for use in the Aleph
         // renderer
         let mut general_queue = None;
+        let mut general_family = None;
         for family in queue_families.iter() {
             if family.is_general() {
                 let info = DeviceQueueCreateInfoBuilder::new()
-                    .queue_family_index(family.queue_family_index)
+                    .queue_family_index(family.index)
                     .queue_priorities(&PRIORITIES[0..1]);
                 general_queue = Some(info);
+                general_family = Some(family.clone());
                 break;
             }
         }
         let general_queue = general_queue.expect("Failed to find a general queue family");
+        let general_family = general_family.expect("Failed to find a general queue family");
 
         // Find an async compute queue if there is one
         let mut compute_queue = None;
+        let mut compute_family = None;
         for family in queue_families.iter() {
             if family.is_async_compute() {
                 let info = DeviceQueueCreateInfoBuilder::new()
-                    .queue_family_index(family.queue_family_index)
+                    .queue_family_index(family.index)
                     .queue_priorities(&PRIORITIES[0..1]);
                 compute_queue = Some(info);
+                compute_family = Some(family.clone());
                 break;
             }
         }
 
         // Find a transfer queue if there is one
         let mut transfer_queue = None;
+        let mut transfer_family = None;
         for family in queue_families.iter() {
             if family.is_transfer() {
                 let info = DeviceQueueCreateInfoBuilder::new()
-                    .queue_family_index(family.queue_family_index)
+                    .queue_family_index(family.index)
                     .queue_priorities(&PRIORITIES[0..1]);
                 transfer_queue = Some(info);
+                transfer_family = Some(family.clone());
                 break;
             }
         }
@@ -180,10 +187,12 @@ impl DeviceBuilder {
             physical_device,
             device_loader,
             general_queue,
+            general_family,
             compute_queue,
+            compute_family,
             transfer_queue,
+            transfer_family,
             instance: instance.clone(),
-            _queue_families: queue_families,
         };
         Arc::new(device)
     }
@@ -345,7 +354,7 @@ impl DeviceBuilder {
                 .enumerate()
                 .map(|(queue_family_index, family)| {
                     let mut index = QueueFamily {
-                        queue_family_index: queue_family_index as u32,
+                        index: queue_family_index as u32,
                         count: family.queue_count,
                         family_type: QueueFamilyType::default(),
                     };
@@ -393,10 +402,12 @@ pub struct Device {
     physical_device: PhysicalDevice,
     device_loader: Arc<DeviceLoader>,
     general_queue: Queue,
+    general_family: QueueFamily,
     compute_queue: Option<Queue>,
+    compute_family: Option<QueueFamily>,
     transfer_queue: Option<Queue>,
+    transfer_family: Option<QueueFamily>,
     instance: Arc<Instance>,
-    _queue_families: Vec<QueueFamily>,
 }
 
 impl Device {
@@ -424,10 +435,17 @@ impl Device {
     }
 
     ///
-    /// Gets the graphics queue we're using
+    /// Gets the general queue we're using
     ///
-    pub fn graphics_queue(&self) -> Queue {
+    pub fn general_queue(&self) -> Queue {
         self.general_queue
+    }
+
+    ///
+    /// Gets the `QueueFamily` of the general queue
+    ///
+    pub fn general_family(&self) -> &QueueFamily {
+        &self.general_family
     }
 
     ///
@@ -440,12 +458,26 @@ impl Device {
     }
 
     ///
+    /// Gets the `QueueFamily` of the compute queue, if there is one
+    ///
+    pub fn compute_family(&self) -> Option<&QueueFamily> {
+        self.compute_family.as_ref()
+    }
+
+    ///
     /// Gets the transfer queue we're using
     ///
     /// This will not always exist so don't assume it will (Intel iGPUs only have a single queue)
     ///
     pub fn transfer_queue(&self) -> Option<Queue> {
         self.transfer_queue
+    }
+
+    ///
+    /// Gets the `QueueFamily` of the transfer queue, if there is one
+    ///
+    pub fn transfer_family(&self) -> Option<&QueueFamily> {
+        self.transfer_family.as_ref()
     }
 
     ///

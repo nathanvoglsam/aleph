@@ -178,7 +178,7 @@ impl Debug for QueueFamilyType {
 ///
 #[derive(Clone, Debug)]
 pub struct QueueFamily {
-    pub queue_family_index: u32,
+    pub index: u32,
     pub count: u32,
     pub family_type: QueueFamilyType,
 }
@@ -189,7 +189,7 @@ impl QueueFamily {
     ///
     pub fn new() -> QueueFamily {
         QueueFamily {
-            queue_family_index: 0,
+            index: 0,
             count: 0,
             family_type: QueueFamilyType::default(),
         }
