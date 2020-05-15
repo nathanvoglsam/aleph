@@ -14,36 +14,23 @@ use erupt::extensions::ext_debug_utils::{
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
     ExtDebugUtilsInstanceLoaderExt,
 };
+use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{Vk10CoreLoaderExt, Vk10InstanceLoaderExt};
 use erupt::{CoreLoader, InstanceLoader};
 use libloading::Library;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::HasRawWindowHandle;
 use std::ffi::CString;
 use std::sync::Arc;
 
 ///
-/// An abusrd internal wrapper because of erupt's interface needing a concrete type
-///
-struct AbsurdWindowWrapper<'a> {
-    window: &'a dyn HasRawWindowHandle,
-}
-
-unsafe impl<'a> HasRawWindowHandle for AbsurdWindowWrapper<'a> {
-    fn raw_window_handle(&self) -> RawWindowHandle {
-        self.window.raw_window_handle()
-    }
-}
-
-///
 /// A builder wrapper for creating a vulkan instance
 ///
-pub struct InstanceBuilder<'a> {
+pub struct InstanceBuilder {
     debug: bool,
     validation: bool,
-    window: Option<AbsurdWindowWrapper<'a>>,
 }
 
-impl<'a> InstanceBuilder<'a> {
+impl InstanceBuilder {
     ///
     /// Construct a new instance builder.
     ///
@@ -53,7 +40,6 @@ impl<'a> InstanceBuilder<'a> {
         Self {
             debug: false,
             validation: false,
-            window: None,
         }
     }
 
@@ -74,36 +60,19 @@ impl<'a> InstanceBuilder<'a> {
     }
 
     ///
-    /// Create the instance so that it supports presenting to the given surface
-    ///
-    pub fn surface(mut self, window: &'a dyn HasRawWindowHandle) -> Self {
-        self.window = Some(AbsurdWindowWrapper { window });
-        self
-    }
-
-    ///
     /// Construct the instance
     ///
-    pub fn build(self, app_info: &AppInfo) -> Arc<Instance> {
+    pub fn build(self, window: &impl HasRawWindowHandle, app_info: &AppInfo) -> Arc<Instance> {
         // Load core vulkan functions for creating an instance
         let core_loader = Self::load_vulkan_core();
 
         // Create the vulkan instance
-        let instance = Self::create_instance(
-            &core_loader,
-            app_info,
-            self.window.as_ref().unwrap(),
-            self.debug,
-            self.validation,
-        );
+        let instance =
+            Self::create_instance(&core_loader, app_info, window, self.debug, self.validation);
 
         // Load the vulkan instance functions
-        let instance_loader = Self::load_vulkan_instance(
-            &core_loader,
-            instance,
-            self.window.as_ref().unwrap(),
-            self.debug,
-        );
+        let instance_loader =
+            Self::load_vulkan_instance(&core_loader, instance, window, self.debug);
 
         let messenger = if self.validation {
             Some(Self::install_debug_messenger(&instance_loader))
@@ -111,9 +80,17 @@ impl<'a> InstanceBuilder<'a> {
             None
         };
 
+        // Create a surface for the window we're making an instance for
+        log::trace!("Creating Vulkan surface");
+        let surface = unsafe {
+            gpu::surface::create_surface(&instance_loader, window, None)
+                .expect("Failed to create surface")
+        };
+
         let instance = Instance {
             _core_loader: Arc::new(core_loader),
             instance_loader: Arc::new(instance_loader),
+            surface,
             messenger,
         };
         Arc::new(instance)
@@ -241,6 +218,7 @@ impl<'a> InstanceBuilder<'a> {
 pub struct Instance {
     _core_loader: Arc<CoreLoader<Library>>,
     instance_loader: Arc<InstanceLoader>,
+    surface: SurfaceKHR,
     messenger: Option<DebugUtilsMessengerEXT>,
 }
 
@@ -248,7 +226,7 @@ impl Instance {
     ///
     /// Get a builder for constructing an instance. Just a wrapper for `InstanceBuilder::new`
     ///
-    pub fn builder<'a>() -> InstanceBuilder<'a> {
+    pub fn builder() -> InstanceBuilder {
         InstanceBuilder::new()
     }
 
@@ -258,15 +236,26 @@ impl Instance {
     pub fn loader(&self) -> &Arc<InstanceLoader> {
         &self.instance_loader
     }
+
+    ///
+    /// Gets the SurfaceKHR we made when creating the instance
+    ///
+    pub fn surface(&self) -> SurfaceKHR {
+        self.surface
+    }
 }
 
 impl Drop for Instance {
     fn drop(&mut self) {
         unsafe {
+            log::trace!("Destroying surface");
+            self.instance_loader.destroy_surface_khr(self.surface, None);
             if let Some(messenger) = self.messenger {
+                log::trace!("Destroying debug messenger");
                 self.instance_loader
                     .destroy_debug_utils_messenger_ext(messenger, None);
             }
+            log::trace!("Destroying vulkan instance");
             self.instance_loader.destroy_instance(None);
         }
     }

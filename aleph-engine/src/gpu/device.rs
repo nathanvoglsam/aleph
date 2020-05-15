@@ -7,8 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::swapchain_support::SwapChainSupport;
-use crate::gpu::{GPUInfo, Instance, QueueFamily, QueueFamilyType, VendorID};
+use crate::gpu::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,
@@ -31,9 +30,10 @@ impl DeviceBuilder {
         Self {}
     }
 
-    pub fn build(self, instance: &Arc<Instance>, surface: SurfaceKHR) -> Arc<Device> {
+    pub fn build(self, instance: &Arc<Instance>) -> Arc<Device> {
         log::trace!("Initializing Vulkan device");
-        let instance_loader = instance.loader().clone();
+        let instance_loader = instance.loader();
+        let surface = instance.surface();
 
         let features = PhysicalDeviceFeatures::default();
         let physical_device = Self::select_device(&instance_loader, &features, surface)
@@ -42,6 +42,12 @@ impl DeviceBuilder {
         log::trace!("Checking swapchain support");
         let swapchain_support =
             Self::get_swapchain_support(&instance_loader, physical_device, surface);
+        if swapchain_support.formats.is_empty() {
+            panic!("No available swapchain formats");
+        }
+        if swapchain_support.present_modes.is_empty() {
+            panic!("No available present modes");
+        }
 
         log::trace!("Getting queue families");
         let queue_families = Self::get_queue_families(&instance_loader, physical_device, surface);
@@ -148,17 +154,36 @@ impl DeviceBuilder {
             .load_vk1_0()
             .expect("Failed to load vulkan device functions");
 
+        log::trace!("Loading general queue");
+        let general_queue =
+            unsafe { device_loader.get_device_queue(general_queue.queue_family_index, 0, None) };
+
+        let compute_queue = compute_queue.map(|queue| {
+            log::trace!("Loading async compute queue");
+            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
+        });
+
+        let transfer_queue = transfer_queue.map(|queue| {
+            log::trace!("Loading transfer queue");
+            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
+        });
+
+        log::trace!("Loading functions for VK_KHR_swapchain");
+        device_loader
+            .load_khr_swapchain()
+            .expect("Failed to load VK_KHR_swapchain functions");
+
         let device_loader = Arc::new(device_loader);
 
         let device = Device {
             info,
-            _queue_families: queue_families,
+            physical_device,
             device_loader,
-            graphics_queue: Default::default(),
-            compute_queue: None,
-            transfer_queue: None,
-            _swapchain_support: swapchain_support,
-            _instance: instance.clone(),
+            general_queue,
+            compute_queue,
+            transfer_queue,
+            instance: instance.clone(),
+            _queue_families: queue_families,
         };
         Arc::new(device)
     }
@@ -279,21 +304,27 @@ impl DeviceBuilder {
     ///
     fn get_swapchain_support(
         instance: &InstanceLoader,
-        device: PhysicalDevice,
+        physical_device: PhysicalDevice,
         surface: SurfaceKHR,
     ) -> SwapChainSupport {
+        let capabilities = unsafe {
+            instance
+                .get_physical_device_surface_capabilities_khr(physical_device, surface, None)
+                .expect("Failed to retrieve surface capabilities")
+        };
         let formats = unsafe {
             instance
-                .get_physical_device_surface_formats_khr(device, surface, None)
+                .get_physical_device_surface_formats_khr(physical_device, surface, None)
                 .expect("Failed to retrieve supported surface formats")
         };
         let present_modes = unsafe {
             instance
-                .get_physical_device_surface_present_modes_khr(device, surface, None)
+                .get_physical_device_surface_present_modes_khr(physical_device, surface, None)
                 .expect("Failed to retrieve support present modes")
         };
 
         SwapChainSupport {
+            capabilities,
             formats,
             present_modes,
         }
@@ -359,13 +390,13 @@ impl DeviceBuilder {
 ///
 pub struct Device {
     info: GPUInfo,
-    _queue_families: Vec<QueueFamily>,
+    physical_device: PhysicalDevice,
     device_loader: Arc<DeviceLoader>,
-    graphics_queue: Queue,
+    general_queue: Queue,
     compute_queue: Option<Queue>,
     transfer_queue: Option<Queue>,
-    _swapchain_support: SwapChainSupport,
-    _instance: Arc<Instance>,
+    instance: Arc<Instance>,
+    _queue_families: Vec<QueueFamily>,
 }
 
 impl Device {
@@ -384,10 +415,19 @@ impl Device {
     }
 
     ///
+    /// Get the surface this device is working with
+    ///
+    /// Just calls `Instance::surface` on the instance ref held by the device
+    ///
+    pub fn surface(&self) -> SurfaceKHR {
+        self.instance.surface()
+    }
+
+    ///
     /// Gets the graphics queue we're using
     ///
     pub fn graphics_queue(&self) -> Queue {
-        self.graphics_queue
+        self.general_queue
     }
 
     ///
@@ -414,10 +454,31 @@ impl Device {
     pub fn info(&self) -> &GPUInfo {
         &self.info
     }
+
+    ///
+    /// Returns the supported presentation modes and surface formats for this vulkan device
+    ///
+    pub fn swapchain_support(&self) -> SwapChainSupport {
+        DeviceBuilder::get_swapchain_support(
+            self.instance.loader(),
+            self.physical_device,
+            self.instance.surface(),
+        )
+    }
+
+    ///
+    /// Returns the physical device handle
+    ///
+    pub fn physical_device(&self) -> PhysicalDevice {
+        self.physical_device
+    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
-        unsafe { self.device_loader.destroy_device(None) }
+        unsafe {
+            log::trace!("Destroying vulkan device");
+            self.device_loader.destroy_device(None);
+        }
     }
 }

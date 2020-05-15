@@ -13,7 +13,6 @@ use crate::gpu::GPUInfo;
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
-use std::sync::Arc;
 
 pub const ENGINE_NAME: &str = "AlephEngine";
 pub static ENGINE_NAME_CSTR: Lazy<CString> = Lazy::new(|| CString::new(ENGINE_NAME).unwrap());
@@ -104,19 +103,15 @@ impl Engine {
         let instance = gpu::InstanceBuilder::new()
             .debug(true)
             .validation(true)
-            .surface(&window)
-            .build(&app_info);
-        let instance = Arc::new(instance);
+            .build(&window, &app_info);
 
-        log::trace!("Creating Vulkan surface");
-        let surface = unsafe {
-            gpu::surface::create_surface(instance.loader(), &window, None)
-                .expect("Failed to create surface")
-        };
+        let device = gpu::DeviceBuilder::new().build(&instance);
+        log::trace!("");
 
-        let device = gpu::DeviceBuilder::new().build(&instance, surface);
         Self::log_gpu_info(device.info());
         log::info!("");
+
+        let swapchain = gpu::SwapchainBuilder::new().compatibility().build(&device);
 
         // =========================================================================================
         // Engine Fully Initialized

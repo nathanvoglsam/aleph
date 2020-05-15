@@ -37,4 +37,5 @@ env_logger = "0.7"
 cmake = "0.1"
 aleph-target = { path = "../aleph-target", version = "1" }
 aleph-compile = { path = "../aleph-compile", version = "1" }
+aleph-math = { path = "../aleph-math", version = "0.1" }
 

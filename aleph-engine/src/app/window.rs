@@ -18,9 +18,18 @@ use sdl2::video::FullscreenType;
 /// info regarding "recently collected" see the documentation for `Window`
 ///
 pub struct WindowState {
+    /// The title/text in the window header
     pub(crate) title: String,
+
+    /// The current width of the window on the desktop
     pub(crate) current_width: u32,
+
+    /// The current height of the window on the desktop
     pub(crate) current_height: u32,
+
+    /// The current width of the drawable
+    pub(crate) drawable_width: u32,
+    pub(crate) drawable_height: u32,
     pub(crate) windowed_width: u32,
     pub(crate) windowed_height: u32,
     pub(crate) fullscreen: bool,
@@ -113,10 +122,13 @@ impl Window {
             .build()
             .expect("Failed to create window");
 
+        let drawable_size = window.vulkan_drawable_size();
         let window_state = WindowState {
             title: "".to_string(),
             current_width: window_settings.width,
             current_height: window_settings.height,
+            drawable_width: drawable_size.0,
+            drawable_height: drawable_size.1,
             windowed_width: window_settings.width,
             windowed_height: window_settings.height,
             fullscreen: false,
@@ -227,6 +239,10 @@ impl Window {
                 }
             }
         }
+
+        let drawable_size = window.vulkan_drawable_size();
+        window_state.drawable_width = drawable_size.0;
+        window_state.drawable_height = drawable_size.1;
     }
 
     fn handle_go_fullscreen(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
@@ -371,6 +387,22 @@ impl Window {
     }
 
     ///
+    /// Returns the dimensions of the window on the desktop
+    ///
+    /// Basically just the result of calling both `Window::width` and `Window::height` but only
+    /// locks the state mutex once
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn size() -> (u32, u32) {
+        let window_state_lock = WINDOW_STATE.read();
+        let window_state = window_state_lock.as_ref().expect("Window not initialized");
+        (window_state.current_width, window_state.current_height)
+    }
+
+    ///
     /// Sets the size of the window
     ///
     /// Will only take affect at the beginning of the next frame
@@ -385,6 +417,52 @@ impl Window {
             .as_mut()
             .expect("Window not initialized")
             .push(WindowRequest::ChangeSize(width, height));
+    }
+
+    ///
+    /// Returns the width of the drawable surface on the window
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn drawable_width() -> u32 {
+        WINDOW_STATE
+            .read()
+            .as_ref()
+            .expect("Window not initialized")
+            .drawable_width
+    }
+
+    ///
+    /// Returns the height of the drawable surface on the window
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn drawable_height() -> u32 {
+        WINDOW_STATE
+            .read()
+            .as_ref()
+            .expect("Window not initialized")
+            .drawable_height
+    }
+
+    ///
+    /// Returns the dimensions of the drawable surface on the window
+    ///
+    /// Basically just the result of calling both `Window::drawable_width` and
+    /// `Window::drawable_height` but only locks the state mutex once
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn drawable_size() -> (u32, u32) {
+        let window_state_lock = WINDOW_STATE.read();
+        let window_state = window_state_lock.as_ref().expect("Window not initialized");
+        (window_state.drawable_width, window_state.drawable_height)
     }
 
     ///
