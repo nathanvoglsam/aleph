@@ -368,13 +368,13 @@ impl Swapchain {
     ///
     /// this function is a wrapper around vkQueuePresent
     ///
-    pub fn present(&mut self, queue: Queue, index: usize, semaphores: &[Semaphore]) {
+    pub fn present(&mut self, queue: Queue, index: usize, wait_semaphores: &[Semaphore]) {
         let swapchains = [self.swapchain];
         let image_indices = [index as u32];
 
         let present_info = PresentInfoKHRBuilder::new()
             .swapchains(&swapchains)
-            .wait_semaphores(semaphores)
+            .wait_semaphores(wait_semaphores)
             .image_indices(&image_indices);
 
         let result = unsafe { self.device.loader().queue_present_khr(queue, &present_info) };

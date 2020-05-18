@@ -504,12 +504,19 @@ impl Device {
     pub fn physical_device(&self) -> PhysicalDevice {
         self.physical_device
     }
+
+    ///
+    /// Get the instance that this device is associated with
+    ///
+    pub fn instance(&self) -> &Arc<Instance> {
+        &self.instance
+    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
-            log::trace!("Destroying vulkan device");
+            log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
         }
     }

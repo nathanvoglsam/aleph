@@ -10,7 +10,12 @@
 use crate::app::{AppInfo, AppLogic, WindowSettings};
 use crate::gpu;
 use crate::gpu::GPUInfo;
-use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use erupt::vk1_0::{
+    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
+    CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, CommandPoolResetFlags, DependencyFlags,
+    Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceRangeBuilder,
+    PipelineStageFlags, SemaphoreCreateInfoBuilder, SubmitInfoBuilder, Vk10DeviceLoaderExt,
+};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
@@ -113,6 +118,10 @@ impl Engine {
         Self::log_gpu_info(device.info());
         log::info!("");
 
+        let _allocator = gpu::alloc::Allocator::builder()
+            .build(&device)
+            .expect("Failed to build vulkan allocator");
+
         let mut swapchain = gpu::SwapchainBuilder::new().compatibility().build(&device);
 
         let create_info = SemaphoreCreateInfoBuilder::new();
@@ -122,6 +131,32 @@ impl Engine {
                 .create_semaphore(&create_info, None, None)
                 .expect("Failed to create acquire semaphore")
         };
+        let barrier_semaphore = unsafe {
+            device
+                .loader()
+                .create_semaphore(&create_info, None, None)
+                .expect("Failed to create barrier semaphore")
+        };
+
+        let create_info =
+            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
+        let command_pool = unsafe {
+            device
+                .loader()
+                .create_command_pool(&create_info, None, None)
+                .expect("Failed to create command pool")
+        };
+
+        let allocate_info = CommandBufferAllocateInfoBuilder::new()
+            .command_buffer_count(1)
+            .command_pool(command_pool)
+            .level(CommandBufferLevel::PRIMARY);
+        let command_buffer = unsafe {
+            device
+                .loader()
+                .allocate_command_buffers(&allocate_info)
+                .expect("Failed to create command buffer")
+        }[0];
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -143,7 +178,7 @@ impl Engine {
                 let _ = swapchain.rebuild();
             }
 
-            let (i, _) = match swapchain.acquire_next(
+            let (i, image) = match swapchain.acquire_next(
                 Duration::from_millis(10),
                 acquire_semaphore,
                 Fence::null(),
@@ -154,11 +189,95 @@ impl Engine {
                 }
             };
 
-            swapchain.present(device.general_queue(), i as usize, &[acquire_semaphore]);
+            unsafe {
+                device
+                    .loader()
+                    .queue_wait_idle(device.general_queue())
+                    .expect("Failed to wait for queue to idle");
+
+                device
+                    .loader()
+                    .reset_command_pool(command_pool, CommandPoolResetFlags::empty())
+                    .expect("Failed to reset command pool");
+
+                // Begin recording a command buffer for one time submit
+                let begin_info = CommandBufferBeginInfoBuilder::new()
+                    .flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+                device
+                    .loader()
+                    .begin_command_buffer(command_buffer, &begin_info)
+                    .expect("Failed to begin command buffer");
+
+                // Inject a pipeline barrier to transition the image from undefined to present
+                // source
+                let subresource_range = ImageSubresourceRangeBuilder::new()
+                    .base_array_layer(0)
+                    .base_mip_level(0)
+                    .layer_count(1)
+                    .level_count(1)
+                    .aspect_mask(ImageAspectFlags::COLOR);
+                let barrier = ImageMemoryBarrierBuilder::new()
+                    .image(image)
+                    .subresource_range(subresource_range.discard())
+                    .old_layout(ImageLayout::UNDEFINED)
+                    .new_layout(ImageLayout::PRESENT_SRC_KHR);
+                let src_stage_mask = PipelineStageFlags::TOP_OF_PIPE;
+                let dst_stage_mask = PipelineStageFlags::BOTTOM_OF_PIPE;
+                let dependency_flags = DependencyFlags::default();
+                let memory_barriers = [];
+                let buffer_memory_barriers = [];
+                let image_memory_barriers = [barrier];
+                device.loader().cmd_pipeline_barrier(
+                    command_buffer,
+                    src_stage_mask,
+                    dst_stage_mask,
+                    dependency_flags,
+                    &memory_barriers,
+                    &buffer_memory_barriers,
+                    &image_memory_barriers,
+                );
+
+                device
+                    .loader()
+                    .end_command_buffer(command_buffer)
+                    .expect("Failed to end command buffer");
+
+                let command_buffers = [command_buffer];
+                let wait_semaphores = [acquire_semaphore];
+                let signal_semaphores = [barrier_semaphore];
+                let wait_dst_stage_mask = [PipelineStageFlags::BOTTOM_OF_PIPE];
+                let submit = SubmitInfoBuilder::new()
+                    .command_buffers(&command_buffers)
+                    .wait_semaphores(&wait_semaphores)
+                    .wait_dst_stage_mask(&wait_dst_stage_mask)
+                    .signal_semaphores(&signal_semaphores);
+                let submits = [submit];
+                device
+                    .loader()
+                    .queue_submit(device.general_queue(), &submits, Fence::null())
+                    .expect("Failed to submit command buffer")
+            }
+
+            swapchain.present(device.general_queue(), i as usize, &[barrier_semaphore]);
         }
 
         log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
+
+        unsafe {
+            device
+                .loader()
+                .device_wait_idle()
+                .expect("Failed to wait on device idle");
+
+            let buffers = [command_buffer];
+            device.loader().free_command_buffers(command_pool, &buffers);
+
+            device.loader().destroy_semaphore(barrier_semaphore, None);
+            device.loader().destroy_semaphore(acquire_semaphore, None);
+
+            device.loader().destroy_command_pool(command_pool, None);
+        }
     }
 
     ///

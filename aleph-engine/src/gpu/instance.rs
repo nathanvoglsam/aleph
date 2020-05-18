@@ -142,7 +142,7 @@ impl InstanceBuilder {
 
         let mut layers = Vec::new();
         if validation {
-            layers.push(erupt::cstr!("VK_LAYER_LUNARG_standard_validation"));
+            layers.push(erupt::cstr!("VK_LAYER_KHRONOS_validation"));
         }
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
@@ -248,14 +248,14 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         unsafe {
-            log::trace!("Destroying surface");
+            log::trace!("Destroying Vulkan surface");
             self.instance_loader.destroy_surface_khr(self.surface, None);
             if let Some(messenger) = self.messenger {
                 log::trace!("Destroying debug messenger");
                 self.instance_loader
                     .destroy_debug_utils_messenger_ext(messenger, None);
             }
-            log::trace!("Destroying vulkan instance");
+            log::trace!("Destroying Vulkan instance");
             self.instance_loader.destroy_instance(None);
         }
     }

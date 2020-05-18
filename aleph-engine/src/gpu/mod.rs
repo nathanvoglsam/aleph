@@ -10,6 +10,8 @@
 pub(crate) mod debug;
 pub(crate) mod surface;
 
+pub mod alloc;
+
 mod device;
 mod gpu_info;
 mod instance;

@@ -12,7 +12,17 @@
 name = "aleph-engine"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "A Rust and Vulkan powered 3D game engine"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-engine/"
+readme = "README.md"
+keywords = ["engine", "graphics", "vulkan", "game"]
+categories = ["game-engines"]
 edition = "2018"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
 
 [dependencies]
 erupt = "0.6"
@@ -26,6 +36,7 @@ libloading = "0.6"
 raw-window-handle = "0.3"
 console = "0.11"
 aleph-target-crate = { path = "../aleph-target-crate", version = "1" }
+aleph-vma-sys = { path = "../aleph-vma-sys", version = "1" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.8"
