@@ -7,13 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::alloc::utils;
-use crate::gpu::alloc::vulkan_functions::VulkanFunctionsBuilder;
-use crate::gpu::alloc::Allocation;
-use crate::gpu::alloc::AllocationCreateInfo;
-use crate::gpu::alloc::AllocationInfo;
-use crate::gpu::alloc::Stats;
-use crate::gpu::Device;
+use crate::gpu::vk::alloc::utils;
+use crate::gpu::vk::alloc::vulkan_functions::VulkanFunctionsBuilder;
+use crate::gpu::vk::alloc::Allocation;
+use crate::gpu::vk::alloc::AllocationCreateInfo;
+use crate::gpu::vk::alloc::AllocationInfo;
+use crate::gpu::vk::alloc::Stats;
+use crate::gpu::vk::Device;
 use core::mem;
 use core::ptr;
 use erupt::utils::VulkanResult;
@@ -112,7 +112,7 @@ impl AllocatorBuilder {
     /// - If not all required function pointers are provided
     /// - If KHR_DEDICATED_ALLOCATION_BIT is set and the required function pointers are not given
     ///
-    pub fn build(mut self, device: &Arc<Device>) -> Result<Allocator, AllocatorBuilderError> {
+    pub fn build(mut self, device: &Arc<Device>) -> Result<Arc<Allocator>, AllocatorBuilderError> {
         self.create_info.device = device.loader().handle.0 as *mut _;
         self.create_info.physicalDevice = device.physical_device().0 as *mut _;
 
@@ -153,7 +153,7 @@ impl AllocatorBuilder {
             _device: device.clone(),
         };
 
-        Ok(alloc)
+        Ok(Arc::new(alloc))
     }
 }
 
@@ -282,8 +282,8 @@ impl Allocator {
     ) -> VulkanResult<u32> {
         let mut idx = 0u32;
 
-        let alloc_ptr = allocation_create_info as *const AllocationCreateInfo;
-        let alloc_ptr = alloc_ptr as *const raw::VmaAllocationCreateInfo;
+        let alloc_create_info = allocation_create_info.into_raw();
+        let alloc_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaFindMemoryTypeIndex(
             self.allocator,
@@ -309,8 +309,8 @@ impl Allocator {
     ) -> VulkanResult<u32> {
         let mut idx = 0u32;
 
-        let alloc_ptr = allocation_create_info as *const AllocationCreateInfo;
-        let alloc_ptr = alloc_ptr as *const raw::VmaAllocationCreateInfo;
+        let alloc_create_info = allocation_create_info.into_raw();
+        let alloc_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
         let buffer_ptr = buffer_create_info as *const BufferCreateInfo;
         let buffer_ptr = buffer_ptr as *const raw::VkBufferCreateInfo;
@@ -339,8 +339,8 @@ impl Allocator {
     ) -> VulkanResult<u32> {
         let mut idx = 0u32;
 
-        let alloc_ptr = allocation_create_info as *const AllocationCreateInfo;
-        let alloc_ptr = alloc_ptr as *const raw::VmaAllocationCreateInfo;
+        let allocation_create_info = allocation_create_info.into_raw();
+        let alloc_ptr = &allocation_create_info as *const raw::VmaAllocationCreateInfo;
 
         let image_ptr = image_create_info as *const ImageCreateInfo;
         let image_ptr = image_ptr as *const raw::VkImageCreateInfo;
@@ -369,8 +369,8 @@ impl Allocator {
     ) -> VulkanResult<Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
-        let create_info_ptr = create_info as *const AllocationCreateInfo;
-        let create_info_ptr = create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let create_info = create_info.into_raw();
+        let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let requirements = memory_requirements as *const MemoryRequirements;
         let requirements = requirements as *const raw::VkMemoryRequirements;
@@ -402,8 +402,8 @@ impl Allocator {
         let mut ret: Vec<Allocation> = Vec::with_capacity(allocation_count);
         ret.resize(allocation_count, Allocation::from_raw(ptr::null_mut()));
 
-        let create_info_ptr = create_info as *const AllocationCreateInfo;
-        let create_info_ptr = create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let create_info = create_info.into_raw();
+        let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let requirements = memory_requirements as *const MemoryRequirements;
         let requirements = requirements as *const raw::VkMemoryRequirements;
@@ -412,7 +412,7 @@ impl Allocator {
             self.allocator,
             requirements,
             create_info_ptr,
-            allocation_count,
+            allocation_count as _,
             ret.as_mut_ptr() as *mut raw::VmaAllocation,
             ptr::null_mut(),
         );
@@ -434,8 +434,8 @@ impl Allocator {
     ) -> VulkanResult<Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
-        let create_info_ptr = create_info as *const AllocationCreateInfo;
-        let create_info_ptr = create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let create_info = create_info.into_raw();
+        let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaAllocateMemoryForBuffer(
             self.allocator,
@@ -462,8 +462,8 @@ impl Allocator {
     ) -> VulkanResult<Allocation> {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
 
-        let create_info_ptr = create_info as *const AllocationCreateInfo;
-        let create_info_ptr = create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let create_info = create_info.into_raw();
+        let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaAllocateMemoryForImage(
             self.allocator,
@@ -495,7 +495,7 @@ impl Allocator {
         let pointer = pointer as *mut Allocation;
         let pointer = pointer as *mut raw::VmaAllocation;
 
-        raw::vmaFreeMemoryPages(self.allocator, allocations.len(), pointer)
+        raw::vmaFreeMemoryPages(self.allocator, allocations.len() as _, pointer)
     }
 
     ///
@@ -679,8 +679,8 @@ impl Allocator {
         let b_create_info_ptr = buffer_create_info as *const BufferCreateInfo;
         let b_create_info_ptr = b_create_info_ptr as *const raw::VkBufferCreateInfo;
 
-        let a_create_info_ptr = alloc_create_info as *const AllocationCreateInfo;
-        let a_create_info_ptr = a_create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let alloc_create_info = alloc_create_info.into_raw();
+        let a_create_info_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
         let mut buffer: Buffer = Buffer::null();
         let buffer_ptr = &mut buffer as *mut Buffer;
@@ -728,8 +728,8 @@ impl Allocator {
         let i_create_info_ptr = image_create_info as *const ImageCreateInfo;
         let i_create_info_ptr = i_create_info_ptr as *const raw::VkImageCreateInfo;
 
-        let a_create_info_ptr = alloc_create_info as *const AllocationCreateInfo;
-        let a_create_info_ptr = a_create_info_ptr as *const raw::VmaAllocationCreateInfo;
+        let alloc_create_info = alloc_create_info.into_raw();
+        let a_create_info_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
         let mut image: Image = Image::null();
         let image_ptr = &mut image as *mut Image;

@@ -32,7 +32,18 @@
 #![allow(non_snake_case)]
 #![allow(clippy::all)]
 
-pub mod raw;
+pub mod raw {
+    pub type size_t = usize;
+    pub type __uint8_t = u8;
+    pub type __uint16_t = u16;
+    pub type __uint32_t = u32;
+    pub type __uint64_t = u64;
+    pub type __int8_t = i8;
+    pub type __int16_t = i16;
+    pub type __int32_t = i32;
+    pub type __int64_t = i64;
+    include!("../raw.rs");
+}
 
 #[cfg(test)]
 mod tests;

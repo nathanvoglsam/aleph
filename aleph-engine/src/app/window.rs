@@ -12,6 +12,7 @@ use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use sdl2::event::WindowEvent;
 use sdl2::video::FullscreenType;
+use std::ops::Deref;
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -27,12 +28,23 @@ pub struct WindowState {
     /// The current height of the window on the desktop
     pub(crate) current_height: u32,
 
-    /// The current width of the drawable
+    /// The current width of the drawable surface
     pub(crate) drawable_width: u32,
+
+    /// The current height of the drawable surface
     pub(crate) drawable_height: u32,
+
+    /// The width of the window when not fullscreen
     pub(crate) windowed_width: u32,
+
+    /// The height of the window when not fullscreen
     pub(crate) windowed_height: u32,
+
+    /// Whether the window is currently fullscreen
     pub(crate) fullscreen: bool,
+
+    /// Is the window currently focused
+    pub(crate) focused: bool,
 }
 
 ///
@@ -54,6 +66,26 @@ pub static WINDOW_REQUEST_QUEUE: Lazy<Mutex<Option<Vec<WindowRequest>>>> =
     Lazy::new(|| Mutex::new(None));
 
 pub static WINDOW_EVENTS: Lazy<RwLock<Option<Vec<WindowEvent>>>> = Lazy::new(|| RwLock::new(None));
+
+///
+/// A wrapper around a read guard on the underlying RwLock used to make the global window events
+/// list thread safe.
+///
+/// # Warning
+///
+/// Do not try and hold onto this between frames, it will deadlock the engine.
+///
+pub struct WindowEvents {
+    lock: parking_lot::RwLockReadGuard<'static, Option<Vec<WindowEvent>>>,
+}
+
+impl Deref for WindowEvents {
+    type Target = [WindowEvent];
+
+    fn deref(&self) -> &Self::Target {
+        self.lock.as_ref().unwrap().as_slice()
+    }
+}
 
 ///
 /// A "namespace struct" similar to the `Engine` struct that is used to encapsulate the global
@@ -132,6 +164,7 @@ impl Window {
             windowed_width: window_settings.width,
             windowed_height: window_settings.height,
             fullscreen: false,
+            focused: false,
         };
 
         *WINDOW_STATE.write() = Some(window_state);
@@ -157,13 +190,17 @@ impl Window {
                 log::trace!("Window resized by OS");
                 log::trace!("Window Size: {}x{}", width, height);
             }
+            WindowEvent::FocusGained => {
+                window_state.focused = true;
+            }
+            WindowEvent::FocusLost => {
+                window_state.focused = false;
+            }
             WindowEvent::SizeChanged(_, _)
             | WindowEvent::Moved(_, _)
             | WindowEvent::Minimized
             | WindowEvent::Maximized
             | WindowEvent::Restored
-            | WindowEvent::FocusGained
-            | WindowEvent::FocusLost
             | WindowEvent::Close
             | WindowEvent::Enter
             | WindowEvent::Leave
@@ -481,6 +518,21 @@ impl Window {
     }
 
     ///
+    /// Return if the window is currently focused
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn focused() -> bool {
+        WINDOW_STATE
+            .read()
+            .as_ref()
+            .expect("Window not initialized")
+            .focused
+    }
+
+    ///
     /// Sets the window to fullscreen
     ///
     /// Will only take affect at the beginning of the next frame
@@ -529,5 +581,18 @@ impl Window {
             .as_mut()
             .expect("Window not initialized")
             .push(WindowRequest::ToggleFullscreen);
+    }
+
+    ///
+    /// Get read only access to this frame's list of window events.
+    ///
+    /// # Warning
+    ///
+    /// This will lock a global RwLock so trying to hold on to this between frames will deadlock the
+    /// engine.
+    ///
+    pub fn events() -> WindowEvents {
+        let lock = WINDOW_EVENTS.read();
+        WindowEvents { lock }
     }
 }

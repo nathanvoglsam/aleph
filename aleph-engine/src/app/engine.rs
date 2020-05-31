@@ -7,15 +7,10 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppInfo, AppLogic, WindowSettings};
+use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Mouse, WindowSettings};
 use crate::gpu;
-use crate::gpu::GPUInfo;
-use erupt::vk1_0::{
-    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
-    CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, CommandPoolResetFlags, DependencyFlags,
-    Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceRangeBuilder,
-    PipelineStageFlags, SemaphoreCreateInfoBuilder, SubmitInfoBuilder, Vk10DeviceLoaderExt,
-};
+use crate::gpu::vk::GPUInfo;
+use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
@@ -100,29 +95,64 @@ impl Engine {
         let mut event_pump = sdl_ctx
             .event_pump()
             .expect("Failed to init SDL2 event pump");
+
+        // Init SDL2 Mouse Utils
+        log::trace!("Initializing Mouse Utils");
+        let mouse_utils = sdl_ctx.mouse();
+
+        log::trace!("Initializing SDL2 Timer Subsystem");
+        let timer = sdl_ctx.timer().expect("Failed to init SDL2 Timer system");
+
+        // Space out logging
         log::trace!("");
+
+        // -----------------------------------------------------------------------------------------
+        // Frame Timer Initialization
+        // -----------------------------------------------------------------------------------------
+        FrameTimer::init(&timer);
+
+        // -----------------------------------------------------------------------------------------
+        // Mouse Initialization
+        // -----------------------------------------------------------------------------------------
+
+        // Initialize the global mouse system
+        Mouse::init();
+
+        // -----------------------------------------------------------------------------------------
+        // ImGui Initialization
+        // -----------------------------------------------------------------------------------------
+
+        // Initialize imgui
+        let mut imgui_ctx = Imgui::new();
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let instance = gpu::InstanceBuilder::new()
+        let instance = gpu::vk::InstanceBuilder::new()
             .debug(true)
             .validation(true)
             .build(&window, &app_info);
 
-        let device = gpu::DeviceBuilder::new().build(&instance);
+        let device = gpu::vk::DeviceBuilder::new().build(&instance);
         log::trace!("");
 
         Self::log_gpu_info(device.info());
         log::info!("");
 
-        let _allocator = gpu::alloc::Allocator::builder()
+        let allocator = gpu::vk::alloc::Allocator::builder()
             .build(&device)
             .expect("Failed to build vulkan allocator");
 
-        let mut swapchain = gpu::SwapchainBuilder::new().compatibility().build(&device);
+        let mut swapchain = gpu::vk::SwapchainBuilder::new().vsync().build(&device);
+
+        let mut imgui_renderer = gpu::vk::ImguiRenderer::new(
+            imgui_ctx.context_mut().fonts(),
+            device.clone(),
+            allocator.clone(),
+            &swapchain,
+        );
 
         let create_info = SemaphoreCreateInfoBuilder::new();
         let acquire_semaphore = unsafe {
@@ -131,32 +161,12 @@ impl Engine {
                 .create_semaphore(&create_info, None, None)
                 .expect("Failed to create acquire semaphore")
         };
-        let barrier_semaphore = unsafe {
+        let signal_semaphore = unsafe {
             device
                 .loader()
                 .create_semaphore(&create_info, None, None)
                 .expect("Failed to create barrier semaphore")
         };
-
-        let create_info =
-            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
-        let command_pool = unsafe {
-            device
-                .loader()
-                .create_command_pool(&create_info, None, None)
-                .expect("Failed to create command pool")
-        };
-
-        let allocate_info = CommandBufferAllocateInfoBuilder::new()
-            .command_buffer_count(1)
-            .command_pool(command_pool)
-            .level(CommandBufferLevel::PRIMARY);
-        let command_buffer = unsafe {
-            device
-                .loader()
-                .allocate_command_buffers(&allocate_info)
-                .expect("Failed to create command buffer")
-        }[0];
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -167,19 +177,38 @@ impl Engine {
         app.on_init();
 
         // Process the SDL2 events and store them into our own event queues for later use
+        let mut opened = true;
         'game_loop: loop {
-            if Engine::handle_pre_update(&mut window, &mut event_pump) {
+            // Update the frame delta timer
+            FrameTimer::frame(&timer);
+
+            if Engine::handle_pre_update(&mut window, &mut event_pump, &mut imgui_ctx, &mouse_utils)
+            {
                 break 'game_loop;
             }
 
+            let ui = imgui_ctx.frame(&mouse_utils);
+
+            ui.show_demo_window(&mut opened);
+
             app.on_update();
+
+            unsafe {
+                device
+                    .loader()
+                    .device_wait_idle()
+                    .expect("Failed to wait on device idle");
+            }
 
             if swapchain.requires_rebuild() {
                 let _ = swapchain.rebuild();
+                unsafe {
+                    imgui_renderer.recreate_resources(&swapchain);
+                }
             }
 
             let (i, image) = match swapchain.acquire_next(
-                Duration::from_millis(10),
+                Duration::from_millis(10000),
                 acquire_semaphore,
                 Fence::null(),
             ) {
@@ -190,75 +219,16 @@ impl Engine {
             };
 
             unsafe {
-                device
-                    .loader()
-                    .queue_wait_idle(device.general_queue())
-                    .expect("Failed to wait for queue to idle");
-
-                device
-                    .loader()
-                    .reset_command_pool(command_pool, CommandPoolResetFlags::empty())
-                    .expect("Failed to reset command pool");
-
-                // Begin recording a command buffer for one time submit
-                let begin_info = CommandBufferBeginInfoBuilder::new()
-                    .flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-                device
-                    .loader()
-                    .begin_command_buffer(command_buffer, &begin_info)
-                    .expect("Failed to begin command buffer");
-
-                // Inject a pipeline barrier to transition the image from undefined to present
-                // source
-                let subresource_range = ImageSubresourceRangeBuilder::new()
-                    .base_array_layer(0)
-                    .base_mip_level(0)
-                    .layer_count(1)
-                    .level_count(1)
-                    .aspect_mask(ImageAspectFlags::COLOR);
-                let barrier = ImageMemoryBarrierBuilder::new()
-                    .image(image)
-                    .subresource_range(subresource_range.discard())
-                    .old_layout(ImageLayout::UNDEFINED)
-                    .new_layout(ImageLayout::PRESENT_SRC_KHR);
-                let src_stage_mask = PipelineStageFlags::TOP_OF_PIPE;
-                let dst_stage_mask = PipelineStageFlags::BOTTOM_OF_PIPE;
-                let dependency_flags = DependencyFlags::default();
-                let memory_barriers = [];
-                let buffer_memory_barriers = [];
-                let image_memory_barriers = [barrier];
-                device.loader().cmd_pipeline_barrier(
-                    command_buffer,
-                    src_stage_mask,
-                    dst_stage_mask,
-                    dependency_flags,
-                    &memory_barriers,
-                    &buffer_memory_barriers,
-                    &image_memory_barriers,
+                imgui_renderer.render_frame(
+                    ui,
+                    &swapchain,
+                    acquire_semaphore,
+                    signal_semaphore,
+                    i as usize,
                 );
-
-                device
-                    .loader()
-                    .end_command_buffer(command_buffer)
-                    .expect("Failed to end command buffer");
-
-                let command_buffers = [command_buffer];
-                let wait_semaphores = [acquire_semaphore];
-                let signal_semaphores = [barrier_semaphore];
-                let wait_dst_stage_mask = [PipelineStageFlags::BOTTOM_OF_PIPE];
-                let submit = SubmitInfoBuilder::new()
-                    .command_buffers(&command_buffers)
-                    .wait_semaphores(&wait_semaphores)
-                    .wait_dst_stage_mask(&wait_dst_stage_mask)
-                    .signal_semaphores(&signal_semaphores);
-                let submits = [submit];
-                device
-                    .loader()
-                    .queue_submit(device.general_queue(), &submits, Fence::null())
-                    .expect("Failed to submit command buffer")
             }
 
-            swapchain.present(device.general_queue(), i as usize, &[barrier_semaphore]);
+            swapchain.present(device.general_queue(), i as usize, &[signal_semaphore]);
         }
 
         log::trace!("Calling AppLogic::on_exit");
@@ -270,13 +240,8 @@ impl Engine {
                 .device_wait_idle()
                 .expect("Failed to wait on device idle");
 
-            let buffers = [command_buffer];
-            device.loader().free_command_buffers(command_pool, &buffers);
-
-            device.loader().destroy_semaphore(barrier_semaphore, None);
+            device.loader().destroy_semaphore(signal_semaphore, None);
             device.loader().destroy_semaphore(acquire_semaphore, None);
-
-            device.loader().destroy_command_pool(command_pool, None);
         }
     }
 
@@ -363,8 +328,10 @@ impl Engine {
     /// Internal function for handling various events prior to the user part of the game loop
     ///
     fn handle_pre_update(
-        mut window: &mut sdl2::video::Window,
-        mut event_pump: &mut sdl2::EventPump,
+        window: &mut sdl2::video::Window,
+        event_pump: &mut sdl2::EventPump,
+        imgui_ctx: &mut Imgui,
+        mouse_utils: &sdl2::mouse::MouseUtil,
     ) -> bool {
         // Get access to window state
         let mut window_state_lock = crate::app::WINDOW_STATE.write();
@@ -372,11 +339,19 @@ impl Engine {
         let window_state = window_state_lock.as_mut();
         let window_state = window_state.expect("Window not initialized");
 
-        crate::app::Window::process_window_requests(&mut window, window_state);
+        imgui_ctx.update_mouse_pos_early();
 
-        if Self::handle_event_pump(&mut event_pump, window_state) {
+        crate::app::Mouse::process_mouse_requests(window, mouse_utils);
+        crate::app::Window::process_window_requests(window, window_state);
+
+        if Self::handle_event_pump(event_pump, window_state) {
             return true;
         }
+
+        drop(window_state_lock);
+
+        imgui_ctx.update_mouse_pos_late();
+
         false
     }
 
@@ -389,11 +364,15 @@ impl Engine {
     ) -> bool {
         // Get access to window events
         let mut window_events_lock = crate::app::WINDOW_EVENTS.write();
-
         let window_events = window_events_lock.as_mut();
         let window_events = window_events.expect("Window not initialized");
 
+        let mut mouse_events_lock = crate::app::MOUSE_EVENTS.write();
+        let mouse_events = mouse_events_lock.as_mut();
+        let mouse_events = mouse_events.expect("Mouse system not initialized");
+
         window_events.clear();
+        mouse_events.clear();
 
         for event in event_pump.poll_iter() {
             match event {
@@ -408,9 +387,24 @@ impl Engine {
                         win_event,
                     );
                 }
+                event @ Event::MouseButtonDown { .. } => {
+                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                }
+                event @ Event::MouseButtonUp { .. } => {
+                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                }
+                event @ Event::MouseMotion { .. } => {
+                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                }
+                event @ Event::MouseWheel { .. } => {
+                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                }
                 _ => {}
             }
         }
+
+        crate::app::Mouse::update_state(event_pump);
+
         false
     }
 

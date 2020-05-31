@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
+use crate::gpu::vk::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,

@@ -83,7 +83,7 @@ impl InstanceBuilder {
         // Create a surface for the window we're making an instance for
         log::trace!("Creating Vulkan surface");
         let surface = unsafe {
-            gpu::surface::create_surface(&instance_loader, window, None)
+            gpu::vk::surface::create_surface(&instance_loader, window, None)
                 .expect("Failed to create surface")
         };
 
@@ -181,7 +181,7 @@ impl InstanceBuilder {
                 .expect("Failed to load VK_EXT_debug_utils functions");
         }
 
-        unsafe { gpu::surface::load_surface_functions(&mut instance_loader, window) }
+        unsafe { gpu::vk::surface::load_surface_functions(&mut instance_loader, window) }
 
         instance_loader
     }
@@ -202,7 +202,7 @@ impl InstanceBuilder {
                 DebugUtilsMessageTypeFlagsEXT::VALIDATION_EXT
                     | DebugUtilsMessageTypeFlagsEXT::PERFORMANCE_EXT,
             )
-            .pfn_user_callback(Some(gpu::debug::vulkan_debug_messenger));
+            .pfn_user_callback(Some(gpu::vk::debug::vulkan_debug_messenger));
 
         unsafe {
             instance_loader

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::alloc::Pool;
+use crate::gpu::vk::alloc::Pool;
 use core::ptr;
 use erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
 use vma_sys::raw;
@@ -17,7 +17,7 @@ use vma_sys::raw;
 ///
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[repr(transparent)]
-pub struct AllocationCreateFlag(u32);
+pub struct AllocationCreateFlag(raw::VmaAllocationCreateFlagBits);
 
 impl AllocationCreateFlag {
     ///
@@ -117,14 +117,14 @@ impl AllocationCreateFlag {
         AllocationCreateFlag(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MASK);
 }
 
-impl From<u32> for AllocationCreateFlag {
-    fn from(input: u32) -> Self {
+impl From<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
+    fn from(input: raw::VmaAllocationCreateFlagBits) -> Self {
         AllocationCreateFlag(input)
     }
 }
 
-impl Into<u32> for AllocationCreateFlag {
-    fn into(self) -> u32 {
+impl Into<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
+    fn into(self) -> raw::VmaAllocationCreateFlagBits {
         self.0
     }
 }
@@ -132,14 +132,42 @@ impl Into<u32> for AllocationCreateFlag {
 ///
 /// VmaMemoryUsage
 ///
-#[repr(u32)]
 #[derive(Debug, Copy, Clone)]
 pub enum MemoryUsage {
-    Unknown = raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN,
-    GPUOnly = raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY,
-    CPUOnly = raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY,
-    CPUToGPU = raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU,
-    GPUToCPU = raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU,
+    Unknown,
+    GPUOnly,
+    CPUOnly,
+    CPUToGPU,
+    GPUToCPU,
+}
+
+impl MemoryUsage {
+    ///
+    /// Convert a raw VmaMemoryUsage enum into our nice rust wrapper
+    ///
+    pub fn from_raw(memory_usage: raw::VmaMemoryUsage) -> Self {
+        match memory_usage {
+            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN => MemoryUsage::Unknown,
+            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY => MemoryUsage::GPUOnly,
+            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY => MemoryUsage::CPUOnly,
+            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU => MemoryUsage::CPUToGPU,
+            raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU => MemoryUsage::GPUToCPU,
+            _ => panic!("Invalid VmaMemoryUsage variant"),
+        }
+    }
+
+    ///
+    /// Convert our enum back into the raw VmaMemoryUsage value
+    ///
+    pub fn into_raw(self) -> raw::VmaMemoryUsage {
+        match self {
+            MemoryUsage::Unknown => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN,
+            MemoryUsage::GPUOnly => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY,
+            MemoryUsage::CPUOnly => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY,
+            MemoryUsage::CPUToGPU => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU,
+            MemoryUsage::GPUToCPU => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU,
+        }
+    }
 }
 
 ///
@@ -158,6 +186,13 @@ impl Allocation {
     ///
     pub fn from_raw(allocation: raw::VmaAllocation) -> Self {
         Allocation { allocation }
+    }
+
+    ///
+    /// Gets a "null" allocation
+    ///
+    pub fn null() -> Self {
+        Self::default()
     }
 
     ///
@@ -208,6 +243,18 @@ impl AllocationCreateInfo {
     pub fn builder() -> AllocationCreateInfoBuilder {
         AllocationCreateInfoBuilder::new()
     }
+
+    pub(crate) fn into_raw(self) -> raw::VmaAllocationCreateInfo {
+        raw::VmaAllocationCreateInfo {
+            flags: self.flags.0 as u32,
+            usage: self.usage.into_raw(),
+            requiredFlags: self.required_flags.bits(),
+            preferredFlags: self.preferred_flags.bits(),
+            memoryTypeBits: self.memory_type_bits,
+            pool: self.pool,
+            pUserData: self.p_user_data,
+        }
+    }
 }
 
 ///
@@ -223,7 +270,7 @@ impl AllocationCreateInfoBuilder {
     ///
     pub fn new() -> Self {
         let info = AllocationCreateInfo {
-            flags: AllocationCreateFlag::from(0u32),
+            flags: AllocationCreateFlag::from(0),
             usage: MemoryUsage::Unknown,
             required_flags: MemoryPropertyFlags::empty(),
             preferred_flags: MemoryPropertyFlags::empty(),

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::VendorID;
+use crate::gpu::vk::VendorID;
 
 ///
 /// Struct that holds information about the physical device (GPU) that a given device represents

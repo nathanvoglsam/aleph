@@ -35,6 +35,7 @@ parking_lot = "0.10"
 libloading = "0.6"
 raw-window-handle = "0.3"
 console = "0.11"
+imgui = "0.4"
 aleph-target-crate = { path = "../aleph-target-crate", version = "1" }
 aleph-vma-sys = { path = "../aleph-vma-sys", version = "1" }
 

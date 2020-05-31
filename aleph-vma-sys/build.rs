@@ -48,12 +48,21 @@ fn generate_bindings_internal(path: &Path) {
             .header("lib/vk_mem_alloc.h")
             .rustified_enum("Vk.*")
             .rustfmt_bindings(true)
+            .blacklist_type("size_t")
+            .blacklist_type("__uint8_t")
+            .blacklist_type("__uint16_t")
+            .blacklist_type("__uint32_t")
+            .blacklist_type("__uint64_t")
+            .blacklist_type("__int8_t")
+            .blacklist_type("__int16_t")
+            .blacklist_type("__int32_t")
+            .blacklist_type("__int64_t")
             .blacklist_type("__darwin_.*")
             .whitelist_type("PFN_vma.*")
             .whitelist_type("Vma.*")
             .whitelist_function(".*vma.*")
             .trust_clang_mangling(false)
-            .layout_tests(true)
+            .layout_tests(false)
             .generate_comments(false)
             .generate()
             .expect("Unable to generate bindings!");
@@ -125,7 +134,7 @@ fn dll_name() -> &'static str {
 }
 
 fn main() {
-    let path = Path::new("src/raw.rs");
+    let path = Path::new("raw.rs");
 
     generate_bindings(path);
     build_lib();

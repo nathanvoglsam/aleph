@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::alloc::Allocator;
+use crate::gpu::vk::alloc::Allocator;
 use core::ptr;
 use erupt::utils::VulkanResult;
 use erupt::vk1_0::DeviceSize;
@@ -141,11 +141,9 @@ impl PoolBuilder {
         let create_ptr = &self.create_info as *const PoolCreateInfo;
         let create_ptr = create_ptr as *const raw::VmaPoolCreateInfo;
 
-        let result = raw::vmaCreatePool(
-            allocator.into_raw(),
-            create_ptr,
-            &mut pool as *mut raw::VmaPool,
-        );
+        let result = raw::vmaCreatePool(allocator.into_raw(), create_ptr, &mut pool as *mut _);
+
+        debug_assert!(pool != ptr::null_mut(), "Pool should not be null");
 
         if result as i32 == 0 {
             let pool = Pool {
@@ -220,7 +218,7 @@ impl Pool {
         raw::vmaMakePoolAllocationsLost(
             self.allocator.into_raw(),
             self.pool,
-            &mut out as *mut usize,
+            &mut out as *mut usize as *mut _,
         );
 
         out
