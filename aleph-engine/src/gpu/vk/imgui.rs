@@ -93,7 +93,7 @@ impl ImguiFrame {
         let memory_pool = unsafe {
             vk::alloc::PoolBuilder::new()
                 .flags(vk::alloc::PoolCreateFlag::LINEAR_ALGORITHM_BIT)
-                .block_size(1024 * 1024 * 32)
+                .block_size((1024 * 1024) * 1)
                 .memory_type_index(memory_type_index)
                 .min_block_count(1)
                 .max_block_count(1)
@@ -173,7 +173,13 @@ impl ImguiFrame {
             .expect("Failed to create framebuffer")
     }
 
-    unsafe fn destroy(&self, device: &vk::Device) {
+    unsafe fn destroy(&self, device: &vk::Device, allocator: &Allocator) {
+        if self.vtx_buffer.0 != Buffer::null() {
+            allocator.destroy_buffer(self.vtx_buffer.0, self.vtx_buffer.1);
+        }
+        if self.idx_buffer.0 != Buffer::null() {
+            allocator.destroy_buffer(self.idx_buffer.0, self.idx_buffer.1);
+        }
         device.loader().destroy_framebuffer(self.framebuffer, None);
         device.loader().destroy_image_view(self.image_view, None);
         device
@@ -821,7 +827,7 @@ impl ImguiRenderer {
 
     pub unsafe fn recreate_resources(&mut self, swapchain: &vk::Swapchain) {
         for frame in self.frames.iter() {
-            frame.destroy(&self.device);
+            frame.destroy(&self.device, &self.allocator);
         }
         self.single.destroy(&self.device);
 
@@ -1196,7 +1202,7 @@ impl Drop for ImguiRenderer {
     fn drop(&mut self) {
         unsafe {
             for frame in self.frames.iter() {
-                frame.destroy(&self.device)
+                frame.destroy(&self.device, &self.allocator)
             }
             self.single.destroy(&self.device);
             self.font.destroy(&self.device, &self.allocator);

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Mouse, WindowSettings};
+use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings};
 use crate::gpu;
 use crate::gpu::vk::GPUInfo;
 use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
@@ -119,6 +119,13 @@ impl Engine {
         Mouse::init();
 
         // -----------------------------------------------------------------------------------------
+        // Keyboard Initialization
+        // -----------------------------------------------------------------------------------------
+
+        // Initialize the global mouse system
+        Keyboard::init();
+
+        // -----------------------------------------------------------------------------------------
         // ImGui Initialization
         // -----------------------------------------------------------------------------------------
 
@@ -132,7 +139,7 @@ impl Engine {
         // Load core vulkan functions for creating an instance
         let instance = gpu::vk::InstanceBuilder::new()
             .debug(true)
-            .validation(true)
+            .validation(false)
             .build(&window, &app_info);
 
         let device = gpu::vk::DeviceBuilder::new().build(&instance);
@@ -339,18 +346,26 @@ impl Engine {
         let window_state = window_state_lock.as_mut();
         let window_state = window_state.expect("Window not initialized");
 
+        // Get access to the keyboard state
+        let mut keyboard_state_lock = crate::app::KEYBOARD_STATE.write();
+
+        let keyboard_state = keyboard_state_lock.as_mut();
+        let keyboard_state = keyboard_state.expect("Keyboard not initialized");
+
         imgui_ctx.update_mouse_pos_early();
 
         crate::app::Mouse::process_mouse_requests(window, mouse_utils);
         crate::app::Window::process_window_requests(window, window_state);
 
-        if Self::handle_event_pump(event_pump, window_state) {
+        if Self::handle_event_pump(event_pump, window_state, keyboard_state) {
             return true;
         }
 
         drop(window_state_lock);
+        drop(keyboard_state_lock);
 
         imgui_ctx.update_mouse_pos_late();
+        imgui_ctx.update_keyboard_input();
 
         false
     }
@@ -361,6 +376,7 @@ impl Engine {
     fn handle_event_pump(
         event_pump: &mut sdl2::EventPump,
         window_state: &mut crate::app::WindowState,
+        keyboard_state: &mut crate::app::KeyboardState,
     ) -> bool {
         // Get access to window events
         let mut window_events_lock = crate::app::WINDOW_EVENTS.write();
@@ -371,8 +387,13 @@ impl Engine {
         let mouse_events = mouse_events_lock.as_mut();
         let mouse_events = mouse_events.expect("Mouse system not initialized");
 
+        let mut keyboard_events_lock = crate::app::KEYBOARD_EVENTS.write();
+        let keyboard_events = keyboard_events_lock.as_mut();
+        let keyboard_events = keyboard_events.expect("Mouse system not initialized");
+
         window_events.clear();
         mouse_events.clear();
+        keyboard_events.clear();
 
         for event in event_pump.poll_iter() {
             match event {
@@ -388,16 +409,25 @@ impl Engine {
                     );
                 }
                 event @ Event::MouseButtonDown { .. } => {
-                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                    Mouse::process_mouse_event(mouse_events, event);
                 }
                 event @ Event::MouseButtonUp { .. } => {
-                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                    Mouse::process_mouse_event(mouse_events, event);
                 }
                 event @ Event::MouseMotion { .. } => {
-                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                    Mouse::process_mouse_event(mouse_events, event);
                 }
                 event @ Event::MouseWheel { .. } => {
-                    crate::app::Mouse::process_mouse_event(mouse_events, event);
+                    Mouse::process_mouse_event(mouse_events, event);
+                }
+                event @ Event::KeyDown { .. } => {
+                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
+                }
+                event @ Event::KeyUp { .. } => {
+                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
+                }
+                event @ Event::TextInput { .. } => {
+                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
                 }
                 _ => {}
             }

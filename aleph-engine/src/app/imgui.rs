@@ -7,8 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{FrameTimer, Mouse, MouseEvent, Window};
+use crate::app::{FrameTimer, Keyboard, KeyboardEvent, Mouse, MouseEvent, Window};
 use imgui::{ImStr, ImString};
+use sdl2::keyboard::Mod;
 use std::ffi::CStr;
 use std::os::raw::c_void;
 
@@ -217,6 +218,30 @@ impl Imgui {
 
         if Window::focused() {
             io.mouse_pos = [mouse_state.pos().0 as f32, mouse_state.pos().1 as f32];
+        }
+    }
+
+    pub fn update_keyboard_input(&mut self) {
+        let io = self.context.io_mut();
+
+        for event in Keyboard::events().iter() {
+            match event {
+                KeyboardEvent::KeyDown(event) => {
+                    io.keys_down[event.scancode as usize] = true;
+                    io.key_shift = (event.keymod & Mod::LSHIFTMOD).bits() != 0;
+                    io.key_ctrl = (event.keymod & Mod::LCTRLMOD).bits() != 0;
+                    io.key_alt = (event.keymod & Mod::LALTMOD).bits() != 0;
+                }
+                KeyboardEvent::KeyUp(event) => {
+                    io.keys_down[event.scancode as usize] = false;
+                    io.key_shift = (event.keymod & Mod::LSHIFTMOD).bits() != 0;
+                    io.key_ctrl = (event.keymod & Mod::LCTRLMOD).bits() != 0;
+                    io.key_alt = (event.keymod & Mod::LALTMOD).bits() != 0;
+                }
+                KeyboardEvent::TextInput(event) => {
+                    event.text.chars().for_each(|c| io.add_input_character(c));
+                }
+            }
         }
     }
 
