@@ -45,7 +45,6 @@ impl aleph::app::AppLogic for AlephAppLogic {
             .bring_to_front_on_focus(false)
             .build(ui, || {
                 ui.menu_bar(|| self.menu_bar(ui));
-
                 ui.text(im_str!("AlephEngine test"));
                 ui.separator();
             });
@@ -119,7 +118,7 @@ impl AlephAppLogic {
         }
     }
 
-    fn edit_menu(&mut self, ui: &Ui) {}
+    fn edit_menu(&mut self, _ui: &Ui) {}
 
     fn view_menu(&mut self, ui: &Ui) {
         let item = MenuItem::new(im_str!("Frame Timer"));
