@@ -124,6 +124,13 @@ impl Imgui {
         let mut context = imgui::Context::create();
         context.set_ini_filename(None);
         context.set_clipboard_backend(ImguiClipboard::new());
+        context.style_mut().child_rounding = 0.0;
+        context.style_mut().frame_rounding = 0.0;
+        context.style_mut().grab_rounding = 0.0;
+        context.style_mut().popup_rounding = 0.0;
+        context.style_mut().scrollbar_rounding = 0.0;
+        context.style_mut().tab_rounding = 0.0;
+        context.style_mut().window_rounding = 0.0;
 
         let io = context.io_mut();
         io.backend_flags |= imgui::BackendFlags::HAS_MOUSE_CURSORS;

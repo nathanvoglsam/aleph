@@ -20,16 +20,17 @@ use erupt::vk1_0::{
     ColorComponentFlags, CommandBuffer, CommandBufferAllocateInfoBuilder,
     CommandBufferBeginInfoBuilder, CommandBufferLevel, CommandBufferUsageFlags, CommandPool,
     CommandPoolCreateFlags, CommandPoolCreateInfoBuilder, ComponentMappingBuilder,
-    ComponentSwizzle, CullModeFlags, DependencyFlagBits, DescriptorImageInfoBuilder,
-    DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
-    DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
-    DescriptorSetLayout, DescriptorSetLayoutBindingBuilder, DescriptorSetLayoutCreateInfoBuilder,
-    DescriptorType, DynamicState, Extent2D, Extent3D, Fence, Filter, Format, Framebuffer,
-    FramebufferCreateInfoBuilder, FrontFace, GraphicsPipelineCreateInfoBuilder, Image,
-    ImageAspectFlags, ImageCreateInfoBuilder, ImageLayout, ImageMemoryBarrierBuilder,
-    ImageSubresourceLayersBuilder, ImageSubresourceRangeBuilder, ImageTiling, ImageType,
-    ImageUsageFlags, ImageView, ImageViewCreateInfoBuilder, ImageViewType, IndexType, Offset2D,
-    Pipeline, PipelineBindPoint, PipelineCache, PipelineColorBlendAttachmentStateBuilder,
+    ComponentSwizzle, CullModeFlags, DependencyFlagBits, DependencyFlags,
+    DescriptorImageInfoBuilder, DescriptorPool, DescriptorPoolCreateFlags,
+    DescriptorPoolCreateInfoBuilder, DescriptorPoolSizeBuilder, DescriptorSet,
+    DescriptorSetAllocateInfoBuilder, DescriptorSetLayout, DescriptorSetLayoutBindingBuilder,
+    DescriptorSetLayoutCreateInfoBuilder, DescriptorType, DynamicState, Extent2D, Extent3D, Fence,
+    Filter, Format, Framebuffer, FramebufferCreateInfoBuilder, FrontFace,
+    GraphicsPipelineCreateInfoBuilder, Image, ImageAspectFlags, ImageCreateInfoBuilder,
+    ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceLayersBuilder,
+    ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
+    ImageViewCreateInfoBuilder, ImageViewType, IndexType, Offset2D, Pipeline, PipelineBindPoint,
+    PipelineCache, PipelineColorBlendAttachmentStateBuilder,
     PipelineColorBlendStateCreateInfoBuilder, PipelineDepthStencilStateCreateInfoBuilder,
     PipelineDynamicStateCreateInfoBuilder, PipelineInputAssemblyStateCreateInfoBuilder,
     PipelineLayout, PipelineLayoutCreateInfoBuilder, PipelineMultisampleStateCreateInfoBuilder,
@@ -44,7 +45,7 @@ use erupt::vk1_0::{
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
     ViewportBuilder, Vk10DeviceLoaderExt, WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
 };
-use imgui::DrawCmd;
+use imgui::{DrawCmd, FontSource};
 use std::sync::Arc;
 
 ///
@@ -402,6 +403,13 @@ impl ImguiFont {
         device: &vk::Device,
         allocator: &Allocator,
     ) -> Self {
+        let sources = [FontSource::TtfData {
+            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            size_pixels: 16.0,
+            config: None,
+        }];
+        fonts.clear_fonts();
+        fonts.add_font(&sources);
         let data = fonts.build_rgba32_texture();
         let dimensions = (data.width, data.height);
         let data = data.data;
@@ -737,8 +745,8 @@ impl ImguiGlobal {
 
     fn create_shader_modules(device: &vk::Device) -> (ShaderModule, ShaderModule) {
         // Compiled with
-        // `dxc /T vs_6_0 -Fo shader.vert.spv -spirv .\shader.vert.hlsl`
-        let bytes = include_bytes_aligned_as!(u32, "shader.vert.spv");
+        // `dxc /T vs_6_0 -Fo imgui.vert.spv -spirv .\imgui.vert.hlsl`
+        let bytes = include_bytes_aligned_as!(u32, "../../../shaders/imgui.vert.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
@@ -750,8 +758,8 @@ impl ImguiGlobal {
         .expect("Failed to create vertex shader module");
 
         // Compiled with
-        // `dxc /T ps_6_0 -Fo shader.frag.spv -spirv .\shader.frag.hlsl`
-        let bytes = include_bytes_aligned_as!(u32, "shader.frag.spv");
+        // `dxc /T ps_6_0 -Fo imgui.frag.spv -spirv .\imgui.frag.hlsl`
+        let bytes = include_bytes_aligned_as!(u32, "../../../shaders/imgui.frag.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
@@ -919,51 +927,54 @@ impl ImguiRenderer {
                 .allocator
                 .create_buffer(&buffer_create_info, &allocation_create_info)
                 .expect("Failed to allocate per frame index buffer");
+
+            let vtx_buffer = self.frames[index].vtx_buffer;
+            let idx_buffer = self.frames[index].idx_buffer;
+
+            //
+            // Map the vertex and index buffers
+            //
+            let mut vptr = self
+                .allocator
+                .map_memory(&vtx_buffer.1)
+                .expect("Failed to map vertex buffer");
+            let mut iptr = self
+                .allocator
+                .map_memory(&idx_buffer.1)
+                .expect("Failed to map index buffer");
+
+            //
+            // Copy vertex and index buffer data into the vulkan buffers
+            //
+            draw_data.draw_lists().for_each(|list| {
+                let vslice = list.vtx_buffer();
+                vptr.copy_from(
+                    vslice.as_ptr() as *const _,
+                    vslice.len() * core::mem::size_of::<imgui::DrawVert>(),
+                );
+                vptr = vptr.add(vslice.len() * core::mem::size_of::<imgui::DrawVert>());
+
+                let islice = list.idx_buffer();
+                iptr.copy_from(
+                    islice.as_ptr() as *const _,
+                    islice.len() * core::mem::size_of::<imgui::DrawIdx>(),
+                );
+                iptr = iptr.add(islice.len() * core::mem::size_of::<imgui::DrawIdx>());
+            });
+
+            //
+            // Flush and unmap the vertex and index buffers
+            //
+            self.allocator
+                .flush_allocation(&vtx_buffer.1, 0, WHOLE_SIZE);
+            self.allocator
+                .flush_allocation(&idx_buffer.1, 0, WHOLE_SIZE);
+            self.allocator.unmap_memory(&vtx_buffer.1);
+            self.allocator.unmap_memory(&idx_buffer.1);
         }
 
         let vtx_buffer = self.frames[index].vtx_buffer;
         let idx_buffer = self.frames[index].idx_buffer;
-        //
-        // Map the vertex and index buffers
-        //
-        let mut vptr = self
-            .allocator
-            .map_memory(&vtx_buffer.1)
-            .expect("Failed to map vertex buffer");
-        let mut iptr = self
-            .allocator
-            .map_memory(&idx_buffer.1)
-            .expect("Failed to map index buffer");
-
-        //
-        // Copy vertex and index buffer data into the vulkan buffers
-        //
-        draw_data.draw_lists().for_each(|list| {
-            let vslice = list.vtx_buffer();
-            vptr.copy_from(
-                vslice.as_ptr() as *const _,
-                vslice.len() * core::mem::size_of::<imgui::DrawVert>(),
-            );
-            vptr = vptr.add(vslice.len() * core::mem::size_of::<imgui::DrawVert>());
-
-            let islice = list.idx_buffer();
-            iptr.copy_from(
-                islice.as_ptr() as *const _,
-                islice.len() * core::mem::size_of::<imgui::DrawIdx>(),
-            );
-            iptr = iptr.add(islice.len() * core::mem::size_of::<imgui::DrawIdx>());
-        });
-
-        //
-        // Flush and unmap the vertex and index buffers
-        //
-        self.allocator
-            .flush_allocation(&vtx_buffer.1, 0, WHOLE_SIZE);
-        self.allocator
-            .flush_allocation(&idx_buffer.1, 0, WHOLE_SIZE);
-        self.allocator.unmap_memory(&vtx_buffer.1);
-        self.allocator.unmap_memory(&idx_buffer.1);
-
         let command_buffer = self.frames[index].command_buffer;
 
         //
@@ -977,58 +988,92 @@ impl ImguiRenderer {
             .expect("Failed to begin command buffer");
 
         //
-        // Begin the render pass
+        // We need to special case for when imgui wants to render nothing as vertex buffers wont
+        // exist so we can't bind them. We still need to transition the image though so instead we
+        // just insert a pipeline barrier to do the transition.
         //
-        let clear_values = [ClearValue {
-            color: ClearColorValue {
-                float32: [0.0, 0.0, 0.0, 1.0],
-            },
-        }];
-        let render_area = Rect2DBuilder::new().extent(swapchain.extents());
-        let render_pass_begin = RenderPassBeginInfoBuilder::new()
-            .render_pass(self.single.render_pass)
-            .framebuffer(self.frames[index].framebuffer)
-            .clear_values(&clear_values)
-            .render_area(*render_area);
-        self.device.loader().cmd_begin_render_pass(
-            command_buffer,
-            &render_pass_begin,
-            SubpassContents::INLINE,
-        );
+        if draw_data.total_vtx_count != 0 {
+            //
+            // Begin the render pass
+            //
+            let clear_values = [ClearValue {
+                color: ClearColorValue {
+                    float32: [0.0, 0.0, 0.0, 1.0],
+                },
+            }];
+            let render_area = Rect2DBuilder::new().extent(swapchain.extents());
+            let render_pass_begin = RenderPassBeginInfoBuilder::new()
+                .render_pass(self.single.render_pass)
+                .framebuffer(self.frames[index].framebuffer)
+                .clear_values(&clear_values)
+                .render_area(*render_area);
+            self.device.loader().cmd_begin_render_pass(
+                command_buffer,
+                &render_pass_begin,
+                SubpassContents::INLINE,
+            );
 
-        self.reset_render_state(
-            swapchain,
-            command_buffer,
-            vtx_buffer.0,
-            idx_buffer.0,
-            draw_data,
-        );
+            self.reset_render_state(
+                swapchain,
+                command_buffer,
+                vtx_buffer.0,
+                idx_buffer.0,
+                draw_data,
+            );
 
-        let clip_off = draw_data.display_pos;
-        let clip_scale = draw_data.framebuffer_scale;
+            let clip_off = draw_data.display_pos;
+            let clip_scale = draw_data.framebuffer_scale;
 
-        let mut vtx_offset = 0;
-        let mut idx_offset = 0;
-        draw_data.draw_lists().for_each(|list| {
-            list.commands().for_each(|command| {
-                self.render_draw_command(
-                    draw_data,
-                    swapchain,
-                    vtx_buffer.0,
-                    idx_buffer.0,
-                    command_buffer,
-                    &clip_off,
-                    &clip_scale,
-                    vtx_offset,
-                    idx_offset,
-                    command,
-                )
+            let mut vtx_offset = 0;
+            let mut idx_offset = 0;
+            draw_data.draw_lists().for_each(|list| {
+                list.commands().for_each(|command| {
+                    self.render_draw_command(
+                        draw_data,
+                        swapchain,
+                        vtx_buffer.0,
+                        idx_buffer.0,
+                        command_buffer,
+                        &clip_off,
+                        &clip_scale,
+                        vtx_offset,
+                        idx_offset,
+                        command,
+                    )
+                });
+                vtx_offset += list.vtx_buffer().len() as i32;
+                idx_offset += list.idx_buffer().len() as u32;
             });
-            vtx_offset += list.vtx_buffer().len() as i32;
-            idx_offset += list.idx_buffer().len() as u32;
-        });
 
-        self.device.loader().cmd_end_render_pass(command_buffer);
+            self.device.loader().cmd_end_render_pass(command_buffer);
+        } else {
+            let src = PipelineStageFlags::BOTTOM_OF_PIPE;
+            let dst = PipelineStageFlags::TOP_OF_PIPE;
+            let flags = DependencyFlags::from_bits(0).unwrap();
+            let range = ImageSubresourceRangeBuilder::new()
+                .layer_count(1)
+                .level_count(1)
+                .base_array_layer(0)
+                .base_mip_level(0)
+                .aspect_mask(ImageAspectFlags::COLOR)
+                .discard();
+            let memory = [];
+            let buffer = [];
+            let image = [ImageMemoryBarrierBuilder::new()
+                .image(swapchain.images()[index])
+                .old_layout(ImageLayout::UNDEFINED)
+                .new_layout(ImageLayout::PRESENT_SRC_KHR)
+                .subresource_range(range)];
+            self.device.loader().cmd_pipeline_barrier(
+                command_buffer,
+                src,
+                dst,
+                flags,
+                &memory,
+                &buffer,
+                &image,
+            );
+        }
 
         self.device
             .loader()
@@ -1038,7 +1083,7 @@ impl ImguiRenderer {
         let command_buffers = [command_buffer];
         let wait_semaphores = [acquire_semaphore];
         let signal_semaphores = [signal_semaphore];
-        let wait_dst_stage_mask = [];
+        let wait_dst_stage_mask = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
         let submit = SubmitInfoBuilder::new()
             .command_buffers(&command_buffers)
             .wait_semaphores(&wait_semaphores)

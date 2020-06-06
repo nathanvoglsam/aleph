@@ -44,9 +44,24 @@ impl Engine {
     /// Once everything is set up it hands
     ///
     pub fn start(app_info: AppInfo, mut app: impl AppLogic) {
-        // =========================================================================================
-        // Engine Initialization Starting
-        // =========================================================================================
+        // -----------------------------------------------------------------------------------------
+        // Read Command Line Switches
+        // -----------------------------------------------------------------------------------------
+        let name = app_info.name.clone();
+        let version = app_info.version_string();
+        let author = app_info.author.clone();
+        let about = "Powered by AlephEngine";
+        let args = clap::App::new(app_info.name.clone())
+            .name(name)
+            .version(version.as_str())
+            .about(about)
+            .author(&*author)
+            .arg(
+                clap::Arg::with_name("GPU_DEBUG")
+                    .long("gpu-debug")
+                    .short("d"),
+            )
+            .get_matches();
 
         // -----------------------------------------------------------------------------------------
         // Core Initialization
@@ -138,8 +153,8 @@ impl Engine {
 
         // Load core vulkan functions for creating an instance
         let instance = gpu::vk::InstanceBuilder::new()
-            .debug(true)
-            .validation(false)
+            .debug(args.is_present("GPU_DEBUG"))
+            .validation(args.is_present("GPU_DEBUG"))
             .build(&window, &app_info);
 
         let device = gpu::vk::DeviceBuilder::new().build(&instance);
@@ -184,7 +199,6 @@ impl Engine {
         app.on_init();
 
         // Process the SDL2 events and store them into our own event queues for later use
-        let mut opened = true;
         'game_loop: loop {
             // Update the frame delta timer
             FrameTimer::frame(&timer);
@@ -196,9 +210,7 @@ impl Engine {
 
             let ui = imgui_ctx.frame(&mouse_utils);
 
-            ui.show_demo_window(&mut opened);
-
-            app.on_update();
+            app.on_update(&ui);
 
             unsafe {
                 device
@@ -214,7 +226,7 @@ impl Engine {
                 }
             }
 
-            let (i, image) = match swapchain.acquire_next(
+            let (i, _) = match swapchain.acquire_next(
                 Duration::from_millis(10000),
                 acquire_semaphore,
                 Fence::null(),

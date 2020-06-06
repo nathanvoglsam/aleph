@@ -21,6 +21,11 @@ pub struct AppInfo {
     pub name: String,
 
     ///
+    /// A string to represent the author of the app
+    ///
+    pub author: String,
+
+    ///
     /// The major version of the app, following semver conventions
     ///
     pub major: u32,
@@ -34,4 +39,13 @@ pub struct AppInfo {
     /// The patch version of the app, following semver conventions
     ///
     pub patch: u32,
+}
+
+impl AppInfo {
+    ///
+    /// Get a string that represents the version number of the form {major}.{minor}.{patch}
+    ///
+    pub fn version_string(&self) -> String {
+        format!("{}.{}.{}", self.major, self.minor, self.patch)
+    }
 }
