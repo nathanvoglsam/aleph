@@ -10,6 +10,7 @@
 mod app_info;
 mod app_logic;
 mod engine;
+mod frame_rate;
 mod frame_timer;
 mod imgui;
 mod keyboard;
@@ -28,6 +29,7 @@ pub use self::engine::ENGINE_VERSION_MINOR;
 pub use self::engine::ENGINE_VERSION_PATCH;
 pub use self::engine::ENGINE_VERSION_STRING;
 pub use self::engine::ENGINE_VERSION_VK;
+pub use self::frame_rate::FrameRate;
 pub use self::frame_timer::FrameTimer;
 pub use self::keyboard::KeyDownEvent;
 pub use self::keyboard::KeyUpEvent;

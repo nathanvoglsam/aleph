@@ -405,40 +405,32 @@ impl ImguiFont {
     ) -> Self {
         fonts.clear_fonts();
 
-        let sources = [
-            FontSource::TtfData {
-                data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
-                size_pixels: 16.0,
-                config: None,
-            }
-        ];
+        let sources = [FontSource::TtfData {
+            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            size_pixels: 16.0,
+            config: None,
+        }];
         fonts.add_font(&sources);
 
-        let sources = [
-            FontSource::TtfData {
-                data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
-                size_pixels: 20.0,
-                config: None,
-            }
-        ];
+        let sources = [FontSource::TtfData {
+            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            size_pixels: 20.0,
+            config: None,
+        }];
         fonts.add_font(&sources);
 
-        let sources = [
-            FontSource::TtfData {
-                data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
-                size_pixels: 24.0,
-                config: None,
-            }
-        ];
+        let sources = [FontSource::TtfData {
+            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            size_pixels: 24.0,
+            config: None,
+        }];
         fonts.add_font(&sources);
 
-        let sources = [
-            FontSource::TtfData {
-                data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
-                size_pixels: 36.0,
-                config: None,
-            }
-        ];
+        let sources = [FontSource::TtfData {
+            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            size_pixels: 36.0,
+            config: None,
+        }];
         fonts.add_font(&sources);
 
         let data = fonts.build_rgba32_texture();

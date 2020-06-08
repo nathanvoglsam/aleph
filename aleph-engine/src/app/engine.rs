@@ -14,6 +14,7 @@ use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
 use std::ffi::CString;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 pub const ENGINE_NAME: &str = "AlephEngine";
@@ -27,6 +28,8 @@ pub const ENGINE_VERSION_VK: u32 = erupt::make_version(
     ENGINE_VERSION_MINOR,
     ENGINE_VERSION_PATCH,
 );
+
+static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 ///
 /// A "namespace" struct that wraps a bunch of global stace into a struct for aesthetic and
@@ -200,6 +203,11 @@ impl Engine {
 
         // Process the SDL2 events and store them into our own event queues for later use
         'game_loop: loop {
+            // Check if the engine should shutdown
+            if !Engine::keep_running() {
+                break 'game_loop;
+            }
+
             // Update the frame delta timer
             FrameTimer::frame(&timer);
 
@@ -282,6 +290,23 @@ impl Engine {
         &crate::app::SHORT_RUNNING_THREAD_POOL
             .get()
             .expect("Aleph not Initialized")
+    }
+
+    ///
+    /// Requests the engine to shutdown (at the earliest convenience)
+    ///
+    /// This enqueues a shutdown. The current frame of execution *will* finish and shutdown will
+    /// begin after the frame has completed and before the next frame *would* have started
+    ///
+    pub fn exit() {
+        ENGINE_KEEP_RUNNING.store(false, Ordering::Relaxed);
+    }
+
+    ///
+    /// Internal function for getting the KEEP_ENGINE_RUNNING value
+    ///
+    fn keep_running() -> bool {
+        ENGINE_KEEP_RUNNING.load(Ordering::Relaxed)
     }
 
     ///

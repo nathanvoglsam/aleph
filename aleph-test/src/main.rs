@@ -9,22 +9,20 @@
 
 extern crate aleph_engine as aleph;
 
-use aleph::app::{AppInfo, FrameTimer, Window};
+use aleph::app::{AppInfo, Engine, FrameRate, Window};
 use aleph::imgui::{im_str, MenuItem, Ui};
 use aleph::imgui::{Condition, ImString};
 
 struct AlephAppLogic {
     frame_timer: bool,
-    frame_times: [f32; 128],
-    sleep_micro: i32,
+    frame_times: FrameRate,
 }
 
 impl AlephAppLogic {
     pub fn new() -> Self {
         Self {
             frame_timer: false,
-            frame_times: [0.0; 128],
-            sleep_micro: 5000,
+            frame_times: FrameRate::new(),
         }
     }
 }
@@ -49,18 +47,7 @@ impl aleph::app::AppLogic for AlephAppLogic {
                 ui.separator();
             });
 
-        std::thread::sleep(std::time::Duration::from_micros(self.sleep_micro as u64));
-
-        for i in 1..self.frame_times.len() {
-            self.frame_times[i - 1] = self.frame_times[i];
-        }
-        *self.frame_times.last_mut().unwrap() = FrameTimer::delta_time() as f32;
-
-        let mut frame_time = 0.0;
-        self.frame_times.iter().for_each(|v| {
-            frame_time += *v;
-        });
-        frame_time /= self.frame_times.len() as f32;
+        self.frame_times.update();
 
         let mut frame_timer_open = self.frame_timer;
         if frame_timer_open {
@@ -71,7 +58,7 @@ impl aleph::app::AppLogic for AlephAppLogic {
                 .resizable(false)
                 .build(ui, || {
                     ui.text(im_str!("Frame Times"));
-                    ui.plot_lines(im_str!(""), &self.frame_times)
+                    ui.plot_lines(im_str!(""), self.frame_times.frame_time_history())
                         .scale_min(0.0)
                         .scale_max(1.0 / 30.0)
                         .graph_size([ui.window_size()[0], 100.0])
@@ -79,17 +66,12 @@ impl aleph::app::AppLogic for AlephAppLogic {
                     ui.separator();
                     ui.label_text(
                         im_str!("Frame Time (ms)"),
-                        &ImString::new(format!("{}", frame_time)),
+                        &ImString::new(format!("{}", self.frame_times.frame_time())),
                     );
                     ui.label_text(
                         im_str!("Frame Rate (fps)"),
-                        &ImString::new(format!("{}", 1.0 / frame_time)),
+                        &ImString::new(format!("{}", self.frame_times.frame_rate())),
                     );
-                    ui.drag_int(im_str!("Sleep Time"), &mut self.sleep_micro)
-                        .min(1)
-                        .max(16000)
-                        .speed(25.0)
-                        .build();
                 });
         }
         self.frame_timer = frame_timer_open;
@@ -114,7 +96,7 @@ impl AlephAppLogic {
 
         let item = MenuItem::new(im_str!("Exit"));
         if item.build(ui) {
-            aleph::log::info!("Exit");
+            Engine::exit();
         }
     }
 
