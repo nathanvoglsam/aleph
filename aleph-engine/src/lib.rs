@@ -22,6 +22,7 @@ extern crate aleph_vma_sys as vma_sys;
 extern crate console;
 extern crate num_cpus;
 extern crate once_cell;
+extern crate palette;
 extern crate parking_lot;
 extern crate raw_window_handle;
 

@@ -31,6 +31,7 @@ pub use self::engine::ENGINE_VERSION_STRING;
 pub use self::engine::ENGINE_VERSION_VK;
 pub use self::frame_rate::FrameRate;
 pub use self::frame_timer::FrameTimer;
+pub use self::imgui::ImguiStyleBuilder;
 pub use self::keyboard::KeyDownEvent;
 pub use self::keyboard::KeyUpEvent;
 pub use self::keyboard::Keyboard;

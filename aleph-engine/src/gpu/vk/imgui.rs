@@ -45,7 +45,8 @@ use erupt::vk1_0::{
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
     ViewportBuilder, Vk10DeviceLoaderExt, WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
 };
-use imgui::{DrawCmd, FontSource};
+use imgui::{DrawCmd, FontConfig, FontSource};
+use std::default::Default;
 use std::sync::Arc;
 
 ///
@@ -405,31 +406,39 @@ impl ImguiFont {
     ) -> Self {
         fonts.clear_fonts();
 
+        let mut config = FontConfig::default();
+        config.name = Some("Cascadia Code 16pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            data: include_bytes!("../../../fonts/CascadiaCode.ttf"),
             size_pixels: 16.0,
-            config: None,
+            config: Some(config),
         }];
         fonts.add_font(&sources);
 
+        let mut config = FontConfig::default();
+        config.name = Some("Cascadia Code 20pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            data: include_bytes!("../../../fonts/CascadiaCode.ttf"),
             size_pixels: 20.0,
-            config: None,
+            config: Some(config),
         }];
         fonts.add_font(&sources);
 
+        let mut config = FontConfig::default();
+        config.name = Some("Cascadia Code 24pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            data: include_bytes!("../../../fonts/CascadiaCode.ttf"),
             size_pixels: 24.0,
-            config: None,
+            config: Some(config),
         }];
         fonts.add_font(&sources);
 
+        let mut config = FontConfig::default();
+        config.name = Some("Cascadia Code 36pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../fonts/JetBrainsMono-Regular.ttf"),
+            data: include_bytes!("../../../fonts/CascadiaCode.ttf"),
             size_pixels: 36.0,
-            config: None,
+            config: Some(config),
         }];
         fonts.add_font(&sources);
 

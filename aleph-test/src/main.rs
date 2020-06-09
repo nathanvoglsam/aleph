@@ -10,8 +10,8 @@
 extern crate aleph_engine as aleph;
 
 use aleph::app::{AppInfo, Engine, FrameRate, Window};
+use aleph::imgui::Condition;
 use aleph::imgui::{im_str, MenuItem, Ui};
-use aleph::imgui::{Condition, ImString};
 
 struct AlephAppLogic {
     frame_timer: bool,
@@ -31,6 +31,8 @@ impl aleph::app::AppLogic for AlephAppLogic {
     fn on_init(&mut self) {}
 
     fn on_update(&mut self, ui: &Ui) {
+        self.frame_times.update();
+
         aleph::imgui::Window::new(im_str!("MainWindow"))
             .size(
                 [Window::width() as f32, Window::height() as f32],
@@ -43,35 +45,37 @@ impl aleph::app::AppLogic for AlephAppLogic {
             .bring_to_front_on_focus(false)
             .build(ui, || {
                 ui.menu_bar(|| self.menu_bar(ui));
+                let token = ui.push_font(ui.fonts().fonts()[3]);
                 ui.text(im_str!("AlephEngine test"));
+                token.pop(ui);
                 ui.separator();
             });
-
-        self.frame_times.update();
 
         let mut frame_timer_open = self.frame_timer;
         if frame_timer_open {
             aleph::imgui::Window::new(im_str!("Frame Time Graph"))
                 .opened(&mut frame_timer_open)
-                .size([400.0, 300.0], Condition::Always)
+                .size([430.0, 250.0], Condition::Always)
                 .collapsible(false)
                 .resizable(false)
                 .build(ui, || {
+                    let token = ui.push_font(ui.fonts().fonts()[1]);
                     ui.text(im_str!("Frame Times"));
+                    token.pop(ui);
                     ui.plot_lines(im_str!(""), self.frame_times.frame_time_history())
                         .scale_min(0.0)
                         .scale_max(1.0 / 30.0)
                         .graph_size([ui.window_size()[0], 100.0])
                         .build();
                     ui.separator();
-                    ui.label_text(
-                        im_str!("Frame Time (ms)"),
-                        &ImString::new(format!("{}", self.frame_times.frame_time())),
-                    );
-                    ui.label_text(
-                        im_str!("Frame Rate (fps)"),
-                        &ImString::new(format!("{}", self.frame_times.frame_rate())),
-                    );
+
+                    ui.text("Frame Time (ms): ");
+                    ui.same_line(0.0);
+                    ui.text(format!("{}", self.frame_times.frame_time()));
+
+                    ui.text("Frame Rate (ms): ");
+                    ui.same_line(0.0);
+                    ui.text(format!("{}", self.frame_times.frame_rate()));
                 });
         }
         self.frame_timer = frame_timer_open;

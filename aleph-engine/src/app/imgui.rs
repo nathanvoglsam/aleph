@@ -8,7 +8,8 @@
 //
 
 use crate::app::{FrameTimer, Keyboard, KeyboardEvent, Mouse, MouseEvent, Window};
-use imgui::{ImStr, ImString};
+use imgui::{ImStr, ImString, StyleColor};
+use palette::{IntoColor, Srgb};
 use sdl2::keyboard::Mod;
 use std::ffi::CStr;
 use std::os::raw::c_void;
@@ -113,6 +114,434 @@ use std::os::raw::c_void;
 ///
 ///
 ///
+pub struct ImguiStyleBuilder {
+    background_colour: Srgb,
+    separator_colour: Srgb,
+    title_colour: Srgb,
+    title_unfocused: Srgb,
+    slider_colour: Srgb,
+    scrollbar_colour: Srgb,
+    frame_colour: Srgb,
+    border_colour: Srgb,
+    button_colour: Srgb,
+    checkmark_colour: Srgb,
+    header_colour: Srgb,
+    resize_grip_colour: Srgb,
+    tab_colour: Srgb,
+    light_theme: bool,
+}
+
+type Hsv = palette::Hsv<palette::encoding::Srgb, f32>;
+
+impl ImguiStyleBuilder {
+    ///
+    /// Create a new builder with a default light colour scheme
+    ///
+    pub fn light() -> Self {
+        let builder = Self {
+            background_colour: Default::default(),
+            separator_colour: Default::default(),
+            title_colour: Default::default(),
+            title_unfocused: Default::default(),
+            slider_colour: Default::default(),
+            scrollbar_colour: Default::default(),
+            frame_colour: Default::default(),
+            border_colour: Default::default(),
+            button_colour: Default::default(),
+            checkmark_colour: Default::default(),
+            header_colour: Default::default(),
+            resize_grip_colour: Default::default(),
+            tab_colour: Default::default(),
+            light_theme: true,
+        };
+
+        builder
+            .primary([0.0 / 255.0, 215.0 / 255.0, 255.0 / 255.0])
+            .background([0.96, 0.96, 0.96])
+    }
+
+    ///
+    /// Create a new builder with a default dark colour scheme
+    ///
+    pub fn dark() -> Self {
+        let builder = Self {
+            background_colour: Default::default(),
+            separator_colour: Default::default(),
+            title_colour: Default::default(),
+            title_unfocused: Default::default(),
+            slider_colour: Default::default(),
+            scrollbar_colour: Default::default(),
+            frame_colour: Default::default(),
+            border_colour: Default::default(),
+            button_colour: Default::default(),
+            checkmark_colour: Default::default(),
+            header_colour: Default::default(),
+            resize_grip_colour: Default::default(),
+            tab_colour: Default::default(),
+            light_theme: false,
+        };
+
+        builder
+            .primary([132.0 / 255.0, 61.0 / 255.0, 146.0 / 255.0])
+            .background([0.1, 0.1, 0.1])
+    }
+
+    ///
+    ///
+    ///
+    pub fn primary(mut self, colour: [f32; 3]) -> Self {
+        let colour: Hsv = Srgb::new(colour[0], colour[1], colour[2]).into_hsv();
+
+        self.separator_colour = Srgb::from(colour);
+        self.title_colour = Srgb::from(Self::value_shift_mul(colour, 0.5, self.light_theme));
+        self.slider_colour = Srgb::from(colour);
+        self.button_colour = Srgb::from(Self::value_shift_mul(colour, 0.9, false));
+        self.checkmark_colour = Srgb::from(colour);
+        self.header_colour = Srgb::from(colour);
+        self.resize_grip_colour = Srgb::from(colour);
+        self.tab_colour = Srgb::from(colour);
+
+        self
+    }
+
+    ///
+    /// Set the background colour to base the colour scheme on
+    ///
+    pub fn background(mut self, colour: [f32; 3]) -> Self {
+        let colour: Hsv = Srgb::new(colour[0], colour[1], colour[2]).into_hsv();
+
+        self.background_colour = Srgb::from(colour);
+        self.scrollbar_colour = Srgb::from(Self::value_shift_mul(colour, 4.0, self.light_theme));
+        self.frame_colour = Srgb::from(Self::value_shift_mul(colour, 0.5, self.light_theme));
+        self.title_unfocused = Srgb::from(Self::value_shift_mul(colour, 0.2, self.light_theme));
+        self
+    }
+
+    ///
+    /// Apply the built colour scheme to the target style
+    ///
+    pub fn build(self, style: &mut imgui::Style) {
+        let bg_base: Hsv = self.background_colour.into_hsv();
+        let separator_base: Hsv = self.separator_colour.into_hsv();
+        let title_base: Hsv = self.title_colour.into_hsv();
+        let title_unfocused: Hsv = self.title_unfocused.into_hsv();
+        let slider_base: Hsv = self.slider_colour.into_hsv();
+        let scrollbar_base: Hsv = self.scrollbar_colour.into_hsv();
+        let frame_base: Hsv = self.frame_colour.into_hsv();
+        let border_base: Hsv = self.border_colour.into_hsv();
+        let button_base: Hsv = self.button_colour.into_hsv();
+        let checkmark_base: Hsv = self.checkmark_colour.into_hsv();
+        let header_base: Hsv = self.header_colour.into_hsv();
+        let resize_grip_base: Hsv = self.resize_grip_colour.into_hsv();
+        let tab_base: Hsv = self.tab_colour.into_hsv();
+
+        let text_base: Hsv = if self.light_theme {
+            Hsv::new(0.0, 0.0, 0.0)
+        } else {
+            Hsv::new(0.0, 0.0, 1.0)
+        };
+
+        // Text
+        Self::apply_colour(text_base, &mut style[StyleColor::Text], 1.0);
+
+        // Border
+        Self::apply_colour(border_base, &mut style[StyleColor::Border], 1.0);
+
+        self.separator_colours(separator_base, style);
+        self.window_background_colours(bg_base, style);
+        self.scrollbar_colours(scrollbar_base, style);
+        self.title_colours(title_base, style);
+        self.title_unfocused_colours(title_unfocused, style);
+        self.checkmark_colours(checkmark_base, style);
+        self.slider_colours(slider_base, style);
+        self.button_colours(button_base, style);
+        self.frame_colours(frame_base, style);
+        self.header_colours(Self::value_shift_mul(header_base, 0.6, false), style);
+        self.resize_grip_colours(Self::value_shift_mul(resize_grip_base, 0.6, false), style);
+        self.tab_colours(Self::value_shift_mul(tab_base, 0.6, false), style);
+    }
+
+    ///
+    /// Apply the given colour to the separator colour category
+    ///
+    fn separator_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(colour, &mut style[StyleColor::SeparatorHovered], 1.0);
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.5, self.light_theme),
+            &mut style[StyleColor::SeparatorActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the window background colour category
+    ///
+    fn window_background_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 50.0, self.light_theme),
+            &mut style[StyleColor::Separator],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, self.light_theme),
+            &mut style[StyleColor::WindowBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, self.light_theme),
+            &mut style[StyleColor::ChildBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.7, self.light_theme),
+            &mut style[StyleColor::PopupBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.5, self.light_theme),
+            &mut style[StyleColor::MenuBarBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.5, self.light_theme),
+            &mut style[StyleColor::ScrollbarBg],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the title colour category
+    ///
+    fn title_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(colour, &mut style[StyleColor::TitleBgActive], 1.0);
+    }
+
+    ///
+    /// Apply the given colour to the title unfocused colour category
+    ///
+    fn title_unfocused_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::TitleBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.75, false),
+            &mut style[StyleColor::TitleBgCollapsed],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the scrollbar colour category
+    ///
+    fn scrollbar_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.5, self.light_theme),
+            &mut style[StyleColor::ScrollbarGrab],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, self.light_theme),
+            &mut style[StyleColor::ScrollbarGrabHovered],
+            1.0,
+        );
+
+        // Button Active
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.75, self.light_theme),
+            &mut style[StyleColor::ScrollbarGrabActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the checkmark colour category
+    ///
+    fn checkmark_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(colour, &mut style[StyleColor::CheckMark], 1.0);
+    }
+
+    ///
+    /// Apply the given colour to the slider colour category
+    ///
+    fn slider_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::SliderGrab],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::SliderGrabActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the button colour category
+    ///
+    fn button_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::Button],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::ButtonHovered],
+            1.0,
+        );
+
+        // Button Active
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.7, false),
+            &mut style[StyleColor::ButtonActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the frame colour category
+    ///
+    fn frame_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::FrameBg],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::FrameBgHovered],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.05, false),
+            &mut style[StyleColor::FrameBgActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the header colour category
+    ///
+    fn header_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::Header],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::HeaderHovered],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.05, false),
+            &mut style[StyleColor::HeaderActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the resize grip colour category
+    ///
+    fn resize_grip_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::ResizeGrip],
+            0.5,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::ResizeGripHovered],
+            0.5,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.05, false),
+            &mut style[StyleColor::ResizeGripActive],
+            0.5,
+        );
+    }
+
+    ///
+    /// Apply the given colour to the tab colour category
+    ///
+    fn tab_colours(&self, colour: Hsv, style: &mut imgui::Style) {
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.8, false),
+            &mut style[StyleColor::Tab],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.0, false),
+            &mut style[StyleColor::TabHovered],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 1.15, false),
+            &mut style[StyleColor::TabActive],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.65, false),
+            &mut style[StyleColor::TabUnfocused],
+            1.0,
+        );
+
+        Self::apply_colour(
+            Self::value_shift_mul(colour, 0.5, false),
+            &mut style[StyleColor::TabUnfocusedActive],
+            1.0,
+        );
+    }
+
+    ///
+    /// Increases value when dark theme, decreases value when light theme
+    ///
+    #[inline]
+    fn value_shift_mul(value: Hsv, factor: f32, reciprocal: bool) -> Hsv {
+        let val = if reciprocal {
+            let factor = 1.0 / factor;
+            value.value * factor
+        } else {
+            value.value * factor
+        };
+        Hsv::new(value.hue, value.saturation, val.min(1.0).max(0.0))
+    }
+
+    #[inline]
+    fn apply_colour(apply: Hsv, to: &mut [f32; 4], alpha: f32) {
+        let apply = Srgb::from(apply).into_components();
+        to[0] = apply.0;
+        to[1] = apply.1;
+        to[2] = apply.2;
+        to[3] = alpha;
+    }
+}
+
+///
+///
+///
 pub struct Imgui {
     context: imgui::Context,
     cursors: Vec<sdl2::mouse::Cursor>,
@@ -131,6 +560,8 @@ impl Imgui {
         context.style_mut().scrollbar_rounding = 0.0;
         context.style_mut().tab_rounding = 0.0;
         context.style_mut().window_rounding = 0.0;
+
+        ImguiStyleBuilder::dark().build(context.style_mut());
 
         let io = context.io_mut();
         io.backend_flags |= imgui::BackendFlags::HAS_MOUSE_CURSORS;
