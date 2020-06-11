@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::vk::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
+use crate::gpu::vk::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID, PipelineCache};
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,
@@ -194,6 +194,9 @@ impl DeviceBuilder {
             transfer_family,
             instance: instance.clone(),
         };
+
+        PipelineCache::init(&device);
+
         Arc::new(device)
     }
 
@@ -515,6 +518,7 @@ impl Device {
 
 impl Drop for Device {
     fn drop(&mut self) {
+        PipelineCache::destroy(self);
         unsafe {
             log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
