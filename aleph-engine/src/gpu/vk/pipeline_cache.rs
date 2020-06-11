@@ -25,6 +25,8 @@ impl PipelineCache {
     /// Internal function for loading the pipeline cache data from disk
     ///
     fn load_file_data() -> Vec<u8> {
+        log::trace!("Reading pipeline cache data from disk");
+
         // Try and open the file if it already exists to read from it
         match std::fs::OpenOptions::new()
             .create(false)
@@ -56,6 +58,7 @@ impl PipelineCache {
     /// Initialize the global pipeline cache object
     ///
     pub fn init(device: &Device) {
+        log::trace!("Creating pipeline cache");
         let initial_data_vec = Self::load_file_data();
         let initial_data: &[u8] = initial_data_vec.as_slice();
         let initial_data: &[c_void] = unsafe { std::mem::transmute(initial_data) };
@@ -76,6 +79,7 @@ impl PipelineCache {
     /// Store the pipeline cache data to a file
     ///
     pub fn store(device: &Device) {
+        log::trace!("Storing pipeline cache data to disk");
         let data = unsafe {
             let mut data_size = 0;
 
@@ -129,6 +133,7 @@ impl PipelineCache {
     /// Destroy the global pipeline cache data
     ///
     pub fn destroy(device: &Device) {
+        log::trace!("Destroying pipeline cache");
         Self::store(device);
 
         unsafe {
