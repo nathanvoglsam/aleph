@@ -21,9 +21,9 @@ struct ImGuiPixelInput
  */
 struct StaticMeshPixelInput
 {
-    float3 Pos       : POSITION;
-    float3 Normal    : NORMAL;
-    float3 Tangent   : TANGENT;
-    float3 Bitangent : BINORMAL;
-    float2 UV        : TEXCOORD0;
+    float3 position  : POSITION;
+    float3 normal    : NORMAL;
+    float3 tangent   : TANGENT;
+    float3 bitangent : BINORMAL;
+    float2 uv        : TEXCOORD0;
 };

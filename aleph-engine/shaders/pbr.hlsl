@@ -18,6 +18,21 @@
 
 
 
+/*
+ * Calculates the attenuation factor for a point light that should be applied to 
+ */
+inline float PointLightAttenuation(const float distance_squared) {
+    return 1 / (4 * PI * distance_squared);
+}
+
+/*
+ * Given the output of a brdf, and a set of point light parameters, calculate the final light
+ * contribution.
+ */
+inline float3 EvaluatePointLight(const float3 brdf, const float lumens, const float distance_squared, const float NoL) {
+    const float attenuation = PointLightAttenuation(distance_squared);
+    return brdf * (lumens * attenuation * NoL);
+}
 
 /*
  * Gets the diffuse colour from the base colour and metallic parameters
@@ -168,7 +183,9 @@ inline float Fd_Burley(const float NoV, const float NoL, const float LoH, const 
 }
 
 /*
- * A standard hard surface PBR BRDF.
+ * A standard hard surface PBR BRDF. This does not account for light attenuation and intensity.
+ *
+ * Returns the combined output of the diffuse and specular term prior to lighting
  *
  * Arguments:
  *
@@ -179,7 +196,7 @@ inline float Fd_Burley(const float NoV, const float NoL, const float LoH, const 
  * - roughness: The roughness value after being mapped from a perceptual roughness value
  * - f0: Reflectance at normal incidence
  */
-inline void StandardBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float f0) {
+inline float3 StandardBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float3 f0) {
     // Half unit vector between l and v
     const float3 h = normalize(v + l);
 
@@ -199,7 +216,9 @@ inline void StandardBRDF(const float3 v, const float3 l, const float3 n, const f
     // Diffuse BRDF
     const float3 Fd = diffuse_colour * Fd_Lambert();
 
-    // apply lighting...
+    const float3 colour = Fr + Fd;
+
+    return Fr + Fd;
 }
 
 inline float V_Kelemen(float LoH) {
@@ -240,7 +259,7 @@ inline void ClearCoatBRDF(const float3 v, const float3 l, const float3 n, const 
     // Diffuse BRDF
     const float3 Fd = diffuse_colour * Fd_Lambert();
 
-    const float Dc = D_GGX(clear_coat_roughness, NoH);
+    const float Dc = D_GGX(NoH, clear_coat_roughness);
     const float Vc = V_SmithGGXCorrelatedFast(NoV, NoL, clear_coat_roughness);
     const float Fc = F_Schlick(0.04, LoH, 1.0) * clear_coat;
     const float Frc = (Dc * Vc) * Fc;
@@ -300,34 +319,3 @@ inline float D_Charlie(const float roughness, const float NoH) {
 // // at perpendicular incidence in lux
 // float illuminance = lightIntensity * NoL;
 // float3 luminance = BSDF(v, l) * illuminance;
-
-inline float getSquareFalloffAttenuation(const float3 posToLight, const float lightInvRadius) {
-    const float distanceSquare = dot(posToLight, posToLight);
-    const float factor = distanceSquare * lightInvRadius * lightInvRadius;
-    const float smoothFactor = max(1.0 - factor * factor, 0.0);
-    return (smoothFactor * smoothFactor) / max(distanceSquare, 0.0001);
-}
-
-inline float getSpotAngleAttenuation(const float3 l, const float3 lightDir, const float innerAngle, const float outerAngle) {
-    // the scale and offset computations can be done CPU-side
-    const float cosOuter = cos(outerAngle);
-    const float spotScale = 1.0 / max(cos(innerAngle) - cosOuter, 0.0001);
-    const float spotOffset = -cosOuter * spotScale;
-
-    const float cd = dot(normalize(-lightDir), l);
-    const float attenuation = clamp(cd * spotScale + spotOffset, 0.0, 1.0);
-    return attenuation * attenuation;
-}
-
-// inline float3 evaluatePunctualLight() {
-//     const float3 l = normalize(posToLight);
-//     const float NoL = clamp(dot(n, l), 0.0, 1.0);
-//     const float3 posToLight = lightPosition - worldPosition;
-// 
-//     const float attenuation;
-//     attenuation  = getSquareFalloffAttenuation(posToLight, lightInvRadius);
-//     attenuation *= getSpotAngleAttenuation(l, lightDir, innerAngle, outerAngle);
-// 
-//     const float3 luminance = (BSDF(v, l) * lightIntensity * attenuation * NoL) * lightColor;
-//     return luminance;
-// }
