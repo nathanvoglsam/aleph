@@ -26,8 +26,8 @@ azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_P
 
 [dependencies]
 erupt = "0.6"
-sdl2 = {version = "0.34", features = ["raw-window-handle"] }
-log = "0.4"
+sdl2 = { version = "0.34", features = ["raw-window-handle"] }
+log = { version = "0.4", features = ["release_max_level_info"] }
 rayon = "1.3"
 once_cell = "1.3"
 num_cpus = "1.13"

@@ -49,7 +49,7 @@ impl ImguiRenderer {
         allocator: Arc<Allocator>,
         swapchain: &vk::Swapchain,
     ) -> Self {
-        log::info!("Initializing ImGui Renderer");
+        log::trace!("Initializing ImGui Renderer");
         let global = ImguiGlobal::init(&device);
 
         let font = ImguiFont::init(fonts, &global, &device, &allocator);
