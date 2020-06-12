@@ -7,11 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-struct PixelInput
-{
-    float4 Color : COLOR0;
-    float2 UV    : TEXCOORD0;
-};
+#include "fragment_payloads.hlsl"
 
 [[vk::binding(0,0)]]
 SamplerState Sampler;
@@ -19,7 +15,7 @@ SamplerState Sampler;
 [[vk::binding(0,0)]]
 Texture2D Tex;
 
-float4 main(in PixelInput input) : SV_Target0
+float4 main(in ImGuiPixelInput input) : SV_Target0
 {
     return input.Color * Tex.Sample(Sampler, input.UV);
 }

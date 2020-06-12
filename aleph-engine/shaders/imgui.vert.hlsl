@@ -7,18 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-struct VertexInput
-{
-    [[vk::location(0)]] float2 Pos   : SV_POSITION;
-    [[vk::location(1)]] float2 UV    : TEXCOORD0;
-    [[vk::location(2)]] float4 Color : COLOR0;
-};
-
-struct PixelInput
-{
-    float4 Color : COLOR0;
-    float2 UV    : TEXCOORD0;
-};
+#include "vertex_layouts.hlsl"
+#include "fragment_payloads.hlsl"
 
 struct PushConstantLayout
 {
@@ -29,11 +19,10 @@ struct PushConstantLayout
 [[vk::push_constant]]
 PushConstantLayout PushConstants;
 
-[[vk::location(0)]]
-PixelInput main(in VertexInput input, out float4 Pos : SV_POSITION)
+ImGuiPixelInput main(in ImGuiVertexInput input, out float4 Pos : SV_POSITION)
 {
 
-    PixelInput output;
+    ImGuiPixelInput output;
 
     Pos = float4((input.Pos * PushConstants.Scale) + PushConstants.Translate,0,1.0);
     output.Color = input.Color;
