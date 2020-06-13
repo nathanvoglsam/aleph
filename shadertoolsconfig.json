@@ -1,0 +1,4 @@
+{
+    "hlsl.preprocessorDefinitions": {},
+    "hlsl.additionalIncludeDirectories": ["aleph-engine\\shaders\\include"]
+  }
