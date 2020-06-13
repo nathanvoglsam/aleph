@@ -10,6 +10,7 @@
 use crate::cstr;
 use crate::gpu::vk;
 use crate::gpu::vk::imgui::ImguiGlobal;
+use crate::gpu::vk::PipelineCache;
 use erupt::vk1_0::{
     AccessFlagBits, AccessFlags, AttachmentDescriptionBuilder, AttachmentLoadOp,
     AttachmentReferenceBuilder, AttachmentStoreOp, BlendFactor, BlendOp, ColorComponentFlags,
@@ -26,7 +27,6 @@ use erupt::vk1_0::{
     SubpassDependencyBuilder, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
     VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt, SUBPASS_EXTERNAL,
 };
-use crate::gpu::vk::PipelineCache;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the

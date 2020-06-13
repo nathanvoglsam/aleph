@@ -7,23 +7,17 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#include "fragment_payloads.hlsl"
+#include "standard_tex.inc.hlsl"
 #include "pbr.hlsl"
-
-struct CameraLayout {
-    float4x4 view_matrix;
-    float4x4 proj_matrix;
-    float3 position;
-};
 
 [[vk::binding(0,0)]]
 ConstantBuffer<CameraLayout> camera;
 
-//[[vk::binding(1,0)]]
-//SamplerState BaseColourSampler;
-//
-//[[vk::binding(1,0)]]
-//Texture2D BaseColourTex;
+[[vk::binding(1,0)]]
+SamplerState BaseColourSampler;
+
+[[vk::binding(1,0)]]
+Texture2D BaseColourTex;
 
 //[[vk::binding(1,1)]]
 //SamplerState NormalSampler;
@@ -42,7 +36,7 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     const float3 frag_to_light = light_position - input.position;
 
     // Material parameters
-    const float3 base_colour = float3(1,1,1);
+    const float3 base_colour = BaseColourTex.Sample(BaseColourSampler, input.uv).xyz;
     const float metallic = 0.0;
     const float roughness = RemapRoughness(0.8);
     const float reflectance = 0.5;

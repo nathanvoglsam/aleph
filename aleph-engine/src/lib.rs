@@ -20,11 +20,13 @@ pub extern crate rayon;
 extern crate aleph_target_crate as target;
 extern crate aleph_vma_sys as vma_sys;
 extern crate console;
+extern crate gltf;
 extern crate num_cpus;
 extern crate once_cell;
 extern crate palette;
 extern crate parking_lot;
 extern crate raw_window_handle;
+extern crate spirv_reflect;
 
 // When on desktop we use env_logger
 #[cfg(not(target_os = "android"))]

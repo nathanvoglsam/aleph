@@ -100,9 +100,8 @@ impl ImguiGlobal {
     }
 
     pub fn create_shader_modules(device: &vk::Device) -> (ShaderModule, ShaderModule) {
-        // Compiled with
-        // `dxc /T vs_6_0 -Fo imgui.vert.spv -spirv .\imgui.vert.hlsl`
-        let bytes = include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui.vert.spv");
+        let bytes =
+            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.vert.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
@@ -113,9 +112,8 @@ impl ImguiGlobal {
         }
         .expect("Failed to create vertex shader module");
 
-        // Compiled with
-        // `dxc /T ps_6_0 -Fo imgui.frag.spv -spirv .\imgui.frag.hlsl`
-        let bytes = include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui.frag.spv");
+        let bytes =
+            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.frag.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);

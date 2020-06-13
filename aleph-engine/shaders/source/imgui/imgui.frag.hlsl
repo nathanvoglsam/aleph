@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#include "fragment_payloads.hlsl"
+#include "imgui.inc.hlsl"
 
 [[vk::binding(0,0)]]
 SamplerState Sampler;
@@ -15,7 +15,6 @@ SamplerState Sampler;
 [[vk::binding(0,0)]]
 Texture2D Tex;
 
-float4 main(in ImGuiPixelInput input) : SV_Target0
-{
+float4 main(in ImGuiPixelInput input) : SV_Target0 {
     return input.Color * Tex.Sample(Sampler, input.UV);
 }

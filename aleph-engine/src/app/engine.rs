@@ -9,10 +9,12 @@
 
 use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings};
 use crate::gpu;
+use crate::gpu::vk::shader::Set;
 use crate::gpu::vk::GPUInfo;
 use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
+use spirv_reflect::types::ReflectEntryPoint;
 use std::ffi::CString;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
@@ -30,6 +32,52 @@ pub const ENGINE_VERSION_VK: u32 = erupt::make_version(
 );
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
+
+fn test_shader_stuff() {
+    fn shader_reflect_func(mut v: ReflectEntryPoint) {
+        println!("Entry Point: {}", v.name);
+        v.descriptor_sets.drain(..).for_each(|set| {
+            println!("{:#?}", Set::reflect(set));
+            //println!("{:#?}", &set);
+        });
+    };
+
+    log::error!("HAH");
+    let shader_bytes = include_bytes!("../../shaders/compiled/standard/standard.frag.spv");
+    spirv_reflect::ShaderModule::load_u8_data(shader_bytes)
+        .expect("Failed to reflect spirv module")
+        .enumerate_entry_points()
+        .expect("No entry points found")
+        .drain(..)
+        .for_each(shader_reflect_func);
+
+    log::error!("HAH");
+    let shader_bytes = include_bytes!("../../shaders/compiled/standard/standard.vert.spv");
+    spirv_reflect::ShaderModule::load_u8_data(shader_bytes)
+        .expect("Failed to reflect spirv module")
+        .enumerate_entry_points()
+        .expect("No entry points found")
+        .drain(..)
+        .for_each(shader_reflect_func);
+
+    log::error!("HAH");
+    let shader_bytes = include_bytes!("../../shaders/compiled/standard_tex/standard_tex.frag.spv");
+    spirv_reflect::ShaderModule::load_u8_data(shader_bytes)
+        .expect("Failed to reflect spirv module")
+        .enumerate_entry_points()
+        .expect("No entry points found")
+        .drain(..)
+        .for_each(shader_reflect_func);
+
+    log::error!("HAH");
+    let shader_bytes = include_bytes!("../../shaders/compiled/standard_tex/standard_tex.vert.spv");
+    spirv_reflect::ShaderModule::load_u8_data(shader_bytes)
+        .expect("Failed to reflect spirv module")
+        .enumerate_entry_points()
+        .expect("No entry points found")
+        .drain(..)
+        .for_each(shader_reflect_func);
+}
 
 ///
 /// A "namespace" struct that wraps a bunch of global stace into a struct for aesthetic and
@@ -90,6 +138,8 @@ impl Engine {
         // Initialize the thread pools
         Engine::init_thread_pools();
         log::info!("");
+
+        test_shader_stuff();
 
         // -----------------------------------------------------------------------------------------
         // SDL2 and Window Initialization

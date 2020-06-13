@@ -9,10 +9,10 @@
 
 use crate::gpu::vk::Device;
 use erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
+use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
 use std::os::raw::c_void;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::fs::OpenOptions;
 
 static PIPELINE_CACHE: AtomicU64 = AtomicU64::new(0);
 static CACHE_FILE_NAME: &'static str = "shader_cache.bin";
@@ -20,7 +20,6 @@ static CACHE_FILE_NAME: &'static str = "shader_cache.bin";
 pub struct PipelineCache {}
 
 impl PipelineCache {
-
     ///
     /// Internal function for loading the pipeline cache data from disk
     ///
@@ -111,19 +110,18 @@ impl PipelineCache {
             .write(true)
             .create(true)
             .truncate(true)
-            .open(CACHE_FILE_NAME) {
+            .open(CACHE_FILE_NAME)
+        {
             Ok(mut file) => {
                 file.write_all(&data)
                     .expect("Failed to write pipeline cache data to file");
-            },
-            Err(err) => {
-                match err.kind() {
-                    ErrorKind::PermissionDenied => {
-                        log::warn!("Failed to save pipeline cache data: PermissionDenied");
-                    },
-                    _ => {
-                        panic!("Failed to save pipeline cache data");
-                    }
+            }
+            Err(err) => match err.kind() {
+                ErrorKind::PermissionDenied => {
+                    log::warn!("Failed to save pipeline cache data: PermissionDenied");
+                }
+                _ => {
+                    panic!("Failed to save pipeline cache data");
                 }
             },
         }
@@ -137,7 +135,8 @@ impl PipelineCache {
         Self::store(device);
 
         unsafe {
-            let pipeline_cache = erupt::vk1_0::PipelineCache(PIPELINE_CACHE.swap(0, Ordering::Relaxed));
+            let pipeline_cache =
+                erupt::vk1_0::PipelineCache(PIPELINE_CACHE.swap(0, Ordering::Relaxed));
             device.loader().destroy_pipeline_cache(pipeline_cache, None);
         }
     }

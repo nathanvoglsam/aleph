@@ -7,19 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#include "vertex_layouts.hlsl"
-#include "fragment_payloads.hlsl"
-
-struct ModelLayout {
-    float4x4 model_matrix;
-    float4x4 normal_matrix;
-};
-
-struct CameraLayout {
-    float4x4 view_matrix;
-    float4x4 proj_matrix;
-    float3 position;
-};
+#include "standard.inc.hlsl"
 
 [[vk::binding(0,0)]]
 ConstantBuffer<CameraLayout> camera;

@@ -7,11 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#include "vertex_layouts.hlsl"
-#include "fragment_payloads.hlsl"
+#include "imgui.inc.hlsl"
 
-struct PushConstantLayout
-{
+struct PushConstantLayout {
     float2 Scale;
     float2 Translate;
 };
@@ -19,9 +17,7 @@ struct PushConstantLayout
 [[vk::push_constant]]
 PushConstantLayout PushConstants;
 
-ImGuiPixelInput main(in ImGuiVertexInput input, out float4 Pos : SV_POSITION)
-{
-
+ImGuiPixelInput main(in ImGuiVertexInput input, out float4 Pos : SV_POSITION) {
     ImGuiPixelInput output;
 
     Pos = float4((input.Pos * PushConstants.Scale) + PushConstants.Translate,0,1.0);
