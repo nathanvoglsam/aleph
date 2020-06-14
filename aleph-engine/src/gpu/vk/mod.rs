@@ -11,7 +11,7 @@ pub(crate) mod debug;
 pub(crate) mod surface;
 
 pub mod alloc;
-pub mod shader;
+pub mod reflect;
 
 mod device;
 mod gpu_info;

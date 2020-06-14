@@ -1,0 +1,132 @@
+//
+//
+// This file is a part of Aleph
+//
+// <ALEPH_REPO_REPLACE>
+//
+// <ALEPH_LICENSE_REPLACE>
+//
+
+use crate::gpu::vk::reflect::structure::resolve_struct_block;
+use crate::gpu::vk::reflect::Struct;
+use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
+
+///
+/// Type that represents the set of supported descriptor bindings that is currently supported
+///
+#[derive(Debug)]
+pub enum BindingType {
+    //Undefined,
+    Sampler,
+    CombinedImageSampler,
+    SampledImage,
+    StorageImage,
+    //UniformTexelBuffer,
+    //StorageTexelBuffer,
+    UniformBuffer(Struct),
+    //StorageBuffer(),
+    UniformBufferDynamic(Struct),
+    //StorageBufferDynamic(),
+    InputAttachment,
+    AccelerationStructureNV,
+}
+
+///
+/// A struct that represents a descriptor binding
+///
+#[derive(Debug)]
+pub struct Binding {
+    binding: u32,
+    name: String,
+    binding_type: BindingType,
+}
+
+impl Binding {
+    ///
+    /// Returns the name of the binding
+    ///
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    ///
+    /// Returns the type of this binding
+    ///
+    pub fn binding_type(&self) -> &BindingType {
+        &self.binding_type
+    }
+}
+
+#[derive(Debug)]
+pub struct Set {
+    set: u32,
+    bindings: Vec<Binding>,
+}
+
+impl Set {
+    ///
+    /// Returns the list of bindings in this descriptor set
+    ///
+    pub fn bindings(&self) -> &[Binding] {
+        &self.bindings
+    }
+
+    ///
+    /// Consume the descriptor set information from a given entry point and produce the list of
+    /// descriptor sets it uses
+    ///
+    pub fn reflect(entry_point: &mut ReflectEntryPoint) -> Vec<Set> {
+        entry_point
+            .descriptor_sets
+            .drain(..)
+            .map(|d| Self::reflect_internal(d))
+            .collect()
+    }
+
+    ///
+    /// Create a new `Set` object from the output produced by `spirv-reflect`
+    ///
+    fn reflect_internal(mut set: ReflectDescriptorSet) -> Set {
+        let bindings = set
+            .bindings
+            .drain(..)
+            .map(|b| {
+                let name = b.name;
+                let binding_type = match b.descriptor_type {
+                    ReflectDescriptorType::StorageBufferDynamic
+                    | ReflectDescriptorType::StorageBuffer
+                    | ReflectDescriptorType::UniformTexelBuffer
+                    | ReflectDescriptorType::StorageTexelBuffer
+                    | ReflectDescriptorType::Undefined => panic!("Unsupported descriptor type"),
+                    ReflectDescriptorType::Sampler => BindingType::Sampler,
+                    ReflectDescriptorType::CombinedImageSampler => {
+                        BindingType::CombinedImageSampler
+                    }
+                    ReflectDescriptorType::SampledImage => BindingType::SampledImage,
+                    ReflectDescriptorType::StorageImage => BindingType::StorageImage,
+                    ReflectDescriptorType::UniformBuffer => {
+                        BindingType::UniformBuffer(resolve_struct_block(b.block))
+                    }
+                    ReflectDescriptorType::UniformBufferDynamic => {
+                        BindingType::UniformBufferDynamic(resolve_struct_block(b.block))
+                    }
+                    ReflectDescriptorType::InputAttachment => BindingType::InputAttachment,
+                    ReflectDescriptorType::AccelerationStructureNV => {
+                        BindingType::AccelerationStructureNV
+                    }
+                };
+                let binding = b.binding;
+                Binding {
+                    binding,
+                    name,
+                    binding_type,
+                }
+            })
+            .collect();
+
+        let set = set.set;
+        let out_set = Set { set, bindings };
+
+        out_set
+    }
+}
