@@ -11,21 +11,12 @@
 #include "pbr.hlsl"
 
 [[vk::binding(0,0)]]
-ConstantBuffer<CameraLayout> camera;
-
-//[[vk::binding(1,0)]]
-//SamplerState BaseColourSampler;
-//
-//[[vk::binding(1,0)]]
-//Texture2D BaseColourTex;
-
-//[[vk::binding(1,1)]]
-//SamplerState NormalSampler;
-//
-//[[vk::binding(1,1)]]
-//Texture2D NormalTex;
+ConstantBuffer<CameraLayout> camera_buffer;
 
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {
+    // Load buffers so auto complete works properly
+    const CameraLayout camera = camera_buffer;
+	
     // Light parameters
     const float3 light_position = float3(0,0,0);
     const float lumens = 5000;

@@ -7,25 +7,29 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#include "standard_tex.inc.hlsl"
+#include "normal_map.hlsl"
 #include "pbr.hlsl"
+#include "standard_tex.inc.hlsl"
 
 [[vk::binding(0,0)]]
-ConstantBuffer<CameraLayout> camera;
+ConstantBuffer<CameraLayout> camera_buffer;
 
 [[vk::binding(1,0)]]
 SamplerState BaseColourSampler;
 
 [[vk::binding(1,0)]]
-Texture2D BaseColourTex;
+Texture2D<float3> BaseColourTex;
 
-//[[vk::binding(1,1)]]
-//SamplerState NormalSampler;
-//
-//[[vk::binding(1,1)]]
-//Texture2D NormalTex;
+[[vk::binding(1,1)]]
+SamplerState NormalSampler;
+
+[[vk::binding(1,1)]]
+Texture2D<float3> NormalTex;
 
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {
+	// Load buffers so auto complete works properly
+    const CameraLayout camera = camera_buffer;
+	
     // Light parameters
     const float3 light_position = float3(0,0,0);
     const float lumens = 5000;
@@ -36,17 +40,24 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     const float3 frag_to_light = light_position - input.position;
 
     // Material parameters
-    const float3 base_colour = BaseColourTex.Sample(BaseColourSampler, input.uv).xyz;
+    const float3 base_colour = BaseColourTex.Sample(BaseColourSampler, input.uv);
     const float metallic = 0.0;
     const float roughness = RemapRoughness(0.8);
     const float reflectance = 0.5;
-
+    
+    // Derive TBN and sample the normal map
+	float3 n;
+	float3 t;
+	float3 b;
+	const float3 normal_sample = NormalTex.Sample(NormalSampler, input.uv);
+	const float3 map_normal = normalize((normal_sample * 2.0) - 1.0);
+	TBNNormalMapSample(map_normal, input.normal, input.tangent, n, t, b);
+    
     // Derived material parameters
-    const float3 v = normalize(camera_to_frag);
-    const float3 l = normalize(light_to_frag);
-    const float3 n = normalize(input.normal);
-    const float3 diffuse_colour = DiffuseFromBaseColour(base_colour, roughness);
-    const float3 f0 = CalculateF0(base_colour, metallic, reflectance);
+	const float3 v = normalize(camera_to_frag);
+	const float3 l = normalize(light_to_frag);
+	const float3 diffuse_colour = DiffuseFromBaseColour(base_colour, roughness);
+	const float3 f0 = CalculateF0(base_colour, metallic, reflectance);
 
     // Calculate the result of our BRDF
     const float3 brdf = StandardBRDF(v, l, n, diffuse_colour, roughness, f0);

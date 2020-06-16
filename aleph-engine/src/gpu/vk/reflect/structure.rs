@@ -298,18 +298,21 @@ pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
 }
 
 pub(crate) fn resolve_struct_interface(interface: &mut Vec<ReflectInterfaceVariable>) -> Struct {
-    let members = interface.drain(..).map(|m| {
-        let member_type = resolve_member_type_interface(&m);
-        let name = m.name;
-        Member {
-            name,
-            size: 0,
-            size_padded: 0,
-            offset: 0,
-            offset_absolute: 0,
-            member_type
-        }
-    }).collect();
+    let members = interface
+        .drain(..)
+        .map(|m| {
+            let member_type = resolve_member_type_interface(&m);
+            let name = m.name;
+            Member {
+                name,
+                size: 0,
+                size_padded: 0,
+                offset: 0,
+                offset_absolute: 0,
+                member_type,
+            }
+        })
+        .collect();
 
     Struct {
         members,

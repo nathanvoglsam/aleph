@@ -13,8 +13,7 @@
 struct StaticMeshPixelInput {
     float3 position  : POSITION;
     float3 normal    : NORMAL;
-    float3 tangent   : TANGENT;
-    float3 bitangent : BINORMAL;
+    float4 tangent   : TANGENT;
     float2 uv        : TEXCOORD0;
 };
 
@@ -22,9 +21,9 @@ struct StaticMeshPixelInput {
  * The standard vertex layout that a static mesh shader will use
  */
 struct StaticMeshVertexInput {
-    [[vk::location(0)]] float3 position : SV_POSITION;
+    [[vk::location(0)]] float3 position : POSITION;
     [[vk::location(1)]] float3 normal   : NORMAL;
-    [[vk::location(2)]] float3 tangent  : TANGENT;
+    [[vk::location(2)]] float4 tangent  : TANGENT;
     [[vk::location(3)]] float2 uv       : TEXCOORD0;
 };
 

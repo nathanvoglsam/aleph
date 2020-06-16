@@ -1,3 +1,7 @@
 /target
 Cargo.lock
 shader_cache.bin
+.vs
+aleph-engine/thirdparty/sdl2/out
+aleph-vma-sys/lib/out
+aleph-engine/shaders/out

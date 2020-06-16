@@ -57,10 +57,18 @@ fn test_shader_stuff() {
             .for_each(shader_reflect_func);
     }
 
-    shader_reflect(include_bytes!("../../shaders/compiled/standard/standard.frag.spv"));
-    shader_reflect(include_bytes!("../../shaders/compiled/standard/standard.vert.spv"));
-    shader_reflect(include_bytes!("../../shaders/compiled/standard_tex/standard_tex.frag.spv"));
-    shader_reflect(include_bytes!("../../shaders/compiled/standard_tex/standard_tex.frag.spv"));
+    shader_reflect(include_bytes!(
+        "../../shaders/compiled/standard/standard.frag.spv"
+    ));
+    shader_reflect(include_bytes!(
+        "../../shaders/compiled/standard/standard.vert.spv"
+    ));
+    shader_reflect(include_bytes!(
+        "../../shaders/compiled/standard_tex/standard_tex.frag.spv"
+    ));
+    shader_reflect(include_bytes!(
+        "../../shaders/compiled/standard_tex/standard_tex.frag.spv"
+    ));
 }
 
 ///

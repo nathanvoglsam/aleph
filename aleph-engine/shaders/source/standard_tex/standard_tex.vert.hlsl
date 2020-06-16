@@ -10,28 +10,33 @@
 #include "standard_tex.inc.hlsl"
 
 [[vk::binding(0,0)]]
-ConstantBuffer<CameraLayout> camera;
+ConstantBuffer<CameraLayout> camera_buffer;
 
-[[vk::binding(2,0)]]
-ConstantBuffer<ModelLayout> model;
+[[vk::binding(1,0)]]
+ConstantBuffer<ModelLayout> model_buffer;
 
-StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 pos : SV_POSITION) {
+StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 out_position : SV_POSITION) {
+    // Load buffers so auto complete works properly
+    const CameraLayout camera = camera_buffer;
+    const ModelLayout model = model_buffer;
+	
     StaticMeshPixelInput output;
 
     const float4 in_pos = float4(input.position, 1.0);
     const float3x3 normal_matrix = (float3x3)model.normal_matrix;
     
-    float4 out_pos = mul(in_pos, model.model_matrix);
-
-    output.position = out_pos.xyz;
-    output.normal = normalize(mul(input.normal, normal_matrix));
-    output.tangent = normalize(mul(input.tangent, normal_matrix));
-    output.bitangent = normalize(mul(cross(input.normal, input.tangent), normal_matrix));
+    float4 position = mul(in_pos, model.model_matrix);
+    float3 normal = normalize(mul(input.normal, normal_matrix));
+    float3 tangent = normalize(mul(input.tangent.xyz, normal_matrix));
+    output.position = position.xyz;
+    output.normal = normal;
+    output.tangent = float4(tangent, input.tangent.w);
     output.uv = input.uv;
 
-    out_pos = mul(out_pos, camera.view_matrix);
-    out_pos = mul(out_pos, camera.proj_matrix);
-    pos = out_pos;
+    position = mul(position, camera.view_matrix);
+    position = mul(position, camera.proj_matrix);
+    
+    out_position = position;
 
     return output;
 }

@@ -29,7 +29,10 @@ impl VertexLayout {
     /// Returns `None` if the given entry point is not a vertex shader
     ///
     pub fn reflect(entry_point: &mut ReflectEntryPoint) -> Option<Self> {
-        if entry_point.shader_stage.contains(ReflectShaderStageFlags::VERTEX) {
+        if entry_point
+            .shader_stage
+            .contains(ReflectShaderStageFlags::VERTEX)
+        {
             let layout = resolve_struct_interface(&mut entry_point.input_variables);
             Some(Self { layout })
         } else {
