@@ -147,7 +147,7 @@ impl Window {
         title: &str,
         window_settings: &WindowSettings,
     ) -> sdl2::video::Window {
-        let window = video_ctx
+        let mut window = video_ctx
             .window(title, window_settings.width, window_settings.height)
             .vulkan()
             .resizable()
@@ -170,6 +170,8 @@ impl Window {
         *WINDOW_STATE.write() = Some(window_state);
         *WINDOW_EVENTS.write() = Some(Vec::new());
         *WINDOW_REQUEST_QUEUE.lock() = Some(Vec::new());
+
+        window.raise();
 
         window
     }
