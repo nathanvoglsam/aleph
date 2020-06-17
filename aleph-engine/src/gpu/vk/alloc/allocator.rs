@@ -150,7 +150,7 @@ impl AllocatorBuilder {
 
         let alloc = Allocator {
             allocator: raw_alloc,
-            _device: device.clone(),
+            device: device.clone(),
         };
 
         Ok(Arc::new(alloc))
@@ -168,7 +168,7 @@ impl Default for AllocatorBuilder {
 ///
 pub struct Allocator {
     allocator: raw::VmaAllocator,
-    _device: Arc<Device>,
+    device: Arc<Device>,
 }
 
 impl Allocator {
@@ -771,6 +771,13 @@ impl Allocator {
     ///
     pub unsafe fn set_current_frame_index(self, index: u32) {
         raw::vmaSetCurrentFrameIndex(self.allocator, index);
+    }
+
+    ///
+    /// Get a reference to the device this allocator was created with
+    ///
+    pub fn device(&self) -> &Device {
+        &self.device
     }
 }
 
