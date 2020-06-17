@@ -7,8 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use gltf::json::accessor::{ComponentType, Type};
 use gltf::buffer::Source;
+use gltf::json::accessor::{ComponentType, Type};
 use std::ops::Deref;
 
 #[inline]
@@ -33,7 +33,10 @@ pub(crate) fn get_accessor_for(
 }
 
 #[inline]
-pub(crate) fn get_vec4_bytes(glb: &'static gltf::Glb, acc: &gltf::Accessor<'static>) -> &'static [[f32;4]] {
+pub(crate) fn get_vec4_bytes(
+    glb: &'static gltf::Glb,
+    acc: &gltf::Accessor<'static>,
+) -> &'static [[f32; 4]] {
     // Get the buffer view for the accessor. Must exist
     let view = acc.view().unwrap();
 
@@ -66,7 +69,10 @@ pub(crate) fn get_vec4_bytes(glb: &'static gltf::Glb, acc: &gltf::Accessor<'stat
 }
 
 #[inline]
-pub(crate) fn get_vec3_bytes(glb: &'static gltf::Glb, acc: &gltf::Accessor<'static>) -> &'static [[f32;3]] {
+pub(crate) fn get_vec3_bytes(
+    glb: &'static gltf::Glb,
+    acc: &gltf::Accessor<'static>,
+) -> &'static [[f32; 3]] {
     // Get the buffer view for the accessor. Must exist
     let view = acc.view().unwrap();
 
@@ -99,7 +105,10 @@ pub(crate) fn get_vec3_bytes(glb: &'static gltf::Glb, acc: &gltf::Accessor<'stat
 }
 
 #[inline]
-pub(crate) fn get_vec2_bytes(glb: &'static gltf::Glb, acc: &gltf::Accessor<'static>) -> &'static [[f32;2]] {
+pub(crate) fn get_vec2_bytes(
+    glb: &'static gltf::Glb,
+    acc: &gltf::Accessor<'static>,
+) -> &'static [[f32; 2]] {
     // Get the buffer view for the accessor. Must exist
     let view = acc.view().unwrap();
 
