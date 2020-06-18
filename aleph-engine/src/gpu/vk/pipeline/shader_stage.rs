@@ -9,10 +9,9 @@
 
 use crate::cstr;
 use erupt::vk1_0::{
-    PipelineShaderStageCreateInfo, PipelineShaderStageCreateInfoBuilder, ShaderModule,
+    PipelineShaderStageCreateInfoBuilder, ShaderModule,
     ShaderStageFlagBits,
 };
-use std::ffi::CStr;
 
 ///
 /// A namespace struct for specifying pipeline shader stages

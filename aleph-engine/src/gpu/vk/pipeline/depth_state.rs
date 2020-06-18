@@ -8,7 +8,7 @@
 //
 
 use erupt::vk1_0::{
-    CompareOp, PipelineDepthStencilStateCreateInfo, PipelineDepthStencilStateCreateInfoBuilder,
+    CompareOp, PipelineDepthStencilStateCreateInfoBuilder,
 };
 
 ///
@@ -20,8 +20,8 @@ impl DepthState {
     ///
     /// Depth write and depth test disabled
     ///
-    pub fn disabled() -> PipelineDepthStencilStateCreateInfo {
-        *PipelineDepthStencilStateCreateInfoBuilder::new()
+    pub fn disabled() -> PipelineDepthStencilStateCreateInfoBuilder<'static> {
+        PipelineDepthStencilStateCreateInfoBuilder::new()
             .depth_write_enable(false)
             .depth_test_enable(false)
     }
@@ -30,8 +30,8 @@ impl DepthState {
     /// Depth testing enabled, with depth writes enabled chosen by `write` and the compare op chosen
     /// by `compare_op`.
     ///
-    pub fn enabled(write: bool, compare_op: CompareOp) -> PipelineDepthStencilStateCreateInfo {
-        *PipelineDepthStencilStateCreateInfoBuilder::new()
+    pub fn enabled(write: bool, compare_op: CompareOp) -> PipelineDepthStencilStateCreateInfoBuilder<'static> {
+        PipelineDepthStencilStateCreateInfoBuilder::new()
             .depth_write_enable(write)
             .depth_test_enable(true)
             .depth_bounds_test_enable(false)

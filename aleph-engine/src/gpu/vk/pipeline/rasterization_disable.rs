@@ -8,7 +8,7 @@
 //
 
 use erupt::vk1_0::{
-    CullModeFlags, FrontFace, PipelineRasterizationStateCreateInfo,
+    CullModeFlags, FrontFace,
     PipelineRasterizationStateCreateInfoBuilder, PolygonMode,
 };
 
@@ -24,8 +24,8 @@ impl RasterizationState {
     pub fn unculled(
         mode: PolygonMode,
         front_face: FrontFace,
-    ) -> PipelineRasterizationStateCreateInfo {
-        *PipelineRasterizationStateCreateInfoBuilder::new()
+    ) -> PipelineRasterizationStateCreateInfoBuilder<'static> {
+        PipelineRasterizationStateCreateInfoBuilder::new()
             .polygon_mode(mode)
             .cull_mode(CullModeFlags::NONE)
             .front_face(front_face)
@@ -41,8 +41,8 @@ impl RasterizationState {
     pub fn backface_culled(
         mode: PolygonMode,
         front_face: FrontFace,
-    ) -> PipelineRasterizationStateCreateInfo {
-        *PipelineRasterizationStateCreateInfoBuilder::new()
+    ) -> PipelineRasterizationStateCreateInfoBuilder<'static> {
+        PipelineRasterizationStateCreateInfoBuilder::new()
             .polygon_mode(mode)
             .cull_mode(CullModeFlags::BACK)
             .front_face(front_face)
@@ -61,8 +61,8 @@ impl RasterizationState {
         constant: f32,
         slope: f32,
         clamp: f32,
-    ) -> PipelineRasterizationStateCreateInfo {
-        *PipelineRasterizationStateCreateInfoBuilder::new()
+    ) -> PipelineRasterizationStateCreateInfoBuilder<'static> {
+        PipelineRasterizationStateCreateInfoBuilder::new()
             .polygon_mode(mode)
             .cull_mode(CullModeFlags::BACK)
             .front_face(front_face)

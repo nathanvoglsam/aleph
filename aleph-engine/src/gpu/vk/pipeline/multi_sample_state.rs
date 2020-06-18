@@ -8,7 +8,7 @@
 //
 
 use erupt::vk1_0::{
-    PipelineMultisampleStateCreateInfo, PipelineMultisampleStateCreateInfoBuilder,
+    PipelineMultisampleStateCreateInfoBuilder,
     SampleCountFlagBits,
 };
 
@@ -21,8 +21,8 @@ impl MultiSampleState {
     ///
     /// Multi sampling disabled
     ///
-    pub fn disabled() -> PipelineMultisampleStateCreateInfo {
-        *PipelineMultisampleStateCreateInfoBuilder::new()
+    pub fn disabled() -> PipelineMultisampleStateCreateInfoBuilder<'static> {
+        PipelineMultisampleStateCreateInfoBuilder::new()
             .rasterization_samples(SampleCountFlagBits::_1)
     }
 }
