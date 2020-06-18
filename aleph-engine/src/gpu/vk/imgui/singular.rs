@@ -7,25 +7,22 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::cstr;
 use crate::gpu::vk;
 use crate::gpu::vk::imgui::ImguiGlobal;
+use crate::gpu::vk::pipeline::{DepthState, MultiSampleState, RasterizationState, ShaderStage};
 use crate::gpu::vk::PipelineCache;
 use erupt::vk1_0::{
-    AccessFlagBits, AccessFlags, AttachmentDescriptionBuilder, AttachmentLoadOp,
-    AttachmentReferenceBuilder, AttachmentStoreOp, BlendFactor, BlendOp, ColorComponentFlags,
-    CullModeFlags, DescriptorSetLayout, DynamicState, Format, FrontFace,
-    GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline, PipelineBindPoint,
+    AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
+    BlendFactor, BlendOp, ColorComponentFlags, DescriptorSetLayout, DynamicState, Format,
+    FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline, PipelineBindPoint,
     PipelineColorBlendAttachmentStateBuilder, PipelineColorBlendStateCreateInfoBuilder,
-    PipelineDepthStencilStateCreateInfoBuilder, PipelineDynamicStateCreateInfoBuilder,
-    PipelineInputAssemblyStateCreateInfoBuilder, PipelineLayout, PipelineLayoutCreateInfoBuilder,
-    PipelineMultisampleStateCreateInfoBuilder, PipelineRasterizationStateCreateInfoBuilder,
-    PipelineShaderStageCreateInfoBuilder, PipelineStageFlags,
-    PipelineVertexInputStateCreateInfoBuilder, PipelineViewportStateCreateInfoBuilder, PolygonMode,
-    PrimitiveTopology, PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder,
-    SampleCountFlagBits, ShaderModule, ShaderStageFlagBits, ShaderStageFlags,
-    SubpassDependencyBuilder, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
-    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt, SUBPASS_EXTERNAL,
+    PipelineDynamicStateCreateInfoBuilder, PipelineInputAssemblyStateCreateInfoBuilder,
+    PipelineLayout, PipelineLayoutCreateInfoBuilder, PipelineVertexInputStateCreateInfoBuilder,
+    PipelineViewportStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
+    PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
+    ShaderModule, ShaderStageFlags, SubpassDescriptionBuilder,
+    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
+    Vk10DeviceLoaderExt,
 };
 
 ///
@@ -96,21 +93,11 @@ impl ImguiSingular {
             .pipeline_bind_point(PipelineBindPoint::GRAPHICS)
             .color_attachments(&color_attachments);
 
-        let dependency = SubpassDependencyBuilder::new()
-            .src_subpass(SUBPASS_EXTERNAL)
-            .dst_subpass(0)
-            .src_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
-            .dst_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
-            .src_access_mask(AccessFlagBits(0).bitmask())
-            .dst_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE);
-
         let attachments = [attachment];
         let subpasses = [subpass];
-        let dependencies = [dependency];
         let create_info = RenderPassCreateInfoBuilder::new()
             .attachments(&attachments)
-            .subpasses(&subpasses)
-            .dependencies(&dependencies);
+            .subpasses(&subpasses);
         unsafe { device.loader().create_render_pass(&create_info, None, None) }
             .expect("Failed to create render pass")
     }
@@ -122,14 +109,8 @@ impl ImguiSingular {
         vertex_module: ShaderModule,
         fragment_module: ShaderModule,
     ) -> Pipeline {
-        let vertex_stage = PipelineShaderStageCreateInfoBuilder::new()
-            .module(vertex_module)
-            .stage(ShaderStageFlagBits::VERTEX)
-            .name(cstr!("main"));
-        let fragment_stage = PipelineShaderStageCreateInfoBuilder::new()
-            .module(fragment_module)
-            .stage(ShaderStageFlagBits::FRAGMENT)
-            .name(cstr!("main"));
+        let vertex_stage = ShaderStage::vertex(vertex_module);
+        let fragment_stage = ShaderStage::fragment(fragment_module);
         let stages = [vertex_stage, fragment_stage];
 
         let binding = VertexInputBindingDescriptionBuilder::new()
@@ -164,18 +145,12 @@ impl ImguiSingular {
             .viewport_count(1)
             .scissor_count(1);
 
-        let rasterization = PipelineRasterizationStateCreateInfoBuilder::new()
-            .polygon_mode(PolygonMode::FILL)
-            .cull_mode(CullModeFlags::NONE)
-            .front_face(FrontFace::COUNTER_CLOCKWISE)
-            .line_width(1.0);
+        let rasterization =
+            RasterizationState::unculled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
 
-        let multisample = PipelineMultisampleStateCreateInfoBuilder::new()
-            .rasterization_samples(SampleCountFlagBits::_1);
+        let multisample = MultiSampleState::disabled();
 
-        let depth_stencil = PipelineDepthStencilStateCreateInfoBuilder::new()
-            .depth_test_enable(false)
-            .depth_write_enable(false);
+        let depth_stencil = DepthState::disabled();
 
         let color_blend = PipelineColorBlendAttachmentStateBuilder::new()
             .blend_enable(true)
