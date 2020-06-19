@@ -10,17 +10,15 @@
 use crate::gpu::vk;
 use crate::gpu::vk::imgui::ImguiGlobal;
 use crate::gpu::vk::pipeline::{
-    DepthState, InputAssemblyState, MultiSampleState, RasterizationState, ShaderStage,
-    ViewportState,
+    ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
+    InputAssemblyState, MultiSampleState, RasterizationState, ShaderStage, ViewportState,
 };
 use crate::gpu::vk::reflect::PushConstantLayout;
 use crate::gpu::vk::PipelineCache;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
-    BlendFactor, BlendOp, ColorComponentFlags, DescriptorSetLayout, DynamicState, Format,
-    FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline, PipelineBindPoint,
-    PipelineColorBlendAttachmentStateBuilder, PipelineColorBlendStateCreateInfoBuilder,
-    PipelineDynamicStateCreateInfoBuilder, PipelineLayout, PipelineLayoutCreateInfoBuilder,
+    DescriptorSetLayout, DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder,
+    ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PipelineLayoutCreateInfoBuilder,
     PipelineVertexInputStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
     PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
     ShaderModule, ShaderStageFlags, SubpassDescriptionBuilder,
@@ -159,25 +157,11 @@ impl ImguiSingular {
 
         let depth_stencil = DepthState::disabled();
 
-        let color_blend = PipelineColorBlendAttachmentStateBuilder::new()
-            .blend_enable(true)
-            .src_color_blend_factor(BlendFactor::SRC_ALPHA)
-            .dst_color_blend_factor(BlendFactor::ONE_MINUS_SRC_ALPHA)
-            .color_blend_op(BlendOp::ADD)
-            .src_alpha_blend_factor(BlendFactor::ONE_MINUS_SRC_ALPHA)
-            .dst_alpha_blend_factor(BlendFactor::ZERO)
-            .alpha_blend_op(BlendOp::ADD)
-            .color_write_mask(
-                ColorComponentFlags::R
-                    | ColorComponentFlags::G
-                    | ColorComponentFlags::B
-                    | ColorComponentFlags::A,
-            );
-        let attachments = [color_blend];
-        let color_blend = PipelineColorBlendStateCreateInfoBuilder::new().attachments(&attachments);
+        let attachments = [ColorBlendAttachmentState::alpha_blending()];
+        let color_blend = ColorBlendState::attachments(&attachments);
 
         let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
-        let dynamic = PipelineDynamicStateCreateInfoBuilder::new().dynamic_states(&dynamic_states);
+        let dynamic_state = DynamicPipelineState::states(&dynamic_states);
 
         let create_info = GraphicsPipelineCreateInfoBuilder::new()
             .layout(pipeline_layout)
@@ -191,7 +175,7 @@ impl ImguiSingular {
             .multisample_state(&multisample)
             .depth_stencil_state(&depth_stencil)
             .color_blend_state(&color_blend)
-            .dynamic_state(&dynamic);
+            .dynamic_state(&dynamic_state);
         unsafe {
             device
                 .loader()
