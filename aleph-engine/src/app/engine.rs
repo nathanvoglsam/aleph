@@ -172,6 +172,9 @@ impl Engine {
 
         let mut swapchain = gpu::vk::SwapchainBuilder::new().vsync().build(&device);
 
+        let _renderer =
+            unsafe { gpu::vk::render::Renderer::new(device.clone(), allocator.clone()) };
+
         let mut imgui_renderer = gpu::vk::ImguiRenderer::new(
             imgui_ctx.context_mut().fonts(),
             device.clone(),
