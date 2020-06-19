@@ -8,8 +8,7 @@
 //
 
 use spirv_reflect::types::{
-    ReflectBlockVariable, ReflectDecorationFlags, ReflectInterfaceVariable,
-    ReflectNumericTraitsScalar, ReflectTypeFlags,
+    ReflectBlockVariable, ReflectDecorationFlags, ReflectNumericTraitsScalar, ReflectTypeFlags,
 };
 
 ///
@@ -297,32 +296,6 @@ pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
     item
 }
 
-pub(crate) fn resolve_struct_interface(interface: &mut Vec<ReflectInterfaceVariable>) -> Struct {
-    let members = interface
-        .drain(..)
-        .map(|m| {
-            let member_type = resolve_member_type_interface(&m);
-            let name = m.name;
-            Member {
-                name,
-                size: 0,
-                size_padded: 0,
-                offset: 0,
-                offset_absolute: 0,
-                member_type,
-            }
-        })
-        .collect();
-
-    Struct {
-        members,
-        size: 0,
-        size_padded: 0,
-        offset: 0,
-        offset_absolute: 0,
-    }
-}
-
 pub(crate) fn resolve_member_type(block: &ReflectBlockVariable) -> MemberType {
     let desc = block.type_description.as_ref().unwrap();
     let float = desc.type_flags.contains(ReflectTypeFlags::FLOAT);
@@ -349,37 +322,6 @@ pub(crate) fn resolve_member_type(block: &ReflectBlockVariable) -> MemberType {
         MemberType::Vector(info)
     } else if float {
         MemberType::Scalar(resolve_scalar_width(block.numeric.scalar))
-    } else {
-        panic!("Unsupported member type");
-    }
-}
-
-pub(crate) fn resolve_member_type_interface(interface: &ReflectInterfaceVariable) -> MemberType {
-    let desc = interface.type_description.as_ref().unwrap();
-    let float = desc.type_flags.contains(ReflectTypeFlags::FLOAT);
-    let vector = desc.type_flags.contains(ReflectTypeFlags::VECTOR);
-    let matrix = desc.type_flags.contains(ReflectTypeFlags::MATRIX);
-
-    if matrix && vector && float {
-        let fp_type = resolve_scalar_width(interface.numeric.scalar);
-        let layout = resolve_matrix_layout(interface.decoration_flags);
-        let info = MatrixInfo {
-            fp_type,
-            layout,
-            rows: interface.numeric.matrix.row_count as _,
-            cols: interface.numeric.matrix.column_count as _,
-            stride: interface.numeric.matrix.stride,
-        };
-        MemberType::Matrix(info)
-    } else if vector && float {
-        let fp_type = resolve_scalar_width(interface.numeric.scalar);
-        let info = VectorInfo {
-            fp_type,
-            elements: interface.numeric.vector.component_count as _,
-        };
-        MemberType::Vector(info)
-    } else if float {
-        MemberType::Scalar(resolve_scalar_width(interface.numeric.scalar))
     } else {
         panic!("Unsupported member type");
     }

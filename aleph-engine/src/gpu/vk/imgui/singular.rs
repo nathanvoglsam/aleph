@@ -9,16 +9,19 @@
 
 use crate::gpu::vk;
 use crate::gpu::vk::imgui::ImguiGlobal;
-use crate::gpu::vk::pipeline::{DepthState, MultiSampleState, RasterizationState, ShaderStage};
+use crate::gpu::vk::pipeline::{
+    DepthState, InputAssemblyState, MultiSampleState, RasterizationState, ShaderStage,
+    ViewportState,
+};
+use crate::gpu::vk::reflect::PushConstantLayout;
 use crate::gpu::vk::PipelineCache;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     BlendFactor, BlendOp, ColorComponentFlags, DescriptorSetLayout, DynamicState, Format,
     FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline, PipelineBindPoint,
     PipelineColorBlendAttachmentStateBuilder, PipelineColorBlendStateCreateInfoBuilder,
-    PipelineDynamicStateCreateInfoBuilder, PipelineInputAssemblyStateCreateInfoBuilder,
-    PipelineLayout, PipelineLayoutCreateInfoBuilder, PipelineVertexInputStateCreateInfoBuilder,
-    PipelineViewportStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
+    PipelineDynamicStateCreateInfoBuilder, PipelineLayout, PipelineLayoutCreateInfoBuilder,
+    PipelineVertexInputStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
     PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
     ShaderModule, ShaderStageFlags, SubpassDescriptionBuilder,
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
@@ -38,7 +41,11 @@ pub struct ImguiSingular {
 impl ImguiSingular {
     pub fn init(device: &vk::Device, global: &ImguiGlobal, format: Format) -> Self {
         let render_pass = Self::create_render_pass(device, format);
-        let pipeline_layout = Self::create_pipeline_layout(device, global.descriptor_set_layout);
+        let pipeline_layout = Self::create_pipeline_layout(
+            device,
+            global.descriptor_set_layout,
+            &global.push_constant_layout,
+        );
         let pipeline = Self::create_pipeline(
             device,
             pipeline_layout,
@@ -57,12 +64,13 @@ impl ImguiSingular {
     pub fn create_pipeline_layout(
         device: &vk::Device,
         layout: DescriptorSetLayout,
+        push_constant_layout: &PushConstantLayout,
     ) -> PipelineLayout {
         let set_layouts = [layout];
         let ranges = [PushConstantRangeBuilder::new()
             .stage_flags(ShaderStageFlags::VERTEX)
             .offset(0)
-            .size(4 * 4)];
+            .size(push_constant_layout.size_padded())];
         let create_info = PipelineLayoutCreateInfoBuilder::new()
             .set_layouts(&set_layouts)
             .push_constant_ranges(&ranges);
@@ -109,9 +117,10 @@ impl ImguiSingular {
         vertex_module: ShaderModule,
         fragment_module: ShaderModule,
     ) -> Pipeline {
-        let vertex_stage = ShaderStage::vertex(vertex_module);
-        let fragment_stage = ShaderStage::fragment(fragment_module);
-        let stages = [vertex_stage, fragment_stage];
+        let stages = [
+            ShaderStage::vertex(vertex_module),
+            ShaderStage::fragment(fragment_module),
+        ];
 
         let binding = VertexInputBindingDescriptionBuilder::new()
             .binding(0)
@@ -138,12 +147,10 @@ impl ImguiSingular {
             .vertex_binding_descriptions(&bindings)
             .vertex_attribute_descriptions(&attributes);
 
-        let input_assembly = PipelineInputAssemblyStateCreateInfoBuilder::new()
-            .topology(PrimitiveTopology::TRIANGLE_LIST);
+        let input_assembly =
+            InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
 
-        let viewport = PipelineViewportStateCreateInfoBuilder::new()
-            .viewport_count(1)
-            .scissor_count(1);
+        let viewport = ViewportState::dynamic(1, 1);
 
         let rasterization =
             RasterizationState::unculled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);

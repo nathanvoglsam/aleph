@@ -85,15 +85,24 @@ impl ImguiFont {
         let image_view = Self::create_image_view(device, image);
 
         unsafe {
-            let info = [DescriptorImageInfoBuilder::new()
+            let sampled_image_info = [DescriptorImageInfoBuilder::new()
                 .image_view(image_view)
-                .sampler(sampler)
                 .image_layout(ImageLayout::SHADER_READ_ONLY_OPTIMAL)];
-            let write = WriteDescriptorSetBuilder::new()
-                .descriptor_type(DescriptorType::COMBINED_IMAGE_SAMPLER)
+            let sampled_image = WriteDescriptorSetBuilder::new()
+                .descriptor_type(DescriptorType::SAMPLED_IMAGE)
                 .dst_set(global.descriptor_set)
-                .image_info(&info);
-            device.loader().update_descriptor_sets(&[write], &[])
+                .image_info(&sampled_image_info)
+                .dst_binding(0);
+
+            let sampler_info = [DescriptorImageInfoBuilder::new().sampler(sampler)];
+            let sampler = WriteDescriptorSetBuilder::new()
+                .descriptor_type(DescriptorType::SAMPLER)
+                .dst_set(global.descriptor_set)
+                .image_info(&sampler_info)
+                .dst_binding(1);
+            device
+                .loader()
+                .update_descriptor_sets(&[sampled_image, sampler], &[])
         }
 
         let font = ImguiFont {

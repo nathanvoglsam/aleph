@@ -9,6 +9,7 @@
 
 use crate::gpu::vk::reflect::structure::resolve_struct_block;
 use crate::gpu::vk::reflect::Struct;
+use erupt::vk1_0::DescriptorType;
 use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
 
 ///
@@ -29,6 +30,24 @@ pub enum BindingType {
     //StorageBufferDynamic(),
     InputAttachment,
     AccelerationStructureNV,
+}
+
+impl BindingType {
+    ///
+    /// Get the VkDescriptorType for this binding type
+    ///
+    pub fn descriptor_type(&self) -> DescriptorType {
+        match self {
+            BindingType::Sampler => DescriptorType::SAMPLER,
+            BindingType::CombinedImageSampler => DescriptorType::COMBINED_IMAGE_SAMPLER,
+            BindingType::SampledImage => DescriptorType::SAMPLED_IMAGE,
+            BindingType::StorageImage => DescriptorType::STORAGE_IMAGE,
+            BindingType::UniformBuffer(_) => DescriptorType::UNIFORM_BUFFER,
+            BindingType::UniformBufferDynamic(_) => DescriptorType::UNIFORM_BUFFER_DYNAMIC,
+            BindingType::InputAttachment => DescriptorType::INPUT_ATTACHMENT,
+            BindingType::AccelerationStructureNV => DescriptorType::ACCELERATION_STRUCTURE_NV,
+        }
+    }
 }
 
 ///
@@ -55,6 +74,13 @@ impl Binding {
     pub fn binding_type(&self) -> &BindingType {
         &self.binding_type
     }
+
+    ///
+    /// Get the binding index
+    ///
+    pub fn binding(&self) -> u32 {
+        self.binding
+    }
 }
 
 #[derive(Debug)]
@@ -69,6 +95,13 @@ impl Set {
     ///
     pub fn bindings(&self) -> &[Binding] {
         &self.bindings
+    }
+
+    ///
+    /// Get the set index
+    ///
+    pub fn set(&self) -> u32 {
+        self.set
     }
 
     ///

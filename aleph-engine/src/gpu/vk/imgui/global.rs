@@ -8,6 +8,7 @@
 //
 
 use crate::gpu::vk;
+use crate::gpu::vk::reflect::{PushConstantLayout, Set};
 use crate::include_bytes_aligned_as;
 use erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
@@ -22,20 +23,25 @@ use erupt::vk1_0::{
 /// lifecycle
 ///
 pub struct ImguiGlobal {
+    pub vertex_module: ShaderModule,
+    pub fragment_module: ShaderModule,
     pub descriptor_pool: DescriptorPool,
     pub descriptor_set_layout: DescriptorSetLayout,
     pub descriptor_set: DescriptorSet,
-    pub vertex_module: ShaderModule,
-    pub fragment_module: ShaderModule,
+    pub push_constant_layout: PushConstantLayout,
+    pub reflected_set_layout: Set,
 }
 
 impl ImguiGlobal {
     pub fn init(device: &vk::Device) -> Self {
+        let (vertex_module, fragment_module) = Self::create_shader_modules(device);
+        let reflected_set_layout = Self::reflect_frag_module();
+        let push_constant_layout = Self::reflect_vert_module();
         let descriptor_pool = Self::create_descriptor_pool(device);
-        let descriptor_set_layout = Self::create_descriptor_set_layout(device);
+        let descriptor_set_layout =
+            Self::create_descriptor_set_layout(device, &reflected_set_layout);
         let descriptor_set =
             Self::allocate_descriptor_set(device, descriptor_set_layout, descriptor_pool);
-        let (vertex_module, fragment_module) = Self::create_shader_modules(device);
 
         Self {
             descriptor_pool,
@@ -43,6 +49,8 @@ impl ImguiGlobal {
             descriptor_set,
             vertex_module,
             fragment_module,
+            push_constant_layout,
+            reflected_set_layout,
         }
     }
 
@@ -70,13 +78,21 @@ impl ImguiGlobal {
         .expect("Failed to create descriptor pool")
     }
 
-    pub fn create_descriptor_set_layout(device: &vk::Device) -> DescriptorSetLayout {
-        let binding = DescriptorSetLayoutBindingBuilder::new()
-            .binding(0)
-            .descriptor_type(DescriptorType::COMBINED_IMAGE_SAMPLER)
-            .descriptor_count(1)
-            .stage_flags(ShaderStageFlags::FRAGMENT);
-        let bindings = [binding];
+    pub fn create_descriptor_set_layout(
+        device: &vk::Device,
+        reflected_set_layout: &Set,
+    ) -> DescriptorSetLayout {
+        let bindings: Vec<DescriptorSetLayoutBindingBuilder> = reflected_set_layout
+            .bindings()
+            .iter()
+            .map(|binding| {
+                DescriptorSetLayoutBindingBuilder::new()
+                    .binding(binding.binding())
+                    .descriptor_type(binding.binding_type().descriptor_type())
+                    .descriptor_count(1)
+                    .stage_flags(ShaderStageFlags::FRAGMENT)
+            })
+            .collect();
         let create_info = DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
         unsafe {
             device
@@ -125,6 +141,49 @@ impl ImguiGlobal {
         .expect("Failed to create vertex shader module");
 
         (vertex_module, fragment_module)
+    }
+
+    pub fn reflect_frag_module() -> Set {
+        let bytes =
+            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.frag.spv");
+
+        let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
+            .expect("Failed to reflect spirv module");
+
+        let mut entry_point = module
+            .enumerate_entry_points()
+            .expect("No entry points found")
+            .drain(..)
+            .find(|v| v.name == "main")
+            .expect("Failed to find \"main\" entry point");
+
+        // Assume we only have a single descriptor set
+        Set::reflect(&mut entry_point).drain(..).nth(0).unwrap()
+    }
+
+    pub fn reflect_vert_module() -> PushConstantLayout {
+        let bytes =
+            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.vert.spv");
+
+        let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
+            .expect("Failed to reflect spirv module");
+
+        let entry_point = module
+            .enumerate_entry_points()
+            .expect("No entry points found")
+            .drain(..)
+            .find(|v| v.name == "main")
+            .expect("Failed to find \"main\" entry point");
+
+        // Assume we only have a single push constant block
+        let push_constants = module
+            .enumerate_push_constant_blocks(Some(&entry_point.name))
+            .expect("No push constants found")
+            .drain(..)
+            .nth(0)
+            .unwrap();
+
+        PushConstantLayout::reflect(push_constants)
     }
 
     pub unsafe fn destroy(&self, device: &vk::Device) {

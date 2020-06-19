@@ -8,8 +8,7 @@
 //
 
 use erupt::vk1_0::{
-    CullModeFlags, FrontFace,
-    PipelineRasterizationStateCreateInfoBuilder, PolygonMode,
+    CullModeFlags, FrontFace, PipelineRasterizationStateCreateInfoBuilder, PolygonMode,
 };
 
 ///

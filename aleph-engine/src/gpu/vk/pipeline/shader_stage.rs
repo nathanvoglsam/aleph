@@ -8,10 +8,7 @@
 //
 
 use crate::cstr;
-use erupt::vk1_0::{
-    PipelineShaderStageCreateInfoBuilder, ShaderModule,
-    ShaderStageFlagBits,
-};
+use erupt::vk1_0::{PipelineShaderStageCreateInfoBuilder, ShaderModule, ShaderStageFlagBits};
 
 ///
 /// A namespace struct for specifying pipeline shader stages

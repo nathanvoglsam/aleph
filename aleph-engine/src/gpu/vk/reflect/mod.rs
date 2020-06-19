@@ -7,15 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod push_constant;
 mod set;
 mod structure;
-mod vertex_layout;
 
 pub use set::Binding;
 pub use set::BindingType;
 pub use set::Set;
-
-pub use vertex_layout::VertexLayout;
 
 pub use structure::IntegerType;
 pub use structure::MatrixInfo;
@@ -25,3 +23,5 @@ pub use structure::MemberType;
 pub use structure::ScalarType;
 pub use structure::Struct;
 pub use structure::VectorInfo;
+
+pub use push_constant::PushConstantLayout;

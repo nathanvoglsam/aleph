@@ -7,9 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use erupt::vk1_0::{
-    CompareOp, PipelineDepthStencilStateCreateInfoBuilder,
-};
+use erupt::vk1_0::{CompareOp, PipelineDepthStencilStateCreateInfoBuilder};
 
 ///
 /// Namespace struct for depth state
@@ -30,7 +28,10 @@ impl DepthState {
     /// Depth testing enabled, with depth writes enabled chosen by `write` and the compare op chosen
     /// by `compare_op`.
     ///
-    pub fn enabled(write: bool, compare_op: CompareOp) -> PipelineDepthStencilStateCreateInfoBuilder<'static> {
+    pub fn enabled(
+        write: bool,
+        compare_op: CompareOp,
+    ) -> PipelineDepthStencilStateCreateInfoBuilder<'static> {
         PipelineDepthStencilStateCreateInfoBuilder::new()
             .depth_write_enable(write)
             .depth_test_enable(true)
