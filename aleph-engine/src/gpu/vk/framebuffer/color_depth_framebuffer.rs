@@ -25,11 +25,11 @@ use std::ops::Deref;
 ///
 /// A wrapper around a vulkan frame buffer
 ///
-pub struct ColorDepthFramebuffer {
+pub struct ColourDepthFramebuffer {
     framebuffer: BaseFramebuffer,
 }
 
-impl ColorDepthFramebuffer {
+impl ColourDepthFramebuffer {
     pub unsafe fn new(
         device: &Device,
         colour: &ColourImage,
@@ -48,11 +48,11 @@ impl ColorDepthFramebuffer {
             .render_pass(render_pass)
             .build(device);
 
-        ColorDepthFramebuffer { framebuffer }
+        ColourDepthFramebuffer { framebuffer }
     }
 }
 
-impl Deref for ColorDepthFramebuffer {
+impl Deref for ColourDepthFramebuffer {
     type Target = BaseFramebuffer;
 
     fn deref(&self) -> &Self::Target {

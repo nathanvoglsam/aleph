@@ -27,7 +27,9 @@ impl ColourImageBuilder {
     ///
     pub fn new() -> ColourImageBuilder {
         Self {
-            inner: ImageSingle2DBuilder::new().aspect(ImageAspectFlags::COLOR),
+            inner: ImageSingle2DBuilder::new()
+                .aspect(ImageAspectFlags::COLOR)
+                .usage(ImageUsageFlags::COLOR_ATTACHMENT),
         }
     }
 

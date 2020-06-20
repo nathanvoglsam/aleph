@@ -12,4 +12,4 @@ mod color_depth_framebuffer;
 
 pub use base_framebuffer::BaseFramebuffer;
 pub use base_framebuffer::BaseFramebufferBuilder;
-pub use color_depth_framebuffer::ColorDepthFramebuffer;
+pub use color_depth_framebuffer::ColourDepthFramebuffer;

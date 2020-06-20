@@ -10,10 +10,11 @@
 use crate::gpu::vk::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use crate::gpu::vk::Device;
 use erupt::vk1_0::{
-    ComponentMappingBuilder, ComponentSwizzle, Extent3D, Format, Image, ImageAspectFlags,
-    ImageCreateInfoBuilder, ImageLayout, ImageSubresourceRangeBuilder, ImageTiling, ImageType,
-    ImageUsageFlags, ImageView, ImageViewCreateInfoBuilder, ImageViewType, SampleCountFlagBits,
-    SharingMode, Vk10DeviceLoaderExt,
+    AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentStoreOp, ComponentMappingBuilder,
+    ComponentSwizzle, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,
+    ImageLayout, ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
+    ImageViewCreateInfoBuilder, ImageViewType, SampleCountFlagBits, SharingMode,
+    Vk10DeviceLoaderExt,
 };
 
 ///
@@ -221,6 +222,27 @@ impl ImageSingle2D {
             // Anything else is invalid
             _ => false,
         }
+    }
+
+    ///
+    /// Creates an attachment description for the given image
+    ///
+    pub fn attachment_description<'a>(
+        &self,
+        initial_layout: ImageLayout,
+        final_layout: ImageLayout,
+        load_op: AttachmentLoadOp,
+        store_op: AttachmentStoreOp,
+    ) -> AttachmentDescriptionBuilder<'a> {
+        AttachmentDescriptionBuilder::new()
+            .format(self.format)
+            .samples(SampleCountFlagBits::_1)
+            .initial_layout(initial_layout)
+            .final_layout(final_layout)
+            .load_op(load_op)
+            .store_op(store_op)
+            .stencil_load_op(AttachmentLoadOp::DONT_CARE)
+            .stencil_load_op(AttachmentLoadOp::DONT_CARE)
     }
 
     ///

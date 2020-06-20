@@ -27,7 +27,9 @@ impl DepthImageBuilder {
     ///
     pub fn new() -> DepthImageBuilder {
         Self {
-            inner: ImageSingle2DBuilder::new().aspect(ImageAspectFlags::DEPTH),
+            inner: ImageSingle2DBuilder::new()
+                .aspect(ImageAspectFlags::DEPTH)
+                .usage(ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT),
         }
     }
 
