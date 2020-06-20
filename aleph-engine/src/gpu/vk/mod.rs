@@ -11,7 +11,6 @@ pub(crate) mod debug;
 pub(crate) mod surface;
 
 pub mod alloc;
-pub mod framebuffer;
 pub mod image;
 pub mod pipeline;
 pub mod reflect;

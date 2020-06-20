@@ -15,8 +15,9 @@ use erupt::extensions::khr_swapchain::{
     KhrSwapchainDeviceLoaderExt, PresentInfoKHRBuilder, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
 };
 use erupt::vk1_0::{
-    Extent2D, Fence, Format, Image, ImageUsageFlags, Queue, Semaphore, SharingMode,
-    Vk10DeviceLoaderExt,
+    ComponentMappingBuilder, ComponentSwizzle, Extent2D, Fence, Format, ImageAspectFlags,
+    ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType,
+    Queue, Semaphore, SharingMode, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
 
@@ -29,6 +30,7 @@ pub use rebuild_error::RebuildError;
 pub use support::SwapChainSupport;
 
 use crate::app::Window;
+use crate::gpu::vk::image::SwapImage;
 use std::time::Duration;
 
 ///
@@ -229,8 +231,6 @@ impl SwapchainBuilder {
             requires_rebuild: true,
         };
 
-        let new_len = self.target_image_count as usize;
-        swap.images.resize(new_len, Image::default());
         swap.rebuild().expect("Failed to construct swapchain");
 
         swap
@@ -243,7 +243,7 @@ pub struct Swapchain {
     present_mode: PresentModeKHR,
     surface_format: SurfaceFormatKHR,
     extents: Extent2D,
-    images: Vec<Image>,
+    images: Vec<SwapImage>,
     device: Arc<Device>,
     favour_vsync: bool,
     requires_rebuild: bool,
@@ -295,7 +295,7 @@ impl Swapchain {
     ///
     /// Get the list of images the swapchain owns
     ///
-    pub fn images(&self) -> &[Image] {
+    pub fn images(&self) -> &[SwapImage] {
         &self.images
     }
 
@@ -314,7 +314,7 @@ impl Swapchain {
         timeout: Duration,
         semaphore: Semaphore,
         fence: Fence,
-    ) -> Result<(u32, Image), AcquireError> {
+    ) -> Result<usize, AcquireError> {
         // If we require a rebuild just exit out immediately, there's no point even trying to do
         // anything more
         if self.requires_rebuild {
@@ -340,7 +340,7 @@ impl Swapchain {
         if result.raw == VkResult::SUCCESS {
             // Success, so return the index + image
             let index = result.value.unwrap();
-            Ok((index, self.images[index as usize]))
+            Ok(index as usize)
         } else if result.raw == VkResult::ERROR_OUT_OF_DATE_KHR {
             // Swapchain out of date, mark as needing a rebuild and error out
             self.requires_rebuild = true;
@@ -350,7 +350,7 @@ impl Swapchain {
             // for next frame but just keep going with this one
             self.requires_rebuild = true;
             let index = result.value.unwrap();
-            Ok((index, self.images[index as usize]))
+            Ok(index as usize)
         } else if result.raw == VkResult::TIMEOUT {
             // We hit the timeout specified and so can't yield a value, inform the caller about the
             // timeout with the error code
@@ -532,12 +532,64 @@ impl Swapchain {
                 .expect("Failed to create swapchain")
         };
 
+        //
+        // Create get the image handles and create corresponding image views
+        //
         let images = unsafe {
             self.device
                 .loader()
                 .get_swapchain_images_khr(swapchain, None)
                 .expect("Failed to retrieve swapchain images")
+                .drain(..)
+                .map(|image| {
+                    let components = ComponentMappingBuilder::new()
+                        .r(ComponentSwizzle::R)
+                        .g(ComponentSwizzle::G)
+                        .b(ComponentSwizzle::B)
+                        .a(ComponentSwizzle::A);
+                    let subresource_range = ImageSubresourceRangeBuilder::new()
+                        .level_count(1)
+                        .layer_count(1)
+                        .base_mip_level(0)
+                        .base_array_layer(0)
+                        .aspect_mask(ImageAspectFlags::COLOR);
+                    let create_info = ImageViewCreateInfoBuilder::new()
+                        .format(surface_format.format)
+                        .image(image)
+                        .subresource_range(*subresource_range)
+                        .components(*components)
+                        .view_type(ImageViewType::_2D);
+                    let image_view = self
+                        .device
+                        .loader()
+                        .create_image_view(&create_info, None, None)
+                        .expect("Failed to create ImageView for swapchain");
+                    SwapImage::internal_create(
+                        image,
+                        image_view,
+                        surface_format.format,
+                        extents.width,
+                        extents.height,
+                    )
+                })
+                .collect()
         };
+
+        if old_swapchain != SwapchainKHR::null() {
+            unsafe {
+                log::trace!("Destroying old swapchain ImageViews");
+                self.images.iter().for_each(|i| {
+                    self.device
+                        .loader()
+                        .destroy_image_view(i.image_view(), None);
+                });
+
+                log::trace!("Destroying old swapchain");
+                self.device
+                    .loader()
+                    .destroy_swapchain_khr(old_swapchain, None);
+            }
+        }
 
         self.surface_format = surface_format;
         self.extents = extents;
@@ -546,15 +598,6 @@ impl Swapchain {
         self.swapchain = swapchain;
         self.requires_rebuild = false;
 
-        if old_swapchain != SwapchainKHR::null() {
-            unsafe {
-                log::trace!("Destroying old swapchain");
-                self.device
-                    .loader()
-                    .destroy_swapchain_khr(old_swapchain, None);
-            }
-        }
-
         Ok(())
     }
 }
@@ -562,6 +605,13 @@ impl Swapchain {
 impl Drop for Swapchain {
     fn drop(&mut self) {
         unsafe {
+            log::trace!("Destroying swapchain ImageViews");
+            self.images.iter().for_each(|i| {
+                self.device
+                    .loader()
+                    .destroy_image_view(i.image_view(), None);
+            });
+
             log::trace!("Destroying swapchain");
             self.device
                 .loader()

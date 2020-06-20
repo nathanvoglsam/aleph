@@ -300,7 +300,7 @@ impl ImguiRenderer {
             let memory = [];
             let buffer = [];
             let image = [ImageMemoryBarrierBuilder::new()
-                .image(swapchain.images()[index])
+                .image(swapchain.images()[index].image())
                 .old_layout(ImageLayout::UNDEFINED)
                 .new_layout(ImageLayout::PRESENT_SRC_KHR)
                 .subresource_range(range)];

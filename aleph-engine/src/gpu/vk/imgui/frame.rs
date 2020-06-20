@@ -9,12 +9,12 @@
 
 use crate::gpu::vk;
 use crate::gpu::vk::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use crate::gpu::vk::image::SwapImage;
 use erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
     CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool, CommandPoolCreateFlags,
-    CommandPoolCreateInfoBuilder, ComponentMappingBuilder, ComponentSwizzle, Format, Framebuffer,
-    FramebufferCreateInfoBuilder, Image, ImageAspectFlags, ImageSubresourceRangeBuilder, ImageView,
-    ImageViewCreateInfoBuilder, ImageViewType, RenderPass, SharingMode, Vk10DeviceLoaderExt,
+    CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
+    SharingMode, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
 
@@ -25,7 +25,7 @@ use std::sync::Arc;
 pub struct ImguiFrame {
     pub command_pool: CommandPool,
     pub command_buffer: CommandBuffer,
-    pub image_view: ImageView,
+    pub swap_image: SwapImage,
     pub framebuffer: Framebuffer,
     pub vtx_buffer: (Buffer, Allocation),
     pub idx_buffer: (Buffer, Allocation),
@@ -42,9 +42,9 @@ impl ImguiFrame {
     ) -> Self {
         let command_pool = Self::create_command_pool(device);
         let command_buffer = Self::allocate_command_buffer(device, command_pool);
-        let image_view =
-            Self::create_image_view(device, swapchain.images()[index], swapchain.format().format);
-        let framebuffer = Self::create_framebuffer(device, swapchain, render_pass, image_view);
+        let swap_image = swapchain.images()[index].clone();
+        let framebuffer =
+            Self::create_framebuffer(device, swapchain, render_pass, swap_image.image_view());
 
         let memory_type_index = unsafe {
             let buffer_create_info = BufferCreateInfoBuilder::new()
@@ -76,7 +76,7 @@ impl ImguiFrame {
         ImguiFrame {
             command_pool,
             command_buffer,
-            image_view,
+            swap_image,
             framebuffer,
             vtx_buffer: (Buffer::null(), Allocation::null()),
             idx_buffer: (Buffer::null(), Allocation::null()),
@@ -108,28 +108,6 @@ impl ImguiFrame {
             .expect("Failed to create command buffer")[0]
     }
 
-    pub fn create_image_view(device: &vk::Device, image: Image, format: Format) -> ImageView {
-        let components = ComponentMappingBuilder::new()
-            .r(ComponentSwizzle::R)
-            .g(ComponentSwizzle::G)
-            .b(ComponentSwizzle::B)
-            .a(ComponentSwizzle::A);
-        let subresource_range = ImageSubresourceRangeBuilder::new()
-            .level_count(1)
-            .layer_count(1)
-            .base_mip_level(0)
-            .base_array_layer(0)
-            .aspect_mask(ImageAspectFlags::COLOR);
-        let create_info = ImageViewCreateInfoBuilder::new()
-            .format(format)
-            .image(image)
-            .subresource_range(*subresource_range)
-            .components(*components)
-            .view_type(ImageViewType::_2D);
-        unsafe { device.loader().create_image_view(&create_info, None, None) }
-            .expect("Failed to create image view")
-    }
-
     pub fn create_framebuffer(
         device: &vk::Device,
         swapchain: &vk::Swapchain,
@@ -155,7 +133,6 @@ impl ImguiFrame {
             allocator.destroy_buffer(self.idx_buffer.0, self.idx_buffer.1);
         }
         device.loader().destroy_framebuffer(self.framebuffer, None);
-        device.loader().destroy_image_view(self.image_view, None);
         device
             .loader()
             .free_command_buffers(self.command_pool, &[self.command_buffer]);
