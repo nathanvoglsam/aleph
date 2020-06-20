@@ -12,7 +12,7 @@ use crate::gpu::vk::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, 
 use crate::gpu::vk::image::SwapImage;
 use erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
-    CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool, CommandPoolCreateFlags,
+    CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool,
     CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
     SharingMode, Vk10DeviceLoaderExt,
 };
@@ -85,9 +85,8 @@ impl ImguiFrame {
     }
 
     pub fn create_command_pool(device: &vk::Device) -> CommandPool {
-        let create_info = CommandPoolCreateInfoBuilder::new()
-            .queue_family_index(device.general_family().index)
-            .flags(CommandPoolCreateFlags::RESET_COMMAND_BUFFER);
+        let create_info =
+            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
         unsafe {
             device
                 .loader()

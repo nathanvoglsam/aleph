@@ -22,11 +22,11 @@ mod singular;
 
 use erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, ClearColorValue, ClearValue, CommandBuffer,
-    CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, DependencyFlags, Extent2D, Fence,
-    ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceRangeBuilder,
-    IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags, Rect2DBuilder,
-    RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode, SubmitInfoBuilder,
-    SubpassContents, ViewportBuilder, Vk10DeviceLoaderExt, WHOLE_SIZE,
+    CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, CommandPoolResetFlags, DependencyFlags,
+    Extent2D, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
+    ImageSubresourceRangeBuilder, IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags,
+    Rect2DBuilder, RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode,
+    SubmitInfoBuilder, SubpassContents, ViewportBuilder, Vk10DeviceLoaderExt, WHOLE_SIZE,
 };
 pub use font::ImguiFont;
 pub use frame::ImguiFrame;
@@ -216,6 +216,15 @@ impl ImguiRenderer {
         let vtx_buffer = self.frames[index].vtx_buffer;
         let idx_buffer = self.frames[index].idx_buffer;
         let command_buffer = self.frames[index].command_buffer;
+        let command_pool = self.frames[index].command_pool;
+
+        self.device
+            .loader()
+            .reset_command_pool(
+                command_pool,
+                CommandPoolResetFlags::default(),
+            )
+            .expect("Failed to reset command pool");
 
         //
         // Begin command buffer recording
