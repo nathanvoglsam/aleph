@@ -25,6 +25,7 @@ extern crate num_cpus;
 extern crate once_cell;
 extern crate palette;
 extern crate parking_lot;
+extern crate raw_cpuid;
 extern crate raw_window_handle;
 extern crate spirv_reflect;
 

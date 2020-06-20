@@ -7,45 +7,17 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
-
-#[cfg(target_arch = "x86")]
-use core::arch::x86::*;
-
 use once_cell::sync::Lazy;
-use std::ffi::CStr;
-use std::os::raw::c_char;
 
 ///
 /// Only need to look this up once so wrap it in a lazy static
 ///
 #[allow(clippy::identity_op)]
 static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
-    if cfg!(target_arch = "x86_64") || cfg!(target_arch = "x86") {
-        unsafe {
-            let mut data = Vec::new();
-
-            let n_ids = __cpuid(0).eax;
-
-            for i in 0..n_ids {
-                data.push(__cpuid_count(i, 0));
-            }
-
-            let mut vendor_buffer = [0u32; 8];
-
-            let vendor_ptr = vendor_buffer.as_mut_ptr() as *mut u32;
-            vendor_ptr.add(0).write(data[0].ebx);
-            vendor_ptr.add(1).write(data[0].edx);
-            vendor_ptr.add(2).write(data[0].ecx);
-
-            let vendor = CStr::from_ptr(vendor_buffer.as_ptr() as *const c_char);
-
-            let vendor = vendor.to_str().expect("Vendor String not UTF8");
-            vendor.to_string()
-        }
-    } else {
-        String::from("Unknown CPU Vendor")
+    let result = raw_cpuid::CpuId::new();
+    match result.get_vendor_info() {
+        None => String::from("Unknown CPU Vendor"),
+        Some(vendor) => vendor.as_string().to_string(),
     }
 });
 
@@ -54,52 +26,13 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
 ///
 #[allow(clippy::identity_op)]
 static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
-    if cfg!(target_arch = "x86_64") || cfg!(target_arch = "x86") {
-        unsafe {
-            let mut data = Vec::new();
-
-            let n_ext_ids = __cpuid(0x8000_0000).eax;
-
-            for i in 0x8000_0000..n_ext_ids {
-                data.push(__cpuid_count(i, 0));
-            }
-
-            if n_ext_ids > 0x8000_0000 {
-                let mut brand_buffer = [0u32; 16];
-
-                let brand_ptr = brand_buffer.as_mut_ptr();
-
-                let offset = 0;
-                brand_ptr.add((offset * 4) + 0).write(data[offset + 2].eax);
-                brand_ptr.add((offset * 4) + 1).write(data[offset + 2].ebx);
-                brand_ptr.add((offset * 4) + 2).write(data[offset + 2].ecx);
-                brand_ptr.add((offset * 4) + 3).write(data[offset + 2].edx);
-
-                let offset = 1;
-                brand_ptr.add((offset * 4) + 0).write(data[offset + 2].eax);
-                brand_ptr.add((offset * 4) + 1).write(data[offset + 2].ebx);
-                brand_ptr.add((offset * 4) + 2).write(data[offset + 2].ecx);
-                brand_ptr.add((offset * 4) + 3).write(data[offset + 2].edx);
-
-                let offset = 2;
-                brand_ptr.add((offset * 4) + 0).write(data[offset + 2].eax);
-                brand_ptr.add((offset * 4) + 1).write(data[offset + 2].ebx);
-                brand_ptr.add((offset * 4) + 2).write(data[offset + 2].ecx);
-                brand_ptr.add((offset * 4) + 3).write(data[offset + 2].edx);
-
-                let brand = CStr::from_ptr(brand_buffer.as_ptr() as *const c_char);
-
-                brand
-                    .to_str()
-                    .expect("brand String not UTF8")
-                    .trim()
-                    .to_string()
-            } else {
-                "Unknown CPU".to_string()
-            }
-        }
-    } else {
-        "Unknown CPU".to_string()
+    let result = raw_cpuid::CpuId::new();
+    match result.get_extended_function_info() {
+        None => "Unknown CPU".to_string(),
+        Some(ext) => ext
+            .processor_brand_string()
+            .unwrap_or("Unknown CPU")
+            .to_string(),
     }
 });
 
