@@ -14,16 +14,16 @@
 [[vk::binding(0,0)]]
 ConstantBuffer<CameraLayout> camera_buffer;
 
-[[vk::binding(1,0)]]
+[[vk::binding(0,2)]]
 SamplerState BaseColourSampler;
 
-[[vk::binding(1,0)]]
+[[vk::binding(1,2)]]
 Texture2D<float3> BaseColourTex;
 
-[[vk::binding(1,1)]]
+[[vk::binding(2,2)]]
 SamplerState NormalSampler;
 
-[[vk::binding(1,1)]]
+[[vk::binding(3,2)]]
 Texture2D<float3> NormalTex;
 
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {

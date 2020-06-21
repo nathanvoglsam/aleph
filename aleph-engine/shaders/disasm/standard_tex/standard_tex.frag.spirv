@@ -34,14 +34,14 @@
                OpDecorate %out_var_SV_Target0 Location 0
                OpDecorate %camera_buffer DescriptorSet 0
                OpDecorate %camera_buffer Binding 0
-               OpDecorate %BaseColourSampler DescriptorSet 0
-               OpDecorate %BaseColourSampler Binding 1
-               OpDecorate %BaseColourTex DescriptorSet 0
+               OpDecorate %BaseColourSampler DescriptorSet 2
+               OpDecorate %BaseColourSampler Binding 0
+               OpDecorate %BaseColourTex DescriptorSet 2
                OpDecorate %BaseColourTex Binding 1
-               OpDecorate %NormalSampler DescriptorSet 1
-               OpDecorate %NormalSampler Binding 1
-               OpDecorate %NormalTex DescriptorSet 1
-               OpDecorate %NormalTex Binding 1
+               OpDecorate %NormalSampler DescriptorSet 2
+               OpDecorate %NormalSampler Binding 2
+               OpDecorate %NormalTex DescriptorSet 2
+               OpDecorate %NormalTex Binding 3
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 Offset 0
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 MatrixStride 16
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 RowMajor

@@ -12,7 +12,7 @@
 [[vk::binding(0,0)]]
 ConstantBuffer<CameraLayout> camera_buffer;
 
-[[vk::binding(1,0)]]
+[[vk::binding(0,1)]]
 ConstantBuffer<ModelLayout> model_buffer;
 
 StaticMeshPixelInput main(in StaticMeshVertexInput input, out float4 out_position : SV_POSITION) {

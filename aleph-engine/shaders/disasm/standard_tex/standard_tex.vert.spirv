@@ -37,8 +37,8 @@
                OpDecorate %out_var_TEXCOORD0 Location 3
                OpDecorate %camera_buffer DescriptorSet 0
                OpDecorate %camera_buffer Binding 0
-               OpDecorate %model_buffer DescriptorSet 0
-               OpDecorate %model_buffer Binding 1
+               OpDecorate %model_buffer DescriptorSet 1
+               OpDecorate %model_buffer Binding 0
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 Offset 0
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 MatrixStride 16
                OpMemberDecorate %type_ConstantBuffer_CameraLayout 0 RowMajor
