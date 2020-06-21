@@ -10,7 +10,7 @@
 use crate::gpu::vk;
 use crate::gpu::vk::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
 use crate::gpu::vk::shader::ShaderModule;
-use crate::include_bytes_aligned_as;
+use crate::include_spirv_bytes;
 use erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
@@ -105,27 +105,25 @@ impl ImguiGlobal {
     }
 
     pub fn create_shader_modules(device: &vk::core::Device) -> (ShaderModule, ShaderModule) {
-        let bytes =
-            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
-        let slice =
-            unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
+        let (_, words) =
+            include_spirv_bytes!("../../../../../shaders/compiled/imgui/imgui.vert.spv");
         let vertex_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
-            .words(slice)
+            .words(words)
             .vertex()
-            .build(Some(device));
+            .build(Some(device))
+            .expect("Failed to create imgui vertex module");
 
-        let bytes =
-            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.frag.spv");
-        let slice =
-            unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
+        let (_, words) =
+            include_spirv_bytes!("../../../../../shaders/compiled/imgui/imgui.frag.spv");
         let fragment_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
-            .words(slice)
+            .words(words)
             .fragment()
-            .build(Some(device));
+            .build(Some(device))
+            .expect("Failed to create imgui fragment module");
 
         (vertex_module, fragment_module)
     }

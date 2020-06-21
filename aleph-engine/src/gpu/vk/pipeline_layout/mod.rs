@@ -119,14 +119,38 @@ impl<'a> PipelineLayoutBuilder<'a> {
             if i == push_constants.len() {
                 break;
             }
+
+            // Remove the current element we're looking for duplicates of
             let mut current = push_constants.remove(0);
-            for j in 0..push_constants.len() {
+
+            // Iterate through the rest of the list
+            let mut j = 0;
+            'push_inner: loop {
+                // Break from the inner loop once we've been through the whole list
+                if j == push_constants.len() {
+                    break 'push_inner;
+                }
+
+                // Get the element we're checking against
+                let other = &push_constants[j];
+
                 // If two push constant blocks are identical then we can should merge them into one
                 // that is accessible from both shader stages as a single range
-                if current.0 == push_constants[j].0 {
-                    current.1 |= push_constants[j].1;
+                //
+                // That is, if they have the same layout and resource name then we interpret that
+                // as trying to use the same resource and so merge the two blocks to once push
+                // constant block accessible from multiple stages
+                if current.0 == other.0 {
+                    // Add the stage usage flag
+                    current.1 |= other.1;
+
+                    // Remove the duplicate
                     push_constants.remove(j);
+
+                    // Skip the index increment
+                    continue 'push_inner;
                 }
+                j += 1;
             }
             push_constants.push(current);
             i += 1;
@@ -167,17 +191,33 @@ impl<'a> PipelineLayoutBuilder<'a> {
             let mut current = sets.remove(0);
 
             // Iterate through the rest of the list
-            for j in 0..sets.len() {
+            let mut j = 0;
+            'sets_inner: loop {
+                // Break from the inner loop once we've been through the whole list
+                if j == sets.len() {
+                    break 'sets_inner;
+                }
+
+                // Get the element we're checking against
                 let other = &sets[j];
-                // If the set index is the same then these sets should be the same
+
+                // If the set index is the same then these sets must have the same layout as they
+                // point to the same resources
                 if current.0.set() == other.0.set() {
                     // Assert that the two sets share the same layout
                     if current.0 != other.0 {
                         return Err(PipelineLayoutBuildError::IncompatibleDescriptorLayouts);
                     }
+                    // Add stage usage
                     current.1 |= other.1;
+
+                    // Remove duplicate set
                     sets.remove(j);
+
+                    // Skip index increment
+                    continue 'sets_inner;
                 }
+                j += 1;
             }
             sets.push(current);
             i += 1;
@@ -224,6 +264,13 @@ pub struct PipelineLayout {
 }
 
 impl PipelineLayout {
+    ///
+    /// Creates a builder
+    ///
+    pub fn builder<'a>() -> PipelineLayoutBuilder<'a> {
+        PipelineLayoutBuilder::new()
+    }
+
     ///
     /// Returns the underlying pipeline layout handle
     ///

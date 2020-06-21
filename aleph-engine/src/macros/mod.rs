@@ -44,3 +44,22 @@ macro_rules! include_bytes_aligned_as {
         &ALIGNED.bytes
     }};
 }
+
+///
+/// Internal function used by `include_spirv_bytes` macro
+///
+#[inline]
+#[allow(dead_code)]
+pub fn spirv_bytes_map(bytes: &'static [u8]) -> (&'static [u8], &'static [u32]) {
+    unsafe {
+        let words = core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4);
+        (bytes, words)
+    }
+}
+
+#[macro_export]
+macro_rules! include_spirv_bytes {
+    ($path:literal) => {{
+        $crate::macros::spirv_bytes_map($crate::include_bytes_aligned_as!(u32, $path))
+    }};
+}

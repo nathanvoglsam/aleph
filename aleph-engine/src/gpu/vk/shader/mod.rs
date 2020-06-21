@@ -16,6 +16,51 @@ use erupt::vk1_0::{
 use spirv_reflect::types::ReflectShaderStageFlags;
 use std::ffi::CStr;
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum ShaderModuleBuildError {
+    ///
+    /// Error when the actual spirv module is for a different shader stage than expected
+    ///
+    ExpectedDifferentModuleStage,
+
+    ///
+    /// When the shader loaded is not for a supported shader stage
+    ///
+    UnsupportedShaderStage,
+
+    ///
+    /// Loaded module is for a shader stage we don't know about and haven't explicitly supported or
+    /// not supported.
+    ///
+    UnknownShaderStage,
+
+    ///
+    /// When the number of entry points in the shader module is not exactly one
+    ///
+    InvalidEntryPointCount,
+
+    ///
+    /// It is invalid for a shader to specify more than one push constant block per shader stage or
+    /// entry point
+    ///
+    MoreThanOnePushConstantBlock,
+
+    ///
+    /// An error was encountered generatin reflection information
+    ///
+    FailedGeneratingReflection(&'static str),
+
+    ///
+    /// Failed to enumerate the entry points in the spirv module
+    ///
+    FailedEnumeratingEntryPoints(&'static str),
+
+    ///
+    /// Failed to generate reflection information for a push constant block
+    ///
+    FailedReflectingPushConstants(&'static str),
+}
+
 ///
 /// Builder struct for creating a shader module
 ///
@@ -152,7 +197,7 @@ impl<'a> ShaderModuleBuilder<'a> {
     /// This way reflection can be generated without having to compiled the shader and this wrapper
     /// can be used in a headless environment (no gpu)
     ///
-    pub fn build(self, device: Option<&Device>) -> ShaderModule {
+    pub fn build(self, device: Option<&Device>) -> Result<ShaderModule, ShaderModuleBuildError> {
         // Get the shader words
         let words = self.words.expect("Shader bytes weren't specified");
 
@@ -165,20 +210,21 @@ impl<'a> ShaderModuleBuilder<'a> {
         };
 
         // At minimum we need to check the shader stage so we need this no matter what settings
-        let reflection = spirv_reflect::create_shader_module(bytes)
-            .expect("Failed to generate reflection information");
+        let reflection = match spirv_reflect::create_shader_module(bytes) {
+            Ok(v) => v,
+            Err(err) => return Err(ShaderModuleBuildError::FailedGeneratingReflection(err)),
+        };
 
         // Load the entry points
-        let mut entry_point = reflection
-            .enumerate_entry_points()
-            .expect("Failed to enumerate entry points");
+        let mut entry_point = match reflection.enumerate_entry_points() {
+            Ok(v) => v,
+            Err(err) => return Err(ShaderModuleBuildError::FailedEnumeratingEntryPoints(err)),
+        };
 
         // Make sure there's only one entry point
-        assert_eq!(
-            entry_point.len(),
-            1,
-            "Only support SPIRV files with a single entry point"
-        );
+        if entry_point.len() != 1 {
+            return Err(ShaderModuleBuildError::InvalidEntryPointCount);
+        }
 
         // Extract the single expected entry point
         let mut entry_point = entry_point.drain(..).nth(0).unwrap();
@@ -189,10 +235,9 @@ impl<'a> ShaderModuleBuilder<'a> {
         // If we've specified an expected shader stage assert this shader is of the right type.
         // otherwise the shader stage will just be set by reflection information
         if self.stage_flags != ReflectShaderStageFlags::UNDEFINED {
-            assert_eq!(
-                self.stage_flags, stage_flags,
-                "Shader not of expected stage"
-            );
+            if self.stage_flags != stage_flags {
+                return Err(ShaderModuleBuildError::ExpectedDifferentModuleStage);
+            }
         }
 
         // Map the internal shader stage flags to vulkan form
@@ -210,24 +255,27 @@ impl<'a> ShaderModuleBuilder<'a> {
             | ReflectShaderStageFlags::CLOSEST_HIT_BIT_NV
             | ReflectShaderStageFlags::INTERSECTION_BIT_NV
             | ReflectShaderStageFlags::MISS_BIT_NV
-            | ReflectShaderStageFlags::RAYGEN_BIT_NV => panic!("Unsupported shader stage"),
-            _ => panic!("Unknown shader stage"),
+            | ReflectShaderStageFlags::RAYGEN_BIT_NV => {
+                return Err(ShaderModuleBuildError::UnsupportedShaderStage)
+            }
+            _ => return Err(ShaderModuleBuildError::UnknownShaderStage),
         };
 
         // Generate reflection information if requested
         let (push_constants, descriptor_sets, entry_point_name) = if self.reflect {
-            let mut push_constants = reflection
+            let mut push_constants = match reflection
                 .enumerate_push_constant_blocks(Some(&entry_point.name))
-                .expect("Failed to reflect push constant information");
+            {
+                Ok(v) => v,
+                Err(err) => return Err(ShaderModuleBuildError::FailedReflectingPushConstants(err)),
+            };
 
             let push_constants = if push_constants.is_empty() {
                 None
             } else {
-                assert_eq!(
-                    push_constants.len(),
-                    1,
-                    "More than one push constant block is invalid"
-                );
+                if push_constants.len() != 1 {
+                    return Err(ShaderModuleBuildError::MoreThanOnePushConstantBlock);
+                }
                 push_constants
                     .drain(..)
                     .map(|v| Some(Box::new(PushConstantReflection::reflect(v))))
@@ -268,14 +316,16 @@ impl<'a> ShaderModuleBuilder<'a> {
             erupt::vk1_0::ShaderModule::null()
         };
 
-        ShaderModule {
+        let module = ShaderModule {
             module,
             entry_point_name,
             push_constants,
             descriptor_sets,
             stage_flags,
             reflected: self.reflect,
-        }
+        };
+
+        Ok(module)
     }
 }
 

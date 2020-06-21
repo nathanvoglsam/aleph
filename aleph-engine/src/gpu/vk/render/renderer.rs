@@ -10,6 +10,9 @@
 use crate::gpu::vk::alloc::Allocator;
 use crate::gpu::vk::core::{Device, Swapchain};
 use crate::gpu::vk::image::{ColourImage, DepthImage, SwapImage};
+use crate::gpu::vk::pipeline_layout::PipelineLayout;
+use crate::gpu::vk::shader::ShaderModule;
+use crate::include_spirv_bytes;
 use erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format,
     Framebuffer, FramebufferCreateInfoBuilder, ImageLayout, PipelineBindPoint, PipelineStageFlags,
@@ -263,6 +266,9 @@ pub struct Renderer {
     gbuffer: GBuffer,
     gbuffer_pass: GBufferPass,
     gbuffer_framebuffer: GBufferFramebuffer,
+    geom_frag_module: ShaderModule,
+    geom_vert_module: ShaderModule,
+    geom_pipe_layout: PipelineLayout,
     device: Arc<Device>,
     allocator: Arc<Allocator>,
 }
@@ -291,11 +297,37 @@ impl Renderer {
             &swap_image,
             gbuffer_pass.render_pass(),
         );
+        let (_, words) =
+            include_spirv_bytes!("../../../../shaders/compiled/standard/standard.frag.spv");
+        let geom_frag_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .fragment()
+            .words(words)
+            .build(Some(&device))
+            .expect("Failed to create geom frag module");
+        let (_, words) =
+            include_spirv_bytes!("../../../../shaders/compiled/standard/standard.vert.spv");
+        let geom_vert_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .vertex()
+            .words(words)
+            .build(Some(&device))
+            .expect("Failed to create geom vert module");
+
+        let geom_pipe_layout = PipelineLayout::builder()
+            .modules(&[&geom_frag_module, &geom_vert_module])
+            .build(&device)
+            .expect("Failed to create geom pipe layout");
 
         Self {
             gbuffer,
             gbuffer_pass,
             gbuffer_framebuffer,
+            geom_frag_module,
+            geom_vert_module,
+            geom_pipe_layout,
             device,
             allocator,
         }
@@ -305,6 +337,9 @@ impl Renderer {
 impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
+            self.geom_pipe_layout.destroy(&self.device);
+            self.geom_vert_module.destroy(&self.device);
+            self.geom_frag_module.destroy(&self.device);
             self.gbuffer_framebuffer.destroy(&self.device);
             self.gbuffer_pass.destroy(&self.device);
             self.gbuffer.destroy(&self.device, &self.allocator);
