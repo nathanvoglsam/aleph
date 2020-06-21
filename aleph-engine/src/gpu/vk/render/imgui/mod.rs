@@ -220,10 +220,7 @@ impl ImguiRenderer {
 
         self.device
             .loader()
-            .reset_command_pool(
-                command_pool,
-                CommandPoolResetFlags::default(),
-            )
+            .reset_command_pool(command_pool, CommandPoolResetFlags::default())
             .expect("Failed to reset command pool");
 
         //

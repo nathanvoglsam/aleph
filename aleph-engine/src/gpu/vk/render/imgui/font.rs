@@ -7,9 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use super::ImguiGlobal;
 use crate::gpu::vk;
 use crate::gpu::vk::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use crate::gpu::vk::imgui::ImguiGlobal;
 use erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
@@ -44,7 +44,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 16pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../../fonts/CascadiaCode.ttf"),
+            data: include_bytes!("../../../../../fonts/CascadiaCode.ttf"),
             size_pixels: 16.0,
             config: Some(config),
         }];
@@ -53,7 +53,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 20pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../../fonts/CascadiaCode.ttf"),
+            data: include_bytes!("../../../../../fonts/CascadiaCode.ttf"),
             size_pixels: 20.0,
             config: Some(config),
         }];
@@ -62,7 +62,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 24pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../../fonts/CascadiaCode.ttf"),
+            data: include_bytes!("../../../../../fonts/CascadiaCode.ttf"),
             size_pixels: 24.0,
             config: Some(config),
         }];
@@ -71,7 +71,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 36pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: include_bytes!("../../../../fonts/CascadiaCode.ttf"),
+            data: include_bytes!("../../../../../fonts/CascadiaCode.ttf"),
             size_pixels: 36.0,
             config: Some(config),
         }];

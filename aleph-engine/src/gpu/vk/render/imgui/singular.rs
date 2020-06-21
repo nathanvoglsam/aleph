@@ -7,8 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use super::ImguiGlobal;
 use crate::gpu::vk;
-use crate::gpu::vk::imgui::ImguiGlobal;
 use crate::gpu::vk::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
     InputAssemblyState, MultiSampleState, RasterizationState, ShaderStage, ViewportState,

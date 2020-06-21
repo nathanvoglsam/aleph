@@ -117,7 +117,7 @@ impl ImguiGlobal {
 
     pub fn create_shader_modules(device: &vk::Device) -> (ShaderModule, ShaderModule) {
         let bytes =
-            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.vert.spv");
+            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
@@ -129,7 +129,7 @@ impl ImguiGlobal {
         .expect("Failed to create vertex shader module");
 
         let bytes =
-            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.frag.spv");
+            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.frag.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
         let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
@@ -145,7 +145,7 @@ impl ImguiGlobal {
 
     pub fn reflect_frag_module() -> Set {
         let bytes =
-            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.frag.spv");
+            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.frag.spv");
 
         let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
             .expect("Failed to reflect spirv module");
@@ -163,7 +163,7 @@ impl ImguiGlobal {
 
     pub fn reflect_vert_module() -> PushConstantLayout {
         let bytes =
-            include_bytes_aligned_as!(u32, "../../../../shaders/compiled/imgui/imgui.vert.spv");
+            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
 
         let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
             .expect("Failed to reflect spirv module");

@@ -18,7 +18,6 @@ pub mod render;
 
 mod device;
 mod gpu_info;
-mod imgui;
 mod instance;
 mod pipeline_cache;
 mod queue_family;
@@ -39,5 +38,3 @@ pub use swapchain::SwapChainSupport;
 pub use swapchain::Swapchain;
 pub use swapchain::SwapchainBuilder;
 pub use vendor::VendorID;
-
-pub(crate) use self::imgui::ImguiRenderer;

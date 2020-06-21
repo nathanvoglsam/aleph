@@ -176,7 +176,7 @@ impl Engine {
             gpu::vk::render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
         };
 
-        let mut imgui_renderer = gpu::vk::ImguiRenderer::new(
+        let mut imgui_renderer = gpu::vk::render::ImguiRenderer::new(
             imgui_ctx.context_mut().fonts(),
             device.clone(),
             allocator.clone(),
