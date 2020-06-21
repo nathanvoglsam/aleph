@@ -7,5 +7,4 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub mod dx12;
 pub mod vk;
