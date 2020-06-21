@@ -34,48 +34,48 @@ static CUBE_MESH_GLTF: Lazy<Gltf> = Lazy::new(|| {
 /// Internal global data for built in mesh position data
 ///
 static CUBE_MESH_POSITIONS: Lazy<&'static [[f32; 3]]> = Lazy::new(|| {
-    let acc = super::builtin_utils::get_accessor_for(
+    let acc = super::utils::get_accessor_for(
         &CUBE_MESH_GLTF,
         &Semantic::Positions,
         Mode::Triangles,
     );
-    super::builtin_utils::get_vec3_bytes(&CUBE_MESH_GLB, &acc)
+    super::utils::get_vec3_bytes(&CUBE_MESH_GLB, &acc)
 });
 
 ///
 /// Internal global data for built in mesh normals data
 ///
 static CUBE_MESH_NORMALS: Lazy<&'static [[f32; 3]]> = Lazy::new(|| {
-    let acc = super::builtin_utils::get_accessor_for(
+    let acc = super::utils::get_accessor_for(
         &CUBE_MESH_GLTF,
         &Semantic::Normals,
         Mode::Triangles,
     );
-    super::builtin_utils::get_vec3_bytes(&CUBE_MESH_GLB, &acc)
+    super::utils::get_vec3_bytes(&CUBE_MESH_GLB, &acc)
 });
 
 ///
 /// Internal global data for built in mesh tangents data
 ///
 static CUBE_MESH_TANGENTS: Lazy<&'static [[f32; 4]]> = Lazy::new(|| {
-    let acc = super::builtin_utils::get_accessor_for(
+    let acc = super::utils::get_accessor_for(
         &CUBE_MESH_GLTF,
         &Semantic::Tangents,
         Mode::Triangles,
     );
-    super::builtin_utils::get_vec4_bytes(&CUBE_MESH_GLB, &acc)
+    super::utils::get_vec4_bytes(&CUBE_MESH_GLB, &acc)
 });
 
 ///
 /// Internal global data for built in mesh uv data
 ///
 static CUBE_MESH_UV: Lazy<&'static [[f32; 2]]> = Lazy::new(|| {
-    let acc = super::builtin_utils::get_accessor_for(
+    let acc = super::utils::get_accessor_for(
         &CUBE_MESH_GLTF,
         &Semantic::TexCoords(0),
         Mode::Triangles,
     );
-    super::builtin_utils::get_vec2_bytes(&CUBE_MESH_GLB, &acc)
+    super::utils::get_vec2_bytes(&CUBE_MESH_GLB, &acc)
 });
 
 ///

@@ -7,4 +7,5 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+pub mod embedded_data;
 pub mod vk;
