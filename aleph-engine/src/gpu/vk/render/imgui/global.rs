@@ -8,15 +8,13 @@
 //
 
 use crate::gpu::vk;
-use crate::gpu::vk::reflect::{DescriptorSetReflection, PushConstantReflection};
+use crate::gpu::vk::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
 use crate::gpu::vk::shader::ShaderModule;
 use crate::include_bytes_aligned_as;
 use erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
-    DescriptorSetLayout, DescriptorSetLayoutBindingBuilder, DescriptorSetLayoutCreateInfoBuilder,
-    DescriptorType, PipelineLayout, PipelineLayoutCreateInfoBuilder, PushConstantRangeBuilder,
-    ShaderStageFlags, Vk10DeviceLoaderExt,
+    DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
 };
 
 ///
@@ -27,7 +25,6 @@ pub struct ImguiGlobal {
     pub vertex_module: ShaderModule,
     pub fragment_module: ShaderModule,
     pub descriptor_pool: DescriptorPool,
-    pub descriptor_set_layout: DescriptorSetLayout,
     pub pipeline_layout: PipelineLayout,
     pub descriptor_set: DescriptorSet,
 }
@@ -36,21 +33,18 @@ impl ImguiGlobal {
     pub fn init(device: &vk::core::Device) -> Self {
         let (vertex_module, fragment_module) = Self::create_shader_modules(device);
         let descriptor_pool = Self::create_descriptor_pool(device);
-        let descriptor_set_layout =
-            Self::create_descriptor_set_layout(device, &fragment_module.descriptor_sets()[0]);
-        let pipeline_layout = Self::create_pipeline_layout(
+        let pipeline_layout =
+            Self::create_pipeline_layout(device, &fragment_module, &vertex_module);
+        let descriptor_set = Self::allocate_descriptor_set(
             device,
-            descriptor_set_layout,
-            vertex_module.push_constants().unwrap(),
+            pipeline_layout.set_layouts()[0],
+            descriptor_pool,
         );
-        let descriptor_set =
-            Self::allocate_descriptor_set(device, descriptor_set_layout, descriptor_pool);
 
         Self {
             vertex_module,
             fragment_module,
             descriptor_pool,
-            descriptor_set_layout,
             pipeline_layout,
             descriptor_set,
         }
@@ -80,49 +74,21 @@ impl ImguiGlobal {
         .expect("Failed to create descriptor pool")
     }
 
-    pub fn create_descriptor_set_layout(
-        device: &vk::core::Device,
-        reflected_set_layout: &DescriptorSetReflection,
-    ) -> DescriptorSetLayout {
-        let bindings: Vec<DescriptorSetLayoutBindingBuilder> = reflected_set_layout
-            .bindings()
-            .iter()
-            .map(|binding| {
-                DescriptorSetLayoutBindingBuilder::new()
-                    .binding(binding.binding())
-                    .descriptor_type(binding.binding_type().descriptor_type())
-                    .descriptor_count(1)
-                    .stage_flags(ShaderStageFlags::FRAGMENT)
-            })
-            .collect();
-        let create_info = DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
-        unsafe {
-            device
-                .loader()
-                .create_descriptor_set_layout(&create_info, None, None)
-        }
-        .expect("Failed to create descriptor set layout")
-    }
-
     pub fn create_pipeline_layout(
         device: &vk::core::Device,
-        layout: DescriptorSetLayout,
-        push_constant_layout: &PushConstantReflection,
+        fragment_module: &ShaderModule,
+        vertex_module: &ShaderModule,
     ) -> PipelineLayout {
-        let set_layouts = [layout];
-        let ranges = [PushConstantRangeBuilder::new()
-            .stage_flags(ShaderStageFlags::VERTEX)
-            .offset(0)
-            .size(push_constant_layout.size_padded())];
-        let create_info = PipelineLayoutCreateInfoBuilder::new()
-            .set_layouts(&set_layouts)
-            .push_constant_ranges(&ranges);
-        unsafe {
-            device
-                .loader()
-                .create_pipeline_layout(&create_info, None, None)
-        }
-        .expect("Failed to create pipeline layout")
+        let pipeline_layout = PipelineLayoutBuilder::new()
+            .modules(&[fragment_module, vertex_module])
+            .build(device)
+            .expect("Failed to create pipeline layout");
+        assert_eq!(
+            pipeline_layout.set_layouts().len(),
+            1,
+            "There should only be a single set layout"
+        );
+        pipeline_layout
     }
 
     pub fn allocate_descriptor_set(
@@ -169,12 +135,7 @@ impl ImguiGlobal {
             .loader()
             .free_descriptor_sets(self.descriptor_pool, &[self.descriptor_set])
             .expect("Failed to free descriptor set");
-        device
-            .loader()
-            .destroy_pipeline_layout(self.pipeline_layout, None);
-        device
-            .loader()
-            .destroy_descriptor_set_layout(self.descriptor_set_layout, None);
+        self.pipeline_layout.destroy(device);
         device
             .loader()
             .destroy_descriptor_pool(self.descriptor_pool, None);

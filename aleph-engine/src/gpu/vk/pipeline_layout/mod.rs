@@ -17,6 +17,7 @@ use erupt::vk1_0::{
 ///
 /// An enum to represent the possible errors that can be encountered when creating a pipeline layout
 ///
+#[derive(Copy, Clone, Hash, Ord, PartialOrd, Eq, PartialEq, Debug)]
 pub enum PipelineLayoutBuildError {
     ///
     /// When multiple shader modules from the same stage are trying to be bound together. This is

@@ -426,7 +426,7 @@ impl ImguiRenderer {
         self.device.loader().cmd_bind_descriptor_sets(
             command_buffer,
             PipelineBindPoint::GRAPHICS,
-            self.global.pipeline_layout,
+            self.global.pipeline_layout.pipeline_layout(),
             0,
             &[self.global.descriptor_set],
             &[],
@@ -468,7 +468,7 @@ impl ImguiRenderer {
         ];
         self.device.loader().cmd_push_constants(
             command_buffer,
-            self.global.pipeline_layout,
+            self.global.pipeline_layout.pipeline_layout(),
             ShaderStageFlags::VERTEX,
             0,
             8,
@@ -480,7 +480,7 @@ impl ImguiRenderer {
         ];
         self.device.loader().cmd_push_constants(
             command_buffer,
-            self.global.pipeline_layout,
+            self.global.pipeline_layout.pipeline_layout(),
             ShaderStageFlags::VERTEX,
             8,
             8,

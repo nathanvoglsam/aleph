@@ -38,7 +38,7 @@ impl ImguiSingular {
         let render_pass = Self::create_render_pass(device, format);
         let pipeline = Self::create_pipeline(
             device,
-            global.pipeline_layout,
+            global.pipeline_layout.pipeline_layout(),
             render_pass,
             &global.vertex_module,
             &global.fragment_module,
