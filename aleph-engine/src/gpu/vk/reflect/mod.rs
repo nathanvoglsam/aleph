@@ -13,7 +13,7 @@ mod structure;
 
 pub use set::Binding;
 pub use set::BindingType;
-pub use set::Set;
+pub use set::DescriptorSetReflection;
 
 pub use structure::IntegerType;
 pub use structure::MatrixInfo;
@@ -24,4 +24,4 @@ pub use structure::ScalarType;
 pub use structure::Struct;
 pub use structure::VectorInfo;
 
-pub use push_constant::PushConstantLayout;
+pub use push_constant::PushConstantReflection;

@@ -14,7 +14,7 @@ use spirv_reflect::types::{
 ///
 /// An enum to represent the different widths of integer values supported
 ///
-#[derive(Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum IntegerType {
     I8,
     I16,
@@ -29,7 +29,7 @@ pub enum IntegerType {
 ///
 /// An enum to represent the different widths of floating point values supported
 ///
-#[derive(Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum ScalarType {
     /// FP32 (single precision)
     Float,
@@ -41,7 +41,7 @@ pub enum ScalarType {
 ///
 /// A struct to represent a vector type in a uniform buffer
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct VectorInfo {
     /// The type of floating point value this vector is constructed of
     pub fp_type: ScalarType,
@@ -55,7 +55,7 @@ pub struct VectorInfo {
 ///
 /// An enum to represent the possible ways of laying out a matrix in a uniform buffer
 ///
-#[derive(Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum MatrixLayout {
     /// The matrix is expected to be laid out in column major form
     ColumnMajor,
@@ -67,7 +67,7 @@ pub enum MatrixLayout {
 ///
 /// A struct to represent a matrix type in a uniform buffer
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct MatrixInfo {
     /// The type of floating point value this matrix is constructed of
     pub fp_type: ScalarType,
@@ -88,7 +88,7 @@ pub struct MatrixInfo {
 ///
 /// An enum to represent the supported variable types in a uniform buffer
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum MemberType {
     /// A scalar value (i.e a single float)
     Scalar(ScalarType),
@@ -103,7 +103,7 @@ pub enum MemberType {
 ///
 /// A struct that represents a member variable for a uniform buffer struct
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct Member {
     pub(crate) name: String,
     pub(crate) size: u32,
@@ -188,7 +188,7 @@ impl Member {
 ///
 /// A struct that represents a uniform buffer's struct layout
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct Struct {
     pub(crate) members: Vec<Member>,
     pub(crate) size: u32,

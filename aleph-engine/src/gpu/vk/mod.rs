@@ -12,5 +12,7 @@ pub mod core;
 pub mod image;
 pub mod pipeline;
 pub mod pipeline_cache;
+pub mod pipeline_layout;
 pub mod reflect;
 pub mod render;
+pub mod shader;

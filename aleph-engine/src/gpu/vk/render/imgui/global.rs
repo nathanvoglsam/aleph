@@ -8,14 +8,14 @@
 //
 
 use crate::gpu::vk;
-use crate::gpu::vk::reflect::{PushConstantLayout, Set};
+use crate::gpu::vk::reflect::DescriptorSetReflection;
+use crate::gpu::vk::shader::ShaderModule;
 use crate::include_bytes_aligned_as;
 use erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
     DescriptorSetLayout, DescriptorSetLayoutBindingBuilder, DescriptorSetLayoutCreateInfoBuilder,
-    DescriptorType, ShaderModule, ShaderModuleCreateInfoBuilder, ShaderStageFlags,
-    Vk10DeviceLoaderExt,
+    DescriptorType, ShaderStageFlags, Vk10DeviceLoaderExt,
 };
 
 ///
@@ -28,18 +28,14 @@ pub struct ImguiGlobal {
     pub descriptor_pool: DescriptorPool,
     pub descriptor_set_layout: DescriptorSetLayout,
     pub descriptor_set: DescriptorSet,
-    pub push_constant_layout: PushConstantLayout,
-    pub reflected_set_layout: Set,
 }
 
 impl ImguiGlobal {
     pub fn init(device: &vk::core::Device) -> Self {
         let (vertex_module, fragment_module) = Self::create_shader_modules(device);
-        let reflected_set_layout = Self::reflect_frag_module();
-        let push_constant_layout = Self::reflect_vert_module();
         let descriptor_pool = Self::create_descriptor_pool(device);
         let descriptor_set_layout =
-            Self::create_descriptor_set_layout(device, &reflected_set_layout);
+            Self::create_descriptor_set_layout(device, &fragment_module.descriptor_sets()[0]);
         let descriptor_set =
             Self::allocate_descriptor_set(device, descriptor_set_layout, descriptor_pool);
 
@@ -49,8 +45,6 @@ impl ImguiGlobal {
             descriptor_set,
             vertex_module,
             fragment_module,
-            push_constant_layout,
-            reflected_set_layout,
         }
     }
 
@@ -80,7 +74,7 @@ impl ImguiGlobal {
 
     pub fn create_descriptor_set_layout(
         device: &vk::core::Device,
-        reflected_set_layout: &Set,
+        reflected_set_layout: &DescriptorSetReflection,
     ) -> DescriptorSetLayout {
         let bindings: Vec<DescriptorSetLayoutBindingBuilder> = reflected_set_layout
             .bindings()
@@ -120,79 +114,30 @@ impl ImguiGlobal {
             include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
-        let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
-        let vertex_module = unsafe {
-            device
-                .loader()
-                .create_shader_module(&create_info, None, None)
-        }
-        .expect("Failed to create vertex shader module");
+        let vertex_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .words(slice)
+            .vertex()
+            .build(Some(device));
 
         let bytes =
             include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.frag.spv");
         let slice =
             unsafe { core::slice::from_raw_parts(bytes.as_ptr() as *const u32, bytes.len() / 4) };
-        let create_info = ShaderModuleCreateInfoBuilder::new().code(slice);
-        let fragment_module = unsafe {
-            device
-                .loader()
-                .create_shader_module(&create_info, None, None)
-        }
-        .expect("Failed to create vertex shader module");
+        let fragment_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .words(slice)
+            .fragment()
+            .build(Some(device));
 
         (vertex_module, fragment_module)
     }
 
-    pub fn reflect_frag_module() -> Set {
-        let bytes =
-            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.frag.spv");
-
-        let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
-            .expect("Failed to reflect spirv module");
-
-        let mut entry_point = module
-            .enumerate_entry_points()
-            .expect("No entry points found")
-            .drain(..)
-            .find(|v| v.name == "main")
-            .expect("Failed to find \"main\" entry point");
-
-        // Assume we only have a single descriptor set
-        Set::reflect(&mut entry_point).drain(..).nth(0).unwrap()
-    }
-
-    pub fn reflect_vert_module() -> PushConstantLayout {
-        let bytes =
-            include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
-
-        let module = spirv_reflect::ShaderModule::load_u8_data(bytes)
-            .expect("Failed to reflect spirv module");
-
-        let entry_point = module
-            .enumerate_entry_points()
-            .expect("No entry points found")
-            .drain(..)
-            .find(|v| v.name == "main")
-            .expect("Failed to find \"main\" entry point");
-
-        // Assume we only have a single push constant block
-        let push_constants = module
-            .enumerate_push_constant_blocks(Some(&entry_point.name))
-            .expect("No push constants found")
-            .drain(..)
-            .nth(0)
-            .unwrap();
-
-        PushConstantLayout::reflect(push_constants)
-    }
-
     pub unsafe fn destroy(&self, device: &vk::core::Device) {
-        device
-            .loader()
-            .destroy_shader_module(self.fragment_module, None);
-        device
-            .loader()
-            .destroy_shader_module(self.vertex_module, None);
+        self.fragment_module.destroy(device);
+        self.vertex_module.destroy(device);
         device
             .loader()
             .free_descriptor_sets(self.descriptor_pool, &[self.descriptor_set])

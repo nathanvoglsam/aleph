@@ -11,19 +11,19 @@ use super::ImguiGlobal;
 use crate::gpu::vk;
 use crate::gpu::vk::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    InputAssemblyState, MultiSampleState, RasterizationState, ShaderStage, ViewportState,
+    InputAssemblyState, MultiSampleState, RasterizationState, ViewportState,
 };
 use crate::gpu::vk::pipeline_cache::PipelineCache;
-use crate::gpu::vk::reflect::PushConstantLayout;
+use crate::gpu::vk::reflect::PushConstantReflection;
+use crate::gpu::vk::shader::ShaderModule;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DescriptorSetLayout, DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder,
     ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PipelineLayoutCreateInfoBuilder,
     PipelineVertexInputStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
     PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
-    ShaderModule, ShaderStageFlags, SubpassDescriptionBuilder,
-    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
-    Vk10DeviceLoaderExt,
+    ShaderStageFlags, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
+    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
 };
 
 ///
@@ -42,14 +42,14 @@ impl ImguiSingular {
         let pipeline_layout = Self::create_pipeline_layout(
             device,
             global.descriptor_set_layout,
-            &global.push_constant_layout,
+            global.vertex_module.push_constants().unwrap(),
         );
         let pipeline = Self::create_pipeline(
             device,
             pipeline_layout,
             render_pass,
-            global.vertex_module,
-            global.fragment_module,
+            &global.vertex_module,
+            &global.fragment_module,
         );
 
         ImguiSingular {
@@ -62,7 +62,7 @@ impl ImguiSingular {
     pub fn create_pipeline_layout(
         device: &vk::core::Device,
         layout: DescriptorSetLayout,
-        push_constant_layout: &PushConstantLayout,
+        push_constant_layout: &PushConstantReflection,
     ) -> PipelineLayout {
         let set_layouts = [layout];
         let ranges = [PushConstantRangeBuilder::new()
@@ -112,12 +112,12 @@ impl ImguiSingular {
         device: &vk::core::Device,
         pipeline_layout: PipelineLayout,
         render_pass: RenderPass,
-        vertex_module: ShaderModule,
-        fragment_module: ShaderModule,
+        vertex_module: &ShaderModule,
+        fragment_module: &ShaderModule,
     ) -> Pipeline {
         let stages = [
-            ShaderStage::vertex(vertex_module),
-            ShaderStage::fragment(fragment_module),
+            vertex_module.pipeline_shader_stage(),
+            fragment_module.pipeline_shader_stage(),
         ];
 
         let binding = VertexInputBindingDescriptionBuilder::new()

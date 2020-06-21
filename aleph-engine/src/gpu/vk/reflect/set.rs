@@ -9,13 +9,13 @@
 
 use crate::gpu::vk::reflect::structure::resolve_struct_block;
 use crate::gpu::vk::reflect::Struct;
-use erupt::vk1_0::DescriptorType;
+use erupt::vk1_0::{DescriptorSetLayoutBindingBuilder, DescriptorType, ShaderStageFlags};
 use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
 
 ///
 /// Type that represents the set of supported descriptor bindings that is currently supported
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum BindingType {
     //Undefined,
     Sampler,
@@ -53,7 +53,7 @@ impl BindingType {
 ///
 /// A struct that represents a descriptor binding
 ///
-#[derive(Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct Binding {
     binding: u32,
     name: String,
@@ -83,13 +83,13 @@ impl Binding {
     }
 }
 
-#[derive(Debug)]
-pub struct Set {
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct DescriptorSetReflection {
     set: u32,
     bindings: Vec<Binding>,
 }
 
-impl Set {
+impl DescriptorSetReflection {
     ///
     /// Returns the list of bindings in this descriptor set
     ///
@@ -105,10 +105,29 @@ impl Set {
     }
 
     ///
+    /// Builds a list of DescriptorSetLayoutBinding objects from the reflected data
+    ///
+    pub fn set_layout_bindings(
+        &self,
+        stage_flags: ShaderStageFlags,
+    ) -> Vec<DescriptorSetLayoutBindingBuilder<'static>> {
+        self.bindings
+            .iter()
+            .map(|binding| {
+                DescriptorSetLayoutBindingBuilder::new()
+                    .binding(binding.binding())
+                    .descriptor_type(binding.binding_type().descriptor_type())
+                    .descriptor_count(1)
+                    .stage_flags(stage_flags)
+            })
+            .collect()
+    }
+
+    ///
     /// Consume the descriptor set information from a given entry point and produce the list of
     /// descriptor sets it uses
     ///
-    pub fn reflect(entry_point: &mut ReflectEntryPoint) -> Vec<Set> {
+    pub fn reflect(entry_point: &mut ReflectEntryPoint) -> Vec<DescriptorSetReflection> {
         entry_point
             .descriptor_sets
             .drain(..)
@@ -119,7 +138,7 @@ impl Set {
     ///
     /// Create a new `Set` object from the output produced by `spirv-reflect`
     ///
-    fn reflect_internal(mut set: ReflectDescriptorSet) -> Set {
+    fn reflect_internal(mut set: ReflectDescriptorSet) -> DescriptorSetReflection {
         let bindings = set
             .bindings
             .drain(..)
@@ -158,7 +177,7 @@ impl Set {
             .collect();
 
         let set = set.set;
-        let out_set = Set { set, bindings };
+        let out_set = DescriptorSetReflection { set, bindings };
 
         out_set
     }

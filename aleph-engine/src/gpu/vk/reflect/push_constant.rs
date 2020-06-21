@@ -14,11 +14,12 @@ use std::ops::Deref;
 ///
 /// Represents a push constant layout reflected from a shader module
 ///
-pub struct PushConstantLayout {
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub struct PushConstantReflection {
     inner: Struct,
 }
 
-impl PushConstantLayout {
+impl PushConstantReflection {
     ///
     /// Reflect a push constant layout from the given block variable
     ///
@@ -28,7 +29,7 @@ impl PushConstantLayout {
     }
 }
 
-impl Deref for PushConstantLayout {
+impl Deref for PushConstantReflection {
     type Target = Struct;
 
     fn deref(&self) -> &Self::Target {
