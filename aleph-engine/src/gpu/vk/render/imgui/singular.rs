@@ -14,15 +14,13 @@ use crate::gpu::vk::pipeline::{
     InputAssemblyState, MultiSampleState, RasterizationState, ViewportState,
 };
 use crate::gpu::vk::pipeline_cache::PipelineCache;
-use crate::gpu::vk::reflect::PushConstantReflection;
 use crate::gpu::vk::shader::ShaderModule;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
-    DescriptorSetLayout, DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder,
-    ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PipelineLayoutCreateInfoBuilder,
-    PipelineVertexInputStateCreateInfoBuilder, PolygonMode, PrimitiveTopology,
-    PushConstantRangeBuilder, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
-    ShaderStageFlags, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
+    DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
+    PipelineBindPoint, PipelineLayout, PipelineVertexInputStateCreateInfoBuilder, PolygonMode,
+    PrimitiveTopology, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
+    SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
     VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
 };
 
@@ -32,21 +30,15 @@ use erupt::vk1_0::{
 ///
 pub struct ImguiSingular {
     pub render_pass: RenderPass,
-    pub pipeline_layout: PipelineLayout,
     pub pipeline: Pipeline,
 }
 
 impl ImguiSingular {
     pub fn init(device: &vk::core::Device, global: &ImguiGlobal, format: Format) -> Self {
         let render_pass = Self::create_render_pass(device, format);
-        let pipeline_layout = Self::create_pipeline_layout(
-            device,
-            global.descriptor_set_layout,
-            global.vertex_module.push_constants().unwrap(),
-        );
         let pipeline = Self::create_pipeline(
             device,
-            pipeline_layout,
+            global.pipeline_layout,
             render_pass,
             &global.vertex_module,
             &global.fragment_module,
@@ -54,30 +46,8 @@ impl ImguiSingular {
 
         ImguiSingular {
             render_pass,
-            pipeline_layout,
             pipeline,
         }
-    }
-
-    pub fn create_pipeline_layout(
-        device: &vk::core::Device,
-        layout: DescriptorSetLayout,
-        push_constant_layout: &PushConstantReflection,
-    ) -> PipelineLayout {
-        let set_layouts = [layout];
-        let ranges = [PushConstantRangeBuilder::new()
-            .stage_flags(ShaderStageFlags::VERTEX)
-            .offset(0)
-            .size(push_constant_layout.size_padded())];
-        let create_info = PipelineLayoutCreateInfoBuilder::new()
-            .set_layouts(&set_layouts)
-            .push_constant_ranges(&ranges);
-        unsafe {
-            device
-                .loader()
-                .create_pipeline_layout(&create_info, None, None)
-        }
-        .expect("Failed to create pipeline layout")
     }
 
     pub fn create_render_pass(device: &vk::core::Device, format: Format) -> RenderPass {
@@ -187,8 +157,5 @@ impl ImguiSingular {
     pub unsafe fn destroy(&self, device: &vk::core::Device) {
         device.loader().destroy_render_pass(self.render_pass, None);
         device.loader().destroy_pipeline(self.pipeline, None);
-        device
-            .loader()
-            .destroy_pipeline_layout(self.pipeline_layout, None);
     }
 }
