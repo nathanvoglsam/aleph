@@ -10,7 +10,7 @@
 use crate::gpu::vk::core::{
     GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID,
 };
-use crate::gpu::vk::PipelineCache;
+use crate::gpu::vk::pipeline_cache::PipelineCache;
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,

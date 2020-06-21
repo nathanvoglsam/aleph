@@ -11,9 +11,6 @@ pub mod alloc;
 pub mod core;
 pub mod image;
 pub mod pipeline;
+pub mod pipeline_cache;
 pub mod reflect;
 pub mod render;
-
-mod pipeline_cache;
-
-pub use pipeline_cache::PipelineCache;
