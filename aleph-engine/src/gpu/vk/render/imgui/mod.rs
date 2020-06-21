@@ -34,7 +34,7 @@ pub use global::ImguiGlobal;
 pub use singular::ImguiSingular;
 
 pub struct ImguiRenderer {
-    device: Arc<vk::Device>,
+    device: Arc<vk::core::Device>,
     allocator: Arc<Allocator>,
     frames: Vec<ImguiFrame>,
     single: ImguiSingular,
@@ -45,9 +45,9 @@ pub struct ImguiRenderer {
 impl ImguiRenderer {
     pub fn new(
         fonts: imgui::FontAtlasRefMut,
-        device: Arc<vk::Device>,
+        device: Arc<vk::core::Device>,
         allocator: Arc<Allocator>,
-        swapchain: &vk::Swapchain,
+        swapchain: &vk::core::Swapchain,
     ) -> Self {
         log::trace!("Initializing ImGui Renderer");
         let global = ImguiGlobal::init(&device);
@@ -73,7 +73,7 @@ impl ImguiRenderer {
         }
     }
 
-    pub unsafe fn recreate_resources(&mut self, swapchain: &vk::Swapchain) {
+    pub unsafe fn recreate_resources(&mut self, swapchain: &vk::core::Swapchain) {
         for frame in self.frames.iter() {
             frame.destroy(&self.device, &self.allocator);
         }
@@ -98,7 +98,7 @@ impl ImguiRenderer {
     pub unsafe fn render_frame(
         &mut self,
         frame: imgui::Ui,
-        swapchain: &vk::Swapchain,
+        swapchain: &vk::core::Swapchain,
         acquire_semaphore: Semaphore,
         signal_semaphore: Semaphore,
         index: usize,
@@ -344,7 +344,7 @@ impl ImguiRenderer {
     unsafe fn render_draw_command(
         &mut self,
         draw_data: &imgui::DrawData,
-        swapchain: &vk::Swapchain,
+        swapchain: &vk::core::Swapchain,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
         command_buffer: CommandBuffer,
@@ -409,7 +409,7 @@ impl ImguiRenderer {
 
     unsafe fn reset_render_state(
         &self,
-        swapchain: &vk::Swapchain,
+        swapchain: &vk::core::Swapchain,
         command_buffer: CommandBuffer,
         vertex_buffer: Buffer,
         index_buffer: Buffer,

@@ -37,7 +37,7 @@ pub struct ImguiSingular {
 }
 
 impl ImguiSingular {
-    pub fn init(device: &vk::Device, global: &ImguiGlobal, format: Format) -> Self {
+    pub fn init(device: &vk::core::Device, global: &ImguiGlobal, format: Format) -> Self {
         let render_pass = Self::create_render_pass(device, format);
         let pipeline_layout = Self::create_pipeline_layout(
             device,
@@ -60,7 +60,7 @@ impl ImguiSingular {
     }
 
     pub fn create_pipeline_layout(
-        device: &vk::Device,
+        device: &vk::core::Device,
         layout: DescriptorSetLayout,
         push_constant_layout: &PushConstantLayout,
     ) -> PipelineLayout {
@@ -80,7 +80,7 @@ impl ImguiSingular {
         .expect("Failed to create pipeline layout")
     }
 
-    pub fn create_render_pass(device: &vk::Device, format: Format) -> RenderPass {
+    pub fn create_render_pass(device: &vk::core::Device, format: Format) -> RenderPass {
         let attachment = AttachmentDescriptionBuilder::new()
             .format(format)
             .samples(SampleCountFlagBits::_1)
@@ -109,7 +109,7 @@ impl ImguiSingular {
     }
 
     pub fn create_pipeline(
-        device: &vk::Device,
+        device: &vk::core::Device,
         pipeline_layout: PipelineLayout,
         render_pass: RenderPass,
         vertex_module: ShaderModule,
@@ -184,7 +184,7 @@ impl ImguiSingular {
         .expect("Failed to create pipeline")[0]
     }
 
-    pub unsafe fn destroy(&self, device: &vk::Device) {
+    pub unsafe fn destroy(&self, device: &vk::core::Device) {
         device.loader().destroy_render_pass(self.render_pass, None);
         device.loader().destroy_pipeline(self.pipeline, None);
         device

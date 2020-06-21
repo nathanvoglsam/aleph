@@ -8,7 +8,7 @@
 //
 
 use crate::gpu::vk::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use crate::gpu::vk::Device;
+use crate::gpu::vk::core::Device;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentStoreOp, ComponentMappingBuilder,
     ComponentSwizzle, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,

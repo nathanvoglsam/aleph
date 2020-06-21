@@ -33,7 +33,7 @@ pub struct ImguiGlobal {
 }
 
 impl ImguiGlobal {
-    pub fn init(device: &vk::Device) -> Self {
+    pub fn init(device: &vk::core::Device) -> Self {
         let (vertex_module, fragment_module) = Self::create_shader_modules(device);
         let reflected_set_layout = Self::reflect_frag_module();
         let push_constant_layout = Self::reflect_vert_module();
@@ -54,7 +54,7 @@ impl ImguiGlobal {
         }
     }
 
-    pub fn create_descriptor_pool(device: &vk::Device) -> DescriptorPool {
+    pub fn create_descriptor_pool(device: &vk::core::Device) -> DescriptorPool {
         let pool_sizes = [
             DescriptorPoolSizeBuilder::new()
                 ._type(DescriptorType::SAMPLER)
@@ -79,7 +79,7 @@ impl ImguiGlobal {
     }
 
     pub fn create_descriptor_set_layout(
-        device: &vk::Device,
+        device: &vk::core::Device,
         reflected_set_layout: &Set,
     ) -> DescriptorSetLayout {
         let bindings: Vec<DescriptorSetLayoutBindingBuilder> = reflected_set_layout
@@ -103,7 +103,7 @@ impl ImguiGlobal {
     }
 
     pub fn allocate_descriptor_set(
-        device: &vk::Device,
+        device: &vk::core::Device,
         layout: DescriptorSetLayout,
         pool: DescriptorPool,
     ) -> DescriptorSet {
@@ -115,7 +115,7 @@ impl ImguiGlobal {
             .expect("Failed to allocate descriptor sets")[0]
     }
 
-    pub fn create_shader_modules(device: &vk::Device) -> (ShaderModule, ShaderModule) {
+    pub fn create_shader_modules(device: &vk::core::Device) -> (ShaderModule, ShaderModule) {
         let bytes =
             include_bytes_aligned_as!(u32, "../../../../../shaders/compiled/imgui/imgui.vert.spv");
         let slice =
@@ -186,7 +186,7 @@ impl ImguiGlobal {
         PushConstantLayout::reflect(push_constants)
     }
 
-    pub unsafe fn destroy(&self, device: &vk::Device) {
+    pub unsafe fn destroy(&self, device: &vk::core::Device) {
         device
             .loader()
             .destroy_shader_module(self.fragment_module, None);

@@ -8,8 +8,8 @@
 //
 
 use crate::gpu::vk::alloc::Allocator;
+use crate::gpu::vk::core::Device;
 use crate::gpu::vk::image::{ImageSingle2D, ImageSingle2DBuilder};
-use crate::gpu::vk::Device;
 
 use erupt::vk1_0::{Format, ImageAspectFlags, ImageUsageFlags};
 use std::ops::Deref;

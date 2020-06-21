@@ -8,8 +8,8 @@
 //
 
 use crate::gpu::vk::alloc::Allocator;
+use crate::gpu::vk::core::{Device, Swapchain};
 use crate::gpu::vk::image::{ColourImage, DepthImage, SwapImage};
-use crate::gpu::vk::{Device, Swapchain};
 use erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format,
     Framebuffer, FramebufferCreateInfoBuilder, ImageLayout, PipelineBindPoint, PipelineStageFlags,

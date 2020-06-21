@@ -9,7 +9,7 @@
 
 use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings};
 use crate::gpu;
-use crate::gpu::vk::GPUInfo;
+use crate::gpu::vk::core::GPUInfo;
 use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use once_cell::sync::Lazy;
 use sdl2::event::Event;
@@ -155,12 +155,12 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let instance = gpu::vk::InstanceBuilder::new()
+        let instance = gpu::vk::core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG"))
             .validation(args.is_present("GPU_DEBUG"))
             .build(&window, &app_info);
 
-        let device = gpu::vk::DeviceBuilder::new().build(&instance);
+        let device = gpu::vk::core::DeviceBuilder::new().build(&instance);
         log::trace!("");
 
         Self::log_gpu_info(device.info());
@@ -170,7 +170,9 @@ impl Engine {
             .build(&device)
             .expect("Failed to build vulkan allocator");
 
-        let mut swapchain = gpu::vk::SwapchainBuilder::new().vsync().build(&device);
+        let mut swapchain = gpu::vk::core::SwapchainBuilder::new()
+            .vsync()
+            .build(&device);
 
         let _renderer = unsafe {
             gpu::vk::render::Renderer::new(device.clone(), allocator.clone(), &swapchain)

@@ -34,9 +34,9 @@ pub struct ImguiFrame {
 
 impl ImguiFrame {
     pub fn init(
-        device: &vk::Device,
+        device: &vk::core::Device,
         allocator: &Arc<Allocator>,
-        swapchain: &vk::Swapchain,
+        swapchain: &vk::core::Swapchain,
         index: usize,
         render_pass: RenderPass,
     ) -> Self {
@@ -84,7 +84,7 @@ impl ImguiFrame {
         }
     }
 
-    pub fn create_command_pool(device: &vk::Device) -> CommandPool {
+    pub fn create_command_pool(device: &vk::core::Device) -> CommandPool {
         let create_info =
             CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
         unsafe {
@@ -96,7 +96,7 @@ impl ImguiFrame {
     }
 
     pub fn allocate_command_buffer(
-        device: &vk::Device,
+        device: &vk::core::Device,
         command_pool: CommandPool,
     ) -> CommandBuffer {
         let allocate_info = CommandBufferAllocateInfoBuilder::new()
@@ -108,8 +108,8 @@ impl ImguiFrame {
     }
 
     pub fn create_framebuffer(
-        device: &vk::Device,
-        swapchain: &vk::Swapchain,
+        device: &vk::core::Device,
+        swapchain: &vk::core::Swapchain,
         render_pass: RenderPass,
         image_view: ImageView,
     ) -> Framebuffer {
@@ -124,7 +124,7 @@ impl ImguiFrame {
             .expect("Failed to create framebuffer")
     }
 
-    pub unsafe fn destroy(&self, device: &vk::Device, allocator: &Allocator) {
+    pub unsafe fn destroy(&self, device: &vk::core::Device, allocator: &Allocator) {
         if self.vtx_buffer.0 != Buffer::null() {
             allocator.destroy_buffer(self.vtx_buffer.0, self.vtx_buffer.1);
         }

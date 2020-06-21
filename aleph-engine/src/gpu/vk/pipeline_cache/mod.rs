@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::vk::Device;
+use crate::gpu::vk::core::Device;
 use erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};

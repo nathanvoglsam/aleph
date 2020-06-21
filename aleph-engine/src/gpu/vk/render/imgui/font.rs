@@ -36,7 +36,7 @@ impl ImguiFont {
     pub fn init(
         mut fonts: imgui::FontAtlasRefMut,
         global: &ImguiGlobal,
-        device: &vk::Device,
+        device: &vk::core::Device,
         allocator: &Allocator,
     ) -> Self {
         fonts.clear_fonts();
@@ -118,7 +118,7 @@ impl ImguiFont {
         font
     }
 
-    pub fn create_sampler(device: &vk::Device) -> Sampler {
+    pub fn create_sampler(device: &vk::core::Device) -> Sampler {
         let create_info = SamplerCreateInfoBuilder::new()
             .address_mode_u(SamplerAddressMode::REPEAT)
             .address_mode_v(SamplerAddressMode::REPEAT)
@@ -156,7 +156,7 @@ impl ImguiFont {
             .expect("Failed to create image")
     }
 
-    pub fn create_image_view(device: &vk::Device, image: Image) -> ImageView {
+    pub fn create_image_view(device: &vk::core::Device, image: Image) -> ImageView {
         let subresource_range = ImageSubresourceRangeBuilder::new()
             .aspect_mask(ImageAspectFlags::COLOR)
             .base_array_layer(0)
@@ -172,7 +172,7 @@ impl ImguiFont {
             .expect("Failed to create image view")
     }
 
-    pub fn upload_font(&self, device: &vk::Device, allocator: &Allocator, data: &[u8]) {
+    pub fn upload_font(&self, device: &vk::core::Device, allocator: &Allocator, data: &[u8]) {
         //
         // Creating then immediately destroying a command pool isn't very efficient, but I don't
         // care that much. It's just for uploading the ImGui font texture which will happen once
@@ -330,7 +330,7 @@ impl ImguiFont {
         }
     }
 
-    pub unsafe fn destroy(&self, device: &vk::Device, allocator: &Allocator) {
+    pub unsafe fn destroy(&self, device: &vk::core::Device, allocator: &Allocator) {
         device.loader().destroy_image_view(self.image_view, None);
         allocator.destroy_image(self.image, self.allocation);
         device.loader().destroy_sampler(self.sampler, None);

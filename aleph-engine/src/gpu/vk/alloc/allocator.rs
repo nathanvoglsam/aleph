@@ -13,7 +13,7 @@ use crate::gpu::vk::alloc::Allocation;
 use crate::gpu::vk::alloc::AllocationCreateInfo;
 use crate::gpu::vk::alloc::AllocationInfo;
 use crate::gpu::vk::alloc::Stats;
-use crate::gpu::vk::Device;
+use crate::gpu::vk::core::Device;
 use core::mem;
 use core::ptr;
 use erupt::utils::VulkanResult;
