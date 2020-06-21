@@ -10,5 +10,5 @@
 #include "fullscreen_quad.inc.hlsl"
 
 void main(in FSQuadVertexLayout input, out float4 Pos : SV_POSITION) {
-	Pos = float4(input.Pos, 1);
+	Pos = float4(input.Pos, 0, 1);
 }
