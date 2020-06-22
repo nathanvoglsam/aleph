@@ -7,9 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use spirv_reflect::types::{
-    ReflectBlockVariable, ReflectDecorationFlags, ReflectNumericTraitsScalar, ReflectTypeFlags,
-};
+use crate::gpu::vk::reflect::utils::resolve_member_type;
+use spirv_reflect::types::ReflectBlockVariable;
 
 ///
 /// An enum to represent the different widths of integer values supported
@@ -48,8 +47,6 @@ pub struct VectorInfo {
 
     /// The number of elements in the vector
     pub elements: u8,
-    // /// TODO: DOCUMENT
-    // pub stride: u32,
 }
 
 ///
@@ -262,12 +259,15 @@ impl Struct {
     }
 }
 
+///
+/// Internal function for resolving a `ReflectBlockVariable` into a `Struct` description
+///
 pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
     let members = block
         .members
         .drain(..)
         .map(|m| {
-            let member_type = resolve_member_type(&m);
+            let member_type = resolve_block_member_type(&m);
             let name = m.name;
             let size = m.size;
             let size_padded = m.padded_size;
@@ -296,51 +296,13 @@ pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
     item
 }
 
-pub(crate) fn resolve_member_type(block: &ReflectBlockVariable) -> MemberType {
+///
+/// Internal wrapper for extracting required information for calling `resolve_member_type` from a
+/// `ReflectBlockVariable`
+///
+pub(crate) fn resolve_block_member_type(block: &ReflectBlockVariable) -> MemberType {
     let desc = block.type_description.as_ref().unwrap();
-    let float = desc.type_flags.contains(ReflectTypeFlags::FLOAT);
-    let vector = desc.type_flags.contains(ReflectTypeFlags::VECTOR);
-    let matrix = desc.type_flags.contains(ReflectTypeFlags::MATRIX);
-
-    if matrix && vector && float {
-        let fp_type = resolve_scalar_width(block.numeric.scalar);
-        let layout = resolve_matrix_layout(block.decoration_flags);
-        let info = MatrixInfo {
-            fp_type,
-            layout,
-            rows: block.numeric.matrix.row_count as _,
-            cols: block.numeric.matrix.column_count as _,
-            stride: block.numeric.matrix.stride,
-        };
-        MemberType::Matrix(info)
-    } else if vector && float {
-        let fp_type = resolve_scalar_width(block.numeric.scalar);
-        let info = VectorInfo {
-            fp_type,
-            elements: block.numeric.vector.component_count as _,
-        };
-        MemberType::Vector(info)
-    } else if float {
-        MemberType::Scalar(resolve_scalar_width(block.numeric.scalar))
-    } else {
-        panic!("Unsupported member type");
-    }
-}
-
-pub(crate) fn resolve_scalar_width(scalar: ReflectNumericTraitsScalar) -> ScalarType {
-    match scalar.width {
-        32 => ScalarType::Float,
-        64 => ScalarType::Double,
-        _ => panic!("Unsupported floating point member size"),
-    }
-}
-
-pub(crate) fn resolve_matrix_layout(flags: ReflectDecorationFlags) -> MatrixLayout {
-    if flags.contains(ReflectDecorationFlags::COLUMN_MAJOR) {
-        MatrixLayout::ColumnMajor
-    } else if flags.contains(ReflectDecorationFlags::ROW_MAJOR) {
-        MatrixLayout::RowMajor
-    } else {
-        panic!("Unknown matrix layout");
-    }
+    let decoration_flags = block.decoration_flags;
+    let numeric = &block.numeric;
+    resolve_member_type(desc, decoration_flags, numeric)
 }

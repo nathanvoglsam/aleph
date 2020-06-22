@@ -7,11 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub(crate) mod utils;
-mod fullscreen_quad;
 mod cube_mesh;
+mod fullscreen_quad;
 mod sphere_mesh;
+pub(crate) mod utils;
 
 pub use cube_mesh::CubeMesh;
-pub use sphere_mesh::SphereMesh;
 pub use fullscreen_quad::FullscreenQuad;
+pub use sphere_mesh::SphereMesh;

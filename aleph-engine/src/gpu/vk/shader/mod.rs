@@ -8,12 +8,14 @@
 //
 
 use crate::gpu::vk::core::Device;
-use crate::gpu::vk::reflect::{DescriptorSetReflection, PushConstantReflection};
+use crate::gpu::vk::reflect::{
+    DescriptorSetReflection, PushConstantReflection, VertexLayoutReflection,
+};
 use erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
     ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use spirv_reflect::types::ReflectShaderStageFlags;
+use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
 use std::ffi::CStr;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -44,6 +46,13 @@ pub enum ShaderModuleBuildError {
     /// entry point
     ///
     MoreThanOnePushConstantBlock,
+
+    ///
+    /// A vertex shader was loaded that has no vertex inputs, we treat this as invalid. There are
+    /// some cases where this is needed so maybe we should explicitly support this in the future
+    /// with a flag to ignore vertex input reflection
+    ///
+    VertexShaderHasNoVertexInputs,
 
     ///
     /// An error was encountered generatin reflection information
@@ -186,6 +195,56 @@ impl<'a> ShaderModuleBuilder<'a> {
     }
 
     ///
+    /// Internal function for generating push constant reflection
+    ///
+    fn generate_push_constants(
+        reflection: &spirv_reflect::ShaderModule,
+        entry_point: &ReflectEntryPoint,
+    ) -> Result<Option<Box<PushConstantReflection>>, ShaderModuleBuildError> {
+        let mut push_constants =
+            match reflection.enumerate_push_constant_blocks(Some(&entry_point.name)) {
+                Ok(v) => v,
+                Err(err) => return Err(ShaderModuleBuildError::FailedReflectingPushConstants(err)),
+            };
+
+        let push_constants = if push_constants.is_empty() {
+            None
+        } else {
+            if push_constants.len() != 1 {
+                return Err(ShaderModuleBuildError::MoreThanOnePushConstantBlock);
+            }
+            push_constants
+                .drain(..)
+                .map(|v| Some(Box::new(PushConstantReflection::reflect(v))))
+                .nth(0)
+                .unwrap()
+        };
+
+        Ok(push_constants)
+    }
+
+    ///
+    /// Internal function for generating vertex layout reflection
+    ///
+    fn generate_vertex_layout(
+        entry_point: &mut ReflectEntryPoint,
+    ) -> Result<Option<Box<VertexLayoutReflection>>, ShaderModuleBuildError> {
+        let vertex_layout = if entry_point
+            .shader_stage
+            .contains(ReflectShaderStageFlags::VERTEX)
+        {
+            if entry_point.input_variables.is_empty() {
+                return Err(ShaderModuleBuildError::VertexShaderHasNoVertexInputs);
+            }
+            let iterator = entry_point.input_variables.drain(..);
+            Some(Box::new(VertexLayoutReflection::reflect(iterator)))
+        } else {
+            None
+        };
+        Ok(vertex_layout)
+    }
+
+    ///
     /// Builds the shader module. Depending on the options provided this will
     ///
     /// - Generate reflection information about the shader
@@ -262,30 +321,28 @@ impl<'a> ShaderModuleBuilder<'a> {
         };
 
         // Generate reflection information if requested
-        let (push_constants, descriptor_sets, entry_point_name) = if self.reflect {
-            let mut push_constants = match reflection
-                .enumerate_push_constant_blocks(Some(&entry_point.name))
-            {
-                Ok(v) => v,
-                Err(err) => return Err(ShaderModuleBuildError::FailedReflectingPushConstants(err)),
-            };
+        let push_constants = if self.reflect {
+            Self::generate_push_constants(&reflection, &entry_point)?
+        } else {
+            None
+        };
 
-            let push_constants = if push_constants.is_empty() {
-                None
-            } else {
-                if push_constants.len() != 1 {
-                    return Err(ShaderModuleBuildError::MoreThanOnePushConstantBlock);
-                }
-                push_constants
-                    .drain(..)
-                    .map(|v| Some(Box::new(PushConstantReflection::reflect(v))))
-                    .nth(0)
-                    .unwrap()
-            };
+        // Generate reflection information if requested
+        let vertex_layout = if self.reflect {
+            Self::generate_vertex_layout(&mut entry_point)?
+        } else {
+            None
+        };
 
-            let descriptor_sets: Vec<DescriptorSetReflection> =
-                DescriptorSetReflection::reflect(&mut entry_point);
+        // Generate reflection information if requested
+        let descriptor_sets = if self.reflect {
+            DescriptorSetReflection::reflect(&mut entry_point)
+        } else {
+            Vec::new()
+        };
 
+        // Generate reflection information if requested
+        let entry_point_name = if self.reflect {
             // Get the entry point with having to reallocate
             let mut entry_point_name = String::new();
             std::mem::swap(&mut entry_point_name, &mut entry_point.name);
@@ -294,11 +351,9 @@ impl<'a> ShaderModuleBuilder<'a> {
             // to the string rather than forcing allocations
             entry_point_name.push('\0');
 
-            (push_constants, descriptor_sets, entry_point_name)
+            entry_point_name
         } else {
-            // No reflection information generated so generate defaults and assume entry point name
-            // is "main"
-            (None, Vec::new(), "main\0".to_string())
+            "main\0".to_string()
         };
 
         // Compiled the module if requested
@@ -320,6 +375,7 @@ impl<'a> ShaderModuleBuilder<'a> {
             module,
             entry_point_name,
             push_constants,
+            vertex_layout,
             descriptor_sets,
             stage_flags,
             reflected: self.reflect,
@@ -337,6 +393,7 @@ pub struct ShaderModule {
     module: erupt::vk1_0::ShaderModule,
     entry_point_name: String,
     push_constants: Option<Box<PushConstantReflection>>,
+    vertex_layout: Option<Box<VertexLayoutReflection>>,
     descriptor_sets: Vec<DescriptorSetReflection>,
     stage_flags: ShaderStageFlags,
     reflected: bool,
@@ -414,6 +471,20 @@ impl ShaderModule {
         match &self.push_constants {
             None => None,
             Some(push_constants) => Some(&push_constants),
+        }
+    }
+
+    ///
+    /// Gets the vertex layout reflection for the struct if this is a vertex shader. Otherwise
+    /// returns None
+    ///
+    /// This will be None if no reflection was generated but may also be None even with reflection
+    /// generated so make sure to check with `Self::reflected`
+    ///
+    pub fn vertex_layout(&self) -> Option<&VertexLayoutReflection> {
+        match &self.vertex_layout {
+            None => None,
+            Some(vertex_layout) => Some(&vertex_layout),
         }
     }
 
