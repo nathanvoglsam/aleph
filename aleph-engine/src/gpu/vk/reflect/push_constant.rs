@@ -7,6 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use crate::gpu::vk::reflect::structure::StructResolutionError;
 use crate::gpu::vk::reflect::Struct;
 use spirv_reflect::types::ReflectBlockVariable;
 use std::ops::Deref;
@@ -23,9 +24,9 @@ impl PushConstantReflection {
     ///
     /// Reflect a push constant layout from the given block variable
     ///
-    pub fn reflect(block: ReflectBlockVariable) -> Self {
-        let inner = super::structure::resolve_struct_block(block);
-        Self { inner }
+    pub fn reflect(block: ReflectBlockVariable) -> Result<Self, StructResolutionError> {
+        let inner = super::structure::resolve_struct_block(block)?;
+        Ok(Self { inner })
     }
 }
 

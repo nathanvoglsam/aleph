@@ -7,13 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod member_resolution;
 mod push_constant;
 mod set;
 mod structure;
 mod vertex_layout;
 
-pub(crate) mod utils;
-
+pub use member_resolution::MemberResolutionError;
 pub use push_constant::PushConstantReflection;
 pub use set::Binding;
 pub use set::BindingType;
@@ -25,5 +25,7 @@ pub use structure::Member;
 pub use structure::MemberType;
 pub use structure::ScalarType;
 pub use structure::Struct;
+pub use structure::StructResolutionError;
 pub use structure::VectorInfo;
 pub use vertex_layout::VertexLayoutReflection;
+pub use vertex_layout::VertexLayoutResolutionError;

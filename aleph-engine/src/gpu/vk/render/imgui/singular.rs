@@ -115,6 +115,13 @@ impl ImguiSingular {
             .vertex_binding_descriptions(&bindings)
             .vertex_attribute_descriptions(&attributes);
 
+        // Check the vertex shader is getting the right input
+        vertex_module
+            .vertex_layout()
+            .unwrap()
+            .is_layout_compatible(&vertex_input)
+            .expect("Specified vertex format not compatible with vertex shader");
+
         let input_assembly =
             InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
 

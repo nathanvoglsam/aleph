@@ -7,7 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::vk::reflect::utils::resolve_member_type;
+use crate::gpu::vk::reflect::member_resolution::resolve_member_type;
+use crate::gpu::vk::reflect::MemberResolutionError;
 use spirv_reflect::types::ReflectBlockVariable;
 
 ///
@@ -30,10 +31,16 @@ pub enum IntegerType {
 ///
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum ScalarType {
-    /// FP32 (single precision)
-    Float,
+    /// 8 bit type
+    Quarter,
 
-    /// FP64 (double precision)
+    /// 16 bit type
+    Half,
+
+    /// 32 bit type
+    Single,
+
+    /// 64 bit ype
     Double,
 }
 
@@ -183,6 +190,23 @@ impl Member {
 }
 
 ///
+/// Represents the set of errors that can be produced when resolving a shader struct layout
+///
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum StructResolutionError {
+    ///
+    /// An error was encountered resolving a member variable
+    ///
+    MemberResolutionError(MemberResolutionError),
+}
+
+impl From<MemberResolutionError> for StructResolutionError {
+    fn from(other: MemberResolutionError) -> Self {
+        StructResolutionError::MemberResolutionError(other)
+    }
+}
+
+///
 /// A struct that represents a uniform buffer's struct layout
 ///
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
@@ -262,28 +286,27 @@ impl Struct {
 ///
 /// Internal function for resolving a `ReflectBlockVariable` into a `Struct` description
 ///
-pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
-    let members = block
-        .members
-        .drain(..)
-        .map(|m| {
-            let member_type = resolve_block_member_type(&m);
-            let name = m.name;
-            let size = m.size;
-            let size_padded = m.padded_size;
-            let offset = m.offset;
-            let offset_absolute = m.absolute_offset;
-            let member = Member {
-                name,
-                size,
-                size_padded,
-                offset,
-                offset_absolute,
-                member_type,
-            };
-            member
-        })
-        .collect();
+pub(crate) fn resolve_struct_block(
+    mut block: ReflectBlockVariable,
+) -> Result<Struct, StructResolutionError> {
+    let mut members = Vec::with_capacity(block.members.len());
+    for m in block.members.drain(..) {
+        let member_type = resolve_block_member_type(&m)?;
+        let name = m.name;
+        let size = m.size;
+        let size_padded = m.padded_size;
+        let offset = m.offset;
+        let offset_absolute = m.absolute_offset;
+        let member = Member {
+            name,
+            size,
+            size_padded,
+            offset,
+            offset_absolute,
+            member_type,
+        };
+        members.push(member);
+    }
 
     let item = Struct {
         members,
@@ -293,14 +316,16 @@ pub(crate) fn resolve_struct_block(mut block: ReflectBlockVariable) -> Struct {
         offset_absolute: block.absolute_offset,
     };
 
-    item
+    Ok(item)
 }
 
 ///
 /// Internal wrapper for extracting required information for calling `resolve_member_type` from a
 /// `ReflectBlockVariable`
 ///
-pub(crate) fn resolve_block_member_type(block: &ReflectBlockVariable) -> MemberType {
+pub(crate) fn resolve_block_member_type(
+    block: &ReflectBlockVariable,
+) -> Result<MemberType, MemberResolutionError> {
     let desc = block.type_description.as_ref().unwrap();
     let decoration_flags = block.decoration_flags;
     let numeric = &block.numeric;

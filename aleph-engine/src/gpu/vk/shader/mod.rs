@@ -9,7 +9,8 @@
 
 use crate::gpu::vk::core::Device;
 use crate::gpu::vk::reflect::{
-    DescriptorSetReflection, PushConstantReflection, VertexLayoutReflection,
+    DescriptorSetReflection, PushConstantReflection, StructResolutionError, VertexLayoutReflection,
+    VertexLayoutResolutionError,
 };
 use erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
@@ -68,6 +69,28 @@ pub enum ShaderModuleBuildError {
     /// Failed to generate reflection information for a push constant block
     ///
     FailedReflectingPushConstants(&'static str),
+
+    ///
+    /// An error was encountered when resolving a struct as part of the shader module reflection
+    ///
+    StructResolutionError(StructResolutionError),
+
+    ///
+    /// An error was encountered when resolving a vertex layout
+    ///
+    VertexLayoutResolutionError(VertexLayoutResolutionError),
+}
+
+impl From<StructResolutionError> for ShaderModuleBuildError {
+    fn from(other: StructResolutionError) -> Self {
+        ShaderModuleBuildError::StructResolutionError(other)
+    }
+}
+
+impl From<VertexLayoutResolutionError> for ShaderModuleBuildError {
+    fn from(other: VertexLayoutResolutionError) -> Self {
+        ShaderModuleBuildError::VertexLayoutResolutionError(other)
+    }
 }
 
 ///
@@ -213,11 +236,11 @@ impl<'a> ShaderModuleBuilder<'a> {
             if push_constants.len() != 1 {
                 return Err(ShaderModuleBuildError::MoreThanOnePushConstantBlock);
             }
-            push_constants
-                .drain(..)
-                .map(|v| Some(Box::new(PushConstantReflection::reflect(v))))
-                .nth(0)
-                .unwrap()
+            let push_constants = push_constants.drain(..).nth(0).unwrap();
+
+            let push_constants = PushConstantReflection::reflect(push_constants)?;
+            let push_constants = Box::new(push_constants);
+            Some(push_constants)
         };
 
         Ok(push_constants)
@@ -237,7 +260,9 @@ impl<'a> ShaderModuleBuilder<'a> {
                 return Err(ShaderModuleBuildError::VertexShaderHasNoVertexInputs);
             }
             let iterator = entry_point.input_variables.drain(..);
-            Some(Box::new(VertexLayoutReflection::reflect(iterator)))
+            let vertex_layout = VertexLayoutReflection::reflect(iterator)?;
+            let vertex_layout = Box::new(vertex_layout);
+            Some(vertex_layout)
         } else {
             None
         };

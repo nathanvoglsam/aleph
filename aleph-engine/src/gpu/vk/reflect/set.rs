@@ -156,11 +156,15 @@ impl DescriptorSetReflection {
                     }
                     ReflectDescriptorType::SampledImage => BindingType::SampledImage,
                     ReflectDescriptorType::StorageImage => BindingType::StorageImage,
-                    ReflectDescriptorType::UniformBuffer => {
-                        BindingType::UniformBuffer(resolve_struct_block(b.block))
-                    }
+                    ReflectDescriptorType::UniformBuffer => BindingType::UniformBuffer(
+                        resolve_struct_block(b.block)
+                            .expect("Failed to reflect uniform buffer block"),
+                    ),
                     ReflectDescriptorType::UniformBufferDynamic => {
-                        BindingType::UniformBufferDynamic(resolve_struct_block(b.block))
+                        BindingType::UniformBufferDynamic(
+                            resolve_struct_block(b.block)
+                                .expect("Failed to reflect dynamic uniform buffer block"),
+                        )
                     }
                     ReflectDescriptorType::InputAttachment => BindingType::InputAttachment,
                     ReflectDescriptorType::AccelerationStructureNV => {
