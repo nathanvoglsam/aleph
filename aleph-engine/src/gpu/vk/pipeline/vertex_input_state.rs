@@ -56,7 +56,8 @@ impl VertexInputState {
     ///
     /// There is an optional parameter for passing a function that can remap attribute locations
     /// based on the current index in the attribute array, the total number of attributes and the
-    /// semantic for the attribute.
+    /// semantic for the attribute. The function also has the ability to return a generic error
+    /// string which will be surfaced back up at the `for_gltf_primitive` call site
     ///
     pub fn for_gltf_primitive<'a>(
         primitive: &gltf::Primitive,
