@@ -11,17 +11,17 @@ use super::ImguiGlobal;
 use crate::gpu::vk;
 use crate::gpu::vk::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    InputAssemblyState, MultiSampleState, RasterizationState, ViewportState,
+    InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
 };
 use crate::gpu::vk::pipeline_cache::PipelineCache;
 use crate::gpu::vk::shader::ShaderModule;
 use erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
-    PipelineBindPoint, PipelineLayout, PipelineVertexInputStateCreateInfoBuilder, PolygonMode,
-    PrimitiveTopology, RenderPass, RenderPassCreateInfoBuilder, SampleCountFlagBits,
-    SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
-    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
+    PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
+    RenderPassCreateInfoBuilder, SampleCountFlagBits, SubpassDescriptionBuilder,
+    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
+    Vk10DeviceLoaderExt,
 };
 
 ///
@@ -111,9 +111,7 @@ impl ImguiSingular {
             .format(Format::R8G8B8A8_UNORM);
         let bindings = [binding];
         let attributes = [pos_attr, uv_attr, col_attr];
-        let vertex_input = PipelineVertexInputStateCreateInfoBuilder::new()
-            .vertex_binding_descriptions(&bindings)
-            .vertex_attribute_descriptions(&attributes);
+        let vertex_input = VertexInputState::new(&bindings, &attributes);
 
         // Check the vertex shader is getting the right input
         vertex_module

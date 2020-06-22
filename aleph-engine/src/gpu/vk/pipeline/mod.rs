@@ -14,6 +14,7 @@ mod dynamic_pipeline_state;
 mod input_assembly_state;
 mod multi_sample_state;
 mod rasterization_state;
+mod vertex_input_state;
 mod viewport_state;
 
 pub use color_blend_attachment_state::ColorBlendAttachmentState;
@@ -23,4 +24,5 @@ pub use dynamic_pipeline_state::DynamicPipelineState;
 pub use input_assembly_state::InputAssemblyState;
 pub use multi_sample_state::MultiSampleState;
 pub use rasterization_state::RasterizationState;
+pub use vertex_input_state::VertexInputState;
 pub use viewport_state::ViewportState;

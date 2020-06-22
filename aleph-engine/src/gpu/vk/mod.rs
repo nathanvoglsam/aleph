@@ -9,6 +9,7 @@
 
 pub mod alloc;
 pub mod core;
+pub mod format;
 pub mod image;
 pub mod pipeline;
 pub mod pipeline_cache;
