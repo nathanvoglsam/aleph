@@ -85,9 +85,12 @@ impl ImguiSingular {
         vertex_module: &ShaderModule,
         fragment_module: &ShaderModule,
     ) -> Pipeline {
+        assert!(vertex_module.is_vertex_shader());
+        assert!(fragment_module.is_fragment_shader());
+
         let stages = [
-            vertex_module.pipeline_shader_stage(),
-            fragment_module.pipeline_shader_stage(),
+            vertex_module.pipeline_shader_stage().unwrap(),
+            fragment_module.pipeline_shader_stage().unwrap(),
         ];
 
         let binding = VertexInputBindingDescriptionBuilder::new()

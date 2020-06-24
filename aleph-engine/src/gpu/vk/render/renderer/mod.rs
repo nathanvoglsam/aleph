@@ -7,10 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod pipelines;
+
 use crate::gpu::vk::alloc::Allocator;
 use crate::gpu::vk::core::{Device, Swapchain};
 use crate::gpu::vk::image::{ColourImage, DepthImage, SwapImage};
 use crate::gpu::vk::pipeline_layout::PipelineLayout;
+use crate::gpu::vk::render::renderer::pipelines::{GeometryPipeline, TonePipeline};
 use crate::gpu::vk::shader::ShaderModule;
 use crate::include_spirv_bytes;
 use erupt::vk1_0::{
@@ -269,6 +272,11 @@ pub struct Renderer {
     geom_frag_module: ShaderModule,
     geom_vert_module: ShaderModule,
     geom_pipe_layout: PipelineLayout,
+    geom_pipe: GeometryPipeline,
+    tone_frag_module: ShaderModule,
+    tone_vert_module: ShaderModule,
+    tone_pipe_layout: PipelineLayout,
+    tone_pipe: TonePipeline,
     device: Arc<Device>,
     allocator: Arc<Allocator>,
 }
@@ -298,7 +306,7 @@ impl Renderer {
             gbuffer_pass.render_pass(),
         );
         let (_, words) =
-            include_spirv_bytes!("../../../../shaders/compiled/standard/standard.frag.spv");
+            include_spirv_bytes!("../../../../../shaders/compiled/standard/standard.frag.spv");
         let geom_frag_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -307,7 +315,7 @@ impl Renderer {
             .build(Some(&device))
             .expect("Failed to create geom frag module");
         let (_, words) =
-            include_spirv_bytes!("../../../../shaders/compiled/standard/standard.vert.spv");
+            include_spirv_bytes!("../../../../../shaders/compiled/standard/standard.vert.spv");
         let geom_vert_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -321,6 +329,48 @@ impl Renderer {
             .build(&device)
             .expect("Failed to create geom pipe layout");
 
+        let geom_pipe = GeometryPipeline::new(
+            &device,
+            &geom_pipe_layout,
+            gbuffer_pass.render_pass(),
+            &geom_vert_module,
+            &geom_frag_module,
+        );
+
+        let (_, words) = include_spirv_bytes!(
+            "../../../../../shaders/compiled/postprocess/tonemapping.frag.spv"
+        );
+        let tone_frag_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .fragment()
+            .words(words)
+            .build(Some(&device))
+            .expect("Failed to create tone frag module");
+        let (_, words) = include_spirv_bytes!(
+            "../../../../../shaders/compiled/fullscreen_quad/fullscreen_quad.vert.spv"
+        );
+        let tone_vert_module = ShaderModule::builder()
+            .reflect(true)
+            .compile(true)
+            .vertex()
+            .words(words)
+            .build(Some(&device))
+            .expect("Failed to create tone vert module");
+
+        let tone_pipe_layout = PipelineLayout::builder()
+            .modules(&[&tone_frag_module, &tone_vert_module])
+            .build(&device)
+            .expect("Failed to create tone pipe layout");
+
+        let tone_pipe = TonePipeline::new(
+            &device,
+            &tone_pipe_layout,
+            gbuffer_pass.render_pass(),
+            &tone_vert_module,
+            &tone_frag_module,
+        );
+
         Self {
             gbuffer,
             gbuffer_pass,
@@ -328,6 +378,11 @@ impl Renderer {
             geom_frag_module,
             geom_vert_module,
             geom_pipe_layout,
+            geom_pipe,
+            tone_frag_module,
+            tone_vert_module,
+            tone_pipe_layout,
+            tone_pipe,
             device,
             allocator,
         }
@@ -337,6 +392,11 @@ impl Renderer {
 impl Drop for Renderer {
     fn drop(&mut self) {
         unsafe {
+            self.tone_pipe.destroy(&self.device);
+            self.tone_pipe_layout.destroy(&self.device);
+            self.tone_vert_module.destroy(&self.device);
+            self.tone_frag_module.destroy(&self.device);
+            self.geom_pipe.destroy(&self.device);
             self.geom_pipe_layout.destroy(&self.device);
             self.geom_vert_module.destroy(&self.device);
             self.geom_frag_module.destroy(&self.device);

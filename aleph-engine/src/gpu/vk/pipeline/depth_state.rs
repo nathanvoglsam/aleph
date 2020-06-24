@@ -37,8 +37,6 @@ impl DepthState {
             .depth_test_enable(true)
             .depth_bounds_test_enable(false)
             .depth_compare_op(compare_op)
-            .min_depth_bounds(0.0)
-            .max_depth_bounds(1.0)
             .stencil_test_enable(false)
     }
 }

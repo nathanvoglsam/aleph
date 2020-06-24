@@ -10,10 +10,11 @@
 use crate::gpu::embedded_data::CubeMesh;
 use crate::gpu::vk::format::{format_from_gltf_accessor, AccessorFormatError};
 use erupt::vk1_0::{
-    PipelineVertexInputStateCreateInfoBuilder, VertexInputAttributeDescriptionBuilder,
+    Format, PipelineVertexInputStateCreateInfoBuilder, VertexInputAttributeDescriptionBuilder,
     VertexInputBindingDescriptionBuilder, VertexInputRate,
 };
 use gltf::Semantic;
+use std::mem::size_of;
 
 ///
 /// An enum to represent the set of errors that can be generated when producing a vertex input
@@ -51,6 +52,31 @@ pub struct VertexInputState {}
 
 impl VertexInputState {
     ///
+    /// Provides a vertex binding and vertex attribute description for a pipeline that takes a
+    /// single fullscreen quad
+    ///
+    pub fn for_fullscreen_quad<'a>(
+        bindings: &'a mut Vec<VertexInputBindingDescriptionBuilder<'static>>,
+        attributes: &'a mut Vec<VertexInputAttributeDescriptionBuilder<'static>>,
+    ) {
+        assert!(bindings.is_empty(), "List of bindings must be empty");
+        assert!(attributes.is_empty(), "List of attributes must be empty");
+
+        let binding = VertexInputBindingDescriptionBuilder::new()
+            .binding(0)
+            .stride(size_of::<f32>() as u32 * 2)
+            .input_rate(VertexInputRate::VERTEX);
+        bindings.push(binding);
+
+        let attribute = VertexInputAttributeDescriptionBuilder::new()
+            .binding(0)
+            .format(Format::R32G32_SFLOAT)
+            .offset(0)
+            .location(0);
+        attributes.push(attribute);
+    }
+
+    ///
     /// Takes a gltf primitive and builds a vertex input description for the mesh data layout the
     /// primitive uses.
     ///
@@ -63,7 +89,7 @@ impl VertexInputState {
         primitive: &gltf::Primitive,
         bindings: &'a mut Vec<VertexInputBindingDescriptionBuilder<'static>>,
         attributes: &'a mut Vec<VertexInputAttributeDescriptionBuilder<'static>>,
-        location_fn: Option<&impl Fn(usize, usize, &Semantic) -> Result<u32, &'static str>>,
+        location_mapper: Option<&impl Fn(usize, usize, &Semantic) -> Result<u32, &'static str>>,
     ) -> Result<(), VertexInputStateError> {
         assert!(bindings.is_empty(), "List of bindings must be empty");
         assert!(attributes.is_empty(), "List of attributes must be empty");
@@ -77,7 +103,7 @@ impl VertexInputState {
                 .stride(accessor.size() as _);
             bindings.push(binding);
 
-            let location = match location_fn {
+            let location = match location_mapper {
                 None => i as _,
                 Some(func) => (*func)(i, attr_num, &semantic)?,
             };
@@ -136,7 +162,7 @@ impl VertexInputState {
         semantic: &Semantic,
     ) -> Result<u32, &'static str> {
         if len != 4 {
-            panic!("We need exactly four vertex attributes for a standard static mesh")
+            return Err("We need exactly four vertex attributes for a standard static mesh");
         }
         match semantic {
             Semantic::Positions => Ok(0),

@@ -471,12 +471,14 @@ impl ShaderModule {
     ///
     /// Creates a `PipelineShaderStageCreateInfo` for this shader module
     ///
-    pub fn pipeline_shader_stage(&self) -> PipelineShaderStageCreateInfoBuilder {
-        let stage = ShaderStageFlagBits(self.stage_flags.bits());
-        PipelineShaderStageCreateInfoBuilder::new()
-            .stage(stage)
-            .module(self.module)
-            .name(self.entry_point_name_cstr())
+    pub fn pipeline_shader_stage(&self) -> Option<PipelineShaderStageCreateInfoBuilder> {
+        self.module().map(|module| {
+            let stage = ShaderStageFlagBits(self.stage_flags.bits());
+            PipelineShaderStageCreateInfoBuilder::new()
+                .stage(stage)
+                .module(module)
+                .name(self.entry_point_name_cstr())
+        })
     }
 
     ///
