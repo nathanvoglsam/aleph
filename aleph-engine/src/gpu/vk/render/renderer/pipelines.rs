@@ -37,25 +37,34 @@ impl GeometryPipeline {
     ) -> Self {
         assert!(vert_module.is_vertex_shader());
         assert!(frag_module.is_fragment_shader());
+
         let color_blend_attachments = [ColorBlendAttachmentState::disabled()];
         let color_blend_state = ColorBlendState::attachments(&color_blend_attachments);
+
         let depth_stencil_state = DepthState::enabled(true, CompareOp::LESS);
+
         let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
         let dynamic_state = DynamicPipelineState::states(&dynamic_states);
+        let viewport_state = ViewportState::dynamic(1, 1);
+
         let input_assembly_state =
             InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
+
         let multisample_state = MultiSampleState::disabled();
+
         let rasterization_stage =
             RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
+
         let stages = [
             vert_module.pipeline_shader_stage().unwrap(),
             frag_module.pipeline_shader_stage().unwrap(),
         ];
-        let viewport_state = ViewportState::dynamic(1, 1);
+
         let mut bindings = Vec::new();
         let mut attributes = Vec::new();
         VertexInputState::for_static_mesh(&mut bindings, &mut attributes);
         let vertex_input_state = VertexInputState::new(&bindings, &attributes);
+
         let create_info = GraphicsPipelineCreateInfoBuilder::new()
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
@@ -115,6 +124,7 @@ impl TonePipeline {
 
         let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
         let dynamic_state = DynamicPipelineState::states(&dynamic_states);
+        let viewport_state = ViewportState::dynamic(1, 1);
 
         let input_assembly_state =
             InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
@@ -128,7 +138,6 @@ impl TonePipeline {
             vert_module.pipeline_shader_stage().unwrap(),
             frag_module.pipeline_shader_stage().unwrap(),
         ];
-        let viewport_state = ViewportState::dynamic(1, 1);
 
         let mut bindings = Vec::new();
         let mut attributes = Vec::new();
