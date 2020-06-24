@@ -9,6 +9,10 @@
 
 #include "fullscreen_quad.inc.hlsl"
 
-void main(in FSQuadVertexLayout input, out float4 Pos : SV_POSITION) {
+FSQuadPSInput main(in FSQuadVertexLayout input, out float4 Pos : SV_POSITION) {
 	Pos = float4(input.Pos, 0, 1);
+	
+	FSQuadPSInput output;
+	output.Pos = input.Pos;
+	return output;
 }
