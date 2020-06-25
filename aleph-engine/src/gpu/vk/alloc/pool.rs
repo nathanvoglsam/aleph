@@ -141,7 +141,7 @@ impl PoolBuilder {
         let create_ptr = &self.create_info as *const PoolCreateInfo;
         let create_ptr = create_ptr as *const raw::VmaPoolCreateInfo;
 
-        let result = raw::vmaCreatePool(allocator.into_raw(), create_ptr, &mut pool as *mut _);
+        let result = raw::vmaCreatePool(allocator.as_raw(), create_ptr, &mut pool as *mut _);
 
         debug_assert!(pool != ptr::null_mut(), "Pool should not be null");
 
@@ -201,7 +201,7 @@ impl Pool {
         };
 
         raw::vmaGetPoolStats(
-            self.allocator.into_raw(),
+            self.allocator.as_raw(),
             self.pool,
             &mut stats as *mut raw::VmaPoolStats,
         );
@@ -216,7 +216,7 @@ impl Pool {
         let mut out = 0usize;
 
         raw::vmaMakePoolAllocationsLost(
-            self.allocator.into_raw(),
+            self.allocator.as_raw(),
             self.pool,
             &mut out as *mut usize as *mut _,
         );
@@ -225,7 +225,7 @@ impl Pool {
     }
 
     pub unsafe fn check_pool_corruption(&self) -> VulkanResult<()> {
-        let result = raw::vmaCheckPoolCorruption(self.allocator.into_raw(), self.pool);
+        let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
 
         if result as i32 == 0 {
             VulkanResult::new_ok(())
@@ -238,7 +238,7 @@ impl Pool {
 impl Drop for Pool {
     fn drop(&mut self) {
         unsafe {
-            raw::vmaDestroyPool(self.allocator.into_raw(), self.pool);
+            raw::vmaDestroyPool(self.allocator.as_raw(), self.pool);
         }
     }
 }

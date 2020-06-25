@@ -147,7 +147,7 @@ impl TonePipeline {
         let create_info = GraphicsPipelineCreateInfoBuilder::new()
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
-            .subpass(0)
+            .subpass(1)
             .color_blend_state(&color_blend_state)
             .depth_stencil_state(&depth_stencil_state)
             .dynamic_state(&dynamic_state)

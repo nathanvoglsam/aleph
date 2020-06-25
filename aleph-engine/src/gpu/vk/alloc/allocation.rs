@@ -10,6 +10,7 @@
 use crate::gpu::vk::alloc::Pool;
 use core::ptr;
 use erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
+use std::ops::Deref;
 use vma_sys::raw;
 
 ///
@@ -332,6 +333,14 @@ impl AllocationCreateInfoBuilder {
 impl Default for AllocationCreateInfoBuilder {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl Deref for AllocationCreateInfoBuilder {
+    type Target = AllocationCreateInfo;
+
+    fn deref(&self) -> &Self::Target {
+        &self.info
     }
 }
 

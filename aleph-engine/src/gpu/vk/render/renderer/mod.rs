@@ -9,6 +9,7 @@
 
 mod pipelines;
 
+use crate::gpu::embedded_data::{CubeMesh, FullscreenQuad, SphereMesh};
 use crate::gpu::vk::alloc::Allocator;
 use crate::gpu::vk::core::{Device, Swapchain};
 use crate::gpu::vk::image::{ColourImage, DepthImage, SwapImage};
@@ -17,10 +18,12 @@ use crate::gpu::vk::render::renderer::pipelines::{GeometryPipeline, TonePipeline
 use crate::gpu::vk::shader::ShaderModule;
 use crate::include_spirv_bytes;
 use erupt::vk1_0::{
-    AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format,
-    Framebuffer, FramebufferCreateInfoBuilder, ImageLayout, PipelineBindPoint, PipelineStageFlags,
-    RenderPass, RenderPassCreateInfoBuilder, SubpassDependencyBuilder, SubpassDescriptionBuilder,
-    Vk10DeviceLoaderExt,
+    AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
+    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
+    CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer,
+    FramebufferCreateInfoBuilder, ImageLayout, PipelineBindPoint, PipelineStageFlags, RenderPass,
+    RenderPassCreateInfoBuilder, SubmitInfoBuilder, SubpassDependencyBuilder,
+    SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
 
@@ -290,6 +293,61 @@ impl Renderer {
         allocator: Arc<Allocator>,
         swapchain: &Swapchain,
     ) -> Renderer {
+        // Create a command pool for creating permanent buffer resources
+        let create_info =
+            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
+        let command_pool = device
+            .loader()
+            .create_command_pool(&create_info, None, None)
+            .expect("Failed to create command pool");
+
+        // Create a command buffer for creating permanent buffer resources
+        let allocate_info = CommandBufferAllocateInfoBuilder::new()
+            .level(CommandBufferLevel::PRIMARY)
+            .command_pool(command_pool)
+            .command_buffer_count(1);
+        let command_buffer = device
+            .loader()
+            .allocate_command_buffers(&allocate_info)
+            .expect("Failed to allocate command buffer")[0];
+
+        // Beginning recording commands
+        let begin_info =
+            CommandBufferBeginInfoBuilder::new().flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+        device
+            .loader()
+            .begin_command_buffer(command_buffer, &begin_info)
+            .expect("Failed to begin command buffer");
+
+        CubeMesh::init_buffers(&allocator, command_buffer);
+        SphereMesh::init_buffers(&allocator, command_buffer);
+        FullscreenQuad::init_buffers(&allocator, command_buffer);
+
+        // End recording commands
+        device
+            .loader()
+            .end_command_buffer(command_buffer)
+            .expect("Failde to end command buffer");
+
+        // Submit command buffer
+        let command_buffers = [command_buffer];
+        let submit = SubmitInfoBuilder::new().command_buffers(&command_buffers);
+        device
+            .loader()
+            .queue_submit(device.general_queue(), &[submit], Fence::null())
+            .expect("Failed to submit command buffer");
+
+        // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
+        // finished being used.
+        device.defer(move |device| {
+            let command_pool = command_pool;
+            let command_buffer = command_buffer;
+            device
+                .loader()
+                .free_command_buffers(command_pool, &[command_buffer]);
+            device.loader().destroy_command_pool(command_pool, None);
+        });
+
         let swap_image = &swapchain.images()[0];
         let gbuffer = GBuffer::new(&device, &allocator, swap_image.width(), swap_image.height());
         let gbuffer_pass = GBufferPass::new(

@@ -21,6 +21,7 @@ use erupt::vk1_0::{
     Buffer, BufferCreateInfo, DeviceMemory, DeviceSize, Image, ImageCreateInfo, MemoryRequirements,
     PhysicalDeviceMemoryProperties, PhysicalDeviceProperties, FALSE, TRUE,
 };
+use parking_lot::Mutex;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -151,6 +152,7 @@ impl AllocatorBuilder {
         let alloc = Allocator {
             allocator: raw_alloc,
             device: device.clone(),
+            deferred_destruction: Default::default(),
         };
 
         Ok(Arc::new(alloc))
@@ -169,6 +171,7 @@ impl Default for AllocatorBuilder {
 pub struct Allocator {
     allocator: raw::VmaAllocator,
     device: Arc<Device>,
+    deferred_destruction: Mutex<Vec<Box<dyn Fn(&Allocator) + 'static>>>,
 }
 
 impl Allocator {
@@ -182,8 +185,20 @@ impl Allocator {
     ///
     /// Get the raw VmaAllocator handle
     ///
-    pub fn into_raw(&self) -> raw::VmaAllocator {
+    pub fn as_raw(&self) -> raw::VmaAllocator {
         self.allocator
+    }
+
+    ///
+    /// Appends a function to the deferred destruction list. This can be used to defer destruction
+    /// of some items until the `Allocator` it self is being dropped. This can be used to guarantee
+    /// that objects live as long as the allocator as an invariant when dealing with unsafe code.
+    ///
+    /// This should be used to uphold invariants for unsafe code and not as a general purpose tool
+    /// for object destruction.
+    ///
+    pub fn defer(&self, func: impl Fn(&Allocator) + 'static) {
+        self.deferred_destruction.lock().push(Box::new(func));
     }
 
     ///
@@ -790,6 +805,9 @@ unsafe impl Sync for Allocator {}
 impl Drop for Allocator {
     fn drop(&mut self) {
         unsafe {
+            self.deferred_destruction.lock().drain(..).for_each(|v| {
+                v(self);
+            });
             log::trace!("Destroying Vulkan allocator");
             raw::vmaDestroyAllocator(self.allocator);
         }

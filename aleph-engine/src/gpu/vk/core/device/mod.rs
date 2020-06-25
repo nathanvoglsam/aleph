@@ -17,6 +17,7 @@ use erupt::vk1_0::{
     PhysicalDeviceType, Queue, QueueFlags, Vk10DeviceLoaderExt, Vk10InstanceLoaderExt, TRUE,
 };
 use erupt::{DeviceLoader, InstanceLoader};
+use parking_lot::Mutex;
 use std::ffi::CStr;
 use std::sync::Arc;
 
@@ -185,6 +186,8 @@ impl DeviceBuilder {
 
         let device_loader = Arc::new(device_loader);
 
+        let deferred_destruction = Mutex::new(Vec::new());
+
         let device = Device {
             info,
             physical_device,
@@ -196,6 +199,7 @@ impl DeviceBuilder {
             transfer_queue,
             transfer_family,
             instance: instance.clone(),
+            deferred_destruction,
         };
 
         PipelineCache::init(&device);
@@ -414,6 +418,7 @@ pub struct Device {
     transfer_queue: Option<Queue>,
     transfer_family: Option<QueueFamily>,
     instance: Arc<Instance>,
+    deferred_destruction: Mutex<Vec<Box<dyn Fn(&Device) + 'static>>>,
 }
 
 impl Device {
@@ -517,12 +522,27 @@ impl Device {
     pub fn instance(&self) -> &Arc<Instance> {
         &self.instance
     }
+
+    ///
+    /// Appends a function to the deferred destruction list. This can be used to defer destruction
+    /// of some items until the `Device` it self is being dropped. This can be used to guarantee
+    /// that objects live as long as the device as an invariant when dealing with unsafe code.
+    ///
+    /// This should be used to uphold invariants for unsafe code and not as a general purpose tool
+    /// for object destruction.
+    ///
+    pub fn defer(&self, func: impl Fn(&Device) + 'static) {
+        self.deferred_destruction.lock().push(Box::new(func));
+    }
 }
 
 impl Drop for Device {
     fn drop(&mut self) {
         PipelineCache::destroy(self);
         unsafe {
+            self.deferred_destruction.lock().drain(..).for_each(|v| {
+                v(self);
+            });
             log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
         }
