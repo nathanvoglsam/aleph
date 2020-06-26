@@ -1,0 +1,35 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-vulkan-core"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "Abstractions around base level vulkan primitives like a Device, PhysicalDevice, Instance and SwapChain"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-vulkan-core/"
+readme = "README.md"
+keywords = ["engine", "graphics", "vulkan", "game"]
+categories = ["game-engines"]
+edition = "2018"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
+
+[dependencies]
+erupt = "0.10"
+log = { version = "0.4", features = ["release_max_level_info"] }
+crossbeam = "0.7"
+##libloading = "0.6"
+raw-window-handle = "0.3"
+console = "0.11"
+aleph-app-info = { path = "../../engine/aleph-app-info", version = "0.1" }
+aleph-macros = { path = "../../utils/aleph-macros", version = "1" }

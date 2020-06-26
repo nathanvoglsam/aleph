@@ -1,0 +1,30 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-embedded-data"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "Special case data that will be embedded into the executable for aleph-engine"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-embedded-data/"
+readme = "README.md"
+## TODO: keywords = ["engine", "graphics", "vulkan", "game"]
+## TODO: categories = ["game-engines"]
+edition = "2018"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
+
+[dependencies]
+aleph-macros = { path = "../../utils/aleph-macros", version = "1.0" }
+gltf = { version = "0.15", features = ["utils", "names"] }
+once_cell = "1.3"

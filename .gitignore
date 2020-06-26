@@ -2,8 +2,6 @@
 Cargo.lock
 shader_cache.bin
 .vs
-aleph-engine/thirdparty/sdl2/out
-aleph-vma-sys/lib/out
-aleph-engine/shaders/out
-aleph-vulkan-core/shaders/out
-aleph-embedded-data/shaders/out
+engine/aleph-engine/thirdparty/sdl2/out
+graphics/aleph-vma-sys/lib/out
+engine/aleph-embedded-data/shaders/out

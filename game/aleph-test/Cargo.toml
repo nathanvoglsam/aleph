@@ -1,0 +1,18 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-test"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+aleph-engine = { path = "../../engine/aleph-engine", version = "0.1" }
