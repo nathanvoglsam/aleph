@@ -12,12 +12,7 @@ pub extern crate aleph_vulkan_core as vulkan_core;
 pub extern crate spirv_reflect;
 pub extern crate imgui;
 
-//extern crate log;
-//extern crate aleph_embedded_data;
-//extern crate console;
 extern crate once_cell;
-//extern crate palette;
-//extern crate raw_window_handle;
 
 pub use aleph_embedded_data::gltf;
 
