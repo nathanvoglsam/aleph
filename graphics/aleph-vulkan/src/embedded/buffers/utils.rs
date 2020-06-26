@@ -8,9 +8,9 @@
 //
 
 use std::mem::size_of;
-use crate::vulkan_core::erupt::vk1_0::{Buffer, BufferUsageFlags, CommandBuffer, BufferCopyBuilder, PipelineStageFlags, DependencyFlags, BufferMemoryBarrierBuilder, WHOLE_SIZE, AccessFlags, BufferCreateInfoBuilder, SharingMode};
-use crate::vulkan_alloc::{Allocation, Allocator, AllocationCreateInfoBuilder, MemoryUsage};
-use crate::vulkan_core::Device;
+use vulkan_core::erupt::vk1_0::{Buffer, BufferUsageFlags, CommandBuffer, BufferCopyBuilder, PipelineStageFlags, DependencyFlags, BufferMemoryBarrierBuilder, WHOLE_SIZE, AccessFlags, BufferCreateInfoBuilder, SharingMode};
+use vulkan_alloc::{Allocation, Allocator, AllocationCreateInfoBuilder, MemoryUsage};
+use vulkan_core::Device;
 use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 
 ///

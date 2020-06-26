@@ -15,7 +15,7 @@ use crate::pipeline::{
 use crate::pipeline_cache::PipelineCache;
 use crate::pipeline_layout::PipelineLayout;
 use crate::shader::ShaderModule;
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     CompareOp, DynamicState, FrontFace, GraphicsPipelineCreateInfoBuilder, Pipeline, PolygonMode,
     PrimitiveTopology, RenderPass, Vk10DeviceLoaderExt,
 };

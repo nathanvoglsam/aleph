@@ -8,7 +8,7 @@
 //
 
 use vulkan_core::Device;
-use crate::vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -77,7 +77,7 @@ impl PipelineCache {
 
             unsafe {
                 let pipeline_cache =
-                    crate::vulkan_core::erupt::vk1_0::PipelineCache(PIPELINE_CACHE.swap(0, Ordering::Relaxed));
+                    vulkan_core::erupt::vk1_0::PipelineCache(PIPELINE_CACHE.swap(0, Ordering::Relaxed));
                 device.loader().destroy_pipeline_cache(pipeline_cache, None);
             }
         });
@@ -139,8 +139,8 @@ impl PipelineCache {
     ///
     /// Get the global pipeline cache handle
     ///
-    pub fn get() -> crate::vulkan_core::erupt::vk1_0::PipelineCache {
-        let val = crate::vulkan_core::erupt::vk1_0::PipelineCache(PIPELINE_CACHE.load(Ordering::Relaxed));
+    pub fn get() -> vulkan_core::erupt::vk1_0::PipelineCache {
+        let val = vulkan_core::erupt::vk1_0::PipelineCache(PIPELINE_CACHE.load(Ordering::Relaxed));
 
         if !val.is_null() {
             val

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::vulkan_core::erupt::vk1_0::{PipelineInputAssemblyStateCreateInfoBuilder, PrimitiveTopology};
+use vulkan_core::erupt::vk1_0::{PipelineInputAssemblyStateCreateInfoBuilder, PrimitiveTopology};
 
 ///
 /// Namespace struct for input assembly state

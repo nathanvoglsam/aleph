@@ -12,7 +12,7 @@ use crate::reflect::{
     DescriptorSetReflection, PushConstantReflection, StructResolutionError, VertexLayoutReflection,
     VertexLayoutResolutionError,
 };
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
     ShaderStageFlags, Vk10DeviceLoaderExt,
 };
@@ -393,7 +393,7 @@ impl<'a> ShaderModuleBuilder<'a> {
                     .expect("Failed to create shader module")
             }
         } else {
-            crate::vulkan_core::erupt::vk1_0::ShaderModule::null()
+            vulkan_core::erupt::vk1_0::ShaderModule::null()
         };
 
         let module = ShaderModule {
@@ -415,7 +415,7 @@ impl<'a> ShaderModuleBuilder<'a> {
 /// about a shader module
 ///
 pub struct ShaderModule {
-    module: crate::vulkan_core::erupt::vk1_0::ShaderModule,
+    module: vulkan_core::erupt::vk1_0::ShaderModule,
     entry_point_name: String,
     push_constants: Option<Box<PushConstantReflection>>,
     vertex_layout: Option<Box<VertexLayoutReflection>>,
@@ -443,7 +443,7 @@ impl ShaderModule {
     /// Gets the internal vulkan ShaderModule handle if it was compiled on object creation.
     /// This returns None if the module wasn't compiled
     ///
-    pub fn module(&self) -> Option<crate::vulkan_core::erupt::vk1_0::ShaderModule> {
+    pub fn module(&self) -> Option<vulkan_core::erupt::vk1_0::ShaderModule> {
         if self.module.is_null() {
             None
         } else {

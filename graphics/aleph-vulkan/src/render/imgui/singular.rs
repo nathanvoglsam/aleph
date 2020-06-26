@@ -14,7 +14,7 @@ use crate::pipeline::{
 };
 use crate::pipeline_cache::PipelineCache;
 use crate::shader::ShaderModule;
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
     PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,

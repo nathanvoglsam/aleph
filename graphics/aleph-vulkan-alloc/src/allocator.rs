@@ -14,7 +14,7 @@ use crate::Allocation;
 use crate::AllocationCreateInfo;
 use crate::AllocationInfo;
 use crate::Stats;
-use crate::vulkan_core::Device;
+use vulkan_core::Device;
 use core::mem;
 use core::ptr;
 use vulkan_core::erupt::utils::VulkanResult;

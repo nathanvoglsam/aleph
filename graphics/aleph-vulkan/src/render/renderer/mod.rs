@@ -9,13 +9,13 @@
 
 mod pipelines;
 
-use crate::vulkan_alloc::Allocator;
+use vulkan_alloc::Allocator;
 use vulkan_core::{Device, Swapchain};
 use crate::image::{ColourImage, DepthImage};
 use crate::pipeline_layout::PipelineLayout;
 use crate::render::renderer::pipelines::{GeometryPipeline, TonePipeline};
 use crate::shader::ShaderModule;
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer,
@@ -24,7 +24,7 @@ use crate::vulkan_core::erupt::vk1_0::{
     SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
-use crate::vulkan_core::SwapImage;
+use vulkan_core::SwapImage;
 use crate::embedded::buffers::{SphereMeshBuffers, CubeMeshBuffers, FullscreenQuadBuffers};
 
 ///

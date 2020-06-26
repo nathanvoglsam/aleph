@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::vulkan_alloc::{
+use vulkan_alloc::{
     AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage,
 };
 
@@ -19,7 +19,7 @@ mod frame;
 mod global;
 mod singular;
 
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, ClearColorValue, ClearValue, CommandBuffer,
     CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, CommandPoolResetFlags, DependencyFlags,
     Extent2D, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,

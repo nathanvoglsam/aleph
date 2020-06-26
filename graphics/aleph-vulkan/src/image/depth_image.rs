@@ -7,11 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::vulkan_alloc::Allocator;
+use vulkan_alloc::Allocator;
 use vulkan_core::Device;
 use crate::image::{ImageSingle2D, ImageSingle2DBuilder};
 
-use crate::vulkan_core::erupt::vk1_0::{Format, ImageAspectFlags, ImageUsageFlags};
+use vulkan_core::erupt::vk1_0::{Format, ImageAspectFlags, ImageUsageFlags};
 use std::ops::Deref;
 
 ///

@@ -8,8 +8,8 @@
 //
 
 use once_cell::sync::OnceCell;
-use crate::vulkan_alloc::Allocator;
-use crate::vulkan_core::erupt::vk1_0::{CommandBuffer, Buffer};
+use vulkan_alloc::Allocator;
+use vulkan_core::erupt::vk1_0::{CommandBuffer, Buffer};
 
 mod utils;
 

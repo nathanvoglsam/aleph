@@ -8,8 +8,8 @@
 //
 
 use super::ImguiGlobal;
-use crate::vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateFlags, CommandPoolCreateInfoBuilder,

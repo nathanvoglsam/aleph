@@ -7,15 +7,15 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
     CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool,
     CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
     SharingMode, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
-use crate::vulkan_core::SwapImage;
+use vulkan_core::SwapImage;
 
 ///
 /// This represents the resources needed for rendering a single imgui frame in parallel. This
@@ -28,7 +28,7 @@ pub struct ImguiFrame {
     pub framebuffer: Framebuffer,
     pub vtx_buffer: (Buffer, Allocation),
     pub idx_buffer: (Buffer, Allocation),
-    pub memory_pool: Arc<crate::vulkan_alloc::Pool>,
+    pub memory_pool: Arc<vulkan_alloc::Pool>,
 }
 
 impl ImguiFrame {
@@ -61,8 +61,8 @@ impl ImguiFrame {
         .expect("Failed to find memory index");
 
         let memory_pool = unsafe {
-            crate::vulkan_alloc::PoolBuilder::new()
-                .flags(crate::vulkan_alloc::PoolCreateFlag::LINEAR_ALGORITHM_BIT)
+            vulkan_alloc::PoolBuilder::new()
+                .flags(vulkan_alloc::PoolCreateFlag::LINEAR_ALGORITHM_BIT)
                 .block_size((1024 * 1024) * 1)
                 .memory_type_index(memory_type_index)
                 .min_block_count(1)

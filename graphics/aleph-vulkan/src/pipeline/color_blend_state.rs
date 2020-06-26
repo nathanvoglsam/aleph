@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     PipelineColorBlendAttachmentStateBuilder, PipelineColorBlendStateCreateInfoBuilder,
 };
 

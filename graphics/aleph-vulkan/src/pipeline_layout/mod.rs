@@ -9,7 +9,7 @@
 
 use vulkan_core::Device;
 use crate::shader::ShaderModule;
-use crate::vulkan_core::erupt::vk1_0::{
+use vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
     PushConstantRangeBuilder, ShaderStageFlags, Vk10DeviceLoaderExt,
 };
@@ -259,7 +259,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
 ///
 ///
 pub struct PipelineLayout {
-    pipeline_layout: crate::vulkan_core::erupt::vk1_0::PipelineLayout,
+    pipeline_layout: vulkan_core::erupt::vk1_0::PipelineLayout,
     set_layouts: Vec<DescriptorSetLayout>,
 }
 
@@ -274,7 +274,7 @@ impl PipelineLayout {
     ///
     /// Returns the underlying pipeline layout handle
     ///
-    pub fn pipeline_layout(&self) -> crate::vulkan_core::erupt::vk1_0::PipelineLayout {
+    pub fn pipeline_layout(&self) -> vulkan_core::erupt::vk1_0::PipelineLayout {
         self.pipeline_layout
     }
 

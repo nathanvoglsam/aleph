@@ -9,7 +9,7 @@
 
 use crate::reflect::structure::resolve_struct_block;
 use crate::reflect::Struct;
-use crate::vulkan_core::erupt::vk1_0::{DescriptorSetLayoutBindingBuilder, DescriptorType, ShaderStageFlags};
+use vulkan_core::erupt::vk1_0::{DescriptorSetLayoutBindingBuilder, DescriptorType, ShaderStageFlags};
 use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
 
 ///
