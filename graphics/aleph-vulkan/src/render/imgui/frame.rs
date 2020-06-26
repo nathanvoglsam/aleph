@@ -7,6 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use std::sync::Arc;
 use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
@@ -14,7 +15,6 @@ use vulkan_core::erupt::vk1_0::{
     CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
     SharingMode, Vk10DeviceLoaderExt,
 };
-use std::sync::Arc;
 use vulkan_core::SwapImage;
 
 ///

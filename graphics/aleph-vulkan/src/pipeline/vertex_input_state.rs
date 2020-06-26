@@ -9,12 +9,12 @@
 
 use crate::embedded::data::CubeMesh;
 use crate::format::{format_from_gltf_accessor, AccessorFormatError};
+use crate::gltf::Semantic;
+use std::mem::size_of;
 use vulkan_core::erupt::vk1_0::{
     Format, PipelineVertexInputStateCreateInfoBuilder, VertexInputAttributeDescriptionBuilder,
     VertexInputBindingDescriptionBuilder, VertexInputRate,
 };
-use crate::gltf::Semantic;
-use std::mem::size_of;
 
 ///
 /// An enum to represent the set of errors that can be generated when producing a vertex input

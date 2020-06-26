@@ -9,7 +9,7 @@
 
 use once_cell::sync::OnceCell;
 use vulkan_alloc::Allocator;
-use vulkan_core::erupt::vk1_0::{CommandBuffer, Buffer};
+use vulkan_core::erupt::vk1_0::{Buffer, CommandBuffer};
 
 mod utils;
 
@@ -159,8 +159,11 @@ impl FullscreenQuadBuffers {
     /// be queued to the GPU to stage the vertex buffers.
     ///
     pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
-        let buffers =
-            self::utils::PosOnlyMeshBuffers::new(allocator, super::data::FullscreenQuad::positions(), super::data::FullscreenQuad::indices());
+        let buffers = self::utils::PosOnlyMeshBuffers::new(
+            allocator,
+            super::data::FullscreenQuad::positions(),
+            super::data::FullscreenQuad::indices(),
+        );
         buffers.record_buffer_staging(allocator.device(), command_buffer);
 
         FS_QUAD_BUFFER

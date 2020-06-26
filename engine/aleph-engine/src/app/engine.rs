@@ -7,14 +7,14 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings, Window};
+use crate::app::{AppLogic, FrameTimer, Imgui, Keyboard, Mouse, Window, WindowSettings};
+use crate::app_info::AppInfo;
+use crate::gpu::pipeline_cache::PipelineCache;
+use gpu::vulkan_core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use gpu::vulkan_core::GPUInfo;
 use sdl2::event::Event;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-use gpu::vulkan_core::erupt::vk1_0::{SemaphoreCreateInfoBuilder, Fence, Vk10DeviceLoaderExt};
-use gpu::vulkan_core::GPUInfo;
-use crate::app_info::AppInfo;
-use crate::gpu::pipeline_cache::PipelineCache;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -168,9 +168,8 @@ impl Engine {
             .vsync()
             .build(&device, Window::drawable_size());
 
-        let _renderer = unsafe {
-            gpu::render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
-        };
+        let _renderer =
+            unsafe { gpu::render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
 
         let mut imgui_renderer = gpu::render::ImguiRenderer::new(
             imgui_ctx.context_mut().fonts(),

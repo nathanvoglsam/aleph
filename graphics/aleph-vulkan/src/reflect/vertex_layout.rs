@@ -9,8 +9,10 @@
 
 use crate::reflect::member_resolution::resolve_member_type;
 use crate::reflect::{MemberResolutionError, MemberType, ScalarType, VectorInfo};
-use vulkan_core::erupt::vk1_0::{Format, PipelineVertexInputStateCreateInfo, VertexInputAttributeDescription};
 use spirv_reflect::types::ReflectInterfaceVariable;
+use vulkan_core::erupt::vk1_0::{
+    Format, PipelineVertexInputStateCreateInfo, VertexInputAttributeDescription,
+};
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum AttributeType {

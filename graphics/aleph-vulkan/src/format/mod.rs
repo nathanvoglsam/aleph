@@ -7,8 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::erupt::vk1_0::Format;
 use crate::gltf::json::accessor::{ComponentType, Type};
+use vulkan_core::erupt::vk1_0::Format;
 
 ///
 /// Represents the set of formats that could in theory be requested by a gltf file but have no
@@ -58,7 +58,9 @@ pub enum AccessorFormatError {
 ///
 /// Takes a gltf accessor and returns a vertex format that matches the accessor's specification
 ///
-pub fn format_from_gltf_accessor(accessor: &crate::gltf::Accessor) -> Result<Format, AccessorFormatError> {
+pub fn format_from_gltf_accessor(
+    accessor: &crate::gltf::Accessor,
+) -> Result<Format, AccessorFormatError> {
     match accessor.dimensions() {
         Type::Scalar => format_scalar(accessor),
         Type::Vec2 => format_vector2(accessor),

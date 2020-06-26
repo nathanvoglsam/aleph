@@ -19,7 +19,7 @@ const ENGINE_VERSION_PATCH: u32 = 0;
 /// Returns the engine name string
 ///
 pub fn engine_name() -> &'static str {
-    &ENGINE_NAME[0..(ENGINE_NAME.len()-1)]
+    &ENGINE_NAME[0..(ENGINE_NAME.len() - 1)]
 }
 
 ///

@@ -7,7 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::Device;
 use crate::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
     InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
@@ -19,6 +18,7 @@ use vulkan_core::erupt::vk1_0::{
     CompareOp, DynamicState, FrontFace, GraphicsPipelineCreateInfoBuilder, Pipeline, PolygonMode,
     PrimitiveTopology, RenderPass, Vk10DeviceLoaderExt,
 };
+use vulkan_core::Device;
 
 ///
 /// The pipeline state object for the geometry pass

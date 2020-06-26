@@ -7,9 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_alloc::{
-    AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage,
-};
+use vulkan_alloc::{AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 
 use imgui::DrawCmd;
 use std::sync::Arc;
@@ -19,6 +17,10 @@ mod frame;
 mod global;
 mod singular;
 
+pub use font::ImguiFont;
+pub use frame::ImguiFrame;
+pub use global::ImguiGlobal;
+pub use singular::ImguiSingular;
 use vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, ClearColorValue, ClearValue, CommandBuffer,
     CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, CommandPoolResetFlags, DependencyFlags,
@@ -27,10 +29,6 @@ use vulkan_core::erupt::vk1_0::{
     Rect2DBuilder, RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode,
     SubmitInfoBuilder, SubpassContents, ViewportBuilder, Vk10DeviceLoaderExt, WHOLE_SIZE,
 };
-pub use font::ImguiFont;
-pub use frame::ImguiFrame;
-pub use global::ImguiGlobal;
-pub use singular::ImguiSingular;
 
 pub struct ImguiRenderer {
     device: Arc<vulkan_core::Device>,

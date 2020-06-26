@@ -9,17 +9,16 @@
 
 pub extern crate erupt;
 
-extern crate aleph_macros as macros;
 extern crate aleph_app_info as app_info;
-extern crate log;
+extern crate aleph_macros as macros;
 extern crate console;
 extern crate crossbeam;
+extern crate log;
 extern crate raw_window_handle;
 
-
 pub(crate) mod debug;
-pub(crate) mod surface;
 pub mod defer;
+pub(crate) mod surface;
 
 mod device;
 mod gpu_info;
@@ -38,7 +37,7 @@ pub use queue_family::QueueFamilyType;
 pub use swapchain::AcquireError;
 pub use swapchain::RebuildError;
 pub use swapchain::SwapChainSupport;
+pub use swapchain::SwapImage;
 pub use swapchain::Swapchain;
 pub use swapchain::SwapchainBuilder;
-pub use swapchain::SwapImage;
 pub use vendor::VendorID;

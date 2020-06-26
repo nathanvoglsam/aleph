@@ -14,19 +14,19 @@ use crate::Allocation;
 use crate::AllocationCreateInfo;
 use crate::AllocationInfo;
 use crate::Stats;
-use vulkan_core::Device;
 use core::mem;
 use core::ptr;
-use vulkan_core::erupt::utils::VulkanResult;
-use vulkan_core::erupt::vk1_0::{
-    Buffer, BufferCreateInfo, DeviceMemory, DeviceSize, Image, ImageCreateInfo, MemoryRequirements,
-    PhysicalDeviceMemoryProperties, PhysicalDeviceProperties, FALSE, TRUE,
-};
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::sync::Arc;
 use vulkan_alloc_sys::raw;
+use vulkan_core::erupt::utils::VulkanResult;
+use vulkan_core::erupt::vk1_0::{
+    Buffer, BufferCreateInfo, DeviceMemory, DeviceSize, Image, ImageCreateInfo, MemoryRequirements,
+    PhysicalDeviceMemoryProperties, PhysicalDeviceProperties, FALSE, TRUE,
+};
+use vulkan_core::Device;
 
 ///
 /// A rusty wrapper around the raw VmaAllocatorCreateFlag constants

@@ -8,7 +8,6 @@
 //
 
 use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use vulkan_core::Device;
 use vulkan_core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentStoreOp, ComponentMappingBuilder,
     ComponentSwizzle, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,
@@ -16,6 +15,7 @@ use vulkan_core::erupt::vk1_0::{
     ImageViewCreateInfoBuilder, ImageViewType, SampleCountFlagBits, SharingMode,
     Vk10DeviceLoaderExt,
 };
+use vulkan_core::Device;
 
 ///
 /// Builder for creating a ColourImage

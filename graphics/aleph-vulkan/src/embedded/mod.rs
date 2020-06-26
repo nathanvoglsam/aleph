@@ -7,6 +7,5 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub mod data;
 pub mod buffers;
-
+pub mod data;

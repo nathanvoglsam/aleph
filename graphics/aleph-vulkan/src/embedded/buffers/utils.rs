@@ -8,10 +8,13 @@
 //
 
 use std::mem::size_of;
-use vulkan_core::erupt::vk1_0::{Buffer, BufferUsageFlags, CommandBuffer, BufferCopyBuilder, PipelineStageFlags, DependencyFlags, BufferMemoryBarrierBuilder, WHOLE_SIZE, AccessFlags, BufferCreateInfoBuilder, SharingMode};
-use vulkan_alloc::{Allocation, Allocator, AllocationCreateInfoBuilder, MemoryUsage};
-use vulkan_core::Device;
+use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
+use vulkan_core::erupt::vk1_0::{
+    AccessFlags, Buffer, BufferCopyBuilder, BufferCreateInfoBuilder, BufferMemoryBarrierBuilder,
+    BufferUsageFlags, CommandBuffer, DependencyFlags, PipelineStageFlags, SharingMode, WHOLE_SIZE,
+};
+use vulkan_core::Device;
 
 ///
 /// Internal struct for holding the buffers for the cube mesh

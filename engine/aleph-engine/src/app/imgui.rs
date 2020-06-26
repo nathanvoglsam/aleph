@@ -532,11 +532,13 @@ impl Imgui {
         io.key_map[gpu::imgui::Key::End as usize] = sdl2::keyboard::Scancode::End as u32;
         io.key_map[gpu::imgui::Key::Insert as usize] = sdl2::keyboard::Scancode::Insert as u32;
         io.key_map[gpu::imgui::Key::Delete as usize] = sdl2::keyboard::Scancode::Delete as u32;
-        io.key_map[gpu::imgui::Key::Backspace as usize] = sdl2::keyboard::Scancode::Backspace as u32;
+        io.key_map[gpu::imgui::Key::Backspace as usize] =
+            sdl2::keyboard::Scancode::Backspace as u32;
         io.key_map[gpu::imgui::Key::Space as usize] = sdl2::keyboard::Scancode::Space as u32;
         io.key_map[gpu::imgui::Key::Enter as usize] = sdl2::keyboard::Scancode::Return as u32;
         io.key_map[gpu::imgui::Key::Escape as usize] = sdl2::keyboard::Scancode::Escape as u32;
-        io.key_map[gpu::imgui::Key::KeyPadEnter as usize] = sdl2::keyboard::Scancode::KpEnter as u32;
+        io.key_map[gpu::imgui::Key::KeyPadEnter as usize] =
+            sdl2::keyboard::Scancode::KpEnter as u32;
         io.key_map[gpu::imgui::Key::A as usize] = sdl2::keyboard::Scancode::A as u32;
         io.key_map[gpu::imgui::Key::C as usize] = sdl2::keyboard::Scancode::C as u32;
         io.key_map[gpu::imgui::Key::V as usize] = sdl2::keyboard::Scancode::V as u32;

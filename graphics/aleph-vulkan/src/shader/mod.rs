@@ -7,17 +7,17 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::Device;
 use crate::reflect::{
     DescriptorSetReflection, PushConstantReflection, StructResolutionError, VertexLayoutReflection,
     VertexLayoutResolutionError,
 };
+use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
+use std::ffi::CStr;
 use vulkan_core::erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
     ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
-use std::ffi::CStr;
+use vulkan_core::Device;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum ShaderModuleBuildError {

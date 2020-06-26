@@ -7,7 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use app_info::{AppInfo, engine_name_cstr, engine_version_major, engine_version_minor, engine_version_patch};
+use app_info::{
+    engine_name_cstr, engine_version_major, engine_version_minor, engine_version_patch, AppInfo,
+};
 use erupt::extensions::ext_debug_utils::{
     DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
@@ -122,7 +124,11 @@ impl InstanceBuilder {
         // Fill out ApplicationInfo for creating a vulkan instance
         let app_name_cstr = CString::new(app_info.name.as_str()).unwrap();
         let app_version = erupt::make_version(app_info.major, app_info.minor, app_info.patch);
-        let engine_version = erupt::make_version(engine_version_major(), engine_version_minor(), engine_version_patch());
+        let engine_version = erupt::make_version(
+            engine_version_major(),
+            engine_version_minor(),
+            engine_version_patch(),
+        );
         let api_version = erupt::make_version(1, 0, 0);
         let app_info = erupt::vk1_0::ApplicationInfoBuilder::new()
             .application_name(&app_name_cstr)

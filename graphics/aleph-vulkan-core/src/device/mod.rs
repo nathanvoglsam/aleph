@@ -10,9 +10,7 @@
 mod defer;
 
 use crate::device::defer::{DeviceDeferList, IntoDeviceDeferBox};
-use crate::{
-    GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID,
-};
+use crate::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,

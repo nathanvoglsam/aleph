@@ -7,11 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::Device;
-use vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
+use vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan_core::Device;
 
 static PIPELINE_CACHE: AtomicU64 = AtomicU64::new(0);
 static CACHE_FILE_NAME: &'static str = "shader_cache.bin";
@@ -76,8 +76,9 @@ impl PipelineCache {
             Self::store(device);
 
             unsafe {
-                let pipeline_cache =
-                    vulkan_core::erupt::vk1_0::PipelineCache(PIPELINE_CACHE.swap(0, Ordering::Relaxed));
+                let pipeline_cache = vulkan_core::erupt::vk1_0::PipelineCache(
+                    PIPELINE_CACHE.swap(0, Ordering::Relaxed),
+                );
                 device.loader().destroy_pipeline_cache(pipeline_cache, None);
             }
         });

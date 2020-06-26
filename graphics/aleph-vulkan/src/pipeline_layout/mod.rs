@@ -7,12 +7,12 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::Device;
 use crate::shader::ShaderModule;
 use vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
     PushConstantRangeBuilder, ShaderStageFlags, Vk10DeviceLoaderExt,
 };
+use vulkan_core::Device;
 
 ///
 /// An enum to represent the possible errors that can be encountered when creating a pipeline layout

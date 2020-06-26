@@ -231,7 +231,8 @@ impl SwapchainBuilder {
             requires_rebuild: true,
         };
 
-        swap.rebuild(drawable_size).expect("Failed to construct swapchain");
+        swap.rebuild(drawable_size)
+            .expect("Failed to construct swapchain");
 
         swap
     }

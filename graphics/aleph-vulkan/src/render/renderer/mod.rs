@@ -9,12 +9,13 @@
 
 mod pipelines;
 
-use vulkan_alloc::Allocator;
-use vulkan_core::{Device, Swapchain};
+use crate::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
 use crate::image::{ColourImage, DepthImage};
 use crate::pipeline_layout::PipelineLayout;
 use crate::render::renderer::pipelines::{GeometryPipeline, TonePipeline};
 use crate::shader::ShaderModule;
+use std::sync::Arc;
+use vulkan_alloc::Allocator;
 use vulkan_core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
@@ -23,9 +24,8 @@ use vulkan_core::erupt::vk1_0::{
     RenderPassCreateInfoBuilder, SubmitInfoBuilder, SubpassDependencyBuilder,
     SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
-use std::sync::Arc;
 use vulkan_core::SwapImage;
-use crate::embedded::buffers::{SphereMeshBuffers, CubeMeshBuffers, FullscreenQuadBuffers};
+use vulkan_core::{Device, Swapchain};
 
 ///
 /// Represents a single gbuffer

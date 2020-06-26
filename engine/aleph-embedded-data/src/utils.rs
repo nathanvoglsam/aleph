@@ -7,9 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use std::ops::Deref;
-use gltf::json::accessor::{ComponentType, Type};
 use gltf::buffer::Source;
+use gltf::json::accessor::{ComponentType, Type};
+use std::ops::Deref;
 
 #[inline]
 pub(crate) fn get_accessor_for(

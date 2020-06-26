@@ -8,6 +8,7 @@
 //
 
 use super::ImguiGlobal;
+use imgui::{FontConfig, FontSource};
 use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
@@ -21,7 +22,6 @@ use vulkan_core::erupt::vk1_0::{
     SamplerMipmapMode, SharingMode, SubmitInfoBuilder, Vk10DeviceLoaderExt,
     WriteDescriptorSetBuilder,
 };
-use imgui::{FontConfig, FontSource};
 
 pub struct ImguiFont {
     pub sampler: Sampler,

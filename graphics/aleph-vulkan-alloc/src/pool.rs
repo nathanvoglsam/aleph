@@ -9,10 +9,10 @@
 
 use crate::Allocator;
 use core::ptr;
-use vulkan_core::erupt::utils::VulkanResult;
-use vulkan_core::erupt::vk1_0::DeviceSize;
 use std::sync::Arc;
 use vulkan_alloc_sys::raw;
+use vulkan_core::erupt::utils::VulkanResult;
+use vulkan_core::erupt::vk1_0::DeviceSize;
 
 ///
 /// A rusty wrapper around the raw VmaPoolCreateFlag constants

@@ -29,4 +29,3 @@ pub use self::allocator::{
 };
 pub use self::pool::{Pool, PoolBuilder, PoolCreateFlag};
 pub use self::stats::{PoolStats, StatInfo, Stats};
-
