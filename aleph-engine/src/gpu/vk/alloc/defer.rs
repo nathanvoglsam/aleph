@@ -7,8 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::gpu::vk::alloc::Allocator;
+use crate::gpu::vk::alloc::{Allocation, Allocator};
 use crate::gpu::vk::defer::{DeferBox, DeferList};
+use erupt::vk1_0::{Buffer, Image};
 
 ///
 /// Trait bound for a function/closure that can be consumed by the device defer list
@@ -32,7 +33,7 @@ pub trait IntoAllocatorDeferBox {
 ///
 impl<T: AllocatorDeferFn> IntoAllocatorDeferBox for T {
     fn into_allocator_defer_box(self) -> DeferBox<dyn AllocatorDeferFn> {
-        Box::new(self)
+        DeferBox::new(self)
     }
 }
 
@@ -64,5 +65,25 @@ impl AllocatorDeferList {
         self.list.consume(|func| {
             func(allocator);
         });
+    }
+}
+
+// =================================================================================================
+// Trait implementations for IntoAllocatorDeferBox for various resources
+// =================================================================================================
+
+impl IntoAllocatorDeferBox for (Buffer, Allocation) {
+    fn into_allocator_defer_box(self) -> DeferBox<dyn AllocatorDeferFn> {
+        DeferBox::new(move |allocator: &Allocator| unsafe {
+            allocator.destroy_buffer(self.0, self.1);
+        })
+    }
+}
+
+impl IntoAllocatorDeferBox for (Image, Allocation) {
+    fn into_allocator_defer_box(self) -> DeferBox<dyn AllocatorDeferFn> {
+        DeferBox::new(move |allocator: &Allocator| unsafe {
+            allocator.destroy_image(self.0, self.1);
+        })
     }
 }

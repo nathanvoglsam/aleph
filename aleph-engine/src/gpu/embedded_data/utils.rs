@@ -245,31 +245,50 @@ impl StaticMeshBuffers {
         uv: &[Uv],
         ind: &[Ind],
     ) -> Self {
+        // Allocate the staging and vertex buffer for the vertex positions
         let pos_staging = init_staging_buffer(allocator, pos);
         let pos_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, pos);
         let pos_size = buffer_size(pos);
 
+        // Allocate the staging and vertex buffer for the vertex normals
         let nrm_staging = init_staging_buffer(allocator, nrm);
         let nrm_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, nrm);
         let nrm_size = buffer_size(nrm);
 
+        // Allocate the staging and vertex buffer for the vertex tangents
         let tan_staging = init_staging_buffer(allocator, tan);
         let tan_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, tan);
         let tan_size = buffer_size(tan);
 
+        // Allocate the staging and vertex buffer for the vertex texture coordinates
         let uv_staging = init_staging_buffer(allocator, uv);
         let uv_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, uv);
         let uv_size = buffer_size(uv);
 
+        // Allocate the staging and index buffer
         let ind_staging = init_staging_buffer(allocator, ind);
         let ind_buffer = init_buffer(allocator, BufferUsageFlags::INDEX_BUFFER, ind);
         let ind_size = buffer_size(ind);
 
+        // Map, copy, and unmap the data for each buffer
         copy_to_buffer(allocator, &pos_staging.1, pos);
         copy_to_buffer(allocator, &nrm_staging.1, nrm);
         copy_to_buffer(allocator, &tan_staging.1, tan);
         copy_to_buffer(allocator, &uv_staging.1, uv);
-        copy_to_buffer(allocator, &ind_staging.1, uv);
+        copy_to_buffer(allocator, &ind_staging.1, ind);
+
+        // Defer the destruction of these buffers until the allocator is being destroyed as we want
+        // these to be valid for the entire runtime of the graphics system
+        allocator.defer_destruction(pos_staging);
+        allocator.defer_destruction(pos_buffer);
+        allocator.defer_destruction(nrm_staging);
+        allocator.defer_destruction(nrm_buffer);
+        allocator.defer_destruction(tan_staging);
+        allocator.defer_destruction(tan_buffer);
+        allocator.defer_destruction(uv_staging);
+        allocator.defer_destruction(uv_buffer);
+        allocator.defer_destruction(ind_staging);
+        allocator.defer_destruction(ind_buffer);
 
         Self {
             pos_buffer,
@@ -404,34 +423,6 @@ impl StaticMeshBuffers {
             );
         }
     }
-
-    ///
-    /// Destroys the staging buffers for the cube mesh as these only need to exist once but have to
-    /// live long enough for the `vkCmdCopyBuffer` calls to get run on a queue so their destruction
-    /// needs to be delayed a little.
-    ///
-    /// Unsafe as the destruction is not synchronized
-    ///
-    pub unsafe fn destroy_staging_buffers(&self, allocator: &Allocator) {
-        destroy_buffer(allocator, &self.pos_staging);
-        destroy_buffer(allocator, &self.nrm_staging);
-        destroy_buffer(allocator, &self.tan_staging);
-        destroy_buffer(allocator, &self.uv_staging);
-        destroy_buffer(allocator, &self.ind_staging);
-    }
-
-    ///
-    /// Destroys the actual vertex buffers for when the engine is shutting down.
-    ///
-    /// Unsafe as the destruction is not synchronized
-    ///
-    pub unsafe fn destroy_buffers(&self, allocator: &Allocator) {
-        destroy_buffer(allocator, &self.pos_buffer);
-        destroy_buffer(allocator, &self.nrm_buffer);
-        destroy_buffer(allocator, &self.tan_buffer);
-        destroy_buffer(allocator, &self.uv_buffer);
-        destroy_buffer(allocator, &self.ind_buffer);
-    }
 }
 
 ///
@@ -459,16 +450,26 @@ impl PosOnlyMeshBuffers {
     /// staging buffers with a call to `destroy_staging_buffers`.
     ///
     pub fn new<Pos, Ind>(allocator: &Allocator, pos: &[Pos], ind: &[Ind]) -> Self {
+        // Allocate the staging and vertex buffer for the vertex positions
         let pos_staging = init_staging_buffer(allocator, pos);
         let pos_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, pos);
         let pos_size = buffer_size(pos);
 
+        // Allocate the staging and index buffer
         let ind_staging = init_staging_buffer(allocator, pos);
         let ind_buffer = init_buffer(allocator, BufferUsageFlags::INDEX_BUFFER, ind);
         let ind_size = buffer_size(ind);
 
+        // Map, copy and unmap the vertex data
         copy_to_buffer(allocator, &pos_staging.1, pos);
         copy_to_buffer(allocator, &ind_staging.1, ind);
+
+        // Defer destruction of these buffers until the allocator is being destroyed as we want
+        // these buffers to live for the entire lifetime of the graphics subsystem
+        allocator.defer_destruction(pos_staging);
+        allocator.defer_destruction(pos_buffer);
+        allocator.defer_destruction(ind_staging);
+        allocator.defer_destruction(ind_buffer);
 
         Self {
             pos_buffer,
@@ -530,28 +531,6 @@ impl PosOnlyMeshBuffers {
                 &[],
             );
         }
-    }
-
-    ///
-    /// Destroys the staging buffers for the cube mesh as these only need to exist once but have to
-    /// live long enough for the `vkCmdCopyBuffer` calls to get run on a queue so their destruction
-    /// needs to be delayed a little.
-    ///
-    /// Unsafe as the destruction is not synchronized
-    ///
-    pub unsafe fn destroy_staging_buffers(&self, allocator: &Allocator) {
-        destroy_buffer(allocator, &self.pos_staging);
-        destroy_buffer(allocator, &self.ind_staging);
-    }
-
-    ///
-    /// Destroys the actual vertex buffers for when the engine is shutting down.
-    ///
-    /// Unsafe as the destruction is not synchronized
-    ///
-    pub unsafe fn destroy_buffers(&self, allocator: &Allocator) {
-        destroy_buffer(allocator, &self.pos_buffer);
-        destroy_buffer(allocator, &self.ind_buffer);
     }
 }
 
@@ -637,11 +616,4 @@ fn init_buffer<T>(
 ///
 fn buffer_size<T>(slice: &[T]) -> u64 {
     slice.len() as u64 * size_of::<T>() as u64
-}
-
-///
-/// Destroys the given buffer/allocation pair
-///
-unsafe fn destroy_buffer(allocator: &Allocator, buffer: &(Buffer, Allocation)) {
-    allocator.destroy_buffer(buffer.0, buffer.1);
 }

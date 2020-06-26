@@ -339,14 +339,7 @@ impl Renderer {
 
         // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
         // finished being used.
-        device.defer_destruction(move |device: &Device| {
-            let command_pool = command_pool;
-            let command_buffer = command_buffer;
-            device
-                .loader()
-                .free_command_buffers(command_pool, &[command_buffer]);
-            device.loader().destroy_command_pool(command_pool, None);
-        });
+        device.defer_destruction(command_pool);
 
         let swap_image = &swapchain.images()[0];
         let gbuffer = GBuffer::new(&device, &allocator, swap_image.width(), swap_image.height());

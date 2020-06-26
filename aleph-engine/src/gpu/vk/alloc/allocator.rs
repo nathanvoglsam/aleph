@@ -197,8 +197,8 @@ impl Allocator {
     /// This should be used to uphold invariants for unsafe code and not as a general purpose tool
     /// for object destruction.
     ///
-    pub fn defer_destruction<T: IntoAllocatorDeferBox>(&self, func: T) {
-        self.defer_list.add(func);
+    pub fn defer_destruction<T: IntoAllocatorDeferBox>(&self, item: T) {
+        self.defer_list.add(item);
     }
 
     ///

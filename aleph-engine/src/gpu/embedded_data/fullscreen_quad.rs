@@ -34,33 +34,6 @@ impl FullscreenQuad {
             .set(buffers)
             .ok()
             .expect("Mesh buffers already initialized");
-
-        allocator.defer_destruction(Self::destroy_staging_buffers);
-        allocator.defer_destruction(Self::destroy_buffers);
-    }
-
-    ///
-    /// Destroys the staging buffers used to upload the vertex data
-    ///
-    /// Unsafe as destruction is not synchronized
-    ///
-    fn destroy_staging_buffers(allocator: &Allocator) {
-        let buffers = FS_QUAD_BUFFER.get().unwrap();
-        unsafe {
-            buffers.destroy_staging_buffers(allocator);
-        }
-    }
-
-    ///
-    /// Destroys the vertex buffers
-    ///
-    /// Unsafe as destruction is not synchronized
-    ///
-    fn destroy_buffers(allocator: &Allocator) {
-        let buffers = FS_QUAD_BUFFER.get().unwrap();
-        unsafe {
-            buffers.destroy_buffers(allocator);
-        }
     }
 
     ///

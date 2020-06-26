@@ -9,6 +9,7 @@
 
 use crate::gpu::vk::core::Device;
 use crate::gpu::vk::defer::{DeferBox, DeferList};
+use erupt::vk1_0::{CommandPool, Vk10DeviceLoaderExt};
 
 ///
 /// Trait bound for a function/closure that can be consumed by the device defer list
@@ -32,7 +33,7 @@ pub trait IntoDeviceDeferBox {
 ///
 impl<T: DeviceDeferFn> IntoDeviceDeferBox for T {
     fn into_device_defer_box(self) -> DeferBox<dyn DeviceDeferFn> {
-        Box::new(self)
+        DeferBox::new(self)
     }
 }
 
@@ -64,5 +65,17 @@ impl DeviceDeferList {
         self.list.consume(|func| {
             func(device);
         });
+    }
+}
+
+// =================================================================================================
+// Trait implementations for IntoAllocatorDeferBox for various resources
+// =================================================================================================
+
+impl IntoDeviceDeferBox for CommandPool {
+    fn into_device_defer_box(self) -> DeferBox<dyn DeviceDeferFn> {
+        DeferBox::new(move |device: &Device| unsafe {
+            device.loader().destroy_command_pool(self, None);
+        })
     }
 }
