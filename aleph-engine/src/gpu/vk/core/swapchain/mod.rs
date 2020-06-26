@@ -225,6 +225,7 @@ impl SwapchainBuilder {
             present_mode: self.target_present_mode,
             surface_format: Default::default(),
             extents: Default::default(),
+            target_image_count: self.target_image_count,
             images: Vec::new(),
             device: device.clone(),
             favour_vsync: self.favour_vsync,
@@ -243,6 +244,7 @@ pub struct Swapchain {
     present_mode: PresentModeKHR,
     surface_format: SurfaceFormatKHR,
     extents: Extent2D,
+    target_image_count: u32,
     images: Vec<SwapImage>,
     device: Arc<Device>,
     favour_vsync: bool,
@@ -499,10 +501,10 @@ impl Swapchain {
         log::trace!("Format        : {:?}", surface_format);
 
         let image_count = {
-            if (self.images.len() as u32) < capabilities.min_image_count {
+            if (self.target_image_count) < capabilities.min_image_count {
                 capabilities.min_image_count
             } else {
-                self.images.len() as u32
+                self.target_image_count
             }
         };
         log::trace!("Image Count   : {}", image_count);
