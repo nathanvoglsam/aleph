@@ -28,7 +28,7 @@
 ##
 
 [package]
-name = "aleph-vma-sys"
+name = "aleph-vulkan-alloc-sys"
 version = "1.0.0+vma.2.2.0"
 authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
 license = "<ALEPH_LICENSE_NAME_REPLACE>"

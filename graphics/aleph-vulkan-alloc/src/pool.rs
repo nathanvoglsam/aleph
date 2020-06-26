@@ -9,10 +9,10 @@
 
 use crate::Allocator;
 use core::ptr;
-use crate::erupt::utils::VulkanResult;
-use crate::erupt::vk1_0::DeviceSize;
+use vulkan_core::erupt::utils::VulkanResult;
+use vulkan_core::erupt::vk1_0::DeviceSize;
 use std::sync::Arc;
-use vma_sys::raw;
+use vulkan_alloc_sys::raw;
 
 ///
 /// A rusty wrapper around the raw VmaPoolCreateFlag constants
@@ -152,7 +152,7 @@ impl PoolBuilder {
             };
             VulkanResult::new_ok(Arc::new(pool))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 }
@@ -230,7 +230,7 @@ impl Pool {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 }

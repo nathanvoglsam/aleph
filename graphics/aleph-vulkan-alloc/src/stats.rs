@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::erupt::vk1_0::DeviceSize;
+use vulkan_core::erupt::vk1_0::DeviceSize;
 
 ///
 /// VmaStatInfo

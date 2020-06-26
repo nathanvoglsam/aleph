@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vma_sys::raw;
+use vulkan_alloc_sys::raw;
 
 ///
 /// Checks for the minimum required functions for vma allocator

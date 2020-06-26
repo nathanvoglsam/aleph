@@ -7,11 +7,10 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+pub extern crate aleph_vulkan_alloc_sys as vulkan_alloc_sys;
+
 extern crate aleph_vulkan_core as vulkan_core;
 extern crate log;
-
-pub extern crate aleph_vma_sys as vma_sys;
-pub use vulkan_core::erupt as erupt;
 
 mod allocation;
 mod allocator;

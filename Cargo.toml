@@ -20,9 +20,9 @@ members = [
     "utils/aleph-macros",
     "utils/aleph-target",
     "utils/aleph-target-crate",
-    "graphics/aleph-vma-sys",
     "graphics/aleph-vulkan",
     "graphics/aleph-vulkan-alloc",
+    "graphics/aleph-vulkan-alloc-sys",
     "graphics/aleph-vulkan-core",
     "game/aleph-test",
 ]

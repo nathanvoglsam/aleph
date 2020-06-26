@@ -9,9 +9,9 @@
 
 use crate::Pool;
 use core::ptr;
-use crate::erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
+use vulkan_core::erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
 use std::ops::Deref;
-use vma_sys::raw;
+use vulkan_alloc_sys::raw;
 
 ///
 /// A rusty wrapper around the raw VmaAllocationCreateFlag constants

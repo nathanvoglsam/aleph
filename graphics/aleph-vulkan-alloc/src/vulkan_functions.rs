@@ -7,11 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vma_sys::raw;
+use vulkan_alloc_sys::raw;
 
 use core::mem;
 use core::ptr;
-use crate::erupt::{DeviceLoader, InstanceLoader};
+use vulkan_core::erupt::{DeviceLoader, InstanceLoader};
 
 ///
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys

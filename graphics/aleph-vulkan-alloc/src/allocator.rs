@@ -17,8 +17,8 @@ use crate::Stats;
 use crate::vulkan_core::Device;
 use core::mem;
 use core::ptr;
-use crate::erupt::utils::VulkanResult;
-use crate::erupt::vk1_0::{
+use vulkan_core::erupt::utils::VulkanResult;
+use vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfo, DeviceMemory, DeviceSize, Image, ImageCreateInfo, MemoryRequirements,
     PhysicalDeviceMemoryProperties, PhysicalDeviceProperties, FALSE, TRUE,
 };
@@ -26,7 +26,7 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::sync::Arc;
-use vma_sys::raw;
+use vulkan_alloc_sys::raw;
 
 ///
 /// A rusty wrapper around the raw VmaAllocatorCreateFlag constants
@@ -310,7 +310,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(idx)
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -340,7 +340,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(idx)
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -370,7 +370,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(idx)
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -401,7 +401,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(Allocation::from_raw(allocation))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -435,7 +435,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(ret)
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -463,7 +463,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(Allocation::from_raw(allocation))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -491,7 +491,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(Allocation::from_raw(allocation))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -527,7 +527,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -590,7 +590,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(pointer)
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -633,7 +633,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -658,7 +658,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -679,7 +679,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok(())
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -716,7 +716,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok((buffer, Allocation::from_raw(allocation)))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
@@ -765,7 +765,7 @@ impl Allocator {
         if result as i32 == 0 {
             VulkanResult::new_ok((image, Allocation::from_raw(allocation)))
         } else {
-            VulkanResult::new_err(crate::erupt::vk1_0::Result(result as i32))
+            VulkanResult::new_err(vulkan_core::erupt::vk1_0::Result(result as i32))
         }
     }
 
