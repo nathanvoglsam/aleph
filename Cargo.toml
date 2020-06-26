@@ -17,4 +17,5 @@ members = [
     "aleph-target-crate",
     "aleph-test",
     "aleph-vma-sys",
+    "aleph-vulkan-core",
 ]

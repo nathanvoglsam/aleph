@@ -12,6 +12,7 @@
       <sourceFolder url="file://$MODULE_DIR$/aleph-test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-vma/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-vma-sys/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-vulkan-core/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
