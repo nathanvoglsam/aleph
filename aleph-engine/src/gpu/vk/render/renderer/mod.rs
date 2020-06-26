@@ -339,7 +339,7 @@ impl Renderer {
 
         // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
         // finished being used.
-        device.defer(move |device| {
+        device.defer_destruction(move |device: &Device| {
             let command_pool = command_pool;
             let command_buffer = command_buffer;
             device

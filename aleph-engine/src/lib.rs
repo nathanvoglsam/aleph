@@ -15,11 +15,13 @@
 pub extern crate imgui;
 pub extern crate log;
 pub extern crate rayon;
+pub extern crate smallbox;
 //pub extern crate aleph_math as math;
 
 extern crate aleph_target_crate as target;
 extern crate aleph_vma_sys as vma_sys;
 extern crate console;
+extern crate crossbeam;
 extern crate gltf;
 extern crate num_cpus;
 extern crate once_cell;

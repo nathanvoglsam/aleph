@@ -104,8 +104,8 @@ impl SphereMesh {
             .ok()
             .expect("Mesh buffers already initialized");
 
-        allocator.defer(Self::destroy_staging_buffers);
-        allocator.defer(Self::destroy_buffers);
+        allocator.defer_destruction(Self::destroy_staging_buffers);
+        allocator.defer_destruction(Self::destroy_buffers);
     }
 
     ///

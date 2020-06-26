@@ -28,14 +28,7 @@ impl AlephAppLogic {
 }
 
 impl aleph::app::AppLogic for AlephAppLogic {
-    fn on_init(&mut self) {
-        let mut bindings = Vec::new();
-        let mut attributes = Vec::new();
-        aleph::gpu::vk::pipeline::VertexInputState::for_static_mesh(&mut bindings, &mut attributes);
-
-        println!("Bindings: {:#?}", bindings);
-        println!("Attributes: {:#?}", attributes);
-    }
+    fn on_init(&mut self) {}
 
     fn on_update(&mut self, ui: &Ui) {
         self.frame_times.update();
