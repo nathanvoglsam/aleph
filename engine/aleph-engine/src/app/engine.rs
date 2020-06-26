@@ -346,10 +346,10 @@ impl Engine {
     ///
     fn log_cpu_info() {
         log::info!("=== CPU INFO ===");
-        log::info!("CPU Vendor    : {}", crate::cpuid::cpu_vendor());
-        log::info!("CPU Brand     : {}", crate::cpuid::cpu_brand());
-        log::info!("Physical CPUs : {}", num_cpus::get_physical());
-        log::info!("Logical CPUs  : {}", num_cpus::get());
+        log::info!("CPU Vendor    : {}", cpu_info::cpu_vendor());
+        log::info!("CPU Brand     : {}", cpu_info::cpu_brand());
+        log::info!("Physical CPUs : {}", cpu_info::physical_core_count());
+        log::info!("Logical CPUs  : {}", cpu_info::logical_core_count());
         log::info!("System RAM    : {}MB", sdl2::cpuinfo::system_ram());
     }
 
@@ -482,7 +482,7 @@ impl Engine {
         let long_threads;
         let short_threads;
 
-        match num_cpus::get() {
+        match cpu_info::logical_core_count() {
             2 => {
                 long_threads = 1;
                 short_threads = 1;
@@ -516,7 +516,7 @@ impl Engine {
                 short_threads = 12;
             }
             _ => {
-                let cpus = num_cpus::get();
+                let cpus = cpu_info::logical_core_count();
 
                 if (cpus / 4) < 1 {
                     long_threads = 1;

@@ -7,6 +7,10 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+extern crate raw_cpuid;
+extern crate once_cell;
+extern crate num_cpus;
+
 use once_cell::sync::Lazy;
 
 ///
@@ -58,4 +62,18 @@ pub fn cpu_vendor() -> &'static str {
 ///
 pub fn cpu_brand() -> &'static str {
     CPU_BRAND_STRING.as_str()
+}
+
+///
+/// Returns the number of physical cores (non SMT cores) on the current host
+///
+pub fn physical_core_count() -> usize {
+    num_cpus::get_physical()
+}
+
+///
+/// Returns the number of logical cores (physical + SMT cores) on the current host
+///
+pub fn logical_core_count() -> usize {
+    num_cpus::get()
 }

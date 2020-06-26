@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub extern crate log;
+extern crate log;
 
 #[cfg(target_os = "android")]
 fn init_internal() {

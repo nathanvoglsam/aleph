@@ -11,8 +11,10 @@
 
 members = [
     "engine/aleph-app-info",
+    "engine/aleph-cpu-info",
     "engine/aleph-embedded-data",
     "engine/aleph-engine",
+    "engine/aleph-logger",
     "engine/aleph-math",
     "utils/aleph-compile",
     "utils/aleph-macros",

@@ -11,7 +11,6 @@ use vulkan_core::Device;
 use crate::vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
-use std::os::raw::c_void;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static PIPELINE_CACHE: AtomicU64 = AtomicU64::new(0);
