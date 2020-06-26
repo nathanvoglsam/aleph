@@ -152,7 +152,7 @@ impl AllocatorBuilder {
         let alloc = Allocator {
             allocator: raw_alloc,
             device: device.clone(),
-            deferred_destruction: AllocatorDeferList::new(),
+            defer_list: AllocatorDeferList::new(),
         };
 
         Ok(Arc::new(alloc))
@@ -171,7 +171,7 @@ impl Default for AllocatorBuilder {
 pub struct Allocator {
     allocator: raw::VmaAllocator,
     device: Arc<Device>,
-    deferred_destruction: AllocatorDeferList,
+    defer_list: AllocatorDeferList,
 }
 
 impl Allocator {
@@ -198,7 +198,7 @@ impl Allocator {
     /// for object destruction.
     ///
     pub fn defer_destruction<T: IntoAllocatorDeferBox>(&self, func: T) {
-        self.deferred_destruction.add(func);
+        self.defer_list.add(func);
     }
 
     ///
@@ -805,7 +805,7 @@ unsafe impl Sync for Allocator {}
 impl Drop for Allocator {
     fn drop(&mut self) {
         unsafe {
-            self.deferred_destruction.consume(self);
+            self.defer_list.consume(self);
             log::trace!("Destroying Vulkan allocator");
             raw::vmaDestroyAllocator(self.allocator);
         }

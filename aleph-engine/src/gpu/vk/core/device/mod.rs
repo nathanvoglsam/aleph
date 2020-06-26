@@ -201,7 +201,7 @@ impl DeviceBuilder {
             transfer_queue,
             transfer_family,
             instance: instance.clone(),
-            deferred_destruction,
+            defer_list: deferred_destruction,
         };
 
         PipelineCache::init(&device);
@@ -420,7 +420,7 @@ pub struct Device {
     transfer_queue: Option<Queue>,
     transfer_family: Option<QueueFamily>,
     instance: Arc<Instance>,
-    deferred_destruction: DeviceDeferList,
+    defer_list: DeviceDeferList,
 }
 
 impl Device {
@@ -534,7 +534,7 @@ impl Device {
     /// for object destruction.
     ///
     pub fn defer_destruction<T: IntoDeviceDeferBox>(&self, item: T) {
-        self.deferred_destruction.add(item);
+        self.defer_list.add(item);
     }
 }
 
@@ -542,7 +542,7 @@ impl Drop for Device {
     fn drop(&mut self) {
         PipelineCache::destroy(self);
         unsafe {
-            self.deferred_destruction.consume(self);
+            self.defer_list.consume(self);
             log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
         }
