@@ -64,6 +64,11 @@ impl Engine {
                     .long("gpu-debug")
                     .short("d"),
             )
+            .arg(
+                clap::Arg::with_name("GPU_VALIDATION")
+                    .long("gpu-validation")
+                    .short("v"),
+            )
             .get_matches();
 
         // -----------------------------------------------------------------------------------------
@@ -156,8 +161,8 @@ impl Engine {
 
         // Load core vulkan functions for creating an instance
         let instance = gpu::vk::core::InstanceBuilder::new()
-            .debug(args.is_present("GPU_DEBUG"))
-            .validation(args.is_present("GPU_DEBUG"))
+            .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
+            .validation(args.is_present("GPU_VALIDATION"))
             .build(&window, &app_info);
 
         let device = gpu::vk::core::DeviceBuilder::new().build(&instance);
