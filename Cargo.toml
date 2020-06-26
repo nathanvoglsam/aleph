@@ -10,12 +10,17 @@
 [workspace]
 
 members = [
+    "aleph-app-info",
     "aleph-compile",
+    "aleph-embedded-data",
     "aleph-engine",
+    "aleph-macros",
     "aleph-math",
     "aleph-target",
     "aleph-target-crate",
     "aleph-test",
     "aleph-vma-sys",
+    "aleph-vulkan",
+    "aleph-vulkan-alloc",
     "aleph-vulkan-core",
 ]

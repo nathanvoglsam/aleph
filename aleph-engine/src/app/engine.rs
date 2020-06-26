@@ -7,27 +7,14 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppInfo, AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings};
-use crate::gpu;
-use crate::gpu::vk::core::GPUInfo;
-use erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
-use once_cell::sync::Lazy;
+use crate::app::{AppLogic, FrameTimer, Imgui, Keyboard, Mouse, WindowSettings, Window};
 use sdl2::event::Event;
-use std::ffi::CString;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-
-pub const ENGINE_NAME: &str = "AlephEngine";
-pub static ENGINE_NAME_CSTR: Lazy<CString> = Lazy::new(|| CString::new(ENGINE_NAME).unwrap());
-pub const ENGINE_VERSION_STRING: &str = "0.1.0";
-pub const ENGINE_VERSION_MAJOR: u32 = 0;
-pub const ENGINE_VERSION_MINOR: u32 = 1;
-pub const ENGINE_VERSION_PATCH: u32 = 0;
-pub const ENGINE_VERSION_VK: u32 = erupt::make_version(
-    ENGINE_VERSION_MAJOR,
-    ENGINE_VERSION_MINOR,
-    ENGINE_VERSION_PATCH,
-);
+use gpu::vulkan_core::erupt::vk1_0::{SemaphoreCreateInfoBuilder, Fence, Vk10DeviceLoaderExt};
+use gpu::vulkan_core::GPUInfo;
+use crate::app_info::AppInfo;
+use crate::gpu::pipeline_cache::PipelineCache;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -160,30 +147,32 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let instance = gpu::vk::core::InstanceBuilder::new()
+        let instance = gpu::core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
             .validation(args.is_present("GPU_VALIDATION"))
             .build(&window, &app_info);
 
-        let device = gpu::vk::core::DeviceBuilder::new().build(&instance);
+        let device = gpu::core::DeviceBuilder::new().build(&instance);
         log::trace!("");
 
         Self::log_gpu_info(device.info());
         log::info!("");
 
-        let allocator = gpu::vk::alloc::Allocator::builder()
+        PipelineCache::init(&device);
+
+        let allocator = gpu::alloc::Allocator::builder()
             .build(&device)
             .expect("Failed to build vulkan allocator");
 
-        let mut swapchain = gpu::vk::core::SwapchainBuilder::new()
+        let mut swapchain = gpu::core::SwapchainBuilder::new()
             .vsync()
-            .build(&device);
+            .build(&device, Window::drawable_size());
 
         let _renderer = unsafe {
-            gpu::vk::render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
+            gpu::render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
         };
 
-        let mut imgui_renderer = gpu::vk::render::ImguiRenderer::new(
+        let mut imgui_renderer = gpu::render::ImguiRenderer::new(
             imgui_ctx.context_mut().fonts(),
             device.clone(),
             allocator.clone(),
@@ -239,7 +228,7 @@ impl Engine {
             }
 
             if swapchain.requires_rebuild() {
-                let _ = swapchain.rebuild();
+                let _ = swapchain.rebuild(Window::drawable_size());
                 unsafe {
                     imgui_renderer.recreate_resources(&swapchain);
                 }
@@ -339,8 +328,8 @@ impl Engine {
     ///
     fn log_engine_info() {
         log::info!("=== Engine Info ===");
-        log::info!("Name    : {}", ENGINE_NAME);
-        log::info!("Version : {}", ENGINE_VERSION_STRING);
+        log::info!("Name    : {}", app_info::engine_name());
+        log::info!("Version : {}", app_info::engine_version_string());
         log::info!("Arch    : {}", target::build::target_architecture().name());
         log::info!(
             "OS      : {}",

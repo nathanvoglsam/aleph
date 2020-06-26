@@ -13,6 +13,12 @@
       <sourceFolder url="file://$MODULE_DIR$/aleph-vma/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-vma-sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/aleph-vulkan-core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-vulkan-embedded-data/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-vulkan/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-vulkan-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-app-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/aleph-embedded-data/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

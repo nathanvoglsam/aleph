@@ -1,0 +1,25 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-macros"
+version = "1.0.0"
+authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+description = "Utility macros used by various aleph crates"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-macros/"
+readme = "README.md"
+keywords = ["macro", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }

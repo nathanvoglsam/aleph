@@ -9,9 +9,10 @@
 
 extern crate aleph_engine as aleph;
 
-use aleph::app::{AppInfo, Engine, FrameRate, Window};
+use aleph::app::{Engine, FrameRate, Window};
 use aleph::imgui::Condition;
 use aleph::imgui::{im_str, MenuItem, Ui};
+use aleph::app_info::AppInfo;
 
 struct AlephAppLogic {
     frame_timer: bool,

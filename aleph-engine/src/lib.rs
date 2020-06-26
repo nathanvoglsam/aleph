@@ -16,6 +16,8 @@ pub extern crate imgui;
 pub extern crate log;
 pub extern crate rayon;
 pub extern crate smallbox;
+pub extern crate aleph_vulkan as gpu;
+pub extern crate aleph_app_info as app_info;
 //pub extern crate aleph_math as math;
 
 extern crate aleph_target_crate as target;
@@ -44,7 +46,6 @@ extern crate android_logger;
 // =================================================================================================
 
 pub mod app;
-pub mod gpu;
 
 // =================================================================================================
 // Internal Modules
@@ -52,4 +53,3 @@ pub mod gpu;
 
 pub(crate) mod cpuid;
 pub(crate) mod logger;
-mod macros;

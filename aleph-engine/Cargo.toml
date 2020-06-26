@@ -25,7 +25,6 @@ edition = "2018"
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
 
 [dependencies]
-erupt = "0.6"
 sdl2 = { version = "0.34", features = ["raw-window-handle"] }
 log = { version = "0.4", features = ["release_max_level_info"] }
 rayon = "1.3"
@@ -43,6 +42,8 @@ clap = "2.33"
 palette = "0.5"
 gltf = {version = "0.15", features = ["utils", "names"]}
 spirv-reflect = "0.2"
+aleph-app-info = { path = "../aleph-app-info", version = "0.1" }
+aleph-vulkan = { path = "../aleph-vulkan", version = "0.1" }
 aleph-target-crate = { path = "../aleph-target-crate", version = "1" }
 aleph-vma-sys = { path = "../aleph-vma-sys", version = "1" }
 

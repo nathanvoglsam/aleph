@@ -7,7 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-mod app_info;
 mod app_logic;
 mod engine;
 mod frame_rate;
@@ -19,16 +18,8 @@ mod settings;
 mod thread_pools;
 mod window;
 
-pub use self::app_info::AppInfo;
 pub use self::app_logic::AppLogic;
 pub use self::engine::Engine;
-pub use self::engine::ENGINE_NAME;
-pub use self::engine::ENGINE_NAME_CSTR;
-pub use self::engine::ENGINE_VERSION_MAJOR;
-pub use self::engine::ENGINE_VERSION_MINOR;
-pub use self::engine::ENGINE_VERSION_PATCH;
-pub use self::engine::ENGINE_VERSION_STRING;
-pub use self::engine::ENGINE_VERSION_VK;
 pub use self::frame_rate::FrameRate;
 pub use self::frame_timer::FrameTimer;
 pub use self::imgui::ImguiStyleBuilder;

@@ -9,13 +9,13 @@
 
 
 [package]
-name = "aleph-vulkan-core"
+name = "aleph-vulkan-alloc"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "Abstractions around base level vulkan primitives like a Device, PhysicalDevice, Instance and SwapChain"
+description = "Wrapper for AMD's VulkanMemoryAllocator"
 license = "<ALEPH_LICENSE_NAME_REPLACE>"
 repository = "<ALEPH_REPO_REPLACE>"
-documentation = "https://docs.rs/aleph-vulkan-core/"
+documentation = "https://docs.rs/aleph-vulkan-alloc/"
 readme = "README.md"
 keywords = ["engine", "graphics", "vulkan", "game"]
 categories = ["game-engines"]
@@ -25,17 +25,17 @@ edition = "2018"
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
 
 [dependencies]
-erupt = "0.6"
+##erupt = "0.6"
+##log = { version = "0.4", features = ["release_max_level_info"] }
+##crossbeam = "0.7"
+##once_cell = "1.3"
+##parking_lot = "0.10"
+##libloading = "0.6"
+##raw-window-handle = "0.3"
+##console = "0.11"
+##imgui = "0.4"
+##palette = "0.5"
+##spirv-reflect = "0.2"
 log = { version = "0.4", features = ["release_max_level_info"] }
-crossbeam = "0.7"
-once_cell = "1.3"
-parking_lot = "0.10"
-libloading = "0.6"
-raw-window-handle = "0.3"
-console = "0.11"
-imgui = "0.4"
-palette = "0.5"
-spirv-reflect = "0.2"
-aleph-app-info = { path = "../aleph-app-info", version = "0.1" }
-aleph-macros = { path = "../aleph-macros", version = "1" }
+aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1" }
 aleph-vma-sys = { path = "../aleph-vma-sys", version = "1" }

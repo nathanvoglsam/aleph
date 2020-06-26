@@ -7,25 +7,43 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+pub extern crate aleph_vma_sys as vma_sys;
+pub extern crate spirv_reflect;
+pub extern crate erupt;
+
+extern crate aleph_macros as macros;
+extern crate aleph_app_info as app_info;
 extern crate log;
-extern crate aleph_vma_sys as vma_sys;
 extern crate console;
 extern crate crossbeam;
 extern crate once_cell;
 extern crate palette;
 extern crate parking_lot;
 extern crate raw_window_handle;
-extern crate spirv_reflect;
-extern crate erupt;
 
-pub mod alloc;
-pub mod core;
+
+pub(crate) mod debug;
+pub(crate) mod surface;
 pub mod defer;
-pub mod format;
-pub mod image;
-pub mod pipeline;
-pub mod pipeline_cache;
-pub mod pipeline_layout;
-pub mod reflect;
-pub mod render;
-pub mod shader;
+
+mod device;
+mod gpu_info;
+mod instance;
+mod queue_family;
+mod swapchain;
+mod vendor;
+
+pub use device::Device;
+pub use device::DeviceBuilder;
+pub use gpu_info::GPUInfo;
+pub use instance::Instance;
+pub use instance::InstanceBuilder;
+pub use queue_family::QueueFamily;
+pub use queue_family::QueueFamilyType;
+pub use swapchain::AcquireError;
+pub use swapchain::RebuildError;
+pub use swapchain::SwapChainSupport;
+pub use swapchain::Swapchain;
+pub use swapchain::SwapchainBuilder;
+pub use swapchain::SwapImage;
+pub use vendor::VendorID;

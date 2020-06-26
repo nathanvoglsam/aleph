@@ -6,3 +6,4 @@ aleph-engine/thirdparty/sdl2/out
 aleph-vma-sys/lib/out
 aleph-engine/shaders/out
 aleph-vulkan-core/shaders/out
+aleph-embedded-data/shaders/out
