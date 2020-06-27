@@ -1,4 +1,4 @@
-# Aleph-Target
+# Aleph-Target-Crate
 
-A library for detecting the target and host platform in build scripts and providing a const fn
-method of platform detection in a crate
+A wrapper that rexports definitions from aleph-target and alternative implementations of some
+some functions to make it usable inside a library crate and not a build script

@@ -28,7 +28,7 @@
  */
 
 extern crate aleph_compile as compile;
-extern crate aleph_target as target;
+extern crate aleph_target_build as target;
 
 use cmake;
 

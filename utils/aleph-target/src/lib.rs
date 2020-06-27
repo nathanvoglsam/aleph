@@ -7,52 +7,163 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-//!
-//! # Aleph-Build
-//!
-//! This crate provides a unified and simplified API for detecting the host and target platform and
-//! build profile. It provides a structure for representing a target or host platform and some
-//! additional utilities for checking the host and target platform and build profile.
-//!
-//! ## Build Script vs Library Usage
-//!
-//! The crate has 3 basic parts, the enums and types used to represent the platform, the functions
-//! for detecting the platform in a build script and the functions for detecting the platform in an
-//! end user crate.
-//!
-//! ### Build Script
-//!
-//! Rust build.rs scripts provide the current HOST (the platform we are compiling ON) and TARGET
-//! (the platform we are compiling FOR) through environment variables. The build script side of this
-//! crate works by querying the environment variables to produce a Platform, Architecture or
-//! BuildType.
-//!
-//! There are also an associated functions with each of those 3 types `print_cargo_cfg` that will
-//! add some build cfg flags that will be used by code in the library portion (not in the build.rs)
-//! of the crate to provide the same interface to all the information in the build script.
-//!
-//! ### Library Usage
-//!
-//! To correctly use this crate inside your own crate, you must provide a build script that calls
-//!
+extern crate aleph_target_build as aleph_target;
 
-#![allow(clippy::suspicious_else_formatting)]
-#![deny(bare_trait_objects)]
+pub use aleph_target::recreate_triple;
 
-mod architecture;
-mod build_type;
-mod platform;
-mod triple;
+pub use aleph_target::Architecture;
+pub use aleph_target::BuildType;
+pub use aleph_target::Platform;
 
-pub mod build;
+pub use aleph_target::get_architecture_from;
+pub use aleph_target::get_build_type_from;
+pub use aleph_target::get_platform_from;
 
-pub use triple::recreate_triple;
+pub mod build {
 
-pub use platform::get_platform_from;
-pub use platform::Platform;
+    ///
+    /// Returns the host platform
+    ///
+    #[inline]
+    pub fn host_platform() -> aleph_target::Platform {
+        if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_windows) {
+            if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
+                aleph_target::Platform::WindowsMSVC
+            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
+                aleph_target::Platform::WindowsGNU
+            } else {
+                panic!("Unsupported Platform")
+            }
+        } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_android) {
+            aleph_target::Platform::Android
+        } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_linux) {
+            aleph_target::Platform::Linux
+        } else {
+            panic!("Unsupported Platform")
+        }
+    }
 
-pub use architecture::get_architecture_from;
-pub use architecture::Architecture;
+    ///
+    /// Returns the host architecture
+    ///
+    #[inline]
+    pub fn host_architecture() -> aleph_target::Architecture {
+        if cfg!(ALEPH_BUILD_ARCH_HOST_is_x86_64) {
+            aleph_target::Architecture::X8664
+        } else if cfg!(ALEPH_BUILD_ARCH_HOST_is_aarch64) {
+            aleph_target::Architecture::AARCH64
+        } else {
+            panic!("Unsupported Architecture")
+        }
+    }
 
-pub use build_type::get_build_type_from;
-pub use build_type::BuildType;
+    ///
+    /// Returns the host build type
+    ///
+    #[inline]
+    pub fn host_build_type() -> aleph_target::BuildType {
+        if cfg!(ALEPH_BUILD_PROFILE_HOST_is_release) {
+            aleph_target::BuildType::Release
+        } else if cfg!(ALEPH_BUILD_PROFILE_HOST_is_debug) {
+            aleph_target::BuildType::Debug
+        } else {
+            panic!("Unsupported Build Profile")
+        }
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    #[cfg(any(HOST_is_x86_64, HOST_is_i686))]
+    const fn internal_host_is_x86() -> bool {
+        true
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    #[cfg(not(any(HOST_is_x86_64, HOST_is_i686)))]
+    const fn internal_host_is_x86() -> bool {
+        false
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    pub const fn host_is_x86() -> bool {
+        internal_host_is_x86()
+    }
+
+    ///
+    /// Returns the target platform
+    ///
+    #[inline]
+    pub fn target_platform() -> aleph_target::Platform {
+        if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_windows) {
+            if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+                aleph_target::Platform::WindowsMSVC
+            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+                aleph_target::Platform::WindowsGNU
+            } else {
+                panic!("Unsupported Platform")
+            }
+        } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_android) {
+            aleph_target::Platform::Android
+        } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_linux) {
+            aleph_target::Platform::Linux
+        } else {
+            panic!("Unsupported Platform")
+        }
+    }
+
+    ///
+    /// Returns the target architecture
+    ///
+    #[inline]
+    pub fn target_architecture() -> aleph_target::Architecture {
+        if cfg!(ALEPH_BUILD_ARCH_TARGET_is_x86_64) {
+            aleph_target::Architecture::X8664
+        } else if cfg!(ALEPH_BUILD_ARCH_TARGET_is_aarch64) {
+            aleph_target::Architecture::AARCH64
+        } else {
+            panic!("Unsupported Architecture")
+        }
+    }
+
+    ///
+    /// Returns the target build type
+    ///
+    #[inline]
+    pub fn target_build_type() -> aleph_target::BuildType {
+        if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_release) {
+            aleph_target::BuildType::Release
+        } else if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_debug) {
+            aleph_target::BuildType::Debug
+        } else {
+            panic!("Unsupported Build Profile")
+        }
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    #[cfg(any(TARGET_is_x86_64, TARGET_is_i686))]
+    const fn internal_target_is_x86() -> bool {
+        true
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    #[cfg(not(any(TARGET_is_x86_64, TARGET_is_i686)))]
+    const fn internal_target_is_x86() -> bool {
+        false
+    }
+
+    ///
+    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
+    ///
+    pub const fn target_is_x86() -> bool {
+        internal_target_is_x86()
+    }
+}

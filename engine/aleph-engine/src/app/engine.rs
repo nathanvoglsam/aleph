@@ -297,9 +297,9 @@ impl Engine {
     fn log_engine_info() {
         let engine_name = app_info::engine_name();
         let engine_version = app_info::engine_version_string();
-        let arch = aleph_target_crate::build::target_architecture().name();
-        let os = aleph_target_crate::build::target_platform().pretty_name();
-        let build = aleph_target_crate::build::target_build_type().pretty_name();
+        let arch = aleph_target::build::target_architecture().name();
+        let os = aleph_target::build::target_platform().pretty_name();
+        let build = aleph_target::build::target_build_type().pretty_name();
         aleph_log::info!("=== Engine Info ===");
         aleph_log::info!("Name    : {}", engine_name);
         aleph_log::info!("Version : {}", engine_version);

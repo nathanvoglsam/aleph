@@ -22,7 +22,7 @@ members = [
     "utils/aleph-logger",
     "utils/aleph-macros",
     "utils/aleph-target",
-    "utils/aleph-target-crate",
+    "utils/aleph-target-build",
     "graphics/aleph-vulkan",
     "graphics/aleph-vulkan-alloc",
     "graphics/aleph-vulkan-alloc-sys",

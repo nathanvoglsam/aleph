@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-extern crate aleph_target as target;
+extern crate aleph_target_build as target;
 
 fn main() {
     target::build::target_architecture().print_target_cargo_cfg();

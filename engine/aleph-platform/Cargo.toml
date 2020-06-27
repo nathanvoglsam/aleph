@@ -31,7 +31,7 @@ parking_lot = "0.10"
 
 [build-dependencies]
 cmake = "0.1"
-aleph-target = { path = "../../utils/aleph-target", version = "1" }
+aleph-target-build = { path = "../../utils/aleph-target-build", version = "1" }
 aleph-compile = { path = "../../utils/aleph-compile", version = "1" }
 aleph-math = { path = "../aleph-math", version = "0.1" }
 
