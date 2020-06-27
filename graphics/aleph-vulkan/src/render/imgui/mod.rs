@@ -46,7 +46,7 @@ impl ImguiRenderer {
         allocator: Arc<Allocator>,
         swapchain: &vulkan_core::Swapchain,
     ) -> Self {
-        log::trace!("Initializing ImGui Renderer");
+        aleph_log::trace!("Initializing ImGui Renderer");
         let global = ImguiGlobal::init(&device);
 
         let font = ImguiFont::init(fonts, &global, &device, &allocator);

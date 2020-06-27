@@ -289,7 +289,7 @@ impl Mouse {
     /// Internal function for initializing the global mouse state
     ///
     pub(crate) fn init() {
-        log::trace!("Initializing the Mouse system");
+        aleph_log::trace!("Initializing the Mouse system");
         let mouse_state = InternalMouseState {
             pos: (0, 0),
             buttons: 0,
@@ -298,7 +298,7 @@ impl Mouse {
         *MOUSE_STATE.write() = Some(mouse_state);
         *MOUSE_REQUEST_QUEUE.lock() = Some(Vec::new());
         *MOUSE_EVENTS.write() = Some(Vec::new());
-        log::trace!("");
+        aleph_log::trace!("");
     }
 
     ///
@@ -315,9 +315,9 @@ impl Mouse {
         for request in mouse_requests.drain(..) {
             match request {
                 MouseRequest::SetPos(x, y) => {
-                    log::trace!("Attempting to set new mouse position");
+                    aleph_log::trace!("Attempting to set new mouse position");
                     mouse_utils.warp_mouse_in_window(window, x as i32, y as i32);
-                    log::trace!("Moved mouse to : {}, {}", x, y);
+                    aleph_log::trace!("Moved mouse to : {}, {}", x, y);
                 }
                 MouseRequest::SetCursor(cursor) => {
                     let cursor = cursors.get(&cursor).unwrap();

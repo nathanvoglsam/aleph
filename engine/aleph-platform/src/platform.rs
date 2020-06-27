@@ -78,20 +78,20 @@ impl PlatformBuilder {
     /// Consumes the builder and constructs a new platform object
     ///
     pub fn build(self) -> Result<Platform, PlatformBuildError> {
-        log::trace!("Initializing SDL2 Library");
+        aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().map_err(|v| PlatformBuildError::FailedToInitSDL2(v))?;
 
-        log::trace!("Initializing SDL2 Event Subsystem");
+        aleph_log::trace!("Initializing SDL2 Event Subsystem");
         let event = sdl
             .event()
             .map_err(|v| PlatformBuildError::FailedToInitEvent(v))?;
 
-        log::trace!("Initializing SDL2 Event Pump");
+        aleph_log::trace!("Initializing SDL2 Event Pump");
         let event_pump = sdl
             .event_pump()
             .map_err(|v| PlatformBuildError::FailedToInitEventPump(v))?;
 
-        log::trace!("Initializing SDL2 Timer Subsystem");
+        aleph_log::trace!("Initializing SDL2 Timer Subsystem");
         let timer = sdl
             .timer()
             .map_err(|v| PlatformBuildError::FailedToInitTimer(v))?;
@@ -100,15 +100,15 @@ impl PlatformBuilder {
 
         // If we aren't running headless, init input handling, video system and create a window
         let (video, mouse_util, window) = if !self.headless {
-            log::trace!("Initializing SDL2 Video Subsystem");
+            aleph_log::trace!("Initializing SDL2 Video Subsystem");
             let video = sdl
                 .video()
                 .map_err(|v| PlatformBuildError::FailedToInitVideo(v))?;
 
-            log::trace!("Initializing SDL2 Mouse Util");
+            aleph_log::trace!("Initializing SDL2 Mouse Util");
             let mouse_util = sdl.mouse();
 
-            log::trace!("Initializing Window");
+            aleph_log::trace!("Initializing Window");
             let window = Window::init_window(&video, "ASD", &WindowSettings::default());
 
             Keyboard::init();
@@ -260,7 +260,7 @@ impl Platform {
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => {
-                        log::info!("Quit Event Received");
+                        aleph_log::info!("Quit Event Received");
                         quit_fn();
                     }
                     Event::Window { win_event, .. } => {
@@ -298,7 +298,7 @@ impl Platform {
             for event in event_pump.poll_iter() {
                 match event {
                     Event::Quit { .. } => {
-                        log::info!("Quit Event Received");
+                        aleph_log::info!("Quit Event Received");
                         quit_fn();
                     }
                     _ => {}

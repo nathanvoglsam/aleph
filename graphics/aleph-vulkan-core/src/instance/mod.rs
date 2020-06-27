@@ -90,7 +90,7 @@ impl InstanceBuilder {
         };
 
         // Create a surface for the window we're making an instance for
-        log::trace!("Creating Vulkan surface");
+        aleph_log::trace!("Creating Vulkan surface");
         let surface = unsafe {
             crate::surface::create_surface(&instance_loader, window_handle, None)
                 .expect("Failed to create surface")
@@ -110,12 +110,12 @@ impl InstanceBuilder {
     ///
     fn load_vulkan_core() -> erupt::utils::loading::DefaultCoreLoader {
         // Load core vulkan functions
-        log::trace!("Initializing Vulkan Core Loader");
+        aleph_log::trace!("Initializing Vulkan Core Loader");
         let mut core_loader =
             erupt::CoreLoader::new().expect("Failed to create Vulkan core loader");
 
         // Load vulkan 1.0 core functions
-        log::trace!("Loading Core Functions for Vulkan 1.0");
+        aleph_log::trace!("Loading Core Functions for Vulkan 1.0");
         core_loader.load_vk1_0().expect("Failed to load Vulkan 1.0");
         core_loader
     }
@@ -164,7 +164,7 @@ impl InstanceBuilder {
             .enabled_layer_names(&layers);
 
         // Construct the vulkan instance
-        log::trace!("Creating Vulkan instance");
+        aleph_log::trace!("Creating Vulkan instance");
         unsafe {
             let instance = core_loader.create_instance(&create_info, None, None);
             instance.expect("Failed to create Vulkan instance")
@@ -181,7 +181,7 @@ impl InstanceBuilder {
         debug: bool,
     ) -> erupt::InstanceLoader {
         // Load the vulkan instance function pointers
-        log::trace!("Loading Vulkan Instance functions");
+        aleph_log::trace!("Loading Vulkan Instance functions");
         let mut instance_loader = erupt::InstanceLoader::new(core_loader, instance)
             .expect("Failed to initialize Vulkan instance loader");
         instance_loader
@@ -202,7 +202,7 @@ impl InstanceBuilder {
     ///
     ///
     fn install_debug_messenger(instance_loader: &erupt::InstanceLoader) -> DebugUtilsMessengerEXT {
-        log::trace!("Installing VK_EXT_debug_utils messenger");
+        aleph_log::trace!("Installing VK_EXT_debug_utils messenger");
         let create_info = DebugUtilsMessengerCreateInfoEXTBuilder::new()
             .message_severity(
                 DebugUtilsMessageSeverityFlagsEXT::ERROR_EXT
@@ -260,14 +260,14 @@ impl Instance {
 impl Drop for Instance {
     fn drop(&mut self) {
         unsafe {
-            log::trace!("Destroying Vulkan surface");
+            aleph_log::trace!("Destroying Vulkan surface");
             self.instance_loader.destroy_surface_khr(self.surface, None);
             if let Some(messenger) = self.messenger {
-                log::trace!("Destroying debug messenger");
+                aleph_log::trace!("Destroying debug messenger");
                 self.instance_loader
                     .destroy_debug_utils_messenger_ext(messenger, None);
             }
-            log::trace!("Destroying Vulkan instance");
+            aleph_log::trace!("Destroying Vulkan instance");
             self.instance_loader.destroy_instance(None);
         }
     }

@@ -28,7 +28,7 @@ pub struct FrameTimer {}
 
 impl FrameTimer {
     pub(crate) fn init(timer: &sdl2::TimerSubsystem) {
-        log::trace!("Initializing the Frame Timer");
+        aleph_log::trace!("Initializing the Frame Timer");
         let state = &FRAME_TIMER_STATE;
 
         state

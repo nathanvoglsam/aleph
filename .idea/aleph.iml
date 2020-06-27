@@ -33,10 +33,11 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-math/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/game/aleph-test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-cpu-info/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-logger/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-logger/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/graphics/aleph-vulkan-alloc-sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-platform/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-settings/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-log/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

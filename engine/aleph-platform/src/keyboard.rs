@@ -145,14 +145,14 @@ impl Keyboard {
     /// Internal function for initializing the global mouse state
     ///
     pub(crate) fn init() {
-        log::trace!("Initializing the Keyboard system");
+        aleph_log::trace!("Initializing the Keyboard system");
         let keyboard_state = KeyboardState {
             keys: [false; 1024],
         };
 
         *KEYBOARD_STATE.write() = Some(keyboard_state);
         *KEYBOARD_EVENTS.write() = Some(Vec::new());
-        log::trace!("");
+        aleph_log::trace!("");
     }
 
     ///

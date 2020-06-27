@@ -503,7 +503,7 @@ pub struct Imgui {
 
 impl Imgui {
     pub fn new() -> Self {
-        log::trace!("Initializing ImGui");
+        aleph_log::trace!("Initializing ImGui");
         let mut context = gpu::imgui::Context::create();
         context.set_ini_filename(None);
         context.set_clipboard_backend(ImguiClipboard::new());
@@ -557,7 +557,7 @@ impl Imgui {
             Cursor::No,
         ];
 
-        log::trace!("");
+        aleph_log::trace!("");
         Self { context, cursors }
     }
 

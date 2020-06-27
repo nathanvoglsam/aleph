@@ -65,24 +65,24 @@ impl Engine {
 
         // First thing we do is initialize the log backend so everything can log from now on
         aleph_logger::init();
-        log::info!("Aleph Engine Starting");
-        log::info!("");
+        aleph_log::info!("Aleph Engine Starting");
+        aleph_log::info!("");
 
         // Print info about the specific app to the log so we know what game and version we're on
         Engine::log_app_info(&app_info);
-        log::info!("");
+        aleph_log::info!("");
 
         // Print engine info to the log so we know what engine version we're running on
         Engine::log_engine_info();
-        log::info!("");
+        aleph_log::info!("");
 
         // Print some system info to the log so we know what we were running on
         Engine::log_cpu_info();
-        log::info!("");
+        aleph_log::info!("");
 
         // Initialize the thread pools
         Engine::init_thread_pools();
-        log::info!("");
+        aleph_log::info!("");
 
         // -----------------------------------------------------------------------------------------
         // SDL2 and Window Initialization
@@ -111,10 +111,10 @@ impl Engine {
             .build(&platform, &app_info);
 
         let device = gpu::core::DeviceBuilder::new().build(&instance);
-        log::trace!("");
+        aleph_log::trace!("");
 
         Self::log_gpu_info(device.info());
-        log::info!("");
+        aleph_log::info!("");
 
         PipelineCache::init(&device);
 
@@ -155,7 +155,7 @@ impl Engine {
         // =========================================================================================
 
         // Call the AppLogic on_init now that it is safe to do so
-        log::trace!("Calling AppLogic::on_init");
+        aleph_log::trace!("Calling AppLogic::on_init");
         app.on_init();
 
         // Process the SDL2 events and store them into our own event queues for later use
@@ -226,7 +226,7 @@ impl Engine {
             swapchain.present(device.general_queue(), i as usize, &[signal_semaphore]);
         }
 
-        log::trace!("Calling AppLogic::on_exit");
+        aleph_log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
 
         unsafe {
@@ -281,9 +281,9 @@ impl Engine {
     /// Internal function for logging info about the game
     ///
     fn log_app_info(app_info: &AppInfo) {
-        log::info!("=== Game Info ===");
-        log::info!("Name    : {}", &app_info.name);
-        log::info!(
+        aleph_log::info!("=== Game Info ===");
+        aleph_log::info!("Name    : {}", &app_info.name);
+        aleph_log::info!(
             "Version : {}.{}.{}",
             app_info.major,
             app_info.minor,
@@ -300,12 +300,12 @@ impl Engine {
         let arch = aleph_target_crate::build::target_architecture().name();
         let os = aleph_target_crate::build::target_platform().pretty_name();
         let build = aleph_target_crate::build::target_build_type().pretty_name();
-        log::info!("=== Engine Info ===");
-        log::info!("Name    : {}", engine_name);
-        log::info!("Version : {}", engine_version);
-        log::info!("Arch    : {}", arch);
-        log::info!("OS      : {}", os);
-        log::info!("Build   : {}", build);
+        aleph_log::info!("=== Engine Info ===");
+        aleph_log::info!("Name    : {}", engine_name);
+        aleph_log::info!("Version : {}", engine_version);
+        aleph_log::info!("Arch    : {}", arch);
+        aleph_log::info!("OS      : {}", os);
+        aleph_log::info!("Build   : {}", build);
     }
 
     ///
@@ -317,12 +317,12 @@ impl Engine {
         let physical_cpus = aleph_cpu_info::physical_core_count();
         let logical_cpus = aleph_cpu_info::logical_core_count();
         let system_ram = Platform::system_ram();
-        log::info!("=== CPU INFO ===");
-        log::info!("CPU Vendor    : {}", cpu_vendor);
-        log::info!("CPU Brand     : {}", cpu_brand);
-        log::info!("Physical CPUs : {}", physical_cpus);
-        log::info!("Logical CPUs  : {}", logical_cpus);
-        log::info!("System RAM    : {}MB", system_ram);
+        aleph_log::info!("=== CPU INFO ===");
+        aleph_log::info!("CPU Vendor    : {}", cpu_vendor);
+        aleph_log::info!("CPU Brand     : {}", cpu_brand);
+        aleph_log::info!("Physical CPUs : {}", physical_cpus);
+        aleph_log::info!("Logical CPUs  : {}", logical_cpus);
+        aleph_log::info!("System RAM    : {}MB", system_ram);
     }
 
     ///
@@ -334,10 +334,10 @@ impl Engine {
         let maj = info.api_version_major;
         let min = info.api_version_minor;
         let pat = info.api_version_patch;
-        log::info!("=== GPU INFO ===");
-        log::info!("GPU Vendor    : {}", gpu_vendor);
-        log::info!("GPU Name      : {}", gpu_name);
-        log::info!("API Version   : {}.{}.{}", maj, min, pat)
+        aleph_log::info!("=== GPU INFO ===");
+        aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
+        aleph_log::info!("GPU Name      : {}", gpu_name);
+        aleph_log::info!("API Version   : {}.{}.{}", maj, min, pat)
     }
 
     ///
@@ -394,13 +394,13 @@ impl Engine {
         }
 
         super::init_long_thread_pool(long_threads);
-        log::info!(
+        aleph_log::info!(
             "Long Running thread pool initialized with {} threads",
             long_threads
         );
 
         super::init_short_thread_pool(short_threads);
-        log::info!(
+        aleph_log::info!(
             "Short Running thread pool initialized with {} threads",
             short_threads
         );

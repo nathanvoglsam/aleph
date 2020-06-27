@@ -23,7 +23,7 @@ impl PipelineCache {
     /// Internal function for loading the pipeline cache data from disk
     ///
     fn load_file_data() -> Vec<u8> {
-        log::trace!("Reading pipeline cache data from disk");
+        aleph_log::trace!("Reading pipeline cache data from disk");
 
         // Try and open the file if it already exists to read from it
         match std::fs::OpenOptions::new()
@@ -56,7 +56,7 @@ impl PipelineCache {
     /// Initialize the global pipeline cache object
     ///
     pub fn init(device: &Device) {
-        log::trace!("Creating pipeline cache");
+        aleph_log::trace!("Creating pipeline cache");
         let initial_data_vec = Self::load_file_data();
         let initial_data: &[u8] = initial_data_vec.as_slice();
 
@@ -72,7 +72,7 @@ impl PipelineCache {
         PIPELINE_CACHE.store(cache.0, Ordering::Relaxed);
 
         device.defer_destruction(|device: &Device| {
-            log::trace!("Destroying pipeline cache");
+            aleph_log::trace!("Destroying pipeline cache");
             Self::store(device);
 
             unsafe {
@@ -88,7 +88,7 @@ impl PipelineCache {
     /// Store the pipeline cache data to a file
     ///
     pub fn store(device: &Device) {
-        log::trace!("Storing pipeline cache data to disk");
+        aleph_log::trace!("Storing pipeline cache data to disk");
         let data = unsafe {
             let mut data_size = 0;
 
@@ -128,7 +128,7 @@ impl PipelineCache {
             }
             Err(err) => match err.kind() {
                 ErrorKind::PermissionDenied => {
-                    log::warn!("Failed to save pipeline cache data: PermissionDenied");
+                    aleph_log::warn!("Failed to save pipeline cache data: PermissionDenied");
                 }
                 _ => {
                     panic!("Failed to save pipeline cache data");
