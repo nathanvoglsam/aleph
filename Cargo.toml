@@ -7,6 +7,12 @@
 ## <ALEPH_LICENSE_REPLACE>
 ##
 
+## Uncomment on an absolute final release build to maximize the compiler's optimization ability
+##[profile.release]
+##lto = "fat"
+##panic = 'unwind'
+##codegen-units = 1
+
 [workspace]
 
 members = [
