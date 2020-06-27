@@ -7,13 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan::core::erupt::vk1_0::{
+use aleph_vulkan::core::erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
     DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
 };
-use vulkan::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
-use vulkan::shader::ShaderModule;
+use aleph_vulkan::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
+use aleph_vulkan::shader::ShaderModule;
 
 ///
 /// A struct to wrap resources that are created and destroyed once during the Imgui renderer's
@@ -28,7 +28,7 @@ pub struct ImguiGlobal {
 }
 
 impl ImguiGlobal {
-    pub fn init(device: &vulkan::core::Device) -> Self {
+    pub fn init(device: &aleph_vulkan::core::Device) -> Self {
         let (vertex_module, fragment_module) = Self::create_shader_modules(device);
         let descriptor_pool = Self::create_descriptor_pool(device);
         let pipeline_layout =
@@ -48,7 +48,7 @@ impl ImguiGlobal {
         }
     }
 
-    pub fn create_descriptor_pool(device: &vulkan::core::Device) -> DescriptorPool {
+    pub fn create_descriptor_pool(device: &aleph_vulkan::core::Device) -> DescriptorPool {
         let pool_sizes = [
             DescriptorPoolSizeBuilder::new()
                 ._type(DescriptorType::SAMPLER)
@@ -73,7 +73,7 @@ impl ImguiGlobal {
     }
 
     pub fn create_pipeline_layout(
-        device: &vulkan::core::Device,
+        device: &aleph_vulkan::core::Device,
         fragment_module: &ShaderModule,
         vertex_module: &ShaderModule,
     ) -> PipelineLayout {
@@ -90,7 +90,7 @@ impl ImguiGlobal {
     }
 
     pub fn allocate_descriptor_set(
-        device: &vulkan::core::Device,
+        device: &aleph_vulkan::core::Device,
         layout: DescriptorSetLayout,
         pool: DescriptorPool,
     ) -> DescriptorSet {
@@ -102,8 +102,10 @@ impl ImguiGlobal {
             .expect("Failed to allocate descriptor sets")[0]
     }
 
-    pub fn create_shader_modules(device: &vulkan::core::Device) -> (ShaderModule, ShaderModule) {
-        let (_, words) = vulkan::embedded::data::shaders::imgui_vert_shader();
+    pub fn create_shader_modules(
+        device: &aleph_vulkan::core::Device,
+    ) -> (ShaderModule, ShaderModule) {
+        let (_, words) = aleph_vulkan::embedded::data::shaders::imgui_vert_shader();
         let vertex_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -112,7 +114,7 @@ impl ImguiGlobal {
             .build(Some(device))
             .expect("Failed to create imgui vertex module");
 
-        let (_, words) = vulkan::embedded::data::shaders::imgui_frag_shader();
+        let (_, words) = aleph_vulkan::embedded::data::shaders::imgui_frag_shader();
         let fragment_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -124,7 +126,7 @@ impl ImguiGlobal {
         (vertex_module, fragment_module)
     }
 
-    pub unsafe fn destroy(&self, device: &vulkan::core::Device) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device) {
         device
             .loader()
             .free_descriptor_sets(self.descriptor_pool, &[self.descriptor_set])

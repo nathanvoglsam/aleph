@@ -7,7 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::erupt::vk1_0::{PipelineMultisampleStateCreateInfoBuilder, SampleCountFlagBits};
+use aleph_vulkan_core::erupt::vk1_0::{
+    PipelineMultisampleStateCreateInfoBuilder, SampleCountFlagBits,
+};
 
 ///
 /// Namespace struct for multisampling state

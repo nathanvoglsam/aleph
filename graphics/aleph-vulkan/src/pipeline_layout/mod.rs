@@ -8,11 +8,11 @@
 //
 
 use crate::shader::ShaderModule;
-use vulkan_core::erupt::vk1_0::{
+use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
     PushConstantRangeBuilder, ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use vulkan_core::Device;
+use aleph_vulkan_core::Device;
 
 ///
 /// An enum to represent the possible errors that can be encountered when creating a pipeline layout
@@ -259,7 +259,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
 ///
 ///
 pub struct PipelineLayout {
-    pipeline_layout: vulkan_core::erupt::vk1_0::PipelineLayout,
+    pipeline_layout: aleph_vulkan_core::erupt::vk1_0::PipelineLayout,
     set_layouts: Vec<DescriptorSetLayout>,
 }
 
@@ -274,7 +274,7 @@ impl PipelineLayout {
     ///
     /// Returns the underlying pipeline layout handle
     ///
-    pub fn pipeline_layout(&self) -> vulkan_core::erupt::vk1_0::PipelineLayout {
+    pub fn pipeline_layout(&self) -> aleph_vulkan_core::erupt::vk1_0::PipelineLayout {
         self.pipeline_layout
     }
 

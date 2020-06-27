@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::erupt::vk1_0::{CompareOp, PipelineDepthStencilStateCreateInfoBuilder};
+use aleph_vulkan_core::erupt::vk1_0::{CompareOp, PipelineDepthStencilStateCreateInfoBuilder};
 
 ///
 /// Namespace struct for depth state

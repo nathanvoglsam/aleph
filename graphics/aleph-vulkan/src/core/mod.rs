@@ -7,4 +7,4 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub use vulkan_core::*;
+pub use aleph_vulkan_core::*;

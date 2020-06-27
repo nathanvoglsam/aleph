@@ -13,9 +13,8 @@ mod pipelines;
 pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
-use std::sync::Arc;
-use vulkan::alloc::Allocator;
-use vulkan::core::erupt::vk1_0::{
+use aleph_vulkan::alloc::Allocator;
+use aleph_vulkan::core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer,
@@ -23,11 +22,12 @@ use vulkan::core::erupt::vk1_0::{
     RenderPassCreateInfoBuilder, SubmitInfoBuilder, SubpassDependencyBuilder,
     SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
-use vulkan::core::{Device, SwapImage, Swapchain};
-use vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
-use vulkan::image::{ColourImage, DepthImage};
-use vulkan::pipeline_layout::PipelineLayout;
-use vulkan::shader::ShaderModule;
+use aleph_vulkan::core::{Device, SwapImage, Swapchain};
+use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
+use aleph_vulkan::image::{ColourImage, DepthImage};
+use aleph_vulkan::pipeline_layout::PipelineLayout;
+use aleph_vulkan::shader::ShaderModule;
+use std::sync::Arc;
 
 ///
 /// Represents a single gbuffer
@@ -358,7 +358,7 @@ impl Renderer {
             &swap_image,
             gbuffer_pass.render_pass(),
         );
-        let (_, words) = vulkan::embedded::data::shaders::standard_frag_shader();
+        let (_, words) = aleph_vulkan::embedded::data::shaders::standard_frag_shader();
         let geom_frag_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -366,7 +366,7 @@ impl Renderer {
             .words(words)
             .build(Some(&device))
             .expect("Failed to create geom frag module");
-        let (_, words) = vulkan::embedded::data::shaders::standard_vert_shader();
+        let (_, words) = aleph_vulkan::embedded::data::shaders::standard_vert_shader();
         let geom_vert_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -388,7 +388,7 @@ impl Renderer {
             &geom_frag_module,
         );
 
-        let (_, words) = vulkan::embedded::data::shaders::tonemapping_frag_shader();
+        let (_, words) = aleph_vulkan::embedded::data::shaders::tonemapping_frag_shader();
         let tone_frag_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -396,7 +396,7 @@ impl Renderer {
             .words(words)
             .build(Some(&device))
             .expect("Failed to create tone frag module");
-        let (_, words) = vulkan::embedded::data::shaders::fullscreen_quad_vert_shader();
+        let (_, words) = aleph_vulkan::embedded::data::shaders::fullscreen_quad_vert_shader();
         let tone_vert_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)

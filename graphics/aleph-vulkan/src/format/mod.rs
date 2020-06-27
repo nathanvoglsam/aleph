@@ -8,7 +8,7 @@
 //
 
 use crate::gltf::json::accessor::{ComponentType, Type};
-use vulkan_core::erupt::vk1_0::Format;
+use aleph_vulkan_core::erupt::vk1_0::Format;
 
 ///
 /// Represents the set of formats that could in theory be requested by a gltf file but have no

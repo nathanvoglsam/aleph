@@ -7,4 +7,4 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub use vulkan_alloc::*;
+pub use aleph_vulkan_alloc::*;

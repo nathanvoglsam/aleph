@@ -8,7 +8,7 @@
 //
 
 use super::ImguiGlobal;
-use vulkan::core::erupt::vk1_0::{
+use aleph_vulkan::core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
     PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
@@ -16,12 +16,12 @@ use vulkan::core::erupt::vk1_0::{
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
     Vk10DeviceLoaderExt,
 };
-use vulkan::pipeline::{
+use aleph_vulkan::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
     InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
 };
-use vulkan::pipeline_cache::PipelineCache;
-use vulkan::shader::ShaderModule;
+use aleph_vulkan::pipeline_cache::PipelineCache;
+use aleph_vulkan::shader::ShaderModule;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -33,7 +33,7 @@ pub struct ImguiSingular {
 }
 
 impl ImguiSingular {
-    pub fn init(device: &vulkan::core::Device, global: &ImguiGlobal, format: Format) -> Self {
+    pub fn init(device: &aleph_vulkan::core::Device, global: &ImguiGlobal, format: Format) -> Self {
         let render_pass = Self::create_render_pass(device, format);
         let pipeline = Self::create_pipeline(
             device,
@@ -49,7 +49,7 @@ impl ImguiSingular {
         }
     }
 
-    pub fn create_render_pass(device: &vulkan::core::Device, format: Format) -> RenderPass {
+    pub fn create_render_pass(device: &aleph_vulkan::core::Device, format: Format) -> RenderPass {
         let attachment = AttachmentDescriptionBuilder::new()
             .format(format)
             .samples(SampleCountFlagBits::_1)
@@ -78,7 +78,7 @@ impl ImguiSingular {
     }
 
     pub fn create_pipeline(
-        device: &vulkan::core::Device,
+        device: &aleph_vulkan::core::Device,
         pipeline_layout: PipelineLayout,
         render_pass: RenderPass,
         vertex_module: &ShaderModule,
@@ -122,8 +122,7 @@ impl ImguiSingular {
             .is_layout_compatible(&vertex_input)
             .expect("Specified vertex format not compatible with vertex shader");
 
-        let input_assembly =
-            InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
+        let input_assembly = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
 
         let viewport = ViewportState::dynamic(1, 1);
 
@@ -161,7 +160,7 @@ impl ImguiSingular {
         .expect("Failed to create pipeline")[0]
     }
 
-    pub unsafe fn destroy(&self, device: &vulkan::core::Device) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device) {
         device.loader().destroy_render_pass(self.render_pass, None);
         device.loader().destroy_pipeline(self.pipeline, None);
     }

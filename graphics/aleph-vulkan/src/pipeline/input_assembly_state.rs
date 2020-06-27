@@ -7,7 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_core::erupt::vk1_0::{PipelineInputAssemblyStateCreateInfoBuilder, PrimitiveTopology};
+use aleph_vulkan_core::erupt::vk1_0::{
+    PipelineInputAssemblyStateCreateInfoBuilder, PrimitiveTopology,
+};
 
 ///
 /// Namespace struct for input assembly state
@@ -18,7 +20,7 @@ impl InputAssemblyState {
     ///
     /// Create an input assembly state with the given topology and primitive restart disabled
     ///
-    pub fn no_primitive_restart(
+    pub fn no_restart(
         topology: PrimitiveTopology,
     ) -> PipelineInputAssemblyStateCreateInfoBuilder<'static> {
         PipelineInputAssemblyStateCreateInfoBuilder::new()

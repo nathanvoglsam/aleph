@@ -8,11 +8,11 @@
 //
 
 use crate::image::{ImageSingle2D, ImageSingle2DBuilder};
-use vulkan_alloc::Allocator;
-use vulkan_core::Device;
+use aleph_vulkan_alloc::Allocator;
+use aleph_vulkan_core::Device;
 
+use aleph_vulkan_core::erupt::vk1_0::{Format, ImageAspectFlags, ImageUsageFlags};
 use std::ops::Deref;
-use vulkan_core::erupt::vk1_0::{Format, ImageAspectFlags, ImageUsageFlags};
 
 ///
 /// Builder for creating a ColourImage

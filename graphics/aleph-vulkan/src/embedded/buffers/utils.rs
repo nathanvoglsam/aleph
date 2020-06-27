@@ -7,14 +7,14 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use std::mem::size_of;
-use vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
-use vulkan_core::erupt::vk1_0::{
+use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use aleph_vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
+use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, Buffer, BufferCopyBuilder, BufferCreateInfoBuilder, BufferMemoryBarrierBuilder,
     BufferUsageFlags, CommandBuffer, DependencyFlags, PipelineStageFlags, SharingMode, WHOLE_SIZE,
 };
-use vulkan_core::Device;
+use aleph_vulkan_core::Device;
+use std::mem::size_of;
 
 ///
 /// Internal struct for holding the buffers for the cube mesh

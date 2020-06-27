@@ -7,18 +7,16 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan::core::erupt::vk1_0::{
-    CompareOp, DynamicState, FrontFace, GraphicsPipelineCreateInfoBuilder, Pipeline, PolygonMode,
-    PrimitiveTopology, RenderPass, Vk10DeviceLoaderExt,
+use aleph_vulkan::core::erupt::vk1_0::{
+    CompareOp, FrontFace, Pipeline, PolygonMode, PrimitiveTopology, RenderPass, Vk10DeviceLoaderExt,
 };
-use vulkan::core::Device;
-use vulkan::pipeline::{
-    ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
+use aleph_vulkan::core::Device;
+use aleph_vulkan::pipeline::{
+    ColorBlendState, DepthState, DynamicPipelineState, GraphicsPipelineBuilder, InputAssemblyState,
+    MultiSampleState, RasterizationState, VertexInputState, ViewportState,
 };
-use vulkan::pipeline_cache::PipelineCache;
-use vulkan::pipeline_layout::PipelineLayout;
-use vulkan::shader::ShaderModule;
+use aleph_vulkan::pipeline_layout::PipelineLayout;
+use aleph_vulkan::shader::ShaderModule;
 
 ///
 /// The pipeline state object for the geometry pass
@@ -38,53 +36,31 @@ impl GeometryPipeline {
         assert!(vert_module.is_vertex_shader());
         assert!(frag_module.is_fragment_shader());
 
-        let color_blend_attachments = [ColorBlendAttachmentState::disabled()];
-        let color_blend_state = ColorBlendState::attachments(&color_blend_attachments);
-
-        let depth_stencil_state = DepthState::enabled(true, CompareOp::LESS);
-
-        let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
-        let dynamic_state = DynamicPipelineState::states(&dynamic_states);
-        let viewport_state = ViewportState::dynamic(1, 1);
-
-        let input_assembly_state =
-            InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
-
-        let multisample_state = MultiSampleState::disabled();
-
-        let rasterization_stage =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
-
-        let stages = [
-            vert_module.pipeline_shader_stage().unwrap(),
-            frag_module.pipeline_shader_stage().unwrap(),
-        ];
-
+        // Fill out the list of bindings and attributes for compatibility with a static mesh
         let mut bindings = Vec::new();
         let mut attributes = Vec::new();
         VertexInputState::for_static_mesh(&mut bindings, &mut attributes);
-        let vertex_input_state = VertexInputState::new(&bindings, &attributes);
 
-        let create_info = GraphicsPipelineCreateInfoBuilder::new()
+        let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
+        let rasterization_state =
+            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
+        let vstage = vert_module.pipeline_shader_stage().unwrap();
+        let fstage = frag_module.pipeline_shader_stage().unwrap();
+        let pipeline = GraphicsPipelineBuilder::new()
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
             .subpass(0)
-            .color_blend_state(&color_blend_state)
-            .depth_stencil_state(&depth_stencil_state)
-            .dynamic_state(&dynamic_state)
+            .color_blend_state(&ColorBlendState::disabled(1))
+            .depth_stencil_state(&DepthState::enabled(true, CompareOp::LESS))
+            .dynamic_state(&DynamicPipelineState::viewport_scissor())
             .input_assembly_state(&input_assembly_state)
-            .multisample_state(&multisample_state)
-            .rasterization_state(&rasterization_stage)
-            .stages(&stages)
-            .viewport_state(&viewport_state)
-            .vertex_input_state(&vertex_input_state);
-
-        let pipeline = unsafe {
-            device
-                .loader()
-                .create_graphics_pipelines(PipelineCache::get(), &[create_info], None)
-                .expect("Failed to create geometry pipeline")[0]
-        };
+            .multisample_state(&MultiSampleState::disabled())
+            .rasterization_state(&rasterization_state)
+            .stages(&[vstage, fstage])
+            .viewport_state(&ViewportState::dynamic(1, 1))
+            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
+            .build(device)
+            .expect("Failed to create geometry pipeline");
 
         Self { pipeline }
     }
@@ -117,53 +93,31 @@ impl TonePipeline {
         assert!(vert_module.is_vertex_shader());
         assert!(frag_module.is_fragment_shader());
 
-        let color_blend_attachments = [ColorBlendAttachmentState::disabled()];
-        let color_blend_state = ColorBlendState::attachments(&color_blend_attachments);
-
-        let depth_stencil_state = DepthState::enabled(true, CompareOp::LESS);
-
-        let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
-        let dynamic_state = DynamicPipelineState::states(&dynamic_states);
-        let viewport_state = ViewportState::dynamic(1, 1);
-
-        let input_assembly_state =
-            InputAssemblyState::no_primitive_restart(PrimitiveTopology::TRIANGLE_LIST);
-
-        let multisample_state = MultiSampleState::disabled();
-
-        let rasterization_stage =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
-
-        let stages = [
-            vert_module.pipeline_shader_stage().unwrap(),
-            frag_module.pipeline_shader_stage().unwrap(),
-        ];
-
+        // Fill out the list of bindings and attributes for compatibility with a static mesh
         let mut bindings = Vec::new();
         let mut attributes = Vec::new();
         VertexInputState::for_fullscreen_quad(&mut bindings, &mut attributes);
-        let vertex_input_state = VertexInputState::new(&bindings, &attributes);
 
-        let create_info = GraphicsPipelineCreateInfoBuilder::new()
+        let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
+        let rasterization_state =
+            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
+        let vstage = vert_module.pipeline_shader_stage().unwrap();
+        let fstage = frag_module.pipeline_shader_stage().unwrap();
+        let pipeline = GraphicsPipelineBuilder::new()
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
             .subpass(1)
-            .color_blend_state(&color_blend_state)
-            .depth_stencil_state(&depth_stencil_state)
-            .dynamic_state(&dynamic_state)
+            .color_blend_state(&ColorBlendState::disabled(1))
+            .depth_stencil_state(&DepthState::enabled(true, CompareOp::LESS))
+            .dynamic_state(&DynamicPipelineState::viewport_scissor())
             .input_assembly_state(&input_assembly_state)
-            .multisample_state(&multisample_state)
-            .rasterization_state(&rasterization_stage)
-            .stages(&stages)
-            .viewport_state(&viewport_state)
-            .vertex_input_state(&vertex_input_state);
-
-        let pipeline = unsafe {
-            device
-                .loader()
-                .create_graphics_pipelines(PipelineCache::get(), &[create_info], None)
-                .expect("Failed to create geometry pipeline")[0]
-        };
+            .multisample_state(&MultiSampleState::disabled())
+            .rasterization_state(&rasterization_state)
+            .stages(&[vstage, fstage])
+            .viewport_state(&ViewportState::dynamic(1, 1))
+            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
+            .build(device)
+            .expect("Failed to create tonemapping pipeline");
 
         Self { pipeline }
     }

@@ -10,11 +10,11 @@
 use crate::embedded::data::CubeMesh;
 use crate::format::{format_from_gltf_accessor, AccessorFormatError};
 use crate::gltf::Semantic;
-use std::mem::size_of;
-use vulkan_core::erupt::vk1_0::{
+use aleph_vulkan_core::erupt::vk1_0::{
     Format, PipelineVertexInputStateCreateInfoBuilder, VertexInputAttributeDescriptionBuilder,
     VertexInputBindingDescriptionBuilder, VertexInputRate,
 };
+use std::mem::size_of;
 
 ///
 /// An enum to represent the set of errors that can be generated when producing a vertex input
@@ -94,26 +94,30 @@ impl VertexInputState {
         assert!(bindings.is_empty(), "List of bindings must be empty");
         assert!(attributes.is_empty(), "List of attributes must be empty");
 
+        // Preallocate the list of bindings
         let attr_num = primitive.attributes().count();
+        bindings.resize(attr_num, VertexInputBindingDescriptionBuilder::new());
+        attributes.resize(attr_num, VertexInputAttributeDescriptionBuilder::new());
 
         for (i, (semantic, accessor)) in primitive.attributes().enumerate() {
-            let binding = VertexInputBindingDescriptionBuilder::new()
-                .input_rate(VertexInputRate::VERTEX)
-                .binding(i as _)
-                .stride(accessor.size() as _);
-            bindings.push(binding);
-
             let location = match location_mapper {
                 None => i as _,
                 Some(func) => (*func)(i, attr_num, &semantic)?,
             };
+
+            let binding = VertexInputBindingDescriptionBuilder::new()
+                .input_rate(VertexInputRate::VERTEX)
+                .binding(location)
+                .stride(accessor.size() as _);
+            bindings[location as usize] = binding;
+
             let attribute = VertexInputAttributeDescriptionBuilder::new()
                 .format(format_from_gltf_accessor(&accessor)?)
                 .offset(0)
                 .location(location)
-                .binding(i as _);
+                .binding(location);
 
-            attributes.push(attribute)
+            attributes[location as usize] = attribute;
         }
         Ok(())
     }

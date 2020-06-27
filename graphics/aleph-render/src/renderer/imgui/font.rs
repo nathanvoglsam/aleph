@@ -8,9 +8,8 @@
 //
 
 use super::ImguiGlobal;
-use imgui::{FontConfig, FontSource};
-use vulkan::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use vulkan::core::erupt::vk1_0::{
+use aleph_vulkan::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use aleph_vulkan::core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateFlags, CommandPoolCreateInfoBuilder,
@@ -22,6 +21,7 @@ use vulkan::core::erupt::vk1_0::{
     SamplerMipmapMode, SharingMode, SubmitInfoBuilder, Vk10DeviceLoaderExt,
     WriteDescriptorSetBuilder,
 };
+use imgui::{FontConfig, FontSource};
 
 pub struct ImguiFont {
     pub sampler: Sampler,
@@ -35,7 +35,7 @@ impl ImguiFont {
     pub fn init(
         mut fonts: imgui::FontAtlasRefMut,
         global: &ImguiGlobal,
-        device: &vulkan::core::Device,
+        device: &aleph_vulkan::core::Device,
         allocator: &Allocator,
     ) -> Self {
         fonts.clear_fonts();
@@ -43,7 +43,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 16pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: vulkan::embedded::data::fonts::cascadia_code(),
+            data: aleph_vulkan::embedded::data::fonts::cascadia_code(),
             size_pixels: 16.0,
             config: Some(config),
         }];
@@ -52,7 +52,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 20pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: vulkan::embedded::data::fonts::cascadia_code(),
+            data: aleph_vulkan::embedded::data::fonts::cascadia_code(),
             size_pixels: 20.0,
             config: Some(config),
         }];
@@ -61,7 +61,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 24pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: vulkan::embedded::data::fonts::cascadia_code(),
+            data: aleph_vulkan::embedded::data::fonts::cascadia_code(),
             size_pixels: 24.0,
             config: Some(config),
         }];
@@ -70,7 +70,7 @@ impl ImguiFont {
         let mut config = FontConfig::default();
         config.name = Some("Cascadia Code 36pt".to_owned());
         let sources = [FontSource::TtfData {
-            data: vulkan::embedded::data::fonts::cascadia_code(),
+            data: aleph_vulkan::embedded::data::fonts::cascadia_code(),
             size_pixels: 36.0,
             config: Some(config),
         }];
@@ -117,7 +117,7 @@ impl ImguiFont {
         font
     }
 
-    pub fn create_sampler(device: &vulkan::core::Device) -> Sampler {
+    pub fn create_sampler(device: &aleph_vulkan::core::Device) -> Sampler {
         let create_info = SamplerCreateInfoBuilder::new()
             .address_mode_u(SamplerAddressMode::REPEAT)
             .address_mode_v(SamplerAddressMode::REPEAT)
@@ -155,7 +155,7 @@ impl ImguiFont {
             .expect("Failed to create image")
     }
 
-    pub fn create_image_view(device: &vulkan::core::Device, image: Image) -> ImageView {
+    pub fn create_image_view(device: &aleph_vulkan::core::Device, image: Image) -> ImageView {
         let subresource_range = ImageSubresourceRangeBuilder::new()
             .aspect_mask(ImageAspectFlags::COLOR)
             .base_array_layer(0)
@@ -171,7 +171,12 @@ impl ImguiFont {
             .expect("Failed to create image view")
     }
 
-    pub fn upload_font(&self, device: &vulkan::core::Device, allocator: &Allocator, data: &[u8]) {
+    pub fn upload_font(
+        &self,
+        device: &aleph_vulkan::core::Device,
+        allocator: &Allocator,
+        data: &[u8],
+    ) {
         //
         // Creating then immediately destroying a command pool isn't very efficient, but I don't
         // care that much. It's just for uploading the ImGui font texture which will happen once
@@ -329,7 +334,7 @@ impl ImguiFont {
         }
     }
 
-    pub unsafe fn destroy(&self, device: &vulkan::core::Device, allocator: &Allocator) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device, allocator: &Allocator) {
         device.loader().destroy_image_view(self.image_view, None);
         allocator.destroy_image(self.image, self.allocation);
         device.loader().destroy_sampler(self.sampler, None);

@@ -9,8 +9,6 @@
 
 pub extern crate imgui;
 
-extern crate aleph_vulkan as vulkan;
-
 mod renderer;
 
 pub use renderer::ImguiRenderer;

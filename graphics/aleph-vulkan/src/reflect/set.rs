@@ -9,10 +9,10 @@
 
 use crate::reflect::structure::resolve_struct_block;
 use crate::reflect::Struct;
-use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
-use vulkan_core::erupt::vk1_0::{
+use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayoutBindingBuilder, DescriptorType, ShaderStageFlags,
 };
+use spirv_reflect::types::{ReflectDescriptorSet, ReflectDescriptorType, ReflectEntryPoint};
 
 ///
 /// Type that represents the set of supported descriptor bindings that is currently supported

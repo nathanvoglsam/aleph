@@ -11,13 +11,13 @@ use crate::reflect::{
     DescriptorSetReflection, PushConstantReflection, StructResolutionError, VertexLayoutReflection,
     VertexLayoutResolutionError,
 };
-use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
-use std::ffi::CStr;
-use vulkan_core::erupt::vk1_0::{
+use aleph_vulkan_core::erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
     ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use vulkan_core::Device;
+use aleph_vulkan_core::Device;
+use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
+use std::ffi::CStr;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum ShaderModuleBuildError {
@@ -393,7 +393,7 @@ impl<'a> ShaderModuleBuilder<'a> {
                     .expect("Failed to create shader module")
             }
         } else {
-            vulkan_core::erupt::vk1_0::ShaderModule::null()
+            aleph_vulkan_core::erupt::vk1_0::ShaderModule::null()
         };
 
         let module = ShaderModule {
@@ -415,7 +415,7 @@ impl<'a> ShaderModuleBuilder<'a> {
 /// about a shader module
 ///
 pub struct ShaderModule {
-    module: vulkan_core::erupt::vk1_0::ShaderModule,
+    module: aleph_vulkan_core::erupt::vk1_0::ShaderModule,
     entry_point_name: String,
     push_constants: Option<Box<PushConstantReflection>>,
     vertex_layout: Option<Box<VertexLayoutReflection>>,
@@ -443,7 +443,7 @@ impl ShaderModule {
     /// Gets the internal vulkan ShaderModule handle if it was compiled on object creation.
     /// This returns None if the module wasn't compiled
     ///
-    pub fn module(&self) -> Option<vulkan_core::erupt::vk1_0::ShaderModule> {
+    pub fn module(&self) -> Option<aleph_vulkan_core::erupt::vk1_0::ShaderModule> {
         if self.module.is_null() {
             None
         } else {
