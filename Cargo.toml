@@ -16,6 +16,8 @@ members = [
     "engine/aleph-engine",
     "engine/aleph-logger",
     "engine/aleph-math",
+    "engine/aleph-platform",
+    "engine/aleph-settings",
     "utils/aleph-compile",
     "utils/aleph-macros",
     "utils/aleph-target",
