@@ -53,7 +53,7 @@ impl ImguiRenderer {
 
         let font = ImguiFont::init(fonts, &global, &device, &allocator);
 
-        let single = ImguiSingular::init(&device, &global, swapchain.format().format);
+        let single = ImguiSingular::init(&device, &global, &swapchain.images()[0]);
 
         let frames = (0..swapchain.images().len())
             .into_iter()
@@ -78,7 +78,7 @@ impl ImguiRenderer {
         }
         self.single.destroy(&self.device);
 
-        self.single = ImguiSingular::init(&self.device, &self.global, swapchain.format().format);
+        self.single = ImguiSingular::init(&self.device, &self.global, &swapchain.images()[0]);
 
         self.frames = (0..swapchain.images().len())
             .into_iter()

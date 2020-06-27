@@ -9,18 +9,18 @@
 
 use super::ImguiGlobal;
 use aleph_vulkan::core::erupt::vk1_0::{
-    AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
-    DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
-    PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
-    RenderPassCreateInfoBuilder, SampleCountFlagBits, SubpassDescriptionBuilder,
-    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
-    Vk10DeviceLoaderExt,
+    AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
+    Format, FrontFace, ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PolygonMode,
+    PrimitiveTopology, RenderPass, RenderPassCreateInfoBuilder,
+    SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
+    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
 };
+use aleph_vulkan::core::SwapImage;
 use aleph_vulkan::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
+    GraphicsPipelineBuilder, InputAssemblyState, MultiSampleState, RasterizationState,
+    VertexInputState, ViewportState,
 };
-use aleph_vulkan::pipeline_cache::PipelineCache;
 use aleph_vulkan::shader::ShaderModule;
 
 ///
@@ -33,11 +33,16 @@ pub struct ImguiSingular {
 }
 
 impl ImguiSingular {
-    pub fn init(device: &aleph_vulkan::core::Device, global: &ImguiGlobal, format: Format) -> Self {
-        let render_pass = Self::create_render_pass(device, format);
+    pub fn init(
+        device: &aleph_vulkan::core::Device,
+        global: &ImguiGlobal,
+        swap_image: &SwapImage,
+    ) -> Self {
+        let render_pass = Self::create_render_pass(device, swap_image);
+        let pipeline_layout = global.pipeline_layout.pipeline_layout();
         let pipeline = Self::create_pipeline(
             device,
-            global.pipeline_layout.pipeline_layout(),
+            pipeline_layout,
             render_pass,
             &global.vertex_module,
             &global.fragment_module,
@@ -49,16 +54,16 @@ impl ImguiSingular {
         }
     }
 
-    pub fn create_render_pass(device: &aleph_vulkan::core::Device, format: Format) -> RenderPass {
-        let attachment = AttachmentDescriptionBuilder::new()
-            .format(format)
-            .samples(SampleCountFlagBits::_1)
-            .load_op(AttachmentLoadOp::CLEAR)
-            .store_op(AttachmentStoreOp::STORE)
-            .stencil_load_op(AttachmentLoadOp::DONT_CARE)
-            .stencil_store_op(AttachmentStoreOp::DONT_CARE)
-            .initial_layout(ImageLayout::UNDEFINED)
-            .final_layout(ImageLayout::PRESENT_SRC_KHR);
+    pub fn create_render_pass(
+        device: &aleph_vulkan::core::Device,
+        swap_image: &SwapImage,
+    ) -> RenderPass {
+        let attachment = swap_image.attachment_description(
+            ImageLayout::UNDEFINED,
+            ImageLayout::PRESENT_SRC_KHR,
+            AttachmentLoadOp::CLEAR,
+            AttachmentStoreOp::STORE,
+        );
 
         let attachment_reference = AttachmentReferenceBuilder::new()
             .attachment(0)
@@ -87,11 +92,6 @@ impl ImguiSingular {
         assert!(vertex_module.is_vertex_shader());
         assert!(fragment_module.is_fragment_shader());
 
-        let stages = [
-            vertex_module.pipeline_shader_stage().unwrap(),
-            fragment_module.pipeline_shader_stage().unwrap(),
-        ];
-
         let binding = VertexInputBindingDescriptionBuilder::new()
             .binding(0)
             .input_rate(VertexInputRate::VERTEX)
@@ -113,51 +113,37 @@ impl ImguiSingular {
             .format(Format::R8G8B8A8_UNORM);
         let bindings = [binding];
         let attributes = [pos_attr, uv_attr, col_attr];
-        let vertex_input = VertexInputState::new(&bindings, &attributes);
 
         // Check the vertex shader is getting the right input
         vertex_module
             .vertex_layout()
             .unwrap()
-            .is_layout_compatible(&vertex_input)
+            .is_layout_compatible(&VertexInputState::new(&bindings, &attributes))
             .expect("Specified vertex format not compatible with vertex shader");
 
         let input_assembly = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
-
-        let viewport = ViewportState::dynamic(1, 1);
-
         let rasterization =
             RasterizationState::unculled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
-
-        let multisample = MultiSampleState::disabled();
-
-        let depth_stencil = DepthState::disabled();
-
         let attachments = [ColorBlendAttachmentState::alpha_blending()];
-        let color_blend = ColorBlendState::attachments(&attachments);
-
-        let dynamic_states = [DynamicState::VIEWPORT, DynamicState::SCISSOR];
-        let dynamic_state = DynamicPipelineState::states(&dynamic_states);
-
-        let create_info = GraphicsPipelineCreateInfoBuilder::new()
+        let vstage = vertex_module.pipeline_shader_stage().unwrap();
+        let fstage = fragment_module.pipeline_shader_stage().unwrap();
+        let pipeline = GraphicsPipelineBuilder::new()
             .layout(pipeline_layout)
             .render_pass(render_pass)
             .subpass(0)
-            .stages(&stages)
-            .vertex_input_state(&vertex_input)
+            .stages(&[vstage, fstage])
+            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
             .input_assembly_state(&input_assembly)
-            .viewport_state(&viewport)
+            .viewport_state(&ViewportState::dynamic(1, 1))
             .rasterization_state(&rasterization)
-            .multisample_state(&multisample)
-            .depth_stencil_state(&depth_stencil)
-            .color_blend_state(&color_blend)
-            .dynamic_state(&dynamic_state);
-        unsafe {
-            device
-                .loader()
-                .create_graphics_pipelines(PipelineCache::get(), &[create_info], None)
-        }
-        .expect("Failed to create pipeline")[0]
+            .multisample_state(&MultiSampleState::disabled())
+            .depth_stencil_state(&DepthState::disabled())
+            .color_blend_state(&ColorBlendState::attachments(&attachments))
+            .dynamic_state(&DynamicPipelineState::viewport_scissor())
+            .build(device)
+            .expect("Failed to create pipeline");
+
+        pipeline
     }
 
     pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device) {
