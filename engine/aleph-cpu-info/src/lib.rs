@@ -7,10 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-extern crate num_cpus;
-extern crate once_cell;
-extern crate raw_cpuid;
-
 use once_cell::sync::Lazy;
 
 ///

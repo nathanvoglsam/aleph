@@ -8,8 +8,8 @@
 //
 
 use crate::{Allocation, Allocator};
-use vulkan_core::defer::{DeferBox, DeferList};
-use vulkan_core::erupt::vk1_0::{Buffer, Image};
+use aleph_vulkan_core::defer::{DeferBox, DeferList};
+use aleph_vulkan_core::erupt::vk1_0::{Buffer, Image};
 
 ///
 /// Trait bound for a function/closure that can be consumed by the device defer list

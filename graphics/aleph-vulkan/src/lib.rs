@@ -12,8 +12,6 @@ pub extern crate aleph_vulkan_core as vulkan_core;
 pub extern crate imgui;
 pub extern crate spirv_reflect;
 
-extern crate once_cell;
-
 pub use aleph_embedded_data::gltf;
 
 pub mod alloc;

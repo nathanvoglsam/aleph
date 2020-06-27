@@ -8,10 +8,10 @@
 //
 
 use crate::Pool;
+use aleph_vulkan_core::erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
 use core::ptr;
 use std::ops::Deref;
 use vulkan_alloc_sys::raw;
-use vulkan_core::erupt::vk1_0::{DeviceMemory, DeviceSize, MemoryPropertyFlags};
 
 ///
 /// A rusty wrapper around the raw VmaAllocationCreateFlag constants

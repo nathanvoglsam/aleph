@@ -101,10 +101,10 @@ pub unsafe fn load_surface_functions(
 ///
 pub unsafe fn create_surface(
     instance_loader: &InstanceLoader,
-    window: &impl HasRawWindowHandle,
+    window_handle: &impl HasRawWindowHandle,
     allocation_callbacks: Option<&AllocationCallbacks>,
 ) -> VulkanResult<SurfaceKHR> {
-    match window.raw_window_handle() {
+    match window_handle.raw_window_handle() {
         #[cfg(any(
             target_os = "linux",
             target_os = "dragonfly",

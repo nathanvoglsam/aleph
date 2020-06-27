@@ -9,9 +9,6 @@
 
 pub extern crate gltf;
 
-extern crate aleph_macros as macros;
-extern crate once_cell;
-
 pub mod fonts;
 pub mod shaders;
 

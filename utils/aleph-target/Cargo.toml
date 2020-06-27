@@ -21,5 +21,3 @@ edition = "2018"
 
 [badges]
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
-
-[dependencies]

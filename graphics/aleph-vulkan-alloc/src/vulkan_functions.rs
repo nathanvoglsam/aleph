@@ -9,9 +9,9 @@
 
 use vulkan_alloc_sys::raw;
 
+use aleph_vulkan_core::erupt::{DeviceLoader, InstanceLoader};
 use core::mem;
 use core::ptr;
-use vulkan_core::erupt::{DeviceLoader, InstanceLoader};
 
 ///
 /// Builder wrapper for the VmaVulkanFunctions struct provided by vma-sys

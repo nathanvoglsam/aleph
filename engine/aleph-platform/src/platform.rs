@@ -9,12 +9,15 @@
 
 use crate::frame_timer::FrameTimer;
 use crate::keyboard::{Keyboard, KEYBOARD_EVENTS, KEYBOARD_STATE};
-use crate::mouse::{Mouse, MOUSE_EVENTS};
+use crate::mouse::{Cursor, Mouse, MOUSE_EVENTS};
 use crate::window::{Window, WINDOW_EVENTS, WINDOW_STATE};
 use aleph_settings::WindowSettings;
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use sdl2::event::Event;
 use std::cell::Cell;
+use std::collections::HashMap;
 
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlatformBuildError {
     ///
     /// The SDL2 library failed to initialize outright. The reason produced by the sdl2 library is
@@ -116,15 +119,27 @@ impl PlatformBuilder {
             (None, None, None)
         };
 
+        let mut cursors = HashMap::new();
+        cursors.insert(Cursor::Arrow, Cursor::Arrow.load_sdl_cursor());
+        cursors.insert(Cursor::IBeam, Cursor::IBeam.load_sdl_cursor());
+        cursors.insert(Cursor::SizeAll, Cursor::SizeAll.load_sdl_cursor());
+        cursors.insert(Cursor::SizeNS, Cursor::SizeNS.load_sdl_cursor());
+        cursors.insert(Cursor::SizeWE, Cursor::SizeWE.load_sdl_cursor());
+        cursors.insert(Cursor::SizeNESW, Cursor::SizeNESW.load_sdl_cursor());
+        cursors.insert(Cursor::SizeNWSE, Cursor::SizeNWSE.load_sdl_cursor());
+        cursors.insert(Cursor::Hand, Cursor::Hand.load_sdl_cursor());
+        cursors.insert(Cursor::No, Cursor::No.load_sdl_cursor());
+
         let platform = Platform {
             headless: self.headless,
-            sdl,
-            video: Cell::new(video),
-            event: Cell::new(Some(event)),
+            _sdl: sdl,
+            _video: Cell::new(video),
+            _event: Cell::new(Some(event)),
             event_pump: Cell::new(Some(event_pump)),
             mouse_util: Cell::new(mouse_util),
             timer: Cell::new(Some(timer)),
             window: Cell::new(window),
+            cursors,
         };
 
         Ok(platform)
@@ -136,13 +151,14 @@ impl PlatformBuilder {
 ///
 pub struct Platform {
     headless: bool,
-    sdl: sdl2::Sdl,
-    video: Cell<Option<sdl2::VideoSubsystem>>,
-    event: Cell<Option<sdl2::EventSubsystem>>,
+    _sdl: sdl2::Sdl,
+    _video: Cell<Option<sdl2::VideoSubsystem>>,
+    _event: Cell<Option<sdl2::EventSubsystem>>,
     event_pump: Cell<Option<sdl2::EventPump>>,
     mouse_util: Cell<Option<sdl2::mouse::MouseUtil>>,
     timer: Cell<Option<sdl2::TimerSubsystem>>,
     window: Cell<Option<sdl2::video::Window>>,
+    cursors: HashMap<Cursor, sdl2::mouse::Cursor>,
 }
 
 impl Platform {
@@ -151,6 +167,13 @@ impl Platform {
     ///
     pub fn builder() -> PlatformBuilder {
         PlatformBuilder::new()
+    }
+
+    ///
+    /// Gets the amount of RAM installed in the system in MB
+    ///
+    pub fn system_ram() -> i32 {
+        sdl2::cpuinfo::system_ram()
     }
 
     ///
@@ -190,15 +213,8 @@ impl Platform {
             let mut window = self.window.take().unwrap();
             let mouse_utils = self.mouse_util.take().unwrap();
 
-            //imgui_ctx.update_mouse_pos_early();
-
-            Mouse::process_mouse_requests(&window, &mouse_utils);
+            Mouse::process_mouse_requests(&window, &mouse_utils, &self.cursors);
             Window::process_window_requests(&mut window, window_state);
-
-            //drop(window_state_lock);
-            //drop(keyboard_state_lock);
-            //imgui_ctx.update_mouse_pos_late();
-            //imgui_ctx.update_keyboard_input();
 
             self.mouse_util.set(Some(mouse_utils));
             self.window.set(Some(window));
@@ -207,9 +223,12 @@ impl Platform {
 
     ///
     /// Processes the new events from the platform (window, input, etc) and update the state objects
-    /// to propagate the changes
+    /// to propagate the changes.
     ///
-    pub fn process_events(&mut self) {
+    /// A closure, `quit_fn`, must be passed in for handling when a quit event is emitted from the
+    /// platform
+    ///
+    pub fn process_events(&mut self, quit_fn: impl Fn()) {
         // Get the event pump
         let mut event_pump = self.event_pump.take().unwrap();
 
@@ -242,7 +261,7 @@ impl Platform {
                 match event {
                     Event::Quit { .. } => {
                         log::info!("Quit Event Received");
-                        // TODO: Propagate quit out of the crate
+                        quit_fn();
                     }
                     Event::Window { win_event, .. } => {
                         Window::process_window_event(window_state, window_events, win_event);
@@ -280,7 +299,7 @@ impl Platform {
                 match event {
                     Event::Quit { .. } => {
                         log::info!("Quit Event Received");
-                        // TODO: Propagate quit out of the crate
+                        quit_fn();
                     }
                     _ => {}
                 }
@@ -289,5 +308,21 @@ impl Platform {
 
         // Return the event pump to its cell
         self.event_pump.set(Some(event_pump));
+    }
+}
+
+unsafe impl HasRawWindowHandle for Platform {
+    fn raw_window_handle(&self) -> RawWindowHandle {
+        // Take window from cell
+        let window = self.window.take().unwrap();
+
+        // Get the raw window handle
+        let window_handle = window.raw_window_handle();
+
+        // Return window to cell
+        self.window.set(Some(window));
+
+        // return the handle
+        window_handle
     }
 }

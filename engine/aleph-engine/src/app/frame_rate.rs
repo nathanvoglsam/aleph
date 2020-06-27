@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::FrameTimer;
+use crate::platform::frame_timer::FrameTimer;
 
 ///
 /// A struct that holds a short history window of frame times to produce a frame rate counter that

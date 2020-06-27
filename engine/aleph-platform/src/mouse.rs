@@ -10,6 +10,9 @@
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use sdl2::event::Event;
+use sdl2::mouse::SystemCursor;
+use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::ops::Deref;
 
 ///
@@ -25,6 +28,9 @@ pub(crate) struct InternalMouseState {
 ///
 pub(crate) enum MouseRequest {
     SetPos(i32, i32),
+    SetCursor(Cursor),
+    ShowCursor,
+    HideCursor,
 }
 
 ///
@@ -44,6 +50,80 @@ pub(crate) static MOUSE_REQUEST_QUEUE: Lazy<Mutex<Option<Vec<MouseRequest>>>> =
 ///
 pub(crate) static MOUSE_EVENTS: Lazy<RwLock<Option<Vec<MouseEvent>>>> =
     Lazy::new(|| RwLock::new(None));
+
+///
+/// Represents the set of cursors available
+///
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
+pub enum Cursor {
+    Arrow,
+    IBeam,
+    SizeAll,
+    SizeNS,
+    SizeWE,
+    SizeNESW,
+    SizeNWSE,
+    Hand,
+    No,
+}
+
+impl Cursor {
+    pub(crate) fn load_sdl_cursor(&self) -> sdl2::mouse::Cursor {
+        let cursor: SystemCursor = (*self).into();
+        sdl2::mouse::Cursor::from_system(cursor).unwrap()
+    }
+}
+
+impl Into<SystemCursor> for Cursor {
+    fn into(self) -> SystemCursor {
+        match self {
+            Cursor::Arrow => SystemCursor::Arrow,
+            Cursor::IBeam => SystemCursor::IBeam,
+            Cursor::SizeAll => SystemCursor::SizeAll,
+            Cursor::SizeNS => SystemCursor::SizeNS,
+            Cursor::SizeWE => SystemCursor::SizeWE,
+            Cursor::SizeNESW => SystemCursor::SizeNESW,
+            Cursor::SizeNWSE => SystemCursor::SizeNWSE,
+            Cursor::Hand => SystemCursor::Hand,
+            Cursor::No => SystemCursor::No,
+        }
+    }
+}
+
+impl Into<usize> for Cursor {
+    fn into(self) -> usize {
+        match self {
+            Cursor::Arrow => 0,
+            Cursor::IBeam => 1,
+            Cursor::SizeAll => 2,
+            Cursor::SizeNS => 3,
+            Cursor::SizeWE => 4,
+            Cursor::SizeNESW => 5,
+            Cursor::SizeNWSE => 6,
+            Cursor::Hand => 7,
+            Cursor::No => 8,
+        }
+    }
+}
+
+impl TryFrom<usize> for Cursor {
+    type Error = ();
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Cursor::Arrow),
+            1 => Ok(Cursor::IBeam),
+            2 => Ok(Cursor::SizeAll),
+            3 => Ok(Cursor::SizeNS),
+            4 => Ok(Cursor::SizeWE),
+            5 => Ok(Cursor::SizeNESW),
+            6 => Ok(Cursor::SizeNWSE),
+            7 => Ok(Cursor::Hand),
+            8 => Ok(Cursor::No),
+            _ => Err(()),
+        }
+    }
+}
 
 ///
 /// The different types of
@@ -227,10 +307,10 @@ impl Mouse {
     pub(crate) fn process_mouse_requests(
         window: &sdl2::video::Window,
         mouse_utils: &sdl2::mouse::MouseUtil,
+        cursors: &HashMap<Cursor, sdl2::mouse::Cursor>,
     ) {
         let mut mouse_requests_lock = MOUSE_REQUEST_QUEUE.lock();
-        let mouse_requests = mouse_requests_lock.as_mut();
-        let mouse_requests = mouse_requests.expect("Mouse system not initialized");
+        let mouse_requests = mouse_requests_lock.as_mut().unwrap();
 
         for request in mouse_requests.drain(..) {
             match request {
@@ -238,6 +318,16 @@ impl Mouse {
                     log::trace!("Attempting to set new mouse position");
                     mouse_utils.warp_mouse_in_window(window, x as i32, y as i32);
                     log::trace!("Moved mouse to : {}, {}", x, y);
+                }
+                MouseRequest::SetCursor(cursor) => {
+                    let cursor = cursors.get(&cursor).unwrap();
+                    cursor.set();
+                }
+                MouseRequest::ShowCursor => {
+                    mouse_utils.show_cursor(true);
+                }
+                MouseRequest::HideCursor => {
+                    mouse_utils.show_cursor(false);
                 }
             }
         }
@@ -368,6 +458,39 @@ impl Mouse {
             .as_mut()
             .expect("Mouse system not initialized")
             .push(MouseRequest::SetPos(x, y));
+    }
+
+    ///
+    /// Sets the mouse cursor
+    ///
+    pub fn set_cursor(cursor: Cursor) {
+        MOUSE_REQUEST_QUEUE
+            .lock()
+            .as_mut()
+            .expect("Mouse system not initialized")
+            .push(MouseRequest::SetCursor(cursor));
+    }
+
+    ///
+    /// Makes the cursor visible
+    ///
+    pub fn show_cursor() {
+        MOUSE_REQUEST_QUEUE
+            .lock()
+            .as_mut()
+            .expect("Mouse system not initialized")
+            .push(MouseRequest::ShowCursor);
+    }
+
+    ///
+    /// Makes the cursor invisible
+    ///
+    pub fn hide_cursor() {
+        MOUSE_REQUEST_QUEUE
+            .lock()
+            .as_mut()
+            .expect("Mouse system not initialized")
+            .push(MouseRequest::HideCursor);
     }
 
     ///

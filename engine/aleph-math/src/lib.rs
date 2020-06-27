@@ -9,8 +9,6 @@
 
 #![no_std]
 
-extern crate num_traits;
-
 pub mod gradient;
 pub mod matrix;
 pub mod quantize;

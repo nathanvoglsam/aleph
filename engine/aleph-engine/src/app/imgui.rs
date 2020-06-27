@@ -7,12 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{FrameTimer, Keyboard, KeyboardEvent, Mouse, MouseEvent, Window};
+use crate::platform::clipboard::Clipboard;
+use crate::platform::frame_timer::FrameTimer;
+use crate::platform::keyboard::{Keyboard, KeyboardEvent, Mod, Scancode};
+use crate::platform::mouse::{Cursor, Mouse, MouseEvent};
+use crate::platform::window::Window;
 use gpu::imgui::{ImStr, ImString, StyleColor};
 use palette::{IntoColor, Srgb};
-use sdl2::keyboard::Mod;
-use std::ffi::CStr;
-use std::os::raw::c_void;
 
 // TODO: Windows IME
 //   #ifdef _WIN32
@@ -497,7 +498,7 @@ impl ImguiStyleBuilder {
 ///
 pub struct Imgui {
     context: gpu::imgui::Context,
-    cursors: Vec<sdl2::mouse::Cursor>,
+    cursors: Vec<Cursor>,
 }
 
 impl Imgui {
@@ -521,41 +522,39 @@ impl Imgui {
         io.backend_flags |= gpu::imgui::BackendFlags::HAS_SET_MOUSE_POS;
         io.backend_flags |= gpu::imgui::BackendFlags::RENDERER_HAS_VTX_OFFSET;
 
-        io.key_map[gpu::imgui::Key::Tab as usize] = sdl2::keyboard::Scancode::Tab as u32;
-        io.key_map[gpu::imgui::Key::LeftArrow as usize] = sdl2::keyboard::Scancode::Left as u32;
-        io.key_map[gpu::imgui::Key::RightArrow as usize] = sdl2::keyboard::Scancode::Right as u32;
-        io.key_map[gpu::imgui::Key::UpArrow as usize] = sdl2::keyboard::Scancode::Up as u32;
-        io.key_map[gpu::imgui::Key::DownArrow as usize] = sdl2::keyboard::Scancode::Down as u32;
-        io.key_map[gpu::imgui::Key::PageUp as usize] = sdl2::keyboard::Scancode::PageUp as u32;
-        io.key_map[gpu::imgui::Key::PageDown as usize] = sdl2::keyboard::Scancode::PageDown as u32;
-        io.key_map[gpu::imgui::Key::Home as usize] = sdl2::keyboard::Scancode::Home as u32;
-        io.key_map[gpu::imgui::Key::End as usize] = sdl2::keyboard::Scancode::End as u32;
-        io.key_map[gpu::imgui::Key::Insert as usize] = sdl2::keyboard::Scancode::Insert as u32;
-        io.key_map[gpu::imgui::Key::Delete as usize] = sdl2::keyboard::Scancode::Delete as u32;
-        io.key_map[gpu::imgui::Key::Backspace as usize] =
-            sdl2::keyboard::Scancode::Backspace as u32;
-        io.key_map[gpu::imgui::Key::Space as usize] = sdl2::keyboard::Scancode::Space as u32;
-        io.key_map[gpu::imgui::Key::Enter as usize] = sdl2::keyboard::Scancode::Return as u32;
-        io.key_map[gpu::imgui::Key::Escape as usize] = sdl2::keyboard::Scancode::Escape as u32;
-        io.key_map[gpu::imgui::Key::KeyPadEnter as usize] =
-            sdl2::keyboard::Scancode::KpEnter as u32;
-        io.key_map[gpu::imgui::Key::A as usize] = sdl2::keyboard::Scancode::A as u32;
-        io.key_map[gpu::imgui::Key::C as usize] = sdl2::keyboard::Scancode::C as u32;
-        io.key_map[gpu::imgui::Key::V as usize] = sdl2::keyboard::Scancode::V as u32;
-        io.key_map[gpu::imgui::Key::X as usize] = sdl2::keyboard::Scancode::X as u32;
-        io.key_map[gpu::imgui::Key::Y as usize] = sdl2::keyboard::Scancode::Y as u32;
-        io.key_map[gpu::imgui::Key::Z as usize] = sdl2::keyboard::Scancode::Z as u32;
+        io.key_map[gpu::imgui::Key::Tab as usize] = Scancode::Tab as u32;
+        io.key_map[gpu::imgui::Key::LeftArrow as usize] = Scancode::Left as u32;
+        io.key_map[gpu::imgui::Key::RightArrow as usize] = Scancode::Right as u32;
+        io.key_map[gpu::imgui::Key::UpArrow as usize] = Scancode::Up as u32;
+        io.key_map[gpu::imgui::Key::DownArrow as usize] = Scancode::Down as u32;
+        io.key_map[gpu::imgui::Key::PageUp as usize] = Scancode::PageUp as u32;
+        io.key_map[gpu::imgui::Key::PageDown as usize] = Scancode::PageDown as u32;
+        io.key_map[gpu::imgui::Key::Home as usize] = Scancode::Home as u32;
+        io.key_map[gpu::imgui::Key::End as usize] = Scancode::End as u32;
+        io.key_map[gpu::imgui::Key::Insert as usize] = Scancode::Insert as u32;
+        io.key_map[gpu::imgui::Key::Delete as usize] = Scancode::Delete as u32;
+        io.key_map[gpu::imgui::Key::Backspace as usize] = Scancode::Backspace as u32;
+        io.key_map[gpu::imgui::Key::Space as usize] = Scancode::Space as u32;
+        io.key_map[gpu::imgui::Key::Enter as usize] = Scancode::Return as u32;
+        io.key_map[gpu::imgui::Key::Escape as usize] = Scancode::Escape as u32;
+        io.key_map[gpu::imgui::Key::KeyPadEnter as usize] = Scancode::KpEnter as u32;
+        io.key_map[gpu::imgui::Key::A as usize] = Scancode::A as u32;
+        io.key_map[gpu::imgui::Key::C as usize] = Scancode::C as u32;
+        io.key_map[gpu::imgui::Key::V as usize] = Scancode::V as u32;
+        io.key_map[gpu::imgui::Key::X as usize] = Scancode::X as u32;
+        io.key_map[gpu::imgui::Key::Y as usize] = Scancode::Y as u32;
+        io.key_map[gpu::imgui::Key::Z as usize] = Scancode::Z as u32;
 
         let cursors = vec![
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::Arrow).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::IBeam).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::SizeAll).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::SizeNS).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::SizeWE).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::SizeNESW).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::SizeNWSE).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::Hand).unwrap(),
-            sdl2::mouse::Cursor::from_system(sdl2::mouse::SystemCursor::No).unwrap(),
+            Cursor::Arrow,
+            Cursor::IBeam,
+            Cursor::SizeAll,
+            Cursor::SizeNS,
+            Cursor::SizeWE,
+            Cursor::SizeNESW,
+            Cursor::SizeNWSE,
+            Cursor::Hand,
+            Cursor::No,
         ];
 
         log::trace!("");
@@ -570,7 +569,7 @@ impl Imgui {
         let io = self.context.io_mut();
 
         if io.want_set_mouse_pos {
-            crate::app::Mouse::set_pos(io.mouse_pos[0] as i32, io.mouse_pos[1] as i32);
+            Mouse::set_pos(io.mouse_pos[0] as i32, io.mouse_pos[1] as i32);
         } else {
             io.mouse_pos[0] = f32::MIN;
             io.mouse_pos[1] = f32::MIN;
@@ -641,7 +640,7 @@ impl Imgui {
     ///
     /// Update the mouse cursor
     ///
-    pub fn frame(&mut self, mouse_utils: &sdl2::mouse::MouseUtil) -> gpu::imgui::Ui {
+    pub fn frame(&mut self) -> gpu::imgui::Ui {
         let window_size = Window::size();
         let drawable_size = Window::drawable_size();
         let scale = [
@@ -679,10 +678,10 @@ impl Imgui {
         };
 
         if ui.io().mouse_draw_cursor || cursor as i32 == gpu::imgui::sys::ImGuiMouseCursor_None {
-            mouse_utils.show_cursor(false);
+            Mouse::hide_cursor();
         } else {
-            self.cursors[cursor as usize].set();
-            mouse_utils.show_cursor(true);
+            Mouse::show_cursor();
+            Mouse::set_cursor(self.cursors[cursor as usize]);
         }
 
         ui
@@ -703,24 +702,22 @@ impl ImguiClipboard {
 
 impl gpu::imgui::ClipboardBackend for ImguiClipboard {
     fn get(&mut self) -> Option<ImString> {
-        unsafe {
-            let buf = sdl2::sys::SDL_GetClipboardText();
+        // Gets the string data
+        let cstring = Clipboard::get_null_terminated()?;
 
-            if buf.is_null() {
-                None
-            } else {
-                let cstr = CStr::from_ptr(buf as *const _);
-                let imstr = ImStr::from_cstr_unchecked(cstr);
-                let imstr = imstr.to_owned();
-                sdl2::sys::SDL_free(buf as *mut c_void);
-                Some(imstr)
-            }
-        }
+        // Ensure the string is valid UTF-8
+        cstring.to_str().ok()?;
+
+        // Get the bytes out of the string
+        let bytes = cstring.into_bytes_with_nul();
+
+        // Convert to an ImString, this is safe as we know it's null terminated because a `CString`
+        // is always null terminated. We know the string is valid UTF8 as we checked for this
+        // explicitly ourselves
+        unsafe { Some(ImString::from_utf8_with_nul_unchecked(bytes)) }
     }
 
     fn set(&mut self, value: &ImStr) {
-        unsafe {
-            sdl2::sys::SDL_SetClipboardText(value.as_ptr());
-        }
+        Clipboard::set_null_terminated(value.as_ref());
     }
 }

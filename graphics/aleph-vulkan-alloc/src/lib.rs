@@ -9,9 +9,6 @@
 
 pub extern crate aleph_vulkan_alloc_sys as vulkan_alloc_sys;
 
-extern crate aleph_vulkan_core as vulkan_core;
-extern crate log;
-
 mod allocation;
 mod allocator;
 mod defer;

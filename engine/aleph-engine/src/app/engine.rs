@@ -7,12 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppLogic, FrameTimer, Imgui, Keyboard, Mouse, Window, WindowSettings};
+use crate::app::{AppLogic, Imgui};
 use crate::app_info::AppInfo;
 use crate::gpu::pipeline_cache::PipelineCache;
+use crate::platform::window::Window;
+use crate::platform::Platform;
 use gpu::vulkan_core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
 use gpu::vulkan_core::GPUInfo;
-use sdl2::event::Event;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -63,7 +64,7 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // First thing we do is initialize the log backend so everything can log from now on
-        crate::logger::init();
+        aleph_logger::init();
         log::info!("Aleph Engine Starting");
         log::info!("");
 
@@ -87,53 +88,10 @@ impl Engine {
         // SDL2 and Window Initialization
         // -----------------------------------------------------------------------------------------
 
-        // Init SDL2
-        log::trace!("Initializing SDL2");
-        let sdl_ctx = sdl2::init().expect("Failed to initialize SDL2");
-
-        // Init SDL2 video subsystem
-        log::trace!("Initializing SDL2 Video Subsystem");
-        let video_ctx = crate::app::Window::init_video(&sdl_ctx);
-
-        // Init the window
-        log::trace!("Initializing OS Window");
-        let mut window =
-            crate::app::Window::init_window(&video_ctx, &app_info.name, &WindowSettings::default());
-
-        // Init the event pump
-        log::trace!("Initializing Event Pump");
-        let mut event_pump = sdl_ctx
-            .event_pump()
-            .expect("Failed to init SDL2 event pump");
-
-        // Init SDL2 Mouse Utils
-        log::trace!("Initializing Mouse Utils");
-        let mouse_utils = sdl_ctx.mouse();
-
-        log::trace!("Initializing SDL2 Timer Subsystem");
-        let timer = sdl_ctx.timer().expect("Failed to init SDL2 Timer system");
-
-        // Space out logging
-        log::trace!("");
-
-        // -----------------------------------------------------------------------------------------
-        // Frame Timer Initialization
-        // -----------------------------------------------------------------------------------------
-        FrameTimer::init(&timer);
-
-        // -----------------------------------------------------------------------------------------
-        // Mouse Initialization
-        // -----------------------------------------------------------------------------------------
-
-        // Initialize the global mouse system
-        Mouse::init();
-
-        // -----------------------------------------------------------------------------------------
-        // Keyboard Initialization
-        // -----------------------------------------------------------------------------------------
-
-        // Initialize the global mouse system
-        Keyboard::init();
+        let mut platform = Platform::builder()
+            .headless(false)
+            .build()
+            .expect("Failed to build platform layer");
 
         // -----------------------------------------------------------------------------------------
         // ImGui Initialization
@@ -150,7 +108,7 @@ impl Engine {
         let instance = gpu::core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
             .validation(args.is_present("GPU_VALIDATION"))
-            .build(&window, &app_info);
+            .build(&platform, &app_info);
 
         let device = gpu::core::DeviceBuilder::new().build(&instance);
         log::trace!("");
@@ -202,20 +160,31 @@ impl Engine {
 
         // Process the SDL2 events and store them into our own event queues for later use
         'game_loop: loop {
-            // Check if the engine should shutdown
+            // Mark a new frame for the platform
+            platform.frame();
+
+            // ImGui pre-event update (this can emit requests so we need to handle them before we
+            // call process_requests)
+            imgui_ctx.update_mouse_pos_early();
+
+            // Process requests and events
+            platform.process_requests();
+            platform.process_events(|| {
+                Engine::exit();
+            });
+
+            // ImGui post-event update (this processes this frame's set of events so it must happen
+            // after process_events an process_requests)
+            imgui_ctx.update_mouse_pos_late();
+            imgui_ctx.update_keyboard_input();
+
+            // Check if the engine should shutdown. This will be updated by process_events so we
+            // need to check after calling process_events
             if !Engine::keep_running() {
                 break 'game_loop;
             }
 
-            // Update the frame delta timer
-            FrameTimer::frame(&timer);
-
-            if Engine::handle_pre_update(&mut window, &mut event_pump, &mut imgui_ctx, &mouse_utils)
-            {
-                break 'game_loop;
-            }
-
-            let ui = imgui_ctx.frame(&mouse_utils);
+            let ui = imgui_ctx.frame();
 
             app.on_update(&ui);
 
@@ -326,152 +295,49 @@ impl Engine {
     /// Internal function for logging info about the engine
     ///
     fn log_engine_info() {
+        let engine_name = app_info::engine_name();
+        let engine_version = app_info::engine_version_string();
+        let arch = aleph_target_crate::build::target_architecture().name();
+        let os = aleph_target_crate::build::target_platform().pretty_name();
+        let build = aleph_target_crate::build::target_build_type().pretty_name();
         log::info!("=== Engine Info ===");
-        log::info!("Name    : {}", app_info::engine_name());
-        log::info!("Version : {}", app_info::engine_version_string());
-        log::info!("Arch    : {}", target::build::target_architecture().name());
-        log::info!(
-            "OS      : {}",
-            target::build::target_platform().pretty_name()
-        );
-        log::info!(
-            "Build   : {}",
-            target::build::target_build_type().pretty_name()
-        );
+        log::info!("Name    : {}", engine_name);
+        log::info!("Version : {}", engine_version);
+        log::info!("Arch    : {}", arch);
+        log::info!("OS      : {}", os);
+        log::info!("Build   : {}", build);
     }
 
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
     fn log_cpu_info() {
+        let cpu_vendor = aleph_cpu_info::cpu_vendor();
+        let cpu_brand = aleph_cpu_info::cpu_brand();
+        let physical_cpus = aleph_cpu_info::physical_core_count();
+        let logical_cpus = aleph_cpu_info::logical_core_count();
+        let system_ram = Platform::system_ram();
         log::info!("=== CPU INFO ===");
-        log::info!("CPU Vendor    : {}", cpu_info::cpu_vendor());
-        log::info!("CPU Brand     : {}", cpu_info::cpu_brand());
-        log::info!("Physical CPUs : {}", cpu_info::physical_core_count());
-        log::info!("Logical CPUs  : {}", cpu_info::logical_core_count());
-        log::info!("System RAM    : {}MB", sdl2::cpuinfo::system_ram());
+        log::info!("CPU Vendor    : {}", cpu_vendor);
+        log::info!("CPU Brand     : {}", cpu_brand);
+        log::info!("Physical CPUs : {}", physical_cpus);
+        log::info!("Logical CPUs  : {}", logical_cpus);
+        log::info!("System RAM    : {}MB", system_ram);
     }
 
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
     fn log_gpu_info(info: &GPUInfo) {
+        let gpu_vendor = info.vendor_id.vendor_name();
+        let gpu_name = info.device_name.as_str();
+        let maj = info.api_version_major;
+        let min = info.api_version_minor;
+        let pat = info.api_version_patch;
         log::info!("=== GPU INFO ===");
-        log::info!("GPU Vendor    : {}", info.vendor_id.vendor_name());
-        log::info!("GPU Name      : {}", &info.device_name);
-        log::info!(
-            "API Version   : {}.{}.{}",
-            info.api_version_major,
-            info.api_version_minor,
-            info.api_version_patch
-        )
-    }
-
-    ///
-    /// Internal function for handling various events prior to the user part of the game loop
-    ///
-    fn handle_pre_update(
-        window: &mut sdl2::video::Window,
-        event_pump: &mut sdl2::EventPump,
-        imgui_ctx: &mut Imgui,
-        mouse_utils: &sdl2::mouse::MouseUtil,
-    ) -> bool {
-        // Get access to window state
-        let mut window_state_lock = crate::app::WINDOW_STATE.write();
-
-        let window_state = window_state_lock.as_mut();
-        let window_state = window_state.expect("Window not initialized");
-
-        // Get access to the keyboard state
-        let mut keyboard_state_lock = crate::app::KEYBOARD_STATE.write();
-
-        let keyboard_state = keyboard_state_lock.as_mut();
-        let keyboard_state = keyboard_state.expect("Keyboard not initialized");
-
-        imgui_ctx.update_mouse_pos_early();
-
-        crate::app::Mouse::process_mouse_requests(window, mouse_utils);
-        crate::app::Window::process_window_requests(window, window_state);
-
-        if Self::handle_event_pump(event_pump, window_state, keyboard_state) {
-            return true;
-        }
-
-        drop(window_state_lock);
-        drop(keyboard_state_lock);
-
-        imgui_ctx.update_mouse_pos_late();
-        imgui_ctx.update_keyboard_input();
-
-        false
-    }
-
-    ///
-    /// Internal function for handling the SDL2 event pump
-    ///
-    fn handle_event_pump(
-        event_pump: &mut sdl2::EventPump,
-        window_state: &mut crate::app::WindowState,
-        keyboard_state: &mut crate::app::KeyboardState,
-    ) -> bool {
-        // Get access to window events
-        let mut window_events_lock = crate::app::WINDOW_EVENTS.write();
-        let window_events = window_events_lock.as_mut();
-        let window_events = window_events.expect("Window not initialized");
-
-        let mut mouse_events_lock = crate::app::MOUSE_EVENTS.write();
-        let mouse_events = mouse_events_lock.as_mut();
-        let mouse_events = mouse_events.expect("Mouse system not initialized");
-
-        let mut keyboard_events_lock = crate::app::KEYBOARD_EVENTS.write();
-        let keyboard_events = keyboard_events_lock.as_mut();
-        let keyboard_events = keyboard_events.expect("Mouse system not initialized");
-
-        window_events.clear();
-        mouse_events.clear();
-        keyboard_events.clear();
-
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. } => {
-                    log::info!("Quit Event Received");
-                    return true;
-                }
-                Event::Window { win_event, .. } => {
-                    crate::app::Window::process_window_event(
-                        window_state,
-                        window_events,
-                        win_event,
-                    );
-                }
-                event @ Event::MouseButtonDown { .. } => {
-                    Mouse::process_mouse_event(mouse_events, event);
-                }
-                event @ Event::MouseButtonUp { .. } => {
-                    Mouse::process_mouse_event(mouse_events, event);
-                }
-                event @ Event::MouseMotion { .. } => {
-                    Mouse::process_mouse_event(mouse_events, event);
-                }
-                event @ Event::MouseWheel { .. } => {
-                    Mouse::process_mouse_event(mouse_events, event);
-                }
-                event @ Event::KeyDown { .. } => {
-                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
-                }
-                event @ Event::KeyUp { .. } => {
-                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
-                }
-                event @ Event::TextInput { .. } => {
-                    Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
-                }
-                _ => {}
-            }
-        }
-
-        crate::app::Mouse::update_state(event_pump);
-
-        false
+        log::info!("GPU Vendor    : {}", gpu_vendor);
+        log::info!("GPU Name      : {}", gpu_name);
+        log::info!("API Version   : {}.{}.{}", maj, min, pat)
     }
 
     ///
@@ -481,7 +347,7 @@ impl Engine {
         let long_threads;
         let short_threads;
 
-        match cpu_info::logical_core_count() {
+        match aleph_cpu_info::logical_core_count() {
             2 => {
                 long_threads = 1;
                 short_threads = 1;
@@ -515,7 +381,7 @@ impl Engine {
                 short_threads = 12;
             }
             _ => {
-                let cpus = cpu_info::logical_core_count();
+                let cpus = aleph_cpu_info::logical_core_count();
 
                 if (cpus / 4) < 1 {
                     long_threads = 1;

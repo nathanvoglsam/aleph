@@ -8,17 +8,14 @@
 //
 
 pub extern crate erupt;
+pub extern crate raw_window_handle;
 
 extern crate aleph_app_info as app_info;
-extern crate aleph_macros as macros;
-extern crate console;
-extern crate crossbeam;
-extern crate log;
-extern crate raw_window_handle;
 
 pub(crate) mod debug;
-pub mod defer;
 pub(crate) mod surface;
+
+pub mod defer;
 
 mod device;
 mod gpu_info;

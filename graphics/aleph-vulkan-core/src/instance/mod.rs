@@ -62,17 +62,26 @@ impl InstanceBuilder {
     ///
     /// Construct the instance
     ///
-    pub fn build(self, window: &impl HasRawWindowHandle, app_info: &AppInfo) -> Arc<Instance> {
+    pub fn build(
+        self,
+        window_handle: &impl HasRawWindowHandle,
+        app_info: &AppInfo,
+    ) -> Arc<Instance> {
         // Load core vulkan functions for creating an instance
         let core_loader = Self::load_vulkan_core();
 
         // Create the vulkan instance
-        let instance =
-            Self::create_instance(&core_loader, app_info, window, self.debug, self.validation);
+        let instance = Self::create_instance(
+            &core_loader,
+            app_info,
+            window_handle,
+            self.debug,
+            self.validation,
+        );
 
         // Load the vulkan instance functions
         let instance_loader =
-            Self::load_vulkan_instance(&core_loader, instance, window, self.debug);
+            Self::load_vulkan_instance(&core_loader, instance, window_handle, self.debug);
 
         let messenger = if self.validation {
             Some(Self::install_debug_messenger(&instance_loader))
@@ -83,7 +92,7 @@ impl InstanceBuilder {
         // Create a surface for the window we're making an instance for
         log::trace!("Creating Vulkan surface");
         let surface = unsafe {
-            crate::surface::create_surface(&instance_loader, window, None)
+            crate::surface::create_surface(&instance_loader, window_handle, None)
                 .expect("Failed to create surface")
         };
 
@@ -117,7 +126,7 @@ impl InstanceBuilder {
     fn create_instance<T>(
         core_loader: &erupt::CoreLoader<T>,
         app_info: &AppInfo,
-        window: &impl HasRawWindowHandle,
+        window_handle: &impl HasRawWindowHandle,
         debug: bool,
         validation: bool,
     ) -> erupt::vk1_0::Instance {
@@ -137,7 +146,7 @@ impl InstanceBuilder {
             .engine_version(engine_version)
             .api_version(api_version);
 
-        let mut extensions = erupt::utils::surface::enumerate_required_extensions(window)
+        let mut extensions = erupt::utils::surface::enumerate_required_extensions(window_handle)
             .expect("Failed to get required vulkan surface extensions");
         if debug {
             extensions.push(erupt::extensions::ext_debug_utils::EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -168,7 +177,7 @@ impl InstanceBuilder {
     fn load_vulkan_instance<T>(
         core_loader: &erupt::CoreLoader<T>,
         instance: erupt::vk1_0::Instance,
-        window: &impl HasRawWindowHandle,
+        window_handle: &impl HasRawWindowHandle,
         debug: bool,
     ) -> erupt::InstanceLoader {
         // Load the vulkan instance function pointers
@@ -184,7 +193,7 @@ impl InstanceBuilder {
                 .expect("Failed to load VK_EXT_debug_utils functions");
         }
 
-        unsafe { crate::surface::load_surface_functions(&mut instance_loader, window) }
+        unsafe { crate::surface::load_surface_functions(&mut instance_loader, window_handle) }
 
         instance_loader
     }

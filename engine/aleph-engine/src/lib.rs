@@ -13,17 +13,10 @@
 
 // Re-export useful crates
 pub extern crate aleph_app_info as app_info;
+pub extern crate aleph_platform as platform;
 pub extern crate aleph_vulkan as gpu;
 pub extern crate log;
 pub extern crate rayon;
-
-extern crate aleph_cpu_info as cpu_info;
-extern crate aleph_logger as logger;
-extern crate aleph_target_crate as target;
-extern crate clap;
-extern crate once_cell;
-extern crate palette;
-extern crate parking_lot;
 
 // =================================================================================================
 // Public Modules

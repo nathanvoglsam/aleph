@@ -7,8 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-extern crate log;
-
 #[cfg(target_os = "android")]
 fn init_internal() {
     use android_logger::Config;
