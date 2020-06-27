@@ -36,5 +36,5 @@ aleph-target = { path = "../../utils/aleph-target", version = "1" }
 aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1" }
 clap = "2.33"
 rayon = "1.3"
-once_cell = "1.3"
+once_cell = "1.4"
 palette = "0.5"

@@ -27,4 +27,4 @@ azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_P
 [dependencies]
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0" }
 gltf = { version = "0.15", features = ["utils", "names"] }
-once_cell = "1.3"
+once_cell = "1.4"
