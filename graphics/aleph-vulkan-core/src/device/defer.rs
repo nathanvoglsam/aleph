@@ -9,7 +9,7 @@
 
 use crate::defer::{DeferBox, DeferList};
 use crate::Device;
-use erupt::vk1_0::{CommandPool, Vk10DeviceLoaderExt};
+use erupt::vk1_0::{CommandPool, Semaphore, Vk10DeviceLoaderExt};
 
 ///
 /// Trait bound for a function/closure that can be consumed by the device defer list
@@ -76,6 +76,14 @@ impl IntoDeviceDeferBox for CommandPool {
     fn into_device_defer_box(self) -> DeferBox<dyn DeviceDeferFn> {
         DeferBox::new(move |device: &Device| unsafe {
             device.loader().destroy_command_pool(self, None);
+        })
+    }
+}
+
+impl IntoDeviceDeferBox for Semaphore {
+    fn into_device_defer_box(self) -> DeferBox<dyn DeviceDeferFn> {
+        DeferBox::new(move |device: &Device| unsafe {
+            device.loader().destroy_semaphore(self, None);
         })
     }
 }

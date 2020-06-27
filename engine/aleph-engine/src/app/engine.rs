@@ -143,12 +143,14 @@ impl Engine {
                 .create_semaphore(&create_info, None, None)
                 .expect("Failed to create acquire semaphore")
         };
+        device.defer_destruction(acquire_semaphore);
         let signal_semaphore = unsafe {
             device
                 .loader()
                 .create_semaphore(&create_info, None, None)
                 .expect("Failed to create barrier semaphore")
         };
+        device.defer_destruction(signal_semaphore);
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -234,9 +236,6 @@ impl Engine {
                 .loader()
                 .device_wait_idle()
                 .expect("Failed to wait on device idle");
-
-            device.loader().destroy_semaphore(signal_semaphore, None);
-            device.loader().destroy_semaphore(acquire_semaphore, None);
         }
     }
 

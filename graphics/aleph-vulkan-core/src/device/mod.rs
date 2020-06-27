@@ -536,6 +536,9 @@ impl Device {
 impl Drop for Device {
     fn drop(&mut self) {
         unsafe {
+            self.loader()
+                .device_wait_idle()
+                .expect("Failed to wait for device to be idle");
             self.defer_list.consume(self);
             aleph_log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
