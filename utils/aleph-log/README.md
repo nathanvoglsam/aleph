@@ -1,3 +1,3 @@
-# Aleph-CPU-Info
+# Aleph-Log
 
-Crate for getting information about the host CPU
+Re-export of the log crate to specify a common version between all crates

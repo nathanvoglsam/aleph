@@ -12,7 +12,7 @@
 name = "aleph-vulkan"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "Abstractions around base level vulkan primitives like a Device, PhysicalDevice, Instance and SwapChain"
+description = "A higher level abstraction around vulkan designed to reduce API surface area and provide a *safer* (not completely) interface"
 license = "<ALEPH_LICENSE_NAME_REPLACE>"
 repository = "<ALEPH_REPO_REPLACE>"
 documentation = "https://docs.rs/aleph-vulkan/"

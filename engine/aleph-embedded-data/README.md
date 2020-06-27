@@ -1,3 +1,3 @@
-# Aleph-Vulkan-Core
+# Aleph-Embedded-Data
 
-Abstractions around base level vulkan primitives like a Device, PhysicalDevice, Instance and SwapChain
+Special case data that will be embedded into the executable for aleph-engine

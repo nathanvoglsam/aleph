@@ -1,3 +1,3 @@
-# Aleph-Vulkan-Core
+# Aleph-Vulkan
 
-Abstractions around base level vulkan primitives like a Device, PhysicalDevice, Instance and SwapChain
+A higher level abstraction around vulkan designed to reduce API surface area and provide a *safer* (not completely) interface

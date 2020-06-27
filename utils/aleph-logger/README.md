@@ -1,3 +1,3 @@
-# Aleph-CPU-Info
+# Aleph-Logger
 
-Crate for getting information about the host CPU
+Wrapper for platform specific logger initialization

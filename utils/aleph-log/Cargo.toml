@@ -12,7 +12,7 @@
 name = "aleph-log"
 version = "1.0.0"
 authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
-description = "Wrapper for platform specific logger initialization"
+description = "Re-export of the log crate to specify a common version between all crates"
 license = "<ALEPH_LICENSE_NAME_REPLACE>"
 repository = "<ALEPH_REPO_REPLACE>"
 documentation = "https://docs.rs/aleph-log/"

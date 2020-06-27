@@ -1,3 +1,3 @@
-# Aleph-App-Info
+# Aleph-Settings
 
-Aleph crate for handling engine and app version passing
+Crate that holds the engine's settings layout
