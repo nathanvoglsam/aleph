@@ -12,8 +12,8 @@ use crate::platform::frame_timer::FrameTimer;
 use crate::platform::keyboard::{Keyboard, KeyboardEvent, Mod, Scancode};
 use crate::platform::mouse::{Cursor, Mouse, MouseEvent};
 use crate::platform::window::Window;
-use render::imgui::{ImStr, ImString, StyleColor};
 use palette::{IntoColor, Srgb};
+use render::imgui::{ImStr, ImString, StyleColor};
 
 // TODO: Windows IME
 //   #ifdef _WIN32

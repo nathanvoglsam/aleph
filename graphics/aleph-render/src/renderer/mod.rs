@@ -7,16 +7,13 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-mod pipelines;
 mod imgui;
+mod pipelines;
 
 pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
-use vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
-use vulkan::image::{ColourImage, DepthImage};
-use vulkan::pipeline_layout::PipelineLayout;
-use vulkan::shader::ShaderModule;
+use std::sync::Arc;
 use vulkan::alloc::Allocator;
 use vulkan::core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
@@ -27,7 +24,10 @@ use vulkan::core::erupt::vk1_0::{
     SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
 use vulkan::core::{Device, SwapImage, Swapchain};
-use std::sync::Arc;
+use vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
+use vulkan::image::{ColourImage, DepthImage};
+use vulkan::pipeline_layout::PipelineLayout;
+use vulkan::shader::ShaderModule;
 
 ///
 /// Represents a single gbuffer

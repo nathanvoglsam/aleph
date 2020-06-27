@@ -11,8 +11,8 @@ extern crate aleph_engine as aleph;
 
 use aleph::app::{Engine, FrameRate};
 use aleph::app_info::AppInfo;
-use aleph::render::imgui::{im_str, Condition, MenuItem, Ui};
 use aleph::platform::window::Window;
+use aleph::render::imgui::{im_str, Condition, MenuItem, Ui};
 
 struct AlephAppLogic {
     frame_timer: bool,

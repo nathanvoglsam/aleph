@@ -9,13 +9,13 @@
 
 use crate::app::{AppLogic, Imgui};
 use app_info::AppInfo;
-use vulkan::pipeline_cache::PipelineCache;
 use platform::window::Window;
 use platform::Platform;
-use vulkan::core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
-use vulkan::core::GPUInfo;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+use vulkan::core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan::core::GPUInfo;
+use vulkan::pipeline_cache::PipelineCache;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 

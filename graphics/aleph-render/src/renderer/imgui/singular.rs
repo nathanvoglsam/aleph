@@ -8,12 +8,6 @@
 //
 
 use super::ImguiGlobal;
-use vulkan::pipeline::{
-    ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
-};
-use vulkan::pipeline_cache::PipelineCache;
-use vulkan::shader::ShaderModule;
 use vulkan::core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
@@ -22,6 +16,12 @@ use vulkan::core::erupt::vk1_0::{
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
     Vk10DeviceLoaderExt,
 };
+use vulkan::pipeline::{
+    ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
+    InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
+};
+use vulkan::pipeline_cache::PipelineCache;
+use vulkan::shader::ShaderModule;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
