@@ -11,12 +11,12 @@ use crate::frame_timer::FrameTimer;
 use crate::keyboard::{Keyboard, KEYBOARD_EVENTS, KEYBOARD_STATE};
 use crate::mouse::{Cursor, Mouse, MOUSE_EVENTS};
 use crate::window::{Window, WINDOW_EVENTS, WINDOW_STATE};
+use aleph_app_info::AppInfo;
 use aleph_settings::Settings;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use sdl2::event::Event;
 use std::cell::Cell;
 use std::collections::HashMap;
-use aleph_app_info::AppInfo;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlatformBuildError {
@@ -65,7 +65,11 @@ impl PlatformBuilder {
     /// Creates a new `PlatformBuilder`
     ///
     pub fn new() -> Self {
-        Self { headless: false, app_info: Default::default(), settings: Default::default() }
+        Self {
+            headless: false,
+            app_info: Default::default(),
+            settings: Default::default(),
+        }
     }
 
     ///
