@@ -90,6 +90,7 @@ impl Engine {
 
         let mut platform = Platform::builder()
             .headless(false)
+            .app_info(app_info.clone())
             .build()
             .expect("Failed to build platform layer");
 

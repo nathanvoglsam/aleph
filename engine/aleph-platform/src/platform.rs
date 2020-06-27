@@ -11,11 +11,12 @@ use crate::frame_timer::FrameTimer;
 use crate::keyboard::{Keyboard, KEYBOARD_EVENTS, KEYBOARD_STATE};
 use crate::mouse::{Cursor, Mouse, MOUSE_EVENTS};
 use crate::window::{Window, WINDOW_EVENTS, WINDOW_STATE};
-use aleph_settings::WindowSettings;
+use aleph_settings::Settings;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use sdl2::event::Event;
 use std::cell::Cell;
 use std::collections::HashMap;
+use aleph_app_info::AppInfo;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlatformBuildError {
@@ -55,11 +56,16 @@ pub enum PlatformBuildError {
 ///
 pub struct PlatformBuilder {
     headless: bool,
+    app_info: AppInfo,
+    settings: Settings,
 }
 
 impl PlatformBuilder {
+    ///
+    /// Creates a new `PlatformBuilder`
+    ///
     pub fn new() -> Self {
-        Self { headless: false }
+        Self { headless: false, app_info: Default::default(), settings: Default::default() }
     }
 
     ///
@@ -71,6 +77,22 @@ impl PlatformBuilder {
     ///
     pub fn headless(mut self, headless: bool) -> Self {
         self.headless = headless;
+        self
+    }
+
+    ///
+    /// Sets app_info for the builder
+    ///
+    pub fn app_info(mut self, app_info: AppInfo) -> Self {
+        self.app_info = app_info;
+        self
+    }
+
+    ///
+    /// Sets app_info for the builder
+    ///
+    pub fn settings(mut self, settings: Settings) -> Self {
+        self.settings = settings;
         self
     }
 
@@ -109,7 +131,7 @@ impl PlatformBuilder {
             let mouse_util = sdl.mouse();
 
             aleph_log::trace!("Initializing Window");
-            let window = Window::init_window(&video, "ASD", &WindowSettings::default());
+            let window = Window::init_window(&video, &self.app_info.name, &self.settings.window);
 
             Keyboard::init();
             Mouse::init();

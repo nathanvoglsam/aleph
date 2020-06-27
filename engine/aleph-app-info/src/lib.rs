@@ -60,6 +60,7 @@ pub fn engine_version_patch() -> u32 {
 ///
 /// A struct that holds information about the particular game the engine will be running
 ///
+#[derive(Clone, Debug)]
 pub struct AppInfo {
     ///
     /// The name of the App.
@@ -89,6 +90,18 @@ pub struct AppInfo {
     /// The patch version of the app, following semver conventions
     ///
     pub patch: u32,
+}
+
+impl Default for AppInfo {
+    fn default() -> Self {
+        Self {
+            name: "Default AlephEngine Game".to_string(),
+            author: "AlephEngine".to_string(),
+            major: 0,
+            minor: 1,
+            patch: 0
+        }
+    }
 }
 
 impl AppInfo {

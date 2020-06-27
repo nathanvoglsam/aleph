@@ -22,6 +22,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
+aleph-app-info = { path = "../aleph-app-info", version = "0.1" }
 aleph-log = { path = "../../utils/aleph-log", version = "1" }
 aleph-settings = { path = "../aleph-settings", version = "0.1" }
 sdl2 = { version = "0.34", features = ["raw-window-handle"] }
@@ -31,9 +32,8 @@ parking_lot = "0.10"
 
 [build-dependencies]
 cmake = "0.1"
-aleph-target-build = { path = "../../utils/aleph-target-build", version = "1" }
 aleph-compile = { path = "../../utils/aleph-compile", version = "1" }
-aleph-math = { path = "../aleph-math", version = "0.1" }
+aleph-target-build = { path = "../../utils/aleph-target-build", version = "1" }
 
 [badges]
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
