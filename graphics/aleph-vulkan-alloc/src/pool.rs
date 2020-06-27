@@ -8,11 +8,11 @@
 //
 
 use crate::Allocator;
+use aleph_vulkan_alloc_sys::raw;
 use aleph_vulkan_core::erupt::utils::VulkanResult;
 use aleph_vulkan_core::erupt::vk1_0::DeviceSize;
 use core::ptr;
 use std::sync::Arc;
-use vulkan_alloc_sys::raw;
 
 ///
 /// A rusty wrapper around the raw VmaPoolCreateFlag constants

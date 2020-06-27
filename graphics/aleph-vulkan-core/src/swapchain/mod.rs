@@ -508,7 +508,6 @@ impl Swapchain {
             }
         };
         aleph_log::trace!("Image Count   : {}", image_count);
-        aleph_log::trace!("");
 
         let old_swapchain = self.swapchain;
         let swap_create_info = SwapchainCreateInfoKHRBuilder::new()

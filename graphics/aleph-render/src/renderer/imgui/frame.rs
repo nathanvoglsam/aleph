@@ -7,14 +7,14 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use aleph_vulkan::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use aleph_vulkan::core::erupt::vk1_0::{
+use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use aleph_vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
     CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool,
     CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
     SharingMode, Vk10DeviceLoaderExt,
 };
-use aleph_vulkan::core::SwapImage;
+use aleph_vulkan_core::SwapImage;
 use std::sync::Arc;
 
 ///
@@ -28,14 +28,14 @@ pub struct ImguiFrame {
     pub framebuffer: Framebuffer,
     pub vtx_buffer: (Buffer, Allocation),
     pub idx_buffer: (Buffer, Allocation),
-    pub memory_pool: Arc<aleph_vulkan::alloc::Pool>,
+    pub memory_pool: Arc<aleph_vulkan_alloc::Pool>,
 }
 
 impl ImguiFrame {
     pub fn init(
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         allocator: &Arc<Allocator>,
-        swapchain: &aleph_vulkan::core::Swapchain,
+        swapchain: &aleph_vulkan_core::Swapchain,
         index: usize,
         render_pass: RenderPass,
     ) -> Self {
@@ -61,8 +61,8 @@ impl ImguiFrame {
         .expect("Failed to find memory index");
 
         let memory_pool = unsafe {
-            aleph_vulkan::alloc::PoolBuilder::new()
-                .flags(aleph_vulkan::alloc::PoolCreateFlag::LINEAR_ALGORITHM_BIT)
+            aleph_vulkan_alloc::PoolBuilder::new()
+                .flags(aleph_vulkan_alloc::PoolCreateFlag::LINEAR_ALGORITHM_BIT)
                 .block_size((1024 * 1024) * 1)
                 .memory_type_index(memory_type_index)
                 .min_block_count(1)
@@ -83,7 +83,7 @@ impl ImguiFrame {
         }
     }
 
-    pub fn create_command_pool(device: &aleph_vulkan::core::Device) -> CommandPool {
+    pub fn create_command_pool(device: &aleph_vulkan_core::Device) -> CommandPool {
         let create_info =
             CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
         unsafe {
@@ -95,7 +95,7 @@ impl ImguiFrame {
     }
 
     pub fn allocate_command_buffer(
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         command_pool: CommandPool,
     ) -> CommandBuffer {
         let allocate_info = CommandBufferAllocateInfoBuilder::new()
@@ -107,8 +107,8 @@ impl ImguiFrame {
     }
 
     pub fn create_framebuffer(
-        device: &aleph_vulkan::core::Device,
-        swapchain: &aleph_vulkan::core::Swapchain,
+        device: &aleph_vulkan_core::Device,
+        swapchain: &aleph_vulkan_core::Swapchain,
         render_pass: RenderPass,
         image_view: ImageView,
     ) -> Framebuffer {
@@ -123,7 +123,7 @@ impl ImguiFrame {
             .expect("Failed to create framebuffer")
     }
 
-    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device, allocator: &Allocator) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {
         if self.vtx_buffer.0 != Buffer::null() {
             allocator.destroy_buffer(self.vtx_buffer.0, self.vtx_buffer.1);
         }

@@ -13,9 +13,9 @@ use platform::window::Window;
 use platform::Platform;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
-use vulkan::core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
-use vulkan::core::GPUInfo;
 use vulkan::pipeline_cache::PipelineCache;
+use vulkan_core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan_core::GPUInfo;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -106,24 +106,23 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let instance = vulkan::core::InstanceBuilder::new()
+        let instance = vulkan_core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
             .validation(args.is_present("GPU_VALIDATION"))
             .build(&platform, &app_info);
 
-        let device = vulkan::core::DeviceBuilder::new().build(&instance);
-        aleph_log::trace!("");
+        let device = vulkan_core::DeviceBuilder::new().build(&instance);
 
         Self::log_gpu_info(device.info());
         aleph_log::info!("");
 
         PipelineCache::init(&device);
 
-        let allocator = vulkan::alloc::Allocator::builder()
+        let allocator = vulkan_alloc::Allocator::builder()
             .build(&device)
             .expect("Failed to build vulkan allocator");
 
-        let mut swapchain = vulkan::core::SwapchainBuilder::new()
+        let mut swapchain = vulkan_core::SwapchainBuilder::new()
             .vsync()
             .build(&device, Window::drawable_size());
 

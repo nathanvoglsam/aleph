@@ -17,6 +17,8 @@ pub extern crate aleph_log as log;
 pub extern crate aleph_platform as platform;
 pub extern crate aleph_render as render;
 pub extern crate aleph_vulkan as vulkan;
+pub extern crate aleph_vulkan_alloc as vulkan_alloc;
+pub extern crate aleph_vulkan_core as vulkan_core;
 pub extern crate rayon;
 
 // =================================================================================================

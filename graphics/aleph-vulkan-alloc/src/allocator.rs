@@ -14,6 +14,7 @@ use crate::Allocation;
 use crate::AllocationCreateInfo;
 use crate::AllocationInfo;
 use crate::Stats;
+use aleph_vulkan_alloc_sys::raw;
 use aleph_vulkan_core::erupt::utils::VulkanResult;
 use aleph_vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfo, DeviceMemory, DeviceSize, Image, ImageCreateInfo, MemoryRequirements,
@@ -26,7 +27,6 @@ use std::ffi::c_void;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 use std::sync::Arc;
-use vulkan_alloc_sys::raw;
 
 ///
 /// A rusty wrapper around the raw VmaAllocatorCreateFlag constants

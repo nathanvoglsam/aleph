@@ -8,8 +8,8 @@
 //
 
 use super::ImguiGlobal;
-use aleph_vulkan::alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use aleph_vulkan::core::erupt::vk1_0::{
+use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateFlags, CommandPoolCreateInfoBuilder,
@@ -35,7 +35,7 @@ impl ImguiFont {
     pub fn init(
         mut fonts: imgui::FontAtlasRefMut,
         global: &ImguiGlobal,
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         allocator: &Allocator,
     ) -> Self {
         fonts.clear_fonts();
@@ -117,7 +117,7 @@ impl ImguiFont {
         font
     }
 
-    pub fn create_sampler(device: &aleph_vulkan::core::Device) -> Sampler {
+    pub fn create_sampler(device: &aleph_vulkan_core::Device) -> Sampler {
         let create_info = SamplerCreateInfoBuilder::new()
             .address_mode_u(SamplerAddressMode::REPEAT)
             .address_mode_v(SamplerAddressMode::REPEAT)
@@ -155,7 +155,7 @@ impl ImguiFont {
             .expect("Failed to create image")
     }
 
-    pub fn create_image_view(device: &aleph_vulkan::core::Device, image: Image) -> ImageView {
+    pub fn create_image_view(device: &aleph_vulkan_core::Device, image: Image) -> ImageView {
         let subresource_range = ImageSubresourceRangeBuilder::new()
             .aspect_mask(ImageAspectFlags::COLOR)
             .base_array_layer(0)
@@ -173,7 +173,7 @@ impl ImguiFont {
 
     pub fn upload_font(
         &self,
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         allocator: &Allocator,
         data: &[u8],
     ) {
@@ -334,7 +334,7 @@ impl ImguiFont {
         }
     }
 
-    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device, allocator: &Allocator) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {
         device.loader().destroy_image_view(self.image_view, None);
         allocator.destroy_image(self.image, self.allocation);
         device.loader().destroy_sampler(self.sampler, None);

@@ -557,7 +557,6 @@ impl Imgui {
             Cursor::No,
         ];
 
-        aleph_log::trace!("");
         Self { context, cursors }
     }
 

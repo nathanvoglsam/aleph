@@ -152,7 +152,6 @@ impl Keyboard {
 
         *KEYBOARD_STATE.write() = Some(keyboard_state);
         *KEYBOARD_EVENTS.write() = Some(Vec::new());
-        aleph_log::trace!("");
     }
 
     ///

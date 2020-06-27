@@ -7,8 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-pub extern crate aleph_vulkan_alloc_sys as vulkan_alloc_sys;
-
 mod allocation;
 mod allocator;
 mod defer;

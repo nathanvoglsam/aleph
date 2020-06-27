@@ -8,20 +8,20 @@
 //
 
 use super::ImguiGlobal;
-use aleph_vulkan::core::erupt::vk1_0::{
-    AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format, FrontFace,
-    ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology,
-    RenderPass, RenderPassCreateInfoBuilder, SubpassDescriptionBuilder,
-    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
-    Vk10DeviceLoaderExt,
-};
-use aleph_vulkan::core::SwapImage;
 use aleph_vulkan::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
     GraphicsPipelineBuilder, InputAssemblyState, MultiSampleState, RasterizationState,
     VertexInputState, ViewportState,
 };
 use aleph_vulkan::shader::ShaderModule;
+use aleph_vulkan_core::erupt::vk1_0::{
+    AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format, FrontFace,
+    ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology,
+    RenderPass, RenderPassCreateInfoBuilder, SubpassDescriptionBuilder,
+    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
+    Vk10DeviceLoaderExt,
+};
+use aleph_vulkan_core::SwapImage;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -34,7 +34,7 @@ pub struct ImguiSingular {
 
 impl ImguiSingular {
     pub fn init(
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         global: &ImguiGlobal,
         swap_image: &SwapImage,
     ) -> Self {
@@ -55,7 +55,7 @@ impl ImguiSingular {
     }
 
     pub fn create_render_pass(
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         swap_image: &SwapImage,
     ) -> RenderPass {
         let attachment = swap_image.attachment_description(
@@ -83,7 +83,7 @@ impl ImguiSingular {
     }
 
     pub fn create_pipeline(
-        device: &aleph_vulkan::core::Device,
+        device: &aleph_vulkan_core::Device,
         pipeline_layout: PipelineLayout,
         render_pass: RenderPass,
         vertex_module: &ShaderModule,
@@ -146,7 +146,7 @@ impl ImguiSingular {
         pipeline
     }
 
-    pub unsafe fn destroy(&self, device: &aleph_vulkan::core::Device) {
+    pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device) {
         device.loader().destroy_render_pass(self.render_pass, None);
         device.loader().destroy_pipeline(self.pipeline, None);
     }

@@ -298,7 +298,6 @@ impl Mouse {
         *MOUSE_STATE.write() = Some(mouse_state);
         *MOUSE_REQUEST_QUEUE.lock() = Some(Vec::new());
         *MOUSE_EVENTS.write() = Some(Vec::new());
-        aleph_log::trace!("");
     }
 
     ///

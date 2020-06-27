@@ -25,6 +25,6 @@ edition = "2018"
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
 
 [dependencies]
-aleph-log = { path = "../../utils/aleph-log", version = "1" }
-aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1" }
-aleph-vulkan-alloc-sys = { path = "../aleph-vulkan-alloc-sys", version = "1" }
+aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1.0" }
+aleph-vulkan-alloc-sys = { path = "../aleph-vulkan-alloc-sys", version = "1.0.0" }

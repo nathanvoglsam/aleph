@@ -15,4 +15,4 @@ authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-aleph-engine = { path = "../../engine/aleph-engine", version = "0.1" }
+aleph-engine = { path = "../../engine/aleph-engine", version = "0.1.0" }
