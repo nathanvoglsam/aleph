@@ -15,7 +15,8 @@
 pub extern crate aleph_app_info as app_info;
 pub extern crate aleph_log as log;
 pub extern crate aleph_platform as platform;
-pub extern crate aleph_vulkan as gpu;
+pub extern crate aleph_render as render;
+pub extern crate aleph_vulkan as vulkan;
 pub extern crate rayon;
 
 // =================================================================================================

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use vulkan_alloc::{AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
+use vulkan::alloc::{AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 
 use imgui::DrawCmd;
 use std::sync::Arc;
@@ -21,7 +21,7 @@ pub use font::ImguiFont;
 pub use frame::ImguiFrame;
 pub use global::ImguiGlobal;
 pub use singular::ImguiSingular;
-use vulkan_core::erupt::vk1_0::{
+use vulkan::core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, ClearColorValue, ClearValue, CommandBuffer,
     CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, CommandPoolResetFlags, DependencyFlags,
     Extent2D, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
@@ -31,7 +31,7 @@ use vulkan_core::erupt::vk1_0::{
 };
 
 pub struct ImguiRenderer {
-    device: Arc<vulkan_core::Device>,
+    device: Arc<vulkan::core::Device>,
     allocator: Arc<Allocator>,
     frames: Vec<ImguiFrame>,
     single: ImguiSingular,
@@ -42,9 +42,9 @@ pub struct ImguiRenderer {
 impl ImguiRenderer {
     pub fn new(
         fonts: imgui::FontAtlasRefMut,
-        device: Arc<vulkan_core::Device>,
+        device: Arc<vulkan::core::Device>,
         allocator: Arc<Allocator>,
-        swapchain: &vulkan_core::Swapchain,
+        swapchain: &vulkan::core::Swapchain,
     ) -> Self {
         aleph_log::trace!("Initializing ImGui Renderer");
         let global = ImguiGlobal::init(&device);
@@ -70,7 +70,7 @@ impl ImguiRenderer {
         }
     }
 
-    pub unsafe fn recreate_resources(&mut self, swapchain: &vulkan_core::Swapchain) {
+    pub unsafe fn recreate_resources(&mut self, swapchain: &vulkan::core::Swapchain) {
         for frame in self.frames.iter() {
             frame.destroy(&self.device, &self.allocator);
         }
@@ -95,7 +95,7 @@ impl ImguiRenderer {
     pub unsafe fn render_frame(
         &mut self,
         frame: imgui::Ui,
-        swapchain: &vulkan_core::Swapchain,
+        swapchain: &vulkan::core::Swapchain,
         acquire_semaphore: Semaphore,
         signal_semaphore: Semaphore,
         index: usize,
@@ -341,7 +341,7 @@ impl ImguiRenderer {
     unsafe fn render_draw_command(
         &mut self,
         draw_data: &imgui::DrawData,
-        swapchain: &vulkan_core::Swapchain,
+        swapchain: &vulkan::core::Swapchain,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
         command_buffer: CommandBuffer,
@@ -406,7 +406,7 @@ impl ImguiRenderer {
 
     unsafe fn reset_render_state(
         &self,
-        swapchain: &vulkan_core::Swapchain,
+        swapchain: &vulkan::core::Swapchain,
         command_buffer: CommandBuffer,
         vertex_buffer: Buffer,
         index_buffer: Buffer,

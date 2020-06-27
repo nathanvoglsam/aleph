@@ -7,8 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-mod imgui;
+pub extern crate imgui;
+
+extern crate aleph_vulkan as vulkan;
+
 mod renderer;
 
-pub use self::imgui::ImguiRenderer;
+pub use renderer::ImguiRenderer;
 pub use renderer::Renderer;

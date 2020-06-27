@@ -7,9 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
-use crate::shader::ShaderModule;
-use vulkan_core::erupt::vk1_0::{
+use vulkan::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
+use vulkan::shader::ShaderModule;
+use vulkan::core::erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
     DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
@@ -28,7 +28,7 @@ pub struct ImguiGlobal {
 }
 
 impl ImguiGlobal {
-    pub fn init(device: &vulkan_core::Device) -> Self {
+    pub fn init(device: &vulkan::core::Device) -> Self {
         let (vertex_module, fragment_module) = Self::create_shader_modules(device);
         let descriptor_pool = Self::create_descriptor_pool(device);
         let pipeline_layout =
@@ -48,7 +48,7 @@ impl ImguiGlobal {
         }
     }
 
-    pub fn create_descriptor_pool(device: &vulkan_core::Device) -> DescriptorPool {
+    pub fn create_descriptor_pool(device: &vulkan::core::Device) -> DescriptorPool {
         let pool_sizes = [
             DescriptorPoolSizeBuilder::new()
                 ._type(DescriptorType::SAMPLER)
@@ -73,7 +73,7 @@ impl ImguiGlobal {
     }
 
     pub fn create_pipeline_layout(
-        device: &vulkan_core::Device,
+        device: &vulkan::core::Device,
         fragment_module: &ShaderModule,
         vertex_module: &ShaderModule,
     ) -> PipelineLayout {
@@ -90,7 +90,7 @@ impl ImguiGlobal {
     }
 
     pub fn allocate_descriptor_set(
-        device: &vulkan_core::Device,
+        device: &vulkan::core::Device,
         layout: DescriptorSetLayout,
         pool: DescriptorPool,
     ) -> DescriptorSet {
@@ -102,8 +102,8 @@ impl ImguiGlobal {
             .expect("Failed to allocate descriptor sets")[0]
     }
 
-    pub fn create_shader_modules(device: &vulkan_core::Device) -> (ShaderModule, ShaderModule) {
-        let (_, words) = crate::embedded::data::shaders::imgui_vert_shader();
+    pub fn create_shader_modules(device: &vulkan::core::Device) -> (ShaderModule, ShaderModule) {
+        let (_, words) = vulkan::embedded::data::shaders::imgui_vert_shader();
         let vertex_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -112,7 +112,7 @@ impl ImguiGlobal {
             .build(Some(device))
             .expect("Failed to create imgui vertex module");
 
-        let (_, words) = crate::embedded::data::shaders::imgui_frag_shader();
+        let (_, words) = vulkan::embedded::data::shaders::imgui_frag_shader();
         let fragment_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -124,7 +124,7 @@ impl ImguiGlobal {
         (vertex_module, fragment_module)
     }
 
-    pub unsafe fn destroy(&self, device: &vulkan_core::Device) {
+    pub unsafe fn destroy(&self, device: &vulkan::core::Device) {
         device
             .loader()
             .free_descriptor_sets(self.descriptor_pool, &[self.descriptor_set])

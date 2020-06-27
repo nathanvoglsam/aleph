@@ -8,12 +8,12 @@
 //
 
 use crate::app::{AppLogic, Imgui};
-use crate::app_info::AppInfo;
-use crate::gpu::pipeline_cache::PipelineCache;
-use crate::platform::window::Window;
-use crate::platform::Platform;
-use gpu::vulkan_core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
-use gpu::vulkan_core::GPUInfo;
+use app_info::AppInfo;
+use vulkan::pipeline_cache::PipelineCache;
+use platform::window::Window;
+use platform::Platform;
+use vulkan::core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan::core::GPUInfo;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
@@ -105,12 +105,12 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load core vulkan functions for creating an instance
-        let instance = gpu::core::InstanceBuilder::new()
+        let instance = vulkan::core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
             .validation(args.is_present("GPU_VALIDATION"))
             .build(&platform, &app_info);
 
-        let device = gpu::core::DeviceBuilder::new().build(&instance);
+        let device = vulkan::core::DeviceBuilder::new().build(&instance);
         aleph_log::trace!("");
 
         Self::log_gpu_info(device.info());
@@ -118,18 +118,18 @@ impl Engine {
 
         PipelineCache::init(&device);
 
-        let allocator = gpu::alloc::Allocator::builder()
+        let allocator = vulkan::alloc::Allocator::builder()
             .build(&device)
             .expect("Failed to build vulkan allocator");
 
-        let mut swapchain = gpu::core::SwapchainBuilder::new()
+        let mut swapchain = vulkan::core::SwapchainBuilder::new()
             .vsync()
             .build(&device, Window::drawable_size());
 
         let _renderer =
-            unsafe { gpu::render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
+            unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
 
-        let mut imgui_renderer = gpu::render::ImguiRenderer::new(
+        let mut imgui_renderer = render::ImguiRenderer::new(
             imgui_ctx.context_mut().fonts(),
             device.clone(),
             allocator.clone(),

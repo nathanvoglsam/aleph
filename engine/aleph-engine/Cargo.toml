@@ -31,6 +31,7 @@ aleph-log = { path = "../../utils/aleph-log", version = "1" }
 aleph-logger = { path = "../../utils/aleph-logger", version = "0.1" }
 aleph-platform = { path = "../aleph-platform", version = "0.1" }
 aleph-settings = { path = "../aleph-settings", version = "0.1" }
+aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
 aleph-target = { path = "../../utils/aleph-target", version = "1" }
 aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1" }
 clap = "2.33"

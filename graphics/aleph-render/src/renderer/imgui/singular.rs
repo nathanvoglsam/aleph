@@ -8,13 +8,13 @@
 //
 
 use super::ImguiGlobal;
-use crate::pipeline::{
+use vulkan::pipeline::{
     ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
     InputAssemblyState, MultiSampleState, RasterizationState, VertexInputState, ViewportState,
 };
-use crate::pipeline_cache::PipelineCache;
-use crate::shader::ShaderModule;
-use vulkan_core::erupt::vk1_0::{
+use vulkan::pipeline_cache::PipelineCache;
+use vulkan::shader::ShaderModule;
+use vulkan::core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     DynamicState, Format, FrontFace, GraphicsPipelineCreateInfoBuilder, ImageLayout, Pipeline,
     PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
@@ -33,7 +33,7 @@ pub struct ImguiSingular {
 }
 
 impl ImguiSingular {
-    pub fn init(device: &vulkan_core::Device, global: &ImguiGlobal, format: Format) -> Self {
+    pub fn init(device: &vulkan::core::Device, global: &ImguiGlobal, format: Format) -> Self {
         let render_pass = Self::create_render_pass(device, format);
         let pipeline = Self::create_pipeline(
             device,
@@ -49,7 +49,7 @@ impl ImguiSingular {
         }
     }
 
-    pub fn create_render_pass(device: &vulkan_core::Device, format: Format) -> RenderPass {
+    pub fn create_render_pass(device: &vulkan::core::Device, format: Format) -> RenderPass {
         let attachment = AttachmentDescriptionBuilder::new()
             .format(format)
             .samples(SampleCountFlagBits::_1)
@@ -78,7 +78,7 @@ impl ImguiSingular {
     }
 
     pub fn create_pipeline(
-        device: &vulkan_core::Device,
+        device: &vulkan::core::Device,
         pipeline_layout: PipelineLayout,
         render_pass: RenderPass,
         vertex_module: &ShaderModule,
@@ -161,7 +161,7 @@ impl ImguiSingular {
         .expect("Failed to create pipeline")[0]
     }
 
-    pub unsafe fn destroy(&self, device: &vulkan_core::Device) {
+    pub unsafe fn destroy(&self, device: &vulkan::core::Device) {
         device.loader().destroy_render_pass(self.render_pass, None);
         device.loader().destroy_pipeline(self.pipeline, None);
     }

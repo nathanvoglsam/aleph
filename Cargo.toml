@@ -23,6 +23,7 @@ members = [
     "utils/aleph-macros",
     "utils/aleph-target",
     "utils/aleph-target-build",
+    "graphics/aleph-render",
     "graphics/aleph-vulkan",
     "graphics/aleph-vulkan-alloc",
     "graphics/aleph-vulkan-alloc-sys",

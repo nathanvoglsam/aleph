@@ -8,15 +8,17 @@
 //
 
 mod pipelines;
+mod imgui;
 
-use crate::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
-use crate::image::{ColourImage, DepthImage};
-use crate::pipeline_layout::PipelineLayout;
-use crate::render::renderer::pipelines::{GeometryPipeline, TonePipeline};
-use crate::shader::ShaderModule;
-use std::sync::Arc;
-use vulkan_alloc::Allocator;
-use vulkan_core::erupt::vk1_0::{
+pub use self::imgui::ImguiRenderer;
+
+use self::pipelines::{GeometryPipeline, TonePipeline};
+use vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
+use vulkan::image::{ColourImage, DepthImage};
+use vulkan::pipeline_layout::PipelineLayout;
+use vulkan::shader::ShaderModule;
+use vulkan::alloc::Allocator;
+use vulkan::core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer,
@@ -24,8 +26,8 @@ use vulkan_core::erupt::vk1_0::{
     RenderPassCreateInfoBuilder, SubmitInfoBuilder, SubpassDependencyBuilder,
     SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
-use vulkan_core::SwapImage;
-use vulkan_core::{Device, Swapchain};
+use vulkan::core::{Device, SwapImage, Swapchain};
+use std::sync::Arc;
 
 ///
 /// Represents a single gbuffer
@@ -356,7 +358,7 @@ impl Renderer {
             &swap_image,
             gbuffer_pass.render_pass(),
         );
-        let (_, words) = crate::embedded::data::shaders::standard_frag_shader();
+        let (_, words) = vulkan::embedded::data::shaders::standard_frag_shader();
         let geom_frag_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -364,7 +366,7 @@ impl Renderer {
             .words(words)
             .build(Some(&device))
             .expect("Failed to create geom frag module");
-        let (_, words) = crate::embedded::data::shaders::standard_vert_shader();
+        let (_, words) = vulkan::embedded::data::shaders::standard_vert_shader();
         let geom_vert_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -386,7 +388,7 @@ impl Renderer {
             &geom_frag_module,
         );
 
-        let (_, words) = crate::embedded::data::shaders::tonemapping_frag_shader();
+        let (_, words) = vulkan::embedded::data::shaders::tonemapping_frag_shader();
         let tone_frag_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
@@ -394,7 +396,7 @@ impl Renderer {
             .words(words)
             .build(Some(&device))
             .expect("Failed to create tone frag module");
-        let (_, words) = crate::embedded::data::shaders::fullscreen_quad_vert_shader();
+        let (_, words) = vulkan::embedded::data::shaders::fullscreen_quad_vert_shader();
         let tone_vert_module = ShaderModule::builder()
             .reflect(true)
             .compile(true)
