@@ -13,7 +13,8 @@ use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, Buffer, BufferCopyBuilder, BufferCreateInfoBuilder, BufferMemoryBarrierBuilder,
     BufferUsageFlags, CommandBuffer, DependencyFlags, PipelineStageFlags, SharingMode, WHOLE_SIZE,
 };
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
+use std::ffi::CStr;
 use std::mem::size_of;
 
 ///
@@ -47,6 +48,7 @@ impl StaticMeshBuffers {
     ///
     pub fn new<Pos, Nrm, Tan, Uv, Ind>(
         allocator: &Allocator,
+        debug_name: &str,
         pos: &[Pos],
         nrm: &[Nrm],
         tan: &[Tan],
@@ -75,6 +77,35 @@ impl StaticMeshBuffers {
 
         let staging_size = pos_size + nrm_size + tan_size + uv_size + ind_size;
         let staging_buffer = init_staging_buffer(allocator, staging_size);
+
+        // Name the buffers
+        unsafe {
+            let name = format!("{}::Positions\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            pos_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Normals\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            nrm_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Tangents\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            tan_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::TexCoords\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            uv_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Indices\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            ind_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Staging\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            staging_buffer
+                .0
+                .add_debug_name(allocator.device(), name_cstr);
+        }
 
         // Map the staging memory
         let dest = map_staging_mem(allocator, &staging_buffer.1);
@@ -266,7 +297,12 @@ impl PosOnlyMeshBuffers {
     /// Once that command buffer has been submitted and executed it is safe to then destroy the
     /// staging buffers with a call to `destroy_staging_buffers`.
     ///
-    pub fn new<Pos, Ind>(allocator: &Allocator, pos: &[Pos], ind: &[Ind]) -> Self {
+    pub fn new<Pos, Ind>(
+        allocator: &Allocator,
+        debug_name: &str,
+        pos: &[Pos],
+        ind: &[Ind],
+    ) -> Self {
         // Allocate the staging and vertex buffer for the vertex positions
         let pos_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, pos);
         let pos_size = buffer_size(pos);
@@ -277,6 +313,23 @@ impl PosOnlyMeshBuffers {
 
         let staging_size = pos_size + ind_size;
         let staging_buffer = init_staging_buffer(allocator, staging_size);
+
+        // Name the buffers
+        unsafe {
+            let name = format!("{}::Positions\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            pos_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Indices\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            ind_buffer.0.add_debug_name(allocator.device(), name_cstr);
+
+            let name = format!("{}::Staging\0", debug_name);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            staging_buffer
+                .0
+                .add_debug_name(allocator.device(), name_cstr);
+        }
 
         // Map the staging memory
         let dest = map_staging_mem(allocator, &staging_buffer.1);

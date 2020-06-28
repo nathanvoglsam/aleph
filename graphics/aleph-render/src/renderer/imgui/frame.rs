@@ -11,10 +11,11 @@ use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, Mem
 use aleph_vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
     CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool,
-    CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, ImageView, RenderPass,
+    CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, RenderPass,
     SharingMode, Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::SwapImage;
+use aleph_vulkan_core::{DebugName, SwapImage};
+use std::ffi::CStr;
 use std::sync::Arc;
 
 ///
@@ -39,11 +40,10 @@ impl ImguiFrame {
         index: usize,
         render_pass: RenderPass,
     ) -> Self {
-        let command_pool = Self::create_command_pool(device);
-        let command_buffer = Self::allocate_command_buffer(device, command_pool);
+        let command_pool = Self::create_command_pool(device, index);
+        let command_buffer = Self::allocate_command_buffer(device, command_pool, index);
         let swap_image = swapchain.images()[index].clone();
-        let framebuffer =
-            Self::create_framebuffer(device, swapchain, render_pass, swap_image.image_view());
+        let framebuffer = Self::create_framebuffer(device, render_pass, &swap_image, index);
 
         let memory_type_index = unsafe {
             let buffer_create_info = BufferCreateInfoBuilder::new()
@@ -83,44 +83,71 @@ impl ImguiFrame {
         }
     }
 
-    pub fn create_command_pool(device: &aleph_vulkan_core::Device) -> CommandPool {
+    pub fn create_command_pool(device: &aleph_vulkan_core::Device, index: usize) -> CommandPool {
         let create_info =
             CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
         unsafe {
-            device
+            let command_pool = device
                 .loader()
                 .create_command_pool(&create_info, None, None)
+                .expect("Failed to create command pool");
+
+            let name = format!("{}::{}::CommandPool\0", module_path!(), index);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            command_pool.add_debug_name(device, name_cstr);
+
+            command_pool
         }
-        .expect("Failed to create command pool")
     }
 
     pub fn allocate_command_buffer(
         device: &aleph_vulkan_core::Device,
         command_pool: CommandPool,
+        index: usize,
     ) -> CommandBuffer {
         let allocate_info = CommandBufferAllocateInfoBuilder::new()
             .command_pool(command_pool)
             .level(CommandBufferLevel::PRIMARY)
             .command_buffer_count(1);
-        unsafe { device.loader().allocate_command_buffers(&allocate_info) }
-            .expect("Failed to create command buffer")[0]
+        unsafe {
+            let command_buffer = device
+                .loader()
+                .allocate_command_buffers(&allocate_info)
+                .expect("Failed to create command buffer")[0];
+
+            let name = format!("{}::{}::CommandBuffer\0", module_path!(), index);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            command_buffer.add_debug_name(device, name_cstr);
+
+            command_buffer
+        }
     }
 
     pub fn create_framebuffer(
         device: &aleph_vulkan_core::Device,
-        swapchain: &aleph_vulkan_core::Swapchain,
         render_pass: RenderPass,
-        image_view: ImageView,
+        swap_image: &SwapImage,
+        index: usize,
     ) -> Framebuffer {
-        let attachments = [image_view];
+        let attachments = [swap_image.image_view()];
         let create_info = FramebufferCreateInfoBuilder::new()
             .render_pass(render_pass)
-            .width(swapchain.extents().width)
-            .height(swapchain.extents().height)
+            .width(swap_image.width())
+            .height(swap_image.height())
             .attachments(&attachments)
             .layers(1);
-        unsafe { device.loader().create_framebuffer(&create_info, None, None) }
-            .expect("Failed to create framebuffer")
+        unsafe {
+            let framebuffer = device
+                .loader()
+                .create_framebuffer(&create_info, None, None)
+                .expect("Failed to create framebuffer");
+
+            let name = format!("{}::{}::FrameBuffer\0", module_path!(), index);
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            framebuffer.add_debug_name(device, name_cstr);
+
+            framebuffer
+        }
     }
 
     pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {

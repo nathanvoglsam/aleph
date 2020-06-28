@@ -14,6 +14,8 @@ use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
     DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
 };
+use aleph_vulkan_core::DebugName;
+use std::ffi::CStr;
 
 ///
 /// A struct to wrap resources that are created and destroyed once during the Imgui renderer's
@@ -65,11 +67,17 @@ impl ImguiGlobal {
             .max_sets(32)
             .pool_sizes(&pool_sizes);
         unsafe {
-            device
+            let descriptor_pool = device
                 .loader()
                 .create_descriptor_pool(&create_info, None, None)
+                .expect("Failed to create descriptor pool");
+
+            let name = format!("{}::DescriptorPool\0", module_path!());
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            descriptor_pool.add_debug_name(device, name_cstr);
+
+            descriptor_pool
         }
-        .expect("Failed to create descriptor pool")
     }
 
     pub fn create_pipeline_layout(
@@ -79,6 +87,10 @@ impl ImguiGlobal {
     ) -> PipelineLayout {
         let pipeline_layout = PipelineLayoutBuilder::new()
             .modules(&[fragment_module, vertex_module])
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::PipelineLayout"
+            )))
             .build(device)
             .expect("Failed to create pipeline layout");
         assert_eq!(
@@ -98,8 +110,18 @@ impl ImguiGlobal {
         let allocate_info = DescriptorSetAllocateInfoBuilder::new()
             .descriptor_pool(pool)
             .set_layouts(&set_layouts);
-        unsafe { device.loader().allocate_descriptor_sets(&allocate_info) }
-            .expect("Failed to allocate descriptor sets")[0]
+        unsafe {
+            let descriptor_set = device
+                .loader()
+                .allocate_descriptor_sets(&allocate_info)
+                .expect("Failed to allocate descriptor sets")[0];
+
+            let name = format!("{}::DescriptorSet\0", module_path!());
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            descriptor_set.add_debug_name(device, name_cstr);
+
+            descriptor_set
+        }
     }
 
     pub fn create_shader_modules(
@@ -111,6 +133,10 @@ impl ImguiGlobal {
             .compile(true)
             .words(words)
             .vertex()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::VertexShaderModule"
+            )))
             .build(Some(device))
             .expect("Failed to create imgui vertex module");
 
@@ -120,6 +146,10 @@ impl ImguiGlobal {
             .compile(true)
             .words(words)
             .fragment()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::FragShaderModule"
+            )))
             .build(Some(device))
             .expect("Failed to create imgui fragment module");
 

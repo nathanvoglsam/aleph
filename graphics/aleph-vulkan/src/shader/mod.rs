@@ -15,7 +15,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
     ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
 use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
 use std::ffi::CStr;
 
@@ -103,6 +103,7 @@ pub struct ShaderModuleBuilder<'a> {
     compile: bool,
     stage_flags: ReflectShaderStageFlags,
     words: Option<&'a [u32]>,
+    debug_name: Option<&'a CStr>,
 }
 
 impl<'a> ShaderModuleBuilder<'a> {
@@ -117,7 +118,17 @@ impl<'a> ShaderModuleBuilder<'a> {
             compile: true,
             stage_flags: ReflectShaderStageFlags::UNDEFINED,
             words: None,
+            debug_name: None,
         }
+    }
+
+    ///
+    /// Adds a debug name to be applied to the shader module handle with the VK_EXT_debug_utils
+    /// extension
+    ///
+    pub fn debug_name(mut self, debug_name: &'a CStr) -> Self {
+        self.debug_name = Some(debug_name);
+        self
     }
 
     ///
@@ -383,14 +394,17 @@ impl<'a> ShaderModuleBuilder<'a> {
 
         // Compiled the module if requested
         let module = if self.compile {
-            let loader = device
-                .expect("Need a device ref to compile shader")
-                .loader();
+            let device = device.expect("Need a device ref to compile shader");
+            let loader = device.loader();
             let create_info = ShaderModuleCreateInfoBuilder::new().code(words);
             unsafe {
-                loader
+                let module = loader
                     .create_shader_module(&create_info, None, None)
-                    .expect("Failed to create shader module")
+                    .expect("Failed to create shader module");
+                if let Some(name) = self.debug_name {
+                    module.add_debug_name(device, name);
+                }
+                module
             }
         } else {
             aleph_vulkan_core::erupt::vk1_0::ShaderModule::null()

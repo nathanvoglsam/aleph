@@ -56,6 +56,9 @@ impl InstanceBuilder {
     ///
     pub fn validation(mut self, validation: bool) -> Self {
         self.validation = validation;
+        if validation {
+            self.debug = true;
+        }
         self
     }
 

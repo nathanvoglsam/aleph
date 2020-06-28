@@ -29,6 +29,7 @@ impl CubeMeshBuffers {
     pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
         let buffers = self::utils::StaticMeshBuffers::new(
             allocator,
+            concat!(module_path!(), "::CubeMesh"),
             super::data::CubeMesh::positions(),
             super::data::CubeMesh::normals(),
             super::data::CubeMesh::tangents(),
@@ -95,6 +96,7 @@ impl SphereMeshBuffers {
     pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
         let buffers = self::utils::StaticMeshBuffers::new(
             allocator,
+            concat!(module_path!(), "::SphereMesh"),
             super::data::SphereMesh::positions(),
             super::data::SphereMesh::normals(),
             super::data::SphereMesh::tangents(),
@@ -161,6 +163,7 @@ impl FullscreenQuadBuffers {
     pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
         let buffers = self::utils::PosOnlyMeshBuffers::new(
             allocator,
+            concat!(module_path!(), "::FullscreenQuad"),
             super::data::FullscreenQuad::positions(),
             super::data::FullscreenQuad::indices(),
         );

@@ -27,6 +27,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     Rect2DBuilder, RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode,
     SubmitInfoBuilder, SubpassContents, ViewportBuilder, Vk10DeviceLoaderExt, WHOLE_SIZE,
 };
+use aleph_vulkan_core::DebugName;
 pub use font::ImguiFont;
 pub use frame::ImguiFrame;
 pub use global::ImguiGlobal;
@@ -147,6 +148,11 @@ impl ImguiRenderer {
                 .create_buffer(&buffer_create_info, &alloc_create_info)
                 .expect("Failed to allocate per frame vertex buffer");
 
+            self.frames[index].vtx_buffer.0.add_debug_name(
+                &self.device,
+                aleph_macros::cstr!(concat!(module_path!(), "::VertexBuffer")),
+            );
+
             //
             // Allocate an index buffer that will only be used for one frame
             //
@@ -166,6 +172,11 @@ impl ImguiRenderer {
                 .allocator
                 .create_buffer(&buffer_create_info, &allocation_create_info)
                 .expect("Failed to allocate per frame index buffer");
+
+            self.frames[index].idx_buffer.0.add_debug_name(
+                &self.device,
+                aleph_macros::cstr!(concat!(module_path!(), "::IndexBuffer")),
+            );
 
             let vtx_buffer = self.frames[index].vtx_buffer;
             let idx_buffer = self.frames[index].idx_buffer;

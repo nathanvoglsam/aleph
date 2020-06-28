@@ -12,7 +12,8 @@ use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
     PushConstantRangeBuilder, ShaderStageFlags, Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
+use std::ffi::CStr;
 
 ///
 /// An enum to represent the possible errors that can be encountered when creating a pipeline layout
@@ -47,6 +48,7 @@ pub enum PipelineLayoutBuildError {
 ///
 pub struct PipelineLayoutBuilder<'a> {
     modules: Option<&'a [&'a ShaderModule]>,
+    debug_name: Option<&'a CStr>,
 }
 
 impl<'a> PipelineLayoutBuilder<'a> {
@@ -54,7 +56,19 @@ impl<'a> PipelineLayoutBuilder<'a> {
     /// Creates a new builder
     ///
     pub fn new() -> Self {
-        Self { modules: None }
+        Self {
+            modules: None,
+            debug_name: None,
+        }
+    }
+
+    ///
+    /// Adds a debug name to be applied to the pipeline layout handle with the VK_EXT_debug_utils
+    /// extension
+    ///
+    pub fn debug_name(mut self, debug_name: &'a CStr) -> Self {
+        self.debug_name = Some(debug_name);
+        self
     }
 
     ///
@@ -242,10 +256,16 @@ impl<'a> PipelineLayoutBuilder<'a> {
             .push_constant_ranges(&push_constant_ranges)
             .set_layouts(&set_layouts);
         let pipeline_layout = unsafe {
-            device
+            let pipeline_layout = device
                 .loader()
                 .create_pipeline_layout(&create_info, None, None)
-                .expect("Failed to create pipeline layout")
+                .expect("Failed to create pipeline layout");
+
+            if let Some(name) = self.debug_name {
+                pipeline_layout.add_debug_name(device, name);
+            }
+
+            pipeline_layout
         };
 
         Ok(PipelineLayout {

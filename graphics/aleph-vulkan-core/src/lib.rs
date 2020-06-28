@@ -12,18 +12,19 @@ pub extern crate raw_window_handle;
 
 extern crate aleph_app_info as app_info;
 
-pub(crate) mod debug;
-pub(crate) mod surface;
-
-pub mod defer;
-
+mod debug;
+mod defer;
 mod device;
 mod gpu_info;
 mod instance;
 mod queue_family;
+mod surface;
 mod swapchain;
 mod vendor;
 
+pub use debug::DebugName;
+pub use defer::DeferBox;
+pub use defer::DeferList;
 pub use device::Device;
 pub use device::DeviceBuilder;
 pub use gpu_info::GPUInfo;

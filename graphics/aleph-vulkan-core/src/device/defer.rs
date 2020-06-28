@@ -7,8 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::defer::{DeferBox, DeferList};
-use crate::Device;
+use crate::{DeferBox, DeferList, Device};
 use erupt::vk1_0::{CommandPool, Semaphore, Vk10DeviceLoaderExt};
 
 ///

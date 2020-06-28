@@ -22,6 +22,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     SamplerMipmapMode, SharingMode, SubmitInfoBuilder, Vk10DeviceLoaderExt,
     WriteDescriptorSetBuilder,
 };
+use aleph_vulkan_core::DebugName;
 
 pub struct ImguiFont {
     pub sampler: Sampler,
@@ -79,6 +80,7 @@ impl ImguiFont {
         let data = fonts.build_rgba32_texture();
         let dimensions = (data.width, data.height);
         let data = data.data;
+
         let sampler = Self::create_sampler(device);
         let (image, allocation) = Self::create_image(allocator, dimensions);
         let image_view = Self::create_image_view(device, image);
@@ -128,8 +130,17 @@ impl ImguiFont {
             .mipmap_mode(SamplerMipmapMode::LINEAR)
             .min_lod(-1000.0)
             .max_lod(1000.0);
-        unsafe { device.loader().create_sampler(&create_info, None, None) }
-            .expect("Failed to create sampler")
+        unsafe {
+            let sampler = device
+                .loader()
+                .create_sampler(&create_info, None, None)
+                .expect("Failed to create sampler");
+            sampler.add_debug_name(
+                device,
+                aleph_macros::cstr!(concat!(module_path!(), "::FontSampler")),
+            );
+            sampler
+        }
     }
 
     pub fn create_image(allocator: &Allocator, dimensions: (u32, u32)) -> (Image, Allocation) {
@@ -151,8 +162,16 @@ impl ImguiFont {
         let alloc_create_info = AllocationCreateInfoBuilder::new()
             .usage(MemoryUsage::GPUOnly)
             .build();
-        unsafe { allocator.create_image(&image_create_info, &alloc_create_info) }
-            .expect("Failed to create image")
+        unsafe {
+            let image = allocator
+                .create_image(&image_create_info, &alloc_create_info)
+                .expect("Failed to create image");
+            image.0.add_debug_name(
+                allocator.device(),
+                aleph_macros::cstr!(concat!(module_path!(), "::FontImage")),
+            );
+            image
+        }
     }
 
     pub fn create_image_view(device: &aleph_vulkan_core::Device, image: Image) -> ImageView {
@@ -167,8 +186,17 @@ impl ImguiFont {
             .format(Format::R8G8B8A8_UNORM)
             .view_type(ImageViewType::_2D)
             .subresource_range(*subresource_range);
-        unsafe { device.loader().create_image_view(&create_info, None, None) }
-            .expect("Failed to create image view")
+        unsafe {
+            let image_view = device
+                .loader()
+                .create_image_view(&create_info, None, None)
+                .expect("Failed to create image view");
+            image_view.add_debug_name(
+                device,
+                aleph_macros::cstr!(concat!(module_path!(), "::FontView")),
+            );
+            image_view
+        }
     }
 
     pub fn upload_font(

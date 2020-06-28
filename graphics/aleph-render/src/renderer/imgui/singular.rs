@@ -21,7 +21,8 @@ use aleph_vulkan_core::erupt::vk1_0::{
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
     Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::SwapImage;
+use aleph_vulkan_core::{DebugName, SwapImage};
+use std::ffi::CStr;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -78,8 +79,18 @@ impl ImguiSingular {
         let create_info = RenderPassCreateInfoBuilder::new()
             .attachments(&attachments)
             .subpasses(&subpasses);
-        unsafe { device.loader().create_render_pass(&create_info, None, None) }
-            .expect("Failed to create render pass")
+        unsafe {
+            let render_pass = device
+                .loader()
+                .create_render_pass(&create_info, None, None)
+                .expect("Failed to create render pass");
+
+            let name = format!("{}::RenderPass\0", module_path!());
+            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
+            render_pass.add_debug_name(device, name_cstr);
+
+            render_pass
+        }
     }
 
     pub fn create_pipeline(
@@ -128,6 +139,7 @@ impl ImguiSingular {
         let vstage = vertex_module.pipeline_shader_stage().unwrap();
         let fstage = fragment_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
+            .debug_name(aleph_macros::cstr!(concat!(module_path!(), "::Pipeline")))
             .layout(pipeline_layout)
             .render_pass(render_pass)
             .subpass(0)

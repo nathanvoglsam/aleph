@@ -183,6 +183,13 @@ impl DeviceBuilder {
             .load_khr_swapchain()
             .expect("Failed to load VK_KHR_swapchain functions");
 
+        if instance_loader.ext_debug_utils.is_some() {
+            aleph_log::trace!("Loading functions for VK_EXT_debug_utils");
+            device_loader
+                .load_ext_debug_utils()
+                .expect("Failed to load VK_EXT_debug_utils functions");
+        }
+
         let device_loader = Arc::new(device_loader);
 
         let deferred_destruction = DeviceDeferList::new();

@@ -17,11 +17,13 @@ use aleph_vulkan_core::erupt::vk1_0::{
     PipelineTessellationStateCreateInfo, PipelineVertexInputStateCreateInfo,
     PipelineViewportStateCreateInfo, RenderPass,
 };
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
+use std::ffi::CStr;
 use std::ops::Deref;
 
 pub struct GraphicsPipelineBuilder<'a> {
     inner: GraphicsPipelineCreateInfoBuilder<'a>,
+    debug_name: Option<&'a CStr>,
 }
 
 impl<'a> GraphicsPipelineBuilder<'a> {
@@ -32,7 +34,14 @@ impl<'a> GraphicsPipelineBuilder<'a> {
     pub fn new() -> GraphicsPipelineBuilder<'a> {
         Self {
             inner: GraphicsPipelineCreateInfoBuilder::new(),
+            debug_name: None,
         }
+    }
+
+    #[inline]
+    pub fn debug_name(mut self, debug_name: &'a CStr) -> Self {
+        self.debug_name = Some(debug_name);
+        self
     }
 
     #[inline]
@@ -180,7 +189,15 @@ impl<'a> GraphicsPipelineBuilder<'a> {
             );
 
             // Wrap the raw return value
-            VulkanResult::new(raw, pipeline)
+            let result = VulkanResult::new(raw, pipeline);
+
+            if result.is_ok() {
+                if let Some(name) = self.debug_name {
+                    pipeline.add_debug_name(device, name);
+                }
+            }
+
+            result
         }
     }
 }

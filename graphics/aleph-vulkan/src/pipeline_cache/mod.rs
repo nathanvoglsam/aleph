@@ -8,7 +8,7 @@
 //
 
 use aleph_vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -68,6 +68,12 @@ impl PipelineCache {
                 .create_pipeline_cache(&create_info, None, None)
                 .expect("Failed to create pipeline cache")
         };
+        unsafe {
+            cache.add_debug_name(
+                device,
+                aleph_macros::cstr!(concat!(module_path!(), "::PipelineCache")),
+            );
+        }
 
         PIPELINE_CACHE.store(cache.0, Ordering::Relaxed);
 
