@@ -45,43 +45,60 @@ macro_rules! implement_debug_name_for {
     };
 }
 
+implement_debug_name_for!(erupt::vk1_0::Instance, erupt::vk1_0::ObjectType::INSTANCE);
+implement_debug_name_for!(
+    erupt::vk1_0::PhysicalDevice,
+    erupt::vk1_0::ObjectType::PHYSICAL_DEVICE
+);
 implement_debug_name_for!(erupt::vk1_0::Device, erupt::vk1_0::ObjectType::DEVICE);
+implement_debug_name_for!(erupt::vk1_0::Queue, erupt::vk1_0::ObjectType::QUEUE);
+implement_debug_name_for!(erupt::vk1_0::Semaphore, erupt::vk1_0::ObjectType::SEMAPHORE);
 implement_debug_name_for!(
     erupt::vk1_0::CommandBuffer,
     erupt::vk1_0::ObjectType::COMMAND_BUFFER
 );
+implement_debug_name_for!(erupt::vk1_0::Fence, erupt::vk1_0::ObjectType::FENCE);
 implement_debug_name_for!(
-    erupt::vk1_0::CommandPool,
-    erupt::vk1_0::ObjectType::COMMAND_POOL
+    erupt::vk1_0::DeviceMemory,
+    erupt::vk1_0::ObjectType::DEVICE_MEMORY
 );
+implement_debug_name_for!(erupt::vk1_0::Buffer, erupt::vk1_0::ObjectType::BUFFER);
 implement_debug_name_for!(erupt::vk1_0::Image, erupt::vk1_0::ObjectType::IMAGE);
+implement_debug_name_for!(erupt::vk1_0::Event, erupt::vk1_0::ObjectType::EVENT);
+implement_debug_name_for!(
+    erupt::vk1_0::QueryPool,
+    erupt::vk1_0::ObjectType::QUERY_POOL
+);
+implement_debug_name_for!(
+    erupt::vk1_0::BufferView,
+    erupt::vk1_0::ObjectType::BUFFER_VIEW
+);
 implement_debug_name_for!(
     erupt::vk1_0::ImageView,
     erupt::vk1_0::ObjectType::IMAGE_VIEW
 );
-implement_debug_name_for!(erupt::vk1_0::Sampler, erupt::vk1_0::ObjectType::SAMPLER);
 implement_debug_name_for!(
-    erupt::vk1_0::Framebuffer,
-    erupt::vk1_0::ObjectType::FRAMEBUFFER
-);
-implement_debug_name_for!(erupt::vk1_0::Pipeline, erupt::vk1_0::ObjectType::PIPELINE);
-implement_debug_name_for!(
-    erupt::vk1_0::PipelineLayout,
-    erupt::vk1_0::ObjectType::PIPELINE_LAYOUT
+    erupt::vk1_0::ShaderModule,
+    erupt::vk1_0::ObjectType::SHADER_MODULE
 );
 implement_debug_name_for!(
     erupt::vk1_0::PipelineCache,
     erupt::vk1_0::ObjectType::PIPELINE_CACHE
 );
 implement_debug_name_for!(
-    erupt::vk1_0::ShaderModule,
-    erupt::vk1_0::ObjectType::SHADER_MODULE
+    erupt::vk1_0::PipelineLayout,
+    erupt::vk1_0::ObjectType::PIPELINE_LAYOUT
 );
-implement_debug_name_for!(erupt::vk1_0::Buffer, erupt::vk1_0::ObjectType::BUFFER);
 implement_debug_name_for!(
-    erupt::vk1_0::BufferView,
-    erupt::vk1_0::ObjectType::BUFFER_VIEW
+    erupt::vk1_0::RenderPass,
+    erupt::vk1_0::ObjectType::RENDER_PASS
 );
+implement_debug_name_for!(erupt::vk1_0::Pipeline, erupt::vk1_0::ObjectType::PIPELINE);
+implement_debug_name_for!(
+    erupt::vk1_0::DescriptorSetLayout,
+    erupt::vk1_0::ObjectType::DESCRIPTOR_SET_LAYOUT
+);
+implement_debug_name_for!(erupt::vk1_0::Sampler, erupt::vk1_0::ObjectType::SAMPLER);
 implement_debug_name_for!(
     erupt::vk1_0::DescriptorPool,
     erupt::vk1_0::ObjectType::DESCRIPTOR_POOL
@@ -91,10 +108,10 @@ implement_debug_name_for!(
     erupt::vk1_0::ObjectType::DESCRIPTOR_SET
 );
 implement_debug_name_for!(
-    erupt::vk1_0::DescriptorSetLayout,
-    erupt::vk1_0::ObjectType::DESCRIPTOR_SET_LAYOUT
+    erupt::vk1_0::Framebuffer,
+    erupt::vk1_0::ObjectType::FRAMEBUFFER
 );
 implement_debug_name_for!(
-    erupt::vk1_0::RenderPass,
-    erupt::vk1_0::ObjectType::RENDER_PASS
+    erupt::vk1_0::CommandPool,
+    erupt::vk1_0::ObjectType::COMMAND_POOL
 );
