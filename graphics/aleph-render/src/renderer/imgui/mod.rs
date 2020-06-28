@@ -11,7 +11,7 @@ use aleph_vulkan_alloc::{
     AllocationCreateFlag, AllocationCreateInfoBuilder, Allocator, MemoryUsage,
 };
 
-use imgui::DrawCmd;
+use aleph_imgui::DrawCmd;
 use std::sync::Arc;
 
 mod font;
@@ -43,7 +43,7 @@ pub struct ImguiRenderer {
 
 impl ImguiRenderer {
     pub fn new(
-        fonts: imgui::FontAtlasRefMut,
+        fonts: aleph_imgui::FontAtlasRefMut,
         device: Arc<aleph_vulkan_core::Device>,
         allocator: Arc<Allocator>,
         swapchain: &aleph_vulkan_core::Swapchain,
@@ -96,7 +96,7 @@ impl ImguiRenderer {
 
     pub unsafe fn render_frame(
         &mut self,
-        frame: imgui::Ui,
+        frame: aleph_imgui::Ui,
         swapchain: &aleph_vulkan_core::Swapchain,
         acquire_semaphore: Semaphore,
         signal_semaphore: Semaphore,
@@ -136,7 +136,7 @@ impl ImguiRenderer {
                 .sharing_mode(SharingMode::EXCLUSIVE)
                 .size(
                     draw_data.total_vtx_count as u64
-                        * core::mem::size_of::<imgui::DrawVert>() as u64,
+                        * core::mem::size_of::<aleph_imgui::DrawVert>() as u64,
                 );
             let alloc_create_info = AllocationCreateInfoBuilder::new()
                 .usage(MemoryUsage::CPUToGPU)
@@ -155,7 +155,7 @@ impl ImguiRenderer {
                 .sharing_mode(SharingMode::EXCLUSIVE)
                 .size(
                     draw_data.total_idx_count as u64
-                        * core::mem::size_of::<imgui::DrawIdx>() as u64,
+                        * core::mem::size_of::<aleph_imgui::DrawIdx>() as u64,
                 );
             let allocation_create_info = AllocationCreateInfoBuilder::new()
                 .flags(AllocationCreateFlag::UPPER_ADDRESS_BIT)
@@ -189,16 +189,16 @@ impl ImguiRenderer {
                 let vslice = list.vtx_buffer();
                 vptr.copy_from(
                     vslice.as_ptr() as *const _,
-                    vslice.len() * core::mem::size_of::<imgui::DrawVert>(),
+                    vslice.len() * core::mem::size_of::<aleph_imgui::DrawVert>(),
                 );
-                vptr = vptr.add(vslice.len() * core::mem::size_of::<imgui::DrawVert>());
+                vptr = vptr.add(vslice.len() * core::mem::size_of::<aleph_imgui::DrawVert>());
 
                 let islice = list.idx_buffer();
                 iptr.copy_from(
                     islice.as_ptr() as *const _,
-                    islice.len() * core::mem::size_of::<imgui::DrawIdx>(),
+                    islice.len() * core::mem::size_of::<aleph_imgui::DrawIdx>(),
                 );
-                iptr = iptr.add(islice.len() * core::mem::size_of::<imgui::DrawIdx>());
+                iptr = iptr.add(islice.len() * core::mem::size_of::<aleph_imgui::DrawIdx>());
             });
 
             //
@@ -342,7 +342,7 @@ impl ImguiRenderer {
 
     unsafe fn render_draw_command(
         &mut self,
-        draw_data: &imgui::DrawData,
+        draw_data: &aleph_imgui::DrawData,
         swapchain: &aleph_vulkan_core::Swapchain,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
@@ -412,7 +412,7 @@ impl ImguiRenderer {
         command_buffer: CommandBuffer,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
-        draw_data: &imgui::DrawData,
+        draw_data: &aleph_imgui::DrawData,
     ) {
         //
         // Bind the pipeline and descriptor set that we'll be rendering with

@@ -1,0 +1,28 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-imgui"
+version = "1.0.0"
+authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+description = "Re-export of the imgui crate to specify a common version between all crates"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-log/"
+readme = "README.md"
+## TODO: keywords = ["macro", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
+
+[dependencies]
+imgui = "0.4"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }

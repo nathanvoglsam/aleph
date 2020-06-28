@@ -39,6 +39,8 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-settings/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-log/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/graphics/aleph-render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/engine/aleph-platform-imgui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-imgui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

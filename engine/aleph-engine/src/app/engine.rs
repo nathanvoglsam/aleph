@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::{AppLogic, Imgui};
+use crate::app::AppLogic;
 use app_info::AppInfo;
 use platform::window::Window;
 use platform::Platform;
@@ -99,7 +99,7 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Initialize imgui
-        let mut imgui_ctx = Imgui::new();
+        let mut imgui_ctx = aleph_platform_imgui::Imgui::new();
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization

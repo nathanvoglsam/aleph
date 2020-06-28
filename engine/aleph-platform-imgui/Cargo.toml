@@ -1,0 +1,31 @@
+##
+##
+## This file is a part of Aleph
+##
+## <ALEPH_REPO_REPLACE>
+##
+## <ALEPH_LICENSE_REPLACE>
+##
+
+
+[package]
+name = "aleph-platform-imgui"
+version = "0.1.0"
+authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+description = "Crate for providing ImGui OS integrations (input/window, etc)"
+license = "<ALEPH_LICENSE_NAME_REPLACE>"
+repository = "<ALEPH_REPO_REPLACE>"
+documentation = "https://docs.rs/aleph-platform-imgui/"
+readme = "README.md"
+## TODO: keywords = ["macro", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
+
+[dependencies]
+aleph-imgui = { path = "../../utils/aleph-imgui", version = "1.0.0" }
+aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-platform = { path = "../aleph-platform", version = "0.1.0" }
+palette = "0.5"
+
+[badges]
+azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }

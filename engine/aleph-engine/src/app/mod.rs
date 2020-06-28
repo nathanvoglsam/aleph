@@ -10,15 +10,12 @@
 mod app_logic;
 mod engine;
 mod frame_rate;
-mod imgui;
 mod thread_pools;
 
 pub use self::app_logic::AppLogic;
 pub use self::engine::Engine;
 pub use self::frame_rate::FrameRate;
-pub use self::imgui::ImguiStyleBuilder;
 
-pub(crate) use self::imgui::Imgui;
 pub(crate) use self::thread_pools::init_long_thread_pool;
 pub(crate) use self::thread_pools::init_short_thread_pool;
 pub(crate) use self::thread_pools::LONG_RUNNING_THREAD_POOL;

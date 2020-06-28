@@ -11,8 +11,8 @@ extern crate aleph_engine as aleph;
 
 use aleph::app::{Engine, FrameRate};
 use aleph::app_info::AppInfo;
+use aleph::imgui::{im_str, Condition, MenuItem, Ui};
 use aleph::platform::window::Window;
-use aleph::render::imgui::{im_str, Condition, MenuItem, Ui};
 
 struct AlephAppLogic {
     frame_timer: bool,
@@ -34,7 +34,7 @@ impl aleph::app::AppLogic for AlephAppLogic {
     fn on_update(&mut self, ui: &Ui) {
         self.frame_times.update();
 
-        aleph::render::imgui::Window::new(im_str!("MainWindow"))
+        aleph::imgui::Window::new(im_str!("MainWindow"))
             .size(
                 [Window::width() as f32, Window::height() as f32],
                 Condition::Always,
@@ -54,7 +54,7 @@ impl aleph::app::AppLogic for AlephAppLogic {
 
         let mut frame_timer_open = self.frame_timer;
         if frame_timer_open {
-            aleph::render::imgui::Window::new(im_str!("Frame Time Graph"))
+            aleph::imgui::Window::new(im_str!("Frame Time Graph"))
                 .opened(&mut frame_timer_open)
                 .size([430.0, 250.0], Condition::Always)
                 .collapsible(false)

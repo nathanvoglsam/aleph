@@ -7,7 +7,6 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-mod renderer;
+extern crate imgui;
 
-pub use renderer::ImguiRenderer;
-pub use renderer::Renderer;
+pub use imgui::*;
