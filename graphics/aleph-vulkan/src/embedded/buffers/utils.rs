@@ -21,20 +21,16 @@ use std::mem::size_of;
 ///
 pub struct StaticMeshBuffers {
     pos_buffer: (Buffer, Allocation),
-    pos_staging: (Buffer, Allocation),
     pos_size: u64,
     nrm_buffer: (Buffer, Allocation),
-    nrm_staging: (Buffer, Allocation),
     nrm_size: u64,
     tan_buffer: (Buffer, Allocation),
-    tan_staging: (Buffer, Allocation),
     tan_size: u64,
     uv_buffer: (Buffer, Allocation),
-    uv_staging: (Buffer, Allocation),
     uv_size: u64,
     ind_buffer: (Buffer, Allocation),
-    ind_staging: (Buffer, Allocation),
     ind_size: u64,
+    staging_buffer: (Buffer, Allocation),
 }
 
 impl StaticMeshBuffers {
@@ -57,67 +53,71 @@ impl StaticMeshBuffers {
         uv: &[Uv],
         ind: &[Ind],
     ) -> Self {
-        // Allocate the staging and vertex buffer for the vertex positions
-        let pos_staging = init_staging_buffer(allocator, pos);
+        // Allocate the vertex buffer for the vertex positions
         let pos_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, pos);
         let pos_size = buffer_size(pos);
 
-        // Allocate the staging and vertex buffer for the vertex normals
-        let nrm_staging = init_staging_buffer(allocator, nrm);
+        // Allocate the vertex buffer for the vertex normals
         let nrm_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, nrm);
         let nrm_size = buffer_size(nrm);
 
-        // Allocate the staging and vertex buffer for the vertex tangents
-        let tan_staging = init_staging_buffer(allocator, tan);
+        // Allocate the vertex buffer for the vertex tangents
         let tan_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, tan);
         let tan_size = buffer_size(tan);
 
-        // Allocate the staging and vertex buffer for the vertex texture coordinates
-        let uv_staging = init_staging_buffer(allocator, uv);
+        // Allocate the vertex buffer for the vertex texture coordinates
         let uv_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, uv);
         let uv_size = buffer_size(uv);
 
-        // Allocate the staging and index buffer
-        let ind_staging = init_staging_buffer(allocator, ind);
+        // Allocate the index buffer
         let ind_buffer = init_buffer(allocator, BufferUsageFlags::INDEX_BUFFER, ind);
         let ind_size = buffer_size(ind);
 
-        // Map, copy, and unmap the data for each buffer
-        copy_to_buffer(allocator, &pos_staging.1, pos);
-        copy_to_buffer(allocator, &nrm_staging.1, nrm);
-        copy_to_buffer(allocator, &tan_staging.1, tan);
-        copy_to_buffer(allocator, &uv_staging.1, uv);
-        copy_to_buffer(allocator, &ind_staging.1, ind);
+        let staging_size = pos_size + nrm_size + tan_size + uv_size + ind_size;
+        let staging_buffer = init_staging_buffer(allocator, staging_size);
+
+        // Map the staging memory
+        let dest = map_staging_mem(allocator, &staging_buffer.1);
+        let mut dest_offset = 0;
+
+        copy_to_buffer(dest, dest_offset, pos);
+        dest_offset += pos_size;
+
+        copy_to_buffer(dest, dest_offset, nrm);
+        dest_offset += nrm_size;
+
+        copy_to_buffer(dest, dest_offset, tan);
+        dest_offset += tan_size;
+
+        copy_to_buffer(dest, dest_offset, uv);
+        dest_offset += uv_size;
+
+        copy_to_buffer(dest, dest_offset, ind);
+
+        // Unmap the staging memory
+        unmap_staging_mem(allocator, &staging_buffer.1);
 
         // Defer the destruction of these buffers until the allocator is being destroyed as we want
         // these to be valid for the entire runtime of the graphics system
-        allocator.defer_destruction(pos_staging);
         allocator.defer_destruction(pos_buffer);
-        allocator.defer_destruction(nrm_staging);
         allocator.defer_destruction(nrm_buffer);
-        allocator.defer_destruction(tan_staging);
         allocator.defer_destruction(tan_buffer);
-        allocator.defer_destruction(uv_staging);
         allocator.defer_destruction(uv_buffer);
-        allocator.defer_destruction(ind_staging);
         allocator.defer_destruction(ind_buffer);
+        allocator.defer_destruction(staging_buffer);
 
         Self {
             pos_buffer,
-            pos_staging,
             pos_size,
             nrm_buffer,
-            nrm_staging,
             nrm_size,
             tan_buffer,
-            tan_staging,
             tan_size,
             uv_buffer,
-            uv_staging,
             uv_size,
             ind_buffer,
-            ind_staging,
             ind_size,
+            staging_buffer,
         }
     }
 
@@ -158,57 +158,63 @@ impl StaticMeshBuffers {
 
     pub fn record_buffer_staging(&self, device: &Device, command_buffer: CommandBuffer) {
         unsafe {
+            let mut src_offset = 0;
+
             let region = BufferCopyBuilder::new()
                 .size(self.pos_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(src_offset);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.pos_staging.0,
+                self.staging_buffer.0,
                 self.pos_buffer.0,
                 &[region],
             );
+            src_offset += self.pos_size;
 
             let region = BufferCopyBuilder::new()
                 .size(self.nrm_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(src_offset);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.nrm_staging.0,
+                self.staging_buffer.0,
                 self.nrm_buffer.0,
                 &[region],
             );
+            src_offset += self.nrm_size;
 
             let region = BufferCopyBuilder::new()
                 .size(self.tan_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(src_offset);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.tan_staging.0,
+                self.staging_buffer.0,
                 self.tan_buffer.0,
                 &[region],
             );
+            src_offset += self.tan_size;
 
             let region = BufferCopyBuilder::new()
                 .size(self.uv_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(src_offset);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.uv_staging.0,
+                self.staging_buffer.0,
                 self.uv_buffer.0,
                 &[region],
             );
+            src_offset += self.uv_size;
 
             let region = BufferCopyBuilder::new()
                 .size(self.ind_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(src_offset);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.ind_staging.0,
+                self.staging_buffer.0,
                 self.ind_buffer.0,
                 &[region],
             );
@@ -242,11 +248,10 @@ impl StaticMeshBuffers {
 ///
 pub struct PosOnlyMeshBuffers {
     pos_buffer: (Buffer, Allocation),
-    pos_staging: (Buffer, Allocation),
     pos_size: u64,
     ind_buffer: (Buffer, Allocation),
-    ind_staging: (Buffer, Allocation),
     ind_size: u64,
+    staging_buffer: (Buffer, Allocation),
 }
 
 impl PosOnlyMeshBuffers {
@@ -263,33 +268,37 @@ impl PosOnlyMeshBuffers {
     ///
     pub fn new<Pos, Ind>(allocator: &Allocator, pos: &[Pos], ind: &[Ind]) -> Self {
         // Allocate the staging and vertex buffer for the vertex positions
-        let pos_staging = init_staging_buffer(allocator, pos);
         let pos_buffer = init_buffer(allocator, BufferUsageFlags::VERTEX_BUFFER, pos);
         let pos_size = buffer_size(pos);
 
         // Allocate the staging and index buffer
-        let ind_staging = init_staging_buffer(allocator, pos);
         let ind_buffer = init_buffer(allocator, BufferUsageFlags::INDEX_BUFFER, ind);
         let ind_size = buffer_size(ind);
 
-        // Map, copy and unmap the vertex data
-        copy_to_buffer(allocator, &pos_staging.1, pos);
-        copy_to_buffer(allocator, &ind_staging.1, ind);
+        let staging_size = pos_size + ind_size;
+        let staging_buffer = init_staging_buffer(allocator, staging_size);
+
+        // Map the staging memory
+        let dest = map_staging_mem(allocator, &staging_buffer.1);
+
+        copy_to_buffer(dest, 0, pos);
+        copy_to_buffer(dest, pos_size, ind);
+
+        // Unmap the staging memory
+        unmap_staging_mem(allocator, &staging_buffer.1);
 
         // Defer destruction of these buffers until the allocator is being destroyed as we want
         // these buffers to live for the entire lifetime of the graphics subsystem
-        allocator.defer_destruction(pos_staging);
         allocator.defer_destruction(pos_buffer);
-        allocator.defer_destruction(ind_staging);
         allocator.defer_destruction(ind_buffer);
+        allocator.defer_destruction(staging_buffer);
 
         Self {
             pos_buffer,
-            pos_staging,
             pos_size,
             ind_buffer,
-            ind_staging,
             ind_size,
+            staging_buffer,
         }
     }
 
@@ -315,7 +324,7 @@ impl PosOnlyMeshBuffers {
                 .src_offset(0);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.pos_staging.0,
+                self.staging_buffer.0,
                 self.pos_buffer.0,
                 &[region],
             );
@@ -323,10 +332,10 @@ impl PosOnlyMeshBuffers {
             let region = BufferCopyBuilder::new()
                 .size(self.ind_size)
                 .dst_offset(0)
-                .src_offset(0);
+                .src_offset(self.pos_size);
             device.loader().cmd_copy_buffer(
                 command_buffer,
-                self.ind_staging.0,
+                self.staging_buffer.0,
                 self.ind_buffer.0,
                 &[region],
             );
@@ -362,34 +371,45 @@ fn buffer_barrier(device: &Device, buffer: Buffer) -> BufferMemoryBarrierBuilder
 }
 
 ///
+/// Internal function that maps the staging buffer memory
+///
+fn map_staging_mem(allocator: &Allocator, allocation: &Allocation) -> *mut u8 {
+    unsafe {
+        allocator
+            .map_memory(allocation)
+            .expect("Failed to map memory")
+    }
+}
+
+///
+/// Internal function that unmaps the staging buffer memory
+///
+fn unmap_staging_mem(allocator: &Allocator, allocation: &Allocation) {
+    unsafe {
+        allocator.unmap_memory(allocation);
+    }
+}
+
+///
 /// Performs the copy from the source buffer memory into the staging buffer
 ///
-fn copy_to_buffer<T>(allocator: &Allocator, allocation: &Allocation, buffer: &[T]) {
+fn copy_to_buffer<T>(dest: *mut u8, dest_offset: u64, src: &[T]) {
     unsafe {
         // Get the buffer as bytes, and the number of bytes to write
-        let src = buffer.as_ptr() as *const u8;
-        let count = buffer_size(buffer) as usize;
-
-        // Map the memory
-        let ptr = allocator
-            .map_memory(allocation)
-            .expect("Failed to map memory");
+        let src_ptr = src.as_ptr() as *const u8;
+        let count = buffer_size(src) as usize;
 
         // Copy the buffer data
-        ptr.copy_from(src, count);
-
-        // Unmap the memory
-        allocator.unmap_memory(allocation);
+        dest.add(dest_offset as usize).copy_from(src_ptr, count);
     }
 }
 
 ///
 /// Creates a staging buffer
 ///
-fn init_staging_buffer<T>(allocator: &Allocator, buffer: &[T]) -> (Buffer, Allocation) {
+fn init_staging_buffer(allocator: &Allocator, size: u64) -> (Buffer, Allocation) {
     let alloc_create_info = AllocationCreateInfoBuilder::new().usage(MemoryUsage::CPUOnly);
 
-    let size = buffer_size(buffer);
     let buffer_create_info = BufferCreateInfoBuilder::new()
         .usage(BufferUsageFlags::TRANSFER_SRC)
         .sharing_mode(SharingMode::EXCLUSIVE)
