@@ -9,7 +9,7 @@
 
 extern crate aleph_engine as aleph;
 
-use aleph::app::{Engine, FrameRate};
+use aleph::{Engine, FrameRate};
 use aleph::app_info::AppInfo;
 use aleph::imgui::{im_str, Condition, MenuItem, Ui};
 use aleph::platform::window::Window;
@@ -28,7 +28,7 @@ impl AlephAppLogic {
     }
 }
 
-impl aleph::app::AppLogic for AlephAppLogic {
+impl aleph::AppLogic for AlephAppLogic {
     fn on_init(&mut self) {}
 
     fn on_update(&mut self, ui: &Ui) {
@@ -123,5 +123,5 @@ fn main() {
         minor: 1,
         patch: 0,
     };
-    aleph::app::Engine::start(app_info, AlephAppLogic::new());
+    Engine::start(app_info, AlephAppLogic::new());
 }

@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::app::AppLogic;
+use crate::AppLogic;
 use app_info::AppInfo;
 use platform::window::Window;
 use platform::Platform;
@@ -244,7 +244,7 @@ impl Engine {
     /// tasks contend with workers
     ///
     pub fn long_running_pool() -> &'static rayon::ThreadPool {
-        &crate::app::LONG_RUNNING_THREAD_POOL
+        &crate::thread_pools::LONG_RUNNING_THREAD_POOL
             .get()
             .expect("Aleph not Initialized")
     }
@@ -254,7 +254,7 @@ impl Engine {
     /// long running tasks
     ///
     pub fn short_running_pool() -> &'static rayon::ThreadPool {
-        &crate::app::SHORT_RUNNING_THREAD_POOL
+        &crate::thread_pools::SHORT_RUNNING_THREAD_POOL
             .get()
             .expect("Aleph not Initialized")
     }
@@ -392,13 +392,13 @@ impl Engine {
             }
         }
 
-        super::init_long_thread_pool(long_threads);
+        crate::thread_pools::init_long_thread_pool(long_threads);
         aleph_log::info!(
             "Long Running thread pool initialized with {} threads",
             long_threads
         );
 
-        super::init_short_thread_pool(short_threads);
+        crate::thread_pools::init_short_thread_pool(short_threads);
         aleph_log::info!(
             "Short Running thread pool initialized with {} threads",
             short_threads

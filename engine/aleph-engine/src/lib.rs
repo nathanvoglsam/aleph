@@ -23,7 +23,14 @@ pub extern crate aleph_vulkan_core as vulkan_core;
 pub extern crate rayon;
 
 // =================================================================================================
-// Public Modules
+// Modules
 // =================================================================================================
 
-pub mod app;
+mod app_logic;
+mod engine;
+mod frame_rate;
+mod thread_pools;
+
+pub use self::app_logic::AppLogic;
+pub use self::engine::Engine;
+pub use self::frame_rate::FrameRate;
