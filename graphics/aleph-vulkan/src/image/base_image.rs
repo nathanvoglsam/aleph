@@ -15,31 +15,42 @@ use aleph_vulkan_core::erupt::vk1_0::{
     ImageViewCreateInfoBuilder, ImageViewType, SampleCountFlagBits, SharingMode,
     Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::Device;
+use aleph_vulkan_core::{DebugName, Device};
+use std::ffi::CStr;
 
 ///
 /// Builder for creating a ColourImage
 ///
-pub struct ImageSingle2DBuilder {
+pub struct ImageSingle2DBuilder<'a> {
     width: u32,
     height: u32,
     format: Format,
     usage: ImageUsageFlags,
     aspect: ImageAspectFlags,
+    debug_name: Option<&'a str>,
 }
 
-impl ImageSingle2DBuilder {
+impl<'a> ImageSingle2DBuilder<'a> {
     ///
     /// Creates a new builder object
     ///
-    pub fn new() -> ImageSingle2DBuilder {
+    pub fn new() -> ImageSingle2DBuilder<'a> {
         Self {
             width: 0,
             height: 0,
             format: Default::default(),
             usage: Default::default(),
             aspect: Default::default(),
+            debug_name: None,
         }
+    }
+
+    ///
+    /// The debug name to attach to the created image
+    ///
+    pub fn debug_name(mut self, debug_name: &'a str) -> Self {
+        self.debug_name = Some(debug_name);
+        self
     }
 
     ///
@@ -133,6 +144,16 @@ impl ImageSingle2DBuilder {
             .create_image_view(&create_info, None, None)
             .expect("Failed to create BaseImage ImageView");
 
+        if let Some(name) = self.debug_name {
+            let image_name = format!("{}::Image\0", name);
+            let image_name_cstr = CStr::from_bytes_with_nul_unchecked(image_name.as_bytes());
+            let image_view_name = format!("{}::ImageView\0", name);
+            let image_view_name_cstr =
+                CStr::from_bytes_with_nul_unchecked(image_view_name.as_bytes());
+            image.add_debug_name(device, image_name_cstr);
+            image_view.add_debug_name(device, image_view_name_cstr);
+        }
+
         ImageSingle2D {
             allocation,
             image,
@@ -163,7 +184,7 @@ impl ImageSingle2D {
     ///
     /// Get a builder
     ///
-    pub fn builder() -> ImageSingle2DBuilder {
+    pub fn builder<'a>() -> ImageSingle2DBuilder<'a> {
         ImageSingle2DBuilder::new()
     }
 

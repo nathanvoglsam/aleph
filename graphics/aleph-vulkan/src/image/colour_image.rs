@@ -17,20 +17,28 @@ use std::ops::Deref;
 ///
 /// Builder for creating a ColourImage
 ///
-pub struct ColourImageBuilder {
-    inner: ImageSingle2DBuilder,
+pub struct ColourImageBuilder<'a> {
+    inner: ImageSingle2DBuilder<'a>,
 }
 
-impl ColourImageBuilder {
+impl<'a> ColourImageBuilder<'a> {
     ///
     /// Creates a new builder object
     ///
-    pub fn new() -> ColourImageBuilder {
+    pub fn new() -> ColourImageBuilder<'a> {
         Self {
             inner: ImageSingle2DBuilder::new()
                 .aspect(ImageAspectFlags::COLOR)
                 .usage(ImageUsageFlags::COLOR_ATTACHMENT),
         }
+    }
+
+    ///
+    /// The debug name to attach to the created image
+    ///
+    pub fn debug_name(mut self, debug_name: &'a str) -> Self {
+        self.inner = self.inner.debug_name(debug_name);
+        self
     }
 
     ///
@@ -124,7 +132,7 @@ impl ColourImage {
     ///
     /// Get a builder
     ///
-    pub fn builder() -> ColourImageBuilder {
+    pub fn builder<'a>() -> ColourImageBuilder<'a> {
         ColourImageBuilder::new()
     }
 }

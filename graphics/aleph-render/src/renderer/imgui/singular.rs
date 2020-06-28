@@ -13,13 +13,13 @@ use aleph_vulkan::pipeline::{
     GraphicsPipelineBuilder, InputAssemblyState, MultiSampleState, RasterizationState,
     VertexInputState, ViewportState,
 };
+use aleph_vulkan::render_pass::AttachmentReference;
 use aleph_vulkan::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
-    AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp, Format, FrontFace,
-    ImageLayout, Pipeline, PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology,
-    RenderPass, RenderPassCreateInfoBuilder, SubpassDescriptionBuilder,
-    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
-    Vk10DeviceLoaderExt,
+    AttachmentLoadOp, AttachmentStoreOp, Format, FrontFace, ImageLayout, Pipeline,
+    PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
+    RenderPassCreateInfoBuilder, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
+    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CStr;
@@ -66,10 +66,7 @@ impl ImguiSingular {
             AttachmentStoreOp::STORE,
         );
 
-        let attachment_reference = AttachmentReferenceBuilder::new()
-            .attachment(0)
-            .layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-        let color_attachments = [attachment_reference];
+        let color_attachments = [AttachmentReference::color(0)];
         let subpass = SubpassDescriptionBuilder::new()
             .pipeline_bind_point(PipelineBindPoint::GRAPHICS)
             .color_attachments(&color_attachments);

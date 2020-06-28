@@ -16,17 +16,17 @@ use self::pipelines::{GeometryPipeline, TonePipeline};
 use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
 use aleph_vulkan::image::{ColourImage, DepthImage};
 use aleph_vulkan::pipeline_layout::PipelineLayout;
+use aleph_vulkan::render_pass::AttachmentReference;
 use aleph_vulkan::shader::ShaderModule;
 use aleph_vulkan_alloc::Allocator;
 use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlags, AttachmentLoadOp, AttachmentReferenceBuilder, AttachmentStoreOp,
-    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
-    CommandBufferUsageFlags, CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer,
-    FramebufferCreateInfoBuilder, ImageLayout, PipelineBindPoint, PipelineStageFlags, RenderPass,
-    RenderPassCreateInfoBuilder, SubmitInfoBuilder, SubpassDependencyBuilder,
-    SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
+    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, CommandBufferAllocateInfoBuilder,
+    CommandBufferBeginInfoBuilder, CommandBufferLevel, CommandBufferUsageFlags,
+    CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer, FramebufferCreateInfoBuilder,
+    ImageLayout, PipelineBindPoint, PipelineStageFlags, RenderPass, RenderPassCreateInfoBuilder,
+    SubmitInfoBuilder, SubpassDependencyBuilder, SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
 };
-use aleph_vulkan_core::{Device, SwapImage, Swapchain};
+use aleph_vulkan_core::{DebugName, Device, SwapImage, Swapchain};
 use std::sync::Arc;
 
 ///
@@ -44,12 +44,14 @@ impl GBuffer {
             .height(height)
             .format(Format::R16G16B16A16_SFLOAT)
             .usage_input_attachment()
+            .debug_name(concat!(module_path!(), "::GBufferColour"))
             .build(device, allocator);
         let depth_buffer = DepthImage::builder()
             .width(width)
             .height(height)
             .format(Format::D32_SFLOAT)
             .usage_input_attachment()
+            .debug_name(concat!(module_path!(), "::GBufferDepth"))
             .build(device, allocator);
         Self {
             base_colour,
@@ -195,12 +197,8 @@ impl GBufferPass {
         //
         // Specify the attachment references for the geometry pass
         //
-        let colour_ref = AttachmentReferenceBuilder::new()
-            .attachment(0)
-            .layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-        let depth_ref = AttachmentReferenceBuilder::new()
-            .attachment(1)
-            .layout(ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        let colour_ref = AttachmentReference::color(0);
+        let depth_ref = AttachmentReference::depth_stencil(1);
 
         //
         // Create the geometry subpass
@@ -214,12 +212,8 @@ impl GBufferPass {
         //
         // Specify the attachment references for the tonemapping pass
         //
-        let colour_tone_ref = [AttachmentReferenceBuilder::new()
-            .attachment(0)
-            .layout(ImageLayout::SHADER_READ_ONLY_OPTIMAL)];
-        let colour_swap_ref = [AttachmentReferenceBuilder::new()
-            .attachment(2)
-            .layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)];
+        let colour_tone_ref = [AttachmentReference::shader_read_only(0)];
+        let colour_swap_ref = [AttachmentReference::color(2)];
 
         //
         // Create the tonemapping subpass
@@ -295,53 +289,7 @@ impl Renderer {
         allocator: Arc<Allocator>,
         swapchain: &Swapchain,
     ) -> Renderer {
-        // Create a command pool for creating permanent buffer resources
-        let create_info =
-            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
-        let command_pool = device
-            .loader()
-            .create_command_pool(&create_info, None, None)
-            .expect("Failed to create command pool");
-
-        // Create a command buffer for creating permanent buffer resources
-        let allocate_info = CommandBufferAllocateInfoBuilder::new()
-            .level(CommandBufferLevel::PRIMARY)
-            .command_pool(command_pool)
-            .command_buffer_count(1);
-        let command_buffer = device
-            .loader()
-            .allocate_command_buffers(&allocate_info)
-            .expect("Failed to allocate command buffer")[0];
-
-        // Beginning recording commands
-        let begin_info =
-            CommandBufferBeginInfoBuilder::new().flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-        device
-            .loader()
-            .begin_command_buffer(command_buffer, &begin_info)
-            .expect("Failed to begin command buffer");
-
-        CubeMeshBuffers::init_buffers(&allocator, command_buffer);
-        SphereMeshBuffers::init_buffers(&allocator, command_buffer);
-        FullscreenQuadBuffers::init_buffers(&allocator, command_buffer);
-
-        // End recording commands
-        device
-            .loader()
-            .end_command_buffer(command_buffer)
-            .expect("Failde to end command buffer");
-
-        // Submit command buffer
-        let command_buffers = [command_buffer];
-        let submit = SubmitInfoBuilder::new().command_buffers(&command_buffers);
-        device
-            .loader()
-            .queue_submit(device.general_queue(), &[submit], Fence::null())
-            .expect("Failed to submit command buffer");
-
-        // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
-        // finished being used.
-        device.defer_destruction(command_pool);
+        Self::init_global_meshes(&device, &allocator);
 
         let swap_image = &swapchain.images()[0];
         let gbuffer = GBuffer::new(&device, &allocator, swap_image.width(), swap_image.height());
@@ -360,6 +308,10 @@ impl Renderer {
         );
         let (_, words) = aleph_vulkan::embedded::data::shaders::standard_frag_shader();
         let geom_frag_module = ShaderModule::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::GeomFragModule"
+            )))
             .reflect(true)
             .compile(true)
             .fragment()
@@ -368,6 +320,10 @@ impl Renderer {
             .expect("Failed to create geom frag module");
         let (_, words) = aleph_vulkan::embedded::data::shaders::standard_vert_shader();
         let geom_vert_module = ShaderModule::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::GeomVertModule"
+            )))
             .reflect(true)
             .compile(true)
             .vertex()
@@ -376,6 +332,10 @@ impl Renderer {
             .expect("Failed to create geom vert module");
 
         let geom_pipe_layout = PipelineLayout::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::GeomPipelineLayout"
+            )))
             .modules(&[&geom_frag_module, &geom_vert_module])
             .build(&device)
             .expect("Failed to create geom pipe layout");
@@ -390,6 +350,10 @@ impl Renderer {
 
         let (_, words) = aleph_vulkan::embedded::data::shaders::tonemapping_frag_shader();
         let tone_frag_module = ShaderModule::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::ToneFragModule"
+            )))
             .reflect(true)
             .compile(true)
             .fragment()
@@ -398,6 +362,10 @@ impl Renderer {
             .expect("Failed to create tone frag module");
         let (_, words) = aleph_vulkan::embedded::data::shaders::fullscreen_quad_vert_shader();
         let tone_vert_module = ShaderModule::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::ToneVertModule"
+            )))
             .reflect(true)
             .compile(true)
             .vertex()
@@ -406,6 +374,10 @@ impl Renderer {
             .expect("Failed to create tone vert module");
 
         let tone_pipe_layout = PipelineLayout::builder()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::TonePipelineLayout"
+            )))
             .modules(&[&tone_frag_module, &tone_vert_module])
             .build(&device)
             .expect("Failed to create tone pipe layout");
@@ -433,6 +405,67 @@ impl Renderer {
             device,
             allocator,
         }
+    }
+
+    ///
+    /// Internal function for initializing global mesh data
+    ///
+    unsafe fn init_global_meshes(device: &Device, allocator: &Allocator) {
+        // Create a command pool for creating permanent buffer resources
+        let create_info =
+            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
+        let command_pool = device
+            .loader()
+            .create_command_pool(&create_info, None, None)
+            .expect("Failed to create command pool");
+        command_pool.add_debug_name(
+            &device,
+            aleph_macros::cstr!(concat!(module_path!(), "::InitGlobalMeshes::CommandPool")),
+        );
+
+        // Create a command buffer for creating permanent buffer resources
+        let allocate_info = CommandBufferAllocateInfoBuilder::new()
+            .level(CommandBufferLevel::PRIMARY)
+            .command_pool(command_pool)
+            .command_buffer_count(1);
+        let command_buffer = device
+            .loader()
+            .allocate_command_buffers(&allocate_info)
+            .expect("Failed to allocate command buffer")[0];
+        command_buffer.add_debug_name(
+            &device,
+            aleph_macros::cstr!(concat!(module_path!(), "::InitGlobalMeshes::CommandBuffer")),
+        );
+
+        // Beginning recording commands
+        let begin_info =
+            CommandBufferBeginInfoBuilder::new().flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+        device
+            .loader()
+            .begin_command_buffer(command_buffer, &begin_info)
+            .expect("Failed to begin command buffer");
+
+        CubeMeshBuffers::init_buffers(allocator, command_buffer);
+        SphereMeshBuffers::init_buffers(allocator, command_buffer);
+        FullscreenQuadBuffers::init_buffers(allocator, command_buffer);
+
+        // End recording commands
+        device
+            .loader()
+            .end_command_buffer(command_buffer)
+            .expect("Failde to end command buffer");
+
+        // Submit command buffer
+        let command_buffers = [command_buffer];
+        let submit = SubmitInfoBuilder::new().command_buffers(&command_buffers);
+        device
+            .loader()
+            .queue_submit(device.general_queue(), &[submit], Fence::null())
+            .expect("Failed to submit command buffer");
+
+        // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
+        // finished being used.
+        device.defer_destruction(command_pool);
     }
 }
 

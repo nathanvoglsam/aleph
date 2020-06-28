@@ -17,20 +17,28 @@ use std::ops::Deref;
 ///
 /// Builder for creating a DepthImage
 ///
-pub struct DepthImageBuilder {
-    inner: ImageSingle2DBuilder,
+pub struct DepthImageBuilder<'a> {
+    inner: ImageSingle2DBuilder<'a>,
 }
 
-impl DepthImageBuilder {
+impl<'a> DepthImageBuilder<'a> {
     ///
     /// Creates a new builder object
     ///
-    pub fn new() -> DepthImageBuilder {
+    pub fn new() -> DepthImageBuilder<'a> {
         Self {
             inner: ImageSingle2DBuilder::new()
                 .aspect(ImageAspectFlags::DEPTH)
                 .usage(ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT),
         }
+    }
+
+    ///
+    /// The debug name to attach to the created image
+    ///
+    pub fn debug_name(mut self, debug_name: &'a str) -> Self {
+        self.inner = self.inner.debug_name(debug_name);
+        self
     }
 
     ///
@@ -122,7 +130,7 @@ impl DepthImage {
     ///
     /// Get a builder
     ///
-    pub fn builder() -> DepthImageBuilder {
+    pub fn builder<'a>() -> DepthImageBuilder<'a> {
         DepthImageBuilder::new()
     }
 }

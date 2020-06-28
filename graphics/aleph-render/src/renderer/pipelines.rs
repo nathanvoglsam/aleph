@@ -47,6 +47,10 @@ impl GeometryPipeline {
         let vstage = vert_module.pipeline_shader_stage().unwrap();
         let fstage = frag_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::GeomPipeline"
+            )))
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
             .subpass(0)
@@ -104,6 +108,10 @@ impl TonePipeline {
         let vstage = vert_module.pipeline_shader_stage().unwrap();
         let fstage = frag_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
+            .debug_name(aleph_macros::cstr!(concat!(
+                module_path!(),
+                "::TonePipeline"
+            )))
             .layout(pipeline_layout.pipeline_layout())
             .render_pass(render_pass)
             .subpass(1)

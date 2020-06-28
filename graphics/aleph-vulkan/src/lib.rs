@@ -18,4 +18,5 @@ pub mod pipeline;
 pub mod pipeline_cache;
 pub mod pipeline_layout;
 pub mod reflect;
+pub mod render_pass;
 pub mod shader;
