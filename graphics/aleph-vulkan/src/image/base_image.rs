@@ -16,7 +16,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, Device};
-use std::ffi::CStr;
+use std::ffi::CString;
 
 ///
 /// Builder for creating a ColourImage
@@ -145,13 +145,12 @@ impl<'a> ImageSingle2DBuilder<'a> {
             .expect("Failed to create BaseImage ImageView");
 
         if let Some(name) = self.debug_name {
-            let image_name = format!("{}::Image\0", name);
-            let image_name_cstr = CStr::from_bytes_with_nul_unchecked(image_name.as_bytes());
-            let image_view_name = format!("{}::ImageView\0", name);
-            let image_view_name_cstr =
-                CStr::from_bytes_with_nul_unchecked(image_view_name.as_bytes());
-            image.add_debug_name(device, image_name_cstr);
-            image_view.add_debug_name(device, image_view_name_cstr);
+            let image_name = format!("{}::Image", name);
+            let image_name = CString::new(image_name).unwrap();
+            let image_view_name = format!("{}::ImageView", name);
+            let image_view_name = CString::new(image_view_name).unwrap();
+            image.add_debug_name(device, &image_name);
+            image_view.add_debug_name(device, &image_view_name);
         }
 
         ImageSingle2D {

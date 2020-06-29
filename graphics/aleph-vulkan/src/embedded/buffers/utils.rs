@@ -14,7 +14,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     BufferUsageFlags, CommandBuffer, DependencyFlags, PipelineStageFlags, SharingMode, WHOLE_SIZE,
 };
 use aleph_vulkan_core::{DebugName, Device};
-use std::ffi::CStr;
+use std::ffi::CString;
 use std::mem::size_of;
 
 ///
@@ -80,31 +80,29 @@ impl StaticMeshBuffers {
 
         // Name the buffers
         unsafe {
-            let name = format!("{}::Positions\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            pos_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Positions", debug_name);
+            let name = CString::new(name).unwrap();
+            pos_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Normals\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            nrm_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Normals", debug_name);
+            let name = CString::new(name).unwrap();
+            nrm_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Tangents\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            tan_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Tangents", debug_name);
+            let name = CString::new(name).unwrap();
+            tan_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::TexCoords\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            uv_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::TexCoords", debug_name);
+            let name = CString::new(name).unwrap();
+            uv_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Indices\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            ind_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Indices", debug_name);
+            let name = CString::new(name).unwrap();
+            ind_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Staging\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            staging_buffer
-                .0
-                .add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Staging", debug_name);
+            let name = CString::new(name).unwrap();
+            staging_buffer.0.add_debug_name(allocator.device(), &name);
         }
 
         // Map the staging memory
@@ -316,19 +314,17 @@ impl PosOnlyMeshBuffers {
 
         // Name the buffers
         unsafe {
-            let name = format!("{}::Positions\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            pos_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Positions", debug_name);
+            let name = CString::new(name).unwrap();
+            pos_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Indices\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            ind_buffer.0.add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Indices", debug_name);
+            let name = CString::new(name).unwrap();
+            ind_buffer.0.add_debug_name(allocator.device(), &name);
 
-            let name = format!("{}::Staging\0", debug_name);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            staging_buffer
-                .0
-                .add_debug_name(allocator.device(), name_cstr);
+            let name = format!("{}::Staging", debug_name);
+            let name = CString::new(name).unwrap();
+            staging_buffer.0.add_debug_name(allocator.device(), &name);
         }
 
         // Map the staging memory

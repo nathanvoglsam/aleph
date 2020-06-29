@@ -15,7 +15,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::DebugName;
-use std::ffi::CStr;
+use std::ffi::CString;
 
 ///
 /// A struct to wrap resources that are created and destroyed once during the Imgui renderer's
@@ -72,9 +72,9 @@ impl ImguiGlobal {
                 .create_descriptor_pool(&create_info, None, None)
                 .expect("Failed to create descriptor pool");
 
-            let name = format!("{}::DescriptorPool\0", module_path!());
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            descriptor_pool.add_debug_name(device, name_cstr);
+            let name = format!("{}::DescriptorPool", module_path!());
+            let name = CString::new(name).unwrap();
+            descriptor_pool.add_debug_name(device, &name);
 
             descriptor_pool
         }
@@ -116,9 +116,9 @@ impl ImguiGlobal {
                 .allocate_descriptor_sets(&allocate_info)
                 .expect("Failed to allocate descriptor sets")[0];
 
-            let name = format!("{}::DescriptorSet\0", module_path!());
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            descriptor_set.add_debug_name(device, name_cstr);
+            let name = format!("{}::DescriptorSet", module_path!());
+            let name = CString::new(name).unwrap();
+            descriptor_set.add_debug_name(device, &name);
 
             descriptor_set
         }

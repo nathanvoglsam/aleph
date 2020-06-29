@@ -15,7 +15,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     SharingMode, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
-use std::ffi::CStr;
+use std::ffi::CString;
 use std::sync::Arc;
 
 ///
@@ -92,9 +92,9 @@ impl ImguiFrame {
                 .create_command_pool(&create_info, None, None)
                 .expect("Failed to create command pool");
 
-            let name = format!("{}::{}::CommandPool\0", module_path!(), index);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            command_pool.add_debug_name(device, name_cstr);
+            let name = format!("{}::{}::CommandPool", module_path!(), index);
+            let name = CString::new(name).unwrap();
+            command_pool.add_debug_name(device, &name);
 
             command_pool
         }
@@ -115,9 +115,9 @@ impl ImguiFrame {
                 .allocate_command_buffers(&allocate_info)
                 .expect("Failed to create command buffer")[0];
 
-            let name = format!("{}::{}::CommandBuffer\0", module_path!(), index);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            command_buffer.add_debug_name(device, name_cstr);
+            let name = format!("{}::{}::CommandBuffer", module_path!(), index);
+            let name = CString::new(name).unwrap();
+            command_buffer.add_debug_name(device, &name);
 
             command_buffer
         }
@@ -142,9 +142,9 @@ impl ImguiFrame {
                 .create_framebuffer(&create_info, None, None)
                 .expect("Failed to create framebuffer");
 
-            let name = format!("{}::{}::FrameBuffer\0", module_path!(), index);
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            framebuffer.add_debug_name(device, name_cstr);
+            let name = format!("{}::{}::FrameBuffer", module_path!(), index);
+            let name = CString::new(name).unwrap();
+            framebuffer.add_debug_name(device, &name);
 
             framebuffer
         }

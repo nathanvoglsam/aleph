@@ -22,7 +22,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
-use std::ffi::CStr;
+use std::ffi::CString;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -82,9 +82,9 @@ impl ImguiSingular {
                 .create_render_pass(&create_info, None, None)
                 .expect("Failed to create render pass");
 
-            let name = format!("{}::RenderPass\0", module_path!());
-            let name_cstr = CStr::from_bytes_with_nul_unchecked(name.as_bytes());
-            render_pass.add_debug_name(device, name_cstr);
+            let name = format!("{}::RenderPass", module_path!());
+            let name = CString::new(name).unwrap();
+            render_pass.add_debug_name(device, &name);
 
             render_pass
         }

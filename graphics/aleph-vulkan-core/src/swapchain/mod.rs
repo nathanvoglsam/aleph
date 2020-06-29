@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::Device;
+use crate::{DebugName, Device};
 use erupt::extensions::khr_surface::{
     ColorSpaceKHR, CompositeAlphaFlagBitsKHR, PresentModeKHR, SurfaceFormatKHR, SurfaceKHR,
 };
@@ -29,6 +29,7 @@ mod swap_image;
 
 pub use acquire_error::AcquireError;
 pub use rebuild_error::RebuildError;
+use std::ffi::CString;
 pub use support::SwapChainSupport;
 pub use swap_image::SwapImage;
 
@@ -542,7 +543,8 @@ impl Swapchain {
                 .get_swapchain_images_khr(swapchain, None)
                 .expect("Failed to retrieve swapchain images")
                 .drain(..)
-                .map(|image| {
+                .enumerate()
+                .map(|(i, image)| {
                     let components = ComponentMappingBuilder::new()
                         .r(ComponentSwizzle::R)
                         .g(ComponentSwizzle::G)
@@ -565,13 +567,22 @@ impl Swapchain {
                         .loader()
                         .create_image_view(&create_info, None, None)
                         .expect("Failed to create ImageView for swapchain");
-                    SwapImage::internal_create(
+                    let image = SwapImage::internal_create(
                         image,
                         image_view,
                         surface_format.format,
                         extents.width,
                         extents.height,
-                    )
+                    );
+                    let name = format!("{}::SwapImage::{}", module_path!(), i);
+                    let name = CString::new(name).unwrap();
+                    image.image().add_debug_name(&self.device, &name);
+
+                    let name = format!("{}::SwapImageView::{}", module_path!(), i);
+                    let name = CString::new(name).unwrap();
+                    image.image_view().add_debug_name(&self.device, &name);
+
+                    image
                 })
                 .collect()
         };

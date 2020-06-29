@@ -10,7 +10,9 @@
 mod defer;
 
 use crate::device::defer::{DeviceDeferList, IntoDeviceDeferBox};
-use crate::{GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID};
+use crate::{
+    DebugName, GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID,
+};
 use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,
@@ -207,6 +209,13 @@ impl DeviceBuilder {
             instance: instance.clone(),
             defer_list: deferred_destruction,
         };
+
+        unsafe {
+            let name = aleph_macros::cstr!(concat!(module_path!(), "::Device"));
+            device.loader().handle.add_debug_name(&device, name);
+            //let name = aleph_macros::cstr!(concat!(module_path!(), "::Instance"));
+            //device.instance().loader().handle.add_debug_name(&device, name, );
+        }
 
         Arc::new(device)
     }
