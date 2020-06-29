@@ -303,9 +303,6 @@ impl ImguiRenderer {
 
             self.device.loader().cmd_end_render_pass(command_buffer);
         } else {
-            let src = PipelineStageFlags::BOTTOM_OF_PIPE;
-            let dst = PipelineStageFlags::TOP_OF_PIPE;
-            let flags = DependencyFlags::from_bits(0).unwrap();
             let range = ImageSubresourceRangeBuilder::new()
                 .layer_count(1)
                 .level_count(1)
@@ -313,21 +310,19 @@ impl ImguiRenderer {
                 .base_mip_level(0)
                 .aspect_mask(ImageAspectFlags::COLOR)
                 .discard();
-            let memory = [];
-            let buffer = [];
-            let image = [ImageMemoryBarrierBuilder::new()
+            let image = ImageMemoryBarrierBuilder::new()
                 .image(swapchain.images()[index].image())
                 .old_layout(ImageLayout::UNDEFINED)
                 .new_layout(ImageLayout::PRESENT_SRC_KHR)
-                .subresource_range(range)];
+                .subresource_range(range);
             self.device.loader().cmd_pipeline_barrier(
                 command_buffer,
-                src,
-                dst,
-                flags,
-                &memory,
-                &buffer,
-                &image,
+                PipelineStageFlags::BOTTOM_OF_PIPE,
+                PipelineStageFlags::TOP_OF_PIPE,
+                DependencyFlags::default(),
+                &[],
+                &[],
+                &[image],
             );
         }
 
