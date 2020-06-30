@@ -453,16 +453,9 @@ impl ImguiRenderer {
         //
         // Set the viewport state, we're going to be rendering to the whole frame
         //
-        let viewport = ViewportBuilder::new()
-            .width(swapchain.extents().width as f32)
-            .height(swapchain.extents().height as f32)
-            .min_depth(0.0)
-            .max_depth(1.0)
-            .x(0.0)
-            .y(0.0);
         self.device
             .loader()
-            .cmd_set_viewport(command_buffer, 0, &[viewport]);
+            .cmd_set_viewport(command_buffer, 0, &[swapchain.get_viewport_full()]);
 
         //
         // Push transforms via push constants
