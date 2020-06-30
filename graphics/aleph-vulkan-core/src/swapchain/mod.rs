@@ -14,7 +14,11 @@ use erupt::extensions::khr_surface::{
 use erupt::extensions::khr_swapchain::{
     KhrSwapchainDeviceLoaderExt, PresentInfoKHRBuilder, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
 };
-use erupt::vk1_0::{ComponentMappingBuilder, ComponentSwizzle, Extent2D, Fence, Format, ImageAspectFlags, ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType, Queue, Semaphore, SharingMode, Vk10DeviceLoaderExt, ViewportBuilder};
+use erupt::vk1_0::{
+    ComponentMappingBuilder, ComponentSwizzle, Extent2D, Fence, Format, ImageAspectFlags,
+    ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType,
+    Queue, Semaphore, SharingMode, ViewportBuilder, Vk10DeviceLoaderExt,
+};
 use std::sync::Arc;
 use std::time::Duration;
 

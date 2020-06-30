@@ -86,7 +86,7 @@ impl ImguiGlobal {
         vertex_module: &ShaderModule,
     ) -> PipelineLayout {
         let pipeline_layout = PipelineLayoutBuilder::new()
-            .modules(&[fragment_module, vertex_module])
+            .modules(&[(fragment_module, None), (vertex_module, None)])
             .debug_name(aleph_macros::cstr!(concat!(
                 module_path!(),
                 "::PipelineLayout"

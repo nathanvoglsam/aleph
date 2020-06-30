@@ -25,7 +25,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     Extent2D, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
     ImageSubresourceRangeBuilder, IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags,
     Rect2DBuilder, RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode,
-    SubmitInfoBuilder, SubpassContents, ViewportBuilder, Vk10DeviceLoaderExt, WHOLE_SIZE,
+    SubmitInfoBuilder, SubpassContents, Vk10DeviceLoaderExt, WHOLE_SIZE,
 };
 use aleph_vulkan_core::DebugName;
 pub use font::ImguiFont;

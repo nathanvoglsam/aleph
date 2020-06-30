@@ -336,7 +336,7 @@ impl Renderer {
                 module_path!(),
                 "::GeomPipelineLayout"
             )))
-            .modules(&[&geom_frag_module, &geom_vert_module])
+            .modules(&[(&geom_frag_module, None), (&geom_vert_module, None)])
             .build(&device)
             .expect("Failed to create geom pipe layout");
 
@@ -378,7 +378,7 @@ impl Renderer {
                 module_path!(),
                 "::TonePipelineLayout"
             )))
-            .modules(&[&tone_frag_module, &tone_vert_module])
+            .modules(&[(&tone_frag_module, None), (&tone_vert_module, None)])
             .build(&device)
             .expect("Failed to create tone pipe layout");
 

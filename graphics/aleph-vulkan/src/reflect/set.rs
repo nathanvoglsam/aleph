@@ -28,8 +28,6 @@ pub enum BindingType {
     //StorageTexelBuffer,
     UniformBuffer(Struct),
     //StorageBuffer(),
-    UniformBufferDynamic(Struct),
-    //StorageBufferDynamic(),
     InputAttachment,
     AccelerationStructureNV,
 }
@@ -38,17 +36,49 @@ impl BindingType {
     ///
     /// Get the VkDescriptorType for this binding type
     ///
-    pub fn descriptor_type(&self) -> DescriptorType {
+    pub fn descriptor_type(&self, buffer_type: BufferBindingType) -> DescriptorType {
         match self {
             BindingType::Sampler => DescriptorType::SAMPLER,
             BindingType::CombinedImageSampler => DescriptorType::COMBINED_IMAGE_SAMPLER,
             BindingType::SampledImage => DescriptorType::SAMPLED_IMAGE,
             BindingType::StorageImage => DescriptorType::STORAGE_IMAGE,
-            BindingType::UniformBuffer(_) => DescriptorType::UNIFORM_BUFFER,
-            BindingType::UniformBufferDynamic(_) => DescriptorType::UNIFORM_BUFFER_DYNAMIC,
+            BindingType::UniformBuffer(_) => match buffer_type {
+                BufferBindingType::Static => DescriptorType::UNIFORM_BUFFER,
+                BufferBindingType::Dynamic => DescriptorType::UNIFORM_BUFFER_DYNAMIC,
+            },
             BindingType::InputAttachment => DescriptorType::INPUT_ATTACHMENT,
             BindingType::AccelerationStructureNV => DescriptorType::ACCELERATION_STRUCTURE_NV,
         }
+    }
+}
+
+///
+/// An enum for specifying whether a buffer descriptor binding should be dynamic or static
+///
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+pub enum BufferBindingType {
+    ///
+    /// A static buffer binding
+    ///
+    /// This maps to descriptor types:
+    /// DescriptorType::STORAGE_BUFFER
+    /// DescriptorType::UNIFORM_BUFFER
+    ///
+    Static,
+
+    ///
+    /// A uniform buffer binding
+    ///
+    /// This maps to descriptor types:
+    /// DescriptorType::STORAGE_BUFFER_DYNAMIC
+    /// DescriptorType::UNIFORM_BUFFER_DYNAMIC
+    ///
+    Dynamic,
+}
+
+impl Default for BufferBindingType {
+    fn default() -> Self {
+        BufferBindingType::Static
     }
 }
 
@@ -85,6 +115,12 @@ impl Binding {
     }
 }
 
+pub trait BindingMapperFn: Fn(&Binding) -> BufferBindingType {}
+impl<T: Fn(&Binding) -> BufferBindingType> BindingMapperFn for T {}
+
+///
+/// Represents the reflection of a single descriptor set
+///
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct DescriptorSetReflection {
     set: u32,
@@ -107,18 +143,26 @@ impl DescriptorSetReflection {
     }
 
     ///
-    /// Builds a list of DescriptorSetLayoutBinding objects from the reflected data
+    /// Builds a list of DescriptorSetLayoutBinding objects from the reflected data.
+    ///
+    /// Provides an optional parameter for mapping from a given binding to whether it should be a
+    /// dynamic or static buffer binding. This is only useful for specifying whether a uniform
+    /// buffer should be UNIFORM_BUFFER or UNIFORM_BUFFER_DYNAMIC as it must be done manually (can
+    /// not be deduced from shader reflection)
     ///
     pub fn set_layout_bindings(
         &self,
         stage_flags: ShaderStageFlags,
+        binding_mapper: Option<&dyn BindingMapperFn>,
     ) -> Vec<DescriptorSetLayoutBindingBuilder<'static>> {
         self.bindings
             .iter()
             .map(|binding| {
+                // Let the user function decide whether the buffer is dynamic or static
+                let binding_type = binding_mapper.map(|v| (*v)(binding)).unwrap_or_default();
                 DescriptorSetLayoutBindingBuilder::new()
                     .binding(binding.binding())
-                    .descriptor_type(binding.binding_type().descriptor_type())
+                    .descriptor_type(binding.binding_type().descriptor_type(binding_type))
                     .descriptor_count(1)
                     .stage_flags(stage_flags)
             })
@@ -163,10 +207,7 @@ impl DescriptorSetReflection {
                             .expect("Failed to reflect uniform buffer block"),
                     ),
                     ReflectDescriptorType::UniformBufferDynamic => {
-                        BindingType::UniformBufferDynamic(
-                            resolve_struct_block(b.block)
-                                .expect("Failed to reflect dynamic uniform buffer block"),
-                        )
+                        unreachable!("It shouldn't be possible for spirv-reflect to emit this")
                     }
                     ReflectDescriptorType::InputAttachment => BindingType::InputAttachment,
                     ReflectDescriptorType::AccelerationStructureNV => {

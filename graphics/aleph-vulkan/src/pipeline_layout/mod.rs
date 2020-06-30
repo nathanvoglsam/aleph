@@ -7,6 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use crate::reflect::BindingMapperFn;
 use crate::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
@@ -47,7 +48,7 @@ pub enum PipelineLayoutBuildError {
 /// A wrapper for building pipeline layouts from reflected shader information
 ///
 pub struct PipelineLayoutBuilder<'a> {
-    modules: Option<&'a [&'a ShaderModule]>,
+    modules: Option<&'a [(&'a ShaderModule, Option<&'a dyn BindingMapperFn>)]>,
     debug_name: Option<&'a CStr>,
 }
 
@@ -72,9 +73,13 @@ impl<'a> PipelineLayoutBuilder<'a> {
     }
 
     ///
-    /// Provide the list of shader modules to build from
+    /// Provide the list of shader modules to build from, with an optionally attached binding mapper
+    /// closure for each module
     ///
-    pub fn modules(mut self, modules: &'a [&'a ShaderModule]) -> Self {
+    pub fn modules(
+        mut self,
+        modules: &'a [(&'a ShaderModule, Option<&'a dyn BindingMapperFn>)],
+    ) -> Self {
         self.modules = Some(modules);
         self
     }
@@ -93,10 +98,10 @@ impl<'a> PipelineLayoutBuilder<'a> {
         // Accumulate a list of all stages that are specified by the list of modules
         let mut stages = ShaderStageFlags::default();
         for v in modules.iter() {
-            stages |= v.shader_stage_flags();
+            stages |= v.0.shader_stage_flags();
 
             // Already looping here so may as well assert and not iterate again just for this
-            if !v.reflected() {
+            if !v.0.reflected() {
                 return Err(PipelineLayoutBuildError::NoReflectionInformation);
             }
         }
@@ -106,8 +111,8 @@ impl<'a> PipelineLayoutBuilder<'a> {
         // if a module tries to remove a stage flag but it isn't there then multiple modules are
         // of the same stage
         for v in modules.iter() {
-            if stages.contains(v.shader_stage_flags()) {
-                stages.set(v.shader_stage_flags(), false);
+            if stages.contains(v.0.shader_stage_flags()) {
+                stages.set(v.0.shader_stage_flags(), false);
             } else {
                 return Err(PipelineLayoutBuildError::MultipleShadersInSameStage);
             }
@@ -120,8 +125,8 @@ impl<'a> PipelineLayoutBuilder<'a> {
         // Extract push constant reflection from all modules that specify one
         let mut push_constants = Vec::new();
         modules.iter().for_each(|v| {
-            if let Some(p) = v.push_constants() {
-                push_constants.push((p, v.shader_stage_flags()));
+            if let Some(p) = v.0.push_constants() {
+                push_constants.push((p, v.0.shader_stage_flags()));
             }
         });
 
@@ -188,8 +193,8 @@ impl<'a> PipelineLayoutBuilder<'a> {
         // Build a flat list of all descriptor sets from the shader modules
         let mut sets = Vec::new();
         modules.iter().for_each(|v| {
-            v.descriptor_sets().iter().for_each(|s| {
-                sets.push((s, v.shader_stage_flags()));
+            v.0.descriptor_sets().iter().for_each(|s| {
+                sets.push((s, v.0.shader_stage_flags(), v.1));
             })
         });
 
@@ -241,7 +246,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
         let set_layouts: Vec<DescriptorSetLayout> = sets
             .drain(..)
             .map(|v| {
-                let bindings = v.0.set_layout_bindings(v.1);
+                let bindings = v.0.set_layout_bindings(v.1, v.2);
                 let create_info = DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
                 unsafe {
                     device

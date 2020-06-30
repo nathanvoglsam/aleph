@@ -16,6 +16,7 @@ mod vertex_layout;
 pub use member_resolution::MemberResolutionError;
 pub use push_constant::PushConstantReflection;
 pub use set::Binding;
+pub use set::BindingMapperFn;
 pub use set::BindingType;
 pub use set::DescriptorSetReflection;
 pub use structure::IntegerType;
