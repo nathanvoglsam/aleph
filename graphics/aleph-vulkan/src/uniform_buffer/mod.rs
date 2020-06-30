@@ -1,0 +1,329 @@
+//
+//
+// This file is a part of Aleph
+//
+// <ALEPH_REPO_REPLACE>
+//
+// <ALEPH_LICENSE_REPLACE>
+//
+
+use crate::reflect::{
+    Binding, BindingType, FloatType, IntegerType, MatrixLayout, MemberType, ScalarType, Struct,
+};
+use aleph_math::matrix::TMat4x4;
+use aleph_math::traits::{Real, Transpose};
+
+///
+/// Represents the set of errors that creating a new `UniformBufferWriter` object could throw
+///
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum WriterCreateError {
+    BufferTooSmall,
+    WrongBindingType,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum MemberWriteError {
+    WrongType,
+    MemberNotFound,
+}
+
+#[derive(Clone, Debug)]
+pub enum Member {
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    F32(f32),
+    F64(f64),
+    Vec2([f32; 2]),
+    Vec3([f32; 3]),
+    Vec4([f32; 4]),
+    DVec2([f64; 2]),
+    DVec3([f64; 3]),
+    DVec4([f64; 4]),
+    Mat4x4(aleph_math::types::Mat4x4),
+    DMat4x4(aleph_math::types::DMat4x4),
+    Quat([f32; 4]),
+    DQuat([f64; 4]),
+}
+
+impl Member {
+    #[inline]
+    fn handle_vector<T>(member_type: &MemberType, src: &[T], dest: &mut [u8]) -> bool {
+        if let MemberType::Vector(info) = member_type {
+            let len = src.len() as u8;
+            if info.elements == len && info.elem_type == ScalarType::Float(FloatType::Single) {
+                Self::write_vector(src, dest);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    fn handle_mat4x4<T: Real>(member_type: &MemberType, src: &TMat4x4<T>, dest: &mut [u8]) -> bool {
+        if let MemberType::Matrix(info) = member_type {
+            if info.cols == 4 && info.rows == 4 && info.elem_type == FloatType::Single {
+                match info.layout {
+                    MatrixLayout::ColumnMajor => {
+                        Self::write_mat4x4(src, dest);
+                    }
+                    MatrixLayout::RowMajor => {
+                        let src = src.clone().transpose();
+                        Self::write_mat4x4(&src, dest);
+                    }
+                }
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    #[inline]
+    fn write_scalar<T>(src: &T, dest: &mut [u8]) {
+        let count = core::mem::size_of::<T>();
+        let src = src as *const T;
+        assert!(dest.len() > count);
+        unsafe {
+            dest.as_mut_ptr().copy_from(src as *const u8, count);
+        }
+    }
+
+    #[inline]
+    fn write_vector<T>(src: &[T], dest: &mut [u8]) {
+        let count = core::mem::size_of::<T>() * src.len();
+        let src = src.as_ptr();
+        assert!(dest.len() > count);
+        unsafe {
+            dest.as_mut_ptr().copy_from(src as *const u8, count);
+        }
+    }
+
+    #[inline]
+    fn write_mat4x4<T: Real>(src: &TMat4x4<T>, dest: &mut [u8]) {
+        let src: &[T; 16] = src.as_slice();
+
+        let count = core::mem::size_of::<T>() * src.len();
+        let src = src.as_ptr();
+        assert!(dest.len() > count);
+        unsafe {
+            dest.as_mut_ptr().copy_from(src as *const u8, count);
+        }
+    }
+
+    #[inline]
+    pub fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> bool {
+        match self {
+            Member::I8(v) => {
+                if let MemberType::Integer(IntegerType::I8) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::I16(v) => {
+                if let MemberType::Integer(IntegerType::I16) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::I32(v) => {
+                if let MemberType::Integer(IntegerType::I32) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::I64(v) => {
+                if let MemberType::Integer(IntegerType::I64) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::U8(v) => {
+                if let MemberType::Integer(IntegerType::U8) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::U16(v) => {
+                if let MemberType::Integer(IntegerType::U16) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::U32(v) => {
+                if let MemberType::Integer(IntegerType::U32) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::U64(v) => {
+                if let MemberType::Integer(IntegerType::U64) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::F32(v) => {
+                if let MemberType::Float(FloatType::Single) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::F64(v) => {
+                if let MemberType::Float(FloatType::Double) = member_type {
+                    Self::write_scalar(v, buffer);
+                    true
+                } else {
+                    false
+                }
+            }
+            Member::Vec2(src) => Self::handle_vector(member_type, src, buffer),
+            Member::Vec3(src) => Self::handle_vector(member_type, src, buffer),
+            Member::Vec4(src) => Self::handle_vector(member_type, src, buffer),
+            Member::Quat(src) => Self::handle_vector(member_type, src, buffer),
+            Member::DVec2(src) => Self::handle_vector(member_type, src, buffer),
+            Member::DVec3(src) => Self::handle_vector(member_type, src, buffer),
+            Member::DQuat(src) => Self::handle_vector(member_type, src, buffer),
+            Member::DVec4(src) => Self::handle_vector(member_type, src, buffer),
+            Member::Mat4x4(src) => Self::handle_mat4x4(member_type, src, buffer),
+            Member::DMat4x4(src) => Self::handle_mat4x4(member_type, src, buffer),
+        }
+    }
+}
+
+///
+/// Utility wrapper for writing a uniform buffer's expected data to a memory buffer that safely
+/// handles writing to the buffer, manages offsets and ensures that all resources are written.
+///
+pub struct UniformBufferWriter<'binding, 'buffer> {
+    binding: &'binding Struct,
+    buffer: &'buffer mut [u8],
+    member_written: Vec<bool>,
+}
+
+impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
+    ///
+    /// Creates a new uniform buffer writer from the given binding reflection and a buffer to write
+    /// to
+    ///
+    pub fn new_for_binding(
+        binding: &'binding Binding,
+        buffer: &'buffer mut [u8],
+    ) -> Result<Self, WriterCreateError> {
+        match binding.binding_type() {
+            BindingType::Sampler => Err(WriterCreateError::WrongBindingType),
+            BindingType::CombinedImageSampler => Err(WriterCreateError::WrongBindingType),
+            BindingType::SampledImage => Err(WriterCreateError::WrongBindingType),
+            BindingType::StorageImage => Err(WriterCreateError::WrongBindingType),
+            BindingType::UniformBuffer(binding) => {
+                if (binding.size() as usize) < buffer.len() {
+                    Err(WriterCreateError::BufferTooSmall)
+                } else {
+                    let member_written = Self::member_written_vec(binding);
+                    Ok(Self {
+                        binding,
+                        buffer,
+                        member_written,
+                    })
+                }
+            }
+            BindingType::InputAttachment => Err(WriterCreateError::WrongBindingType),
+            BindingType::AccelerationStructureNV => Err(WriterCreateError::WrongBindingType),
+        }
+    }
+
+    fn member_written_vec(binding: &Struct) -> Vec<bool> {
+        let mut vec = Vec::new();
+        vec.resize(binding.members().len(), false);
+        vec
+    }
+
+    ///
+    /// Writes the given value to a member variable of the given name, if it exists.
+    ///
+    pub fn write_member(&mut self, name: &str, member: Member) -> Result<(), MemberWriteError> {
+        // Find the member by name
+        let (i, binding_member) = self
+            .binding
+            .members()
+            .iter()
+            .enumerate()
+            .find(|(_, v)| v.name() == name)
+            .ok_or(MemberWriteError::MemberNotFound)?;
+
+        // Get the range of bytes that we'll be writing to
+        let offset = binding_member.offset() as usize;
+        let offset_end = offset + binding_member.size_padded() as usize;
+
+        //
+        let buffer = &mut self.buffer[offset..offset_end];
+        let member_type = binding_member.member_type().clone();
+        if !member.write_member_to_memory(&member_type, buffer) {
+            return Err(MemberWriteError::WrongType);
+        }
+        self.member_written[i] = true;
+
+        Ok(())
+    }
+
+    pub fn write_member_index(
+        &mut self,
+        index: usize,
+        member: Member,
+    ) -> Result<(), MemberWriteError> {
+        // Find the member by index
+        let binding_member = &self.binding.members()[index];
+
+        // Get the range of bytes that we'll be writing to
+        let offset = binding_member.offset() as usize;
+        let offset_end = offset + binding_member.size_padded() as usize;
+
+        //
+        let buffer = &mut self.buffer[offset..offset_end];
+        let member_type = binding_member.member_type().clone();
+        if !member.write_member_to_memory(&member_type, buffer) {
+            return Err(MemberWriteError::WrongType);
+        }
+        self.member_written[index] = true;
+
+        Ok(())
+    }
+}
+
+impl<'binding, 'buffer> Drop for UniformBufferWriter<'binding, 'buffer> {
+    fn drop(&mut self) {
+        for b in self.member_written.iter() {
+            if *b == false {
+                panic!("Didn't write all uniform buffer members");
+            }
+        }
+    }
+}

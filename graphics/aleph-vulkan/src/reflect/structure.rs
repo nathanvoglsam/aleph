@@ -30,7 +30,7 @@ pub enum IntegerType {
 /// An enum to represent the different widths of floating point values supported
 ///
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum ScalarType {
+pub enum FloatType {
     /// 8 bit type
     Quarter,
 
@@ -45,12 +45,28 @@ pub enum ScalarType {
 }
 
 ///
+///
+/// An enum to represent a union between integers and floats as a singular "scalar" concept
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ScalarType {
+    ///
+    /// An integer
+    ///
+    Integer(IntegerType),
+
+    ///
+    /// A floating point value
+    ///
+    Float(FloatType),
+}
+
+///
 /// A struct to represent a vector type in a uniform buffer
 ///
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct VectorInfo {
     /// The type of floating point value this vector is constructed of
-    pub fp_type: ScalarType,
+    pub elem_type: ScalarType,
 
     /// The number of elements in the vector
     pub elements: u8,
@@ -74,7 +90,7 @@ pub enum MatrixLayout {
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct MatrixInfo {
     /// The type of floating point value this matrix is constructed of
-    pub fp_type: ScalarType,
+    pub elem_type: FloatType,
 
     /// The expected layout of the matrix data
     pub layout: MatrixLayout,
@@ -94,8 +110,11 @@ pub struct MatrixInfo {
 ///
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum MemberType {
-    /// A scalar value (i.e a single float)
-    Scalar(ScalarType),
+    /// An integer value
+    Integer(IntegerType),
+
+    /// A floating point value (i.e a single float)
+    Float(FloatType),
 
     /// A vector value (i.e a float3 or float4)
     Vector(VectorInfo),

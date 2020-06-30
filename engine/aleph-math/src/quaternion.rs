@@ -7,7 +7,7 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use core::ops::{Mul, MulAssign};
+use core::ops::{Index, IndexMut, Mul, MulAssign};
 
 use crate::matrix::TMat4x4;
 use crate::traits::CrossProduct;
@@ -128,6 +128,20 @@ impl<T: Real> TQuat<T> {
     #[inline]
     pub fn vector(&self) -> TVec3<T> {
         TVec3::<T>::new(self.data[0], self.data[1], self.data[2])
+    }
+}
+
+impl<T: Real> Index<usize> for TQuat<T> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.data[index]
+    }
+}
+
+impl<T: Real> IndexMut<usize> for TQuat<T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.data[index]
     }
 }
 

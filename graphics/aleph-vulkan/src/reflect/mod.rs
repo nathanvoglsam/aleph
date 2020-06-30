@@ -19,6 +19,7 @@ pub use set::Binding;
 pub use set::BindingMapperFn;
 pub use set::BindingType;
 pub use set::DescriptorSetReflection;
+pub use structure::FloatType;
 pub use structure::IntegerType;
 pub use structure::MatrixInfo;
 pub use structure::MatrixLayout;

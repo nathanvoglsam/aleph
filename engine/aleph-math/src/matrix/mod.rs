@@ -288,6 +288,20 @@ impl<T: Real> TMat4x4<T> {
     }
 
     ///
+    /// Gets a slice reference to the underlying data array
+    ///
+    pub fn as_slice(&self) -> &[T; 16] {
+        &self.data
+    }
+
+    ///
+    /// Gets a slice mutable reference to the underlying data array
+    ///
+    pub fn as_slice_mut(&mut self) -> &[T; 16] {
+        &mut self.data
+    }
+
+    ///
     /// Returns column refs as TVec4<T>s
     ///
     #[inline]

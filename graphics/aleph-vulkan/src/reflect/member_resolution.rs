@@ -7,7 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::reflect::{MatrixInfo, MatrixLayout, MemberType, ScalarType, VectorInfo};
+use crate::reflect::structure::ScalarType;
+use crate::reflect::{FloatType, IntegerType, MatrixInfo, MatrixLayout, MemberType, VectorInfo};
 use spirv_reflect::types::{
     ReflectDecorationFlags, ReflectNumericTraits, ReflectNumericTraitsScalar,
     ReflectTypeDescription, ReflectTypeFlags,
@@ -49,15 +50,16 @@ pub(crate) fn resolve_member_type(
     decoration_flags: ReflectDecorationFlags,
     numeric: &ReflectNumericTraits,
 ) -> Result<MemberType, MemberResolutionError> {
+    let int = desc.type_flags.contains(ReflectTypeFlags::INT);
     let float = desc.type_flags.contains(ReflectTypeFlags::FLOAT);
     let vector = desc.type_flags.contains(ReflectTypeFlags::VECTOR);
     let matrix = desc.type_flags.contains(ReflectTypeFlags::MATRIX);
 
     if matrix && vector && float {
-        let fp_type = resolve_scalar_width(numeric.scalar)?;
+        let fp_type = resolve_float_width(numeric.scalar)?;
         let layout = resolve_matrix_layout(decoration_flags)?;
         let info = MatrixInfo {
-            fp_type,
+            elem_type: fp_type,
             layout,
             rows: numeric.matrix.row_count as _,
             cols: numeric.matrix.column_count as _,
@@ -65,30 +67,78 @@ pub(crate) fn resolve_member_type(
         };
         Ok(MemberType::Matrix(info))
     } else if vector && float {
-        let fp_type = resolve_scalar_width(numeric.scalar)?;
+        let fp_type = resolve_float_width(numeric.scalar)?;
         let info = VectorInfo {
-            fp_type,
+            elem_type: ScalarType::Float(fp_type),
+            elements: numeric.vector.component_count as _,
+        };
+        Ok(MemberType::Vector(info))
+    } else if vector && int {
+        let int_type = resolve_int_width(numeric.scalar)?;
+        let info = VectorInfo {
+            elem_type: ScalarType::Integer(int_type),
             elements: numeric.vector.component_count as _,
         };
         Ok(MemberType::Vector(info))
     } else if float {
-        Ok(MemberType::Scalar(resolve_scalar_width(numeric.scalar)?))
+        Ok(MemberType::Float(resolve_float_width(numeric.scalar)?))
+    } else if int {
+        Ok(MemberType::Integer(resolve_int_width(numeric.scalar)?))
     } else {
         Err(MemberResolutionError::UnsupportedMemberType)
     }
 }
 
 ///
-/// Reduce the scalar width integer to an enum
+/// Reduce the scalar width to an enum for a floating point type
 ///
-pub(crate) fn resolve_scalar_width(
+pub(crate) fn resolve_float_width(
     scalar: ReflectNumericTraitsScalar,
-) -> Result<ScalarType, MemberResolutionError> {
+) -> Result<FloatType, MemberResolutionError> {
     match scalar.width {
-        8 => Ok(ScalarType::Quarter),
-        16 => Ok(ScalarType::Half),
-        32 => Ok(ScalarType::Single),
-        64 => Ok(ScalarType::Double),
+        8 => Ok(FloatType::Quarter),
+        16 => Ok(FloatType::Half),
+        32 => Ok(FloatType::Single),
+        64 => Ok(FloatType::Double),
+        _ => Err(MemberResolutionError::UnknownScalarWidth(scalar.width)),
+    }
+}
+
+///
+/// Reduce the scalar width to an enum for an integer type
+///
+pub(crate) fn resolve_int_width(
+    scalar: ReflectNumericTraitsScalar,
+) -> Result<IntegerType, MemberResolutionError> {
+    match scalar.width {
+        8 => {
+            if scalar.signedness != 0 {
+                Ok(IntegerType::I8)
+            } else {
+                Ok(IntegerType::U8)
+            }
+        }
+        16 => {
+            if scalar.signedness != 0 {
+                Ok(IntegerType::I16)
+            } else {
+                Ok(IntegerType::U16)
+            }
+        }
+        32 => {
+            if scalar.signedness != 0 {
+                Ok(IntegerType::I32)
+            } else {
+                Ok(IntegerType::U32)
+            }
+        }
+        64 => {
+            if scalar.signedness != 0 {
+                Ok(IntegerType::I64)
+            } else {
+                Ok(IntegerType::U64)
+            }
+        }
         _ => Err(MemberResolutionError::UnknownScalarWidth(scalar.width)),
     }
 }

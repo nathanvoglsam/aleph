@@ -8,7 +8,7 @@
 //
 
 use crate::reflect::member_resolution::resolve_member_type;
-use crate::reflect::{MemberResolutionError, MemberType, ScalarType, VectorInfo};
+use crate::reflect::{FloatType, MemberResolutionError, MemberType, VectorInfo};
 use aleph_vulkan_core::erupt::vk1_0::{
     Format, PipelineVertexInputStateCreateInfo, VertexInputAttributeDescription,
 };
@@ -16,7 +16,7 @@ use spirv_reflect::types::ReflectInterfaceVariable;
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub enum AttributeType {
-    Scalar(ScalarType),
+    Scalar(FloatType),
     Vector(VectorInfo),
 }
 
@@ -231,7 +231,7 @@ impl VertexAttributeReflection {
     ///
     fn check_scalar_compatibility(
         attr: &VertexInputAttributeDescription,
-        scalar: &ScalarType,
+        scalar: &FloatType,
     ) -> Result<(), AttributeCompatibilityError> {
         match attr.format {
             Format::R8_SINT
@@ -390,9 +390,10 @@ pub(crate) fn resolve_vertex_attributes(
         // Make sure we haven't passed a matrix in as one of the vertex input attachments as we
         // don't support this
         let attribute_type = match attribute_type {
-            MemberType::Scalar(scalar) => AttributeType::Scalar(scalar),
+            MemberType::Float(scalar) => AttributeType::Scalar(scalar),
             MemberType::Vector(vector) => AttributeType::Vector(vector),
             MemberType::Matrix(_) => return Err(VertexLayoutResolutionError::UnsupportedType),
+            MemberType::Integer(_) => return Err(VertexLayoutResolutionError::UnsupportedType),
         };
 
         let name = m.name;
