@@ -24,7 +24,7 @@
 void TBNNormalMapSample(const float3 map_normal, const float3 mesh_normal, const float4 mesh_tangent, out float3 n, out float3 t, out float3 b) {
 	const float3 tangent = mesh_tangent.xyz;
 	const float3 bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
-	const float3x3 tbn = float3x3(t, b, mesh_normal);
+	const float3x3 tbn = float3x3(tangent, bitangent, mesh_normal);
 	n = normalize(mul(map_normal, tbn));
 	t = normalize(tangent);
 	b = normalize(bitangent);
@@ -48,7 +48,7 @@ void TBNNormalMapSample(const float3 map_normal, const float3 mesh_normal, const
 void MikkTNormalMapSample(const float3 map_normal, const float3 mesh_normal, const float4 mesh_tangent, out float3 n, out float3 t, out float3 b) {
 	const float3 tangent = mesh_tangent.xyz;
 	const float3 bitangent = cross(mesh_normal, tangent) * sign(mesh_tangent.w);
-	n = normalize(map_normal.x * t + map_normal.y * b + map_normal.z * mesh_normal);
+	n = normalize(map_normal.x * tangent + map_normal.y * bitangent + map_normal.z * mesh_normal);
 	t = normalize(tangent);
 	b = normalize(bitangent);
 }
