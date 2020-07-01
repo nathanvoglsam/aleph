@@ -22,12 +22,18 @@ pub enum WriterCreateError {
     WrongBindingType,
 }
 
+///
+/// The set of errors that can be produced when trying to write a UBO member
+///
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum MemberWriteError {
     WrongType,
     MemberNotFound,
 }
 
+///
+/// Represents the set of supported UBO member variable types that can be written
+///
 #[derive(Clone, Debug)]
 pub enum Member {
     I8(i8),
@@ -53,7 +59,11 @@ pub enum Member {
 }
 
 impl Member {
-    #[inline]
+    ///
+    /// Internal function for handling checking for matching type and handing off to another
+    /// function to write the actual data
+    ///
+    #[inline(always)]
     fn handle_vector<T>(member_type: &MemberType, src: &[T], dest: &mut [u8]) -> bool {
         if let MemberType::Vector(info) = member_type {
             let len = src.len() as u8;
@@ -68,7 +78,11 @@ impl Member {
         }
     }
 
-    #[inline]
+    ///
+    /// Internal function for handling checking for matching type and handing off to another
+    /// function to write the actual data
+    ///
+    #[inline(always)]
     fn handle_mat4x4<T: Real>(member_type: &MemberType, src: &TMat4x4<T>, dest: &mut [u8]) -> bool {
         if let MemberType::Matrix(info) = member_type {
             if info.cols == 4 && info.rows == 4 && info.elem_type == FloatType::Single {
@@ -90,7 +104,10 @@ impl Member {
         }
     }
 
-    #[inline]
+    ///
+    /// Writes a single scalar value to the destination buffer, if there's enough space to do so
+    ///
+    #[inline(always)]
     fn write_scalar<T>(src: &T, dest: &mut [u8]) {
         let count = core::mem::size_of::<T>();
         let src = src as *const T;
@@ -100,7 +117,10 @@ impl Member {
         }
     }
 
-    #[inline]
+    ///
+    /// Writes an N component vector to the destination buffer, if there's enough space to do so
+    ///
+    #[inline(always)]
     fn write_vector<T>(src: &[T], dest: &mut [u8]) {
         let count = core::mem::size_of::<T>() * src.len();
         let src = src.as_ptr();
@@ -110,7 +130,10 @@ impl Member {
         }
     }
 
-    #[inline]
+    ///
+    /// Writes an 4x4 matrix to the destination buffer, if there's enough space to do so
+    ///
+    #[inline(always)]
     fn write_mat4x4<T: Real>(src: &TMat4x4<T>, dest: &mut [u8]) {
         let src: &[T; 16] = src.as_slice();
 
@@ -122,8 +145,11 @@ impl Member {
         }
     }
 
-    #[inline]
-    pub fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> bool {
+    ///
+    /// Internal function for writing
+    ///
+    #[inline(always)]
+    fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> bool {
         match self {
             Member::I8(v) => {
                 if let MemberType::Integer(IntegerType::I8) = member_type {
@@ -299,6 +325,11 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
         index: usize,
         member: Member,
     ) -> Result<(), MemberWriteError> {
+        // Ensure that an index'th member exists
+        if index >= self.binding.members().len() {
+            return Err(MemberWriteError::MemberNotFound);
+        }
+
         // Find the member by index
         let binding_member = &self.binding.members()[index];
 
