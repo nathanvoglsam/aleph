@@ -26,6 +26,62 @@ pub enum IntegerType {
     U64,
 }
 
+impl From<i8> for IntegerType {
+    #[inline(always)]
+    fn from(_: i8) -> Self {
+        IntegerType::I8
+    }
+}
+
+impl From<i16> for IntegerType {
+    #[inline(always)]
+    fn from(_: i16) -> Self {
+        IntegerType::I16
+    }
+}
+
+impl From<i32> for IntegerType {
+    #[inline(always)]
+    fn from(_: i32) -> Self {
+        IntegerType::I32
+    }
+}
+
+impl From<i64> for IntegerType {
+    #[inline(always)]
+    fn from(_: i64) -> Self {
+        IntegerType::I64
+    }
+}
+
+impl From<u8> for IntegerType {
+    #[inline(always)]
+    fn from(_: u8) -> Self {
+        IntegerType::U8
+    }
+}
+
+impl From<u16> for IntegerType {
+    #[inline(always)]
+    fn from(_: u16) -> Self {
+        IntegerType::U16
+    }
+}
+
+impl From<u32> for IntegerType {
+    #[inline(always)]
+    fn from(_: u32) -> Self {
+        IntegerType::U32
+    }
+}
+
+impl From<u64> for IntegerType {
+    #[inline(always)]
+    fn from(_: u64) -> Self {
+        IntegerType::U64
+    }
+}
+
 ///
 /// An enum to represent the different widths of floating point values supported
 ///
@@ -42,6 +98,20 @@ pub enum FloatType {
 
     /// 64 bit ype
     Double,
+}
+
+impl From<f32> for FloatType {
+    #[inline(always)]
+    fn from(_: f32) -> Self {
+        FloatType::Single
+    }
+}
+
+impl From<f64> for FloatType {
+    #[inline(always)]
+    fn from(_: f64) -> Self {
+        FloatType::Double
+    }
 }
 
 ///
@@ -140,6 +210,7 @@ impl Member {
     ///
     /// The name of the member variable
     ///
+    #[inline(always)]
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -154,6 +225,7 @@ impl Member {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn size(&self) -> u32 {
         self.size
     }
@@ -168,6 +240,7 @@ impl Member {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn size_padded(&self) -> u32 {
         self.size_padded
     }
@@ -182,6 +255,7 @@ impl Member {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn offset(&self) -> u32 {
         self.offset
     }
@@ -196,6 +270,7 @@ impl Member {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn offset_absolute(&self) -> u32 {
         self.offset_absolute
     }
@@ -203,6 +278,7 @@ impl Member {
     ///
     /// The type of value this member represents
     ///
+    #[inline(always)]
     pub fn member_type(&self) -> &MemberType {
         &self.member_type
     }
@@ -220,6 +296,7 @@ pub enum StructResolutionError {
 }
 
 impl From<MemberResolutionError> for StructResolutionError {
+    #[inline(always)]
     fn from(other: MemberResolutionError) -> Self {
         StructResolutionError::MemberResolutionError(other)
     }
@@ -241,6 +318,7 @@ impl Struct {
     ///
     /// Slice of the members of this struct
     ///
+    #[inline(always)]
     pub fn members(&self) -> &[Member] {
         &self.members
     }
@@ -255,6 +333,7 @@ impl Struct {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn size(&self) -> u32 {
         self.size
     }
@@ -269,6 +348,7 @@ impl Struct {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn size_padded(&self) -> u32 {
         self.size_padded
     }
@@ -283,6 +363,7 @@ impl Struct {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn offset(&self) -> u32 {
         self.offset
     }
@@ -297,6 +378,7 @@ impl Struct {
     /// description so size has no meaning. The vertex input's memory layout is defined by the API
     /// and not the shader.
     ///
+    #[inline(always)]
     pub fn offset_absolute(&self) -> u32 {
         self.offset_absolute
     }

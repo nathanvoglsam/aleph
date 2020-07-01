@@ -64,6 +64,50 @@ impl Member {
     /// function to write the actual data
     ///
     #[inline(always)]
+    fn handle_integer<T: Into<IntegerType> + Copy>(
+        member_type: &MemberType,
+        src: T,
+        dest: &mut [u8],
+    ) -> bool {
+        if let MemberType::Integer(v) = member_type {
+            if *v == src.into() {
+                Self::write_scalar(src, dest);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    ///
+    /// Internal function for handling checking for matching type and handing off to another
+    /// function to write the actual data
+    ///
+    #[inline(always)]
+    fn handle_float<T: Into<FloatType> + Copy>(
+        member_type: &MemberType,
+        src: T,
+        dest: &mut [u8],
+    ) -> bool {
+        if let MemberType::Float(v) = member_type {
+            if *v == src.into() {
+                Self::write_scalar(src, dest);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    ///
+    /// Internal function for handling checking for matching type and handing off to another
+    /// function to write the actual data
+    ///
+    #[inline(always)]
     fn handle_vector<T>(member_type: &MemberType, src: &[T], dest: &mut [u8]) -> bool {
         if let MemberType::Vector(info) = member_type {
             let len = src.len() as u8;
@@ -108,9 +152,9 @@ impl Member {
     /// Writes a single scalar value to the destination buffer, if there's enough space to do so
     ///
     #[inline(always)]
-    fn write_scalar<T>(src: &T, dest: &mut [u8]) {
+    fn write_scalar<T>(src: T, dest: &mut [u8]) {
         let count = core::mem::size_of::<T>();
-        let src = src as *const T;
+        let src = &src as *const T;
         assert!(dest.len() > count);
         unsafe {
             dest.as_mut_ptr().copy_from(src as *const u8, count);
@@ -151,86 +195,16 @@ impl Member {
     #[inline(always)]
     fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> bool {
         match self {
-            Member::I8(v) => {
-                if let MemberType::Integer(IntegerType::I8) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::I16(v) => {
-                if let MemberType::Integer(IntegerType::I16) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::I32(v) => {
-                if let MemberType::Integer(IntegerType::I32) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::I64(v) => {
-                if let MemberType::Integer(IntegerType::I64) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::U8(v) => {
-                if let MemberType::Integer(IntegerType::U8) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::U16(v) => {
-                if let MemberType::Integer(IntegerType::U16) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::U32(v) => {
-                if let MemberType::Integer(IntegerType::U32) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::U64(v) => {
-                if let MemberType::Integer(IntegerType::U64) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::F32(v) => {
-                if let MemberType::Float(FloatType::Single) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
-            Member::F64(v) => {
-                if let MemberType::Float(FloatType::Double) = member_type {
-                    Self::write_scalar(v, buffer);
-                    true
-                } else {
-                    false
-                }
-            }
+            Member::I8(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::I16(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::I32(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::I64(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::U8(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::U16(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::U32(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::U64(v) => Self::handle_integer(member_type, *v, buffer),
+            Member::F32(v) => Self::handle_float(member_type, *v, buffer),
+            Member::F64(v) => Self::handle_float(member_type, *v, buffer),
             Member::Vec2(src) => Self::handle_vector(member_type, src, buffer),
             Member::Vec3(src) => Self::handle_vector(member_type, src, buffer),
             Member::Vec4(src) => Self::handle_vector(member_type, src, buffer),
@@ -269,20 +243,29 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
             BindingType::CombinedImageSampler => Err(WriterCreateError::WrongBindingType),
             BindingType::SampledImage => Err(WriterCreateError::WrongBindingType),
             BindingType::StorageImage => Err(WriterCreateError::WrongBindingType),
-            BindingType::UniformBuffer(binding) => {
-                if (binding.size() as usize) < buffer.len() {
-                    Err(WriterCreateError::BufferTooSmall)
-                } else {
-                    let member_written = Self::member_written_vec(binding);
-                    Ok(Self {
-                        binding,
-                        buffer,
-                        member_written,
-                    })
-                }
-            }
+            BindingType::UniformBuffer(binding) => Self::new_for_struct(binding, buffer),
             BindingType::InputAttachment => Err(WriterCreateError::WrongBindingType),
             BindingType::AccelerationStructureNV => Err(WriterCreateError::WrongBindingType),
+        }
+    }
+
+    ///
+    /// Creates a new uniform buffer writer from the given binding reflection and a buffer to write
+    /// to
+    ///
+    pub fn new_for_struct(
+        binding: &'binding Struct,
+        buffer: &'buffer mut [u8],
+    ) -> Result<Self, WriterCreateError> {
+        if (binding.size() as usize) < buffer.len() {
+            Err(WriterCreateError::BufferTooSmall)
+        } else {
+            let member_written = Self::member_written_vec(binding);
+            Ok(Self {
+                binding,
+                buffer,
+                member_written,
+            })
         }
     }
 
