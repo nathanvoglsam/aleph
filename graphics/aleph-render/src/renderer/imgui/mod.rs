@@ -284,7 +284,7 @@ impl ImguiRenderer {
                 .discard();
             let image = ImageMemoryBarrierBuilder::new()
                 .image(self.frames[index].swap_image.image())
-                .old_layout(ImageLayout::UNDEFINED)
+                .old_layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
                 .new_layout(ImageLayout::PRESENT_SRC_KHR)
                 .subresource_range(range);
             self.device.loader().cmd_pipeline_barrier(

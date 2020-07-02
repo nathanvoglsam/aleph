@@ -18,7 +18,7 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     const CameraLayout camera = camera_buffer;
 	
     // Light parameters
-    const float3 light_position = float3(0,0,10.5);
+    const float3 light_position = float3(3,0,10.5);
     const float lumens = 5000;
 
     // Camera and light vectors

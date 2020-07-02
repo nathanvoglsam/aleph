@@ -15,8 +15,9 @@ pub use self::imgui::ImguiRenderer;
 use self::pipelines::{GeometryPipeline, TonePipeline};
 use aleph_math::traits::{Inverse, Transpose};
 use aleph_math::types::{Mat4x4, Quat, Vec3};
+use aleph_math::units::radians;
 use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
-use aleph_vulkan::embedded::data::CubeMesh;
+use aleph_vulkan::embedded::data::SphereMesh;
 use aleph_vulkan::image::{ColourImage, DepthImage};
 use aleph_vulkan::pipeline_layout::PipelineLayout;
 use aleph_vulkan::reflect::{BindingType, Struct};
@@ -366,8 +367,12 @@ impl UniformBuffers {
         let mut writer = UniformBufferWriter::new_for_struct(layout, mem).unwrap();
 
         // Calculate the matrices to upload
-        let model = Mat4x4::identity();
-        let normal = model.clone().inverse().transpose();
+        let pos = Vec3::new(0.0, 0.0, 0.0);
+        let rot = Quat::from_angle_axis(radians(45.0), Vec3::up());
+        let pos: Mat4x4 = Mat4x4::translation(pos);
+        let rot: Mat4x4 = rot.into();
+        let model: Mat4x4 = pos * rot;
+        let normal: Mat4x4 = model.clone().inverse().transpose();
 
         // Write the members
         writer
@@ -785,7 +790,7 @@ impl Renderer {
 
         if swapchain.requires_rebuild() {
             let _ = swapchain.rebuild(drawable_size);
-            //renderer.recreate_resources(&swapchain);
+            //TODO: renderer.recreate_resources(&swapchain);
         }
 
         match swapchain.acquire_next(
@@ -923,10 +928,10 @@ impl Renderer {
 
         // Bind all the vertex attributes for a static mesh
         let buffers = [
-            CubeMeshBuffers::positions(),
-            CubeMeshBuffers::normals(),
-            CubeMeshBuffers::tangents(),
-            CubeMeshBuffers::uvs(),
+            SphereMeshBuffers::positions(),
+            SphereMeshBuffers::normals(),
+            SphereMeshBuffers::tangents(),
+            SphereMeshBuffers::uvs(),
         ];
         let offsets = [0, 0, 0, 0];
         self.device
@@ -935,13 +940,13 @@ impl Renderer {
 
         self.device.loader().cmd_bind_index_buffer(
             command_buffer,
-            CubeMeshBuffers::indices(),
+            SphereMeshBuffers::indices(),
             0,
             IndexType::UINT16,
         );
         self.device.loader().cmd_draw_indexed(
             command_buffer,
-            CubeMesh::indices().len() as _,
+            SphereMesh::indices().len() as _,
             1,
             0,
             0,
@@ -1090,6 +1095,9 @@ impl Drop for Renderer {
             self.geom_sets.destroy(&self.device);
             self.tone_sets.destroy(&self.device);
             self.uniform_buffers.destroy(&self.allocator);
+            self.device
+                .loader()
+                .destroy_command_pool(self.command_pool, None);
         }
     }
 }
