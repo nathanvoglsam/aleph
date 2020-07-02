@@ -54,12 +54,12 @@ impl ColorBlendState {
 const fn blend_disabled() -> PipelineColorBlendAttachmentState {
     PipelineColorBlendAttachmentState {
         blend_enable: FALSE,
-        src_color_blend_factor: BlendFactor(0),
-        dst_color_blend_factor: BlendFactor(0),
-        color_blend_op: BlendOp(0),
-        src_alpha_blend_factor: BlendFactor(0),
-        dst_alpha_blend_factor: BlendFactor(0),
-        alpha_blend_op: BlendOp(0),
-        color_write_mask: ColorComponentFlagBits(0).bitmask(),
+        src_color_blend_factor: BlendFactor::ONE,
+        dst_color_blend_factor: BlendFactor::ZERO,
+        color_blend_op: BlendOp::ADD,
+        src_alpha_blend_factor: BlendFactor::ONE,
+        dst_alpha_blend_factor: BlendFactor::ZERO,
+        alpha_blend_op: BlendOp::ADD,
+        color_write_mask: ColorComponentFlagBits(0b1111).bitmask(),
     }
 }

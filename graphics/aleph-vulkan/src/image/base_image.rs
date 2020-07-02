@@ -10,10 +10,10 @@
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
     AttachmentDescriptionBuilder, AttachmentLoadOp, AttachmentStoreOp, ComponentMappingBuilder,
-    ComponentSwizzle, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,
+    ComponentSwizzle, Extent2D, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,
     ImageLayout, ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
-    ImageViewCreateInfoBuilder, ImageViewType, SampleCountFlagBits, SharingMode,
-    Vk10DeviceLoaderExt,
+    ImageViewCreateInfoBuilder, ImageViewType, Offset2D, Rect2DBuilder, SampleCountFlagBits,
+    SharingMode, ViewportBuilder, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, Device};
 use std::ffi::CString;
@@ -263,6 +263,31 @@ impl ImageSingle2D {
             .store_op(store_op)
             .stencil_load_op(AttachmentLoadOp::DONT_CARE)
             .stencil_load_op(AttachmentLoadOp::DONT_CARE)
+    }
+
+    ///
+    /// Gets a viewport for rendering to the whole image
+    ///
+    pub fn get_viewport_full(&self) -> ViewportBuilder {
+        ViewportBuilder::new()
+            .width(self.extent.0 as f32)
+            .height(self.extent.1 as f32)
+            .min_depth(0.0)
+            .max_depth(1.0)
+            .x(0.0)
+            .y(0.0)
+    }
+
+    ///
+    /// Gets a scissor for rendering to the whole image
+    ///
+    pub fn get_scissor_full(&self) -> Rect2DBuilder {
+        Rect2DBuilder::new()
+            .extent(Extent2D {
+                width: self.extent.0,
+                height: self.extent.1,
+            })
+            .offset(Offset2D { x: 0, y: 0 })
     }
 
     ///

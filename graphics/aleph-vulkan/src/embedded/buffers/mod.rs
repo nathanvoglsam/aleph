@@ -178,14 +178,14 @@ impl FullscreenQuadBuffers {
     ///
     /// Get the raw vertex position data
     ///
-    pub fn position_buffer() -> Buffer {
+    pub fn positions() -> Buffer {
         FS_QUAD_BUFFER.get().unwrap().positions()
     }
 
     ///
     /// Get the raw index data
     ///
-    pub fn index_buffer() -> Buffer {
+    pub fn indices() -> Buffer {
         FS_QUAD_BUFFER.get().unwrap().indices()
     }
 }

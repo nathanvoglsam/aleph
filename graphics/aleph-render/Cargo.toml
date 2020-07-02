@@ -28,6 +28,7 @@ azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_P
 aleph-imgui = { path = "../../utils/aleph-imgui", version = "1.0.0" }
 aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
+aleph-math = { path = "../../engine/aleph-math", version = "0.1.0" }
 aleph-vulkan = { path = "../aleph-vulkan", version = "0.1.0" }
 aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1.0" }
 aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1.0" }

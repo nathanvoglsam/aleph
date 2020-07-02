@@ -9,10 +9,8 @@
 
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
-    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer,
-    CommandBufferAllocateInfoBuilder, CommandBufferLevel, CommandPool,
-    CommandPoolCreateInfoBuilder, Framebuffer, FramebufferCreateInfoBuilder, RenderPass,
-    SharingMode, Vk10DeviceLoaderExt,
+    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, Framebuffer, FramebufferCreateInfoBuilder,
+    RenderPass, SharingMode, Vk10DeviceLoaderExt,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
@@ -23,8 +21,6 @@ use std::sync::Arc;
 /// separation allows for multiple frames in flight
 ///
 pub struct ImguiFrame {
-    pub command_pool: CommandPool,
-    pub command_buffer: CommandBuffer,
     pub swap_image: SwapImage,
     pub framebuffer: Framebuffer,
     pub vtx_buffer: (Buffer, Allocation),
@@ -40,8 +36,6 @@ impl ImguiFrame {
         index: usize,
         render_pass: RenderPass,
     ) -> Self {
-        let command_pool = Self::create_command_pool(device, index);
-        let command_buffer = Self::allocate_command_buffer(device, command_pool, index);
         let swap_image = swapchain.images()[index].clone();
         let framebuffer = Self::create_framebuffer(device, render_pass, &swap_image, index);
 
@@ -73,53 +67,11 @@ impl ImguiFrame {
         .expect("Failed to create memory pool");
 
         ImguiFrame {
-            command_pool,
-            command_buffer,
             swap_image,
             framebuffer,
             vtx_buffer: (Buffer::null(), Allocation::null()),
             idx_buffer: (Buffer::null(), Allocation::null()),
             memory_pool,
-        }
-    }
-
-    pub fn create_command_pool(device: &aleph_vulkan_core::Device, index: usize) -> CommandPool {
-        let create_info =
-            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
-        unsafe {
-            let command_pool = device
-                .loader()
-                .create_command_pool(&create_info, None, None)
-                .expect("Failed to create command pool");
-
-            let name = format!("{}::{}::CommandPool", module_path!(), index);
-            let name = CString::new(name).unwrap();
-            command_pool.add_debug_name(device, &name);
-
-            command_pool
-        }
-    }
-
-    pub fn allocate_command_buffer(
-        device: &aleph_vulkan_core::Device,
-        command_pool: CommandPool,
-        index: usize,
-    ) -> CommandBuffer {
-        let allocate_info = CommandBufferAllocateInfoBuilder::new()
-            .command_pool(command_pool)
-            .level(CommandBufferLevel::PRIMARY)
-            .command_buffer_count(1);
-        unsafe {
-            let command_buffer = device
-                .loader()
-                .allocate_command_buffers(&allocate_info)
-                .expect("Failed to create command buffer")[0];
-
-            let name = format!("{}::{}::CommandBuffer", module_path!(), index);
-            let name = CString::new(name).unwrap();
-            command_buffer.add_debug_name(device, &name);
-
-            command_buffer
         }
     }
 
@@ -158,11 +110,5 @@ impl ImguiFrame {
             allocator.destroy_buffer(self.idx_buffer.0, self.idx_buffer.1);
         }
         device.loader().destroy_framebuffer(self.framebuffer, None);
-        device
-            .loader()
-            .free_command_buffers(self.command_pool, &[self.command_buffer]);
-        device
-            .loader()
-            .destroy_command_pool(self.command_pool, None);
     }
 }

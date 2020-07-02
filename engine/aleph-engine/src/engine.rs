@@ -12,9 +12,8 @@ use app_info::AppInfo;
 use platform::window::Window;
 use platform::Platform;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
 use vulkan::pipeline_cache::PipelineCache;
-use vulkan_core::erupt::vk1_0::{Fence, SemaphoreCreateInfoBuilder, Vk10DeviceLoaderExt};
+use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use vulkan_core::GPUInfo;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -126,31 +125,14 @@ impl Engine {
             .vsync()
             .build(&device, Window::drawable_size());
 
-        let _renderer =
-            unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
-
-        let mut imgui_renderer = render::ImguiRenderer::new(
-            imgui_ctx.context_mut().fonts(),
-            device.clone(),
-            allocator.clone(),
-            &swapchain,
-        );
-
-        let create_info = SemaphoreCreateInfoBuilder::new();
-        let acquire_semaphore = unsafe {
-            device
-                .loader()
-                .create_semaphore(&create_info, None, None)
-                .expect("Failed to create acquire semaphore")
+        let mut renderer = unsafe {
+            render::Renderer::new(
+                device.clone(),
+                allocator.clone(),
+                &swapchain,
+                imgui_ctx.context_mut(),
+            )
         };
-        device.defer_destruction(acquire_semaphore);
-        let signal_semaphore = unsafe {
-            device
-                .loader()
-                .create_semaphore(&create_info, None, None)
-                .expect("Failed to create barrier semaphore")
-        };
-        device.defer_destruction(signal_semaphore);
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -191,41 +173,13 @@ impl Engine {
             app.on_update(&ui);
 
             unsafe {
-                device
-                    .loader()
-                    .device_wait_idle()
-                    .expect("Failed to wait on device idle");
-            }
-
-            if swapchain.requires_rebuild() {
-                let _ = swapchain.rebuild(Window::drawable_size());
-                unsafe {
-                    imgui_renderer.recreate_resources(&swapchain);
-                }
-            }
-
-            let i = match swapchain.acquire_next(
-                Duration::from_millis(10000),
-                acquire_semaphore,
-                Fence::null(),
-            ) {
-                Ok(v) => v,
-                Err(_) => {
+                let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
+                if i.is_none() {
                     continue;
                 }
-            };
-
-            unsafe {
-                imgui_renderer.render_frame(
-                    ui,
-                    &swapchain,
-                    acquire_semaphore,
-                    signal_semaphore,
-                    i as usize,
-                );
+                let i = i.unwrap();
+                renderer.render_frame(&mut swapchain, i, ui);
             }
-
-            swapchain.present(device.general_queue(), i as usize, &[signal_semaphore]);
         }
 
         aleph_log::trace!("Calling AppLogic::on_exit");

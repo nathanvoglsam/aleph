@@ -13,21 +13,35 @@ mod pipelines;
 pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
+use aleph_math::traits::{Inverse, Transpose};
+use aleph_math::types::{Mat4x4, Quat, Vec3};
 use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
+use aleph_vulkan::embedded::data::CubeMesh;
 use aleph_vulkan::image::{ColourImage, DepthImage};
 use aleph_vulkan::pipeline_layout::PipelineLayout;
+use aleph_vulkan::reflect::{BindingType, Struct};
 use aleph_vulkan::render_pass::AttachmentReference;
 use aleph_vulkan::shader::ShaderModule;
-use aleph_vulkan_alloc::Allocator;
+use aleph_vulkan::uniform_buffer::Member;
+use aleph_vulkan::uniform_buffer::UniformBufferWriter;
+use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, CommandBufferAllocateInfoBuilder,
-    CommandBufferBeginInfoBuilder, CommandBufferLevel, CommandBufferUsageFlags,
-    CommandPoolCreateInfoBuilder, Fence, Format, Framebuffer, FramebufferCreateInfoBuilder,
-    ImageLayout, PipelineBindPoint, PipelineStageFlags, RenderPass, RenderPassCreateInfoBuilder,
-    SubmitInfoBuilder, SubpassDependencyBuilder, SubpassDescriptionBuilder, Vk10DeviceLoaderExt,
+    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, Buffer, BufferCreateInfoBuilder,
+    BufferUsageFlags, ClearColorValue, ClearDepthStencilValue, ClearValue, CommandBuffer,
+    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
+    CommandBufferUsageFlags, CommandPool, CommandPoolCreateInfoBuilder, CommandPoolResetFlags,
+    DescriptorBufferInfoBuilder, DescriptorImageInfoBuilder, DescriptorPool,
+    DescriptorPoolCreateInfoBuilder, DescriptorPoolSizeBuilder, DescriptorSet,
+    DescriptorSetAllocateInfoBuilder, DescriptorType, Extent2DBuilder, Fence, Format, Framebuffer,
+    FramebufferCreateInfoBuilder, ImageLayout, IndexType, Offset2DBuilder, PipelineBindPoint,
+    PipelineStageFlags, Rect2DBuilder, RenderPass, RenderPassBeginInfoBuilder,
+    RenderPassCreateInfoBuilder, Semaphore, SemaphoreCreateInfoBuilder, SharingMode,
+    SubmitInfoBuilder, SubpassContents, SubpassDependencyBuilder, SubpassDescriptionBuilder,
+    Vk10DeviceLoaderExt, WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
 };
 use aleph_vulkan_core::{DebugName, Device, SwapImage, Swapchain};
 use std::sync::Arc;
+use std::time::Duration;
 
 ///
 /// Represents a single gbuffer
@@ -179,7 +193,7 @@ impl GBufferPass {
             ImageLayout::UNDEFINED,
             ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             AttachmentLoadOp::CLEAR,
-            AttachmentStoreOp::DONT_CARE,
+            AttachmentStoreOp::STORE,
         );
         let depth_desc = depth_image.attachment_description(
             ImageLayout::UNDEFINED,
@@ -189,7 +203,7 @@ impl GBufferPass {
         );
         let swap_desc = swap_image.attachment_description(
             ImageLayout::UNDEFINED,
-            ImageLayout::PRESENT_SRC_KHR,
+            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             AttachmentLoadOp::CLEAR,
             AttachmentStoreOp::STORE,
         );
@@ -229,10 +243,17 @@ impl GBufferPass {
             .src_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
             .dst_stage_mask(PipelineStageFlags::FRAGMENT_SHADER)
             .dst_access_mask(AccessFlags::INPUT_ATTACHMENT_READ);
+        let out_dependency = SubpassDependencyBuilder::new()
+            .src_subpass(1)
+            .dst_subpass(SUBPASS_EXTERNAL)
+            .src_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+            .src_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
+            .dst_stage_mask(PipelineStageFlags::TOP_OF_PIPE)
+            .dst_access_mask(AccessFlags::MEMORY_READ);
 
         let attachments = [colour_desc, depth_desc, swap_desc];
         let subpasses = [geom_pass, tone_pass];
-        let dependencies = [tone_dependency];
+        let dependencies = [tone_dependency, out_dependency];
         let create_info = RenderPassCreateInfoBuilder::new()
             .attachments(&attachments)
             .subpasses(&subpasses)
@@ -261,21 +282,309 @@ impl GBufferPass {
     }
 }
 
+pub struct UniformBuffers {
+    camera_buffer: (Buffer, Allocation),
+    model_buffer: (Buffer, Allocation),
+}
+
+impl UniformBuffers {
+    pub unsafe fn new(allocator: &Allocator, shader_module: &ShaderModule) -> Self {
+        // Find the description of the model and camera uniform buffers
+        let mut model = None;
+        let mut camera = None;
+        shader_module.descriptor_sets().iter().for_each(|v| {
+            if model.is_none() {
+                model = v.bindings().iter().find(|v| v.name() == "model_buffer");
+            }
+            if camera.is_none() {
+                camera = v.bindings().iter().find(|v| v.name() == "camera_buffer");
+            }
+        });
+        // Ensure we've found a descriptor of the correct type
+        let model = model.unwrap();
+        let model = if let BindingType::UniformBuffer(v) = model.binding_type() {
+            v
+        } else {
+            panic!()
+        };
+
+        // Ensure we've found a descriptor of the correct type
+        let camera = camera.unwrap();
+        let camera = if let BindingType::UniformBuffer(v) = camera.binding_type() {
+            v
+        } else {
+            panic!()
+        };
+
+        // Create the model uniform buffer
+        let buffer_create_info = BufferCreateInfoBuilder::new()
+            .size(model.size_padded() as _)
+            .sharing_mode(SharingMode::EXCLUSIVE)
+            .usage(BufferUsageFlags::UNIFORM_BUFFER);
+        let alloc_create_info = AllocationCreateInfoBuilder::new().usage(MemoryUsage::CPUToGPU);
+        let model_buffer = allocator
+            .create_buffer(&buffer_create_info, &alloc_create_info)
+            .expect("Failed to allocate model buffer");
+        model_buffer.0.add_debug_name(
+            allocator.device(),
+            aleph_macros::cstr!(concat!(module_path!(), "::UniformBufferModel")),
+        );
+
+        // Create the camera uniform buffer
+        let buffer_create_info = BufferCreateInfoBuilder::new()
+            .size(camera.size_padded() as _)
+            .sharing_mode(SharingMode::EXCLUSIVE)
+            .usage(BufferUsageFlags::UNIFORM_BUFFER);
+        let alloc_create_info = AllocationCreateInfoBuilder::new().usage(MemoryUsage::CPUToGPU);
+        let camera_buffer = allocator
+            .create_buffer(&buffer_create_info, &alloc_create_info)
+            .expect("Failed to allocate model buffer");
+        model_buffer.0.add_debug_name(
+            allocator.device(),
+            aleph_macros::cstr!(concat!(module_path!(), "::UniformBufferCamera")),
+        );
+
+        // Write the memory for the uniform buffers
+        Self::write_model_buffer(allocator, model, &model_buffer);
+        Self::write_camera_buffer(allocator, camera, &camera_buffer);
+
+        Self {
+            camera_buffer,
+            model_buffer,
+        }
+    }
+
+    unsafe fn write_model_buffer(
+        allocator: &Allocator,
+        layout: &Struct,
+        buffer: &(Buffer, Allocation),
+    ) {
+        let ptr = allocator
+            .map_memory(&buffer.1)
+            .expect("Failed to map memory");
+        let mem = std::slice::from_raw_parts_mut(ptr, layout.size_padded() as _);
+        let mut writer = UniformBufferWriter::new_for_struct(layout, mem).unwrap();
+
+        // Calculate the matrices to upload
+        let model = Mat4x4::identity();
+        let normal = model.clone().inverse().transpose();
+
+        // Write the members
+        writer
+            .write_member("model_matrix", Member::Mat4x4(model))
+            .unwrap();
+        writer
+            .write_member("normal_matrix", Member::Mat4x4(normal))
+            .unwrap();
+
+        // Finalize the writer and ensure that all members have been written
+        writer.finalize().unwrap();
+
+        // Flush and unmap the buffer
+        allocator.flush_allocation(&buffer.1, 0, mem.len() as _);
+        allocator.unmap_memory(&buffer.1);
+    }
+
+    unsafe fn write_camera_buffer(
+        allocator: &Allocator,
+        layout: &Struct,
+        buffer: &(Buffer, Allocation),
+    ) {
+        let ptr = allocator
+            .map_memory(&buffer.1)
+            .expect("Failed to map memory");
+        let mem = std::slice::from_raw_parts_mut(ptr, layout.size_padded() as _);
+        let mut writer = UniformBufferWriter::new_for_struct(layout, mem).unwrap();
+
+        // Calculate the matrices to upload
+        let pos: Vec3 = Vec3::new(0.0, 0.0, 5.0);
+        let trn: Mat4x4 = Mat4x4::translation(pos);
+        let rot: Mat4x4 = Quat::identity().into();
+        let view = trn * rot;
+        let proj = Mat4x4::perspective(16.0 / 9.0, 90.0, 0.1, 100.0);
+
+        // Write the members
+        writer
+            .write_member("view_matrix", Member::Mat4x4(view))
+            .unwrap();
+        writer
+            .write_member("proj_matrix", Member::Mat4x4(proj))
+            .unwrap();
+        writer
+            .write_member("position", Member::Vec3(pos.into()))
+            .unwrap();
+
+        // Finalize the writer and ensure that all members have been written
+        writer.finalize().unwrap();
+
+        // Flush and unmap the buffer
+        allocator.flush_allocation(&buffer.1, 0, mem.len() as _);
+        allocator.unmap_memory(&buffer.1);
+    }
+
+    ///
+    /// Destroys the underlying buffers.
+    ///
+    /// Unsafe as destruction is un synchronized
+    ///
+    pub unsafe fn destroy(&self, allocator: &Allocator) {
+        allocator.destroy_buffer(self.camera_buffer.0, self.camera_buffer.1);
+        allocator.destroy_buffer(self.model_buffer.0, self.model_buffer.1);
+    }
+}
+
+pub struct GeometrySets {
+    geom_set_pool: DescriptorPool,
+    camera_set: DescriptorSet,
+    model_set: DescriptorSet,
+}
+
+impl GeometrySets {
+    pub unsafe fn new(
+        device: &Device,
+        pipeline_layout: &PipelineLayout,
+        buffers: &UniformBuffers,
+    ) -> Self {
+        let pool_sizes = [DescriptorPoolSizeBuilder::new()
+            ._type(DescriptorType::UNIFORM_BUFFER)
+            .descriptor_count(4)];
+        let create_info = DescriptorPoolCreateInfoBuilder::new()
+            .max_sets(4)
+            .pool_sizes(&pool_sizes);
+        let geom_set_pool = device
+            .loader()
+            .create_descriptor_pool(&create_info, None, None)
+            .expect("Failed to create descriptor pool");
+
+        let allocate_info = DescriptorSetAllocateInfoBuilder::new()
+            .descriptor_pool(geom_set_pool)
+            .set_layouts(pipeline_layout.set_layouts());
+        let sets = device
+            .loader()
+            .allocate_descriptor_sets(&allocate_info)
+            .expect("Failed to create descriptor set");
+        let camera_set = sets[0];
+        let model_set = sets[1];
+
+        // Camera UBO
+        let camera_buffer_info = [DescriptorBufferInfoBuilder::new()
+            .offset(0)
+            .buffer(buffers.camera_buffer.0)
+            .range(WHOLE_SIZE)];
+        let camera_write = WriteDescriptorSetBuilder::new()
+            .descriptor_type(DescriptorType::UNIFORM_BUFFER)
+            .buffer_info(&camera_buffer_info)
+            .dst_set(camera_set)
+            .dst_binding(0);
+
+        // Model UBO
+        let model_buffer_info = [DescriptorBufferInfoBuilder::new()
+            .offset(0)
+            .buffer(buffers.model_buffer.0)
+            .range(WHOLE_SIZE)];
+        let model_write = WriteDescriptorSetBuilder::new()
+            .descriptor_type(DescriptorType::UNIFORM_BUFFER)
+            .buffer_info(&model_buffer_info)
+            .dst_set(model_set)
+            .dst_binding(0);
+
+        let writes = [camera_write, model_write];
+        device.loader().update_descriptor_sets(&writes, &[]);
+
+        Self {
+            geom_set_pool,
+            camera_set,
+            model_set,
+        }
+    }
+
+    pub unsafe fn destroy(&self, device: &Device) {
+        device
+            .loader()
+            .destroy_descriptor_pool(self.geom_set_pool, None);
+    }
+}
+
+pub struct ToneSets {
+    tone_set_pool: DescriptorPool,
+    tone_set: DescriptorSet,
+}
+
+impl ToneSets {
+    pub unsafe fn new(
+        device: &Device,
+        pipeline_layout: &PipelineLayout,
+        gbuffer: &GBuffer,
+    ) -> Self {
+        let pool_sizes = [DescriptorPoolSizeBuilder::new()
+            ._type(DescriptorType::INPUT_ATTACHMENT)
+            .descriptor_count(4)];
+        let create_info = DescriptorPoolCreateInfoBuilder::new()
+            .max_sets(4)
+            .pool_sizes(&pool_sizes);
+        let tone_set_pool = device
+            .loader()
+            .create_descriptor_pool(&create_info, None, None)
+            .expect("Failed to create descriptor pool");
+
+        let allocate_info = DescriptorSetAllocateInfoBuilder::new()
+            .descriptor_pool(tone_set_pool)
+            .set_layouts(pipeline_layout.set_layouts());
+        let sets = device
+            .loader()
+            .allocate_descriptor_sets(&allocate_info)
+            .expect("Failed to create descriptor set");
+        let tone_set = sets[0];
+
+        // Input Attachment
+        let input_attachment_info = [DescriptorImageInfoBuilder::new()
+            .image_view(gbuffer.base_colour.image_view())
+            .image_layout(ImageLayout::SHADER_READ_ONLY_OPTIMAL)];
+        let tone_write = WriteDescriptorSetBuilder::new()
+            .descriptor_type(DescriptorType::INPUT_ATTACHMENT)
+            .image_info(&input_attachment_info)
+            .dst_set(tone_set)
+            .dst_binding(0);
+
+        let writes = [tone_write];
+        device.loader().update_descriptor_sets(&writes, &[]);
+
+        Self {
+            tone_set_pool,
+            tone_set,
+        }
+    }
+
+    pub unsafe fn destroy(&self, device: &Device) {
+        device
+            .loader()
+            .destroy_descriptor_pool(self.tone_set_pool, None);
+    }
+}
+
 ///
 ///
 ///
 pub struct Renderer {
     gbuffer: GBuffer,
     gbuffer_pass: GBufferPass,
-    gbuffer_framebuffer: GBufferFramebuffer,
+    gbuffer_framebuffers: Vec<GBufferFramebuffer>,
     geom_frag_module: ShaderModule,
     geom_vert_module: ShaderModule,
     geom_pipe_layout: PipelineLayout,
     geom_pipe: GeometryPipeline,
+    geom_sets: GeometrySets,
     tone_frag_module: ShaderModule,
     tone_vert_module: ShaderModule,
     tone_pipe_layout: PipelineLayout,
     tone_pipe: TonePipeline,
+    tone_sets: ToneSets,
+    uniform_buffers: UniformBuffers,
+    imgui_renderer: ImguiRenderer,
+    command_pool: CommandPool,
+    command_buffer: CommandBuffer,
+    acquire_semaphore: Semaphore,
+    signal_semaphore: Semaphore,
     device: Arc<Device>,
     allocator: Arc<Allocator>,
 }
@@ -288,6 +597,7 @@ impl Renderer {
         device: Arc<Device>,
         allocator: Arc<Allocator>,
         swapchain: &Swapchain,
+        imgui_ctx: &mut aleph_imgui::Context,
     ) -> Renderer {
         Self::init_global_meshes(&device, &allocator);
 
@@ -297,15 +607,23 @@ impl Renderer {
             &device,
             gbuffer.colour_image(),
             gbuffer.depth_image(),
-            &swap_image,
+            swap_image,
         );
-        let gbuffer_framebuffer = GBufferFramebuffer::new(
-            &device,
-            gbuffer.colour_image(),
-            gbuffer.depth_image(),
-            &swap_image,
-            gbuffer_pass.render_pass(),
-        );
+
+        let gbuffer_framebuffers: Vec<GBufferFramebuffer> = swapchain
+            .images()
+            .iter()
+            .map(|v| {
+                GBufferFramebuffer::new(
+                    &device,
+                    gbuffer.colour_image(),
+                    gbuffer.depth_image(),
+                    &v,
+                    gbuffer_pass.render_pass(),
+                )
+            })
+            .collect();
+
         let (_, words) = aleph_vulkan::embedded::data::shaders::standard_frag_shader();
         let geom_frag_module = ShaderModule::builder()
             .debug_name(aleph_macros::cstr!(concat!(
@@ -390,21 +708,305 @@ impl Renderer {
             &tone_frag_module,
         );
 
+        let uniform_buffers = UniformBuffers::new(&allocator, &geom_vert_module);
+
+        let geom_sets = GeometrySets::new(&device, &geom_pipe_layout, &uniform_buffers);
+        let tone_sets = ToneSets::new(&device, &tone_pipe_layout, &gbuffer);
+
+        let imgui_renderer = ImguiRenderer::new(
+            imgui_ctx.fonts(),
+            device.clone(),
+            allocator.clone(),
+            swapchain,
+        );
+
+        let create_info =
+            CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
+        let command_pool = device
+            .loader()
+            .create_command_pool(&create_info, None, None)
+            .expect("Failed to create command pool");
+
+        let allocate_info = CommandBufferAllocateInfoBuilder::new()
+            .command_pool(command_pool)
+            .command_buffer_count(1)
+            .level(CommandBufferLevel::PRIMARY);
+        let command_buffer = device
+            .loader()
+            .allocate_command_buffers(&allocate_info)
+            .expect("Failed to allocate command buffer")[0];
+
+        let create_info = SemaphoreCreateInfoBuilder::new();
+        let acquire_semaphore = device
+            .loader()
+            .create_semaphore(&create_info, None, None)
+            .expect("Failed to create acquire semaphore");
+        device.defer_destruction(acquire_semaphore);
+        let signal_semaphore = device
+            .loader()
+            .create_semaphore(&create_info, None, None)
+            .expect("Failed to create barrier semaphore");
+        device.defer_destruction(signal_semaphore);
+
         Self {
             gbuffer,
             gbuffer_pass,
-            gbuffer_framebuffer,
+            gbuffer_framebuffers,
             geom_frag_module,
             geom_vert_module,
             geom_pipe_layout,
             geom_pipe,
+            geom_sets,
             tone_frag_module,
             tone_vert_module,
             tone_pipe_layout,
             tone_pipe,
+            tone_sets,
+            uniform_buffers,
+            imgui_renderer,
+            command_pool,
+            command_buffer,
+            acquire_semaphore,
+            signal_semaphore,
             device,
             allocator,
         }
+    }
+
+    pub unsafe fn acquire_swap_image(
+        &self,
+        swapchain: &mut Swapchain,
+        drawable_size: (u32, u32),
+    ) -> Option<usize> {
+        self.device
+            .loader()
+            .device_wait_idle()
+            .expect("Failed to wait on device idle");
+
+        if swapchain.requires_rebuild() {
+            let _ = swapchain.rebuild(drawable_size);
+            //renderer.recreate_resources(&swapchain);
+        }
+
+        match swapchain.acquire_next(
+            Duration::from_millis(10000),
+            self.acquire_semaphore,
+            Fence::null(),
+        ) {
+            Ok(v) => Some(v),
+            Err(_) => None,
+        }
+    }
+
+    pub unsafe fn render_frame(
+        &mut self,
+        swapchain: &mut Swapchain,
+        index: usize,
+        frame: aleph_imgui::Ui,
+    ) {
+        self.device
+            .loader()
+            .reset_command_pool(self.command_pool, CommandPoolResetFlags::default())
+            .expect("Failed to reset command pool");
+
+        //
+        // Begin command buffer recording
+        //
+        let begin_info =
+            CommandBufferBeginInfoBuilder::new().flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+        self.device
+            .loader()
+            .begin_command_buffer(self.command_buffer, &begin_info)
+            .expect("Failed to begin command buffer");
+
+        self.record_frame(self.command_buffer, index);
+
+        self.imgui_renderer
+            .render_frame(frame, self.command_buffer, index);
+
+        self.device
+            .loader()
+            .end_command_buffer(self.command_buffer)
+            .expect("Failed to end command buffer");
+
+        let command_buffers = [self.command_buffer];
+        let wait_semaphores = [self.acquire_semaphore];
+        let signal_semaphores = [self.signal_semaphore];
+        let wait_dst_stage_mask = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+        let submit = SubmitInfoBuilder::new()
+            .command_buffers(&command_buffers)
+            .wait_semaphores(&wait_semaphores)
+            .signal_semaphores(&signal_semaphores)
+            .wait_dst_stage_mask(&wait_dst_stage_mask);
+        self.device
+            .loader()
+            .queue_submit(self.device.general_queue(), &[submit], Fence::null())
+            .expect("Failed to submit to queue");
+
+        swapchain.present(self.device.general_queue(), index, &[self.signal_semaphore]);
+    }
+
+    pub unsafe fn record_frame(&self, command_buffer: CommandBuffer, index: usize) {
+        // Build render area over entire image
+        let base_colour = &self.gbuffer.base_colour;
+        let offset = Offset2DBuilder::new().x(0).y(0);
+        let extent = Extent2DBuilder::new()
+            .width(base_colour.width())
+            .height(base_colour.height());
+        let render_area = Rect2DBuilder::new().extent(*extent).offset(*offset);
+
+        // Create the clear values
+        let colour_clear = ClearValue {
+            color: ClearColorValue {
+                uint32: [0, 0, 0, 0],
+            },
+        };
+        let depth_clear = ClearValue {
+            depth_stencil: ClearDepthStencilValue {
+                depth: 1.0,
+                stencil: 0,
+            },
+        };
+        let swap_clear = ClearValue {
+            color: ClearColorValue {
+                uint32: [0, 0, 0, 0],
+            },
+        };
+
+        // RenderPass begin for the gbuffer pass on the given framebuffer index
+        let clear_values = [colour_clear, depth_clear, swap_clear];
+        let render_pass_begin = RenderPassBeginInfoBuilder::new()
+            .render_pass(self.gbuffer_pass.render_pass())
+            .framebuffer(self.gbuffer_framebuffers[index].framebuffer())
+            .render_area(*render_area)
+            .clear_values(&clear_values);
+
+        self.device.loader().cmd_begin_render_pass(
+            command_buffer,
+            &render_pass_begin,
+            SubpassContents::INLINE,
+        );
+
+        // =========================================================================================
+        // GEOMETRY SUBPASS
+        // =========================================================================================
+
+        // Bind the geometry pipeline
+        self.device.loader().cmd_bind_pipeline(
+            command_buffer,
+            PipelineBindPoint::GRAPHICS,
+            self.geom_pipe.pipeline(),
+        );
+
+        self.device.loader().cmd_set_viewport(
+            command_buffer,
+            0,
+            &[self.gbuffer.base_colour.get_viewport_full()],
+        );
+
+        self.device.loader().cmd_set_scissor(
+            command_buffer,
+            0,
+            &[self.gbuffer.base_colour.get_scissor_full()],
+        );
+
+        // Bind the descriptors
+        let descriptor_sets = [self.geom_sets.camera_set, self.geom_sets.model_set];
+        self.device.loader().cmd_bind_descriptor_sets(
+            command_buffer,
+            PipelineBindPoint::GRAPHICS,
+            self.geom_pipe_layout.pipeline_layout(),
+            0,
+            &descriptor_sets,
+            &[],
+        );
+
+        // Bind all the vertex attributes for a static mesh
+        let buffers = [
+            CubeMeshBuffers::positions(),
+            CubeMeshBuffers::normals(),
+            CubeMeshBuffers::tangents(),
+            CubeMeshBuffers::uvs(),
+        ];
+        let offsets = [0, 0, 0, 0];
+        self.device
+            .loader()
+            .cmd_bind_vertex_buffers(command_buffer, 0, &buffers, &offsets);
+
+        self.device.loader().cmd_bind_index_buffer(
+            command_buffer,
+            CubeMeshBuffers::indices(),
+            0,
+            IndexType::UINT16,
+        );
+        self.device.loader().cmd_draw_indexed(
+            command_buffer,
+            CubeMesh::indices().len() as _,
+            1,
+            0,
+            0,
+            0,
+        );
+
+        // =========================================================================================
+        // TONEMAPPING SUBPASS
+        // =========================================================================================
+        self.device
+            .loader()
+            .cmd_next_subpass(command_buffer, SubpassContents::INLINE);
+
+        // Bind the tonemapping pipeline
+        self.device.loader().cmd_bind_pipeline(
+            command_buffer,
+            PipelineBindPoint::GRAPHICS,
+            self.tone_pipe.pipeline(),
+        );
+
+        self.device.loader().cmd_set_viewport(
+            command_buffer,
+            0,
+            &[self.gbuffer.base_colour.get_viewport_full()],
+        );
+
+        self.device.loader().cmd_set_scissor(
+            command_buffer,
+            0,
+            &[self.gbuffer.base_colour.get_scissor_full()],
+        );
+
+        // Bind the descriptors
+        let descriptor_sets = [self.tone_sets.tone_set];
+        self.device.loader().cmd_bind_descriptor_sets(
+            command_buffer,
+            PipelineBindPoint::GRAPHICS,
+            self.tone_pipe_layout.pipeline_layout(),
+            0,
+            &descriptor_sets,
+            &[],
+        );
+
+        // Bind the FS quad vertex buffer
+        let buffers = [FullscreenQuadBuffers::positions()];
+        let offsets = [0];
+        self.device
+            .loader()
+            .cmd_bind_vertex_buffers(command_buffer, 0, &buffers, &offsets);
+
+        // Bind the FS quad index buffer
+        self.device.loader().cmd_bind_index_buffer(
+            command_buffer,
+            FullscreenQuadBuffers::indices(),
+            0,
+            IndexType::UINT16,
+        );
+
+        // Draw a single full screen quad
+        self.device
+            .loader()
+            .cmd_draw_indexed(command_buffer, 6, 1, 0, 0, 0);
+
+        // End the render pass
+        self.device.loader().cmd_end_render_pass(command_buffer);
     }
 
     ///
@@ -480,9 +1082,14 @@ impl Drop for Renderer {
             self.geom_pipe_layout.destroy(&self.device);
             self.geom_vert_module.destroy(&self.device);
             self.geom_frag_module.destroy(&self.device);
-            self.gbuffer_framebuffer.destroy(&self.device);
+            self.gbuffer_framebuffers
+                .iter()
+                .for_each(|v| v.destroy(&self.device));
             self.gbuffer_pass.destroy(&self.device);
             self.gbuffer.destroy(&self.device, &self.allocator);
+            self.geom_sets.destroy(&self.device);
+            self.tone_sets.destroy(&self.device);
+            self.uniform_buffers.destroy(&self.allocator);
         }
     }
 }

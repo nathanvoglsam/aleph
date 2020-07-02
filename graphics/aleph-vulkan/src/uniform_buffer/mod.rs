@@ -32,6 +32,14 @@ pub enum MemberWriteError {
 }
 
 ///
+/// The set of errors that can be produced when trying to finalize a writer
+///
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub enum WriterFinalizeError {
+    NotAllMembersWritten,
+}
+
+///
 /// Represents the set of supported UBO member variable types that can be written
 ///
 #[derive(Clone, Debug)]
@@ -155,7 +163,7 @@ impl Member {
     fn write_scalar<T>(src: T, dest: &mut [u8]) {
         let count = core::mem::size_of::<T>();
         let src = &src as *const T;
-        assert!(dest.len() > count);
+        assert!(dest.len() >= count);
         unsafe {
             dest.as_mut_ptr().copy_from(src as *const u8, count);
         }
@@ -168,7 +176,7 @@ impl Member {
     fn write_vector<T>(src: &[T], dest: &mut [u8]) {
         let count = core::mem::size_of::<T>() * src.len();
         let src = src.as_ptr();
-        assert!(dest.len() > count);
+        assert!(dest.len() >= count);
         unsafe {
             dest.as_mut_ptr().copy_from(src as *const u8, count);
         }
@@ -183,7 +191,7 @@ impl Member {
 
         let count = core::mem::size_of::<T>() * src.len();
         let src = src.as_ptr();
-        assert!(dest.len() > count);
+        assert!(dest.len() >= count);
         unsafe {
             dest.as_mut_ptr().copy_from(src as *const u8, count);
         }
@@ -327,6 +335,27 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
             return Err(MemberWriteError::WrongType);
         }
         self.member_written[index] = true;
+
+        Ok(())
+    }
+
+    ///
+    /// Finalize the uniform buffer producing errors if writing was invalid.
+    ///
+    /// This function is important to call to prevent an implicit panic. The invariant of checking
+    /// that all members have been written is still upheld by the `Drop` implementation by causing
+    /// a panic if the invariant is not met. This function moves that panic to a Result so it can
+    /// be checked for and handled manually (you can also just panic explicitly).
+    ///
+    pub fn finalize(mut self) -> Result<(), WriterFinalizeError> {
+        for b in self.member_written.iter() {
+            if *b == false {
+                return Err(WriterFinalizeError::NotAllMembersWritten);
+            }
+        }
+
+        // Empty the vec so the drop implementation wont panic
+        self.member_written.clear();
 
         Ok(())
     }

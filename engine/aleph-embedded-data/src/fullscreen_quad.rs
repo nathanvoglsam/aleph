@@ -24,8 +24,8 @@ impl FullscreenQuad {
     ///
     /// Gets the index buffer for a fullscreen quad
     ///
-    pub fn indices() -> &'static [u32; 6] {
-        static IND: [u32; 6] = [0, 1, 2, 3, 0, 2];
+    pub fn indices() -> &'static [u16; 6] {
+        static IND: [u16; 6] = [0, 1, 2, 3, 0, 2];
         &IND
     }
 }

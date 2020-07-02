@@ -16,10 +16,11 @@ use aleph_vulkan::pipeline::{
 use aleph_vulkan::render_pass::AttachmentReference;
 use aleph_vulkan::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
-    AttachmentLoadOp, AttachmentStoreOp, Format, FrontFace, ImageLayout, Pipeline,
-    PipelineBindPoint, PipelineLayout, PolygonMode, PrimitiveTopology, RenderPass,
-    RenderPassCreateInfoBuilder, SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
-    VertexInputBindingDescriptionBuilder, VertexInputRate, Vk10DeviceLoaderExt,
+    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, Format, FrontFace, ImageLayout, Pipeline,
+    PipelineBindPoint, PipelineLayout, PipelineStageFlags, PolygonMode, PrimitiveTopology,
+    RenderPass, RenderPassCreateInfoBuilder, SubpassDependencyBuilder, SubpassDescriptionBuilder,
+    VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
+    Vk10DeviceLoaderExt, SUBPASS_EXTERNAL,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
@@ -60,9 +61,9 @@ impl ImguiSingular {
         swap_image: &SwapImage,
     ) -> RenderPass {
         let attachment = swap_image.attachment_description(
-            ImageLayout::UNDEFINED,
+            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
             ImageLayout::PRESENT_SRC_KHR,
-            AttachmentLoadOp::CLEAR,
+            AttachmentLoadOp::LOAD,
             AttachmentStoreOp::STORE,
         );
 
@@ -71,11 +72,21 @@ impl ImguiSingular {
             .pipeline_bind_point(PipelineBindPoint::GRAPHICS)
             .color_attachments(&color_attachments);
 
+        let dependency = SubpassDependencyBuilder::new()
+            .src_subpass(SUBPASS_EXTERNAL)
+            .dst_subpass(0)
+            .src_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
+            .dst_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
+            .src_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+            .dst_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT);
+
         let attachments = [attachment];
         let subpasses = [subpass];
+        let dependencies = [dependency];
         let create_info = RenderPassCreateInfoBuilder::new()
             .attachments(&attachments)
-            .subpasses(&subpasses);
+            .subpasses(&subpasses)
+            .dependencies(&dependencies);
         unsafe {
             let render_pass = device
                 .loader()

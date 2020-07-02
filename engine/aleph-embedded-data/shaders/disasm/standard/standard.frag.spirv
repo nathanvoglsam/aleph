@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Google spiregg; 0
-; Bound: 95
+; Bound: 94
 ; Schema: 0
                OpCapability Shader
           %1 = OpExtInstImport "GLSL.std.450"
@@ -37,7 +37,9 @@
                OpDecorate %type_ConstantBuffer_CameraLayout Block
       %float = OpTypeFloat 32
     %float_0 = OpConstant %float 0
+ %float_10_5 = OpConstant %float 10.5
     %v3float = OpTypeVector %float 3
+         %14 = OpConstantComposite %v3float %float_0 %float_0 %float_10_5
     %float_1 = OpConstant %float 1
   %float_0_5 = OpConstant %float 0.5
 %float_4_99999987en05 = OpConstant %float 4.99999987e-05
@@ -52,7 +54,7 @@
 %_ptr_Input_v2float = OpTypePointer Input %v2float
 %_ptr_Output_v4float = OpTypePointer Output %v4float
        %void = OpTypeVoid
-         %26 = OpTypeFunction %void
+         %28 = OpTypeFunction %void
 %camera_buffer = OpVariable %_ptr_Uniform_type_ConstantBuffer_CameraLayout Uniform
 %in_var_POSITION = OpVariable %_ptr_Input_v3float Input
 %in_var_NORMAL = OpVariable %_ptr_Input_v3float Input
@@ -62,72 +64,69 @@
 %float_0_640000045 = OpConstant %float 0.640000045
 %float_0_359999955 = OpConstant %float 0.359999955
 %float_0_0399999991 = OpConstant %float 0.0399999991
-         %30 = OpConstantComposite %v3float %float_0_0399999991 %float_0_0399999991 %float_0_0399999991
+         %32 = OpConstantComposite %v3float %float_0_0399999991 %float_0_0399999991 %float_0_0399999991
 %float_0_318309873 = OpConstant %float 0.318309873
 %float_0_959999979 = OpConstant %float 0.959999979
-         %33 = OpConstantComposite %v3float %float_0_959999979 %float_0_959999979 %float_0_959999979
+         %35 = OpConstantComposite %v3float %float_0_959999979 %float_0_959999979 %float_0_959999979
 %float_0_114591539 = OpConstant %float 0.114591539
-         %35 = OpConstantComposite %v3float %float_0_114591539 %float_0_114591539 %float_0_114591539
+         %37 = OpConstantComposite %v3float %float_0_114591539 %float_0_114591539 %float_0_114591539
 %float_397_887329 = OpConstant %float 397.887329
 %_ptr_Uniform_v3float = OpTypePointer Uniform %v3float
        %uint = OpTypeInt 32 0
      %uint_2 = OpConstant %uint 2
-       %main = OpFunction %void None %26
-         %40 = OpLabel
-         %41 = OpLoad %v3float %in_var_POSITION
-         %42 = OpLoad %v3float %in_var_NORMAL
-         %43 = OpAccessChain %_ptr_Uniform_v3float %camera_buffer %uint_2
-         %44 = OpLoad %v3float %43
-         %45 = OpFSub %v3float %44 %41
-         %46 = OpFNegate %v3float %41
-         %47 = OpExtInst %v3float %1 Normalize %45
-         %48 = OpExtInst %v3float %1 Normalize %41
-         %49 = OpExtInst %v3float %1 Normalize %42
-         %50 = OpFAdd %v3float %47 %48
-         %51 = OpExtInst %v3float %1 Normalize %50
-         %52 = OpDot %float %49 %47
-         %53 = OpExtInst %float %1 FAbs %52
-         %54 = OpFAdd %float %53 %float_4_99999987en05
-         %55 = OpDot %float %49 %48
-         %56 = OpExtInst %float %1 FClamp %55 %float_0 %float_1
-         %57 = OpDot %float %49 %51
+       %main = OpFunction %void None %28
+         %42 = OpLabel
+         %43 = OpLoad %v3float %in_var_POSITION
+         %44 = OpLoad %v3float %in_var_NORMAL
+         %45 = OpAccessChain %_ptr_Uniform_v3float %camera_buffer %uint_2
+         %46 = OpLoad %v3float %45
+         %47 = OpFSub %v3float %46 %43
+         %48 = OpFSub %v3float %43 %14
+         %49 = OpExtInst %v3float %1 Normalize %47
+         %50 = OpExtInst %v3float %1 Normalize %48
+         %51 = OpExtInst %v3float %1 Normalize %44
+         %52 = OpFAdd %v3float %49 %50
+         %53 = OpExtInst %v3float %1 Normalize %52
+         %54 = OpDot %float %51 %49
+         %55 = OpExtInst %float %1 FAbs %54
+         %56 = OpFAdd %float %55 %float_4_99999987en05
+         %57 = OpDot %float %51 %50
          %58 = OpExtInst %float %1 FClamp %57 %float_0 %float_1
-         %59 = OpDot %float %48 %51
+         %59 = OpDot %float %51 %53
          %60 = OpExtInst %float %1 FClamp %59 %float_0 %float_1
-         %61 = OpFMul %float %58 %float_0_640000045
-         %62 = OpFMul %float %58 %58
-         %63 = OpFSub %float %float_1 %62
-         %64 = OpFMul %float %61 %61
-         %65 = OpFAdd %float %63 %64
-         %66 = OpFDiv %float %float_0_640000045 %65
-         %67 = OpFMul %float %66 %66
-         %68 = OpFMul %float %67 %float_0_318309873
-         %69 = OpFMul %float %54 %float_0_359999955
-         %70 = OpFAdd %float %69 %float_0_640000045
-         %71 = OpFMul %float %56 %70
-         %72 = OpFMul %float %56 %float_0_359999955
-         %73 = OpFAdd %float %72 %float_0_640000045
-         %74 = OpFMul %float %54 %73
-         %75 = OpFAdd %float %71 %74
-         %76 = OpFDiv %float %float_0_5 %75
-         %77 = OpFSub %float %float_1 %60
-         %78 = OpExtInst %float %1 Pow %77 %float_5
-         %79 = OpVectorTimesScalar %v3float %33 %78
-         %80 = OpFAdd %v3float %30 %79
-         %81 = OpFMul %float %68 %76
-         %82 = OpVectorTimesScalar %v3float %80 %81
-         %83 = OpFAdd %v3float %82 %35
-         %84 = OpExtInst %v3float %1 Normalize %46
-         %85 = OpDot %float %49 %84
-         %86 = OpExtInst %float %1 FClamp %85 %float_0 %float_1
-         %87 = OpDot %float %41 %41
-         %88 = OpFDiv %float %float_397_887329 %87
-         %89 = OpFMul %float %88 %86
-         %90 = OpVectorTimesScalar %v3float %83 %89
-         %91 = OpCompositeExtract %float %90 0
-         %92 = OpCompositeExtract %float %90 1
-         %93 = OpCompositeExtract %float %90 2
-         %94 = OpCompositeConstruct %v4float %91 %92 %93 %float_1
-               OpStore %out_var_SV_Target0 %94
+         %61 = OpDot %float %50 %53
+         %62 = OpExtInst %float %1 FClamp %61 %float_0 %float_1
+         %63 = OpFMul %float %60 %float_0_640000045
+         %64 = OpFMul %float %60 %60
+         %65 = OpFSub %float %float_1 %64
+         %66 = OpFMul %float %63 %63
+         %67 = OpFAdd %float %65 %66
+         %68 = OpFDiv %float %float_0_640000045 %67
+         %69 = OpFMul %float %68 %68
+         %70 = OpFMul %float %69 %float_0_318309873
+         %71 = OpFMul %float %56 %float_0_359999955
+         %72 = OpFAdd %float %71 %float_0_640000045
+         %73 = OpFMul %float %58 %72
+         %74 = OpFMul %float %58 %float_0_359999955
+         %75 = OpFAdd %float %74 %float_0_640000045
+         %76 = OpFMul %float %56 %75
+         %77 = OpFAdd %float %73 %76
+         %78 = OpFDiv %float %float_0_5 %77
+         %79 = OpFSub %float %float_1 %62
+         %80 = OpExtInst %float %1 Pow %79 %float_5
+         %81 = OpVectorTimesScalar %v3float %35 %80
+         %82 = OpFAdd %v3float %32 %81
+         %83 = OpFMul %float %70 %78
+         %84 = OpVectorTimesScalar %v3float %82 %83
+         %85 = OpFAdd %v3float %84 %37
+         %86 = OpDot %float %48 %48
+         %87 = OpFDiv %float %float_397_887329 %86
+         %88 = OpFMul %float %87 %58
+         %89 = OpVectorTimesScalar %v3float %85 %88
+         %90 = OpCompositeExtract %float %89 0
+         %91 = OpCompositeExtract %float %89 1
+         %92 = OpCompositeExtract %float %89 2
+         %93 = OpCompositeConstruct %v4float %90 %91 %92 %float_1
+               OpStore %out_var_SV_Target0 %93
                OpReturn
                OpFunctionEnd

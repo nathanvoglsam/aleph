@@ -43,7 +43,7 @@ impl GeometryPipeline {
 
         let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
         let rasterization_state =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
+            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::CLOCKWISE);
         let vstage = vert_module.pipeline_shader_stage().unwrap();
         let fstage = frag_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
@@ -67,6 +67,13 @@ impl GeometryPipeline {
             .expect("Failed to create geometry pipeline");
 
         Self { pipeline }
+    }
+
+    ///
+    /// Gets the underlying pipeline handle
+    ///
+    pub fn pipeline(&self) -> Pipeline {
+        self.pipeline
     }
 
     ///
@@ -104,7 +111,7 @@ impl TonePipeline {
 
         let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
         let rasterization_state =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
+            RasterizationState::unculled(PolygonMode::FILL, FrontFace::CLOCKWISE);
         let vstage = vert_module.pipeline_shader_stage().unwrap();
         let fstage = frag_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
@@ -116,7 +123,7 @@ impl TonePipeline {
             .render_pass(render_pass)
             .subpass(1)
             .color_blend_state(&ColorBlendState::disabled(1))
-            .depth_stencil_state(&DepthState::enabled(true, CompareOp::LESS))
+            .depth_stencil_state(&DepthState::disabled())
             .dynamic_state(&DynamicPipelineState::viewport_scissor())
             .input_assembly_state(&input_assembly_state)
             .multisample_state(&MultiSampleState::disabled())
@@ -128,6 +135,13 @@ impl TonePipeline {
             .expect("Failed to create tonemapping pipeline");
 
         Self { pipeline }
+    }
+
+    ///
+    /// Gets the underlying pipeline handle
+    ///
+    pub fn pipeline(&self) -> Pipeline {
+        self.pipeline
     }
 
     ///

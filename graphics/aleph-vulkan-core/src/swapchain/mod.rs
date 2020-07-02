@@ -17,7 +17,7 @@ use erupt::extensions::khr_swapchain::{
 use erupt::vk1_0::{
     ComponentMappingBuilder, ComponentSwizzle, Extent2D, Fence, Format, ImageAspectFlags,
     ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType,
-    Queue, Semaphore, SharingMode, ViewportBuilder, Vk10DeviceLoaderExt,
+    Queue, Semaphore, SharingMode, Vk10DeviceLoaderExt,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -307,19 +307,6 @@ impl Swapchain {
     ///
     pub fn requires_rebuild(&self) -> bool {
         self.requires_rebuild
-    }
-
-    ///
-    /// Gets a viewport for rendering to the whole image
-    ///
-    pub fn get_viewport_full(&self) -> ViewportBuilder {
-        ViewportBuilder::new()
-            .width(self.extents.width as f32)
-            .height(self.extents.height as f32)
-            .min_depth(0.0)
-            .max_depth(1.0)
-            .x(0.0)
-            .y(0.0)
     }
 
     ///

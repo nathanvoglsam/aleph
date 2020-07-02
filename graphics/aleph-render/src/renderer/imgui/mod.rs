@@ -20,12 +20,11 @@ mod global;
 mod singular;
 
 use aleph_vulkan_core::erupt::vk1_0::{
-    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, ClearColorValue, ClearValue, CommandBuffer,
-    CommandBufferBeginInfoBuilder, CommandBufferUsageFlags, CommandPoolResetFlags, DependencyFlags,
-    Extent2D, Fence, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
+    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer, DependencyFlags, Extent2D,
+    Extent2DBuilder, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
     ImageSubresourceRangeBuilder, IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags,
-    Rect2DBuilder, RenderPassBeginInfoBuilder, Semaphore, ShaderStageFlags, SharingMode,
-    SubmitInfoBuilder, SubpassContents, Vk10DeviceLoaderExt, WHOLE_SIZE,
+    Rect2DBuilder, RenderPassBeginInfoBuilder, ShaderStageFlags, SharingMode, SubpassContents,
+    Vk10DeviceLoaderExt, WHOLE_SIZE,
 };
 use aleph_vulkan_core::DebugName;
 pub use font::ImguiFont;
@@ -98,9 +97,7 @@ impl ImguiRenderer {
     pub unsafe fn render_frame(
         &mut self,
         frame: aleph_imgui::Ui,
-        swapchain: &aleph_vulkan_core::Swapchain,
-        acquire_semaphore: Semaphore,
-        signal_semaphore: Semaphore,
+        command_buffer: CommandBuffer,
         index: usize,
     ) {
         let draw_data = frame.render();
@@ -225,23 +222,6 @@ impl ImguiRenderer {
 
         let vtx_buffer = self.frames[index].vtx_buffer;
         let idx_buffer = self.frames[index].idx_buffer;
-        let command_buffer = self.frames[index].command_buffer;
-        let command_pool = self.frames[index].command_pool;
-
-        self.device
-            .loader()
-            .reset_command_pool(command_pool, CommandPoolResetFlags::default())
-            .expect("Failed to reset command pool");
-
-        //
-        // Begin command buffer recording
-        //
-        let begin_info =
-            CommandBufferBeginInfoBuilder::new().flags(CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-        self.device
-            .loader()
-            .begin_command_buffer(command_buffer, &begin_info)
-            .expect("Failed to begin command buffer");
 
         //
         // We need to special case for when imgui wants to render nothing as vertex buffers wont
@@ -252,16 +232,14 @@ impl ImguiRenderer {
             //
             // Begin the render pass
             //
-            let clear_values = [ClearValue {
-                color: ClearColorValue {
-                    float32: [0.0, 0.0, 0.0, 1.0],
-                },
-            }];
-            let render_area = Rect2DBuilder::new().extent(swapchain.extents());
+            let extent = Extent2DBuilder::new()
+                .width(self.frames[index].swap_image.width())
+                .height(self.frames[index].swap_image.height());
+            let render_area = Rect2DBuilder::new().extent(*extent);
             let render_pass_begin = RenderPassBeginInfoBuilder::new()
                 .render_pass(self.single.render_pass)
                 .framebuffer(self.frames[index].framebuffer)
-                .clear_values(&clear_values)
+                .clear_values(&[])
                 .render_area(*render_area);
             self.device.loader().cmd_begin_render_pass(
                 command_buffer,
@@ -269,13 +247,7 @@ impl ImguiRenderer {
                 SubpassContents::INLINE,
             );
 
-            self.reset_render_state(
-                swapchain,
-                command_buffer,
-                vtx_buffer.0,
-                idx_buffer.0,
-                draw_data,
-            );
+            self.reset_render_state(index, command_buffer, vtx_buffer.0, idx_buffer.0, draw_data);
 
             let clip_off = draw_data.display_pos;
             let clip_scale = draw_data.framebuffer_scale;
@@ -286,7 +258,7 @@ impl ImguiRenderer {
                 list.commands().for_each(|command| {
                     self.render_draw_command(
                         draw_data,
-                        swapchain,
+                        index,
                         vtx_buffer.0,
                         idx_buffer.0,
                         command_buffer,
@@ -311,7 +283,7 @@ impl ImguiRenderer {
                 .aspect_mask(ImageAspectFlags::COLOR)
                 .discard();
             let image = ImageMemoryBarrierBuilder::new()
-                .image(swapchain.images()[index].image())
+                .image(self.frames[index].swap_image.image())
                 .old_layout(ImageLayout::UNDEFINED)
                 .new_layout(ImageLayout::PRESENT_SRC_KHR)
                 .subresource_range(range);
@@ -325,31 +297,12 @@ impl ImguiRenderer {
                 &[image],
             );
         }
-
-        self.device
-            .loader()
-            .end_command_buffer(command_buffer)
-            .expect("Failed to end command buffer");
-
-        let command_buffers = [command_buffer];
-        let wait_semaphores = [acquire_semaphore];
-        let signal_semaphores = [signal_semaphore];
-        let wait_dst_stage_mask = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
-        let submit = SubmitInfoBuilder::new()
-            .command_buffers(&command_buffers)
-            .wait_semaphores(&wait_semaphores)
-            .signal_semaphores(&signal_semaphores)
-            .wait_dst_stage_mask(&wait_dst_stage_mask);
-        self.device
-            .loader()
-            .queue_submit(self.device.general_queue(), &[submit], Fence::null())
-            .expect("Failed to submit to queue");
     }
 
     unsafe fn render_draw_command(
         &mut self,
         draw_data: &aleph_imgui::DrawData,
-        swapchain: &aleph_vulkan_core::Swapchain,
+        index: usize,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
         command_buffer: CommandBuffer,
@@ -368,7 +321,10 @@ impl ImguiRenderer {
                     (cmd_params.clip_rect[3] - clip_off[1]) * clip_scale[1],
                 ];
 
-                let swap_extent = swapchain.extents();
+                let swap_image = &self.frames[index].swap_image;
+                let swap_extent = Extent2DBuilder::new()
+                    .width(swap_image.width())
+                    .height(swap_image.height());
                 if clip_rect[0] < swap_extent.width as f32
                     && clip_rect[1] < swap_extent.height as f32
                     && clip_rect[2] > 0.0
@@ -399,7 +355,7 @@ impl ImguiRenderer {
             }
             DrawCmd::ResetRenderState => {
                 self.reset_render_state(
-                    swapchain,
+                    index,
                     command_buffer,
                     vertex_buffer,
                     index_buffer,
@@ -414,7 +370,7 @@ impl ImguiRenderer {
 
     unsafe fn reset_render_state(
         &self,
-        swapchain: &aleph_vulkan_core::Swapchain,
+        index: usize,
         command_buffer: CommandBuffer,
         vertex_buffer: Buffer,
         index_buffer: Buffer,
@@ -453,9 +409,11 @@ impl ImguiRenderer {
         //
         // Set the viewport state, we're going to be rendering to the whole frame
         //
-        self.device
-            .loader()
-            .cmd_set_viewport(command_buffer, 0, &[swapchain.get_viewport_full()]);
+        self.device.loader().cmd_set_viewport(
+            command_buffer,
+            0,
+            &[self.frames[index].swap_image.get_viewport_full()],
+        );
 
         //
         // Push transforms via push constants

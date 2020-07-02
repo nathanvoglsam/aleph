@@ -18,13 +18,12 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     const CameraLayout camera = camera_buffer;
 	
     // Light parameters
-    const float3 light_position = float3(0,0,0);
+    const float3 light_position = float3(0,0,10.5);
     const float lumens = 5000;
 
     // Camera and light vectors
     const float3 camera_to_frag = camera.position - input.position;
     const float3 light_to_frag = input.position - light_position;
-    const float3 frag_to_light = light_position - input.position;
 
     // Material parameters
     const float3 base_colour = float3(1,1,1);
@@ -43,7 +42,7 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     const float3 brdf = StandardBRDF(v, l, n, diffuse_colour, roughness, f0);
 
     // Apply a single point light
-    const float NoL = clamp(dot(n, normalize(frag_to_light)), 0.0, 1.0);
+    const float NoL = clamp(dot(n, normalize(light_to_frag)), 0.0, 1.0);
     const float distance_squared = dot(light_to_frag, light_to_frag);
     const float3 final = EvaluatePointLight(brdf, lumens, distance_squared, NoL);
 
