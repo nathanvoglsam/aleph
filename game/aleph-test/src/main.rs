@@ -22,7 +22,7 @@ struct AlephAppLogic {
 impl AlephAppLogic {
     pub fn new() -> Self {
         Self {
-            frame_timer: false,
+            frame_timer: true,
             frame_times: FrameRate::new(),
         }
     }
