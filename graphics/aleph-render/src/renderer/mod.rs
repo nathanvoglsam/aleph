@@ -289,7 +289,7 @@ pub struct UniformBuffers {
 }
 
 impl UniformBuffers {
-    pub unsafe fn new(allocator: &Allocator, shader_module: &ShaderModule) -> Self {
+    pub unsafe fn new(allocator: &Allocator, shader_module: &ShaderModule, aspect: f32) -> Self {
         // Find the description of the model and camera uniform buffers
         let mut model = None;
         let mut camera = None;
@@ -347,7 +347,7 @@ impl UniformBuffers {
 
         // Write the memory for the uniform buffers
         Self::write_model_buffer(allocator, model, &model_buffer);
-        Self::write_camera_buffer(allocator, camera, &camera_buffer);
+        Self::write_camera_buffer(allocator, camera, &camera_buffer, aspect);
 
         Self {
             camera_buffer,
@@ -394,6 +394,7 @@ impl UniformBuffers {
         allocator: &Allocator,
         layout: &Struct,
         buffer: &(Buffer, Allocation),
+        aspect: f32
     ) {
         let ptr = allocator
             .map_memory(&buffer.1)
@@ -406,7 +407,7 @@ impl UniformBuffers {
         let trn: Mat4x4 = Mat4x4::translation(pos);
         let rot: Mat4x4 = Quat::identity().into();
         let view = trn * rot;
-        let proj = Mat4x4::perspective(16.0 / 9.0, 90.0, 0.1, 100.0);
+        let proj = Mat4x4::perspective(aspect, radians(90.0), 0.1, 100.0);
 
         // Write the members
         writer
@@ -713,7 +714,8 @@ impl Renderer {
             &tone_frag_module,
         );
 
-        let uniform_buffers = UniformBuffers::new(&allocator, &geom_vert_module);
+        let aspect = swap_image.width() as f32 / swap_image.height() as f32;
+        let uniform_buffers = UniformBuffers::new(&allocator, &geom_vert_module, aspect);
 
         let geom_sets = GeometrySets::new(&device, &geom_pipe_layout, &uniform_buffers);
         let tone_sets = ToneSets::new(&device, &tone_pipe_layout, &gbuffer);

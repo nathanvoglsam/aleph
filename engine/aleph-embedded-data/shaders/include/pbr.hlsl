@@ -214,11 +214,11 @@ inline float3 StandardBRDF(const float3 v, const float3 l, const float3 n, const
     const float3 Fr = (D * V) * F;
 
     // Diffuse BRDF
-    const float3 Fd = diffuse_colour * Fd_Lambert();
+    const float3 Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
     const float3 colour = Fr + Fd;
 
-    return Fr + Fd;
+    return colour;
 }
 
 inline float V_Kelemen(float LoH) {
@@ -227,6 +227,8 @@ inline float V_Kelemen(float LoH) {
 
 /*
  * A standard hard surface PBR BRDF with an extra clear coat term.
+ *
+ * Returns the combined output of the diffuse and specular term prior to lighting
  *
  * Arguments:
  *
@@ -239,7 +241,7 @@ inline float V_Kelemen(float LoH) {
  * - clear_coat: The strength of the clear coat effect
  * - clear_coat_roughness: The roughness value for the clearcoat after being mapped
  */
-inline void ClearCoatBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float f0, const float clear_coat, const float clear_coat_roughness) {
+inline float3 ClearCoatBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float3 f0, const float clear_coat, const float clear_coat_roughness) {
     // Half unit vector between l and v
     const float3 h = normalize(v + l);
 
@@ -264,10 +266,9 @@ inline void ClearCoatBRDF(const float3 v, const float3 l, const float3 n, const 
     const float Fc = F_Schlick(0.04, LoH, 1.0) * clear_coat;
     const float Frc = (Dc * Vc) * Fc;
 
-    // apply lighting...
-    
-    // account for energy loss in the base layer
-    // return color * ((Fd + Fr * (1.0 - Fc)) * (1.0 - Fc) + Frc);
+    const float3 colour = ((Fd + Fr * (1.0 - Fc)) * (1.0 - Fc) + Frc);
+
+    return colour;
 }
 
 inline float D_Ashikhmin(const float roughness, const float NoH) {

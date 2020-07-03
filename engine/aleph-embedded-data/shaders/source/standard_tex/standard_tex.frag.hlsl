@@ -55,7 +55,7 @@ float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     // Derived material parameters
 	const float3 v = normalize(camera_to_frag);
 	const float3 l = normalize(light_to_frag);
-	const float3 diffuse_colour = DiffuseFromBaseColour(base_colour, roughness);
+	const float3 diffuse_colour = DiffuseFromBaseColour(base_colour, metallic);
 	const float3 f0 = CalculateF0(base_colour, metallic, reflectance);
 
     // Calculate the result of our BRDF
