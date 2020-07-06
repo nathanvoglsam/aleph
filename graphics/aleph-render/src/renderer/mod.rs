@@ -394,7 +394,7 @@ impl UniformBuffers {
         allocator: &Allocator,
         layout: &Struct,
         buffer: &(Buffer, Allocation),
-        aspect: f32
+        aspect: f32,
     ) {
         let ptr = allocator
             .map_memory(&buffer.1)
