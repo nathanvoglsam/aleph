@@ -29,21 +29,14 @@ inline float PointLightAttenuation(const float distance_squared) {
  * Given the output of a brdf, and a set of point light parameters, calculate the final light
  * contribution.
  */
-inline float3 EvaluatePointLight(const float3 brdf, const float lumens, const float distance_squared, const float NoL) {
+inline float3 EvaluatePointLight(
+    const float3 brdf,
+    const float lumens,
+    const float distance_squared,
+    const float NoL
+) {
     const float attenuation = PointLightAttenuation(distance_squared);
     return brdf * (lumens * attenuation * NoL);
-}
-
-/*
- * Gets the diffuse colour from the base colour and metallic parameters
- *
- * Arguments:
- *
- * - base_colour: The base colour parameter of the material
- * - metallic: The metallic parameter of the material
- */
-inline float3 DiffuseFromBaseColour(const float3 base_colour, const float metallic) {
-    return (1.0 - metallic) * base_colour;
 }
 
 /*
@@ -100,7 +93,7 @@ inline float D_GGX_Anisotropic(
     const float3 b,
     const float at,
     const float ab
-    ) {
+) {
     const float ToH = dot(t, h);
     const float BoH = dot(b, h);
     const float a2 = at * ab;
@@ -132,7 +125,7 @@ inline float V_SmithGGXCorrelated_Anisotropic(
     const float BoL,
     const float NoV, 
     const float NoL
-    ) {
+) {
     const float lambdaV = NoL * length(float3(at * ToV, ab * BoV, NoV));
     const float lambdaL = NoV * length(float3(at * ToL, ab * BoL, NoL));
     const float v = 0.5 / (lambdaV + lambdaL);
@@ -192,11 +185,20 @@ inline float Fd_Burley(const float NoV, const float NoL, const float LoH, const 
  * - v: The view unit vector
  * - l: The incident light unit vector
  * - n: The surface normal vector
- * - diffuse_colour: The diffuse colour after being mapped from the metallic and base colour
+ * - base_colour: The base colour of the material
+ * - metallic: The metallic parameter of the material
  * - roughness: The roughness value after being mapped from a perceptual roughness value
  * - f0: Reflectance at normal incidence
  */
-inline float3 StandardBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float3 f0) {
+inline float3 StandardBRDF(
+    const float3 v,
+    const float3 l,
+    const float3 n,
+    const float3 base_colour,
+    const float metallic,
+    const float roughness,
+    const float3 f0
+) {
     // Half unit vector between l and v
     const float3 h = normalize(v + l);
 
@@ -211,12 +213,17 @@ inline float3 StandardBRDF(const float3 v, const float3 l, const float3 n, const
     const float3 F = F_SchlickVec(LoH, f0, 1.0);
 
     // Specular BRDF
-    const float3 Fr = (D * V) * F;
+    const float3 Fr_nominator = (D * V) * F;
+    const float3 Fr_denominator = max(4 * NoV * NoL, 0.001);
+    const float3 Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
-    const float3 Fd = diffuse_colour * Fd_Burley(NoV, NoL, LoH, roughness);
+    const float3 Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
 
-    const float3 colour = Fr + Fd;
+    // Diffuse contribution
+    const float3 kD = (float3(1,1,1) - F) * (1 - metallic);
+
+    const float3 colour = Fr + (Fd * kD);
 
     return colour;
 }
@@ -235,13 +242,24 @@ inline float V_Kelemen(float LoH) {
  * - v: The view unit vector
  * - l: The incident light unit vector
  * - n: The surface normal vector
- * - diffuse_colour: The diffuse colour after being mapped from the metallic and base colour
+ * - base_colour: The base colour of the material
+ * - metallic: The metallic parameter of the material
  * - roughness: The roughness value after being mapped
  * - f0: Reflectance at normal incidence
  * - clear_coat: The strength of the clear coat effect
  * - clear_coat_roughness: The roughness value for the clearcoat after being mapped
  */
-inline float3 ClearCoatBRDF(const float3 v, const float3 l, const float3 n, const float3 diffuse_colour, const float roughness, const float3 f0, const float clear_coat, const float clear_coat_roughness) {
+inline float3 ClearCoatBRDF(
+    const float3 v,
+    const float3 l,
+    const float3 n,
+    const float3 base_colour,
+    const float metallic,
+    const float roughness,
+    const float3 f0,
+    const float clear_coat,
+    const float clear_coat_roughness
+) {
     // Half unit vector between l and v
     const float3 h = normalize(v + l);
 
@@ -256,17 +274,28 @@ inline float3 ClearCoatBRDF(const float3 v, const float3 l, const float3 n, cons
     const float3 F = F_SchlickVec(LoH, f0, 1.0);
 
     // Specular BRDF
-    const float3 Fr = (D * V) * F;
+    const float3 Fr_nominator = (D * V) * F;
+    const float3 Fr_denominator = max(4 * NoV * NoL, 0.001);
+    const float3 Fr = Fr_nominator / Fr_denominator;
 
     // Diffuse BRDF
-    const float3 Fd = diffuse_colour * Fd_Lambert();
+    const float3 Fd = base_colour * Fd_Burley(NoV, NoL, LoH, roughness);
+
+    // Diffuse contribution
+    const float3 kD = (float3(1,1,1) - F) * (1 - metallic);
 
     const float Dc = D_GGX(NoH, clear_coat_roughness);
     const float Vc = V_SmithGGXCorrelatedFast(NoV, NoL, clear_coat_roughness);
-    const float Fc = F_Schlick(0.04, LoH, 1.0) * clear_coat;
-    const float Frc = (Dc * Vc) * Fc;
+    const float Fc = F_Schlick(LoH, 0.04, 1.0) * clear_coat;
 
-    const float3 colour = ((Fd + Fr * (1.0 - Fc)) * (1.0 - Fc) + Frc);
+    const float Frc_nominator = (Dc * Vc) * Fc;
+    const float Frc_denominator = max(4 * NoV * NoL, 0.001);
+    const float Frc = Frc_nominator / Frc_denominator;
+
+    const float cc_energy_loss = 1 - Fc;
+    const float3 Or = Fr * cc_energy_loss;
+    const float3 Od = Fd * kD;
+    const float3 colour = (Od + Or) * cc_energy_loss + Frc;
 
     return colour;
 }
