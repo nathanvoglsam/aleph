@@ -38,7 +38,7 @@ pub struct RenderGraphBuilder<'a> {
     ///
     /// Need a list of all the passes we want in the output graph
     ///
-    passes: Vec<Option<Box<dyn RenderGraphPass + 'a>>>,
+    passes: Vec<Box<dyn RenderGraphPass + 'a>>,
 }
 
 impl<'a> RenderGraphBuilder<'a> {
@@ -53,7 +53,7 @@ impl<'a> RenderGraphBuilder<'a> {
     /// Add a new pass to the builder
     ///
     pub fn pass(&mut self, pass: impl RenderGraphPass + 'a) -> &mut Self {
-        self.passes.push(Some(Box::new(pass)));
+        self.passes.push(Box::new(pass));
         self
     }
 
@@ -72,8 +72,6 @@ impl<'a> RenderGraphBuilder<'a> {
                     reads: Vec::new(),
                     writes: Vec::new(),
                 };
-                // This WILL be valid
-                let pass = pass.as_mut().unwrap();
 
                 pass.register_access(&mut accesses);
 

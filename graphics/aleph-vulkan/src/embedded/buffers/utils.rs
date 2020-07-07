@@ -255,8 +255,8 @@ impl StaticMeshBuffers {
             let ind_barrier = buffer_barrier(device, self.ind_buffer.0);
             device.loader().cmd_pipeline_barrier(
                 command_buffer,
-                PipelineStageFlags::TRANSFER,
-                PipelineStageFlags::TOP_OF_PIPE,
+                PipelineStageFlags::ALL_COMMANDS,
+                PipelineStageFlags::ALL_COMMANDS,
                 DependencyFlags::default(),
                 &[],
                 &[
@@ -393,8 +393,8 @@ impl PosOnlyMeshBuffers {
             let ind_barrier = buffer_barrier(device, self.ind_buffer.0);
             device.loader().cmd_pipeline_barrier(
                 command_buffer,
-                PipelineStageFlags::BOTTOM_OF_PIPE,
-                PipelineStageFlags::TOP_OF_PIPE,
+                PipelineStageFlags::ALL_COMMANDS,
+                PipelineStageFlags::ALL_COMMANDS,
                 DependencyFlags::default(),
                 &[],
                 &[pos_barrier, ind_barrier],
