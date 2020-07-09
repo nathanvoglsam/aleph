@@ -8,38 +8,49 @@
 //
 
 use crate::{RenderGraphPass, ResourceAccess};
-use aleph_vulkan_core::erupt::vk1_0::CommandBuffer;
 
 ///
 /// A simple pass that wraps some closures in an object that implements the `RenderGraphPass` trait
 ///
-pub struct ClosurePass<RegAcc: FnMut(&mut ResourceAccess), Rec: FnMut(CommandBuffer)> {
+pub struct ClosurePass<RegAcc: FnMut(&mut ResourceAccess), Comp: FnMut(), Rec: FnMut()> {
     register_accesses: RegAcc,
+    compile: Comp,
     record: Rec,
 }
 
-impl<RegAcc: FnMut(&mut ResourceAccess), Rec: FnMut(CommandBuffer)> ClosurePass<RegAcc, Rec> {
+impl<RegAcc, Comp, Rec> ClosurePass<RegAcc, Comp, Rec>
+where
+    RegAcc: FnMut(&mut ResourceAccess),
+    Comp: FnMut(),
+    Rec: FnMut(),
+{
     ///
     /// Builds a new ClosurePass from the provided closure objects
     ///
-    pub fn new(register_accesses: RegAcc, record: Rec) -> Self {
+    pub fn new(register_accesses: RegAcc, compile: Comp, record: Rec) -> Self {
         Self {
             register_accesses,
+            compile,
             record,
         }
     }
 }
 
-impl<RegAcc, Rec> RenderGraphPass for ClosurePass<RegAcc, Rec>
+impl<RegAcc, Comp, Rec> RenderGraphPass for ClosurePass<RegAcc, Comp, Rec>
 where
     RegAcc: FnMut(&mut ResourceAccess),
-    Rec: FnMut(CommandBuffer),
+    Comp: FnMut(),
+    Rec: FnMut(),
 {
     fn register_access(&mut self, accesses: &mut ResourceAccess) {
         (self.register_accesses)(accesses)
     }
 
-    fn record(&mut self, command_buffer: CommandBuffer) {
-        (self.record)(command_buffer)
+    fn compile(&mut self) {
+        (self.compile)()
+    }
+
+    fn record(&mut self) {
+        (self.record)()
     }
 }

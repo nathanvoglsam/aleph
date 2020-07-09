@@ -74,11 +74,14 @@
 
 mod builder;
 mod graph;
+mod resource;
 
 pub use builder::GraphBuildError;
+pub use builder::ImageReadDescription;
+pub use builder::ImageWriteDescription;
 pub use builder::RenderGraphBuilder;
+pub use builder::ResourceAccess;
 
 pub use graph::ClosurePass;
 pub use graph::RenderGraph;
 pub use graph::RenderGraphPass;
-pub use graph::ResourceAccess;
