@@ -7,49 +7,10 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use crate::utils::{debug_check_image_access_type, debug_check_image_read_access_type};
 use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlagBits, AccessFlags, ImageLayout, PipelineStageFlags,
+    AccessFlagBits, AccessFlags, ImageLayout, PipelineStageFlagBits, PipelineStageFlags,
 };
-
-///
-/// Internal function for asserting that a given access type is valid for a read only image
-///
-#[inline]
-fn debug_check_image_read_access_type(access: AccessFlagBits) {
-    // Debug check if passing write accesses to a read only description
-    debug_assert!(access != AccessFlagBits::MEMORY_WRITE);
-    debug_assert!(access != AccessFlagBits::COLOR_ATTACHMENT_WRITE);
-    debug_assert!(access != AccessFlagBits::TRANSFER_WRITE);
-    debug_assert!(access != AccessFlagBits::DEPTH_STENCIL_ATTACHMENT_WRITE);
-    debug_assert!(access != AccessFlagBits::HOST_WRITE);
-    debug_assert!(access != AccessFlagBits::SHADER_WRITE);
-    debug_assert!(access != AccessFlagBits::TRANSFORM_FEEDBACK_COUNTER_WRITE_EXT);
-    debug_assert!(access != AccessFlagBits::TRANSFORM_FEEDBACK_WRITE_EXT);
-    debug_assert!(access != AccessFlagBits::ACCELERATION_STRUCTURE_WRITE_KHR);
-    debug_assert!(access != AccessFlagBits::ACCELERATION_STRUCTURE_WRITE_NV);
-    debug_assert!(access != AccessFlagBits::COMMAND_PREPROCESS_WRITE_NV);
-}
-
-///
-/// Internal function for asserting that a given access type is valid for an image to be used as
-///
-#[inline]
-fn debug_check_image_access_type(access: AccessFlagBits) {
-    // Debug check if passing invalid access type in
-    debug_assert!(access != AccessFlagBits::INDEX_READ);
-    debug_assert!(access != AccessFlagBits::UNIFORM_READ);
-    debug_assert!(access != AccessFlagBits::VERTEX_ATTRIBUTE_READ);
-    debug_assert!(access != AccessFlagBits::INDIRECT_COMMAND_READ);
-    debug_assert!(access != AccessFlagBits::ACCELERATION_STRUCTURE_READ_KHR);
-    debug_assert!(access != AccessFlagBits::ACCELERATION_STRUCTURE_READ_NV);
-    debug_assert!(access != AccessFlagBits::COMMAND_PREPROCESS_READ_NV);
-    debug_assert!(access != AccessFlagBits::TRANSFORM_FEEDBACK_COUNTER_READ_EXT);
-
-    // Debug check if passing unsupported access type in
-    debug_assert!(access != AccessFlagBits::FRAGMENT_DENSITY_MAP_READ_EXT);
-    debug_assert!(access != AccessFlagBits::SHADING_RATE_IMAGE_READ_NV);
-    debug_assert!(access != AccessFlagBits::COLOR_ATTACHMENT_READ_NONCOHERENT_EXT);
-}
 
 ///
 /// Describes a write to an image resource with the given `identifier` and with the image in the
@@ -58,9 +19,16 @@ fn debug_check_image_access_type(access: AccessFlagBits) {
 /// state how it will be used.
 ///
 pub struct ImageWriteDescription {
+    /// The identifier for the image we're writing
     pub(crate) identifier: String,
+
+    /// The layout we want the image to be in when writing to it
     pub(crate) layout: ImageLayout,
+
+    /// The pipeline stages we'll be writing to the image
     pub(crate) stages: PipelineStageFlags,
+
+    /// The types of access we will be writing to the image in
     pub(crate) access_types: AccessFlags,
 }
 
@@ -70,6 +38,11 @@ impl ImageWriteDescription {
     /// image will be in the given layout.
     ///
     pub fn new(identifier: &str, layout: ImageLayout) -> Self {
+        assert_ne!(
+            layout,
+            ImageLayout::UNDEFINED,
+            "Writing in layout undefined makes no sense"
+        );
         Self {
             identifier: identifier.to_string(),
             layout,
@@ -81,13 +54,17 @@ impl ImageWriteDescription {
     ///
     /// Add the given stage to the set of stages the image will be used in
     ///
-    pub fn in_stage(mut self, stage: PipelineStageFlags) -> Self {
-        self.stages |= stage;
+    pub fn in_stage(mut self, stage: PipelineStageFlagBits) -> Self {
+        self.stages |= stage.bitmask();
         self
     }
 
     ///
-    /// Add the given access type to the
+    /// Add the given access type to the set of access types this image will be used
+    ///
+    /// # Panics
+    ///
+    /// `debug_assert!()` is used to check if nonsensical access flags are provided
     ///
     pub fn access_type(mut self, access: AccessFlagBits) -> Self {
         debug_check_image_access_type(access);
@@ -103,9 +80,16 @@ impl ImageWriteDescription {
 /// state how it will be used.
 ///
 pub struct ImageReadDescription {
+    /// The identifier for the image we're reading
     pub(crate) identifier: String,
+
+    /// The layout we want to read the image in
     pub(crate) layout: ImageLayout,
+
+    /// The pipeline stages we'll be reading the image in
     pub(crate) stages: PipelineStageFlags,
+
+    /// The set of access types this image will be read as
     pub(crate) access_types: AccessFlags,
 }
 
@@ -115,6 +99,11 @@ impl ImageReadDescription {
     /// image will be in the given layout.
     ///
     pub fn new(identifier: &str, layout: ImageLayout) -> Self {
+        assert_ne!(
+            layout,
+            ImageLayout::UNDEFINED,
+            "Reading in layout undefined makes no sense"
+        );
         Self {
             identifier: identifier.to_string(),
             layout,
@@ -126,13 +115,17 @@ impl ImageReadDescription {
     ///
     /// Add the given stage to the set of stages the image will be used in
     ///
-    pub fn in_stage(mut self, stage: PipelineStageFlags) -> Self {
-        self.stages |= stage;
+    pub fn in_stage(mut self, stage: PipelineStageFlagBits) -> Self {
+        self.stages |= stage.bitmask();
         self
     }
 
     ///
-    /// Add the given access type to the
+    /// Add the given access type to the set of access types this image will be used
+    ///
+    /// # Panics
+    ///
+    /// `debug_assert!()` is used to check if nonsensical access flags are provided
     ///
     pub fn access_type(mut self, access: AccessFlagBits) -> Self {
         debug_check_image_access_type(access);

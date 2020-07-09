@@ -8,12 +8,13 @@
 //
 
 mod closure_pass;
+mod pass_index;
+
+pub use closure_pass::ClosurePass;
+pub use pass_index::PassIndex;
 
 use crate::RenderGraphBuilder;
 use crate::ResourceAccess;
-pub use closure_pass::ClosurePass;
-
-pub(crate) const PASS_INDEX_EXTERNAL: usize = usize::max_value();
 
 ///
 /// The trait that specifies the required interface for a render graph node
@@ -40,11 +41,11 @@ pub trait RenderGraphPass {
 }
 
 ///
-/// Internal struct for
+/// Internal struct for representing the execution dependencies between passes
 ///
 pub(crate) struct GraphLink {
-    pub depends_on: Vec<usize>,
-    pub waited_on_by: Vec<usize>,
+    pub depends_on: Vec<PassIndex>,
+    pub waited_on_by: Vec<PassIndex>,
 }
 
 ///
@@ -57,7 +58,7 @@ pub struct RenderGraph<'a> {
     pub(crate) passes: Vec<Box<dyn RenderGraphPass + 'a>>,
 
     ///
-    /// Holds the dependency links between a pass and what it depends on and what passes wait on it.
+    /// Holds the execution dependencies for a pass.
     ///
     pub(crate) links: Vec<GraphLink>,
 

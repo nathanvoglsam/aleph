@@ -7,18 +7,19 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+use crate::graph::PassIndex;
 use aleph_vulkan_core::erupt::vk1_0::{AccessFlags, ImageLayout, PipelineStageFlags};
 
 #[derive(Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ImageUsage {
     /// The pass that writes this value
-    pub writen_by: usize,
+    pub writen_by: PassIndex,
 
     /// Holds the number of ways that the image is subsequently read in
     pub read_types: Vec<ImageRead>,
 
     /// Which passes read from the resource and how. (pass index, read_type index)
-    pub read_by: Vec<(usize, usize)>,
+    pub read_by: Vec<(PassIndex, usize)>,
 
     /// The layout this value will be written in
     pub layout: ImageLayout,
@@ -55,20 +56,18 @@ pub enum ResourceUsage {
 
 impl ResourceUsage {
     ///
-    /// If this is a write usage, return the index of the pass that wrote it. Returns `None` if this
-    /// is a read access
+    /// Returns the `PassIndex` of the pass that writes this resource
     ///
-    pub fn writen_by(&self) -> usize {
+    pub fn writen_by(&self) -> PassIndex {
         match self {
             ResourceUsage::Image(v) => v.writen_by,
         }
     }
 
     ///
-    /// If this is a read usage, return a list of pass indexes that refer to the passes that read
-    /// from this resource. Returns `None` if this is a write access.
+    /// Returns an iterator of `PassIndex`s over all the readers of this resource
     ///
-    pub fn read_by<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+    pub fn read_by<'a>(&'a self) -> impl Iterator<Item = PassIndex> + 'a {
         match self {
             ResourceUsage::Image(v) => {
                 let iter = v.read_by.iter();

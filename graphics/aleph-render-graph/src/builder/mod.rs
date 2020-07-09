@@ -8,6 +8,7 @@
 //
 
 mod access;
+mod external;
 mod usages;
 
 #[cfg(test)]
@@ -16,12 +17,13 @@ mod tests;
 pub use access::ImageReadDescription;
 pub use access::ImageWriteDescription;
 pub use access::ResourceAccess;
+pub use external::ImageExport;
+pub use external::ImageImport;
+pub use external::ResourceExport;
+pub use external::ResourceImport;
 
 use crate::builder::usages::{ImageRead, ImageUsage, ResourceUsage};
-use crate::graph::{GraphLink, RenderGraph, RenderGraphPass, PASS_INDEX_EXTERNAL};
-use crate::resource::{ImageResource, Resource, SWAP_IMAGE_RESERVED_NAME};
-use aleph_vulkan_core::erupt::vk1_0::{AccessFlags, Extent2D, ImageLayout, PipelineStageFlags};
-use aleph_vulkan_core::SwapImage;
+use crate::graph::{GraphLink, PassIndex, RenderGraph, RenderGraphPass};
 use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 
@@ -40,7 +42,7 @@ pub enum GraphBuildError {
 
     /// Error thrown when a pass tries to use a resource as the incorrect type. For example, an
     /// image resource is written and a subsequent pass tries to read it as a buffer.
-    IncorrectResourceTypeError,
+    IncorrectResourceType,
 }
 
 ///
@@ -61,9 +63,14 @@ pub struct RenderGraphBuilder<'a> {
     passes: Vec<Box<dyn RenderGraphPass + 'a>>,
 
     ///
-    /// The list of resources imported into the graph from external sources
+    /// Maps identifiers to images to be imported into the frame graph
     ///
-    resources: HashMap<String, Resource>,
+    imports: HashMap<String, ResourceImport>,
+
+    ///
+    /// List of images to be exported and the state it should be exported in
+    ///
+    exports: HashMap<String, ResourceExport>,
 }
 
 impl<'a> RenderGraphBuilder<'a> {
@@ -73,7 +80,8 @@ impl<'a> RenderGraphBuilder<'a> {
     pub fn new() -> Self {
         Self {
             passes: Vec::new(),
-            resources: HashMap::new(),
+            imports: HashMap::new(),
+            exports: HashMap::default(),
         }
     }
 
@@ -86,32 +94,58 @@ impl<'a> RenderGraphBuilder<'a> {
     }
 
     ///
-    /// Register the given SwapImage with the graph builder. A SwapImage is a simplified type of
-    /// image resource that is assumed to be in an undefined layout.
+    /// Mark a resource, by identifier, as a resource that should be exported from the graph.
     ///
-    pub fn swap_image(&mut self, swap_image: SwapImage) -> &mut Self {
-        let image_view = swap_image.image_view();
-        let initial_layout = ImageLayout::UNDEFINED;
-        let format = swap_image.format();
-        let extent = Extent2D {
-            width: swap_image.width(),
-            height: swap_image.height(),
-        };
-        let resource = ImageResource {
-            image_view,
-            initial_layout,
-            format,
-            extent,
-        };
-        self.resource(SWAP_IMAGE_RESERVED_NAME, Resource::Image(resource))
+    /// # Panics
+    ///
+    /// Panics if the same resource identifier is asked to be exported multiple times
+    ///
+    pub fn export_image(&mut self, identifier: &str, image: ImageExport) -> &mut Self {
+        self.export_resource(identifier, ResourceExport::Image(image))
     }
 
     ///
-    /// Internal wrapper around the underlying resource map
+    /// Mark a resource, by identifier, as a resource that should be exported from the graph.
     ///
-    fn resource(&mut self, identifier: &str, resource: Resource) -> &mut Self {
+    /// # Panics
+    ///
+    /// Panics if the same resource identifier is asked to be exported multiple times
+    ///
+    pub fn export_resource(&mut self, identifier: &str, resource: ResourceExport) -> &mut Self {
         let already_exists = self
-            .resources
+            .exports
+            .insert(identifier.to_string(), resource)
+            .is_some();
+
+        assert!(
+            !already_exists,
+            "Tried inserting multiple resources with the same identifier"
+        );
+
+        self
+    }
+
+    ///
+    /// Import the given resource under the provided identifier
+    ///
+    /// # Panics
+    ///
+    /// Panics if a resource has already been imported with the given identifier
+    ///
+    pub fn import_image(&mut self, identifier: &str, image: ImageImport) -> &mut Self {
+        self.import_resource(identifier, ResourceImport::Image(image))
+    }
+
+    ///
+    /// Import the given resource under the provided identifier
+    ///
+    /// # Panics
+    ///
+    /// Panics if a resource has already been imported with the given identifier
+    ///
+    pub fn import_resource(&mut self, identifier: &str, resource: ResourceImport) -> &mut Self {
+        let already_exists = self
+            .imports
             .insert(identifier.to_string(), resource)
             .is_some();
 
@@ -129,11 +163,12 @@ impl<'a> RenderGraphBuilder<'a> {
     pub fn build(self) -> Result<RenderGraph<'a>, GraphBuildError> {
         // Move passes out of self for naming consistency
         let mut passes = self.passes;
-        let mut resources = self.resources;
+        let imports = self.imports;
+        let exports = self.exports;
 
         let accesses = Self::resolve_accesses(&mut passes);
-        let mut resources = Self::resolve_usages(&mut resources, &accesses)?;
-        let links = Self::resolve_links(&mut passes, &mut resources);
+        let mut usages = Self::resolve_usages(&imports, &exports, &accesses)?;
+        let links = Self::resolve_links(&mut passes, &mut usages);
 
         // Build the actual render graph struct itself
         let graph = RenderGraph::<'a> {
@@ -146,7 +181,7 @@ impl<'a> RenderGraphBuilder<'a> {
     }
 
     ///
-    /// Internal function for resolving the passess access declarations into a list of said accesses
+    /// Internal function for resolving the passes access declarations into a list of said accesses
     ///
     fn resolve_accesses(passes: &mut Vec<Box<dyn RenderGraphPass + 'a>>) -> Vec<ResourceAccess> {
         // First we need to resolve all the resource access objects from the provided passes into
@@ -173,49 +208,48 @@ impl<'a> RenderGraphBuilder<'a> {
     /// pass scheduling phase
     ///
     fn resolve_usages(
-        resources: &HashMap<String, Resource>,
+        imports: &HashMap<String, ResourceImport>,
+        exports: &HashMap<String, ResourceExport>,
         accesses: &Vec<ResourceAccess>,
     ) -> Result<HashMap<String, ResourceUsage>, GraphBuildError> {
         let mut usages: HashMap<String, ResourceUsage> = HashMap::new();
 
-        // First we import all external resources by marking them as writes from an "external" pass
-        // and use the widest possible synchronization for the resource.
-        Self::resolve_usages_external(resources, &mut usages);
-
-        // Creates new usage entries for each image write. This also prepares the usage entry for
-        // the read resolution stage.
-        Self::resolve_usages_image_writes(accesses, &mut usages)?;
-
-        // Adds to each image "created" with a write the passes and ways the resource is written in
-        // after it's initial write.
-        Self::resolve_usages_image_reads(accesses, &mut usages)?;
+        Self::resolve_imports(imports, &mut usages);
+        Self::resolve_image_writes(accesses, &mut usages)?;
+        Self::resolve_image_reads(accesses, &mut usages)?;
+        Self::resolve_exports(exports, &mut usages)?;
 
         Ok(usages)
     }
 
     ///
-    /// Imports all external resources as writes by "PASS_INDEX_EXTERNAL" with the widest possible
+    /// Imports all external resources as writes by `PassIndex::EXTERNAL` with the widest possible
     /// synchronization scope.
     ///
-    fn resolve_usages_external(
-        resources: &HashMap<String, Resource>,
+    fn resolve_imports(
+        imports: &HashMap<String, ResourceImport>,
         usages: &mut HashMap<String, ResourceUsage>,
     ) {
-        // For each
-        for (identifier, resource) in resources.iter() {
-            match resource {
-                Resource::Image(resource) => {
+        // Each import is equal to a write from `PassIndex::EXTERNAL` so we insert a new resource
+        // usage into the map
+        for (identifier, import) in imports.iter() {
+            let resource = match import {
+                ResourceImport::Image(import) => {
                     let usage = ImageUsage {
-                        writen_by: PASS_INDEX_EXTERNAL,
+                        writen_by: PassIndex::EXTERNAL,
                         read_types: Vec::new(),
                         read_by: Vec::new(),
-                        layout: resource.initial_layout,
-                        stages: PipelineStageFlags::ALL_COMMANDS,
-                        access_types: AccessFlags::MEMORY_WRITE,
+                        layout: import.current_layout,
+                        stages: import.stages,
+                        access_types: import.access_types,
                     };
-                    usages.insert(identifier.clone(), ResourceUsage::Image(usage));
+                    ResourceUsage::Image(usage)
                 }
-            }
+            };
+            // This is valid because the list of imports is already checked for duplicates. If it
+            // wasn't then we would have to check if there was already a resource written with the
+            // same identifier and emit an error if there was
+            usages.insert(identifier.clone(), resource);
         }
     }
 
@@ -223,73 +257,151 @@ impl<'a> RenderGraphBuilder<'a> {
     /// Resolves all resource writes into the usages map. This MUST be run before the corresponding
     /// reads resolution as it sets up the map for the reads resolution to consume.
     ///
-    fn resolve_usages_image_writes(
+    fn resolve_image_writes(
         accesses: &Vec<ResourceAccess>,
         usages: &mut HashMap<String, ResourceUsage>,
     ) -> Result<(), GraphBuildError> {
+        // Iterate over all the access sets emitted by the passes from their `register_access` phase
+        // and insert and validate the image writes that each pass requested
         for (pass_index, access) in accesses.iter().enumerate() {
+            let pass_index = PassIndex::new(pass_index);
             for image_write in &access.image_writes {
-                match usages.entry(image_write.identifier.clone()) {
-                    // If the entry already exists it means the value was already written by another
-                    // pass. This is an error so we should report the error and exit
-                    Entry::Occupied(_) => {
-                        return Err(GraphBuildError::MultipleWritesToSameResource);
-                    }
-                    // Otherwise we insert a new resource object
-                    Entry::Vacant(vacant) => {
-                        let usage = ImageUsage {
-                            writen_by: pass_index,
-                            read_types: Vec::new(),
-                            read_by: Vec::new(),
-                            layout: image_write.layout,
-                            stages: image_write.stages,
-                            access_types: image_write.access_types,
-                        };
-                        vacant.insert(ResourceUsage::Image(usage));
-                    }
-                }
+                Self::handle_image_write(usages, pass_index, image_write)?;
             }
         }
         Ok(())
     }
 
-    fn resolve_usages_image_reads(
+    ///
+    /// Internal function used by `resolve_image_writes` to make the loop less hideous
+    ///
+    fn handle_image_write(
+        usages: &mut HashMap<String, ResourceUsage>,
+        pass_index: PassIndex,
+        image_write: &ImageWriteDescription,
+    ) -> Result<(), GraphBuildError> {
+        // We use the entry API here, and check if there already exists a resource usage for the
+        // identifier we're providing. This check is required by the constraints of SSA form, which
+        // specifies that each value is written to exactly once.
+        match usages.entry(image_write.identifier.clone()) {
+            Entry::Occupied(_) => {
+                return Err(GraphBuildError::MultipleWritesToSameResource);
+            }
+            Entry::Vacant(vacant) => {
+                let usage = ImageUsage {
+                    writen_by: pass_index,
+                    read_types: Vec::new(),
+                    read_by: Vec::new(),
+                    layout: image_write.layout,
+                    stages: image_write.stages,
+                    access_types: image_write.access_types,
+                };
+                vacant.insert(ResourceUsage::Image(usage));
+            }
+        }
+        Ok(())
+    }
+
+    ///
+    /// Internal function for resolving the list of reads into the list of resource usages
+    ///
+    fn resolve_image_reads(
         accesses: &Vec<ResourceAccess>,
         usages: &mut HashMap<String, ResourceUsage>,
     ) -> Result<(), GraphBuildError> {
+        // Iterate over all the access sets emitted by the passes from their `register_access` phase
+        // and insert and validate the image reads that each pass requested
         for (pass_index, access) in accesses.iter().enumerate() {
+            let pass_index = PassIndex::new(pass_index);
             for image_read in &access.image_reads {
-                if let Some(usage) = usages.get_mut(&image_read.identifier) {
-                    if let ResourceUsage::Image(usage) = usage {
-                        // Find a read in the same layout
-                        let read_type = usage
-                            .read_types
-                            .iter_mut()
-                            .enumerate()
-                            .find(|(_, v)| v.layout == image_read.layout);
+                Self::handle_image_read(usages, pass_index, image_read)?;
+            }
+        }
+        Ok(())
+    }
 
-                        // If there is a read in the same layout, merge the barrier information
-                        // otherwise insert a new read type
-                        if let Some((read_type_index, read_type)) = read_type {
-                            read_type.stages |= image_read.stages;
-                            read_type.access_types |= image_read.access_types;
-                            usage.read_by.push((pass_index, read_type_index));
-                        } else {
-                            let read_type_index = usage.read_types.len();
+    ///
+    /// Internal function used by `resolve_image_reads` to make the loop less hideous
+    ///
+    fn handle_image_read(
+        usages: &mut HashMap<String, ResourceUsage>,
+        pass_index: PassIndex,
+        image_read: &ImageReadDescription,
+    ) -> Result<(), GraphBuildError> {
+        // Get the usage info for the resource we're trying to read from by identifier. If we can't
+        // find an entry then we're tying to read from a non existent resource and should emit an
+        // error.
+        if let Some(usage) = usages.get_mut(&image_read.identifier) {
+            // We're handling image reads so assert that the resource is actually an image resource
+            if let ResourceUsage::Image(usage) = usage {
+                // Find a read in the same layout
+                let read_type = usage
+                    .read_types
+                    .iter_mut()
+                    .enumerate()
+                    .find(|(_, v)| v.layout == image_read.layout);
+
+                // If there is a read in the same layout, merge the barrier information
+                // otherwise insert a new read type.
+                //
+                // This is important so we can group reads to the same image in the same layout
+                // together and emit a single barrier that can be shared by multiple passes.
+                if let Some((read_type_index, read_type)) = read_type {
+                    read_type.stages |= image_read.stages;
+                    read_type.access_types |= image_read.access_types;
+                    usage.read_by.push((pass_index, read_type_index));
+                } else {
+                    let read_type_index = usage.read_types.len();
+                    let read_type = ImageRead {
+                        layout: image_read.layout,
+                        stages: image_read.stages,
+                        access_types: image_read.access_types,
+                    };
+                    usage.read_types.push(read_type);
+                    usage.read_by.push((pass_index, read_type_index));
+                }
+            } else {
+                return Err(GraphBuildError::IncorrectResourceType);
+            }
+        } else {
+            return Err(GraphBuildError::ReadResourceDoesNotExist);
+        }
+        Ok(())
+    }
+
+    ///
+    /// Exports all resources that are wanted outside of the graph as reads from PASS_INDEX_EXTERNAL
+    ///
+    fn resolve_exports(
+        exports: &HashMap<String, ResourceExport>,
+        usages: &mut HashMap<String, ResourceUsage>,
+    ) -> Result<(), GraphBuildError> {
+        // Each export is equal to a read from `PassIndex::EXTERNAL` so we try to insert a new read
+        // for each export into the usage list
+        for (identifier, export) in exports.iter() {
+            // Get the usage info for the resource we're trying to read from by identifier. If we can't
+            // find an entry then we're tying to read from a non existent resource and should emit an
+            // error.
+            if let Some(usage) = usages.get_mut(identifier) {
+                match usage {
+                    ResourceUsage::Image(usage) => {
+                        if let ResourceExport::Image(export) = export {
+                            let pass_index = PassIndex::EXTERNAL;
                             let read_type = ImageRead {
-                                layout: image_read.layout,
-                                stages: image_read.stages,
-                                access_types: image_read.access_types,
+                                layout: export.layout,
+                                stages: export.stages,
+                                access_types: export.access_types,
                             };
+                            let read_type_index = usage.read_types.len();
                             usage.read_types.push(read_type);
                             usage.read_by.push((pass_index, read_type_index));
+                        } else {
+                            return Err(GraphBuildError::IncorrectResourceType);
                         }
-                    } else {
-                        return Err(GraphBuildError::IncorrectResourceTypeError);
                     }
-                } else {
-                    return Err(GraphBuildError::ReadResourceDoesNotExist);
                 }
+            } else {
+                return Err(GraphBuildError::ReadResourceDoesNotExist);
             }
         }
         Ok(())
@@ -313,13 +425,13 @@ impl<'a> RenderGraphBuilder<'a> {
         // just iterate over the resources and make anything that reads from a resource depend on
         // the writer and update the writer's link to include the reader.
         usages.iter().for_each(|(_, usage)| {
-            usage.read_by().for_each(|read: usize| {
+            usage.read_by().for_each(|read: PassIndex| {
                 // Make sure we don't try and write dependencies for PASS_INDEX_EXTERNAL
-                if read != PASS_INDEX_EXTERNAL {
+                if let Some(read) = read.get() {
                     links[read].depends_on.push(usage.writen_by());
                 }
-                if usage.writen_by() != PASS_INDEX_EXTERNAL {
-                    links[usage.writen_by()].waited_on_by.push(read);
+                if let Some(writen_by) = usage.writen_by().get() {
+                    links[writen_by].waited_on_by.push(read);
                 }
             });
         });

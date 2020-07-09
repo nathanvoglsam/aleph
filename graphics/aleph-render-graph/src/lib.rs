@@ -75,12 +75,17 @@
 mod builder;
 mod graph;
 mod resource;
+mod utils;
 
 pub use builder::GraphBuildError;
+pub use builder::ImageExport;
+pub use builder::ImageImport;
 pub use builder::ImageReadDescription;
 pub use builder::ImageWriteDescription;
 pub use builder::RenderGraphBuilder;
 pub use builder::ResourceAccess;
+pub use builder::ResourceExport;
+pub use builder::ResourceImport;
 
 pub use graph::ClosurePass;
 pub use graph::RenderGraph;
