@@ -15,6 +15,7 @@ pub use pass_index::PassIndex;
 
 use crate::RenderGraphBuilder;
 use crate::ResourceAccess;
+use std::collections::HashSet;
 
 ///
 /// The trait that specifies the required interface for a render graph node
@@ -44,8 +45,8 @@ pub trait RenderGraphPass {
 /// Internal struct for representing the execution dependencies between passes
 ///
 pub(crate) struct GraphLink {
-    pub depends_on: Vec<PassIndex>,
-    pub waited_on_by: Vec<PassIndex>,
+    pub depends_on: HashSet<PassIndex>,
+    pub waited_on_by: HashSet<PassIndex>,
 }
 
 ///

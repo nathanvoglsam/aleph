@@ -91,7 +91,6 @@ impl ImageImport {
     ///
     pub fn access_type(mut self, access: AccessFlagBits) -> Self {
         debug_check_image_access_type(access);
-        debug_check_image_read_access_type(access);
         self.access_types |= access.bitmask();
         self
     }
@@ -150,18 +149,4 @@ impl ImageExport {
         self.access_types |= access.bitmask();
         self
     }
-}
-
-///
-/// Represents the set of supported resource types that can be imported
-///
-pub enum ResourceImport {
-    Image(ImageImport),
-}
-
-///
-/// Represents the set of supported resource types that can be exported
-///
-pub enum ResourceExport {
-    Image(ImageExport),
 }

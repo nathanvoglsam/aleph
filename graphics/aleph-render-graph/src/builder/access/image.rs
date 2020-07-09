@@ -134,29 +134,3 @@ impl ImageReadDescription {
         self
     }
 }
-
-///
-/// Struct passed into `register_access` for describing the resources accessed by the pass
-///
-pub struct ResourceAccess {
-    pub(crate) image_reads: Vec<ImageReadDescription>,
-    pub(crate) image_writes: Vec<ImageWriteDescription>,
-}
-
-impl ResourceAccess {
-    ///
-    ///
-    /// Register that the given image resource will be read in this pass
-    ///
-    pub fn read_image(&mut self, read: ImageReadDescription) {
-        self.image_reads.push(read);
-    }
-
-    ///
-    ///
-    /// Register that the given image resource will be written in this pass
-    ///
-    pub fn write_image(&mut self, write: ImageWriteDescription) {
-        self.image_writes.push(write);
-    }
-}

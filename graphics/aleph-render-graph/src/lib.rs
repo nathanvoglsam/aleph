@@ -77,6 +77,10 @@ mod graph;
 mod resource;
 mod utils;
 
+pub use builder::BufferExport;
+pub use builder::BufferImport;
+pub use builder::BufferReadDescription;
+pub use builder::BufferWriteDescription;
 pub use builder::GraphBuildError;
 pub use builder::ImageExport;
 pub use builder::ImageImport;
