@@ -42,6 +42,7 @@
       <sourceFolder url="file://$MODULE_DIR$/engine/aleph-platform-imgui/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-imgui/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/graphics/aleph-render-graph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-ktx/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>

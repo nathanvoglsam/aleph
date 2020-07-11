@@ -26,6 +26,7 @@ members = [
     "engine/aleph-settings",
     "utils/aleph-compile",
     "utils/aleph-imgui",
+    "utils/aleph-ktx",
     "utils/aleph-log",
     "utils/aleph-logger",
     "utils/aleph-macros",
