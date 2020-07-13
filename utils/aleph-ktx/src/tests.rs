@@ -8,6 +8,4 @@
 //
 
 #[test]
-fn test_fn() {
-
-}
+fn test_fn() {}

@@ -7,8 +7,11 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod data_format_descriptor;
 mod document;
+mod file_index;
 mod format;
+mod level_index;
 mod super_compression_scheme;
 
 #[cfg(test)]

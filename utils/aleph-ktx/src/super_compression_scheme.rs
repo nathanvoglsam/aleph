@@ -49,6 +49,37 @@ impl SuperCompressionScheme {
     }
 
     ///
+    /// Whether this compression scheme expects to have global data
+    ///
+    pub fn has_global_data(self) -> bool {
+        match self {
+            Self::NONE => false,
+            Self::BASIS_LZ => true,
+            Self::ZSTD => false,
+            Self::ZLIB => false,
+            _ => false,
+        }
+    }
+
+    ///
+    /// Returns whether the compression scheme is known to the implementation.
+    ///
+    /// # Info
+    ///
+    /// See `VkFormat::is_known`'s documentation for more info. This function exists for the same
+    /// reasons, but for any new compression schemes that may be added
+    ///
+    pub fn is_known(self) -> bool {
+        match self {
+            Self::NONE => true,
+            Self::BASIS_LZ => true,
+            Self::ZSTD => true,
+            Self::ZLIB => true,
+            _ => false,
+        }
+    }
+
+    ///
     /// Is this scheme ID in the range reserved for use exclusively by the KTX itself
     ///
     pub fn is_in_ktx_reserved(self) -> bool {
@@ -78,10 +109,10 @@ impl SuperCompressionScheme {
 impl Debug for SuperCompressionScheme {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
         fmt.write_str(match self {
-            &Self::NONE => "UNDEFINED",
-            &Self::BASIS_LZ => "R4G4_UNORM_PACK8",
-            &Self::ZSTD => "R4G4B4A4_UNORM_PACK16",
-            &Self::ZLIB => "B4G4R4A4_UNORM_PACK16",
+            &Self::NONE => "NONE",
+            &Self::BASIS_LZ => "BASIS_LZ",
+            &Self::ZSTD => "ZSTD",
+            &Self::ZLIB => "ZLIB",
             _ => {
                 if self.is_in_ktx_reserved() {
                     "(unknown):KTX_RESERVED"
