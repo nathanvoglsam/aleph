@@ -38,14 +38,23 @@ impl SuperCompressionScheme {
     /// Is this compression scheme supported by our implementation
     ///
     pub fn is_supported(self) -> bool {
-        SUPPORTED_SCHEMES.contains(&self)
+        match self {
+            SuperCompressionScheme::NONE => true,
+            _ => false,
+        }
     }
 
     ///
     /// Is this a compression scheme provided by the KTX 2.0 spec itself
     ///
     pub fn is_core_scheme(self) -> bool {
-        CORE_SCHEMES.contains(&self)
+        match self {
+            SuperCompressionScheme::NONE
+            | SuperCompressionScheme::BASIS_LZ
+            | SuperCompressionScheme::ZSTD
+            | SuperCompressionScheme::ZLIB => true,
+            _ => false,
+        }
     }
 
     ///
@@ -71,10 +80,10 @@ impl SuperCompressionScheme {
     ///
     pub fn is_known(self) -> bool {
         match self {
-            Self::NONE => true,
-            Self::BASIS_LZ => true,
-            Self::ZSTD => true,
-            Self::ZLIB => true,
+            SuperCompressionScheme::NONE
+            | SuperCompressionScheme::BASIS_LZ
+            | SuperCompressionScheme::ZSTD
+            | SuperCompressionScheme::ZLIB => true,
             _ => false,
         }
     }
@@ -127,17 +136,3 @@ impl Debug for SuperCompressionScheme {
         })
     }
 }
-
-///
-/// Internal list of compression schemes that are supported by our implementation
-///
-const SUPPORTED_SCHEMES: [SuperCompressionScheme; 1] = [SuperCompressionScheme::NONE];
-
-///
-/// List of compression schemes provided by the KTX 2.0 spec directly
-///
-const CORE_SCHEMES: [SuperCompressionScheme; 3] = [
-    SuperCompressionScheme::BASIS_LZ,
-    SuperCompressionScheme::ZSTD,
-    SuperCompressionScheme::ZLIB,
-];

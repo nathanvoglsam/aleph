@@ -9,15 +9,17 @@
 
 mod data_format_descriptor;
 mod document;
-mod file_index;
 mod format;
-mod level_index;
-mod super_compression_scheme;
 
 #[cfg(test)]
 mod tests;
 
+pub use data_format_descriptor::ColorModel;
+pub use data_format_descriptor::ColorPrimaries;
+pub use data_format_descriptor::DFDError;
+pub use data_format_descriptor::DataFormatDescriptor;
+pub use data_format_descriptor::TransferFunction;
 pub use document::KTXDocument;
 pub use document::KTXReadError;
+pub use document::SuperCompressionScheme;
 pub use format::VkFormat;
-pub use super_compression_scheme::SuperCompressionScheme;

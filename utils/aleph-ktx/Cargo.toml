@@ -23,6 +23,7 @@ edition = "2018"
 
 [dependencies]
 byteorder = "1.3"
+bitflags = "1.2"
 
 [badges]
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }

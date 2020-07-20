@@ -7,6 +7,9 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+#[cfg(test)]
+mod tests;
+
 ///
 /// Definitions of all vulkan formats.
 ///
@@ -207,9 +210,7 @@ impl VkFormat {
     pub const ASTC_12X10_SRGB_BLOCK: Self = Self(182);
     pub const ASTC_12X12_UNORM_BLOCK: Self = Self(183);
     pub const ASTC_12X12_SRGB_BLOCK: Self = Self(184);
-}
 
-impl VkFormat {
     pub const G8B8G8R8_422_UNORM: Self = Self(1000156000);
     pub const B8G8R8G8_422_UNORM: Self = Self(1000156001);
     pub const G8_B8_R8_3PLANE_420_UNORM: Self = Self(1000156002);
@@ -244,12 +245,8 @@ impl VkFormat {
     pub const G16_B16_R16_3PLANE_422_UNORM: Self = Self(1000156031);
     pub const G16_B16R16_2PLANE_422_UNORM: Self = Self(1000156032);
     pub const G16_B16_R16_3PLANE_444_UNORM: Self = Self(1000156033);
-}
 
-///
-/// ASTC compressed formats (VK_EXT_texture_compression_astc_hdr)
-///
-impl VkFormat {
+    // ASTC compressed formats (VK_EXT_texture_compression_astc_hdr)
     pub const ASTC_4X4_SFLOAT_BLOCK_EXT: Self = Self(1000066000);
     pub const ASTC_5X4_SFLOAT_BLOCK_EXT: Self = Self(1000066001);
     pub const ASTC_5X5_SFLOAT_BLOCK_EXT: Self = Self(1000066002);
@@ -264,12 +261,8 @@ impl VkFormat {
     pub const ASTC_10X10_SFLOAT_BLOCK_EXT: Self = Self(1000066011);
     pub const ASTC_12X10_SFLOAT_BLOCK_EXT: Self = Self(1000066012);
     pub const ASTC_12X12_SFLOAT_BLOCK_EXT: Self = Self(1000066013);
-}
 
-///
-/// PVRTC compressed formats (VK_IMG_format_pvrtc)
-///
-impl VkFormat {
+    // PVRTC compressed formats (VK_IMG_format_pvrtc)
     pub const PVRTC1_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054000);
     pub const PVRTC1_4BPP_UNORM_BLOCK_IMG: Self = Self(1000054001);
     pub const PVRTC2_2BPP_UNORM_BLOCK_IMG: Self = Self(1000054002);
@@ -280,95 +273,375 @@ impl VkFormat {
     pub const PVRTC2_4BPP_SRGB_BLOCK_IMG: Self = Self(1000054007);
 }
 
-///
-/// YcBcR formats (VK_KHR_sampler_ycbcr_conversion)
-///
-impl VkFormat {
-    pub const G8B8G8R8_422_UNORM_KHR: Self = Self::G8B8G8R8_422_UNORM;
-    pub const B8G8R8G8_422_UNORM_KHR: Self = Self::B8G8R8G8_422_UNORM;
-    pub const G8_B8_R8_3PLANE_420_UNORM_KHR: Self = Self::G8_B8_R8_3PLANE_420_UNORM;
-    pub const G8_B8R8_2PLANE_420_UNORM_KHR: Self = Self::G8_B8R8_2PLANE_420_UNORM;
-    pub const G8_B8_R8_3PLANE_422_UNORM_KHR: Self = Self::G8_B8_R8_3PLANE_422_UNORM;
-    pub const G8_B8R8_2PLANE_422_UNORM_KHR: Self = Self::G8_B8R8_2PLANE_422_UNORM;
-    pub const G8_B8_R8_3PLANE_444_UNORM_KHR: Self = Self::G8_B8_R8_3PLANE_444_UNORM;
-    pub const R10X6_UNORM_PACK16_KHR: Self = Self::R10X6_UNORM_PACK16;
-    pub const R10X6G10X6_UNORM_2PACK16_KHR: Self = Self::R10X6G10X6_UNORM_2PACK16;
-    pub const R10X6G10X6B10X6A10X6_UNORM_4PACK16_KHR: Self =
-        Self::R10X6G10X6B10X6A10X6_UNORM_4PACK16;
-    pub const G10X6B10X6G10X6R10X6_422_UNORM_4PACK16_KHR: Self =
-        Self::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16;
-    pub const B10X6G10X6R10X6G10X6_422_UNORM_4PACK16_KHR: Self =
-        Self::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16;
-    pub const G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16_KHR: Self =
-        Self::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16;
-    pub const G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16_KHR: Self =
-        Self::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16;
-    pub const G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16_KHR: Self =
-        Self::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16;
-    pub const G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16_KHR: Self =
-        Self::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16;
-    pub const G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16_KHR: Self =
-        Self::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16;
-    pub const R12X4_UNORM_PACK16_KHR: Self = Self::R12X4_UNORM_PACK16;
-    pub const R12X4G12X4_UNORM_2PACK16_KHR: Self = Self::R12X4G12X4_UNORM_2PACK16;
-    pub const R12X4G12X4B12X4A12X4_UNORM_4PACK16_KHR: Self =
-        Self::R12X4G12X4B12X4A12X4_UNORM_4PACK16;
-    pub const G12X4B12X4G12X4R12X4_422_UNORM_4PACK16_KHR: Self =
-        Self::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16;
-    pub const B12X4G12X4R12X4G12X4_422_UNORM_4PACK16_KHR: Self =
-        Self::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16;
-    pub const G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16_KHR: Self =
-        Self::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16;
-    pub const G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16_KHR: Self =
-        Self::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16;
-    pub const G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16_KHR: Self =
-        Self::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16;
-    pub const G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16_KHR: Self =
-        Self::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16;
-    pub const G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16_KHR: Self =
-        Self::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16;
-    pub const G16B16G16R16_422_UNORM_KHR: Self = Self::G16B16G16R16_422_UNORM;
-    pub const B16G16R16G16_422_UNORM_KHR: Self = Self::B16G16R16G16_422_UNORM;
-    pub const G16_B16_R16_3PLANE_420_UNORM_KHR: Self = Self::G16_B16_R16_3PLANE_420_UNORM;
-    pub const G16_B16R16_2PLANE_420_UNORM_KHR: Self = Self::G16_B16R16_2PLANE_420_UNORM;
-    pub const G16_B16_R16_3PLANE_422_UNORM_KHR: Self = Self::G16_B16_R16_3PLANE_422_UNORM;
-    pub const G16_B16R16_2PLANE_422_UNORM_KHR: Self = Self::G16_B16R16_2PLANE_422_UNORM;
-    pub const G16_B16_R16_3PLANE_444_UNORM_KHR: Self = Self::G16_B16_R16_3PLANE_444_UNORM;
-}
-
 impl VkFormat {
     ///
     /// If this is a block format
     ///
+    #[inline]
     pub fn is_block_format(self) -> bool {
+        self.is_bcn() || self.is_etc2() || self.is_eac() || self.is_astc() || self.is_pvrtc()
+    }
+
+    ///
+    /// If this format has been marked explicitly as unsupported by our implementation
+    ///
+    #[inline]
+    pub fn is_unsupported(self) -> bool {
         match self {
-            VkFormat::BC1_RGB_UNORM_BLOCK
-            | VkFormat::BC1_RGB_SRGB_BLOCK
-            | VkFormat::BC1_RGBA_UNORM_BLOCK
+            VkFormat::UNDEFINED
+            | VkFormat::D16_UNORM_S8_UINT
+            | VkFormat::D24_UNORM_S8_UINT
+            | VkFormat::X8_D24_UNORM_PACK32
+            | VkFormat::D32_SFLOAT_S8_UINT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// Returns whether this format is any one of the BCn compressed formats.
+    ///
+    /// # Info
+    ///
+    /// This function is equivalent to the logical OR of all of the following functions
+    ///
+    /// - Self::is_bc1
+    /// - Self::is_bc2
+    /// - Self::is_bc3
+    /// - Self::is_bc4
+    /// - Self::is_bc5
+    /// - Self::is_bc6h
+    /// - Self::is_bc7
+    ///
+    #[inline]
+    pub fn is_bcn(self) -> bool {
+        self.is_bc1()
+            || self.is_bc2()
+            || self.is_bc3()
+            || self.is_bc4()
+            || self.is_bc5()
+            || self.is_bc6h()
+            || self.is_bc7()
+    }
+
+    ///
+    /// If this format is any one of the possible BC1 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc1(self) -> bool {
+        match self {
+            VkFormat::BC1_RGB_SRGB_BLOCK
+            | VkFormat::BC1_RGB_UNORM_BLOCK
             | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::BC2_UNORM_BLOCK
-            | VkFormat::BC2_SRGB_BLOCK
-            | VkFormat::BC3_UNORM_BLOCK
-            | VkFormat::BC3_SRGB_BLOCK
-            | VkFormat::BC4_UNORM_BLOCK
-            | VkFormat::BC4_SNORM_BLOCK
-            | VkFormat::BC5_UNORM_BLOCK
-            | VkFormat::BC5_SNORM_BLOCK
-            | VkFormat::BC6H_UFLOAT_BLOCK
-            | VkFormat::BC6H_SFLOAT_BLOCK
-            | VkFormat::BC7_UNORM_BLOCK
-            | VkFormat::BC7_SRGB_BLOCK
+            | VkFormat::BC1_RGBA_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC2 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc2(self) -> bool {
+        match self {
+            VkFormat::BC2_SRGB_BLOCK | VkFormat::BC2_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC3 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc3(self) -> bool {
+        match self {
+            VkFormat::BC3_SRGB_BLOCK | VkFormat::BC3_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC4 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc4(self) -> bool {
+        match self {
+            VkFormat::BC4_SNORM_BLOCK | VkFormat::BC4_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC5 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc5(self) -> bool {
+        match self {
+            VkFormat::BC5_SNORM_BLOCK | VkFormat::BC5_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC6H compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc6h(self) -> bool {
+        match self {
+            VkFormat::BC6H_SFLOAT_BLOCK | VkFormat::BC6H_UFLOAT_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible BC7 compressed image formats
+    ///
+    #[inline]
+    pub fn is_bc7(self) -> bool {
+        match self {
+            VkFormat::BC7_SRGB_BLOCK | VkFormat::BC7_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ETC2 compressed image formats
+    ///
+    #[inline]
+    pub fn is_etc2(self) -> bool {
+        match self {
+            VkFormat::ETC2_R8G8B8_SRGB_BLOCK
             | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
             | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
             | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
-            | VkFormat::EAC_R11_UNORM_BLOCK
-            | VkFormat::EAC_R11_SNORM_BLOCK
-            | VkFormat::EAC_R11G11_UNORM_BLOCK
-            | VkFormat::EAC_R11G11_SNORM_BLOCK
-            | VkFormat::ASTC_4X4_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 4
+    ///
+    #[inline]
+    pub fn is_astc_block_width_4(self) -> bool {
+        match self {
+            VkFormat::ASTC_4X4_UNORM_BLOCK
+            | VkFormat::ASTC_4X4_SRGB_BLOCK
+            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 5
+    ///
+    #[inline]
+    pub fn is_astc_block_width_5(self) -> bool {
+        match self {
+            VkFormat::ASTC_5X4_UNORM_BLOCK
+            | VkFormat::ASTC_5X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X5_UNORM_BLOCK
+            | VkFormat::ASTC_5X5_SRGB_BLOCK
+            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 6
+    ///
+    #[inline]
+    pub fn is_astc_block_width_6(self) -> bool {
+        match self {
+            VkFormat::ASTC_6X5_UNORM_BLOCK
+            | VkFormat::ASTC_6X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X6_UNORM_BLOCK
+            | VkFormat::ASTC_6X6_SRGB_BLOCK
+            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 8
+    ///
+    #[inline]
+    pub fn is_astc_block_width_8(self) -> bool {
+        match self {
+            VkFormat::ASTC_8X5_UNORM_BLOCK
+            | VkFormat::ASTC_8X5_SRGB_BLOCK
+            | VkFormat::ASTC_8X6_UNORM_BLOCK
+            | VkFormat::ASTC_8X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X8_UNORM_BLOCK
+            | VkFormat::ASTC_8X8_SRGB_BLOCK
+            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 10
+    ///
+    #[inline]
+    pub fn is_astc_block_width_10(self) -> bool {
+        match self {
+            VkFormat::ASTC_10X5_UNORM_BLOCK
+            | VkFormat::ASTC_10X5_SRGB_BLOCK
+            | VkFormat::ASTC_10X6_UNORM_BLOCK
+            | VkFormat::ASTC_10X6_SRGB_BLOCK
+            | VkFormat::ASTC_10X8_UNORM_BLOCK
+            | VkFormat::ASTC_10X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X10_UNORM_BLOCK
+            | VkFormat::ASTC_10X10_SRGB_BLOCK
+            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block width
+    /// of 12
+    ///
+    #[inline]
+    pub fn is_astc_block_width_12(self) -> bool {
+        match self {
+            VkFormat::ASTC_12X10_UNORM_BLOCK
+            | VkFormat::ASTC_12X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X12_UNORM_BLOCK
+            | VkFormat::ASTC_12X12_SRGB_BLOCK
+            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 4
+    ///
+    #[inline]
+    pub fn is_astc_block_height_4(self) -> bool {
+        match self {
+            VkFormat::ASTC_4X4_UNORM_BLOCK
+            | VkFormat::ASTC_4X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X4_UNORM_BLOCK
+            | VkFormat::ASTC_5X4_SRGB_BLOCK
+            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 5
+    ///
+    #[inline]
+    pub fn is_astc_block_height_5(self) -> bool {
+        match self {
+            VkFormat::ASTC_5X5_UNORM_BLOCK
+            | VkFormat::ASTC_5X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X5_UNORM_BLOCK
+            | VkFormat::ASTC_6X5_SRGB_BLOCK
+            | VkFormat::ASTC_8X5_UNORM_BLOCK
+            | VkFormat::ASTC_8X5_SRGB_BLOCK
+            | VkFormat::ASTC_10X5_UNORM_BLOCK
+            | VkFormat::ASTC_10X5_SRGB_BLOCK
+            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 6
+    ///
+    #[inline]
+    pub fn is_astc_block_height_6(self) -> bool {
+        match self {
+            VkFormat::ASTC_6X6_UNORM_BLOCK
+            | VkFormat::ASTC_6X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X6_UNORM_BLOCK
+            | VkFormat::ASTC_8X6_SRGB_BLOCK
+            | VkFormat::ASTC_10X6_UNORM_BLOCK
+            | VkFormat::ASTC_10X6_SRGB_BLOCK
+            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 8
+    ///
+    #[inline]
+    pub fn is_astc_block_height_8(self) -> bool {
+        match self {
+            VkFormat::ASTC_8X8_UNORM_BLOCK
+            | VkFormat::ASTC_8X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X8_UNORM_BLOCK
+            | VkFormat::ASTC_10X8_SRGB_BLOCK
+            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 10
+    ///
+    #[inline]
+    pub fn is_astc_block_height_10(self) -> bool {
+        match self {
+            VkFormat::ASTC_10X10_UNORM_BLOCK
+            | VkFormat::ASTC_10X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X10_UNORM_BLOCK
+            | VkFormat::ASTC_12X10_SRGB_BLOCK
+            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats with a block height
+    /// of 12
+    ///
+    #[inline]
+    pub fn is_astc_block_height_12(self) -> bool {
+        match self {
+            VkFormat::ASTC_12X12_UNORM_BLOCK
+            | VkFormat::ASTC_12X12_SRGB_BLOCK
+            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible ASTC compressed image formats
+    ///
+    #[inline]
+    pub fn is_astc(self) -> bool {
+        match self {
+            VkFormat::ASTC_4X4_UNORM_BLOCK
             | VkFormat::ASTC_4X4_SRGB_BLOCK
             | VkFormat::ASTC_5X4_UNORM_BLOCK
             | VkFormat::ASTC_5X4_SRGB_BLOCK
@@ -409,13 +682,41 @@ impl VkFormat {
             | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
             | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
             | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
-            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible PVRTC compressed image formats
+    ///
+    #[inline]
+    pub fn is_pvrtc(self) -> bool {
+        self.is_pvrtc1() || self.is_pvrtc2()
+    }
+
+    ///
+    /// If this format is any one of the possible PVRTC1 compressed image formats
+    ///
+    #[inline]
+    pub fn is_pvrtc1(self) -> bool {
+        match self {
+            VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible PVRTC2 compressed image formats
+    ///
+    #[inline]
+    pub fn is_pvrtc2(self) -> bool {
+        match self {
+            VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
             | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
             _ => false,
@@ -423,15 +724,168 @@ impl VkFormat {
     }
 
     ///
-    /// If this format has been marked explicitly as unsupported by our implementation
+    /// If this format is any one of the possible PVRTC 2bpp formats (2 bits per pixel)
     ///
-    pub fn is_unsupported(self) -> bool {
+    #[inline]
+    pub fn is_pvrtc_2bpp(self) -> bool {
         match self {
-            VkFormat::UNDEFINED
-            | VkFormat::D16_UNORM_S8_UINT
-            | VkFormat::D24_UNORM_S8_UINT
-            | VkFormat::X8_D24_UNORM_PACK32
-            | VkFormat::D32_SFLOAT_S8_UINT => true,
+            VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible PVRTC 4bpp formats (4 bits per pixel)
+    ///
+    #[inline]
+    pub fn is_pvrtc_4bpp(self) -> bool {
+        match self {
+            VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// If this format is any one of the possible EAC compressed image formats
+    ///
+    #[inline]
+    pub fn is_eac(self) -> bool {
+        match self {
+            VkFormat::EAC_R11_SNORM_BLOCK
+            | VkFormat::EAC_R11_UNORM_BLOCK
+            | VkFormat::EAC_R11G11_SNORM_BLOCK
+            | VkFormat::EAC_R11G11_UNORM_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// Returns the pixel width of a "block" for this image format
+    ///
+    /// # Info
+    ///
+    /// This will be one for non block compressed formats as a "non blocked" can be described as
+    /// a blocked format with a 1x1 block size.
+    ///
+    /// This will be >1 for any compressed formats.
+    ///
+    #[inline]
+    pub fn block_width(self) -> u32 {
+        if self.is_bcn() || self.is_etc2() || self.is_eac() {
+            4
+        } else if self.is_pvrtc_2bpp() {
+            8
+        } else if self.is_pvrtc_4bpp() {
+            4
+        } else if self.is_astc_block_width_4() {
+            4
+        } else if self.is_astc_block_width_5() {
+            5
+        } else if self.is_astc_block_width_6() {
+            6
+        } else if self.is_astc_block_width_8() {
+            8
+        } else if self.is_astc_block_width_10() {
+            10
+        } else if self.is_astc_block_width_12() {
+            12
+        } else {
+            1
+        }
+    }
+
+    ///
+    /// Returns the pixel height of a "block" for this image format
+    ///
+    /// # Info
+    ///
+    /// This will be one for non block compressed formats as a "non blocked" can be described as
+    /// a blocked format with a 1x1 block size.
+    ///
+    /// This will be >1 for any compressed formats.
+    ///
+    #[inline]
+    pub fn block_height(self) -> u32 {
+        if self.is_bcn() || self.is_etc2() || self.is_eac() {
+            4
+        } else if self.is_pvrtc() {
+            4
+        } else if self.is_astc_block_height_4() {
+            4
+        } else if self.is_astc_block_height_5() {
+            5
+        } else if self.is_astc_block_height_6() {
+            6
+        } else if self.is_astc_block_height_8() {
+            8
+        } else if self.is_astc_block_height_10() {
+            10
+        } else if self.is_astc_block_height_12() {
+            12
+        } else {
+            1
+        }
+    }
+
+    ///
+    /// Returns the pixel depth of a "block" for this image format
+    ///
+    /// # Info
+    ///
+    /// There are 3D block compressed ASTC formats, but they aren't enumerated by Vulkan at the time
+    /// of this code being written so we just return 1 here.
+    ///
+    #[inline]
+    pub fn block_depth(self) -> u32 {
+        1
+    }
+
+    ///
+    /// Returns whether the format is one of the `SRGB` formats
+    ///
+    #[inline]
+    pub fn is_srgb(self) -> bool {
+        match self {
+            // All SRGB formats
+            VkFormat::R8_SRGB
+            | VkFormat::R8G8_SRGB
+            | VkFormat::R8G8B8_SRGB
+            | VkFormat::B8G8R8_SRGB
+            | VkFormat::R8G8B8A8_SRGB
+            | VkFormat::B8G8R8A8_SRGB
+            | VkFormat::A8B8G8R8_SRGB_PACK32
+            | VkFormat::BC1_RGB_SRGB_BLOCK
+            | VkFormat::BC1_RGBA_SRGB_BLOCK
+            | VkFormat::BC2_SRGB_BLOCK
+            | VkFormat::ASTC_4X4_SRGB_BLOCK
+            | VkFormat::ASTC_8X6_SRGB_BLOCK
+            | VkFormat::ASTC_5X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X5_SRGB_BLOCK
+            | VkFormat::ASTC_8X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X5_SRGB_BLOCK
+            | VkFormat::ASTC_10X6_SRGB_BLOCK
+            | VkFormat::ASTC_10X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X12_SRGB_BLOCK
+            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::BC3_SRGB_BLOCK
+            | VkFormat::BC7_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK => true,
             _ => false,
         }
     }
@@ -439,6 +893,7 @@ impl VkFormat {
     ///
     /// If this format has been marked explicitly as unsupported by our implementation
     ///
+    #[inline]
     pub fn is_depth_format(self) -> bool {
         match self {
             VkFormat::D32_SFLOAT
@@ -454,6 +909,7 @@ impl VkFormat {
     ///
     /// If this format has been marked as prohibited by the KTX 2.0 spec
     ///
+    #[inline]
     pub fn is_prohibited(self) -> bool {
         match self {
             VkFormat::R8_USCALED
@@ -538,6 +994,7 @@ impl VkFormat {
     /// This shouldn't cause any errors when reading a KTX file but may be an issue when trying to
     /// output a KTX file.
     ///
+    #[inline]
     pub fn is_known(self) -> bool {
         match self {
             VkFormat::UNDEFINED => true,

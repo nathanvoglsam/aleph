@@ -7,10 +7,16 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod file_index;
+mod level_index;
+mod super_compression_scheme;
+
+pub use file_index::FileIndex;
+pub use level_index::LevelIndex;
+pub use super_compression_scheme::SuperCompressionScheme;
+
 use crate::data_format_descriptor::DataFormatDescriptor;
-use crate::file_index::FileIndex;
-use crate::level_index::LevelIndex;
-use crate::{SuperCompressionScheme, VkFormat};
+use crate::{DFDError, VkFormat};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Error, Read, Seek};
 
@@ -69,14 +75,8 @@ pub enum KTXReadError {
     /// Whether the dimensions in the image are invalid (i.e 0,0,0)
     InvalidImageDimensions,
 
-    /// The dfd vendor id is non zero (we don't support this)
-    InvalidDFDVendor(u32),
-
-    /// The dfd descriptor type is non zero (we don't support this)
-    InvalidDFDDescriptorType(u16),
-
-    /// The `dfdTotalSize` is invalid
-    InvalidDFDTotalSize(u32),
+    /// An error when reading the data format descriptor
+    DFDError(DFDError),
 
     /// An error occurred while reading the data itself
     IOError(std::io::Error),
@@ -85,6 +85,12 @@ pub enum KTXReadError {
 impl From<std::io::Error> for KTXReadError {
     fn from(err: Error) -> Self {
         KTXReadError::IOError(err)
+    }
+}
+
+impl From<DFDError> for KTXReadError {
+    fn from(err: DFDError) -> Self {
+        KTXReadError::DFDError(err)
     }
 }
 
@@ -297,7 +303,7 @@ impl KTXDocument {
             _ => panic!("Unable to deduce valid document type"),
         };
 
-        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index)?;
+        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, format)?;
 
         let out = Self {
             format,
