@@ -16,7 +16,9 @@ pub use level_index::LevelIndex;
 pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
-use crate::{DFDError, VkFormat};
+use crate::format::{is_format_prohibited, is_format_unsupported};
+use crate::DFDError;
+use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Error, Read, Seek};
 
@@ -348,9 +350,9 @@ impl KTXDocument {
         let format = VkFormat(format);
 
         // Check if format is valid and supported
-        if format.is_prohibited() {
+        if is_format_prohibited(format) {
             Err(KTXReadError::ProhibitedFormat(format))
-        } else if format.is_unsupported() {
+        } else if is_format_unsupported(format) {
             Err(KTXReadError::UnsupportedFormat(format))
         } else {
             Ok(format)

@@ -22,4 +22,3 @@ pub use data_format_descriptor::TransferFunction;
 pub use document::KTXDocument;
 pub use document::KTXReadError;
 pub use document::SuperCompressionScheme;
-pub use format::VkFormat;

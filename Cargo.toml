@@ -32,6 +32,7 @@ members = [
     "utils/aleph-macros",
     "utils/aleph-target",
     "utils/aleph-target-build",
+    "utils/aleph-vk-format",
     "graphics/aleph-render",
     "graphics/aleph-render-graph",
     "graphics/aleph-vulkan",

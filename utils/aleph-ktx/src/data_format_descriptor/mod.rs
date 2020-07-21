@@ -10,15 +10,20 @@
 mod color_model;
 mod color_primaries;
 mod flags;
+mod sample_info;
 mod transfer_function;
 
 pub use color_model::ColorModel;
 pub use color_primaries::ColorPrimaries;
 pub use flags::DFDFlags;
+pub use flags::SampleFlags;
+pub use sample_info::SampleInfo;
+pub use sample_info::SampleInfoIterator;
 pub use transfer_function::TransferFunction;
 
 use crate::document::FileIndex;
-use crate::{KTXReadError, VkFormat};
+use crate::KTXReadError;
+use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Seek, SeekFrom};
 
@@ -77,8 +82,8 @@ pub enum DFDError {
 /// Struct for unpacking and validating the data format descriptor in a KTX document
 ///
 pub struct DataFormatDescriptor {
-    pub descriptor_block_size: u16,
-    pub sample_count: u16,
+    pub flags: DFDFlags,
+    pub color_primaries: ColorPrimaries,
 }
 
 impl DataFormatDescriptor {
@@ -122,6 +127,12 @@ impl DataFormatDescriptor {
         let texel_block_dimensions_1 = (words[3] >> 8) & 0xFF;
         let texel_block_dimensions_2 = (words[3] >> 16) & 0xFF;
         let texel_block_dimensions_3 = (words[3] >> 24) & 0xFF;
+        let block_dimensions = [
+            texel_block_dimensions_0,
+            texel_block_dimensions_1,
+            texel_block_dimensions_2,
+            texel_block_dimensions_3,
+        ];
 
         // Unpack byte plane sizes
         let byte_planes_0 = ((words[4] >> 0) & 0xFF) as u8;
@@ -194,13 +205,13 @@ impl DataFormatDescriptor {
         }
 
         // Assert the DFD block width matches the format specified by the file earlier
-        if texel_block_dimensions_0 + 1 != format.block_width() {
+        if block_dimensions[0] + 1 != format.block_width() {
             // + 1 to decode value
             return Err(DFDError::InvalidBlockWidth(texel_block_dimensions_0).into());
         }
 
         // Assert the DFD block height matches the format specified by the file earlier
-        if texel_block_dimensions_1 + 1 != format.block_height() {
+        if block_dimensions[1] + 1 != format.block_height() {
             // + 1 to decode value
             return Err(DFDError::InvalidBlockHeight(texel_block_dimensions_0).into());
         }
@@ -211,7 +222,7 @@ impl DataFormatDescriptor {
         //
         // Long story short, assert that the blocks depth matches the format specified earlier by
         // the file
-        if texel_block_dimensions_2 + 1 != format.block_depth() {
+        if block_dimensions[2] + 1 != format.block_depth() {
             // + 1 to decode value
             return Err(DFDError::InvalidBlockDepth(texel_block_dimensions_2).into());
         }
@@ -220,7 +231,7 @@ impl DataFormatDescriptor {
         // our physical forms so I think it's safe to just call it an error and not worry about it.
         //
         // Long story short, assert that the blocks W dimension is 1
-        if texel_block_dimensions_3 + 1 != 1 {
+        if block_dimensions[3] + 1 != 1 {
             // + 1 to decode value
             return Err(DFDError::InvalidBlock4thDimension(texel_block_dimensions_2).into());
         }
@@ -234,10 +245,11 @@ impl DataFormatDescriptor {
 
         // Derive the sample count so we can iterate over the DFD sample descriptions
         let sample_count = (descriptor_block_size - 24) / 16;
+        for (index, sample) in SampleInfoIterator::from_reader_count(reader, sample_count) {}
 
         Ok(Self {
-            descriptor_block_size,
-            sample_count,
+            flags,
+            color_primaries,
         })
     }
 }

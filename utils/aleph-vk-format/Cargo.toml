@@ -9,22 +9,17 @@
 
 
 [package]
-name = "aleph-ktx"
-version = "0.1.0"
+name = "aleph-vk-format"
+version = "1.0.0+145"
 authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
-description = "KTX 2.0 parsing library"
+description = "A standalone description of VkFormat with some utility methods attached"
 license = "<ALEPH_LICENSE_NAME_REPLACE>"
 repository = "<ALEPH_REPO_REPLACE>"
-documentation = "https://docs.rs/aleph-ktx/"
+documentation = "https://docs.rs/aleph-vk-format/"
 readme = "README.md"
-## TODO: keywords = ["build", "compilation", "utility"]
-## TODO: categories = ["development-tools::build-utils"]
+# TODO: keywords = ["build", "compilation", "utility"]
+# TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
-
-[dependencies]
-aleph-vk-format = { path = "../aleph-vk-format", version = "1.0.0" }
-byteorder = "1.3"
-bitflags = "1.2"
 
 [badges]
 azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }

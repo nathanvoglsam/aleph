@@ -7,7 +7,8 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
-use crate::VkFormat;
+use crate::format::is_format_prohibited;
+use aleph_vk_format::VkFormat;
 
 ///
 /// Represents the supported set of DFD color models
@@ -124,7 +125,7 @@ impl ColorModel {
     /// Returns a color model for the given VkFormat
     ///
     pub fn for_format(format: VkFormat) -> Option<ColorModel> {
-        if format == VkFormat::UNDEFINED || format.is_prohibited() {
+        if format == VkFormat::UNDEFINED || is_format_prohibited(format) {
             None
         } else if format.is_bc1() {
             Some(ColorModel::BC1A)
