@@ -7,12 +7,27 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+mod channel_type;
 mod color_model;
 mod color_primaries;
 mod flags;
 mod sample_info;
 mod transfer_function;
 
+pub use channel_type::ASTCChannelType;
+pub use channel_type::BC1ChannelType;
+pub use channel_type::BC2ChannelType;
+pub use channel_type::BC3ChannelType;
+pub use channel_type::BC4ChannelType;
+pub use channel_type::BC5ChannelType;
+pub use channel_type::BC6ChannelType;
+pub use channel_type::BC7ChannelType;
+pub use channel_type::ETC1ChannelType;
+pub use channel_type::ETC1SChannelType;
+pub use channel_type::ETC2ChannelType;
+pub use channel_type::PVRTC2ChannelType;
+pub use channel_type::PVRTCChannelType;
+pub use channel_type::RGBSDAChannelType;
 pub use color_model::ColorModel;
 pub use color_primaries::ColorPrimaries;
 pub use flags::DFDFlags;

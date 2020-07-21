@@ -27,3 +27,9 @@ bitflags::bitflags! {
         const FLOAT = 0b1000;
     }
 }
+
+impl Default for SampleFlags {
+    fn default() -> Self {
+        Self::empty()
+    }
+}

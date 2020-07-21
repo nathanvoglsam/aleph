@@ -1,3 +1,3 @@
-# Aleph-Compile
+# Aleph-VkFormat
 
-A set of utilities used by build.rs scripts for Aleph
+A standalone description of VkFormat with some utility methods attached
