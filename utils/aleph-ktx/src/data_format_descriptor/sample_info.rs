@@ -12,7 +12,7 @@ use crate::data_format_descriptor::{
     BC5ChannelType, BC6ChannelType, BC7ChannelType, ETC1ChannelType, ETC1SChannelType,
     ETC2ChannelType, PVRTC2ChannelType, PVRTCChannelType, SampleFlags,
 };
-use crate::format::{format_has_alpha, is_format_alpha_first_ordered, is_format_rgb_ordered};
+use crate::format::{format_has_alpha, is_format_alpha_first_ordered, is_format_rgbds_ordered};
 use crate::{format_sample_info_count, is_format_prohibited, is_format_unsupported};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -552,7 +552,7 @@ impl SampleInfo {
             None
         } else {
             let has_alpha = format_has_alpha(format);
-            let is_rgb_ordered = is_format_rgb_ordered(format);
+            let is_rgb_ordered = is_format_rgbds_ordered(format);
             let alpha_first = is_format_alpha_first_ordered(format);
             let count = format_sample_info_count(format)?;
             let is_float = format.is_floating_point();
@@ -565,7 +565,7 @@ impl SampleInfo {
                 (true, _, true) => return None, // Doesn't make sense (float + norm?)
                 (true, true, false) => SampleFlags::FLOAT | SampleFlags::SIGNED,
                 (true, false, false) => SampleFlags::FLOAT,
-                (_, true, _) => SampleFlags::SIGNED,
+                (false, true, _) => SampleFlags::SIGNED,
                 (_, _, _) => SampleFlags::empty(),
             };
 
