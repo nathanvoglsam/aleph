@@ -283,6 +283,143 @@ impl VkFormat {
     }
 
     ///
+    /// Some formats have 1 bit (punch-through alpha) so it may be useful to be able to check for
+    /// this.
+    ///
+    /// This returns if the format can at most represent 1 bit of alpha
+    ///
+    pub fn is_1bit_alpha(self) -> bool {
+        match self {
+            VkFormat::R5G5B5A1_UNORM_PACK16
+            | VkFormat::B5G5R5A1_UNORM_PACK16
+            | VkFormat::A1R5G5B5_UNORM_PACK16
+            | VkFormat::BC1_RGBA_UNORM_BLOCK
+            | VkFormat::BC1_RGBA_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK => true,
+            _ => false,
+        }
+    }
+
+    ///
+    /// Returns whether this format has an alpha channel
+    ///
+    pub fn has_alpha(self) -> bool {
+        match self {
+            VkFormat::R4G4B4A4_UNORM_PACK16
+            | VkFormat::B4G4R4A4_UNORM_PACK16
+            | VkFormat::R5G5B5A1_UNORM_PACK16
+            | VkFormat::B5G5R5A1_UNORM_PACK16
+            | VkFormat::A1R5G5B5_UNORM_PACK16
+            | VkFormat::R8G8B8A8_UNORM
+            | VkFormat::R8G8B8A8_SNORM
+            | VkFormat::R8G8B8A8_USCALED
+            | VkFormat::R8G8B8A8_SSCALED
+            | VkFormat::R8G8B8A8_UINT
+            | VkFormat::R8G8B8A8_SINT
+            | VkFormat::R8G8B8A8_SRGB
+            | VkFormat::B8G8R8A8_UNORM
+            | VkFormat::B8G8R8A8_SNORM
+            | VkFormat::B8G8R8A8_USCALED
+            | VkFormat::B8G8R8A8_SSCALED
+            | VkFormat::B8G8R8A8_UINT
+            | VkFormat::B8G8R8A8_SINT
+            | VkFormat::B8G8R8A8_SRGB
+            | VkFormat::A8B8G8R8_UNORM_PACK32
+            | VkFormat::A8B8G8R8_SNORM_PACK32
+            | VkFormat::A8B8G8R8_USCALED_PACK32
+            | VkFormat::A8B8G8R8_SSCALED_PACK32
+            | VkFormat::A8B8G8R8_UINT_PACK32
+            | VkFormat::A8B8G8R8_SINT_PACK32
+            | VkFormat::A8B8G8R8_SRGB_PACK32
+            | VkFormat::A2R10G10B10_UNORM_PACK32
+            | VkFormat::A2R10G10B10_SNORM_PACK32
+            | VkFormat::A2R10G10B10_USCALED_PACK32
+            | VkFormat::A2R10G10B10_SSCALED_PACK32
+            | VkFormat::A2R10G10B10_UINT_PACK32
+            | VkFormat::A2R10G10B10_SINT_PACK32
+            | VkFormat::A2B10G10R10_UNORM_PACK32
+            | VkFormat::A2B10G10R10_SNORM_PACK32
+            | VkFormat::A2B10G10R10_USCALED_PACK32
+            | VkFormat::A2B10G10R10_SSCALED_PACK32
+            | VkFormat::A2B10G10R10_UINT_PACK32
+            | VkFormat::A2B10G10R10_SINT_PACK32
+            | VkFormat::R16G16B16A16_UNORM
+            | VkFormat::R16G16B16A16_SNORM
+            | VkFormat::R16G16B16A16_USCALED
+            | VkFormat::R16G16B16A16_SSCALED
+            | VkFormat::R16G16B16A16_UINT
+            | VkFormat::R16G16B16A16_SINT
+            | VkFormat::R16G16B16A16_SFLOAT
+            | VkFormat::R32G32B32A32_UINT
+            | VkFormat::R32G32B32A32_SINT
+            | VkFormat::R32G32B32A32_SFLOAT
+            | VkFormat::R64G64B64A64_UINT
+            | VkFormat::R64G64B64A64_SINT
+            | VkFormat::R64G64B64A64_SFLOAT
+            | VkFormat::BC1_RGBA_UNORM_BLOCK
+            | VkFormat::BC1_RGBA_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+            | VkFormat::ASTC_4X4_UNORM_BLOCK
+            | VkFormat::ASTC_4X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X4_UNORM_BLOCK
+            | VkFormat::ASTC_5X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X5_UNORM_BLOCK
+            | VkFormat::ASTC_5X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X5_UNORM_BLOCK
+            | VkFormat::ASTC_6X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X6_UNORM_BLOCK
+            | VkFormat::ASTC_6X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X5_UNORM_BLOCK
+            | VkFormat::ASTC_8X5_SRGB_BLOCK
+            | VkFormat::ASTC_8X6_UNORM_BLOCK
+            | VkFormat::ASTC_8X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X8_UNORM_BLOCK
+            | VkFormat::ASTC_8X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X5_UNORM_BLOCK
+            | VkFormat::ASTC_10X5_SRGB_BLOCK
+            | VkFormat::ASTC_10X6_UNORM_BLOCK
+            | VkFormat::ASTC_10X6_SRGB_BLOCK
+            | VkFormat::ASTC_10X8_UNORM_BLOCK
+            | VkFormat::ASTC_10X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X10_UNORM_BLOCK
+            | VkFormat::ASTC_10X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X10_UNORM_BLOCK
+            | VkFormat::ASTC_12X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X12_UNORM_BLOCK
+            | VkFormat::ASTC_12X12_SRGB_BLOCK
+            | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
+            | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
+            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
+            _ => false,
+        }
+    }
+
+    ///
     /// Returns whether this format is any one of the BCn compressed formats.
     ///
     /// # Info
@@ -314,10 +451,18 @@ impl VkFormat {
     #[inline]
     pub fn is_bc1(self) -> bool {
         match self {
-            VkFormat::BC1_RGB_SRGB_BLOCK
-            | VkFormat::BC1_RGB_UNORM_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::BC1_RGBA_UNORM_BLOCK => true,
+            VkFormat::BC1_RGB_SRGB_BLOCK | VkFormat::BC1_RGB_UNORM_BLOCK => true,
+            _ => self.is_bc1_alpha(),
+        }
+    }
+
+    ///
+    /// If this format is any one of the BC1 compressed image formats with cutout alpha
+    ///
+    #[inline]
+    pub fn is_bc1_alpha(self) -> bool {
+        match self {
+            VkFormat::BC1_RGBA_SRGB_BLOCK | VkFormat::BC1_RGBA_UNORM_BLOCK => true,
             _ => false,
         }
     }

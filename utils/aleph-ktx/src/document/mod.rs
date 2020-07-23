@@ -17,7 +17,7 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
-use crate::DFDError;
+use crate::{ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Error, Read, Seek};
@@ -176,6 +176,28 @@ impl KTXDocument {
     ///
     pub fn depth(&self) -> u32 {
         self.depth
+    }
+
+    ///
+    /// Returns whether the file says the data it contains has premultiplied alpha.
+    ///
+    /// # Warning
+    ///
+    /// Faulty exporters could set this incorrectly. Trust this at your own discretion.
+    ///
+    pub fn is_premultiplied_alpha(&self) -> bool {
+        self.dfd.flags.contains(DFDFlags::ALPHA_PREMULTIPLIED)
+    }
+
+    ///
+    /// Gets the color primaries that the file states the image data matches
+    ///
+    /// # Warning
+    ///
+    /// Faulty exporters could set this incorrectly. Trust this at your own discretion.
+    ///
+    pub fn color_primaries(&self) -> ColorPrimaries {
+        self.dfd.color_primaries
     }
 
     ///

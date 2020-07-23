@@ -91,6 +91,12 @@ pub enum DFDError {
 
     /// If one of the `bytePlane` values is invalid, (byte plane index, byte plane value)
     InvalidBytePlaneSize(u8, u8),
+
+    /// If the sample information block itself is incompatible with the earlier stated format
+    InvalidSampleInfo,
+
+    /// If one of the sample information blocks in the DFD was invalid for the earlier stated format
+    IncorrectSampleInfo(SampleInfo, SampleInfo),
 }
 
 ///
@@ -260,7 +266,24 @@ impl DataFormatDescriptor {
 
         // Derive the sample count so we can iterate over the DFD sample descriptions
         let sample_count = (descriptor_block_size - 24) / 16;
-        for (index, sample) in SampleInfoIterator::from_reader_count(reader, sample_count) {}
+
+        // Get the sample infos expected for the format
+        let mut sample_infos: [SampleInfo; 8] = Default::default();
+        let needed_infos = SampleInfo::for_format(format, &mut sample_infos).unwrap();
+
+        // Check the lengths are equal
+        if needed_infos != sample_count as usize {
+            return Err(DFDError::InvalidSampleInfo.into());
+        }
+
+        // Make sure all sample info DFD stuff matches
+        for (index, sample) in SampleInfoIterator::from_reader_count(reader, sample_count) {
+            if &sample != &sample_infos[index] {
+                return Err(
+                    DFDError::IncorrectSampleInfo(sample, sample_infos[index].clone()).into(),
+                );
+            }
+        }
 
         Ok(Self {
             flags,
