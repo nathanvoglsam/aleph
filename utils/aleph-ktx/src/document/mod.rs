@@ -17,7 +17,7 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
-use crate::{ColorPrimaries, DFDError, DFDFlags};
+use crate::{format_type_size, ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Error, Read, Seek};
@@ -268,7 +268,7 @@ impl KTXDocument {
     ///
     pub fn from_reader(mut reader: (impl Read + Seek)) -> Result<Self, KTXReadError> {
         Self::validate_file_identifier(&mut reader)?;
-        let format = Self::read_vk_format(&mut reader)?;
+        let mut format = Self::read_vk_format(&mut reader)?;
         let type_size = Self::read_type_size(&mut reader, format)?;
         let dimensions = Self::read_dimensions(&mut reader, format)?;
         let layer_num = Self::read_layer_count(&mut reader)?;
@@ -286,7 +286,7 @@ impl KTXDocument {
         for _ in 0..levels_to_read {
             level_indices.push(LevelIndex::from_reader(
                 &mut reader,
-                layer_num,
+                layer_num.max(1),
                 face_num,
                 super_compression_scheme,
             )?);
@@ -327,7 +327,7 @@ impl KTXDocument {
             _ => panic!("Unable to deduce valid document type"),
         };
 
-        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, format)?;
+        let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, &mut format)?;
 
         let out = Self {
             format,
@@ -386,8 +386,9 @@ impl KTXDocument {
     ///
     fn read_type_size(reader: &mut impl Read, format: VkFormat) -> Result<u32, KTXReadError> {
         let type_size = reader.read_u32::<LittleEndian>()?;
+        let expected = format_type_size(format);
 
-        if type_size == 1 && !format.is_block_format() {
+        if type_size != expected {
             Err(KTXReadError::WrongTypeSizeForBlockFormat(type_size, format))
         } else {
             Ok(type_size)
@@ -455,9 +456,11 @@ impl KTXDocument {
         let max_dim = u32::max(max_dim, dimensions.2);
 
         // Max level is equal to log2 of the highest image dimension
-        let max_levels = (max_dim as f64).log2() as u32;
+        let max_dim = max_dim as f64;
+        let max_dim = max_dim.log2();
+        let max_levels = max_dim as u32;
 
-        if level_count > max_levels {
+        if level_count > max_levels + 1 {
             Err(KTXReadError::TooManyLevels(level_count))
         } else if level_count == 0 && format.is_block_format() {
             Err(KTXReadError::InvalidLevelCountForBlockFormat(level_count))

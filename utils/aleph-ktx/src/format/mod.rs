@@ -26,6 +26,7 @@ pub use bit_count::format_stencil_bits;
 pub use component_order::is_format_alpha_first_ordered;
 pub use component_order::is_format_rgbds_ordered;
 pub use layout::format_pack_bits;
+pub use layout::format_type_size;
 pub use samples::format_sample_info_count;
 pub use support::is_format_prohibited;
 pub use support::is_format_unsupported;

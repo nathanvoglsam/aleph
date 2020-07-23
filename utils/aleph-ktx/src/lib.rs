@@ -49,6 +49,7 @@ pub use format::format_pack_bits;
 pub use format::format_red_bits;
 pub use format::format_sample_info_count;
 pub use format::format_stencil_bits;
+pub use format::format_type_size;
 pub use format::is_format_alpha_first_ordered;
 pub use format::is_format_prohibited;
 pub use format::is_format_rgbds_ordered;

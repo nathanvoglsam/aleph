@@ -8,8 +8,8 @@
 //
 
 use crate::format::is_format_prohibited;
-use aleph_vk_format::VkFormat;
 use crate::is_format_unsupported;
+use aleph_vk_format::VkFormat;
 
 ///
 /// Represents the set of supported `transferFunction` values

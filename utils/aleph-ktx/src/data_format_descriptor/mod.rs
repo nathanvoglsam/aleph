@@ -11,6 +11,7 @@ mod channel_type;
 mod color_model;
 mod color_primaries;
 mod flags;
+mod raw;
 mod sample_info;
 mod transfer_function;
 
@@ -36,10 +37,10 @@ pub use sample_info::SampleInfo;
 pub use sample_info::SampleInfoIterator;
 pub use transfer_function::TransferFunction;
 
+use crate::data_format_descriptor::raw::RawDataFormatDescriptor;
 use crate::document::FileIndex;
 use crate::KTXReadError;
 use aleph_vk_format::VkFormat;
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Read, Seek, SeekFrom};
 
 ///
@@ -109,111 +110,61 @@ pub struct DataFormatDescriptor {
 
 impl DataFormatDescriptor {
     ///
-    /// Reads the data format descriptor from the given reader
+    /// Reads the data format descriptor from the given reader, validating that the DFD values match
+    /// what what the given VkFormat expects.
     ///
-    pub fn from_reader(
+    /// # Panics
+    ///
+    /// Will panic if `format` is `VkFormat::UNDEFINED`
+    ///
+    fn validate_against_format(
         reader: &mut (impl Read + Seek),
+        raw_dfd: RawDataFormatDescriptor,
         file_index: &FileIndex,
         format: VkFormat,
     ) -> Result<Self, KTXReadError> {
-        reader.seek(SeekFrom::Start(file_index.dfd_offset as _))?;
-
-        //
-        // Read off the next 7 words of the DFD and unpack them into the different parts
-        //
-
-        // Read in the next 7 words.
-        let mut words = [0; 7];
-        reader.read_u32_into::<LittleEndian>(&mut words)?;
-
-        // Unpack the next word
-        let dfd_total_size = words[0];
-
-        // Unpack the next word
-        let vendor_id = words[1] & 0x1FFFF;
-        let descriptor_type = (words[1] >> 17) as u16;
-
-        // Unpack the next word
-        let version_number = (words[2] & 0xFFFF) as u16;
-        let descriptor_block_size = (words[2] >> 16) as u16;
-
-        // Unpack the next word
-        let color_model = ((words[3] >> 0) & 0xFF) as u8;
-        let color_primaries = ((words[3] >> 8) & 0xFF) as u8;
-        let transfer_function = ((words[3] >> 16) & 0xFF) as u8;
-        let flags = ((words[3] >> 24) & 0xFF) as u8;
-
-        // Unpack the next word
-        let texel_block_dimensions_0 = (words[4] >> 0) & 0xFF;
-        let texel_block_dimensions_1 = (words[4] >> 8) & 0xFF;
-        let texel_block_dimensions_2 = (words[4] >> 16) & 0xFF;
-        let texel_block_dimensions_3 = (words[4] >> 24) & 0xFF;
-        let block_dimensions = [
-            texel_block_dimensions_0,
-            texel_block_dimensions_1,
-            texel_block_dimensions_2,
-            texel_block_dimensions_3,
-        ];
-
-        // Unpack byte plane sizes
-        let byte_planes_0 = ((words[5] >> 0) & 0xFF) as u8;
-        let byte_planes_1 = ((words[5] >> 8) & 0xFF) as u8;
-        let byte_planes_2 = ((words[5] >> 16) & 0xFF) as u8;
-        let byte_planes_3 = ((words[5] >> 24) & 0xFF) as u8;
-        let byte_planes_4 = ((words[6] >> 0) & 0xFF) as u8;
-        let byte_planes_5 = ((words[6] >> 8) & 0xFF) as u8;
-        let byte_planes_6 = ((words[6] >> 16) & 0xFF) as u8;
-        let byte_planes_7 = ((words[6] >> 24) & 0xFF) as u8;
-        let byte_planes = [
-            byte_planes_0,
-            byte_planes_1,
-            byte_planes_2,
-            byte_planes_3,
-            byte_planes_4,
-            byte_planes_5,
-            byte_planes_6,
-            byte_planes_7,
-        ];
+        assert_ne!(format, VkFormat::UNDEFINED);
 
         //
         // CHECK THE VALUES ARE VALID AFTER READING THEM OUT
         //
 
         // Assert the dfd_total_size field matches the constraints of the KTX format
-        if dfd_total_size != file_index.kvd_offset - file_index.dfd_offset {
-            return Err(DFDError::InvalidTotalSize(dfd_total_size).into());
+        if raw_dfd.dfd_total_size != file_index.kvd_offset - file_index.dfd_offset {
+            return Err(DFDError::InvalidTotalSize(raw_dfd.dfd_total_size).into());
         }
 
         // Assert the vendor id is 0, which is the Khronos group, we don't support any vendor
         // extensions in this reader.
-        if vendor_id != 0 {
-            return Err(DFDError::InvalidVendor(vendor_id).into());
+        if raw_dfd.vendor_id != 0 {
+            return Err(DFDError::InvalidVendor(raw_dfd.vendor_id).into());
         }
 
         // Assert the descriptor type is 0, the only type we support.
-        if descriptor_type != 0 {
-            return Err(DFDError::InvalidDescriptorType(descriptor_type).into());
+        if raw_dfd.descriptor_type != 0 {
+            return Err(DFDError::InvalidDescriptorType(raw_dfd.descriptor_type).into());
         }
 
         // We only support DFD version 2 so assert the file is the right version
-        if version_number != 2 {
-            return Err(DFDError::InvalidVersionNumber(version_number).into());
+        if raw_dfd.version_number != 2 {
+            return Err(DFDError::InvalidVersionNumber(raw_dfd.version_number).into());
         }
 
         // Assert that the file at least specifies a color model that exists
-        let color_model =
-            ColorModel::from_raw(color_model).ok_or(DFDError::InvalidColorModel(color_model))?;
+        let color_model = ColorModel::from_raw(raw_dfd.color_model)
+            .ok_or(DFDError::InvalidColorModel(raw_dfd.color_model))?;
 
         // Assert that the file at least specifies a color primaries value that exists
-        let color_primaries = ColorPrimaries::from_raw(color_primaries)
-            .ok_or(DFDError::InvalidColorPrimaries(color_primaries))?;
+        let color_primaries = ColorPrimaries::from_raw(raw_dfd.color_primaries)
+            .ok_or(DFDError::InvalidColorPrimaries(raw_dfd.color_primaries))?;
 
         // Assert that the file at least specifies a transfer function that exists
-        let transfer_function = TransferFunction::from_raw(transfer_function)
-            .ok_or(DFDError::InvalidTransferFunction(transfer_function))?;
+        let transfer_function = TransferFunction::from_raw(raw_dfd.transfer_function)
+            .ok_or(DFDError::InvalidTransferFunction(raw_dfd.transfer_function))?;
 
         // Assert that the file only specifies valid flags
-        let flags: DFDFlags = DFDFlags::from_bits(flags).ok_or(DFDError::InvalidFlags(flags))?;
+        let flags: DFDFlags =
+            DFDFlags::from_bits(raw_dfd.flags).ok_or(DFDError::InvalidFlags(raw_dfd.flags))?;
 
         // Assert the color model is valid for the format specified by the file earlier
         if !color_model.is_compatible_with_format(format) {
@@ -226,15 +177,15 @@ impl DataFormatDescriptor {
         }
 
         // Assert the DFD block width matches the format specified by the file earlier
-        if block_dimensions[0] + 1 != format.block_width() {
+        if raw_dfd.block_dimensions[0] as u32 + 1 != format.block_width() {
             // + 1 to decode value
-            return Err(DFDError::InvalidBlockWidth(texel_block_dimensions_0).into());
+            return Err(DFDError::InvalidBlockWidth(raw_dfd.block_dimensions[0] as _).into());
         }
 
         // Assert the DFD block height matches the format specified by the file earlier
-        if block_dimensions[1] + 1 != format.block_height() {
+        if raw_dfd.block_dimensions[1] as u32 + 1 != format.block_height() {
             // + 1 to decode value
-            return Err(DFDError::InvalidBlockHeight(texel_block_dimensions_0).into());
+            return Err(DFDError::InvalidBlockHeight(raw_dfd.block_dimensions[1] as _).into());
         }
 
         // There's no image formats known to Vulkan with a 3D block size so this should always be 1
@@ -243,29 +194,33 @@ impl DataFormatDescriptor {
         //
         // Long story short, assert that the blocks depth matches the format specified earlier by
         // the file
-        if block_dimensions[2] + 1 != format.block_depth() {
+        if raw_dfd.block_dimensions[2] as u32 + 1 != format.block_depth() {
             // + 1 to decode value
-            return Err(DFDError::InvalidBlockDepth(texel_block_dimensions_2).into());
+            return Err(DFDError::InvalidBlockDepth(raw_dfd.block_dimensions[2] as _).into());
         }
 
         // If we're far enough in the future to be using a 4D block size we've probably transcended
         // our physical forms so I think it's safe to just call it an error and not worry about it.
         //
         // Long story short, assert that the blocks W dimension is 1
-        if block_dimensions[3] + 1 != 1 {
+        if raw_dfd.block_dimensions[3] + 1 != 1 {
             // + 1 to decode value
-            return Err(DFDError::InvalidBlock4thDimension(texel_block_dimensions_2).into());
+            return Err(
+                DFDError::InvalidBlock4thDimension(raw_dfd.block_dimensions[3] as _).into(),
+            );
         }
 
         // Only single plane images are supported by KTX so bytePlanes1-7 should be 0
-        for (i, val) in byte_planes[1..].iter().enumerate() {
+        for (i, val) in raw_dfd.byte_planes[1..].iter().enumerate() {
             if *val != 0 {
                 return Err(DFDError::InvalidBytePlaneSize(i as u8, *val).into());
             }
         }
 
+        // TODO: Validate the byte_plane size
+
         // Derive the sample count so we can iterate over the DFD sample descriptions
-        let sample_count = (descriptor_block_size - 24) / 16;
+        let sample_count = (raw_dfd.descriptor_block_size - 24) / 16;
 
         // Get the sample infos expected for the format
         let mut sample_infos: [SampleInfo; 8] = Default::default();
@@ -289,5 +244,30 @@ impl DataFormatDescriptor {
             flags,
             color_primaries,
         })
+    }
+
+    ///
+    /// Reads the data format descriptor from the given reader.
+    ///
+    /// Takes a mutable reference to a format which *may* be written into if the format needs to be
+    /// deduced from the DFD.
+    ///
+    /// If the existing value of `format` is `VkFormat::UNDEFINED` then the value of format will be
+    /// set to a VkFormat value deduced from the DFD.
+    ///
+    pub fn from_reader(
+        reader: &mut (impl Read + Seek),
+        file_index: &FileIndex,
+        format: &mut VkFormat,
+    ) -> Result<Self, KTXReadError> {
+        reader.seek(SeekFrom::Start(file_index.dfd_offset as _))?;
+
+        let raw_dfd = RawDataFormatDescriptor::from_reader(reader)?;
+
+        if *format == VkFormat::UNDEFINED {
+            unimplemented!()
+        } else {
+            Self::validate_against_format(reader, raw_dfd, file_index, *format)
+        }
     }
 }

@@ -14,9 +14,9 @@ use crate::data_format_descriptor::{
 };
 use crate::{
     format_alpha_bits, format_blue_bits, format_depth_bits, format_exponent_bits,
-    format_green_bits, format_red_bits, format_sample_info_count, format_stencil_bits,
-    is_format_alpha_first_ordered, is_format_prohibited, is_format_rgbds_ordered,
-    is_format_unsupported, RGBSDAChannelType,
+    format_green_bits, format_pack_bits, format_red_bits, format_sample_info_count,
+    format_stencil_bits, is_format_alpha_first_ordered, is_format_prohibited,
+    is_format_rgbds_ordered, is_format_unsupported, RGBSDAChannelType,
 };
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -711,9 +711,11 @@ impl SampleInfo {
         {
             None
         } else {
+            let is_packed = format_pack_bits(format).is_some();
             let is_rgb_ordered = is_format_rgbds_ordered(format);
             let alpha_first = is_format_alpha_first_ordered(format);
             let count = format_sample_info_count(format)?;
+            let is_srgb = format.is_srgb();
             let is_float = format.is_floating_point();
             let is_signed = format.is_signed();
             let is_normalized = format.is_normalized();
@@ -725,12 +727,25 @@ impl SampleInfo {
             let a_bits = format_alpha_bits(format);
             let e_bits = format_exponent_bits(format);
 
+            // Invert based on whether the format is packed
+            let is_rgb_ordered = if is_packed {
+                !is_rgb_ordered
+            } else {
+                is_rgb_ordered
+            };
+            let alpha_first = if is_packed { !alpha_first } else { alpha_first };
+
             let sample_flags: SampleFlags = match (is_float, is_signed, is_normalized) {
                 (true, _, true) => return None, // Doesn't make sense (float + norm?)
                 (true, true, false) => SampleFlags::FLOAT | SampleFlags::SIGNED,
                 (true, false, false) => SampleFlags::FLOAT,
                 (false, true, _) => SampleFlags::SIGNED,
                 (_, _, _) => SampleFlags::empty(),
+            };
+            let alpha_flags: SampleFlags = match (is_srgb, is_float) {
+                (true, true) => return None, // Doesn't make sense
+                (true, false) => sample_flags | SampleFlags::LINEAR,
+                (false, _) => sample_flags,
             };
 
             // TODO: Function for getting bit width of RGBA channels + depth and stencil channels
@@ -764,7 +779,7 @@ impl SampleInfo {
                 (_, Some(r), None, None, None, None, None, None, _, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -782,21 +797,21 @@ impl SampleInfo {
                 (_, Some(r), Some(g), None, None, None, None, None, true, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: g,
-                        channel_type: RGBSDAChannelType::Green.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, g),
-                        sample_upper: max_val(is_float, is_signed, g),
-                    };
-                    sample_infos[1] = SampleInfo {
-                        bit_offset: g as u16,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
                         sample_lower: min_val(is_float, is_signed, r),
                         sample_upper: max_val(is_float, is_signed, r),
+                    };
+                    sample_infos[1] = SampleInfo {
+                        bit_offset: r as u16,
+                        bit_length: g - 1,
+                        channel_type: RGBSDAChannelType::Green.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, g),
+                        sample_upper: max_val(is_float, is_signed, g),
                     };
                     Some(2)
                 }
@@ -806,10 +821,10 @@ impl SampleInfo {
                 //
 
                 // all RGB int formats rgb ordered
-                (_, Some(r), Some(g), Some(b), None, None, None, None, true, _) => {
+                (_, Some(r), Some(g), Some(b), None, None, None, None, false, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: b,
+                        bit_length: b - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -818,7 +833,7 @@ impl SampleInfo {
                     };
                     sample_infos[1] = SampleInfo {
                         bit_offset: b as u16,
-                        bit_length: g,
+                        bit_length: g - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -827,7 +842,7 @@ impl SampleInfo {
                     };
                     sample_infos[2] = SampleInfo {
                         bit_offset: b as u16 + g as u16,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -837,10 +852,10 @@ impl SampleInfo {
                     Some(3)
                 }
                 // all RGB int formats reverse rgb ordered
-                (_, Some(r), Some(g), Some(b), None, None, None, None, false, _) => {
+                (_, Some(r), Some(g), Some(b), None, None, None, None, true, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -849,7 +864,7 @@ impl SampleInfo {
                     };
                     sample_infos[1] = SampleInfo {
                         bit_offset: r as u16,
-                        bit_length: g,
+                        bit_length: g - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -858,7 +873,7 @@ impl SampleInfo {
                     };
                     sample_infos[2] = SampleInfo {
                         bit_offset: r as u16 + g as u16,
-                        bit_length: b,
+                        bit_length: b - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -882,7 +897,7 @@ impl SampleInfo {
                 ) => {
                     let er = SampleInfo {
                         bit_offset: 27,
-                        bit_length: e,
+                        bit_length: e - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -891,7 +906,7 @@ impl SampleInfo {
                     };
                     let eg = SampleInfo {
                         bit_offset: 27,
-                        bit_length: e,
+                        bit_length: e - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -900,7 +915,7 @@ impl SampleInfo {
                     };
                     let eb = SampleInfo {
                         bit_offset: 27,
-                        bit_length: e,
+                        bit_length: e - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -910,7 +925,7 @@ impl SampleInfo {
 
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -920,7 +935,7 @@ impl SampleInfo {
                     sample_infos[1] = er;
                     sample_infos[2] = SampleInfo {
                         bit_offset: r as u16,
-                        bit_length: g,
+                        bit_length: g - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -930,7 +945,7 @@ impl SampleInfo {
                     sample_infos[3] = eg;
                     sample_infos[4] = SampleInfo {
                         bit_offset: r as u16 + g as u16,
-                        bit_length: b,
+                        bit_length: b - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -946,90 +961,10 @@ impl SampleInfo {
                 //
 
                 // all RGBA formats rgb ordered
-                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, true, false) => {
-                    sample_infos[0] = SampleInfo {
-                        bit_offset: 0,
-                        bit_length: a,
-                        channel_type: RGBSDAChannelType::Alpha.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, a),
-                        sample_upper: max_val(is_float, is_signed, a),
-                    };
-                    sample_infos[1] = SampleInfo {
-                        bit_offset: a as u16,
-                        bit_length: b,
-                        channel_type: RGBSDAChannelType::Blue.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, b),
-                        sample_upper: max_val(is_float, is_signed, b),
-                    };
-                    sample_infos[2] = SampleInfo {
-                        bit_offset: a as u16 + b as u16,
-                        bit_length: g,
-                        channel_type: RGBSDAChannelType::Green.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, g),
-                        sample_upper: max_val(is_float, is_signed, g),
-                    };
-                    sample_infos[3] = SampleInfo {
-                        bit_offset: a as u16 + b as u16 + g as u16,
-                        bit_length: r,
-                        channel_type: RGBSDAChannelType::Red.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, r),
-                        sample_upper: max_val(is_float, is_signed, r),
-                    };
-                    Some(4)
-                }
-                // all RGBA formats reverse rgb ordered
                 (_, Some(r), Some(g), Some(b), None, None, Some(a), None, false, false) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: a,
-                        channel_type: RGBSDAChannelType::Alpha.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, a),
-                        sample_upper: max_val(is_float, is_signed, a),
-                    };
-                    sample_infos[1] = SampleInfo {
-                        bit_offset: a as u16,
-                        bit_length: r,
-                        channel_type: RGBSDAChannelType::Red.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, r),
-                        sample_upper: max_val(is_float, is_signed, r),
-                    };
-                    sample_infos[2] = SampleInfo {
-                        bit_offset: a as u16 + r as u16,
-                        bit_length: g,
-                        channel_type: RGBSDAChannelType::Green.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, g),
-                        sample_upper: max_val(is_float, is_signed, g),
-                    };
-                    sample_infos[3] = SampleInfo {
-                        bit_offset: a as u16 + r as u16 + g as u16,
-                        bit_length: b,
-                        channel_type: RGBSDAChannelType::Blue.to_raw(),
-                        sample_flags,
-                        sample_positions: [0, 0, 0, 0],
-                        sample_lower: min_val(is_float, is_signed, b),
-                        sample_upper: max_val(is_float, is_signed, b),
-                    };
-                    Some(4)
-                }
-                // all ARGB formats rgb ordered
-                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, true, true) => {
-                    sample_infos[0] = SampleInfo {
-                        bit_offset: 0,
-                        bit_length: b,
+                        bit_length: b - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1038,7 +973,7 @@ impl SampleInfo {
                     };
                     sample_infos[1] = SampleInfo {
                         bit_offset: b as u16,
-                        bit_length: g,
+                        bit_length: g - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1047,7 +982,7 @@ impl SampleInfo {
                     };
                     sample_infos[2] = SampleInfo {
                         bit_offset: b as u16 + g as u16,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1056,20 +991,20 @@ impl SampleInfo {
                     };
                     sample_infos[3] = SampleInfo {
                         bit_offset: r as u16 + b as u16 + g as u16,
-                        bit_length: a,
+                        bit_length: a - 1,
                         channel_type: RGBSDAChannelType::Alpha.to_raw(),
-                        sample_flags,
+                        sample_flags: alpha_flags,
                         sample_positions: [0, 0, 0, 0],
                         sample_lower: min_val(is_float, is_signed, a),
                         sample_upper: max_val(is_float, is_signed, a),
                     };
                     Some(4)
                 }
-                // all ARGB formats reverse rgb ordered
-                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, false, true) => {
+                // all RGBA formats reverse rgb ordered
+                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, true, false) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: r,
+                        bit_length: r - 1,
                         channel_type: RGBSDAChannelType::Red.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1078,7 +1013,7 @@ impl SampleInfo {
                     };
                     sample_infos[1] = SampleInfo {
                         bit_offset: r as u16,
-                        bit_length: g,
+                        bit_length: g - 1,
                         channel_type: RGBSDAChannelType::Green.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1087,7 +1022,7 @@ impl SampleInfo {
                     };
                     sample_infos[2] = SampleInfo {
                         bit_offset: r as u16 + g as u16,
-                        bit_length: b,
+                        bit_length: b - 1,
                         channel_type: RGBSDAChannelType::Blue.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1096,12 +1031,92 @@ impl SampleInfo {
                     };
                     sample_infos[3] = SampleInfo {
                         bit_offset: r as u16 + g as u16 + b as u16,
-                        bit_length: a,
+                        bit_length: a - 1,
                         channel_type: RGBSDAChannelType::Alpha.to_raw(),
-                        sample_flags,
+                        sample_flags: alpha_flags,
                         sample_positions: [0, 0, 0, 0],
                         sample_lower: min_val(is_float, is_signed, a),
                         sample_upper: max_val(is_float, is_signed, a),
+                    };
+                    Some(4)
+                }
+                // all ARGB formats rgb ordered
+                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, false, true) => {
+                    sample_infos[0] = SampleInfo {
+                        bit_offset: 0,
+                        bit_length: a - 1,
+                        channel_type: RGBSDAChannelType::Alpha.to_raw(),
+                        sample_flags: alpha_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, a),
+                        sample_upper: max_val(is_float, is_signed, a),
+                    };
+                    sample_infos[1] = SampleInfo {
+                        bit_offset: a as u16,
+                        bit_length: b - 1,
+                        channel_type: RGBSDAChannelType::Blue.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, b),
+                        sample_upper: max_val(is_float, is_signed, b),
+                    };
+                    sample_infos[2] = SampleInfo {
+                        bit_offset: a as u16 + b as u16,
+                        bit_length: g - 1,
+                        channel_type: RGBSDAChannelType::Green.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, g),
+                        sample_upper: max_val(is_float, is_signed, g),
+                    };
+                    sample_infos[3] = SampleInfo {
+                        bit_offset: a as u16 + b as u16 + g as u16,
+                        bit_length: r - 1,
+                        channel_type: RGBSDAChannelType::Red.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, r),
+                        sample_upper: max_val(is_float, is_signed, r),
+                    };
+                    Some(4)
+                }
+                // all ARGB formats reverse rgb ordered
+                (_, Some(r), Some(g), Some(b), None, None, Some(a), None, true, true) => {
+                    sample_infos[0] = SampleInfo {
+                        bit_offset: 0,
+                        bit_length: a - 1,
+                        channel_type: RGBSDAChannelType::Alpha.to_raw(),
+                        sample_flags: alpha_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, a),
+                        sample_upper: max_val(is_float, is_signed, a),
+                    };
+                    sample_infos[1] = SampleInfo {
+                        bit_offset: a as u16,
+                        bit_length: r - 1,
+                        channel_type: RGBSDAChannelType::Red.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, r),
+                        sample_upper: max_val(is_float, is_signed, r),
+                    };
+                    sample_infos[2] = SampleInfo {
+                        bit_offset: a as u16 + r as u16,
+                        bit_length: g - 1,
+                        channel_type: RGBSDAChannelType::Green.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, g),
+                        sample_upper: max_val(is_float, is_signed, g),
+                    };
+                    sample_infos[3] = SampleInfo {
+                        bit_offset: a as u16 + r as u16 + g as u16,
+                        bit_length: b - 1,
+                        channel_type: RGBSDAChannelType::Blue.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, b),
+                        sample_upper: max_val(is_float, is_signed, b),
                     };
                     Some(4)
                 }
@@ -1114,7 +1129,7 @@ impl SampleInfo {
                 (_, None, None, None, None, Some(d), None, None, _, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: d,
+                        bit_length: d - 1,
                         channel_type: RGBSDAChannelType::Depth.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1132,7 +1147,7 @@ impl SampleInfo {
                 (_, None, None, None, Some(s), None, None, None, _, _) => {
                     sample_infos[0] = SampleInfo {
                         bit_offset: 0,
-                        bit_length: s,
+                        bit_length: s - 1,
                         channel_type: RGBSDAChannelType::Stencil.to_raw(),
                         sample_flags,
                         sample_positions: [0, 0, 0, 0],
@@ -1151,7 +1166,7 @@ impl SampleInfo {
                     if format != VkFormat::D32_SFLOAT_S8_UINT {
                         sample_infos[0] = SampleInfo {
                             bit_offset: 0,
-                            bit_length: s,
+                            bit_length: s - 1,
                             channel_type: RGBSDAChannelType::Stencil.to_raw(),
                             sample_flags,
                             sample_positions: [0, 0, 0, 0],
@@ -1160,7 +1175,7 @@ impl SampleInfo {
                         };
                         sample_infos[1] = SampleInfo {
                             bit_offset: s as u16,
-                            bit_length: d,
+                            bit_length: d - 1,
                             channel_type: RGBSDAChannelType::Depth.to_raw(),
                             sample_flags,
                             sample_positions: [0, 0, 0, 0],
@@ -1171,7 +1186,7 @@ impl SampleInfo {
                     } else {
                         sample_infos[0] = SampleInfo {
                             bit_offset: 0,
-                            bit_length: s,
+                            bit_length: s - 1,
                             channel_type: RGBSDAChannelType::Stencil.to_raw(),
                             sample_flags,
                             sample_positions: [0, 0, 0, 0],
@@ -1180,7 +1195,7 @@ impl SampleInfo {
                         };
                         sample_infos[1] = SampleInfo {
                             bit_offset: s as u16,
-                            bit_length: d,
+                            bit_length: d - 1,
                             channel_type: RGBSDAChannelType::Depth.to_raw(),
                             sample_flags,
                             sample_positions: [0, 0, 0, 0],
@@ -1263,6 +1278,6 @@ fn max_val(is_float: bool, is_signed: bool, bits: u8) -> u32 {
     } else if is_signed {
         !0 ^ (1 << (u32::min(bits as u32, 32) - 1))
     } else {
-        1 << (u32::min(bits as u32, 32) - 1)
+        (0xFFFFFFFF << (bits as u32)) ^ 0xFFFFFFFF
     }
 }
