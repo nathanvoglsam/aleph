@@ -425,10 +425,16 @@ impl KTXDocument {
     fn read_face_count(reader: &mut impl Read, depth: u32) -> Result<u32, KTXReadError> {
         let face_count = reader.read_u32::<LittleEndian>()?;
 
-        if face_count != 1 || face_count != 6 {
-            Err(KTXReadError::InvalidFaceCount(face_count))
-        } else if face_count == 6 && depth != 0 {
-            Err(KTXReadError::InvalidDepthForCubeMap(depth))
+        if face_count != 1 {
+            if face_count == 6 {
+                if depth != 0 {
+                    Err(KTXReadError::InvalidDepthForCubeMap(depth))
+                } else {
+                    Ok(face_count)
+                }
+            } else {
+                Err(KTXReadError::InvalidFaceCount(face_count))
+            }
         } else {
             Ok(face_count)
         }

@@ -50,8 +50,8 @@ impl SampleInfo {
         let sample_pos_3 = ((words[1] >> 24) & 0xFF) as u8;
         let sample_positions = [sample_pos_0, sample_pos_1, sample_pos_2, sample_pos_3];
 
-        let sample_upper = words[2];
-        let sample_lower = words[3];
+        let sample_lower = words[2];
+        let sample_upper = words[3];
 
         Self {
             bit_offset,

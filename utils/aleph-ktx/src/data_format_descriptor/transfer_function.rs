@@ -9,6 +9,7 @@
 
 use crate::format::is_format_prohibited;
 use aleph_vk_format::VkFormat;
+use crate::is_format_unsupported;
 
 ///
 /// Represents the set of supported `transferFunction` values
@@ -48,7 +49,7 @@ impl TransferFunction {
     #[inline]
     pub fn is_compatible_with_format(self, format: VkFormat) -> bool {
         let is_srgb = format.is_srgb();
-        let allowed = format == VkFormat::UNDEFINED || is_format_prohibited(format);
+        let allowed = !is_format_unsupported(format) && !is_format_prohibited(format);
         match (allowed, is_srgb, self) {
             (true, true, TransferFunction::SRGB) => true,
             (true, false, TransferFunction::Linear) => true,
@@ -61,7 +62,7 @@ impl TransferFunction {
     ///
     #[inline]
     pub fn for_format(format: VkFormat) -> Option<Self> {
-        if is_format_prohibited(format) || format == VkFormat::UNDEFINED {
+        if is_format_prohibited(format) || is_format_unsupported(format) {
             None
         } else if format.is_srgb() {
             Some(TransferFunction::SRGB)

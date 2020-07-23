@@ -130,24 +130,24 @@ impl DataFormatDescriptor {
         let dfd_total_size = words[0];
 
         // Unpack the next word
-        let vendor_id = words[0] & 0x1FFFF;
-        let descriptor_type = (words[0] >> 17) as u16;
+        let vendor_id = words[1] & 0x1FFFF;
+        let descriptor_type = (words[1] >> 17) as u16;
 
         // Unpack the next word
-        let descriptor_block_size = (words[1] & 0xFFFF) as u16;
-        let version_number = (words[1] >> 16) as u16;
+        let version_number = (words[2] & 0xFFFF) as u16;
+        let descriptor_block_size = (words[2] >> 16) as u16;
 
         // Unpack the next word
-        let color_model = ((words[2] >> 0) & 0xFF) as u8;
-        let color_primaries = ((words[2] >> 8) & 0xFF) as u8;
-        let transfer_function = ((words[2] >> 16) & 0xFF) as u8;
-        let flags = ((words[2] >> 24) & 0xFF) as u8;
+        let color_model = ((words[3] >> 0) & 0xFF) as u8;
+        let color_primaries = ((words[3] >> 8) & 0xFF) as u8;
+        let transfer_function = ((words[3] >> 16) & 0xFF) as u8;
+        let flags = ((words[3] >> 24) & 0xFF) as u8;
 
         // Unpack the next word
-        let texel_block_dimensions_0 = (words[3] >> 0) & 0xFF;
-        let texel_block_dimensions_1 = (words[3] >> 8) & 0xFF;
-        let texel_block_dimensions_2 = (words[3] >> 16) & 0xFF;
-        let texel_block_dimensions_3 = (words[3] >> 24) & 0xFF;
+        let texel_block_dimensions_0 = (words[4] >> 0) & 0xFF;
+        let texel_block_dimensions_1 = (words[4] >> 8) & 0xFF;
+        let texel_block_dimensions_2 = (words[4] >> 16) & 0xFF;
+        let texel_block_dimensions_3 = (words[4] >> 24) & 0xFF;
         let block_dimensions = [
             texel_block_dimensions_0,
             texel_block_dimensions_1,
@@ -156,14 +156,14 @@ impl DataFormatDescriptor {
         ];
 
         // Unpack byte plane sizes
-        let byte_planes_0 = ((words[4] >> 0) & 0xFF) as u8;
-        let byte_planes_1 = ((words[4] >> 8) & 0xFF) as u8;
-        let byte_planes_2 = ((words[4] >> 16) & 0xFF) as u8;
-        let byte_planes_3 = ((words[4] >> 24) & 0xFF) as u8;
-        let byte_planes_4 = ((words[5] >> 0) & 0xFF) as u8;
-        let byte_planes_5 = ((words[5] >> 8) & 0xFF) as u8;
-        let byte_planes_6 = ((words[5] >> 16) & 0xFF) as u8;
-        let byte_planes_7 = ((words[5] >> 24) & 0xFF) as u8;
+        let byte_planes_0 = ((words[5] >> 0) & 0xFF) as u8;
+        let byte_planes_1 = ((words[5] >> 8) & 0xFF) as u8;
+        let byte_planes_2 = ((words[5] >> 16) & 0xFF) as u8;
+        let byte_planes_3 = ((words[5] >> 24) & 0xFF) as u8;
+        let byte_planes_4 = ((words[6] >> 0) & 0xFF) as u8;
+        let byte_planes_5 = ((words[6] >> 8) & 0xFF) as u8;
+        let byte_planes_6 = ((words[6] >> 16) & 0xFF) as u8;
+        let byte_planes_7 = ((words[6] >> 24) & 0xFF) as u8;
         let byte_planes = [
             byte_planes_0,
             byte_planes_1,
