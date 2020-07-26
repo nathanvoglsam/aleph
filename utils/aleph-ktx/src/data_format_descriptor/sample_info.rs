@@ -815,6 +815,27 @@ impl SampleInfo {
                     };
                     Some(2)
                 }
+                (_, Some(r), Some(g), None, None, None, None, None, false, _) => {
+                    sample_infos[0] = SampleInfo {
+                        bit_offset: 0,
+                        bit_length: g - 1,
+                        channel_type: RGBSDAChannelType::Green.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, g),
+                        sample_upper: max_val(is_float, is_signed, g),
+                    };
+                    sample_infos[1] = SampleInfo {
+                        bit_offset: g as u16,
+                        bit_length: r - 1,
+                        channel_type: RGBSDAChannelType::Red.to_raw(),
+                        sample_flags,
+                        sample_positions: [0, 0, 0, 0],
+                        sample_lower: min_val(is_float, is_signed, r),
+                        sample_upper: max_val(is_float, is_signed, r),
+                    };
+                    Some(2)
+                }
 
                 //
                 // RED GREEN BLUE FORMATS
@@ -1238,6 +1259,20 @@ impl<'a, R: Read + Seek> SampleInfoIterator<'a, R> {
     }
 }
 
+impl SampleInfo {
+    pub fn compatible_with(&self, other: &Self) -> bool {
+        let compat = self.bit_offset == other.bit_offset
+            && self.bit_length == other.bit_length
+            && self.channel_type == other.channel_type
+            && self.sample_positions == other.sample_positions
+            && self.sample_lower == other.sample_lower
+            && self.sample_upper == other.sample_upper;
+        let flags_compat = self.sample_flags.compatible_with(other.sample_flags);
+        compat && flags_compat
+
+    }
+}
+
 impl<'a, R: Read + Seek> Iterator for SampleInfoIterator<'a, R> {
     type Item = (usize, SampleInfo);
 
@@ -1262,10 +1297,11 @@ impl<'a, R: Read + Seek> Iterator for SampleInfoIterator<'a, R> {
 
 #[inline]
 fn min_val(is_float: bool, is_signed: bool, bits: u8) -> u32 {
+    let bits_clamped = u32::min(bits as u32, 32);
     if is_float {
         0xBF800000
     } else if is_signed {
-        1 << (u32::min(bits as u32, 32) - 1)
+        1 << (bits_clamped - 1)
     } else {
         0
     }
@@ -1273,11 +1309,14 @@ fn min_val(is_float: bool, is_signed: bool, bits: u8) -> u32 {
 
 #[inline]
 fn max_val(is_float: bool, is_signed: bool, bits: u8) -> u32 {
+    let bits_clamped = u32::min(bits as u32, 32);
     if is_float {
         0x7F800000
     } else if is_signed {
-        !0 ^ (1 << (u32::min(bits as u32, 32) - 1))
+        !0 ^ (1 << (bits_clamped - 1))
     } else {
-        (0xFFFFFFFF << (bits as u32)) ^ 0xFFFFFFFF
+        let max = 0xFFFFFFFFu64 << bits_clamped as u64;
+        let max = (max & 0xFFFFFFFFu64) as u32;
+        max ^ 0xFFFFFFFFu32
     }
 }

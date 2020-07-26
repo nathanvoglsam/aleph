@@ -233,7 +233,7 @@ impl DataFormatDescriptor {
 
         // Make sure all sample info DFD stuff matches
         for (index, sample) in SampleInfoIterator::from_reader_count(reader, sample_count) {
-            if &sample != &sample_infos[index] {
+            if !sample.compatible_with(&sample_infos[index]) {
                 return Err(
                     DFDError::IncorrectSampleInfo(sample, sample_infos[index].clone()).into(),
                 );
