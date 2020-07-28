@@ -52,7 +52,6 @@ fn test_validates_files() {
     ];
 
     file_list.iter().for_each(|file| {
-        let cursor = Cursor::new(*file);
-        let _ktx = KTXDocument::from_reader(cursor).unwrap();
+        let _ktx = KTXDocument::from_slice(file).unwrap();
     });
 }

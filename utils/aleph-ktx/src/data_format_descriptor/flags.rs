@@ -30,9 +30,11 @@ bitflags::bitflags! {
 
 impl SampleFlags {
     pub fn compatible_with(&self, other: SampleFlags) -> bool {
-        let signed_match = self.contains(SampleFlags::SIGNED) == other.contains(SampleFlags::SIGNED);
+        let signed_match =
+            self.contains(SampleFlags::SIGNED) == other.contains(SampleFlags::SIGNED);
         let float_match = self.contains(SampleFlags::FLOAT) == other.contains(SampleFlags::FLOAT);
-        let exp_match = self.contains(SampleFlags::EXPONENT) == other.contains(SampleFlags::EXPONENT);
+        let exp_match =
+            self.contains(SampleFlags::EXPONENT) == other.contains(SampleFlags::EXPONENT);
         signed_match && float_match && exp_match
     }
 }

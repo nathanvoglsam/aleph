@@ -39,7 +39,7 @@ pub use transfer_function::TransferFunction;
 
 use crate::data_format_descriptor::raw::RawDataFormatDescriptor;
 use crate::document::FileIndex;
-use crate::KTXReadError;
+use crate::{format_bytes_per_block, KTXReadError};
 use aleph_vk_format::VkFormat;
 use std::io::{Read, Seek, SeekFrom};
 
@@ -217,7 +217,10 @@ impl DataFormatDescriptor {
             }
         }
 
-        // TODO: Validate the byte_plane size
+        // The value of byte plane 0 must match the size of a single block for the format
+        if raw_dfd.byte_planes[0] != format_bytes_per_block(format).unwrap() {
+            return Err(DFDError::InvalidBytePlaneSize(1, raw_dfd.byte_planes[0]).into());
+        }
 
         // Derive the sample count so we can iterate over the DFD sample descriptions
         let sample_count = (raw_dfd.descriptor_block_size - 24) / 16;

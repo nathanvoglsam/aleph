@@ -1269,7 +1269,6 @@ impl SampleInfo {
             && self.sample_upper == other.sample_upper;
         let flags_compat = self.sample_flags.compatible_with(other.sample_flags);
         compat && flags_compat
-
     }
 }
 

@@ -20,7 +20,7 @@ use crate::format::{is_format_prohibited, is_format_unsupported};
 use crate::{format_type_size, ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Error, Read, Seek};
+use std::io::{Cursor, Error, Read, Seek, Write};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -126,7 +126,8 @@ pub enum DocumentType {
     CubeArray,
 }
 
-pub struct KTXDocument {
+pub struct KTXDocument<R: Read + Seek> {
+    reader: R,
     format: VkFormat,
     type_size: u32,
     width: u32,
@@ -142,7 +143,7 @@ pub struct KTXDocument {
     level_indices: Vec<LevelIndex>,
 }
 
-impl KTXDocument {
+impl<R: Read + Seek> KTXDocument<R> {
     ///
     /// Gets the Vulkan format of the image this document stores
     ///
@@ -260,13 +261,34 @@ impl KTXDocument {
     pub fn super_compression_scheme(&self) -> SuperCompressionScheme {
         self.super_compression_scheme
     }
+
+    //
+    //
+    //
+    //pub fn read_image(
+    //    &self,
+    //    layer: usize,
+    //    face: usize,
+    //    level: usize,
+    //    writer: &mut impl Write,
+    //) -> Result<(), std::io::Error> {
+    //}
 }
 
-impl KTXDocument {
+impl<'a> KTXDocument<Cursor<&'a [u8]>> {
     ///
     /// Creates a new `KTXDocument` from the given reader
     ///
-    pub fn from_reader(mut reader: (impl Read + Seek)) -> Result<Self, KTXReadError> {
+    pub fn from_slice(bytes: &'a [u8]) -> Result<Self, KTXReadError> {
+        Self::from_reader(Cursor::new(bytes))
+    }
+}
+
+impl<R: Read + Seek> KTXDocument<R> {
+    ///
+    /// Creates a new `KTXDocument` from the given reader
+    ///
+    pub fn from_reader(mut reader: R) -> Result<Self, KTXReadError> {
         Self::validate_file_identifier(&mut reader)?;
         let mut format = Self::read_vk_format(&mut reader)?;
         let type_size = Self::read_type_size(&mut reader, format)?;
@@ -330,6 +352,7 @@ impl KTXDocument {
         let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, &mut format)?;
 
         let out = Self {
+            reader,
             format,
             type_size,
             width,

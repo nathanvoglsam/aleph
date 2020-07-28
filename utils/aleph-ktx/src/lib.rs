@@ -42,6 +42,7 @@ pub use document::KTXReadError;
 pub use document::SuperCompressionScheme;
 pub use format::format_alpha_bits;
 pub use format::format_blue_bits;
+pub use format::format_bytes_per_block;
 pub use format::format_depth_bits;
 pub use format::format_exponent_bits;
 pub use format::format_green_bits;
