@@ -17,10 +17,10 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
-use crate::{format_type_size, ColorPrimaries, DFDError, DFDFlags};
+use crate::{format_bytes_per_block, format_type_size, ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Error, Read, Seek, Write};
+use std::io::{Cursor, Error, ErrorKind, Read, Seek, SeekFrom, Write};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -127,7 +127,7 @@ pub enum DocumentType {
 }
 
 pub struct KTXDocument<R: Read + Seek> {
-    reader: R,
+    reader: Option<R>,
     format: VkFormat,
     type_size: u32,
     width: u32,
@@ -262,17 +262,120 @@ impl<R: Read + Seek> KTXDocument<R> {
         self.super_compression_scheme
     }
 
-    //
-    //
-    //
-    //pub fn read_image(
-    //    &self,
-    //    layer: usize,
-    //    face: usize,
-    //    level: usize,
-    //    writer: &mut impl Write,
-    //) -> Result<(), std::io::Error> {
-    //}
+    ///
+    /// Reads the image data for the given mip level, cube face and array layer into the writer
+    /// provided.
+    ///
+    /// This function requires the `KTXDocument` mutably as the reader will be mutated while being
+    /// read from (a reader is a stateful object).
+    ///
+    pub fn read_image(
+        &mut self,
+        layer: usize,
+        face: usize,
+        level: usize,
+        writer: &mut impl Write,
+    ) -> Result<(), Error> {
+        // Check we're in bounds for the number of levels, faces and levels
+        if level >= self.level_num() as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Level index out of bounds",
+            ));
+        }
+        if layer >= self.layer_num() as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Layer index out of bounds",
+            ));
+        }
+        if face >= self.face_num() as usize {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Face index out of bounds",
+            ));
+        }
+
+        // Read the offset from the level indices
+        let level_offset = self.level_indices[level].offset;
+
+        // Gets the size of a single image at the mip level requested
+        let image_bytes = self.image_bytes(level).unwrap();
+
+        // Calculates the stride of a single face
+        let face_stride = image_bytes as u64;
+
+        // Calculate the stride of a single layer
+        let layer_stride = (face_stride * self.face_num() as u64) * (self.layer_num() as u64);
+
+        // Calculate the final offset of the image data in the file
+        let data_offset =
+            (layer_stride * layer as u64) + (face_stride * face as u64) + level_offset;
+
+        // Take ownership of the reader from the document
+        let mut reader = self.reader.take().unwrap();
+
+        // Seek to the start of the image data
+        reader.seek(SeekFrom::Start(data_offset))?;
+
+        // Make a scoped reader that will read exactly the number of bytes required for the image
+        let mut reader = reader.take(image_bytes as u64);
+
+        // Perform the copy from the reader into writer
+        std::io::copy(&mut reader, writer)?;
+
+        // Return the reader to the document
+        self.reader = Some(reader.into_inner());
+
+        Ok(())
+    }
+
+    ///
+    /// Returns the number of bytes required for a single image at the given mip level. This will,
+    /// roughly speaking, return the value of width * height * depth (bytes per block/pixel) for a
+    /// given mip level. For block compressed formats it will be based on the dimensions and size of
+    /// a block. For regular formats it will be based on dimensions and size of a single pixel.
+    ///
+    /// For cube maps this will be the size of a single face, not all 6 faces.
+    ///
+    /// Will return `None` if the level index provided is out of bounds.
+    ///
+    pub fn image_bytes(&self, level: usize) -> Option<usize> {
+        if level >= self.level_num() as usize {
+            None
+        } else {
+            let bytes_per_block = format_bytes_per_block(self.format).unwrap() as usize;
+            let block_width = self.format.block_width() as usize;
+            let block_height = self.format.block_height() as usize;
+            let block_depth = self.format.block_depth() as usize;
+            match self.document_type {
+                DocumentType::Image1D | DocumentType::Array1D => {
+                    let width = (self.width >> level) as usize;
+                    let width = width / block_width;
+                    Some(width * bytes_per_block)
+                }
+                DocumentType::Cube
+                | DocumentType::CubeArray
+                | DocumentType::Image2D
+                | DocumentType::Array2D => {
+                    let width = (self.width >> level) as usize;
+                    let width = width / block_width;
+                    let height = (self.height >> level) as usize;
+                    let height = height / block_height as usize;
+                    Some(width * height * bytes_per_block)
+                }
+                DocumentType::Image3D | DocumentType::Array3D => {
+                    let width = (self.width >> level) as usize;
+                    let width = width / block_width;
+                    let height = (self.height >> level) as usize;
+                    let height = height / block_height as usize;
+                    let depth = (self.depth >> level) as usize;
+                    let depth = depth / block_depth as usize;
+                    Some(width * height * depth * bytes_per_block)
+                }
+            }
+        }
+    }
 }
 
 impl<'a> KTXDocument<Cursor<&'a [u8]>> {
@@ -350,6 +453,8 @@ impl<R: Read + Seek> KTXDocument<R> {
         };
 
         let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, &mut format)?;
+
+        let reader = Some(reader);
 
         let out = Self {
             reader,

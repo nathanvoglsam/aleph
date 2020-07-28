@@ -55,3 +55,31 @@ fn test_validates_files() {
         let _ktx = KTXDocument::from_slice(file).unwrap();
     });
 }
+
+#[test]
+fn test_read_image_data() {
+    let mut ktx = KTXDocument::from_slice(RGB_MIPMAP_REFERENCE_U).unwrap();
+
+    let level_vals: [[u8; 3]; 7] = [
+        [255, 0, 0],
+        [255, 116, 0],
+        [255, 255, 0],
+        [0, 255, 0],
+        [0, 0, 255],
+        [0, 255, 255],
+        [255, 0, 255],
+    ];
+
+    for (level, expected_vals) in level_vals.iter().enumerate() {
+        let image_bytes = ktx.image_bytes(level).unwrap();
+        let mut cursor = Cursor::new(vec![0u8; image_bytes]);
+
+        ktx.read_image(0, 0, level, &mut cursor).unwrap();
+
+        let data = cursor.into_inner();
+
+        data.chunks(3).for_each(|pixel_vals| {
+            assert_eq!(pixel_vals, expected_vals);
+        });
+    }
+}
