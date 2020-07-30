@@ -31,8 +31,8 @@
 name = "aleph-vulkan-alloc-sys"
 version = "1.0.0+vma.2.2.0"
 authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
-license = "<ALEPH_LICENSE_NAME_REPLACE>"
-repository = "<ALEPH_REPO_REPLACE>"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-vma-sys/"
 readme = "README.md"
 keywords = ["engine", "graphics", "vulkan", "game"] # TODO: Keywords
