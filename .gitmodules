@@ -1,3 +1,6 @@
 [submodule "engine/aleph-platform/thirdparty/SDL-mirror"]
 	path = engine/aleph-platform/thirdparty/SDL-mirror
 	url = git@github.com:spurious/SDL-mirror.git
+[submodule "graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator"]
+	path = graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator
+	url = git@github.com:GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
