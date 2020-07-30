@@ -7,6 +7,21 @@
 // <ALEPH_LICENSE_REPLACE>
 //
 
+//!
+//! This crate provides a simple, universal way to deal with the `VkFormat` enum defined by the
+//! Vulkan spec. Prior to this crate, if someone wanted to handle the `VkFormat` enum and ONLY the
+//! `VkFormat` enum it was still required to pull in a dependency on one of the available Vulkan
+//! binding crates. Depending on one would make using another more inconvenient and would require
+//! building both bindings crates.
+//!
+//! This crate was made to solve this problem by quite literally copy pasting the `VkFormat`
+//! definition from the `erupt` into this crate and manually tweaking the definition.
+//!
+//! This crate also provides a set of utilities to aid pattern matching against different types of
+//! formats. This includes checks for if a format is SNORM, SFLOAT, is signed, etc as well as block
+//! size for compressed formats.
+//!
+
 #[cfg(test)]
 mod tests;
 
@@ -16,7 +31,7 @@ mod tests;
 /// # Attribution
 ///
 /// This is copy pasted directly from the `erupt` auto generated vulkan bindings with some quick
-/// manual clean ups. Editing this manually can be dont, but dont. Just update it from the generated
+/// manual clean ups. Editing this manually can be done, but dont. Just update it from the generated
 /// bindings as needed. This way we don't have to have a cargo dependency on any particular bindings
 /// and we can be agnostic of whether someone is using `ash` or `erupt` or their own bindings.
 ///
@@ -1333,172 +1348,180 @@ impl VkFormat {
     ///
     /// Returns whether this format is known by the implementation.
     ///
-    /// In the event that newer versions of the Vulkan spec introduce new formats that can be stored
-    /// inside of a KTX file, it could lead to `aleph-ktx` being used on KTX files that hold formats
-    /// that didn't exist when `aleph-ktx` was written (or when an older `aleph-ktx` version was
-    /// compiled into an executable).
+    /// # Info
     ///
-    /// To handle this possibility, this function will return if the format is known by the library.
+    /// This library may end up compiled into binary that is supposed to consume `VkFormat` values
+    /// provided by other programs. As a result it may be possible for `VkFormat` values from newer
+    /// versions of the spec to be passed to a version of this library embedded in some binary
+    /// somewhere.
     ///
-    /// This shouldn't cause any errors when reading a KTX file but may be an issue when trying to
-    /// output a KTX file.
+    /// Newer Vulkan versions may define new formats that didn't exist when a particular version of
+    /// this crate was written. The value would be a valid Vulkan format but it would still be
+    /// treated as an unknown value. It would cause every utility function provided by this crate to
+    /// return nonsensical results that have no bearing on the actual semantics of the format.
+    ///
+    /// To that end, this function is provided to allow for a user to check if the format is known
+    /// by the version of `aleph-vk-format` they are using to defend against potential errors.
+    ///
+    /// This function will return `true` for **ALL** formats enumerated by the particular version
+    /// of this crate that is being depended on.
     ///
     #[inline]
     pub fn is_known(self) -> bool {
         match self {
-            VkFormat::R16_SFLOAT => true,
-            VkFormat::R16G16_SFLOAT => true,
-            VkFormat::R16G16B16_SFLOAT => true,
-            VkFormat::R16G16B16A16_UNORM => true,
-            VkFormat::R16G16B16A16_SNORM => true,
-            VkFormat::R16G16B16A16_USCALED => true,
-            VkFormat::R16G16B16A16_SSCALED => true,
-            VkFormat::R16G16B16A16_UINT => true,
-            VkFormat::R16G16B16A16_SINT => true,
-            VkFormat::R16G16B16A16_SFLOAT => true,
-            VkFormat::R32_UINT => true,
-            VkFormat::R32_SINT => true,
-            VkFormat::R32_SFLOAT => true,
-            VkFormat::R32G32_UINT => true,
-            VkFormat::R32G32_SINT => true,
-            VkFormat::R32G32_SFLOAT => true,
-            VkFormat::R32G32B32_UINT => true,
-            VkFormat::R32G32B32_SINT => true,
-            VkFormat::R32G32B32_SFLOAT => true,
-            VkFormat::R32G32B32A32_UINT => true,
-            VkFormat::R32G32B32A32_SINT => true,
-            VkFormat::R32G32B32A32_SFLOAT => true,
-            VkFormat::R64_UINT => true,
-            VkFormat::R64_SINT => true,
-            VkFormat::R64_SFLOAT => true,
-            VkFormat::R64G64_UINT => true,
-            VkFormat::R64G64_SINT => true,
-            VkFormat::R64G64_SFLOAT => true,
-            VkFormat::R64G64B64_UINT => true,
-            VkFormat::R64G64B64_SINT => true,
-            VkFormat::R64G64B64_SFLOAT => true,
-            VkFormat::R64G64B64A64_UINT => true,
-            VkFormat::R64G64B64A64_SINT => true,
-            VkFormat::R64G64B64A64_SFLOAT => true,
-            VkFormat::B10G11R11_UFLOAT_PACK32 => true,
-            VkFormat::E5B9G9R9_UFLOAT_PACK32 => true,
-            VkFormat::D16_UNORM => true,
-            VkFormat::X8_D24_UNORM_PACK32 => true,
-            VkFormat::D32_SFLOAT => true,
-            VkFormat::S8_UINT => true,
-            VkFormat::D16_UNORM_S8_UINT => true,
-            VkFormat::D24_UNORM_S8_UINT => true,
-            VkFormat::D32_SFLOAT_S8_UINT => true,
-            VkFormat::BC1_RGB_UNORM_BLOCK => true,
-            VkFormat::BC1_RGB_SRGB_BLOCK => true,
-            VkFormat::BC1_RGBA_UNORM_BLOCK => true,
-            VkFormat::BC1_RGBA_SRGB_BLOCK => true,
-            VkFormat::BC2_UNORM_BLOCK => true,
-            VkFormat::BC2_SRGB_BLOCK => true,
-            VkFormat::BC3_UNORM_BLOCK => true,
-            VkFormat::BC3_SRGB_BLOCK => true,
-            VkFormat::BC4_UNORM_BLOCK => true,
-            VkFormat::BC4_SNORM_BLOCK => true,
-            VkFormat::BC5_UNORM_BLOCK => true,
-            VkFormat::BC5_SNORM_BLOCK => true,
-            VkFormat::BC6H_UFLOAT_BLOCK => true,
-            VkFormat::BC6H_SFLOAT_BLOCK => true,
-            VkFormat::BC7_UNORM_BLOCK => true,
-            VkFormat::BC7_SRGB_BLOCK => true,
-            VkFormat::ETC2_R8G8B8_UNORM_BLOCK => true,
-            VkFormat::ETC2_R8G8B8_SRGB_BLOCK => true,
-            VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK => true,
-            VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK => true,
-            VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK => true,
-            VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK => true,
-            VkFormat::EAC_R11_UNORM_BLOCK => true,
-            VkFormat::EAC_R11_SNORM_BLOCK => true,
-            VkFormat::EAC_R11G11_UNORM_BLOCK => true,
-            VkFormat::EAC_R11G11_SNORM_BLOCK => true,
-            VkFormat::ASTC_4X4_UNORM_BLOCK => true,
-            VkFormat::ASTC_4X4_SRGB_BLOCK => true,
-            VkFormat::ASTC_5X4_UNORM_BLOCK => true,
-            VkFormat::ASTC_5X4_SRGB_BLOCK => true,
-            VkFormat::ASTC_5X5_UNORM_BLOCK => true,
-            VkFormat::ASTC_5X5_SRGB_BLOCK => true,
-            VkFormat::ASTC_6X5_UNORM_BLOCK => true,
-            VkFormat::ASTC_6X5_SRGB_BLOCK => true,
-            VkFormat::ASTC_6X6_UNORM_BLOCK => true,
-            VkFormat::ASTC_6X6_SRGB_BLOCK => true,
-            VkFormat::ASTC_8X5_UNORM_BLOCK => true,
-            VkFormat::ASTC_8X5_SRGB_BLOCK => true,
-            VkFormat::ASTC_8X6_UNORM_BLOCK => true,
-            VkFormat::ASTC_8X6_SRGB_BLOCK => true,
-            VkFormat::ASTC_8X8_UNORM_BLOCK => true,
-            VkFormat::ASTC_8X8_SRGB_BLOCK => true,
-            VkFormat::ASTC_10X5_UNORM_BLOCK => true,
-            VkFormat::ASTC_10X5_SRGB_BLOCK => true,
-            VkFormat::ASTC_10X6_UNORM_BLOCK => true,
-            VkFormat::ASTC_10X6_SRGB_BLOCK => true,
-            VkFormat::ASTC_10X8_UNORM_BLOCK => true,
-            VkFormat::ASTC_10X8_SRGB_BLOCK => true,
-            VkFormat::ASTC_10X10_UNORM_BLOCK => true,
-            VkFormat::ASTC_10X10_SRGB_BLOCK => true,
-            VkFormat::ASTC_12X10_UNORM_BLOCK => true,
-            VkFormat::ASTC_12X10_SRGB_BLOCK => true,
-            VkFormat::ASTC_12X12_UNORM_BLOCK => true,
-            VkFormat::ASTC_12X12_SRGB_BLOCK => true,
-            VkFormat::G8B8G8R8_422_UNORM => true,
-            VkFormat::B8G8R8G8_422_UNORM => true,
-            VkFormat::G8_B8_R8_3PLANE_420_UNORM => true,
-            VkFormat::G8_B8R8_2PLANE_420_UNORM => true,
-            VkFormat::G8_B8_R8_3PLANE_422_UNORM => true,
-            VkFormat::G8_B8R8_2PLANE_422_UNORM => true,
-            VkFormat::G8_B8_R8_3PLANE_444_UNORM => true,
-            VkFormat::R10X6_UNORM_PACK16 => true,
-            VkFormat::R10X6G10X6_UNORM_2PACK16 => true,
-            VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16 => true,
-            VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 => true,
-            VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 => true,
-            VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 => true,
-            VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 => true,
-            VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 => true,
-            VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 => true,
-            VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 => true,
-            VkFormat::R12X4_UNORM_PACK16 => true,
-            VkFormat::R12X4G12X4_UNORM_2PACK16 => true,
-            VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16 => true,
-            VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 => true,
-            VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 => true,
-            VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 => true,
-            VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 => true,
-            VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 => true,
-            VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 => true,
-            VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 => true,
-            VkFormat::G16B16G16R16_422_UNORM => true,
-            VkFormat::B16G16R16G16_422_UNORM => true,
-            VkFormat::G16_B16_R16_3PLANE_420_UNORM => true,
-            VkFormat::G16_B16R16_2PLANE_420_UNORM => true,
-            VkFormat::G16_B16_R16_3PLANE_422_UNORM => true,
-            VkFormat::G16_B16R16_2PLANE_422_UNORM => true,
-            VkFormat::G16_B16_R16_3PLANE_444_UNORM => true,
-            VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT => true,
-            VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG => true,
-            VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG => true,
-            VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG => true,
-            VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG => true,
-            VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG => true,
-            VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG => true,
-            VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG => true,
-            VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
+            VkFormat::R16_SFLOAT
+            | VkFormat::R16G16_SFLOAT
+            | VkFormat::R16G16B16_SFLOAT
+            | VkFormat::R16G16B16A16_UNORM
+            | VkFormat::R16G16B16A16_SNORM
+            | VkFormat::R16G16B16A16_USCALED
+            | VkFormat::R16G16B16A16_SSCALED
+            | VkFormat::R16G16B16A16_UINT
+            | VkFormat::R16G16B16A16_SINT
+            | VkFormat::R16G16B16A16_SFLOAT
+            | VkFormat::R32_UINT
+            | VkFormat::R32_SINT
+            | VkFormat::R32_SFLOAT
+            | VkFormat::R32G32_UINT
+            | VkFormat::R32G32_SINT
+            | VkFormat::R32G32_SFLOAT
+            | VkFormat::R32G32B32_UINT
+            | VkFormat::R32G32B32_SINT
+            | VkFormat::R32G32B32_SFLOAT
+            | VkFormat::R32G32B32A32_UINT
+            | VkFormat::R32G32B32A32_SINT
+            | VkFormat::R32G32B32A32_SFLOAT
+            | VkFormat::R64_UINT
+            | VkFormat::R64_SINT
+            | VkFormat::R64_SFLOAT
+            | VkFormat::R64G64_UINT
+            | VkFormat::R64G64_SINT
+            | VkFormat::R64G64_SFLOAT
+            | VkFormat::R64G64B64_UINT
+            | VkFormat::R64G64B64_SINT
+            | VkFormat::R64G64B64_SFLOAT
+            | VkFormat::R64G64B64A64_UINT
+            | VkFormat::R64G64B64A64_SINT
+            | VkFormat::R64G64B64A64_SFLOAT
+            | VkFormat::B10G11R11_UFLOAT_PACK32
+            | VkFormat::E5B9G9R9_UFLOAT_PACK32
+            | VkFormat::D16_UNORM
+            | VkFormat::X8_D24_UNORM_PACK32
+            | VkFormat::D32_SFLOAT
+            | VkFormat::S8_UINT
+            | VkFormat::D16_UNORM_S8_UINT
+            | VkFormat::D24_UNORM_S8_UINT
+            | VkFormat::D32_SFLOAT_S8_UINT
+            | VkFormat::BC1_RGB_UNORM_BLOCK
+            | VkFormat::BC1_RGB_SRGB_BLOCK
+            | VkFormat::BC1_RGBA_UNORM_BLOCK
+            | VkFormat::BC1_RGBA_SRGB_BLOCK
+            | VkFormat::BC2_UNORM_BLOCK
+            | VkFormat::BC2_SRGB_BLOCK
+            | VkFormat::BC3_UNORM_BLOCK
+            | VkFormat::BC3_SRGB_BLOCK
+            | VkFormat::BC4_UNORM_BLOCK
+            | VkFormat::BC4_SNORM_BLOCK
+            | VkFormat::BC5_UNORM_BLOCK
+            | VkFormat::BC5_SNORM_BLOCK
+            | VkFormat::BC6H_UFLOAT_BLOCK
+            | VkFormat::BC6H_SFLOAT_BLOCK
+            | VkFormat::BC7_UNORM_BLOCK
+            | VkFormat::BC7_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+            | VkFormat::EAC_R11_UNORM_BLOCK
+            | VkFormat::EAC_R11_SNORM_BLOCK
+            | VkFormat::EAC_R11G11_UNORM_BLOCK
+            | VkFormat::EAC_R11G11_SNORM_BLOCK
+            | VkFormat::ASTC_4X4_UNORM_BLOCK
+            | VkFormat::ASTC_4X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X4_UNORM_BLOCK
+            | VkFormat::ASTC_5X4_SRGB_BLOCK
+            | VkFormat::ASTC_5X5_UNORM_BLOCK
+            | VkFormat::ASTC_5X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X5_UNORM_BLOCK
+            | VkFormat::ASTC_6X5_SRGB_BLOCK
+            | VkFormat::ASTC_6X6_UNORM_BLOCK
+            | VkFormat::ASTC_6X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X5_UNORM_BLOCK
+            | VkFormat::ASTC_8X5_SRGB_BLOCK
+            | VkFormat::ASTC_8X6_UNORM_BLOCK
+            | VkFormat::ASTC_8X6_SRGB_BLOCK
+            | VkFormat::ASTC_8X8_UNORM_BLOCK
+            | VkFormat::ASTC_8X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X5_UNORM_BLOCK
+            | VkFormat::ASTC_10X5_SRGB_BLOCK
+            | VkFormat::ASTC_10X6_UNORM_BLOCK
+            | VkFormat::ASTC_10X6_SRGB_BLOCK
+            | VkFormat::ASTC_10X8_UNORM_BLOCK
+            | VkFormat::ASTC_10X8_SRGB_BLOCK
+            | VkFormat::ASTC_10X10_UNORM_BLOCK
+            | VkFormat::ASTC_10X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X10_UNORM_BLOCK
+            | VkFormat::ASTC_12X10_SRGB_BLOCK
+            | VkFormat::ASTC_12X12_UNORM_BLOCK
+            | VkFormat::ASTC_12X12_SRGB_BLOCK
+            | VkFormat::G8B8G8R8_422_UNORM
+            | VkFormat::B8G8R8G8_422_UNORM
+            | VkFormat::G8_B8_R8_3PLANE_420_UNORM
+            | VkFormat::G8_B8R8_2PLANE_420_UNORM
+            | VkFormat::G8_B8_R8_3PLANE_422_UNORM
+            | VkFormat::G8_B8R8_2PLANE_422_UNORM
+            | VkFormat::G8_B8_R8_3PLANE_444_UNORM
+            | VkFormat::R10X6_UNORM_PACK16
+            | VkFormat::R10X6G10X6_UNORM_2PACK16
+            | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
+            | VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
+            | VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
+            | VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
+            | VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+            | VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
+            | VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
+            | VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
+            | VkFormat::R12X4_UNORM_PACK16
+            | VkFormat::R12X4G12X4_UNORM_2PACK16
+            | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
+            | VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
+            | VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
+            | VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
+            | VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
+            | VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
+            | VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
+            | VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
+            | VkFormat::G16B16G16R16_422_UNORM
+            | VkFormat::B16G16R16G16_422_UNORM
+            | VkFormat::G16_B16_R16_3PLANE_420_UNORM
+            | VkFormat::G16_B16R16_2PLANE_420_UNORM
+            | VkFormat::G16_B16_R16_3PLANE_422_UNORM
+            | VkFormat::G16_B16R16_2PLANE_422_UNORM
+            | VkFormat::G16_B16_R16_3PLANE_444_UNORM
+            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
             _ => false,
         }
     }
