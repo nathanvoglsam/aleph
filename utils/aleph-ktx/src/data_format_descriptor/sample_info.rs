@@ -748,12 +748,6 @@ impl SampleInfo {
                 (false, _) => sample_flags,
             };
 
-            // TODO: Function for getting bit width of RGBA channels + depth and stencil channels
-            // TODO: Tick off the list of formats below and make sure we can produce a DFD for every
-            //       supported format
-            // TODO: Maybe special case any oddball formats rather than making the pattern too
-            //       complex
-
             // Check there's enough space to write the sample infos
             if (count as usize) > sample_infos.len() {
                 return None;

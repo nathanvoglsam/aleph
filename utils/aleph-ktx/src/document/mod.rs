@@ -17,10 +17,10 @@ pub use super_compression_scheme::SuperCompressionScheme;
 
 use crate::data_format_descriptor::DataFormatDescriptor;
 use crate::format::{is_format_prohibited, is_format_unsupported};
-use crate::{format_bytes_per_block, format_type_size, ColorPrimaries, DFDError, DFDFlags};
+use crate::{format_bytes_for_image, format_type_size, ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Error, ErrorKind, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -43,6 +43,9 @@ pub enum KTXReadError {
 
     /// The `typeSize` value != 1 when `vkFormat` was a block format as required by the spec
     WrongTypeSizeForBlockFormat(u32, VkFormat),
+
+    /// The width value in `pixelWidth` is not valid, this must always hold true: `pixelWidth > 0`
+    InvalidWidth(u32),
 
     /// The depth value in `pixelDepth` is not valid for the `vkFormat` specified by the document
     InvalidDepthForFormat(u32, VkFormat),
@@ -85,7 +88,7 @@ pub enum KTXReadError {
 }
 
 impl From<std::io::Error> for KTXReadError {
-    fn from(err: Error) -> Self {
+    fn from(err: std::io::Error) -> Self {
         KTXReadError::IOError(err)
     }
 }
@@ -159,24 +162,46 @@ impl<R: Read + Seek> KTXDocument<R> {
     }
 
     ///
-    /// Pixel width of the image
+    /// Pixel width of the image.
     ///
     pub fn width(&self) -> u32 {
         self.width
     }
 
     ///
-    /// Pixel height of the image
+    /// Pixel height of the image.
+    ///
+    /// # Warning
+    ///
+    /// In the case of a 1D image this will still return 1. Having this return a minimum of 1 (which
+    /// is mathematically correct, as a 1D image is effectively a 2D image with a height of 1) makes
+    /// dealing with images more generic. No surprise 0 will pop up here.
+    ///
+    /// This is in contrast to the KTX2.0 spec which requires a height of 0 to mark a 1D image. We
+    /// resolve the document type while building the `KTXDocument`.
+    ///
+    /// To query what type of image the document holds use `KTXDocument::document_type`
     ///
     pub fn height(&self) -> u32 {
-        self.height
+        self.height.max(1)
     }
 
     ///
-    /// Pixel depth of the image
+    /// Pixel depth of the image.
+    ///
+    /// # Warning
+    ///
+    /// In the case of a 2D image this will still return 1. Having this return a minimum of 1 (which
+    /// is mathematically correct, as a 2D image is effectively a 3D image with a depth of 1) makes
+    /// dealing with images more generic. No surprise 0 will pop up here.
+    ///
+    /// This is in contrast to the KTX2.0 spec which requires a depth of 0 to mark a 2D image. We
+    /// resolve the document type while building the `KTXDocument`.
+    ///
+    /// To query what type of image the document holds use `KTXDocument::document_type`
     ///
     pub fn depth(&self) -> u32 {
-        self.depth
+        self.depth.max(1)
     }
 
     ///
@@ -207,9 +232,17 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// # Info
     ///
     /// This is *NOT* the raw `layerCount` from the KTX 2.0 document. This is exactly equal to
-    /// `u32::max(1, layerCount)`. A `layerCount` of 0 is a marker value for whether the KTX
-    /// document describes an image array but still specifies that the image contains a single
-    /// layer.
+    /// `u32::max(1, layerCount)`. A `layerCount` of 0 is a marker value for when the document does
+    /// not describe a texture array. A value > 0 describes an image array where there are
+    /// `layerCount` elements.
+    ///
+    /// If `layerCount` is 1 then this means an image array with one element which is functionally
+    /// equivalent to a non array image as both still have a single layer but the KTX2 spec
+    /// uses 0 to differentiate between these two states.
+    ///
+    /// In any case it was deemed more useful to clamp to 1 for the return value for this function
+    /// as a `layerCount` of 0 still means the image has a single layer. To check for an array
+    /// use the `KTXDocument::document_type` function.
     ///
     pub fn layer_num(&self) -> u32 {
         u32::max(1, self.layer_num)
@@ -239,9 +272,18 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// # Info
     ///
     /// This is *NOT* the raw `levelCount` from the KTX 2.0 document. This is exactly equal to
-    /// `u32::max(1, levelCount)`. A `levelCount` of 0 is a marker value for whether the KTX
-    /// document describes an image with a single level, or an image where only a single level has
-    /// been provided and the implementation should generate the mip chain itself.
+    /// `u32::max(1, levelCount)`.
+    ///
+    /// A `levelCount` of 0 is a special marker for when a document only provides a single mip layer
+    /// but would like the loader to generate the rest of the mip levels. A `levelCount` greater
+    /// than 0 specifies an image has exactly `levelCount` mip levels and they should be used as
+    /// provided.
+    ///
+    /// A `levelCount` of 0 or 1 still functionally means 1 level of data is provided by the
+    /// document and so this function clamps to 1 to simplify using this function.
+    ///
+    /// To check if the document requests mip generation use the
+    /// `KTXDocument::requests_mip_generation` function.
     ///
     pub fn level_num(&self) -> u32 {
         u32::max(1, self.level_num)
@@ -275,7 +317,10 @@ impl<R: Read + Seek> KTXDocument<R> {
         face: usize,
         level: usize,
         writer: &mut impl Write,
-    ) -> Result<(), Error> {
+    ) -> Result<(), std::io::Error> {
+        use std::io::Error;
+        use std::io::ErrorKind;
+
         // Check we're in bounds for the number of levels, faces and levels
         if level >= self.level_num() as usize {
             return Err(Error::new(
@@ -344,36 +389,11 @@ impl<R: Read + Seek> KTXDocument<R> {
         if level >= self.level_num() as usize {
             None
         } else {
-            let bytes_per_block = format_bytes_per_block(self.format).unwrap() as usize;
-            let block_width = self.format.block_width() as usize;
-            let block_height = self.format.block_height() as usize;
-            let block_depth = self.format.block_depth() as usize;
-            match self.document_type {
-                DocumentType::Image1D | DocumentType::Array1D => {
-                    let width = (self.width >> level) as usize;
-                    let width = width / block_width;
-                    Some(width * bytes_per_block)
-                }
-                DocumentType::Cube
-                | DocumentType::CubeArray
-                | DocumentType::Image2D
-                | DocumentType::Array2D => {
-                    let width = (self.width >> level) as usize;
-                    let width = width / block_width;
-                    let height = (self.height >> level) as usize;
-                    let height = height / block_height as usize;
-                    Some(width * height * bytes_per_block)
-                }
-                DocumentType::Image3D | DocumentType::Array3D => {
-                    let width = (self.width >> level) as usize;
-                    let width = width / block_width;
-                    let height = (self.height >> level) as usize;
-                    let height = height / block_height as usize;
-                    let depth = (self.depth >> level) as usize;
-                    let depth = depth / block_depth as usize;
-                    Some(width * height * depth * bytes_per_block)
-                }
-            }
+            let width = (self.width >> level).max(1) as usize;
+            let height = (self.height >> level).max(1) as usize;
+            let depth = (self.depth >> level).max(1) as usize;
+            let bytes = format_bytes_for_image(self.format, width, height, depth).unwrap();
+            Some(bytes)
         }
     }
 }
@@ -536,6 +556,8 @@ impl<R: Read + Seek> KTXDocument<R> {
 
         if format.is_depth_format() && depth != 0 {
             Err(KTXReadError::InvalidDepthForFormat(depth, format))
+        } else if width == 0 {
+            Err(KTXReadError::InvalidWidth(width))
         } else {
             Ok((width, height, depth))
         }

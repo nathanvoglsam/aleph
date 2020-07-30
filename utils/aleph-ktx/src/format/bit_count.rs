@@ -484,6 +484,28 @@ pub fn format_bytes_per_block(format: VkFormat) -> Option<u8> {
 }
 
 ///
+/// Returns the size of an image, in bytes
+///
+#[inline]
+pub fn format_bytes_for_image(
+    format: VkFormat,
+    width: usize,
+    height: usize,
+    depth: usize,
+) -> Option<usize> {
+    let bytes_per_block = format_bytes_per_block(format)? as usize;
+    let block_width = format.block_width() as usize;
+    let block_height = format.block_height() as usize;
+    let block_depth = format.block_depth() as usize;
+
+    let width = width / block_width;
+    let height = height / block_height;
+    let depth = depth / block_depth;
+
+    Some(width * height * depth * bytes_per_block)
+}
+
+///
 /// Returns the number of bits in the depth component of the given format.
 ///
 /// Returns `None` if there is no depth component

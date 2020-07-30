@@ -18,6 +18,7 @@ mod support;
 
 pub use bit_count::format_alpha_bits;
 pub use bit_count::format_blue_bits;
+pub use bit_count::format_bytes_for_image;
 pub use bit_count::format_bytes_per_block;
 pub use bit_count::format_depth_bits;
 pub use bit_count::format_exponent_bits;
