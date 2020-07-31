@@ -42,7 +42,7 @@ categories = ["game-engines"]
 edition = "2018"
 
 [badges]
-azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
 
 [dependencies]
 aleph-app-info = { path = "../../engine/aleph-app-info", version = "0.1.0" }

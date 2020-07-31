@@ -48,4 +48,4 @@ num-integer = "0.1"
 bitflags = "1.2"
 
 [badges]
-azure-devops = { project = "<ALEPH_CI_PROJECT_REPLACE>", pipeline = "<ALEPH_CI_PIPELINE_REPLACE>", build = "1" }
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
