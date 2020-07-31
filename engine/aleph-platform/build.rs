@@ -128,6 +128,9 @@ fn main() {
             // Having this enabled is going to cause problems for linking so get rid of it
             build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
 
+            // Force to compile for release, we'll never need to debug this
+            build.profile("Release");
+
             let out_dir = build.build();
 
             // We're going to need the output lib and bin dir

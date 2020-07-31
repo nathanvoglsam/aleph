@@ -81,11 +81,14 @@ fn generate_bindings(path: &Path) {
 }
 
 fn build_lib() {
-    let mut build = cmake::Config::new("lib");
+    let mut build = cmake::Config::new("thirdparty/Library");
 
     if cfg!(feature = "corruption_detection") {
         build.define("FEATURE_VMA_DEBUG_DETECT_CORRUPTION", "1");
     }
+
+    // Force to compile for release, we'll never need to debug this
+    build.profile("Release");
 
     if target_platform().is_android() {
         let android_home = std::env::var("ANDROID_HOME").unwrap();
@@ -116,13 +119,8 @@ fn build_lib() {
     let mut output_file = output_dir.clone();
     output_file.push(dll_name());
 
-    compile::copy_file_to_artifacts_dir(&output_file)
-        .expect("Failed to copy output file to artifacts directory");
-    compile::copy_file_to_target_dir(&output_file)
-        .expect("Failed to copy output file to target directory");
-
     println!("cargo:rustc-link-search=native={}", output_dir.display());
-    println!("cargo:rustc-link-lib=dylib=vma");
+    println!("cargo:rustc-link-lib=static=vma");
 }
 
 fn dll_name() -> &'static str {

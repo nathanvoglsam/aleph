@@ -34,7 +34,7 @@ project(vma LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_library(vma SHARED vk_mem_alloc.cpp)
+add_library(vma STATIC vk_mem_alloc.cpp)
 
 if (NOT MSVC)
     target_compile_options(vma PUBLIC "-Wno-missing-field-initializers")
@@ -51,7 +51,8 @@ endif()
 
 target_compile_definitions(vma PUBLIC VMA_STATIC_VULKAN_FUNCTIONS=0)
 
-target_include_directories(vma PUBLIC "../include")
+target_include_directories(vma PUBLIC "../Vulkan-Headers/include")
+target_include_directories(vma PUBLIC "../VulkanMemoryAllocator/src")
 
 install(
         TARGETS vma
