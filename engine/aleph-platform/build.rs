@@ -116,7 +116,7 @@ fn main() {
 
             // Perform the cmake build with the ninja generator, ninja will need to be in the system
             // path for this to work
-            let mut build = cmake::Config::new("thirdparty/sdl2");
+            let mut build = cmake::Config::new("thirdparty/SDL-mirror");
             build.generator("Ninja");
 
             // When compiling for MSVC we need to include vcruntime as some symbols are missing
@@ -124,9 +124,6 @@ fn main() {
             if target::build::target_platform().is_msvc() {
                 build.define("EXTRA_LIBS", "vcruntime");
             }
-
-            // Having this enabled is going to cause problems for linking so get rid of it
-            build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
 
             // Force to compile for release, we'll never need to debug this
             build.profile("Release");
