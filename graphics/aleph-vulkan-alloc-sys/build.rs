@@ -38,7 +38,7 @@ use bindgen;
 use std::path::Path;
 use target::build::target_architecture;
 use target::build::target_platform;
-use target::{Architecture, Platform};
+use target::Architecture;
 
 #[cfg(feature = "generate_bindings")]
 fn generate_bindings_internal(path: &Path) {
@@ -88,7 +88,14 @@ fn build_lib() {
     }
 
     // Force to compile for release, we'll never need to debug this
-    build.profile("Release");
+    if target_platform().is_msvc() {
+        build.profile("Release");
+    }
+
+    // Force link stdc++
+    if target_platform().is_gnu() && target_platform().is_windows() {
+        println!("cargo:rustc-link-lib=dylib=stdc++");
+    }
 
     if target_platform().is_android() {
         let android_home = std::env::var("ANDROID_HOME").unwrap();
@@ -116,19 +123,8 @@ fn build_lib() {
 
     let output_dir = build.build();
 
-    let mut output_file = output_dir.clone();
-    output_file.push(dll_name());
-
     println!("cargo:rustc-link-search=native={}", output_dir.display());
-    println!("cargo:rustc-link-lib=static=vma");
-}
-
-fn dll_name() -> &'static str {
-    match target::build::target_platform() {
-        Platform::WindowsGNU => "libvma.dll",
-        Platform::WindowsMSVC => "vma.dll",
-        Platform::Linux | Platform::Android => "libvma.so",
-    }
+    //println!("cargo:rustc-link-lib=static=vma");
 }
 
 fn main() {
