@@ -27,39 +27,20 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
+[package]
+name = "aleph-rust-codegen"
+version = "0.1.0"
+authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+description = "Crate for parsing and generating rust code that wraps syn into a less verbose interface"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-rust-codegen/"
+readme = "README.md"
+## TODO: keywords = ["build", "compilation", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
 
-[workspace]
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-members = [
-    "engine/aleph-app-info",
-    "engine/aleph-cpu-info",
-    "engine/aleph-embedded-data",
-    "engine/aleph-engine",
-    "engine/aleph-math",
-    "engine/aleph-platform",
-    "engine/aleph-platform-imgui",
-    "engine/aleph-settings",
-    "utils/aleph-compile",
-    "utils/aleph-imgui",
-    "utils/aleph-interface-gen",
-    "utils/aleph-ktx",
-    "utils/aleph-log",
-    "utils/aleph-logger",
-    "utils/aleph-macros",
-    "utils/aleph-rust-codegen",
-    "utils/aleph-target",
-    "utils/aleph-target-build",
-    "utils/aleph-vk-format",
-    "graphics/aleph-render",
-    "graphics/aleph-render-graph",
-    "graphics/aleph-vulkan",
-    "graphics/aleph-vulkan-alloc",
-    "graphics/aleph-vulkan-alloc-sys",
-    "graphics/aleph-vulkan-core",
-    "game/aleph-test",
-]
+[dependencies]
+syn = { version = "1.0", default-features = false, features = ["derive", "parsing", "printing", "clone-impls", "full"] }

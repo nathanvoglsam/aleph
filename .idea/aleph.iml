@@ -44,6 +44,9 @@
       <sourceFolder url="file://$MODULE_DIR$/graphics/aleph-render-graph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-ktx/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-vk-format/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-rust-parser/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-rust-codegen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/utils/aleph-interface-gen/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
