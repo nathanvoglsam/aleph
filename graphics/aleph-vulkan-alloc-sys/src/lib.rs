@@ -45,7 +45,7 @@ pub mod raw {
     include!("../raw.rs");
 }
 
-#[link(name="vma", kind="static")]
+#[link(name = "vma", kind = "static")]
 extern "C" {}
 
 #[cfg(test)]

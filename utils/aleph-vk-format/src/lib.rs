@@ -1389,7 +1389,7 @@ impl VkFormat {
     #[inline]
     pub fn is_known(self) -> bool {
         match self {
-            | VkFormat::UNDEFINED
+            VkFormat::UNDEFINED
             | VkFormat::R4G4_UNORM_PACK8
             | VkFormat::R4G4B4A4_UNORM_PACK16
             | VkFormat::B4G4R4A4_UNORM_PACK16

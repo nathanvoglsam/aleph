@@ -33,7 +33,11 @@ use crate::ALL_FORMATS;
 #[test]
 fn all_formats_enumerated() {
     ALL_FORMATS.iter().for_each(|format| {
-        assert!(format.is_known(), "All formats in the list must be known: {:#?}", format);
+        assert!(
+            format.is_known(),
+            "All formats in the list must be known: {:#?}",
+            format
+        );
     });
 }
 
