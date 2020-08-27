@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-#include "constants.hlsl"
-#include "saturate.hlsl"
+#include "common.hlsl"
 
 
 

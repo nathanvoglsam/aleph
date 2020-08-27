@@ -27,6 +27,45 @@
 // SOFTWARE.
 //
 
+static const float PI = 3.14159265f;
+
+/*
+ * Struct that describes a ray for use with ray tracing functions.
+ *
+ * Members:
+ *
+ * - origin: The origin of the ray in some coordinate space
+ * - direction: A unit vector that represents the direction to trace in
+ */
+struct Ray {
+    float3 origin;
+    float3 direction;
+};
+
+/*
+ * Returns the value of the largest component in the vector passed into the function
+ */
+float MaxComponent(float2 v) {
+    return max(v.x, v.y);
+}
+
+/*
+ * Returns the value of the largest component in the vector passed into the function
+ */
+float MaxComponent(float3 v) {
+    const float max_xy = max(v.x, v.y);
+    return max(max_xy, v.z);
+}
+
+/*
+ * Returns the value of the largest component in the vector passed into the function
+ */
+float MaxComponent(float4 v) {
+    const float max_xy = max(v.x, v.y);
+    const float max_xyz = max(max_xy, v.z);
+    return max(max_xyz, v.w);
+}
+
 /*
  * Saturate a FP16 (half precision) float to be in the 0-1 range but never actually 0
  */
@@ -35,7 +74,7 @@ inline float SaturateFP16(float val) {
 }
 
 /*
- * Saturate a FP32 (full precision) float to be in the 0-1 range but never actually 0 
+ * Saturate a FP32 (full precision) float to be in the 0-1 range but never actually 0
  */
 inline float SaturateFP32(float val) {
     return clamp(val, 0.045, 1.0);
