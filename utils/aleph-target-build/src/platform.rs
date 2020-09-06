@@ -33,6 +33,7 @@ pub enum Platform {
     WindowsMSVC,
     Linux,
     Android,
+    Unknown,
 }
 
 impl Platform {
@@ -51,6 +52,9 @@ impl Platform {
             }
             Platform::Android => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_TARGET_is_android");
+            }
+            Platform::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_TARGET_is_unknown");
             }
         }
     }
@@ -71,52 +75,72 @@ impl Platform {
             Platform::Android => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_HOST_is_android");
             }
+            Platform::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_PLATFORM_HOST_is_unknown");
+            }
         }
     }
 
-    #[inline]
-    pub fn name(self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "gnu",
             Platform::WindowsMSVC => "msvc",
             Platform::Linux => "linux",
             Platform::Android => "android",
+            Platform::Unknown => "unknown",
         }
     }
 
-    #[inline]
-    pub fn pretty_name(self) -> &'static str {
+    pub const fn pretty_name(self) -> &'static str {
         match self {
             Platform::WindowsGNU => "Windows GNU",
             Platform::WindowsMSVC => "Windows MSVC",
             Platform::Linux => "Linux",
             Platform::Android => "Android",
+            Platform::Unknown => "Unknown",
         }
     }
 
-    #[inline]
-    pub fn is_windows(self) -> bool {
-        self == Platform::WindowsMSVC || self == Platform::WindowsGNU
+    pub const fn is_windows(self) -> bool {
+        match self {
+            Platform::WindowsMSVC | Platform::WindowsGNU => true,
+            _ => false,
+        }
     }
 
-    #[inline]
-    pub fn is_linux(self) -> bool {
-        self == Platform::Linux
+    pub const fn is_linux(self) -> bool {
+        match self {
+            Platform::Linux => true,
+            _ => false,
+        }
     }
 
-    #[inline]
-    pub fn is_msvc(self) -> bool {
-        self == Platform::WindowsMSVC
+    pub const fn is_msvc(self) -> bool {
+        match self {
+            Platform::WindowsMSVC => true,
+            _ => false,
+        }
     }
 
-    #[inline]
-    pub fn is_gnu(self) -> bool {
-        self == Platform::WindowsGNU
+    pub const fn is_gnu(self) -> bool {
+        match self {
+            Platform::WindowsGNU => true,
+            _ => false,
+        }
     }
 
-    #[inline]
-    pub fn is_android(self) -> bool {
-        self == Platform::Android
+    pub const fn is_android(self) -> bool {
+        match self {
+            Platform::Android => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_unknown(self) -> bool {
+        match self {
+            Platform::Unknown => true,
+            _ => false,
+        }
     }
 }
 
@@ -129,13 +153,13 @@ pub fn get_platform_from(triple: &str) -> Platform {
         } else if target.contains("gnu") {
             Platform::WindowsGNU
         } else {
-            panic!("Unsupported Platform")
+            Platform::Unknown
         }
     } else if target.contains("android") {
         Platform::Android
     } else if target.contains("linux") {
         Platform::Linux
     } else {
-        panic!("Unsupported Platform")
+        Platform::Unknown
     }
 }

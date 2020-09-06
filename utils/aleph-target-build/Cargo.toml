@@ -29,7 +29,7 @@
 
 [package]
 name = "aleph-target-build"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Library for compile time platform detection"
 license = "MIT"

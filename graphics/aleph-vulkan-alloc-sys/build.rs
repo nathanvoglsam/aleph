@@ -116,6 +116,9 @@ fn build_lib() {
             Architecture::AARCH64 => {
                 build.target("aarch64-none-linux-android24");
             }
+            Architecture::Unknown => {
+                panic!("Unsupported architecture");
+            }
         }
     }
 

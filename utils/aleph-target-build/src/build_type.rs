@@ -34,6 +34,7 @@
 pub enum BuildType {
     Release,
     Debug,
+    Unknown,
 }
 
 impl BuildType {
@@ -44,6 +45,9 @@ impl BuildType {
             }
             BuildType::Debug => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_debug");
+            }
+            BuildType::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_unknown");
             }
         }
     }
@@ -56,36 +60,50 @@ impl BuildType {
             BuildType::Debug => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_debug");
             }
+            BuildType::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_unknown");
+            }
         }
     }
 
     ///
     /// Get the build type name
     ///
-    #[inline]
-    pub fn name(self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
             BuildType::Release => "release",
             BuildType::Debug => "debug",
+            BuildType::Unknown => "unknown",
         }
     }
 
-    #[inline]
-    pub fn pretty_name(self) -> &'static str {
+    pub const fn pretty_name(self) -> &'static str {
         match self {
             BuildType::Release => "Release",
             BuildType::Debug => "Debug",
+            BuildType::Unknown => "unknown",
         }
     }
 
-    #[inline]
-    pub fn is_release(self) -> bool {
-        self == BuildType::Release
+    pub const fn is_release(self) -> bool {
+        match self {
+            BuildType::Release => true,
+            _ => false,
+        }
     }
 
-    #[inline]
-    pub fn is_debug(self) -> bool {
-        self == BuildType::Debug
+    pub const fn is_debug(self) -> bool {
+        match self {
+            BuildType::Debug => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_unknown(self) -> bool {
+        match self {
+            BuildType::Unknown => true,
+            _ => false,
+        }
     }
 }
 
@@ -96,6 +114,6 @@ pub fn get_build_type_from(profile: &str) -> BuildType {
     } else if profile == "debug" {
         BuildType::Debug
     } else {
-        panic!("Unsupported Build Profile")
+        BuildType::Unknown
     }
 }

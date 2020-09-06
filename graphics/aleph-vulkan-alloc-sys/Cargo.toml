@@ -53,4 +53,4 @@ corruption_detection = [ ]
 cmake = "0.1"
 bindgen = { version = "0.53", optional = true }
 aleph-compile = { path = "../../utils/aleph-compile", version = "1.0.0" }
-aleph-target-build = { path = "../../utils/aleph-target-build", version = "1.0.0" }
+aleph-target-build = { path = "../../utils/aleph-target-build", version = "2.0.0" }

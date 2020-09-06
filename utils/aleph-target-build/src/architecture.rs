@@ -34,6 +34,7 @@
 pub enum Architecture {
     X8664,
     AARCH64,
+    Unknown,
 }
 
 impl Architecture {
@@ -44,6 +45,9 @@ impl Architecture {
             }
             Architecture::AARCH64 => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_aarch64");
+            }
+            Architecture::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_unknown");
             }
         }
     }
@@ -56,39 +60,46 @@ impl Architecture {
             Architecture::AARCH64 => {
                 println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_aarch64");
             }
+            Architecture::Unknown => {
+                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_unknown");
+            }
         }
     }
 
-    #[inline]
-    pub fn name(self) -> &'static str {
+    pub const fn name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",
             Architecture::AARCH64 => "aarch64",
+            Architecture::Unknown => "unknown",
         }
     }
 
-    #[inline]
-    pub fn ndk_name(self) -> &'static str {
+    pub const fn ndk_name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",
             Architecture::AARCH64 => "arm64-v8a",
+            Architecture::Unknown => "unknown",
         }
     }
 
     ///
     /// Are we building for x86-64
     ///
-    #[inline]
-    pub fn is_x86_64(self) -> bool {
-        self == Architecture::X8664
+    pub const fn is_x86_64(self) -> bool {
+        match self {
+            Architecture::X8664 => true,
+            _ => false,
+        }
     }
 
     ///
     /// Are we building for aarch64 (ARM 64bit)
     ///
-    #[inline]
-    pub fn is_aarch64(self) -> bool {
-        self == Architecture::AARCH64
+    pub const fn is_aarch64(self) -> bool {
+        match self {
+            Architecture::AARCH64 => true,
+            _ => false,
+        }
     }
 }
 
@@ -101,6 +112,6 @@ pub fn get_architecture_from(triple: &str) -> Architecture {
     } else if target.contains("aarch64") {
         Architecture::AARCH64
     } else {
-        panic!("Unsupported Architecture");
+        Architecture::Unknown
     }
 }

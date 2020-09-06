@@ -40,6 +40,7 @@ fn dll_name() -> &'static str {
     match target::build::target_platform() {
         Platform::WindowsGNU | Platform::WindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
+        Platform::Unknown => panic!("Unsupported Platform"),
     }
 }
 
@@ -54,6 +55,7 @@ fn get_ndk_build_file() -> String {
         }
         Platform::Linux => format!("{}/ndk-bundle/ndk-build", &ndk_build),
         Platform::Android => panic!("Unsupported host"),
+        Platform::Unknown => panic!("Unsupported host"),
     }
 }
 
@@ -149,11 +151,14 @@ fn main() {
             compile::copy_file_to_target_dir(&source)
                 .expect("Failed to copy SDL2 dll/so to target dir");
         }
-        Platform::Linux => {
+        Platform::Linux | Platform::Unknown => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
             // SDL2 lest we wake the horrible demons of distributing your own libraries on linux.
             // If it's in the distro repository, get it from there as it will probably play much
             // nicer than compiling our own.
+            //
+            // We also do nothing on platform unknown as there's nothing to do and it will panic
+            // at an earlier stage anyway
         }
         Platform::Android => {
             // On android we need to compile with ndk-build so it will play nicely with all the

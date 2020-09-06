@@ -54,7 +54,7 @@ aleph-platform = { path = "../aleph-platform", version = "0.1.0" }
 aleph-platform-imgui = { path = "../aleph-platform-imgui", version = "0.1.0" }
 aleph-settings = { path = "../aleph-settings", version = "0.1.0" }
 aleph-render = { path = "../../graphics/aleph-render", version = "0.1.0" }
-aleph-target = { path = "../../utils/aleph-target", version = "1.0.0" }
+aleph-target = { path = "../../utils/aleph-target", version = "2.0.0" }
 aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1.0" }
 aleph-vulkan-core = { path = "../../graphics/aleph-vulkan-core", version = "0.1.0" }
 aleph-vulkan-alloc = { path = "../../graphics/aleph-vulkan-alloc", version = "0.1.0" }

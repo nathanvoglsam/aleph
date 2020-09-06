@@ -45,145 +45,94 @@ pub mod build {
     /// Returns the host platform
     ///
     #[inline]
-    pub fn host_platform() -> aleph_target::Platform {
+    pub const fn host_platform() -> aleph_target::Platform {
         if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_windows) {
             if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
                 aleph_target::Platform::WindowsMSVC
             } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
                 aleph_target::Platform::WindowsGNU
             } else {
-                panic!("Unsupported Platform")
+                aleph_target::Platform::Unknown
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_android) {
             aleph_target::Platform::Android
         } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_linux) {
             aleph_target::Platform::Linux
         } else {
-            panic!("Unsupported Platform")
+            aleph_target::Platform::Unknown
         }
     }
 
     ///
     /// Returns the host architecture
     ///
-    #[inline]
-    pub fn host_architecture() -> aleph_target::Architecture {
+    pub const fn host_architecture() -> aleph_target::Architecture {
         if cfg!(ALEPH_BUILD_ARCH_HOST_is_x86_64) {
             aleph_target::Architecture::X8664
         } else if cfg!(ALEPH_BUILD_ARCH_HOST_is_aarch64) {
             aleph_target::Architecture::AARCH64
         } else {
-            panic!("Unsupported Architecture")
+            aleph_target::Architecture::Unknown
         }
     }
 
     ///
     /// Returns the host build type
     ///
-    #[inline]
-    pub fn host_build_type() -> aleph_target::BuildType {
+    pub const fn host_build_type() -> aleph_target::BuildType {
         if cfg!(ALEPH_BUILD_PROFILE_HOST_is_release) {
             aleph_target::BuildType::Release
         } else if cfg!(ALEPH_BUILD_PROFILE_HOST_is_debug) {
             aleph_target::BuildType::Debug
         } else {
-            panic!("Unsupported Build Profile")
+            aleph_target::BuildType::Unknown
         }
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    #[cfg(any(HOST_is_x86_64, HOST_is_i686))]
-    const fn internal_host_is_x86() -> bool {
-        true
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    #[cfg(not(any(HOST_is_x86_64, HOST_is_i686)))]
-    const fn internal_host_is_x86() -> bool {
-        false
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    pub const fn host_is_x86() -> bool {
-        internal_host_is_x86()
     }
 
     ///
     /// Returns the target platform
     ///
-    #[inline]
-    pub fn target_platform() -> aleph_target::Platform {
+    pub const fn target_platform() -> aleph_target::Platform {
         if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_windows) {
             if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
                 aleph_target::Platform::WindowsMSVC
             } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
                 aleph_target::Platform::WindowsGNU
             } else {
-                panic!("Unsupported Platform")
+                aleph_target::Platform::Unknown
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_android) {
             aleph_target::Platform::Android
         } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_linux) {
             aleph_target::Platform::Linux
         } else {
-            panic!("Unsupported Platform")
+            aleph_target::Platform::Unknown
         }
     }
 
     ///
     /// Returns the target architecture
     ///
-    #[inline]
-    pub fn target_architecture() -> aleph_target::Architecture {
+    pub const fn target_architecture() -> aleph_target::Architecture {
         if cfg!(ALEPH_BUILD_ARCH_TARGET_is_x86_64) {
             aleph_target::Architecture::X8664
         } else if cfg!(ALEPH_BUILD_ARCH_TARGET_is_aarch64) {
             aleph_target::Architecture::AARCH64
         } else {
-            panic!("Unsupported Architecture")
+            aleph_target::Architecture::Unknown
         }
     }
 
     ///
     /// Returns the target build type
     ///
-    #[inline]
-    pub fn target_build_type() -> aleph_target::BuildType {
+    pub const fn target_build_type() -> aleph_target::BuildType {
         if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_release) {
             aleph_target::BuildType::Release
         } else if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_debug) {
             aleph_target::BuildType::Debug
         } else {
-            panic!("Unsupported Build Profile")
+            aleph_target::BuildType::Unknown
         }
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    #[cfg(any(TARGET_is_x86_64, TARGET_is_i686))]
-    const fn internal_target_is_x86() -> bool {
-        true
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    #[cfg(not(any(TARGET_is_x86_64, TARGET_is_i686)))]
-    const fn internal_target_is_x86() -> bool {
-        false
-    }
-
-    ///
-    /// Returns whether we are compiling for an x86 platform. Useful for guarding use of x86 intrinsics
-    ///
-    pub const fn target_is_x86() -> bool {
-        internal_target_is_x86()
     }
 }
