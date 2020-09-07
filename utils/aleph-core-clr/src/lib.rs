@@ -47,7 +47,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 ///
-///
+/// This represents the set of errors that can occur when loading the coreclr dynamic library
 ///
 #[derive(Debug)]
 pub enum LibraryLoadError {
@@ -82,12 +82,20 @@ pub struct Library {
 }
 
 impl Library {
+    ///
+    /// Wrapper around dlopen/LoadLibrary. Will load the library directly by the platform's name for
+    /// coreclr
+    ///
     pub fn new() -> Result<Library, LibraryLoadError> {
         let library = libloading::Library::new(Self::library_name())?;
         let out = Self { library };
         Ok(out)
     }
 
+    ///
+    /// Wrapper around dlopen/LoadLibrary. Will load the library by appending the name of the
+    /// library to the given path
+    ///
     pub fn new_in_path(path: impl AsRef<Path>) -> Result<Library, LibraryLoadError> {
         let path = path.as_ref();
         let path = path.join(Self::library_name());
@@ -101,6 +109,8 @@ impl Library {
     ///
     /// Returns the name of the coreclr library on the platform the library is compiled for
     ///
+    /// If the platform is unknown (`Platform::Unknown`) this will return `"unknown"`
+    ///
     pub const fn library_name() -> &'static str {
         match aleph_target::build::target_platform() {
             Platform::WindowsGNU => "coreclr.dll",
@@ -112,6 +122,9 @@ impl Library {
     }
 }
 
+///
+/// This wraps an error code that can be returned from any of the coreclr raw functions
+///
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct RuntimeError {
@@ -203,10 +216,18 @@ impl RuntimeBuilder {
         }
     }
 
-    pub fn property_string_list<'a>(
+    ///
+    /// Add a property with a given name where the value is a list of strings.
+    ///
+    /// This will automatically handle flattening the list of strings given down to a single string
+    /// with a separator between them (how coreclr want's these lists) and abstract away the slight
+    /// platform differences that are associated with doing this (the separator is different on
+    /// windows thant it is elsewhere).
+    ///
+    pub fn property_string_list(
         mut self,
         property: &str,
-        mut items: impl Iterator<Item = &'a str>,
+        mut items: impl Iterator<Item = impl AsRef<str>>,
     ) -> Self {
         const SEPARATOR: char = if aleph_target::build::target_platform().is_windows() {
             ';'
@@ -217,6 +238,7 @@ impl RuntimeBuilder {
         let mut value = String::new();
 
         while let Some(item) = items.next() {
+            let item = item.as_ref();
             value.push_str(item);
             value.push(SEPARATOR);
         }
@@ -228,21 +250,43 @@ impl RuntimeBuilder {
         self
     }
 
-    pub fn trusted_platform_assemblies<'a>(
+    ///
+    /// Specify the list of trusted assemblies.
+    ///
+    /// Maps to `TRUSTED_PLATFORM_ASSEMBLIES`. [more info](https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing)
+    ///
+    pub fn trusted_platform_assemblies(
         self,
-        assemblies: impl Iterator<Item = &'a str>,
+        assemblies: impl Iterator<Item = impl AsRef<str>>,
     ) -> Self {
         self.property_string_list("TRUSTED_PLATFORM_ASSEMBLIES", assemblies)
     }
 
-    pub fn app_paths<'a>(self, paths: impl Iterator<Item = &'a str>) -> Self {
+    ///
+    /// Specify the set of app folders where app assemblies may be loaded from
+    ///
+    /// Maps to `APP_PATHS` [more info](https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing)
+    ///
+    pub fn app_paths(self, paths: impl Iterator<Item = impl AsRef<str>>) -> Self {
         self.property_string_list("APP_PATHS", paths)
     }
 
-    pub fn native_dll_search_directories<'a>(self, paths: impl Iterator<Item = &'a str>) -> Self {
+    ///
+    /// Specify list of folders where native libraries can be loaded from
+    ///
+    /// Maps to `NATIVE_DLL_SEARCH_DIRECTORIES` [more info](https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing)
+    ///
+    pub fn native_dll_search_directories(self, paths: impl Iterator<Item = impl AsRef<str>>) -> Self {
         self.property_string_list("NATIVE_DLL_SEARCH_DIRECTORIES", paths)
     }
 
+    ///
+    /// Creates a coreclr runtime instance, loading functions from the given library instance and
+    /// using the given name for the appdomain.
+    ///
+    /// This handles trying to load function pointers from the dynamically linked library and
+    /// calling `coreclr_initialize` to create the runtime instance.
+    ///
     pub fn build(
         self,
         library: &Library,
@@ -323,6 +367,10 @@ impl RuntimeBuilder {
     }
 }
 
+///
+/// A wrapper type that enforces that a delegate returned from the coreclr runtime does not outlive
+/// the runtime.
+///
 pub struct Delegate<'runtime, T> {
     pointer: *mut T,
     phantom: PhantomData<&'runtime T>,
@@ -340,7 +388,7 @@ impl<'runtime, T> Deref for Delegate<'runtime, T> {
 }
 
 ///
-/// Internal struct for wrapping this in a mutex
+/// Internal struct for wrapping the runtime struct in a mutex
 ///
 struct RuntimeHandle {
     handle: *mut c_void,

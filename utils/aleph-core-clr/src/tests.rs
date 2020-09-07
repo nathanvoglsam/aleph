@@ -34,7 +34,7 @@ use std::path::PathBuf;
 fn test_get_delegate() {
     //let clr_path = "C:\\Program Files\\dotnet\\shared\\Microsoft.NETCore.App\\3.1.6";
     let clr_path = "D:\\Code\\dotnet-runtime-3.1.7-win-x64\\shared\\Microsoft.NETCore.App\\3.1.7";
-    let assembly_path = "D:\\Code\\DelegateTest\\bin\\Debug\\netcoreapp3.1";
+    let assembly_path = "D:\\Code\\DelegateTest\\publish";
 
     let library = Library::new_in_path(clr_path).unwrap();
 
@@ -59,7 +59,7 @@ fn test_get_delegate() {
 
     let runtime = Runtime::builder()
         .trusted_platform_assemblies(assemblies.iter().map(|v| v.to_str().unwrap()))
-        .app_paths(app_paths.iter().map(|v| *v))
+        .app_paths(app_paths.iter())
         .build(&library, "DelegateTest")
         .unwrap();
 
