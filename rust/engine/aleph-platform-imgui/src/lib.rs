@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use imgui::{ImStr, ImString, StyleColor};
 use aleph_platform::clipboard::Clipboard;
 use aleph_platform::frame_timer::FrameTimer;
 use aleph_platform::keyboard::{Keyboard, KeyboardEvent, Mod, Scancode};
 use aleph_platform::mouse::{Cursor, Mouse, MouseEvent};
 use aleph_platform::window::Window;
+use imgui::{ImStr, ImString, StyleColor};
 use palette::{IntoColor, Srgb};
 
 // TODO: Windows IME

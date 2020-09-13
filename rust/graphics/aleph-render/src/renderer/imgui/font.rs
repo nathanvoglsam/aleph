@@ -28,7 +28,6 @@
 //
 
 use super::ImguiGlobal;
-use imgui::{FontConfig, FontSource};
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
@@ -43,6 +42,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     WriteDescriptorSetBuilder,
 };
 use aleph_vulkan_core::DebugName;
+use imgui::{FontConfig, FontSource};
 
 pub struct ImguiFont {
     pub sampler: Sampler,
