@@ -120,6 +120,8 @@ impl ImguiRenderer {
         command_buffer: CommandBuffer,
         index: usize,
     ) {
+        optick::event!();
+
         let draw_data = frame.render();
 
         //

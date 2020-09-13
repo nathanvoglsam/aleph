@@ -380,6 +380,8 @@ impl UniformBuffers {
         layout: &Struct,
         buffer: &(Buffer, Allocation),
     ) {
+        optick::event!();
+
         let ptr = allocator
             .map_memory(&buffer.1)
             .expect("Failed to map memory");
@@ -416,6 +418,8 @@ impl UniformBuffers {
         buffer: &(Buffer, Allocation),
         aspect: f32,
     ) {
+        optick::event!();
+
         let ptr = allocator
             .map_memory(&buffer.1)
             .expect("Failed to map memory");
@@ -860,21 +864,25 @@ impl Renderer {
             .end_command_buffer(self.command_buffer)
             .expect("Failed to end command buffer");
 
-        let command_buffers = [self.command_buffer];
-        let wait_semaphores = [self.acquire_semaphore];
-        let signal_semaphores = [self.signal_semaphore];
-        let wait_dst_stage_mask = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
-        let submit = SubmitInfoBuilder::new()
-            .command_buffers(&command_buffers)
-            .wait_semaphores(&wait_semaphores)
-            .signal_semaphores(&signal_semaphores)
-            .wait_dst_stage_mask(&wait_dst_stage_mask);
-        self.device
-            .loader()
-            .queue_submit(self.device.general_queue(), &[submit], Fence::null())
-            .expect("Failed to submit to queue");
+        {
+            optick::event!("aleph_render::renderer::Renderer::submit_and_present");
 
-        swapchain.present(self.device.general_queue(), index, &[self.signal_semaphore]);
+            let command_buffers = [self.command_buffer];
+            let wait_semaphores = [self.acquire_semaphore];
+            let signal_semaphores = [self.signal_semaphore];
+            let wait_dst_stage_mask = [PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+            let submit = SubmitInfoBuilder::new()
+                .command_buffers(&command_buffers)
+                .wait_semaphores(&wait_semaphores)
+                .signal_semaphores(&signal_semaphores)
+                .wait_dst_stage_mask(&wait_dst_stage_mask);
+            self.device
+                .loader()
+                .queue_submit(self.device.general_queue(), &[submit], Fence::null())
+                .expect("Failed to submit to queue");
+
+            swapchain.present(self.device.general_queue(), index, &[self.signal_semaphore]);
+        }
     }
 
     pub unsafe fn record_frame(&self, command_buffer: CommandBuffer, index: usize) {
