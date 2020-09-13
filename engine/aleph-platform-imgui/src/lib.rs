@@ -585,6 +585,8 @@ impl Imgui {
     /// stuff we need to run after mouse events so we split them into different functions
     ///
     pub fn update_mouse_pos_early(&mut self) {
+        optick::event!();
+
         let io = self.context.io_mut();
 
         if io.want_set_mouse_pos {
@@ -600,6 +602,8 @@ impl Imgui {
     /// stuff we need to run after mouse events so we split them into different functions
     ///
     pub fn update_mouse_pos_late(&mut self) {
+        optick::event!();
+
         let io = self.context.io_mut();
 
         for event in Mouse::events().iter() {
@@ -633,6 +637,8 @@ impl Imgui {
     }
 
     pub fn update_keyboard_input(&mut self) {
+        optick::event!();
+
         let io = self.context.io_mut();
 
         for event in Keyboard::events().iter() {
@@ -660,6 +666,8 @@ impl Imgui {
     /// Update the mouse cursor
     ///
     pub fn frame(&mut self) -> aleph_imgui::Ui {
+        optick::event!();
+
         let window_size = Window::size();
         let drawable_size = Window::drawable_size();
         let scale = [
@@ -682,7 +690,10 @@ impl Imgui {
         self.context.io_mut().display_framebuffer_scale = scale;
 
         self.context.io_mut().delta_time = FrameTimer::delta_time() as f32;
-        let ui = self.context.frame();
+        let ui = {
+            optick::event!("aleph_platform_imgui::Imgui::render_ui");
+            self.context.frame()
+        };
 
         if (ui.io().config_flags & aleph_imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE)
             == aleph_imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE

@@ -235,6 +235,7 @@ impl Platform {
     /// Currently this updates the FrameTimer with fresh timer values
     ///
     pub fn frame(&mut self) {
+        optick::event!();
         // Get the timer subsystem
         let timer = self.timer.take().unwrap();
 
@@ -249,6 +250,8 @@ impl Platform {
     /// Processes any of the requests made of the platform systems from the previous frame
     ///
     pub fn process_requests(&mut self) {
+        optick::event!();
+
         // This is a no-op in headless mode as a headless game instance can't get any window or
         // input requests as the systems aren't active
         if !self.headless {
@@ -275,6 +278,8 @@ impl Platform {
     /// platform
     ///
     pub fn process_events(&mut self, quit_fn: impl Fn()) {
+        optick::event!();
+
         // Get the event pump
         let mut event_pump = self.event_pump.take().unwrap();
 

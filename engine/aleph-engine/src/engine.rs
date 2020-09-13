@@ -35,6 +35,29 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use vulkan::pipeline_cache::PipelineCache;
 use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use vulkan_core::GPUInfo;
+use crate::imgui::Ui;
+
+///
+/// Internal wrapper for injecting profiling hooks for the user's AppLogic instance
+///
+struct ProfiledAppLogic<T: crate::AppLogic> {
+    app_logic: T,
+}
+
+impl<T: crate::AppLogic> crate::AppLogic for ProfiledAppLogic<T> {
+    fn on_init(&mut self) {
+        self.app_logic.on_init();
+    }
+
+    fn on_update(&mut self, ui: &Ui) {
+        optick::event!();
+        self.app_logic.on_update(ui);
+    }
+
+    fn on_exit(&mut self) {
+        self.app_logic.on_exit();
+    }
+}
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -53,7 +76,7 @@ impl Engine {
     ///
     /// Once everything is set up it hands
     ///
-    pub fn start(app_info: AppInfo, mut app: impl AppLogic) {
+    pub fn start(app_info: AppInfo, app: impl crate::AppLogic) {
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches
         // -----------------------------------------------------------------------------------------
@@ -86,6 +109,9 @@ impl Engine {
         aleph_logger::init();
         aleph_log::info!("Aleph Engine Starting");
         aleph_log::info!("");
+
+        // Init the profiler and mark the first frame
+        optick::next_frame();
 
         // Print info about the specific app to the log so we know what game and version we're on
         Engine::log_app_info(&app_info);
@@ -154,6 +180,11 @@ impl Engine {
             )
         };
 
+        // -----------------------------------------------------------------------------------------
+        // Wrap User AppLogic
+        // -----------------------------------------------------------------------------------------
+        let mut app = ProfiledAppLogic { app_logic: app };
+
         // =========================================================================================
         // Engine Fully Initialized
         // =========================================================================================
@@ -164,6 +195,9 @@ impl Engine {
 
         // Process the SDL2 events and store them into our own event queues for later use
         'game_loop: loop {
+            // Mark a new frame for the optick profiler
+            optick::next_frame();
+
             // Mark a new frame for the platform
             platform.frame();
 

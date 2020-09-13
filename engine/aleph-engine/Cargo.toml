@@ -61,3 +61,4 @@ aleph-vulkan-alloc = { path = "../../graphics/aleph-vulkan-alloc", version = "0.
 clap = "2.33"
 rayon = "1.3"
 once_cell = "1.4"
+optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }

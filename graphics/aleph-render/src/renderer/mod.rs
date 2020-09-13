@@ -805,6 +805,8 @@ impl Renderer {
         swapchain: &mut Swapchain,
         drawable_size: (u32, u32),
     ) -> Option<usize> {
+        optick::event!();
+
         self.device
             .loader()
             .device_wait_idle()
@@ -831,6 +833,8 @@ impl Renderer {
         index: usize,
         frame: aleph_imgui::Ui,
     ) {
+        optick::event!();
+
         self.device
             .loader()
             .reset_command_pool(self.command_pool, CommandPoolResetFlags::default())
@@ -874,6 +878,8 @@ impl Renderer {
     }
 
     pub unsafe fn record_frame(&self, command_buffer: CommandBuffer, index: usize) {
+        optick::event!();
+
         // Build render area over entire image
         let base_colour = &self.gbuffer.base_colour;
         let offset = Offset2DBuilder::new().x(0).y(0);
