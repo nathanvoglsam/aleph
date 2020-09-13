@@ -45,7 +45,6 @@ members = [
     "rust/dotnet/aleph-interface-gen",
     "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",
-    "rust/engine/aleph-math",
     "rust/graphics/aleph-render",
     "rust/graphics/aleph-render-graph",
     "rust/graphics/aleph-vulkan",

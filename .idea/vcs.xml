@@ -2,8 +2,8 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/rust/engine/aleph-platform/thirdparty/SDL-mirror" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rust/graphics/aleph-vulkan-alloc-sys/thirdparty/Vulkan-Headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rust/graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/rust/platform/aleph-platform/thirdparty/SDL-mirror" vcs="Git" />
   </component>
 </project>

@@ -33,9 +33,6 @@ mod pipelines;
 pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
-use aleph_math::traits::{Inverse, Transpose};
-use aleph_math::types::{Mat4x4, Quat, Vec3};
-use aleph_math::units::radians;
 use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
 use aleph_vulkan::embedded::data::SphereMesh;
 use aleph_vulkan::image::{ColourImage, DepthImage};
@@ -63,6 +60,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
 use aleph_vulkan_core::{DebugName, Device, SwapImage, Swapchain};
 use std::sync::Arc;
 use std::time::Duration;
+use ultraviolet::{Bivec3, Isometry3, Rotor3, Vec3};
 
 ///
 /// Represents a single gbuffer
@@ -393,12 +391,15 @@ impl UniformBuffers {
         let mut writer = UniformBufferWriter::new_for_struct(layout, mem).unwrap();
 
         // Calculate the matrices to upload
-        let pos = Vec3::new(0.0, 0.0, 0.0);
-        let rot = Quat::from_angle_axis(radians(45.0), Vec3::up());
-        let pos: Mat4x4 = Mat4x4::translation(pos);
-        let rot: Mat4x4 = rot.into();
-        let model: Mat4x4 = pos * rot;
-        let normal: Mat4x4 = model.clone().inverse().transpose();
+        let pos = Vec3::zero();
+
+        let angle = 45f32.to_radians();
+        let plane = Bivec3::from_normalized_axis(Vec3::unit_y());
+        let rot = Rotor3::from_angle_plane(angle, plane);
+
+        let translation = ultraviolet::transform::Isometry3::new(pos, rot);
+        let model = translation.into_homogeneous_matrix();
+        let normal = model.inversed().transposed();
 
         // Write the members
         writer
@@ -431,11 +432,13 @@ impl UniformBuffers {
         let mut writer = UniformBufferWriter::new_for_struct(layout, mem).unwrap();
 
         // Calculate the matrices to upload
-        let pos: Vec3 = Vec3::new(0.0, 0.0, 5.0);
-        let trn: Mat4x4 = Mat4x4::translation(pos);
-        let rot: Mat4x4 = Quat::identity().into();
-        let view = trn * rot;
-        let proj = Mat4x4::perspective(aspect, radians(90.0), 0.1, 100.0);
+        let pos = Vec3::new(0.5, 0.0, -2.0);
+        let rot = Rotor3::identity();
+        let view = Isometry3::new(pos, rot);
+        let view = view.into_homogeneous_matrix();
+
+        let proj =
+            ultraviolet::projection::perspective_vk(90.0f32.to_radians(), aspect, 0.1, 100.0);
 
         // Write the members
         writer
@@ -445,7 +448,7 @@ impl UniformBuffers {
             .write_member("proj_matrix", Member::Mat4x4(proj))
             .unwrap();
         writer
-            .write_member("position", Member::Vec3(pos.into()))
+            .write_member("position", Member::Vec3(pos))
             .unwrap();
 
         // Finalize the writer and ensure that all members have been written

@@ -30,8 +30,8 @@
 use crate::reflect::{
     Binding, BindingType, FloatType, IntegerType, MatrixLayout, MemberType, ScalarType, Struct,
 };
-use aleph_math::matrix::TMat4x4;
-use aleph_math::traits::{Real, Transpose};
+use bytemuck::Pod;
+use ultraviolet::{DMat4, DVec2, DVec3, DVec4, Mat4, Vec2, Vec3, Vec4};
 
 ///
 /// Represents the set of errors that creating a new `UniformBufferWriter` object could throw
@@ -74,16 +74,14 @@ pub enum Member {
     U64(u64),
     F32(f32),
     F64(f64),
-    Vec2([f32; 2]),
-    Vec3([f32; 3]),
-    Vec4([f32; 4]),
-    DVec2([f64; 2]),
-    DVec3([f64; 3]),
-    DVec4([f64; 4]),
-    Mat4x4(aleph_math::types::Mat4x4),
-    DMat4x4(aleph_math::types::DMat4x4),
-    Quat([f32; 4]),
-    DQuat([f64; 4]),
+    Vec2(Vec2),
+    Vec3(Vec3),
+    Vec4(Vec4),
+    DVec2(DVec2),
+    DVec3(DVec3),
+    DVec4(DVec4),
+    Mat4x4(Mat4),
+    DMat4x4(DMat4),
 }
 
 impl Member {
@@ -92,15 +90,14 @@ impl Member {
     /// function to write the actual data
     ///
     #[inline(always)]
-    fn handle_integer<T: Into<IntegerType> + Copy>(
+    fn handle_integer<T: Into<IntegerType> + Pod>(
         member_type: &MemberType,
         src: T,
         dest: &mut [u8],
     ) -> bool {
         if let MemberType::Integer(v) = member_type {
             if *v == src.into() {
-                Self::write_scalar(src, dest);
-                true
+                Self::write_scalars(&[src], dest)
             } else {
                 false
             }
@@ -114,15 +111,14 @@ impl Member {
     /// function to write the actual data
     ///
     #[inline(always)]
-    fn handle_float<T: Into<FloatType> + Copy>(
+    fn handle_float<T: Into<FloatType> + Pod>(
         member_type: &MemberType,
         src: T,
         dest: &mut [u8],
     ) -> bool {
         if let MemberType::Float(v) = member_type {
             if *v == src.into() {
-                Self::write_scalar(src, dest);
-                true
+                Self::write_scalars(&[src], dest)
             } else {
                 false
             }
@@ -136,11 +132,15 @@ impl Member {
     /// function to write the actual data
     ///
     #[inline(always)]
-    fn handle_vector<T>(member_type: &MemberType, src: &[T], dest: &mut [u8]) -> bool {
+    fn handle_vector<T: Into<FloatType> + Pod>(
+        member_type: &MemberType,
+        src: &[T],
+        dest: &mut [u8],
+    ) -> bool {
         if let MemberType::Vector(info) = member_type {
-            let len = src.len() as u8;
-            if info.elements == len && info.elem_type == ScalarType::Float(FloatType::Single) {
-                Self::write_vector(src, dest);
+            let elems = src.len() as u8;
+            if info.elements == elems && info.elem_type == ScalarType::Float(T::zeroed().into()) {
+                Self::write_scalars(src, dest);
                 true
             } else {
                 false
@@ -155,19 +155,16 @@ impl Member {
     /// function to write the actual data
     ///
     #[inline(always)]
-    fn handle_mat4x4<T: Real>(member_type: &MemberType, src: &TMat4x4<T>, dest: &mut [u8]) -> bool {
+    fn handle_mat4x4(member_type: &MemberType, src: &Mat4, dest: &mut [u8]) -> bool {
         if let MemberType::Matrix(info) = member_type {
             if info.cols == 4 && info.rows == 4 && info.elem_type == FloatType::Single {
                 match info.layout {
-                    MatrixLayout::ColumnMajor => {
-                        Self::write_mat4x4(src, dest);
-                    }
+                    MatrixLayout::ColumnMajor => Self::write_scalars(src.as_slice(), dest),
                     MatrixLayout::RowMajor => {
-                        let src = src.clone().transpose();
-                        Self::write_mat4x4(&src, dest);
+                        let src = src.transposed();
+                        Self::write_scalars(&src.as_slice(), dest)
                     }
                 }
-                true
             } else {
                 false
             }
@@ -177,15 +174,25 @@ impl Member {
     }
 
     ///
-    /// Writes a single scalar value to the destination buffer, if there's enough space to do so
+    /// Internal function for handling checking for matching type and handing off to another
+    /// function to write the actual data
     ///
     #[inline(always)]
-    fn write_scalar<T>(src: T, dest: &mut [u8]) {
-        let count = core::mem::size_of::<T>();
-        let src = &src as *const T;
-        assert!(dest.len() >= count);
-        unsafe {
-            dest.as_mut_ptr().copy_from(src as *const u8, count);
+    fn handle_dmat4x4(member_type: &MemberType, src: &DMat4, dest: &mut [u8]) -> bool {
+        if let MemberType::Matrix(info) = member_type {
+            if info.cols == 4 && info.rows == 4 && info.elem_type == FloatType::Double {
+                match info.layout {
+                    MatrixLayout::ColumnMajor => Self::write_scalars(src.as_slice(), dest),
+                    MatrixLayout::RowMajor => {
+                        let src = src.transposed();
+                        Self::write_scalars(src.as_slice(), dest)
+                    }
+                }
+            } else {
+                false
+            }
+        } else {
+            false
         }
     }
 
@@ -193,27 +200,16 @@ impl Member {
     /// Writes an N component vector to the destination buffer, if there's enough space to do so
     ///
     #[inline(always)]
-    fn write_vector<T>(src: &[T], dest: &mut [u8]) {
-        let count = core::mem::size_of::<T>() * src.len();
-        let src = src.as_ptr();
-        assert!(dest.len() >= count);
-        unsafe {
-            dest.as_mut_ptr().copy_from(src as *const u8, count);
-        }
-    }
+    fn write_scalars<T: Pod>(src: &[T], dest: &mut [u8]) -> bool {
+        // Get the vector as an array of bytes
+        let bytes = bytemuck::cast_slice::<T, u8>(src);
 
-    ///
-    /// Writes an 4x4 matrix to the destination buffer, if there's enough space to do so
-    ///
-    #[inline(always)]
-    fn write_mat4x4<T: Real>(src: &TMat4x4<T>, dest: &mut [u8]) {
-        let src: &[T; 16] = src.as_slice();
-
-        let count = core::mem::size_of::<T>() * src.len();
-        let src = src.as_ptr();
-        assert!(dest.len() >= count);
-        unsafe {
-            dest.as_mut_ptr().copy_from(src as *const u8, count);
+        // Copy the data if there is enough space
+        if let Some(sub_dest) = dest.get_mut(0..bytes.len()) {
+            sub_dest.copy_from_slice(bytes);
+            true
+        } else {
+            false
         }
     }
 
@@ -221,8 +217,8 @@ impl Member {
     /// Internal function for writing
     ///
     #[inline(always)]
-    fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> bool {
-        match self {
+    fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> Result<(),()> {
+        let success = match self {
             Member::I8(v) => Self::handle_integer(member_type, *v, buffer),
             Member::I16(v) => Self::handle_integer(member_type, *v, buffer),
             Member::I32(v) => Self::handle_integer(member_type, *v, buffer),
@@ -233,16 +229,21 @@ impl Member {
             Member::U64(v) => Self::handle_integer(member_type, *v, buffer),
             Member::F32(v) => Self::handle_float(member_type, *v, buffer),
             Member::F64(v) => Self::handle_float(member_type, *v, buffer),
-            Member::Vec2(src) => Self::handle_vector(member_type, src, buffer),
-            Member::Vec3(src) => Self::handle_vector(member_type, src, buffer),
-            Member::Vec4(src) => Self::handle_vector(member_type, src, buffer),
-            Member::Quat(src) => Self::handle_vector(member_type, src, buffer),
-            Member::DVec2(src) => Self::handle_vector(member_type, src, buffer),
-            Member::DVec3(src) => Self::handle_vector(member_type, src, buffer),
-            Member::DQuat(src) => Self::handle_vector(member_type, src, buffer),
-            Member::DVec4(src) => Self::handle_vector(member_type, src, buffer),
+            Member::Vec2(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
+            Member::Vec3(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
+            Member::Vec4(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
+            Member::DVec2(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
+            Member::DVec3(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
+            Member::DVec4(src) => Self::handle_vector(member_type, src.as_slice(), buffer),
             Member::Mat4x4(src) => Self::handle_mat4x4(member_type, src, buffer),
-            Member::DMat4x4(src) => Self::handle_mat4x4(member_type, src, buffer),
+            Member::DMat4x4(src) => Self::handle_dmat4x4(member_type, src, buffer),
+        };
+
+        // Map bool to error
+        if success {
+            Ok(())
+        } else {
+            Err(())
         }
     }
 }
@@ -323,7 +324,7 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
         //
         let buffer = &mut self.buffer[offset..offset_end];
         let member_type = binding_member.member_type().clone();
-        if !member.write_member_to_memory(&member_type, buffer) {
+        if member.write_member_to_memory(&member_type, buffer).is_err() {
             return Err(MemberWriteError::WrongType);
         }
         self.member_written[i] = true;
@@ -351,7 +352,7 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
         //
         let buffer = &mut self.buffer[offset..offset_end];
         let member_type = binding_member.member_type().clone();
-        if !member.write_member_to_memory(&member_type, buffer) {
+        if member.write_member_to_memory(&member_type, buffer).is_err() {
             return Err(MemberWriteError::WrongType);
         }
         self.member_written[index] = true;
