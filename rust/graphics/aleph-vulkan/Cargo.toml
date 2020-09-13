@@ -46,7 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 
 [dependencies]
 aleph-embedded-data = { path = "../../engine/aleph-embedded-data", version = "0.1.0" }
-aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
 aleph-math = { path = "../../engine/aleph-math", version = "0.1.0" }
 aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1.0" }

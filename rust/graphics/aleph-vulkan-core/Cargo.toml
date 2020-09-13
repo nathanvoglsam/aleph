@@ -46,7 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 
 [dependencies]
 aleph-app-info = { path = "../../engine/aleph-app-info", version = "0.1.0" }
-aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
 erupt = "0.10"
 crossbeam = "0.7"

@@ -30,7 +30,7 @@
 extern crate aleph_engine as aleph;
 
 use aleph::app_info::AppInfo;
-use aleph::imgui::{im_str, Condition, MenuItem, Ui};
+use imgui::{im_str, Condition, MenuItem, Ui};
 use aleph::platform::window::Window;
 use aleph::{Engine, FrameRate};
 
@@ -74,7 +74,7 @@ impl aleph::AppLogic for AlephAppLogic {
 
         let mut frame_timer_open = self.frame_timer;
         if frame_timer_open {
-            aleph::imgui::Window::new(im_str!("Frame Time Graph"))
+            imgui::Window::new(im_str!("Frame Time Graph"))
                 .opened(&mut frame_timer_open)
                 .size([430.0, 250.0], Condition::Always)
                 .collapsible(false)

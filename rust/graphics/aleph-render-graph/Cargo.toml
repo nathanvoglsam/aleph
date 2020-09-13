@@ -45,8 +45,7 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
 
 [dependencies]
-##aleph-imgui = { path = "../../utils/aleph-imgui", version = "1.0.0" }
-aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 ##aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
 ##aleph-math = { path = "../../engine/aleph-math", version = "0.1.0" }
 aleph-vulkan = { path = "../aleph-vulkan", version = "0.1.0" }

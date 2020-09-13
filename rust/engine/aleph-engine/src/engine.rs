@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::imgui::Ui;
+use imgui::Ui;
 use crate::AppLogic;
 use app_info::AppInfo;
 use platform::window::Window;

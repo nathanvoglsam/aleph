@@ -44,4 +44,4 @@ edition = "2018"
 
 [dependencies]
 libloading = "0.6"
-aleph-target = { path = "../aleph-target", version = "2" }
+aleph-target = { path = "../../build/aleph-target", version = "2" }

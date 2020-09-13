@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_imgui::{ImStr, ImString, StyleColor};
+use imgui::{ImStr, ImString, StyleColor};
 use aleph_platform::clipboard::Clipboard;
 use aleph_platform::frame_timer::FrameTimer;
 use aleph_platform::keyboard::{Keyboard, KeyboardEvent, Mod, Scancode};
@@ -194,7 +194,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the built colour scheme to the target style
     ///
-    pub fn build(self, style: &mut aleph_imgui::Style) {
+    pub fn build(self, style: &mut imgui::Style) {
         let bg_base: Hsv = self.background_colour.into_hsv();
         let separator_base: Hsv = self.separator_colour.into_hsv();
         let title_base: Hsv = self.title_colour.into_hsv();
@@ -238,7 +238,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the separator colour category
     ///
-    fn separator_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn separator_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(colour, &mut style[StyleColor::SeparatorHovered], 1.0);
 
         Self::apply_colour(
@@ -251,7 +251,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the window background colour category
     ///
-    fn window_background_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn window_background_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 50.0, self.light_theme),
             &mut style[StyleColor::Separator],
@@ -292,14 +292,14 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the title colour category
     ///
-    fn title_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn title_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(colour, &mut style[StyleColor::TitleBgActive], 1.0);
     }
 
     ///
     /// Apply the given colour to the title unfocused colour category
     ///
-    fn title_unfocused_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn title_unfocused_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 1.0, false),
             &mut style[StyleColor::TitleBg],
@@ -316,7 +316,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the scrollbar colour category
     ///
-    fn scrollbar_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn scrollbar_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.5, self.light_theme),
             &mut style[StyleColor::ScrollbarGrab],
@@ -340,14 +340,14 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the checkmark colour category
     ///
-    fn checkmark_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn checkmark_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(colour, &mut style[StyleColor::CheckMark], 1.0);
     }
 
     ///
     /// Apply the given colour to the slider colour category
     ///
-    fn slider_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn slider_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::SliderGrab],
@@ -364,7 +364,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the button colour category
     ///
-    fn button_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn button_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::Button],
@@ -388,7 +388,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the frame colour category
     ///
-    fn frame_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn frame_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::FrameBg],
@@ -411,7 +411,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the header colour category
     ///
-    fn header_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn header_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::Header],
@@ -434,7 +434,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the resize grip colour category
     ///
-    fn resize_grip_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn resize_grip_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::ResizeGrip],
@@ -457,7 +457,7 @@ impl ImguiStyleBuilder {
     ///
     /// Apply the given colour to the tab colour category
     ///
-    fn tab_colours(&self, colour: Hsv, style: &mut aleph_imgui::Style) {
+    fn tab_colours(&self, colour: Hsv, style: &mut imgui::Style) {
         Self::apply_colour(
             Self::value_shift_mul(colour, 0.8, false),
             &mut style[StyleColor::Tab],
@@ -517,14 +517,14 @@ impl ImguiStyleBuilder {
 ///
 ///
 pub struct Imgui {
-    context: aleph_imgui::Context,
+    context: imgui::Context,
     cursors: Vec<Cursor>,
 }
 
 impl Imgui {
     pub fn new() -> Self {
         aleph_log::trace!("Initializing ImGui");
-        let mut context = aleph_imgui::Context::create();
+        let mut context = imgui::Context::create();
         context.set_ini_filename(None);
         context.set_clipboard_backend(ImguiClipboard::new());
         context.style_mut().child_rounding = 0.0;
@@ -538,32 +538,32 @@ impl Imgui {
         ImguiStyleBuilder::dark().build(context.style_mut());
 
         let io = context.io_mut();
-        io.backend_flags |= aleph_imgui::BackendFlags::HAS_MOUSE_CURSORS;
-        io.backend_flags |= aleph_imgui::BackendFlags::HAS_SET_MOUSE_POS;
-        io.backend_flags |= aleph_imgui::BackendFlags::RENDERER_HAS_VTX_OFFSET;
+        io.backend_flags |= imgui::BackendFlags::HAS_MOUSE_CURSORS;
+        io.backend_flags |= imgui::BackendFlags::HAS_SET_MOUSE_POS;
+        io.backend_flags |= imgui::BackendFlags::RENDERER_HAS_VTX_OFFSET;
 
-        io.key_map[aleph_imgui::Key::Tab as usize] = Scancode::Tab as u32;
-        io.key_map[aleph_imgui::Key::LeftArrow as usize] = Scancode::Left as u32;
-        io.key_map[aleph_imgui::Key::RightArrow as usize] = Scancode::Right as u32;
-        io.key_map[aleph_imgui::Key::UpArrow as usize] = Scancode::Up as u32;
-        io.key_map[aleph_imgui::Key::DownArrow as usize] = Scancode::Down as u32;
-        io.key_map[aleph_imgui::Key::PageUp as usize] = Scancode::PageUp as u32;
-        io.key_map[aleph_imgui::Key::PageDown as usize] = Scancode::PageDown as u32;
-        io.key_map[aleph_imgui::Key::Home as usize] = Scancode::Home as u32;
-        io.key_map[aleph_imgui::Key::End as usize] = Scancode::End as u32;
-        io.key_map[aleph_imgui::Key::Insert as usize] = Scancode::Insert as u32;
-        io.key_map[aleph_imgui::Key::Delete as usize] = Scancode::Delete as u32;
-        io.key_map[aleph_imgui::Key::Backspace as usize] = Scancode::Backspace as u32;
-        io.key_map[aleph_imgui::Key::Space as usize] = Scancode::Space as u32;
-        io.key_map[aleph_imgui::Key::Enter as usize] = Scancode::Return as u32;
-        io.key_map[aleph_imgui::Key::Escape as usize] = Scancode::Escape as u32;
-        io.key_map[aleph_imgui::Key::KeyPadEnter as usize] = Scancode::KpEnter as u32;
-        io.key_map[aleph_imgui::Key::A as usize] = Scancode::A as u32;
-        io.key_map[aleph_imgui::Key::C as usize] = Scancode::C as u32;
-        io.key_map[aleph_imgui::Key::V as usize] = Scancode::V as u32;
-        io.key_map[aleph_imgui::Key::X as usize] = Scancode::X as u32;
-        io.key_map[aleph_imgui::Key::Y as usize] = Scancode::Y as u32;
-        io.key_map[aleph_imgui::Key::Z as usize] = Scancode::Z as u32;
+        io.key_map[imgui::Key::Tab as usize] = Scancode::Tab as u32;
+        io.key_map[imgui::Key::LeftArrow as usize] = Scancode::Left as u32;
+        io.key_map[imgui::Key::RightArrow as usize] = Scancode::Right as u32;
+        io.key_map[imgui::Key::UpArrow as usize] = Scancode::Up as u32;
+        io.key_map[imgui::Key::DownArrow as usize] = Scancode::Down as u32;
+        io.key_map[imgui::Key::PageUp as usize] = Scancode::PageUp as u32;
+        io.key_map[imgui::Key::PageDown as usize] = Scancode::PageDown as u32;
+        io.key_map[imgui::Key::Home as usize] = Scancode::Home as u32;
+        io.key_map[imgui::Key::End as usize] = Scancode::End as u32;
+        io.key_map[imgui::Key::Insert as usize] = Scancode::Insert as u32;
+        io.key_map[imgui::Key::Delete as usize] = Scancode::Delete as u32;
+        io.key_map[imgui::Key::Backspace as usize] = Scancode::Backspace as u32;
+        io.key_map[imgui::Key::Space as usize] = Scancode::Space as u32;
+        io.key_map[imgui::Key::Enter as usize] = Scancode::Return as u32;
+        io.key_map[imgui::Key::Escape as usize] = Scancode::Escape as u32;
+        io.key_map[imgui::Key::KeyPadEnter as usize] = Scancode::KpEnter as u32;
+        io.key_map[imgui::Key::A as usize] = Scancode::A as u32;
+        io.key_map[imgui::Key::C as usize] = Scancode::C as u32;
+        io.key_map[imgui::Key::V as usize] = Scancode::V as u32;
+        io.key_map[imgui::Key::X as usize] = Scancode::X as u32;
+        io.key_map[imgui::Key::Y as usize] = Scancode::Y as u32;
+        io.key_map[imgui::Key::Z as usize] = Scancode::Z as u32;
 
         let cursors = vec![
             Cursor::Arrow,
@@ -665,7 +665,7 @@ impl Imgui {
     ///
     /// Update the mouse cursor
     ///
-    pub fn frame(&mut self) -> aleph_imgui::Ui {
+    pub fn frame(&mut self) -> imgui::Ui {
         optick::event!();
 
         let window_size = Window::size();
@@ -695,8 +695,8 @@ impl Imgui {
             self.context.frame()
         };
 
-        if (ui.io().config_flags & aleph_imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE)
-            == aleph_imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE
+        if (ui.io().config_flags & imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE)
+            == imgui::ConfigFlags::NO_MOUSE_CURSOR_CHANGE
         {
             return ui;
         }
@@ -707,7 +707,7 @@ impl Imgui {
             return ui;
         };
 
-        if ui.io().mouse_draw_cursor || cursor as i32 == aleph_imgui::sys::ImGuiMouseCursor_None {
+        if ui.io().mouse_draw_cursor || cursor as i32 == imgui::sys::ImGuiMouseCursor_None {
             Mouse::hide_cursor();
         } else {
             Mouse::show_cursor();
@@ -717,7 +717,7 @@ impl Imgui {
         ui
     }
 
-    pub fn context_mut(&mut self) -> &mut aleph_imgui::Context {
+    pub fn context_mut(&mut self) -> &mut imgui::Context {
         &mut self.context
     }
 }
@@ -730,7 +730,7 @@ impl ImguiClipboard {
     }
 }
 
-impl aleph_imgui::ClipboardBackend for ImguiClipboard {
+impl imgui::ClipboardBackend for ImguiClipboard {
     fn get(&mut self) -> Option<ImString> {
         // Gets the string data
         let cstring = Clipboard::get_null_terminated()?;

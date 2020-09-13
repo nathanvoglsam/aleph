@@ -28,7 +28,7 @@
 //
 
 use super::ImguiGlobal;
-use aleph_imgui::{FontConfig, FontSource};
+use imgui::{FontConfig, FontSource};
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
@@ -54,7 +54,7 @@ pub struct ImguiFont {
 
 impl ImguiFont {
     pub fn init(
-        mut fonts: aleph_imgui::FontAtlasRefMut,
+        mut fonts: imgui::FontAtlasRefMut,
         global: &ImguiGlobal,
         device: &aleph_vulkan_core::Device,
         allocator: &Allocator,

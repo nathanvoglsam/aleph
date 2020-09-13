@@ -627,7 +627,7 @@ impl Renderer {
         device: Arc<Device>,
         allocator: Arc<Allocator>,
         swapchain: &Swapchain,
-        imgui_ctx: &mut aleph_imgui::Context,
+        imgui_ctx: &mut ::imgui::Context,
     ) -> Renderer {
         Self::init_global_meshes(&device, &allocator);
 
@@ -835,7 +835,7 @@ impl Renderer {
         &mut self,
         swapchain: &mut Swapchain,
         index: usize,
-        frame: aleph_imgui::Ui,
+        frame: ::imgui::Ui,
     ) {
         optick::event!();
 

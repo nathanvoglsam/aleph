@@ -134,7 +134,7 @@ impl ImguiSingular {
         let binding = VertexInputBindingDescriptionBuilder::new()
             .binding(0)
             .input_rate(VertexInputRate::VERTEX)
-            .stride(core::mem::size_of::<aleph_imgui::DrawVert>() as u32);
+            .stride(core::mem::size_of::<imgui::DrawVert>() as u32);
         let pos_attr = VertexInputAttributeDescriptionBuilder::new()
             .binding(0)
             .offset(0)

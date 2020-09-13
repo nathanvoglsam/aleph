@@ -42,10 +42,10 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-aleph-imgui = { path = "../../utils/aleph-imgui", version = "1.0.0" }
-aleph-log = { path = "../../utils/aleph-log", version = "1.0.0" }
+aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-platform = { path = "../aleph-platform", version = "0.1.0" }
 palette = "0.5"
+imgui = "0.4.0"
 optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }
 
 [badges]
