@@ -45,13 +45,13 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
 
 [dependencies]
-aleph-app-info = { path = "../aleph-app-info", version = "0.1.0" }
-aleph-cpu-info = { path = "../aleph-cpu-info", version = "0.1.0" }
+aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1.0" }
+aleph-cpu-info = { path = "../../platform/aleph-cpu-info", version = "0.1.0" }
 aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-logger = { path = "../../logging/aleph-logger", version = "0.1.0" }
-aleph-platform = { path = "../aleph-platform", version = "0.1.0" }
-aleph-platform-imgui = { path = "../aleph-platform-imgui", version = "0.1.0" }
-aleph-settings = { path = "../aleph-settings", version = "0.1.0" }
+aleph-platform = { path = "../../platform/aleph-platform", version = "0.1.0" }
+aleph-platform-imgui = { path = "../../platform/aleph-platform-imgui", version = "0.1.0" }
+aleph-settings = { path = "../../config/aleph-settings", version = "0.1.0" }
 aleph-render = { path = "../../graphics/aleph-render", version = "0.1.0" }
 aleph-target = { path = "../../build/aleph-target", version = "2.0.0" }
 aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1.0" }

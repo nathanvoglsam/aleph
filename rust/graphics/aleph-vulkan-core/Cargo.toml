@@ -45,7 +45,7 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
 
 [dependencies]
-aleph-app-info = { path = "../../engine/aleph-app-info", version = "0.1.0" }
+aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1.0" }
 aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
 erupt = "0.13"

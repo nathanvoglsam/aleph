@@ -74,6 +74,15 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-vk-format/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-rust-codegen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-interface-gen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/build/aleph-target/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/build/aleph-target-build/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/logging/aleph-log/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/build/aleph-compile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/ktx/aleph-vk-format/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/logging/aleph-logger/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/dotnet/aleph-interface-gen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/ktx/aleph-ktx/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/dotnet/aleph-core-clr/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />
