@@ -31,7 +31,7 @@ use crate::reflect::BindingMapperFn;
 use crate::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorSetLayout, DescriptorSetLayoutCreateInfoBuilder, PipelineLayoutCreateInfoBuilder,
-    PushConstantRangeBuilder, ShaderStageFlags, Vk10DeviceLoaderExt,
+    PushConstantRangeBuilder, ShaderStageFlags,
 };
 use aleph_vulkan_core::{DebugName, Device};
 use std::ffi::CStr;
@@ -338,9 +338,11 @@ impl PipelineLayout {
     pub unsafe fn destroy(&self, device: &Device) {
         device
             .loader()
-            .destroy_pipeline_layout(self.pipeline_layout, None);
-        self.set_layouts
-            .iter()
-            .for_each(|v| device.loader().destroy_descriptor_set_layout(*v, None));
+            .destroy_pipeline_layout(Some(self.pipeline_layout), None);
+        self.set_layouts.iter().for_each(|v| {
+            device
+                .loader()
+                .destroy_descriptor_set_layout(Some(*v), None)
+        });
     }
 }

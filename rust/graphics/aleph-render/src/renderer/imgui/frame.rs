@@ -30,7 +30,7 @@
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
 use aleph_vulkan_core::erupt::vk1_0::{
     Buffer, BufferCreateInfoBuilder, BufferUsageFlags, Framebuffer, FramebufferCreateInfoBuilder,
-    RenderPass, SharingMode, Vk10DeviceLoaderExt,
+    RenderPass, SharingMode,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
@@ -129,6 +129,8 @@ impl ImguiFrame {
         if self.idx_buffer.0 != Buffer::null() {
             allocator.destroy_buffer(self.idx_buffer.0, self.idx_buffer.1);
         }
-        device.loader().destroy_framebuffer(self.framebuffer, None);
+        device
+            .loader()
+            .destroy_framebuffer(Some(self.framebuffer), None);
     }
 }

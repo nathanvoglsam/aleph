@@ -33,7 +33,7 @@ use crate::reflect::{
 };
 use aleph_vulkan_core::erupt::vk1_0::{
     PipelineShaderStageCreateInfoBuilder, ShaderModuleCreateInfoBuilder, ShaderStageFlagBits,
-    ShaderStageFlags, Vk10DeviceLoaderExt,
+    ShaderStageFlags,
 };
 use aleph_vulkan_core::{DebugName, Device};
 use spirv_reflect::types::{ReflectEntryPoint, ReflectShaderStageFlags};
@@ -614,7 +614,9 @@ impl ShaderModule {
     ///
     pub unsafe fn destroy(&self, device: &Device) {
         if !self.module.is_null() {
-            device.loader().destroy_shader_module(self.module, None)
+            device
+                .loader()
+                .destroy_shader_module(Some(self.module), None)
         }
     }
 }

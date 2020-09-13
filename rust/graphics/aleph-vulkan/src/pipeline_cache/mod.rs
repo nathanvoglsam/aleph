@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan_core::erupt::vk1_0::{PipelineCacheCreateInfoBuilder, Vk10DeviceLoaderExt};
+use aleph_vulkan_core::erupt::vk1_0::PipelineCacheCreateInfoBuilder;
 use aleph_vulkan_core::{DebugName, Device};
 use std::fs::OpenOptions;
 use std::io::{ErrorKind, Read, Write};
@@ -80,7 +80,8 @@ impl PipelineCache {
         let initial_data_vec = Self::load_file_data();
         let initial_data: &[u8] = initial_data_vec.as_slice();
 
-        let create_info = PipelineCacheCreateInfoBuilder::new().initial_data(initial_data);
+        let create_info = PipelineCacheCreateInfoBuilder::new()
+            .initial_data(initial_data.as_ptr() as *const core::ffi::c_void);
 
         let cache = unsafe {
             device
@@ -105,7 +106,9 @@ impl PipelineCache {
                 let pipeline_cache = aleph_vulkan_core::erupt::vk1_0::PipelineCache(
                     PIPELINE_CACHE.swap(0, Ordering::Relaxed),
                 );
-                device.loader().destroy_pipeline_cache(pipeline_cache, None);
+                device
+                    .loader()
+                    .destroy_pipeline_cache(Some(pipeline_cache), None);
             }
         });
     }

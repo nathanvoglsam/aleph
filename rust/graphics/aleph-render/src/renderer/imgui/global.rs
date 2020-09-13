@@ -32,7 +32,7 @@ use aleph_vulkan::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
     DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
     DescriptorPoolSizeBuilder, DescriptorSet, DescriptorSetAllocateInfoBuilder,
-    DescriptorSetLayout, DescriptorType, Vk10DeviceLoaderExt,
+    DescriptorSetLayout, DescriptorType,
 };
 use aleph_vulkan_core::DebugName;
 use std::ffi::CString;
@@ -184,7 +184,7 @@ impl ImguiGlobal {
         self.pipeline_layout.destroy(device);
         device
             .loader()
-            .destroy_descriptor_pool(self.descriptor_pool, None);
+            .destroy_descriptor_pool(Some(self.descriptor_pool), None);
         self.vertex_module.destroy(device);
         self.fragment_module.destroy(device);
     }

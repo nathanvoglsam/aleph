@@ -47,10 +47,9 @@ macro_rules! implement_debug_name_for {
     ($handle:ty, $obj_type:expr) => {
         impl $crate::DebugName for $handle {
             unsafe fn add_debug_name(&self, device: &$crate::Device, name: &std::ffi::CStr) {
-                use erupt::extensions::ext_debug_utils::{
-                    DebugUtilsObjectNameInfoEXTBuilder, ExtDebugUtilsDeviceLoaderExt,
-                };
-                if device.loader().ext_debug_utils.is_some() && *self != Default::default() {
+                use erupt::extensions::ext_debug_utils::DebugUtilsObjectNameInfoEXTBuilder;
+                let ext_loaded = device.instance().loader().enabled.ext_debug_utils;
+                if ext_loaded && *self != Default::default() {
                     let name_info = DebugUtilsObjectNameInfoEXTBuilder::new()
                         .object_handle(self.0 as u64)
                         .object_type($obj_type)

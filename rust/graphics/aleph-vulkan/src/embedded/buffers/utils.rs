@@ -28,10 +28,9 @@
 //
 
 use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use aleph_vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, Buffer, BufferCopyBuilder, BufferCreateInfoBuilder, BufferMemoryBarrierBuilder,
-    BufferUsageFlags, CommandBuffer, DependencyFlags, PipelineStageFlags, SharingMode, WHOLE_SIZE,
+    BufferUsageFlags, CommandBuffer, PipelineStageFlags, SharingMode, WHOLE_SIZE,
 };
 use aleph_vulkan_core::{DebugName, Device};
 use std::ffi::CString;
@@ -277,7 +276,7 @@ impl StaticMeshBuffers {
                 command_buffer,
                 PipelineStageFlags::ALL_COMMANDS,
                 PipelineStageFlags::ALL_COMMANDS,
-                DependencyFlags::default(),
+                None,
                 &[],
                 &[
                     pos_barrier,
@@ -415,7 +414,7 @@ impl PosOnlyMeshBuffers {
                 command_buffer,
                 PipelineStageFlags::ALL_COMMANDS,
                 PipelineStageFlags::ALL_COMMANDS,
-                DependencyFlags::default(),
+                None,
                 &[],
                 &[pos_barrier, ind_barrier],
                 &[],

@@ -27,37 +27,31 @@
 // SOFTWARE.
 //
 
-pub extern crate erupt;
-pub extern crate raw_window_handle;
+use erupt::utils::loading::EntryLoaderError;
+use std::sync::Arc;
 
-extern crate aleph_app_info as app_info;
+///
+/// Wrapper around the erupt API for dynamically loading the vulkan library that plays nicer with
+/// the patterns set by other wrappers in this crate
+///
+pub struct Entry {
+    entry_loader: erupt::DefaultEntryLoader,
+}
 
-mod debug;
-mod defer;
-mod device;
-mod entry;
-mod gpu_info;
-mod instance;
-mod queue_family;
-mod surface;
-mod swapchain;
-mod vendor;
+impl Entry {
+    pub fn new() -> Result<Arc<Self>, EntryLoaderError> {
+        aleph_log::trace!("Initializing Vulkan Entry Loader");
+        let entry_loader = erupt::DefaultEntryLoader::new()?;
+        let out = Self { entry_loader };
+        Ok(Arc::new(out))
+    }
+}
 
-pub use debug::DebugName;
-pub use defer::DeferBox;
-pub use defer::DeferList;
-pub use device::Device;
-pub use device::DeviceBuilder;
-pub use entry::Entry;
-pub use gpu_info::GPUInfo;
-pub use instance::Instance;
-pub use instance::InstanceBuilder;
-pub use queue_family::QueueFamily;
-pub use queue_family::QueueFamilyType;
-pub use swapchain::AcquireError;
-pub use swapchain::RebuildError;
-pub use swapchain::SwapChainSupport;
-pub use swapchain::SwapImage;
-pub use swapchain::Swapchain;
-pub use swapchain::SwapchainBuilder;
-pub use vendor::VendorID;
+impl Entry {
+    ///
+    /// Get a reference to the ref-counted loader instance
+    ///
+    pub fn loader(&self) -> &erupt::DefaultEntryLoader {
+        &self.entry_loader
+    }
+}

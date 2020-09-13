@@ -33,13 +33,12 @@ use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
     CommandBufferUsageFlags, CommandPoolCreateFlags, CommandPoolCreateInfoBuilder,
-    DependencyFlagBits, DescriptorImageInfoBuilder, DescriptorType, Extent3D, Fence, Filter,
-    Format, Image, ImageAspectFlags, ImageCreateInfoBuilder, ImageLayout,
-    ImageMemoryBarrierBuilder, ImageSubresourceLayersBuilder, ImageSubresourceRangeBuilder,
-    ImageTiling, ImageType, ImageUsageFlags, ImageView, ImageViewCreateInfoBuilder, ImageViewType,
-    PipelineStageFlags, SampleCountFlagBits, Sampler, SamplerAddressMode, SamplerCreateInfoBuilder,
-    SamplerMipmapMode, SharingMode, SubmitInfoBuilder, Vk10DeviceLoaderExt,
-    WriteDescriptorSetBuilder,
+    DescriptorImageInfoBuilder, DescriptorType, Extent3D, Filter, Format, Image, ImageAspectFlags,
+    ImageCreateInfoBuilder, ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceLayersBuilder,
+    ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
+    ImageViewCreateInfoBuilder, ImageViewType, PipelineStageFlags, SampleCountFlagBits, Sampler,
+    SamplerAddressMode, SamplerCreateInfoBuilder, SamplerMipmapMode, SharingMode,
+    SubmitInfoBuilder, WriteDescriptorSetBuilder,
 };
 use aleph_vulkan_core::DebugName;
 use imgui::{FontConfig, FontSource};
@@ -297,7 +296,7 @@ impl ImguiFont {
                 command_buffer,
                 PipelineStageFlags::HOST,
                 PipelineStageFlags::TRANSFER,
-                DependencyFlagBits(0).bitmask(),
+                None,
                 &memory_barriers,
                 &buffer_memory_barriers,
                 &image_memory_barriers,
@@ -350,7 +349,7 @@ impl ImguiFont {
                 command_buffer,
                 PipelineStageFlags::TRANSFER,
                 PipelineStageFlags::FRAGMENT_SHADER,
-                DependencyFlagBits(0).bitmask(),
+                None,
                 &memory_barriers,
                 &buffer_memory_barriers,
                 &image_memory_barriers,
@@ -368,7 +367,7 @@ impl ImguiFont {
             let submits = [submit];
             device
                 .loader()
-                .queue_submit(device.general_queue(), &submits, Fence::null())
+                .queue_submit(device.general_queue(), &submits, None)
                 .expect("Failed to submit command buffer");
             device
                 .loader()
@@ -378,13 +377,17 @@ impl ImguiFont {
 
         unsafe {
             allocator.destroy_buffer(upload_buffer, upload_allocation);
-            device.loader().destroy_command_pool(command_pool, None);
+            device
+                .loader()
+                .destroy_command_pool(Some(command_pool), None);
         }
     }
 
     pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {
-        device.loader().destroy_image_view(self.image_view, None);
+        device
+            .loader()
+            .destroy_image_view(Some(self.image_view), None);
         allocator.destroy_image(self.image, self.allocation);
-        device.loader().destroy_sampler(self.sampler, None);
+        device.loader().destroy_sampler(Some(self.sampler), None);
     }
 }

@@ -33,7 +33,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     ComponentSwizzle, Extent2D, Extent3D, Format, Image, ImageAspectFlags, ImageCreateInfoBuilder,
     ImageLayout, ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
     ImageViewCreateInfoBuilder, ImageViewType, Offset2D, Rect2DBuilder, SampleCountFlagBits,
-    SharingMode, ViewportBuilder, Vk10DeviceLoaderExt,
+    SharingMode, ViewportBuilder,
 };
 use aleph_vulkan_core::{DebugName, Device};
 use std::ffi::CString;
@@ -328,7 +328,9 @@ impl ImageSingle2D {
     /// Destroys the image
     ///
     pub unsafe fn destroy(&self, device: &Device, alloc: &Allocator) {
-        device.loader().destroy_image_view(self.image_view, None);
+        device
+            .loader()
+            .destroy_image_view(Some(self.image_view), None);
         alloc.destroy_image(self.image, self.allocation);
     }
 }

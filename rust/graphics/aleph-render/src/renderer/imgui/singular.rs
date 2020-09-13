@@ -40,7 +40,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     PipelineBindPoint, PipelineLayout, PipelineStageFlags, PolygonMode, PrimitiveTopology,
     RenderPass, RenderPassCreateInfoBuilder, SubpassDependencyBuilder, SubpassDescriptionBuilder,
     VertexInputAttributeDescriptionBuilder, VertexInputBindingDescriptionBuilder, VertexInputRate,
-    Vk10DeviceLoaderExt, SUBPASS_EXTERNAL,
+    SUBPASS_EXTERNAL,
 };
 use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
@@ -187,7 +187,9 @@ impl ImguiSingular {
     }
 
     pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device) {
-        device.loader().destroy_render_pass(self.render_pass, None);
-        device.loader().destroy_pipeline(self.pipeline, None);
+        device
+            .loader()
+            .destroy_render_pass(Some(self.render_pass), None);
+        device.loader().destroy_pipeline(Some(self.pipeline), None);
     }
 }

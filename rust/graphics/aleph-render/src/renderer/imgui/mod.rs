@@ -40,11 +40,10 @@ mod global;
 mod singular;
 
 use aleph_vulkan_core::erupt::vk1_0::{
-    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer, DependencyFlags, Extent2D,
-    Extent2DBuilder, ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder,
-    ImageSubresourceRangeBuilder, IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags,
-    Rect2DBuilder, RenderPassBeginInfoBuilder, ShaderStageFlags, SharingMode, SubpassContents,
-    Vk10DeviceLoaderExt, WHOLE_SIZE,
+    Buffer, BufferCreateInfoBuilder, BufferUsageFlags, CommandBuffer, Extent2D, Extent2DBuilder,
+    ImageAspectFlags, ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceRangeBuilder,
+    IndexType, Offset2D, PipelineBindPoint, PipelineStageFlags, Rect2DBuilder,
+    RenderPassBeginInfoBuilder, ShaderStageFlags, SharingMode, SubpassContents, WHOLE_SIZE,
 };
 use aleph_vulkan_core::DebugName;
 pub use font::ImguiFont;
@@ -303,7 +302,7 @@ impl ImguiRenderer {
                 .base_array_layer(0)
                 .base_mip_level(0)
                 .aspect_mask(ImageAspectFlags::COLOR)
-                .discard();
+                .build();
             let image = ImageMemoryBarrierBuilder::new()
                 .image(self.frames[index].swap_image.image())
                 .old_layout(ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
@@ -313,7 +312,7 @@ impl ImguiRenderer {
                 command_buffer,
                 PipelineStageFlags::BOTTOM_OF_PIPE,
                 PipelineStageFlags::TOP_OF_PIPE,
-                DependencyFlags::default(),
+                None,
                 &[],
                 &[],
                 &[image],

@@ -33,10 +33,10 @@ use crate::device::defer::{DeviceDeferList, IntoDeviceDeferBox};
 use crate::{
     DebugName, GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID,
 };
-use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
+use erupt::extensions::khr_surface::SurfaceKHR;
 use erupt::vk1_0::{
     DeviceCreateInfoBuilder, DeviceQueueCreateInfoBuilder, PhysicalDevice, PhysicalDeviceFeatures,
-    PhysicalDeviceType, Queue, QueueFlags, Vk10DeviceLoaderExt, Vk10InstanceLoaderExt, TRUE,
+    PhysicalDeviceType, Queue, QueueFlags, TRUE,
 };
 use erupt::{DeviceLoader, InstanceLoader};
 use std::ffi::CStr;
@@ -89,9 +89,9 @@ impl DeviceBuilder {
         let device_name = device_props.device_name.as_ptr();
         let device_name = unsafe { CStr::from_ptr(device_name) };
         let device_name = device_name.to_str().unwrap().to_string();
-        let api_version_major = erupt::version_major(device_props.api_version);
-        let api_version_minor = erupt::version_minor(device_props.api_version);
-        let api_version_patch = erupt::version_patch(device_props.api_version);
+        let api_version_major = erupt::vk1_0::version_major(device_props.api_version);
+        let api_version_minor = erupt::vk1_0::version_minor(device_props.api_version);
+        let api_version_patch = erupt::vk1_0::version_patch(device_props.api_version);
         let info = GPUInfo {
             vendor_id,
             device_name,
@@ -173,18 +173,10 @@ impl DeviceBuilder {
             .enabled_features(&enabled_features)
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
-        let device = unsafe {
-            instance_loader
-                .create_device(physical_device, &device_create_info, None, None)
-                .expect("Failed to create vulkan device")
-        };
-
         aleph_log::trace!("Loading device functions");
-        let mut device_loader =
-            DeviceLoader::new(&instance_loader, device).expect("Failed to create device loader");
-        device_loader
-            .load_vk1_0()
-            .expect("Failed to load vulkan device functions");
+        let device_loader =
+            DeviceLoader::new(&instance_loader, physical_device, &device_create_info, None)
+                .expect("Failed to create device and device loader");
 
         aleph_log::trace!("Loading general queue");
         let general_queue =
@@ -199,18 +191,6 @@ impl DeviceBuilder {
             aleph_log::trace!("Loading transfer queue");
             unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
         });
-
-        aleph_log::trace!("Loading functions for VK_KHR_swapchain");
-        device_loader
-            .load_khr_swapchain()
-            .expect("Failed to load VK_KHR_swapchain functions");
-
-        if instance_loader.ext_debug_utils.is_some() {
-            aleph_log::trace!("Loading functions for VK_EXT_debug_utils");
-            device_loader
-                .load_ext_debug_utils()
-                .expect("Failed to load VK_EXT_debug_utils functions");
-        }
 
         let device_loader = Arc::new(device_loader);
 
@@ -310,7 +290,7 @@ impl DeviceBuilder {
             }
 
             // This should never happen but always good to be safe
-            if props.api_version < erupt::make_version(1, 0, 0) {
+            if props.api_version < erupt::vk1_0::make_version(1, 0, 0) {
                 score.1 = -100_000;
                 continue;
             }

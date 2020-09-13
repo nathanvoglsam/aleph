@@ -71,7 +71,7 @@ impl VulkanFunctionsBuilder {
     }
 
     ///
-    /// Fill out the function pointers from ash's function pointer tables
+    /// Fill out the function pointers from erupt's function pointer tables
     ///
     pub fn erupt_tables(
         mut self,
@@ -79,106 +79,106 @@ impl VulkanFunctionsBuilder {
         device_loader: &DeviceLoader,
     ) -> Self {
         // Get the function lists
-        let inst = instance_loader.vk1_0.as_ref().unwrap();
-        let dev = device_loader.vk1_0.as_ref().unwrap();
+        let inst = instance_loader;
+        let dev = device_loader;
 
-        let func = inst.get_physical_device_properties;
+        let func = inst.get_physical_device_properties.unwrap();
         let func: raw::PFN_vkGetPhysicalDeviceProperties = unsafe { mem::transmute(func) };
         self = self.get_physical_device_properties(func);
 
         // === //
 
-        let func = inst.get_physical_device_memory_properties;
+        let func = inst.get_physical_device_memory_properties.unwrap();
         let func: raw::PFN_vkGetPhysicalDeviceMemoryProperties = unsafe { mem::transmute(func) };
         self = self.get_physical_device_memory_properties(func);
 
         // === //
 
-        let func = dev.allocate_memory;
+        let func = dev.allocate_memory.unwrap();
         let func: raw::PFN_vkAllocateMemory = unsafe { mem::transmute(func) };
         self = self.allocate_memory(func);
 
         // === //
 
-        let func = dev.free_memory;
+        let func = dev.free_memory.unwrap();
         let func: raw::PFN_vkFreeMemory = unsafe { mem::transmute(func) };
         self = self.free_memory(func);
 
         // === //
 
-        let func = dev.map_memory;
+        let func = dev.map_memory.unwrap();
         let func: raw::PFN_vkMapMemory = unsafe { mem::transmute(func) };
         self = self.map_memory(func);
 
         // === //
 
-        let func = dev.unmap_memory;
+        let func = dev.unmap_memory.unwrap();
         let func: raw::PFN_vkUnmapMemory = unsafe { mem::transmute(func) };
         self = self.unmap_memory(func);
 
         // === //
 
-        let func = dev.flush_mapped_memory_ranges;
+        let func = dev.flush_mapped_memory_ranges.unwrap();
         let func: raw::PFN_vkFlushMappedMemoryRanges = unsafe { mem::transmute(func) };
         self = self.flush_mapped_memory_ranges(func);
 
         // === //
 
-        let func = dev.invalidate_mapped_memory_ranges;
+        let func = dev.invalidate_mapped_memory_ranges.unwrap();
         let func: raw::PFN_vkInvalidateMappedMemoryRanges = unsafe { mem::transmute(func) };
         self = self.invalidate_mapped_memory_ranges(func);
 
         // === //
 
-        let func = dev.bind_buffer_memory;
+        let func = dev.bind_buffer_memory.unwrap();
         let func: raw::PFN_vkBindBufferMemory = unsafe { mem::transmute(func) };
         self = self.bind_buffer_memory(func);
 
         // === //
 
-        let func = dev.bind_image_memory;
+        let func = dev.bind_image_memory.unwrap();
         let func: raw::PFN_vkBindImageMemory = unsafe { mem::transmute(func) };
         self = self.bind_image_memory(func);
 
         // === //
 
-        let func = dev.get_buffer_memory_requirements;
+        let func = dev.get_buffer_memory_requirements.unwrap();
         let func: raw::PFN_vkGetBufferMemoryRequirements = unsafe { mem::transmute(func) };
         self = self.get_buffer_memory_requirements(func);
 
         // === //
 
-        let func = dev.get_image_memory_requirements;
+        let func = dev.get_image_memory_requirements.unwrap();
         let func: raw::PFN_vkGetImageMemoryRequirements = unsafe { mem::transmute(func) };
         self = self.get_image_memory_requirements(func);
 
         // === //
 
-        let func = dev.create_buffer;
+        let func = dev.create_buffer.unwrap();
         let func: raw::PFN_vkCreateBuffer = unsafe { mem::transmute(func) };
         self = self.create_buffer(func);
 
         // === //
 
-        let func = dev.destroy_buffer;
+        let func = dev.destroy_buffer.unwrap();
         let func: raw::PFN_vkDestroyBuffer = unsafe { mem::transmute(func) };
         self = self.destroy_buffer(func);
 
         // === //
 
-        let func = dev.create_image;
+        let func = dev.create_image.unwrap();
         let func: raw::PFN_vkCreateImage = unsafe { mem::transmute(func) };
         self = self.create_image(func);
 
         // === //
 
-        let func = dev.destroy_image;
+        let func = dev.destroy_image.unwrap();
         let func: raw::PFN_vkDestroyImage = unsafe { mem::transmute(func) };
         self = self.destroy_image(func);
 
         // === //
 
-        let func = dev.cmd_copy_buffer;
+        let func = dev.cmd_copy_buffer.unwrap();
         let func: raw::PFN_vkCmdCopyBuffer = unsafe { mem::transmute(func) };
         self = self.cmd_copy_buffer(func);
 

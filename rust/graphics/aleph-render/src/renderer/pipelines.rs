@@ -34,7 +34,7 @@ use aleph_vulkan::pipeline::{
 use aleph_vulkan::pipeline_layout::PipelineLayout;
 use aleph_vulkan::shader::ShaderModule;
 use aleph_vulkan_core::erupt::vk1_0::{
-    CompareOp, FrontFace, Pipeline, PolygonMode, PrimitiveTopology, RenderPass, Vk10DeviceLoaderExt,
+    CompareOp, FrontFace, Pipeline, PolygonMode, PrimitiveTopology, RenderPass,
 };
 use aleph_vulkan_core::Device;
 
@@ -102,7 +102,7 @@ impl GeometryPipeline {
     /// Unsafe as the destroy is not synchronized
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_pipeline(self.pipeline, None);
+        device.loader().destroy_pipeline(Some(self.pipeline), None);
     }
 }
 
@@ -170,6 +170,6 @@ impl TonePipeline {
     /// Unsafe as the destroy is not synchronized
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_pipeline(self.pipeline, None);
+        device.loader().destroy_pipeline(Some(self.pipeline), None);
     }
 }

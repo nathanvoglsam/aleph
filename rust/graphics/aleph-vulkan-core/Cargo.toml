@@ -48,7 +48,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 aleph-app-info = { path = "../../engine/aleph-app-info", version = "0.1.0" }
 aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
-erupt = "0.10"
+erupt = "0.13"
 crossbeam = "0.7"
 console = "0.11"
 raw-window-handle = "0.3"

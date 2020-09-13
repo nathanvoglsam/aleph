@@ -32,7 +32,6 @@ use platform::window::Window;
 use platform::Platform;
 use std::sync::atomic::{AtomicBool, Ordering};
 use vulkan::pipeline_cache::PipelineCache;
-use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use vulkan_core::GPUInfo;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
@@ -126,11 +125,14 @@ impl Engine {
         // Graphics Initialization
         // -----------------------------------------------------------------------------------------
 
+        // Load the vulkan-1.dll library (or w/e name it is on the platform)
+        let entry = vulkan_core::Entry::new().expect("Failed to load the vulkan library");
+
         // Load core vulkan functions for creating an instance
         let instance = vulkan_core::InstanceBuilder::new()
             .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
             .validation(args.is_present("GPU_VALIDATION"))
-            .build(&platform, &app_info);
+            .build(&entry, &platform, &app_info);
 
         let device = vulkan_core::DeviceBuilder::new().build(&instance);
 

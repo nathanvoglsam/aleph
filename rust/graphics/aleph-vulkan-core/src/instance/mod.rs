@@ -27,16 +27,15 @@
 // SOFTWARE.
 //
 
+use crate::Entry;
 use app_info::{
     engine_name_cstr, engine_version_major, engine_version_minor, engine_version_patch, AppInfo,
 };
 use erupt::extensions::ext_debug_utils::{
     DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
-    ExtDebugUtilsInstanceLoaderExt,
 };
-use erupt::extensions::khr_surface::{KhrSurfaceInstanceLoaderExt, SurfaceKHR};
-use erupt::vk1_0::{Vk10CoreLoaderExt, Vk10InstanceLoaderExt};
+use erupt::extensions::khr_surface::SurfaceKHR;
 use erupt::InstanceLoader;
 use raw_window_handle::HasRawWindowHandle;
 use std::ffi::CString;
@@ -87,24 +86,18 @@ impl InstanceBuilder {
     ///
     pub fn build(
         self,
+        entry_loader: &Arc<Entry>,
         window_handle: &impl HasRawWindowHandle,
         app_info: &AppInfo,
     ) -> Arc<Instance> {
-        // Load core vulkan functions for creating an instance
-        let core_loader = Self::load_vulkan_core();
-
         // Create the vulkan instance
-        let instance = Self::create_instance(
-            &core_loader,
+        let instance_loader = Self::create_instance(
+            entry_loader.loader(),
             app_info,
             window_handle,
             self.debug,
             self.validation,
         );
-
-        // Load the vulkan instance functions
-        let instance_loader =
-            Self::load_vulkan_instance(&core_loader, instance, window_handle, self.debug);
 
         let messenger = if self.validation {
             Some(Self::install_debug_messenger(&instance_loader))
@@ -120,7 +113,7 @@ impl InstanceBuilder {
         };
 
         let instance = Instance {
-            _core_loader: Arc::new(core_loader),
+            _entry_loader: entry_loader.clone(),
             instance_loader: Arc::new(instance_loader),
             surface,
             messenger,
@@ -129,39 +122,25 @@ impl InstanceBuilder {
     }
 
     ///
-    /// Loads the core vulkan functions required for creating a VkInstance
-    ///
-    fn load_vulkan_core() -> erupt::utils::loading::DefaultCoreLoader {
-        // Load core vulkan functions
-        aleph_log::trace!("Initializing Vulkan Core Loader");
-        let mut core_loader =
-            erupt::CoreLoader::new().expect("Failed to create Vulkan core loader");
-
-        // Load vulkan 1.0 core functions
-        aleph_log::trace!("Loading Core Functions for Vulkan 1.0");
-        core_loader.load_vk1_0().expect("Failed to load Vulkan 1.0");
-        core_loader
-    }
-
-    ///
     /// Creates a vulkan instance and returns the instance handle
     ///
     fn create_instance<T>(
-        core_loader: &erupt::CoreLoader<T>,
+        entry_loader: &erupt::EntryLoader<T>,
         app_info: &AppInfo,
         window_handle: &impl HasRawWindowHandle,
         debug: bool,
         validation: bool,
-    ) -> erupt::vk1_0::Instance {
+    ) -> erupt::InstanceLoader {
         // Fill out ApplicationInfo for creating a vulkan instance
         let app_name_cstr = CString::new(app_info.name.as_str()).unwrap();
-        let app_version = erupt::make_version(app_info.major, app_info.minor, app_info.patch);
-        let engine_version = erupt::make_version(
+        let app_version =
+            erupt::vk1_0::make_version(app_info.major, app_info.minor, app_info.patch);
+        let engine_version = erupt::vk1_0::make_version(
             engine_version_major(),
             engine_version_minor(),
             engine_version_patch(),
         );
-        let api_version = erupt::make_version(1, 0, 0);
+        let api_version = erupt::vk1_0::make_version(1, 0, 0);
         let app_info = erupt::vk1_0::ApplicationInfoBuilder::new()
             .application_name(&app_name_cstr)
             .application_version(app_version)
@@ -188,37 +167,8 @@ impl InstanceBuilder {
 
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
-        unsafe {
-            let instance = core_loader.create_instance(&create_info, None, None);
-            instance.expect("Failed to create Vulkan instance")
-        }
-    }
-
-    ///
-    /// Loads the vulkan functions that require an instance before they can be loaded
-    ///
-    fn load_vulkan_instance<T>(
-        core_loader: &erupt::CoreLoader<T>,
-        instance: erupt::vk1_0::Instance,
-        window_handle: &impl HasRawWindowHandle,
-        debug: bool,
-    ) -> erupt::InstanceLoader {
-        // Load the vulkan instance function pointers
-        aleph_log::trace!("Loading Vulkan Instance functions");
-        let mut instance_loader = erupt::InstanceLoader::new(core_loader, instance)
-            .expect("Failed to initialize Vulkan instance loader");
-        instance_loader
-            .load_vk1_0()
-            .expect("Failed to load vulkan functions");
-        if debug {
-            instance_loader
-                .load_ext_debug_utils()
-                .expect("Failed to load VK_EXT_debug_utils functions");
-        }
-
-        unsafe { crate::surface::load_surface_functions(&mut instance_loader, window_handle) }
-
-        instance_loader
+        erupt::InstanceLoader::new(entry_loader, &create_info, None)
+            .expect("Failed to initialize Vulkan instance loader")
     }
 
     ///
@@ -251,7 +201,7 @@ impl InstanceBuilder {
 /// A wrapper for representing a vulkan instance and it's dynamically loaded functions
 ///
 pub struct Instance {
-    _core_loader: Arc<erupt::utils::loading::DefaultCoreLoader>,
+    _entry_loader: Arc<Entry>,
     instance_loader: Arc<InstanceLoader>,
     surface: SurfaceKHR,
     messenger: Option<DebugUtilsMessengerEXT>,
@@ -284,11 +234,12 @@ impl Drop for Instance {
     fn drop(&mut self) {
         unsafe {
             aleph_log::trace!("Destroying Vulkan surface");
-            self.instance_loader.destroy_surface_khr(self.surface, None);
+            self.instance_loader
+                .destroy_surface_khr(Some(self.surface), None);
             if let Some(messenger) = self.messenger {
                 aleph_log::trace!("Destroying debug messenger");
                 self.instance_loader
-                    .destroy_debug_utils_messenger_ext(messenger, None);
+                    .destroy_debug_utils_messenger_ext(Some(messenger), None);
             }
             aleph_log::trace!("Destroying Vulkan instance");
             self.instance_loader.destroy_instance(None);

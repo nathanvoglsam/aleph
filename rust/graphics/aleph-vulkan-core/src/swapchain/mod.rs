@@ -32,12 +32,12 @@ use erupt::extensions::khr_surface::{
     ColorSpaceKHR, CompositeAlphaFlagBitsKHR, PresentModeKHR, SurfaceFormatKHR, SurfaceKHR,
 };
 use erupt::extensions::khr_swapchain::{
-    KhrSwapchainDeviceLoaderExt, PresentInfoKHRBuilder, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
+    PresentInfoKHRBuilder, SwapchainCreateInfoKHRBuilder, SwapchainKHR,
 };
 use erupt::vk1_0::{
     ComponentMappingBuilder, ComponentSwizzle, Extent2D, Fence, Format, ImageAspectFlags,
     ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType,
-    Queue, Semaphore, SharingMode, Vk10DeviceLoaderExt,
+    Queue, Semaphore, SharingMode,
 };
 use std::sync::Arc;
 use std::time::Duration;
@@ -351,8 +351,8 @@ impl Swapchain {
             self.device.loader().acquire_next_image_khr(
                 self.swapchain,
                 timeout,
-                semaphore,
-                fence,
+                Some(semaphore),
+                Some(fence),
                 None,
             )
         };
@@ -613,13 +613,13 @@ impl Swapchain {
                 self.images.iter().for_each(|i| {
                     self.device
                         .loader()
-                        .destroy_image_view(i.image_view(), None);
+                        .destroy_image_view(Some(i.image_view()), None);
                 });
 
                 aleph_log::trace!("Destroying old swapchain");
                 self.device
                     .loader()
-                    .destroy_swapchain_khr(old_swapchain, None);
+                    .destroy_swapchain_khr(Some(old_swapchain), None);
             }
         }
 
@@ -641,13 +641,13 @@ impl Drop for Swapchain {
             self.images.iter().for_each(|i| {
                 self.device
                     .loader()
-                    .destroy_image_view(i.image_view(), None);
+                    .destroy_image_view(Some(i.image_view()), None);
             });
 
             aleph_log::trace!("Destroying swapchain");
             self.device
                 .loader()
-                .destroy_swapchain_khr(self.swapchain, None);
+                .destroy_swapchain_khr(Some(self.swapchain), None);
         }
     }
 }

@@ -50,7 +50,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     AccessFlags, AttachmentLoadOp, AttachmentStoreOp, Buffer, BufferCreateInfoBuilder,
     BufferUsageFlags, ClearColorValue, ClearDepthStencilValue, ClearValue, CommandBuffer,
     CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
-    CommandBufferUsageFlags, CommandPool, CommandPoolCreateInfoBuilder, CommandPoolResetFlags,
+    CommandBufferUsageFlags, CommandPool, CommandPoolCreateInfoBuilder,
     DescriptorBufferInfoBuilder, DescriptorImageInfoBuilder, DescriptorPool,
     DescriptorPoolCreateInfoBuilder, DescriptorPoolSizeBuilder, DescriptorSet,
     DescriptorSetAllocateInfoBuilder, DescriptorType, Extent2DBuilder, Fence, Format, Framebuffer,
@@ -58,7 +58,7 @@ use aleph_vulkan_core::erupt::vk1_0::{
     PipelineStageFlags, Rect2DBuilder, RenderPass, RenderPassBeginInfoBuilder,
     RenderPassCreateInfoBuilder, Semaphore, SemaphoreCreateInfoBuilder, SharingMode,
     SubmitInfoBuilder, SubpassContents, SubpassDependencyBuilder, SubpassDescriptionBuilder,
-    Vk10DeviceLoaderExt, WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
+    WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
 };
 use aleph_vulkan_core::{DebugName, Device, SwapImage, Swapchain};
 use std::sync::Arc;
@@ -186,7 +186,9 @@ impl GBufferFramebuffer {
     /// Destroys the framebuffer
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_framebuffer(self.framebuffer, None);
+        device
+            .loader()
+            .destroy_framebuffer(Some(self.framebuffer), None);
     }
 }
 
@@ -299,7 +301,9 @@ impl GBufferPass {
     /// Free the renderpass data
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_render_pass(self.render_pass, None);
+        device
+            .loader()
+            .destroy_render_pass(Some(self.render_pass), None);
     }
 }
 
@@ -531,7 +535,7 @@ impl GeometrySets {
     pub unsafe fn destroy(&self, device: &Device) {
         device
             .loader()
-            .destroy_descriptor_pool(self.geom_set_pool, None);
+            .destroy_descriptor_pool(Some(self.geom_set_pool), None);
     }
 }
 
@@ -588,7 +592,7 @@ impl ToneSets {
     pub unsafe fn destroy(&self, device: &Device) {
         device
             .loader()
-            .destroy_descriptor_pool(self.tone_set_pool, None);
+            .destroy_descriptor_pool(Some(self.tone_set_pool), None);
     }
 }
 
@@ -841,7 +845,7 @@ impl Renderer {
 
         self.device
             .loader()
-            .reset_command_pool(self.command_pool, CommandPoolResetFlags::default())
+            .reset_command_pool(self.command_pool, None)
             .expect("Failed to reset command pool");
 
         //
@@ -878,7 +882,7 @@ impl Renderer {
                 .wait_dst_stage_mask(&wait_dst_stage_mask);
             self.device
                 .loader()
-                .queue_submit(self.device.general_queue(), &[submit], Fence::null())
+                .queue_submit(self.device.general_queue(), &[submit], None)
                 .expect("Failed to submit to queue");
 
             swapchain.present(self.device.general_queue(), index, &[self.signal_semaphore]);
@@ -1103,7 +1107,7 @@ impl Renderer {
         let submit = SubmitInfoBuilder::new().command_buffers(&command_buffers);
         device
             .loader()
-            .queue_submit(device.general_queue(), &[submit], Fence::null())
+            .queue_submit(device.general_queue(), &[submit], None)
             .expect("Failed to submit command buffer");
 
         // Defer freeing the command pool until app shutdown. Easy way to make sure the buffer has
@@ -1133,7 +1137,7 @@ impl Drop for Renderer {
             self.uniform_buffers.destroy(&self.allocator);
             self.device
                 .loader()
-                .destroy_command_pool(self.command_pool, None);
+                .destroy_command_pool(Some(self.command_pool), None);
         }
     }
 }
