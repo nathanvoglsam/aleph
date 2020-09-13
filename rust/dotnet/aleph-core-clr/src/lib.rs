@@ -29,9 +29,6 @@
 
 pub mod raw;
 
-#[cfg(test)]
-mod tests;
-
 use crate::raw::{
     coreclr_create_delegate_fn, coreclr_initialize_fn, coreclr_shutdown_fn,
     CORECLR_CREATE_DELEGATE_FN_SYMBOL, CORECLR_INITIALIZE_FN_SYMBOL, CORECLR_SHUTDOWN_FN_SYMBOL,
