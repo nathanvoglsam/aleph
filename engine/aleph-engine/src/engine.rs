@@ -37,28 +37,6 @@ use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use vulkan_core::GPUInfo;
 use crate::imgui::Ui;
 
-///
-/// Internal wrapper for injecting profiling hooks for the user's AppLogic instance
-///
-struct ProfiledAppLogic<T: crate::AppLogic> {
-    app_logic: T,
-}
-
-impl<T: crate::AppLogic> crate::AppLogic for ProfiledAppLogic<T> {
-    fn on_init(&mut self) {
-        self.app_logic.on_init();
-    }
-
-    fn on_update(&mut self, ui: &Ui) {
-        optick::event!();
-        self.app_logic.on_update(ui);
-    }
-
-    fn on_exit(&mut self) {
-        self.app_logic.on_exit();
-    }
-}
-
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
 ///
@@ -76,7 +54,7 @@ impl Engine {
     ///
     /// Once everything is set up it hands
     ///
-    pub fn start(app_info: AppInfo, app: impl crate::AppLogic) {
+    pub fn start(app_info: AppInfo, mut app: impl crate::AppLogic) {
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches
         // -----------------------------------------------------------------------------------------
@@ -180,11 +158,6 @@ impl Engine {
             )
         };
 
-        // -----------------------------------------------------------------------------------------
-        // Wrap User AppLogic
-        // -----------------------------------------------------------------------------------------
-        let mut app = ProfiledAppLogic { app_logic: app };
-
         // =========================================================================================
         // Engine Fully Initialized
         // =========================================================================================
@@ -224,7 +197,10 @@ impl Engine {
 
             let ui = imgui_ctx.frame();
 
-            app.on_update(&ui);
+            {
+                optick::event!("aleph_engine::AppLogic::on_update");
+                app.on_update(&ui);
+            }
 
             unsafe {
                 let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
