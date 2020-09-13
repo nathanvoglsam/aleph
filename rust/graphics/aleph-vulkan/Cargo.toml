@@ -52,12 +52,6 @@ aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
 aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1.0" }
 aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1.0" }
 once_cell = "1.4"
+ultraviolet = { version = "0.6", features = ["f64"] }
 spirv-reflect = "0.2"
 bytemuck = "1.4"
-
-
-[dependencies.ultraviolet]
-git = "https://github.com/nathanvoglsam/ultraviolet.git"
-branch = "my-sse4.1-fix"
-default-features = false
-features = ["f64"]
