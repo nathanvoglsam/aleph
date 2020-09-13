@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::imgui::Ui;
 use crate::AppLogic;
 use app_info::AppInfo;
 use platform::window::Window;
@@ -35,7 +36,6 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use vulkan::pipeline_cache::PipelineCache;
 use vulkan_core::erupt::vk1_0::Vk10DeviceLoaderExt;
 use vulkan_core::GPUInfo;
-use crate::imgui::Ui;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 

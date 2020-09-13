@@ -276,7 +276,10 @@ impl RuntimeBuilder {
     ///
     /// Maps to `NATIVE_DLL_SEARCH_DIRECTORIES` [more info](https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing)
     ///
-    pub fn native_dll_search_directories(self, paths: impl Iterator<Item = impl AsRef<str>>) -> Self {
+    pub fn native_dll_search_directories(
+        self,
+        paths: impl Iterator<Item = impl AsRef<str>>,
+    ) -> Self {
         self.property_string_list("NATIVE_DLL_SEARCH_DIRECTORIES", paths)
     }
 
