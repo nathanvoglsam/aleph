@@ -48,7 +48,35 @@
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-rust-codegen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-interface-gen/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/utils/aleph-core-clr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-vulkan-alloc-sys/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-target-build/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-compile/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-cpu-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-core-clr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-target/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-engine/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-imgui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-platform/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-settings/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-app-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-log/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-vulkan-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-vulkan-core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-macros/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-vulkan/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-math/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-logger/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-platform-imgui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-render-graph/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-ktx/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-vk-format/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-rust-codegen/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/utils/aleph-interface-gen/src" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
+      <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />

@@ -1,9 +1,9 @@
 [submodule "engine/aleph-platform/thirdparty/SDL-mirror"]
-	path = engine/aleph-platform/thirdparty/SDL-mirror
+	path = rust/engine/aleph-platform/thirdparty/SDL-mirror
 	url = https://github.com/spurious/SDL-mirror.git
 [submodule "graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator"]
-	path = graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator
+	path = rust/graphics/aleph-vulkan-alloc-sys/thirdparty/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
 [submodule "graphics/aleph-vulkan-alloc-sys/thirdparty/Vulkan-Headers"]
-	path = graphics/aleph-vulkan-alloc-sys/thirdparty/Vulkan-Headers
+	path = rust/graphics/aleph-vulkan-alloc-sys/thirdparty/Vulkan-Headers
 	url = https://github.com/KhronosGroup/Vulkan-Headers.git
