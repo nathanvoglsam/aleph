@@ -63,7 +63,7 @@ impl GeometryPipeline {
 
         let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
         let rasterization_state =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::CLOCKWISE);
+            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
         let vstage = vert_module.pipeline_shader_stage().unwrap();
         let fstage = frag_module.pipeline_shader_stage().unwrap();
         let pipeline = GraphicsPipelineBuilder::new()
