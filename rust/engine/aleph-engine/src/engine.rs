@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::AppLogic;
 use app_info::AppInfo;
-use imgui::Ui;
 use platform::window::Window;
 use platform::Platform;
 use std::sync::atomic::{AtomicBool, Ordering};

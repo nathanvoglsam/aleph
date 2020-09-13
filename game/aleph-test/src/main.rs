@@ -30,9 +30,8 @@
 extern crate aleph_engine as aleph;
 
 use aleph::app_info::AppInfo;
-use aleph::platform::window::Window;
 use aleph::{Engine, FrameRate};
-use imgui::{im_str, Condition, MenuItem, Ui};
+use imgui::{im_str, Condition, Ui};
 
 struct AlephAppLogic {
     frame_timer: bool,
@@ -103,36 +102,6 @@ impl aleph::AppLogic for AlephAppLogic {
     }
 
     fn on_exit(&mut self) {}
-}
-
-impl AlephAppLogic {
-    fn menu_bar(&mut self, ui: &Ui) {
-        ui.menu(im_str!("File"), true, || self.file_menu(ui));
-        ui.menu(im_str!("Edit"), true, || self.edit_menu(ui));
-        ui.menu(im_str!("View"), true, || self.view_menu(ui));
-    }
-
-    fn file_menu(&mut self, ui: &Ui) {
-        let item = MenuItem::new(im_str!("Open"));
-        if item.build(ui) {
-            aleph::log::info!("Open");
-        }
-        ui.separator();
-
-        let item = MenuItem::new(im_str!("Exit"));
-        if item.build(ui) {
-            Engine::exit();
-        }
-    }
-
-    fn edit_menu(&mut self, _ui: &Ui) {}
-
-    fn view_menu(&mut self, ui: &Ui) {
-        let item = MenuItem::new(im_str!("Frame Timer"));
-        if item.build(ui) {
-            self.frame_timer = !self.frame_timer;
-        }
-    }
 }
 
 fn main() {
