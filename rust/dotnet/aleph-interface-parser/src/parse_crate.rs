@@ -76,7 +76,61 @@ pub fn parse_crate<P: AsRef<Path>>(root_dir: P) -> Result<syn::File> {
     // Recursively resolve all modules in the crate
     resolve_modules(&path, &mut file)?;
 
-    Ok(file)
+    if check_for_unresolved_modules(&file) {
+        Err(ParserError::ModuleGraphInvalid)
+    } else {
+        Ok(file)
+    }
+}
+
+///
+/// Returns if there are any unresolved `Mod` items
+///
+fn check_for_unresolved_modules(file: &syn::File) -> bool {
+    fn recurse(module: &syn::ItemMod) -> bool {
+        if let Some((_, items)) = &module.content {
+            for item in items.iter() {
+                match item {
+                    Item::Mod(module) => {
+                        if recurse(module) {
+                            return true;
+                        }
+                    },
+                    _ => {},
+                };
+            }
+            false
+        } else {
+            true
+        }
+    }
+
+    for item in file.items.iter() {
+        match item {
+            Item::Mod(module) => {
+                if recurse(module) {
+                    return true;
+                }
+            },
+            _ => {},
+        }
+    }
+
+    false
+}
+
+fn resolve_modules(path: &Path, file: &mut syn::File) -> Result<()> {
+    // Iterate over all items, checking for `Mod` items.
+    for item in file.items.iter_mut() {
+        let item: &mut Item = item;
+        match item {
+            Item::Mod(module) => {
+                resolve_module(path, module)?;
+            }
+            _ => {}
+        }
+    }
+    Ok(())
 }
 
 fn resolve_module(parent_module_path: &Path, module: &mut syn::ItemMod) -> Result<()> {
@@ -144,27 +198,10 @@ fn resolve_module(parent_module_path: &Path, module: &mut syn::ItemMod) -> Resul
             module.content = Some((brace, items));
 
             // Exit as we've now parsed the module
-            return Ok(())
+            return Ok(());
         }
         Err(ParserError::ModFileNotFound)
     } else {
         Ok(())
     }
-}
-
-///
-/// Internal recursive function
-///
-fn resolve_modules(path: &Path, file: &mut syn::File) -> Result<()> {
-    // Iterate over all items, checking for `Mod` items.
-    for item in file.items.iter_mut() {
-        let item: &mut Item = item;
-        match item {
-            Item::Mod(module) => {
-                resolve_module(path, module)?;
-            }
-            _ => {}
-        }
-    }
-    Ok(())
 }

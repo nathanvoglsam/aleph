@@ -41,6 +41,10 @@ pub enum ParserError {
     /// Occurs when a `module/mod.rs`, `module.rs`, etc file could not be bound
     ModFileNotFound,
 
+    /// Occurs when the module walker was unable to resolve all `Mod` items to their full contents.
+    /// Usually a result of a poorly formed module graph.
+    ModuleGraphInvalid,
+
     /// An error occured in the `syn` parser
     SynError(syn::Error),
 }

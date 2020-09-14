@@ -27,8 +27,11 @@
 // SOFTWARE.
 //
 
+use syn::export::ToTokens;
+
 #[test]
 fn test_parse_crate_1() {
     let path = std::env::current_dir().unwrap();
-    crate::parse_crate(path.join("src")).unwrap();
+    let file = crate::parse_crate(path.join("src")).unwrap();
+    println!("{}", file.to_token_stream());
 }
