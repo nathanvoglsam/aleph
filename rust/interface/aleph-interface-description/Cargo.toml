@@ -31,10 +31,10 @@
 name = "aleph-interface-description"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "A library for parsing an entire crate graph into a single AST with `syn`"
+description = "Aleph's IDL used for generating the language bindings"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-interface/"
+documentation = "https://docs.rs/aleph-interface-description/"
 readme = "README.md"
 ## TODO: keywords = ["build", "compilation", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]

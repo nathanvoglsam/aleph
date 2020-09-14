@@ -1,3 +1,3 @@
-# Aleph-Crate-Parser
+# Aleph-Interface-Description
 
-A library for parsing an entire crate graph into a single AST with `syn`
+Aleph's IDL used for generating the language bindings
