@@ -28,13 +28,13 @@
 ##
 
 [package]
-name = "aleph-interface-parser"
+name = "aleph-crate-parser"
 version = "0.1.0"
 authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
-description = "A library that allows for generating a custom IDL directly from rust source code"
+description = "A library for parsing an entire crate graph into a single AST with `syn`"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-interface-parser/"
+documentation = "https://docs.rs/aleph-crate-parser/"
 readme = "README.md"
 ## TODO: keywords = ["build", "compilation", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
