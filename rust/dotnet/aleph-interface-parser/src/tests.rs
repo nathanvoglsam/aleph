@@ -28,10 +28,27 @@
 //
 
 use syn::export::ToTokens;
+use std::process::Stdio;
+use std::io::Write;
 
 #[test]
 fn test_parse_crate_1() {
     let path = std::env::current_dir().unwrap();
     let file = crate::parse_crate(path.join("src")).unwrap();
-    println!("{}", file.to_token_stream());
+    let file = file.to_token_stream().to_string();
+
+    let mut proc = std::process::Command::new("rustfmt")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+
+    let stdin = proc.stdin.as_mut().unwrap();
+    stdin.write_all(file.as_bytes()).unwrap();
+
+    let output = proc.wait_with_output().unwrap();
+    let output = std::str::from_utf8(&output.stdout).unwrap();
+
+    println!("{}", output);
 }
