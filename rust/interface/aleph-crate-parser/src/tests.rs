@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use syn::export::ToTokens;
-use std::process::Stdio;
 use std::io::Write;
+use std::process::Stdio;
+use syn::export::ToTokens;
 
 #[test]
 fn test_parse_crate_1() {

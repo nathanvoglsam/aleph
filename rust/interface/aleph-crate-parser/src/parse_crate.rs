@@ -28,8 +28,8 @@
 //
 
 use crate::error::ParserError;
-use crate::result::Result;
 use crate::module_file_candidates::ModuleFileCandidates;
+use crate::result::Result;
 use std::io::{ErrorKind, Read};
 use std::path::Path;
 use syn::Item;
@@ -95,8 +95,8 @@ fn check_for_unresolved_modules(file: &syn::File) -> bool {
                         if recurse(module) {
                             return true;
                         }
-                    },
-                    _ => {},
+                    }
+                    _ => {}
                 };
             }
             false
@@ -111,8 +111,8 @@ fn check_for_unresolved_modules(file: &syn::File) -> bool {
                 if recurse(module) {
                     return true;
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 
