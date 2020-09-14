@@ -217,7 +217,11 @@ impl Member {
     /// Internal function for writing
     ///
     #[inline(always)]
-    fn write_member_to_memory(&self, member_type: &MemberType, buffer: &mut [u8]) -> Result<(),()> {
+    fn write_member_to_memory(
+        &self,
+        member_type: &MemberType,
+        buffer: &mut [u8],
+    ) -> Result<(), ()> {
         let success = match self {
             Member::I8(v) => Self::handle_integer(member_type, *v, buffer),
             Member::I16(v) => Self::handle_integer(member_type, *v, buffer),

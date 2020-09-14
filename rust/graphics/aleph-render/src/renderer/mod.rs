@@ -447,9 +447,7 @@ impl UniformBuffers {
         writer
             .write_member("proj_matrix", Member::Mat4x4(proj))
             .unwrap();
-        writer
-            .write_member("position", Member::Vec3(pos))
-            .unwrap();
+        writer.write_member("position", Member::Vec3(pos)).unwrap();
 
         // Finalize the writer and ensure that all members have been written
         writer.finalize().unwrap();
