@@ -30,13 +30,10 @@
 pub mod error;
 pub mod result;
 
-mod interface_description;
 mod module_file_candidates;
 mod parse_crate;
 
 #[cfg(test)]
 mod tests;
 
-pub use interface_description::InterfaceDescription;
-pub use module_file_candidates::ModuleFileCandidates;
 pub use parse_crate::parse_crate;

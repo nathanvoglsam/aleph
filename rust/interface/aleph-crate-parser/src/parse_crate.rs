@@ -29,7 +29,7 @@
 
 use crate::error::ParserError;
 use crate::result::Result;
-use crate::ModuleFileCandidates;
+use crate::module_file_candidates::ModuleFileCandidates;
 use std::io::{ErrorKind, Read};
 use std::path::Path;
 use syn::Item;
