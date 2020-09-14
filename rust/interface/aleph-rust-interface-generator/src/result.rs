@@ -27,12 +27,7 @@
 // SOFTWARE.
 //
 
-pub mod error;
-pub mod result;
+use crate::error::GeneratorError;
 
-#[cfg(test)]
-mod tests;
-
-mod interface_generator;
-
-pub use interface_generator::InterfaceGenerator;
+/// Wrapper around `std::result::Result` with our custom error type
+pub type Result<T> = std::result::Result<T, GeneratorError>;

@@ -27,12 +27,9 @@
 // SOFTWARE.
 //
 
-pub mod error;
-pub mod result;
-
-#[cfg(test)]
-mod tests;
-
-mod interface_generator;
-
-pub use interface_generator::InterfaceGenerator;
+/// The set of errors that can be thrown while generating an interface
+#[derive(Debug)]
+pub enum GeneratorError {
+    /// Tried to generate an interface for a function with an unsupported function return type
+    UnsupportedFunctionReturnType,
+}

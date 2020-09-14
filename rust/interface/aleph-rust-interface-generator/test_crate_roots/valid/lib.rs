@@ -27,12 +27,63 @@
 // SOFTWARE.
 //
 
-pub mod error;
-pub mod result;
+#[aleph::interface]
+pub struct TestSingleton {}
 
-#[cfg(test)]
-mod tests;
+impl TestSingleton {
+    pub fn hello_world() {
+        println!("Hello, World!");
+    }
 
-mod interface_generator;
+    pub fn have_a_number() -> u32 {
+        56
+    }
 
-pub use interface_generator::InterfaceGenerator;
+    pub fn have_a_float() -> f32 {
+        21.0f32
+    }
+
+    pub fn sqaure_this_number(number: u32) -> u32 {
+        number * number
+    }
+
+    pub fn trace_this_ray(ray: &Ray) -> Vector3 {
+        ray.origin
+    }
+
+    pub fn count_this_slice(slice: &[Vector3]) -> u64 {
+        slice.len() as u64
+    }
+}
+
+#[aleph::interface]
+#[derive(Copy, Clone)]
+pub struct Vector3 {
+    x: f32,
+    y: f32,
+    z: f32
+}
+
+impl Vector3 {
+    pub fn add(&mut self, other: &Vector3) {
+        self.x += other.x;
+        self.y += other.y;
+        self.z += other.z;
+    }
+}
+
+#[aleph::interface]
+#[derive(Clone)]
+pub struct Ray {
+    origin: Vector3,
+    dir: Vector3
+}
+
+#[aleph::interface(opaque)]
+pub struct Opaque {
+    data: u8,
+}
+
+pub struct IgnoreMe {
+    also_data: Vec<u8>,
+}

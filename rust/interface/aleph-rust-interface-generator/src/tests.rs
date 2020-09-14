@@ -27,12 +27,15 @@
 // SOFTWARE.
 //
 
-pub mod error;
-pub mod result;
+use crate::interface_generator::InterfaceGenerator;
 
-#[cfg(test)]
-mod tests;
+#[test]
+fn test_generate_valid() {
+    let path = std::env::current_dir().unwrap();
+    let path = path.join("test_crate_roots");
+    let path = path.join("valid");
+    let file = aleph_crate_parser::parse_crate(path).unwrap();
 
-mod interface_generator;
-
-pub use interface_generator::InterfaceGenerator;
+    let interface = InterfaceGenerator::new().generate(&file).unwrap();
+    println!("{}", serde_json::to_string_pretty(&interface).unwrap());
+}
