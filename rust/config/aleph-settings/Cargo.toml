@@ -31,7 +31,7 @@
 [package]
 name = "aleph-settings"
 version = "0.1.0"
-authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Crate that holds the engine's settings layout"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"

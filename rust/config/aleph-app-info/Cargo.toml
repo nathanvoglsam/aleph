@@ -31,7 +31,7 @@
 [package]
 name = "aleph-app-info"
 version = "0.1.0"
-authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Crate for handling engine and app version passing"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"

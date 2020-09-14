@@ -30,7 +30,7 @@
 [package]
 name = "aleph-core-clr"
 version = "0.1.0"
-authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "A rusty wrapper around the CoreCLR .NET Core embedding API"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"

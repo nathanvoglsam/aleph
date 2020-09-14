@@ -31,7 +31,7 @@
 [package]
 name = "aleph-log"
 version = "1.0.0"
-authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Re-export of the log crate to specify a common version between all crates"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"

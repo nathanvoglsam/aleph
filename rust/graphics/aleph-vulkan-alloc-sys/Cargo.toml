@@ -30,7 +30,7 @@
 [package]
 name = "aleph-vulkan-alloc-sys"
 version = "1.0.0+vma.2.2.0"
-authors = ["Nathan Voglsam <godbotherer4@gmail.com>"]
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-vma-sys/"
