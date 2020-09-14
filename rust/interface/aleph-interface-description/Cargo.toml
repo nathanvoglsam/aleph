@@ -46,3 +46,10 @@ edition = "2018"
 version = "1.0"
 default-features = false
 features = ["derive", "parsing", "printing", "clone-impls", "full"]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1.0"

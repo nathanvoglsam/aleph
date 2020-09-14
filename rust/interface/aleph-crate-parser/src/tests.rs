@@ -45,8 +45,11 @@ fn test_parse_crate_malformed_graph() {
     let file = crate::parse_crate(path);
     if let Err(e) = file {
         match e {
-            ParserError::ModuleGraphInvalid => {},
-            _ => panic!("parse_crate failed, but failed for the wrong reason: {:#?}", e)
+            ParserError::ModuleGraphInvalid => {}
+            _ => panic!(
+                "parse_crate failed, but failed for the wrong reason: {:#?}",
+                e
+            ),
         }
     } else {
         panic!("parse_crate should fail, but did not")
