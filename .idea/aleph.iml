@@ -89,6 +89,7 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/config/aleph-settings/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/platform/aleph-cpu-info/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/interface/aleph-interface-description/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/interface/aleph-rust-interface-generator/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />
