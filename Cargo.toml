@@ -42,7 +42,8 @@ members = [
     "rust/config/aleph-app-info",
     "rust/config/aleph-settings",
     "rust/dotnet/aleph-core-clr",
-    "rust/dotnet/aleph-interface-parser",
+    "rust/interface/aleph-interface-parser",
+    "rust/interface/aleph-rust-codegen",
     "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",
     "rust/graphics/aleph-render",
@@ -59,6 +60,5 @@ members = [
     "rust/platform/aleph-platform",
     "rust/platform/aleph-platform-imgui",
     "rust/utils/aleph-macros",
-    "rust/utils/aleph-rust-codegen",
     "game/aleph-test",
 ]
