@@ -43,9 +43,11 @@ use syn::Item;
 /// # Example
 ///
 /// ```
+/// use aleph_crate_parser::parse_crate;
+///
 /// // Assuming you're working dir contains the Cargo.toml for a library crate
 /// let path = std::env::current_dir().unwrap();
-/// crate::parse_crate(path.join("src")).unwrap();
+/// parse_crate(path.join("src")).unwrap();
 /// ```
 ///
 pub fn parse_crate<P: AsRef<Path>>(root_dir: P) -> Result<syn::File> {

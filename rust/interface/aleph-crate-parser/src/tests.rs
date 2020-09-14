@@ -27,28 +27,28 @@
 // SOFTWARE.
 //
 
-use std::io::Write;
-use std::process::Stdio;
-use syn::export::ToTokens;
+use crate::error::ParserError;
 
 #[test]
-fn test_parse_crate_1() {
+fn test_parse_crate_valid() {
     let path = std::env::current_dir().unwrap();
-    let file = crate::parse_crate(path.join("src")).unwrap();
-    let file = file.to_token_stream().to_string();
+    let path = path.join("test_crate_roots");
+    let path = path.join("valid");
+    let file = crate::parse_crate(path).unwrap();
+}
 
-    let mut proc = std::process::Command::new("rustfmt")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .unwrap();
-
-    let stdin = proc.stdin.as_mut().unwrap();
-    stdin.write_all(file.as_bytes()).unwrap();
-
-    let output = proc.wait_with_output().unwrap();
-    let output = std::str::from_utf8(&output.stdout).unwrap();
-
-    println!("{}", output);
+#[test]
+fn test_parse_crate_malformed_graph() {
+    let path = std::env::current_dir().unwrap();
+    let path = path.join("test_crate_roots");
+    let path = path.join("malformed_graph");
+    let file = crate::parse_crate(path);
+    if let Err(e) = file {
+        match e {
+            ParserError::ModuleGraphInvalid => {},
+            _ => panic!("parse_crate failed, but failed for the wrong reason: {:#?}", e)
+        }
+    } else {
+        panic!("parse_crate should fail, but did not")
+    }
 }

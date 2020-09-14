@@ -76,7 +76,7 @@ impl<'a> Iterator for ModuleFileCandidates<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let item = match self.state {
-            ModuleFileCandidatesState::SubFolder => Some(format!("mod/{}.rs", self.name)),
+            ModuleFileCandidatesState::SubFolder => Some(format!("{}/mod.rs", self.name)),
             ModuleFileCandidatesState::Name => Some(format!("{}.rs", self.name)),
             ModuleFileCandidatesState::End => None,
         };
