@@ -57,28 +57,73 @@ impl InterfaceGenerator {
         let mut aleph_interface = syn::Path::from(aleph);
         aleph_interface.segments.push(interface.into());
 
+        // Create a stack of the item iterators we're working on, and then push the root element on
+        // to the stack
+        let mut item_iter_stack = Vec::new();
+        item_iter_stack.push(file.items.iter());
+
         // We need to make sure we've resolved all the structs before we try and resolve any of the
         // impl blocks on them
-        for item in file.items.iter() {
-            match item {
-                syn::Item::Struct(item) => {
-                    // If the struct as the `#[aleph::interface]` attribute we should generate an
-                    // interface for it
-                    if item.attrs.iter().any(|attr| &attr.path == &aleph_interface) {
-                        self.generate_struct_interface(item)?;
+        'struct_outer: while let Some(mut items) = item_iter_stack.pop() {
+            while let Some(item) = items.next() {
+                match item {
+                    syn::Item::Struct(item) => {
+                        // If the struct as the `#[aleph::interface]` attribute we should generate an
+                        // interface for it
+                        if item.attrs.iter().any(|attr| &attr.path == &aleph_interface) {
+                            self.generate_struct_interface(item)?;
+                        }
                     }
+                    syn::Item::Mod(item) => {
+                        if let Some(content) = item.content.as_ref() {
+                            // Add the module name to the namespace stack
+                            let mod_name = item.ident.to_string();
+                            self.namespace_stack.push(mod_name);
+
+                            // Backup the current iterator onto the iterator stack
+                            item_iter_stack.push(items);
+
+                            // Push the item iterator for the module we want to handle onto the stack
+                            item_iter_stack.push(content.1.iter());
+                            continue 'struct_outer;
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
+            self.namespace_stack.pop();
         }
 
+        // Assert these are empty (the algorithm should leave them empty once finished)
+        debug_assert!(item_iter_stack.is_empty());
+        debug_assert!(self.namespace_stack.is_empty());
+
+        // Push the root element on to the stack again as we're going to walk the AST again
+        item_iter_stack.push(file.items.iter());
+
         // Now we can iterate through all the bare impl blocks that refer to type's we've defined
-        for item in file.items.iter() {
-            match item {
-                syn::Item::Impl(item) => {
-                    self.generate_impl_interface(item)?;
+        'mod_outer: while let Some(mut items) = item_iter_stack.pop() {
+            while let Some(item) = items.next() {
+                match item {
+                    syn::Item::Impl(item) => {
+                        self.generate_impl_interface(item)?;
+                    }
+                    syn::Item::Mod(item) => {
+                        if let Some(content) = item.content.as_ref() {
+                            // Add the module name to the namespace stack
+                            let mod_name = item.ident.to_string();
+                            self.namespace_stack.push(mod_name);
+
+                            // Backup the current iterator onto the iterator stack
+                            item_iter_stack.push(items);
+
+                            // Push the item iterator for the module we want to handle onto the stack
+                            item_iter_stack.push(content.1.iter());
+                            continue 'mod_outer;
+                        }
+                    }
+                    _ => {}
                 }
-                _ => {}
             }
         }
 
@@ -95,6 +140,7 @@ impl InterfaceGenerator {
             // Convert to our path format and reject primitive types as we can't export interfaces
             // for those
             if let Some(Type::Path(path)) = Type::from_path(&path.path) {
+                let path = self.current_namespace() + &path;
                 // We only want to handle impl blocks for structs we're indexing
                 if let Some(class) = self.description.borrow_mut().classes.get_mut(&path) {
                     for item in item.items.iter() {
