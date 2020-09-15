@@ -29,7 +29,6 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use syn::{FnArg, ReturnType};
 
 /// The supported set of types in the Aleph IDL
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Serialize, Deserialize)]
@@ -73,11 +72,11 @@ pub enum Type {
     /// A function pointer, with the given signature
     FunctionPointer(Box<Function>),
 
-    /// A const slice, of either variable or statically known size
-    ConstSlice((Option<usize>, Box<Type>)),
+    /// A slice of a given type. This matches the semantics of a slice in rust
+    Slice(Box<Type>),
 
-    /// A mutable slice, of either variable or statically known size
-    MutableSlice((Option<usize>, Box<Type>)),
+    /// An array of a given type. This matches semantics of an array in rust
+    Array((u64, Box<Type>)),
 
     /// A non-nullable const pointer. This matches the semantics of a shared reference in rust
     ConstReference(Box<Type>),
@@ -184,9 +183,11 @@ impl Type {
             | Type::ConstReference(_)
             | Type::ConstPointer(_)
             | Type::Path(_)
-            | Type::ConstSlice(_)
             | Type::FunctionPointer(_) => false,
-            Type::MutableSlice(_) | Type::MutableReference(_) | Type::MutablePointer(_) => true,
+            Type::Array(_)
+            | Type::Slice(_)
+            | Type::MutableReference(_)
+            | Type::MutablePointer(_) => true,
         }
     }
 
@@ -225,8 +226,8 @@ impl Type {
             | Type::Path(_) => false,
             Type::This => true,
             Type::FunctionPointer(v) => v.contains_this(),
-            Type::ConstSlice((_, v)) => v.contains_this(),
-            Type::MutableSlice((_, v)) => v.contains_this(),
+            Type::Array((_, v)) => v.contains_this(),
+            Type::Slice(v) => v.contains_this(),
             Type::ConstReference(v) => v.contains_this(),
             Type::MutableReference(v) => v.contains_this(),
             Type::ConstPointer(v) => v.contains_this(),
@@ -257,62 +258,142 @@ impl Type {
         Box::new(self)
     }
 
-    /// Performs a direct conversion from a `syn::Path`. Won't perform error checks for unsupported
-    /// primitive types like i128, u128 or bool. You'll need to check for invalid primitives
-    /// yourself.
-    pub fn from_syn_path(path: &syn::Path) -> Self {
-        // Convert rust's path into a flat string with '.' as a separator
-        let mut our_path = String::new();
-        path.segments.pairs().for_each(|v| {
-            let (segment, token) = v.into_tuple();
-            our_path.push_str(&segment.ident.to_string());
-            if token.is_some() {
-                our_path.push('.');
-            }
-        });
-
+    /// Takes a `syn::Path` and converts it to a `Type`. This will check for and coerce to one of
+    /// the primitive type variants if one is detected, and will return `None` on unsupported
+    /// primitive types
+    pub fn from_path(path: &syn::Path) -> Option<Self> {
+        let our_path = path_to_string(path);
         match our_path.as_str() {
-            "u8" => Type::U8,
-            "u16" => Type::U16,
-            "u32" => Type::U32,
-            "u64" => Type::U64,
-            "i8" => Type::I8,
-            "i16" => Type::I16,
-            "i32" => Type::I32,
-            "i64" => Type::I64,
-            "f32" => Type::F32,
-            "f64" => Type::F64,
-            _ => Type::Path(our_path),
+            "u8" => Some(Type::U8),
+            "u16" => Some(Type::U16),
+            "u32" => Some(Type::U32),
+            "u64" => Some(Type::U64),
+            "i8" => Some(Type::I8),
+            "i16" => Some(Type::I16),
+            "i32" => Some(Type::I32),
+            "i64" => Some(Type::I64),
+            "f32" => Some(Type::F32),
+            "f64" => Some(Type::F64),
+            "usize" => None, // Unsupported type
+            "isize" => None, // Unsupported type
+            "i128" => None,  // Unsupported type
+            "u128" => None,  // Unsupported type
+            "bool" => None,  // Unsupported type
+            "str" => None,   // Unsupported type
+            _ => Some(Type::Path(our_path)),
         }
     }
 
-    pub fn from_bare_fn(_bare: &syn::TypeBareFn) -> Option<Self> {
-        unimplemented!()
+    /// Creates a `Type` from a `syn::TypePtr`. This should be called where the root type is a
+    /// pointer
+    pub fn from_ptr(ptr: &syn::TypePtr) -> Option<Self> {
+        let ty = drill_through_parens(ptr.elem.as_ref());
+        let inner = Self::from_ptr_like_inner(ty);
+        if ptr.mutability.is_some() {
+            Some(Type::MutablePointer(inner?.boxed()))
+        } else {
+            Some(Type::ConstPointer(inner?.boxed()))
+        }
+    }
+
+    /// Creates a `Type` from a `syn::TypePtr`. This should be called where the root type is a
+    /// pointer
+    pub fn from_ref(reference: &syn::TypeReference) -> Option<Self> {
+        let ty = drill_through_parens(reference.elem.as_ref());
+        let inner = Self::from_ptr_like_inner(ty);
+        if reference.mutability.is_some() {
+            Some(Type::MutableReference(inner?.boxed()))
+        } else {
+            Some(Type::ConstReference(inner?.boxed()))
+        }
+    }
+
+    /// Creates a `Type`
+    pub fn from_ptr_like_inner(ty: &syn::Type) -> Option<Self> {
+        match ty {
+            syn::Type::Array(t) => Self::from_array(t),
+            syn::Type::BareFn(t) => Self::from_bare_fn(t),
+            syn::Type::Path(t) => Self::from_path(&t.path),
+            syn::Type::Ptr(t) => Self::from_ptr(t),
+            syn::Type::Reference(t) => Self::from_ref(t),
+            syn::Type::Slice(t) => Self::from_slice(t),
+            _ => None,
+        }
+    }
+
+    pub fn from_bare_fn(bare: &syn::TypeBareFn) -> Option<Self> {
+        let returns = Type::from_return_type(&bare.output)?;
+
+        let mut args = Vec::new();
+        for arg in bare.inputs.iter() {
+            args.push(Type::from_bare_function_arg(arg)?);
+        }
+
+        let function = Function { args, returns };
+        let out = Type::FunctionPointer(function.boxed());
+
+        Some(out)
+    }
+
+    /// Produces a `Type` from a `syn::FnArg`
+    pub fn from_bare_function_arg(arg: &syn::BareFnArg) -> Option<Self> {
+        match drill_through_parens(&arg.ty) {
+            //syn::Type::Array(_) => unimplemented!(),
+            syn::Type::BareFn(t) => Self::from_bare_fn(t),
+            syn::Type::Path(t) => Self::from_path(&t.path),
+            syn::Type::Ptr(t) => Self::from_ptr(t),
+            syn::Type::Reference(t) => Self::from_ref(t),
+            //syn::Type::Slice(_) => unimplemented!(),
+            _ => None,
+        }
     }
 
     pub fn from_struct_field(ty: &syn::Type) -> Option<Self> {
         let ty = drill_through_parens(ty);
         match ty {
-            syn::Type::Array(_) => unimplemented!(),
+            syn::Type::Array(t) => Self::from_array(t),
             syn::Type::BareFn(t) => Self::from_bare_fn(t),
-            syn::Type::Path(t) => {
-                match Self::from_syn_path(&t.path) {
-                    Type::Path(v) => {
-                        match v.as_str() {
-                            "usize" => None, // Unsupported type
-                            "isize" => None, // Unsupported type
-                            "i128" => None,  // Unsupported type
-                            "u128" => None,  // Unsupported type
-                            "bool" => None,  // Unsupported type
-                            _ => Some(Type::Path(v)),
-                        }
-                    }
-                    v @ _ => Some(v),
-                }
-            }
-            syn::Type::Ptr(_) => unimplemented!(),
-            syn::Type::Reference(_) => unimplemented!(),
-            syn::Type::Paren(_) => unreachable!(),
+            syn::Type::Path(t) => Self::from_path(&t.path),
+            syn::Type::Ptr(t) => Self::from_ptr(t),
+            syn::Type::Reference(t) => Self::from_ref(t),
+            _ => None,
+        }
+    }
+
+    /// Creates a `Type` from a `syn::TypeArray`
+    pub fn from_array(array: &syn::TypeArray) -> Option<Self> {
+        let ty = Self::from_array_like(array.elem.as_ref())?;
+
+        let size: Option<u64> = match &array.len {
+            syn::Expr::Lit(lit) => match &lit.lit {
+                syn::Lit::Int(int) => int.base10_parse().ok(),
+                _ => None,
+            },
+            //syn::Expr::Paren(_) => unimplemented!(),
+            _ => None,
+        };
+
+        let inner = (size?, ty.boxed());
+        Some(Type::Array(inner))
+    }
+
+    /// Creates a `Type` from a `syn::TypeSlice`
+    pub fn from_slice(slice: &syn::TypeSlice) -> Option<Self> {
+        let ty = Self::from_array_like(slice.elem.as_ref())?;
+        Some(Type::Slice(ty.boxed()))
+    }
+
+    /// Creates a `Type` from the `syn::Type` of an array like primitive. This should be the root
+    /// type of an array or slice type
+    pub fn from_array_like(ty: &syn::Type) -> Option<Self> {
+        let ty = drill_through_parens(ty);
+        match ty {
+            syn::Type::Array(t) => Self::from_array(t),
+            syn::Type::BareFn(t) => Self::from_bare_fn(t),
+            syn::Type::Path(t) => Self::from_path(&t.path),
+            syn::Type::Ptr(t) => Self::from_ptr(t),
+            syn::Type::Reference(t) => Self::from_ref(t),
+            syn::Type::Slice(t) => Self::from_slice(t),
             _ => None,
         }
     }
@@ -320,7 +401,7 @@ impl Type {
     /// Produces a `Type` from a `syn::FnArg`
     pub fn from_function_arg(arg: &syn::FnArg) -> Option<Self> {
         match arg {
-            FnArg::Receiver(v) => {
+            syn::FnArg::Receiver(v) => {
                 let mutable = v.mutability.is_some();
                 let reference = v.reference.is_some();
 
@@ -330,13 +411,13 @@ impl Type {
                     (_, _) => None,
                 }
             }
-            FnArg::Typed(v) => match drill_through_parens(v.ty.as_ref()) {
-                //syn::Type::Array(_) => {}
+            syn::FnArg::Typed(v) => match drill_through_parens(v.ty.as_ref()) {
+                //syn::Type::Array(_) => unimplemented!(),
                 syn::Type::BareFn(t) => Self::from_bare_fn(t),
-                syn::Type::Path(_) => { unimplemented!() }
-                syn::Type::Ptr(_) => { unimplemented!() }
-                syn::Type::Reference(_) => { unimplemented!() }
-                //syn::Type::Slice(_) => {}
+                syn::Type::Path(t) => Self::from_path(&t.path),
+                syn::Type::Ptr(t) => Self::from_ptr(t),
+                syn::Type::Reference(t) => Self::from_ref(t),
+                //syn::Type::Slice(_) => unimplemented!(),
                 _ => None,
             },
         }
@@ -345,8 +426,8 @@ impl Type {
     /// Produces a `Type` from a `syn::ReturnType`
     pub fn from_return_type(output: &syn::ReturnType) -> Option<Self> {
         match output {
-            ReturnType::Default => Some(Type::Void),
-            ReturnType::Type(_, t) => Self::from_type_for_return_value(t.as_ref()),
+            syn::ReturnType::Default => Some(Type::Void),
+            syn::ReturnType::Type(_, t) => Self::from_type_for_return_value(t.as_ref()),
         }
     }
 
@@ -362,15 +443,28 @@ impl Type {
     pub fn from_type_for_return_value(ty: &syn::Type) -> Option<Self> {
         let ty = drill_through_parens(ty);
         match ty {
-            syn::Type::Array(_) => unimplemented!(),
-            syn::Type::Path(_) => unimplemented!(),
-            syn::Type::Ptr(_) => unimplemented!(),
-            syn::Type::Reference(_) => unimplemented!(),
-            syn::Type::Tuple(_) => unimplemented!(),
-            syn::Type::Paren(_) => unreachable!(),
+            //syn::Type::Array(_) => unimplemented!(),
+            syn::Type::BareFn(t) => Self::from_bare_fn(t),
+            syn::Type::Path(t) => Self::from_path(&t.path),
+            syn::Type::Ptr(t) => Self::from_ptr(t),
+            syn::Type::Reference(t) => Self::from_ref(t),
             _ => None,
         }
     }
+}
+
+/// Takes a `syn::Path` and produces a flattened string with '.' as the segment separator
+pub fn path_to_string(path: &syn::Path) -> String {
+    // Convert rust's path into a flat string with '.' as a separator
+    let mut our_path = String::new();
+    path.segments.pairs().for_each(|v| {
+        let (segment, token) = v.into_tuple();
+        our_path.push_str(&segment.ident.to_string());
+        if token.is_some() {
+            our_path.push('.');
+        }
+    });
+    our_path
 }
 
 /// Internal function for drilling through an arbitrary level of `syn::Type::Paren` wrapping
@@ -413,6 +507,11 @@ impl Function {
         self.args.iter().any(Type::contains_this) || self.returns.contains_this()
     }
 
+    /// Put `self` into a `Box`
+    pub fn boxed(self) -> Box<Function> {
+        Box::new(self)
+    }
+
     pub fn from_function_signature(sig: &syn::Signature) -> Option<Self> {
         let returns = Type::from_return_type(&sig.output)?;
 
@@ -421,10 +520,7 @@ impl Function {
             args.push(Type::from_function_arg(arg)?);
         }
 
-        let out = Function {
-            args,
-            returns
-        };
+        let out = Function { args, returns };
 
         Some(out)
     }

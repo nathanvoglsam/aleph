@@ -30,6 +30,9 @@
 /// The set of errors that can be thrown while generating an interface
 #[derive(Debug)]
 pub enum GeneratorError {
-    /// Tried to generate an interface for a function with an unsupported function return type
-    UnsupportedFunctionReturnType,
+    /// Tried to generate an interface for a method with an unsupported signature
+    UnsupportedMethodSignature,
+
+    /// Tried to generate an interface for a struct field with an unsupported type
+    UnsupportedStructField,
 }

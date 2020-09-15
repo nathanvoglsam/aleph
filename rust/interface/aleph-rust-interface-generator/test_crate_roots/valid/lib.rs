@@ -27,6 +27,45 @@
 // SOFTWARE.
 //
 
+mod test_mod {
+    #[aleph::interface]
+    pub struct TestSingleton {}
+
+    impl TestSingleton {
+        pub fn hello_world() {
+            println!("Hello, World!");
+        }
+
+        pub fn have_a_number() -> u32 {
+            56
+        }
+
+        pub fn have_a_float() -> f32 {
+            21.0f32
+        }
+
+        pub fn sqaure_this_number(number: u32) -> u32 {
+            number * number
+        }
+
+        pub fn trace_this_ray(ray: &Ray) -> Vector3 {
+            ray.origin
+        }
+
+        pub fn count_this_slice(slice: &[Vector3]) -> u64 {
+            slice.len() as u64
+        }
+
+        pub fn have_a_function() -> fn(u32) -> u32 {
+            TestSingleton::a_function
+        }
+
+        pub fn a_function(val: u32) -> u32 {
+            val * val
+        }
+    }
+}
+
 #[aleph::interface]
 pub struct TestSingleton {}
 

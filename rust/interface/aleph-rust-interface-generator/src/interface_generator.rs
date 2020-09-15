@@ -94,25 +94,30 @@ impl InterfaceGenerator {
         if let syn::Type::Path(path) = self_ty {
             // Convert to our path format and reject primitive types as we can't export interfaces
             // for those
-            if let Type::Path(path) = Type::from_syn_path(&path.path) {
+            if let Some(Type::Path(path)) = Type::from_path(&path.path) {
                 // We only want to handle impl blocks for structs we're indexing
-                if let Some(class) = self.description.borrow_mut().classes.get(&path) {
+                if let Some(class) = self.description.borrow_mut().classes.get_mut(&path) {
                     for item in item.items.iter() {
                         if let ImplItem::Method(method) = item {
-                            //method
+                            let function = Function::from_function_signature(&method.sig);
+                            if let Some(function) = function {
+                                let name = method.sig.ident.to_string();
+                                class.functions.insert(name, function);
+                            } else {
+                                return Err(GeneratorError::UnsupportedMethodSignature);
+                            }
                         }
                     }
                 }
             }
         }
-
         Ok(())
     }
 
     fn generate_struct_interface(&mut self, item: &syn::ItemStruct) -> Result<()> {
         // Get the current namespace, fully qualified and with a trailing separator ready for the
         // name of the struct to be appended
-        let namespace = self.current_namespace_trailing_separator();
+        let namespace = self.current_namespace();
         let struct_name = item.ident.to_string();
 
         // Append namespace and struct name
@@ -128,7 +133,7 @@ impl InterfaceGenerator {
             let ty = if let Some(ty) = Type::from_struct_field(&field.ty) {
                 ty
             } else {
-                return Err(GeneratorError::UnsupportedFunctionReturnType);
+                return Err(GeneratorError::UnsupportedStructField);
             };
 
             members.insert(field_name, ty);
@@ -147,23 +152,9 @@ impl InterfaceGenerator {
         Ok(())
     }
 
-    /// Internal function, returns a fully qualified name for the current namespace
-    fn current_namespace(&self) -> String {
-        let mut namespace = String::new();
-
-        for i in 0..self.namespace_stack.len() {
-            namespace.push_str(&self.namespace_stack[i]);
-            if (self.namespace_stack.len() - 1) == i {
-                namespace.push('.');
-            }
-        }
-
-        namespace
-    }
-
     /// Internal function, returns a fully qualified name for the current namespace. Will leave a
     /// trailing namespace separator in the string when there is more than 0 namespace segments
-    fn current_namespace_trailing_separator(&self) -> String {
+    fn current_namespace(&self) -> String {
         let mut namespace = String::new();
 
         for i in 0..self.namespace_stack.len() {
