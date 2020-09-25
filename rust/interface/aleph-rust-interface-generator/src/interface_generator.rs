@@ -40,9 +40,8 @@ type NameSpaceStack = Vec<String>;
 /// Type alias for the item iterator stack
 type ItemIterStack<'a> = Vec<std::slice::Iter<'a, syn::Item>>;
 
-pub struct InterfaceGenerator<'a> {
+pub struct InterfaceGenerator {
     namespace_stack: NameSpaceStack,
-    item_iter_stack: ItemIterStack<'a>,
     description: InterfaceDescription,
 }
 
@@ -54,23 +53,23 @@ pub struct InterfaceGenerator<'a> {
 // TODO: Investigate customization flags for interop
 // TODO: Investigate opaque types
 
-impl<'a> InterfaceGenerator<'a> {
+impl InterfaceGenerator {
     pub fn new() -> Self {
         Self {
             namespace_stack: NameSpaceStack::new(),
-            item_iter_stack: ItemIterStack::new(),
             description: InterfaceDescription::default(),
         }
     }
 
-    pub fn generate(mut self, file: &'a syn::File) -> Result<InterfaceDescription> {
+    pub fn generate(mut self, file: &syn::File) -> Result<InterfaceDescription> {
         let aleph_interface = Self::aleph_interface_path();
 
-        self.item_iter_stack.push(file.items.iter());
+        let mut item_iter_stack = ItemIterStack::new();
+        item_iter_stack.push(file.items.iter());
 
         // We need to make sure we've resolved all the structs before we try and resolve any of the
         // impl blocks on them
-        'struct_outer: while let Some(mut items) = self.item_iter_stack.pop() {
+        'struct_outer: while let Some(mut items) = item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
                     syn::Item::Struct(item) => {
@@ -87,10 +86,10 @@ impl<'a> InterfaceGenerator<'a> {
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
-                            self.item_iter_stack.push(items);
+                            item_iter_stack.push(items);
 
                             // Push the item iterator for the module we want to handle onto the stack
-                            self.item_iter_stack.push(content.1.iter());
+                            item_iter_stack.push(content.1.iter());
 
                             continue 'struct_outer;
                         }
@@ -102,14 +101,14 @@ impl<'a> InterfaceGenerator<'a> {
         }
 
         // Assert these are empty (the algorithm should leave them empty once finished)
-        debug_assert!(self.item_iter_stack.is_empty());
+        debug_assert!(item_iter_stack.is_empty());
         debug_assert!(self.namespace_stack.is_empty());
 
         // Push the root element on to the stack again as we're going to walk the AST again
-        self.item_iter_stack.push(file.items.iter());
+        item_iter_stack.push(file.items.iter());
 
         // Now we can iterate through all the bare impl blocks that refer to type's we've defined
-        'mod_outer: while let Some(mut items) = self.item_iter_stack.pop() {
+        'mod_outer: while let Some(mut items) = item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
                     syn::Item::Impl(item) => {
@@ -122,10 +121,10 @@ impl<'a> InterfaceGenerator<'a> {
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
-                            self.item_iter_stack.push(items);
+                            item_iter_stack.push(items);
 
                             // Push the item iterator for the module we want to handle onto the stack
-                            self.item_iter_stack.push(content.1.iter());
+                            item_iter_stack.push(content.1.iter());
 
                             continue 'mod_outer;
                         }
