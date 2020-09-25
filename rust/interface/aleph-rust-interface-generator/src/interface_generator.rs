@@ -30,41 +30,47 @@
 use crate::error::GeneratorError;
 use crate::result::Result;
 use aleph_interface_description::*;
-use std::cell::RefCell;
 use std::collections::HashMap;
 use syn::export::Span;
 use syn::ImplItem;
 
-pub struct InterfaceGenerator {
-    namespace_stack: Vec<String>,
-    description: RefCell<InterfaceDescription>,
+/// Type alias for the namespace stack
+type NameSpaceStack = Vec<String>;
+
+/// Type alias for the item iterator stack
+type ItemIterStack<'a> = Vec<std::slice::Iter<'a, syn::Item>>;
+
+pub struct InterfaceGenerator<'a> {
+    namespace_stack: NameSpaceStack,
+    item_iter_stack: ItemIterStack<'a>,
+    description: InterfaceDescription,
 }
 
-impl InterfaceGenerator {
+// TODO: Handle `use` statements
+// TODO: Handle resolving paths against the current in scope names
+// TODO: Handle trying to export a non #[aleph::interface] marked type (i.e as a struct member)
+// TODO: Investigate wrapping tuples
+// TODO: Investigate wrapping arrays as return values (move semantics)
+// TODO: Investigate customization flags for interop
+// TODO: Investigate opaque types
+
+impl<'a> InterfaceGenerator<'a> {
     pub fn new() -> Self {
         Self {
-            namespace_stack: Vec::new(),
-            description: RefCell::new(InterfaceDescription::default()),
+            namespace_stack: NameSpaceStack::new(),
+            item_iter_stack: ItemIterStack::new(),
+            description: InterfaceDescription::default(),
         }
     }
 
-    pub fn generate(mut self, file: &syn::File) -> Result<InterfaceDescription> {
-        // Common identifiers
-        let aleph = syn::Ident::new("aleph", Span::call_site());
-        let interface = syn::Ident::new("interface", Span::call_site());
+    pub fn generate(mut self, file: &'a syn::File) -> Result<InterfaceDescription> {
+        let aleph_interface = Self::aleph_interface_path();
 
-        // Make path for `aleph::interface`
-        let mut aleph_interface = syn::Path::from(aleph);
-        aleph_interface.segments.push(interface.into());
-
-        // Create a stack of the item iterators we're working on, and then push the root element on
-        // to the stack
-        let mut item_iter_stack = Vec::new();
-        item_iter_stack.push(file.items.iter());
+        self.item_iter_stack.push(file.items.iter());
 
         // We need to make sure we've resolved all the structs before we try and resolve any of the
         // impl blocks on them
-        'struct_outer: while let Some(mut items) = item_iter_stack.pop() {
+        'struct_outer: while let Some(mut items) = self.item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
                     syn::Item::Struct(item) => {
@@ -81,10 +87,11 @@ impl InterfaceGenerator {
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
-                            item_iter_stack.push(items);
+                            self.item_iter_stack.push(items);
 
                             // Push the item iterator for the module we want to handle onto the stack
-                            item_iter_stack.push(content.1.iter());
+                            self.item_iter_stack.push(content.1.iter());
+
                             continue 'struct_outer;
                         }
                     }
@@ -95,14 +102,14 @@ impl InterfaceGenerator {
         }
 
         // Assert these are empty (the algorithm should leave them empty once finished)
-        debug_assert!(item_iter_stack.is_empty());
+        debug_assert!(self.item_iter_stack.is_empty());
         debug_assert!(self.namespace_stack.is_empty());
 
         // Push the root element on to the stack again as we're going to walk the AST again
-        item_iter_stack.push(file.items.iter());
+        self.item_iter_stack.push(file.items.iter());
 
         // Now we can iterate through all the bare impl blocks that refer to type's we've defined
-        'mod_outer: while let Some(mut items) = item_iter_stack.pop() {
+        'mod_outer: while let Some(mut items) = self.item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
                     syn::Item::Impl(item) => {
@@ -115,10 +122,11 @@ impl InterfaceGenerator {
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
-                            item_iter_stack.push(items);
+                            self.item_iter_stack.push(items);
 
                             // Push the item iterator for the module we want to handle onto the stack
-                            item_iter_stack.push(content.1.iter());
+                            self.item_iter_stack.push(content.1.iter());
+
                             continue 'mod_outer;
                         }
                     }
@@ -127,7 +135,7 @@ impl InterfaceGenerator {
             }
         }
 
-        Ok(self.description.into_inner())
+        Ok(self.description)
     }
 
     fn generate_impl_interface(&mut self, item: &syn::ItemImpl) -> Result<()> {
@@ -142,7 +150,7 @@ impl InterfaceGenerator {
             if let Some(Type::Path(path)) = Type::from_path(&path.path) {
                 let path = self.current_namespace() + &path;
                 // We only want to handle impl blocks for structs we're indexing
-                if let Some(class) = self.description.borrow_mut().classes.get_mut(&path) {
+                if let Some(class) = self.description.classes.get_mut(&path) {
                     for item in item.items.iter() {
                         if let ImplItem::Method(method) = item {
                             let function = Function::from_function_signature(&method.sig);
@@ -191,7 +199,6 @@ impl InterfaceGenerator {
         };
 
         self.description
-            .get_mut()
             .classes
             .insert(struct_name, class);
 
@@ -209,6 +216,19 @@ impl InterfaceGenerator {
         }
 
         namespace
+    }
+
+    /// Internal function for getting the path "aleph::interface"
+    fn aleph_interface_path() -> syn::Path {
+        // Common identifiers
+        let aleph = syn::Ident::new("aleph", Span::call_site());
+        let interface = syn::Ident::new("interface", Span::call_site());
+
+        // Make path for `aleph::interface`
+        let mut aleph_interface = syn::Path::from(aleph);
+        aleph_interface.segments.push(interface.into());
+
+        aleph_interface
     }
 }
 
