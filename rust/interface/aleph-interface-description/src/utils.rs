@@ -27,49 +27,26 @@
 // SOFTWARE.
 //
 
-mod math;
-
-use math::Vector3;
-pub(crate) use math::{Ray3D, Ray2D};
-pub use crate::math::Vector2 as Vec2;
-use std::slice::Iter;
-pub use math::funcs::Vec56;
-
-#[aleph::interface]
-#[repr(C)]
-pub struct TestSingleton {}
-
-impl TestSingleton {
-    pub fn hello_world() {
-        println!("Hello, World!");
-    }
-
-    pub fn have_a_number() -> u32 {
-        56
-    }
-
-    pub fn have_a_float() -> f32 {
-        21.0f32
-    }
-
-    pub fn sqaure_this_number(number: u32) -> u32 {
-        number * number
-    }
-
-    pub fn trace_this_ray(ray: &Ray3D) -> Vector3 {
-        ray.origin
-    }
-
-    pub fn count_this_slice(slice: &[Vector3]) -> u64 {
-        slice.len() as u64
-    }
+/// Takes a `syn::Path` and produces a flattened string with '.' as the segment separator
+pub fn path_to_string(path: &syn::Path) -> String {
+    // Convert rust's path into a flat string with '.' as a separator
+    let mut our_path = String::new();
+    path.segments.pairs().for_each(|v| {
+        let (segment, token) = v.into_tuple();
+        our_path.push_str(&segment.ident.to_string());
+        if token.is_some() {
+            our_path.push('.');
+        }
+    });
+    our_path
 }
 
-#[aleph::interface(opaque)]
-pub struct Opaque {
-    data: u8,
-}
-
-pub struct IgnoreMe {
-    also_data: Vec<u8>,
+/// Internal function for drilling through an arbitrary level of `syn::Type::Paren` wrapping
+pub fn drill_through_parens(ty: &syn::Type) -> &syn::Type {
+    // Trivial to do iteratively, so do it iteratively
+    let mut ty = ty;
+    while let syn::Type::Paren(t) = ty {
+        ty = t.elem.as_ref();
+    }
+    ty
 }

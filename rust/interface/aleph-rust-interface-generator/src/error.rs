@@ -35,4 +35,22 @@ pub enum GeneratorError {
 
     /// Tried to generate an interface for a struct field with an unsupported type
     UnsupportedStructField,
+
+    /// An item was declared with `pub(in path)` or `pub(super)` visibility specifier. This is not
+    /// supported due to complicating the parser implementation significantly.
+    UnsupportedVisibility,
+
+    /// Attempting to use with a path of the form `::something::else` is invalid as it, by
+    /// definition, refers to objects outside of the current crate which we can't parse. As such we
+    /// can't ever handle these imports in a sane way so just make them a hard error.
+    InvalidUsePath,
+
+    /// If we detect invalid rust syntax in our walk of tree from syn
+    InvalidUseSyntax,
+
+    /// Occurs when two objects in the same scope are declared with the same name
+    MultipleObjectsWithSameName,
+
+    /// Occurs when a `use` statement tries to import an object which doesn't exist in the crate
+    ImportedObjectDoesNotExist,
 }

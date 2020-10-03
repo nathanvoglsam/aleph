@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::ast::Module;
 use crate::interface_generator::InterfaceGenerator;
+use crate::interner::Interner;
 
 #[test]
 fn test_generate_valid() {
@@ -36,6 +38,18 @@ fn test_generate_valid() {
     let path = path.join("valid");
     let file = aleph_crate_parser::parse_crate(path).unwrap();
 
-    let interface = InterfaceGenerator::new().generate(&file).unwrap();
+    let interface = InterfaceGenerator::new().generate(file).unwrap();
     println!("{}", serde_json::to_string_pretty(&interface).unwrap());
+}
+
+#[test]
+fn test_parse_to_internal_ast() {
+    let path = std::env::current_dir().unwrap();
+    let path = path.join("test_crate_roots");
+    let path = path.join("valid");
+    let file = aleph_crate_parser::parse_crate(path).unwrap();
+
+    let mut interner = Interner::with_capacity(1024);
+    let interface = Module::from_file(&mut interner, &file).unwrap();
+    interface.debug_print(&interner).unwrap();
 }

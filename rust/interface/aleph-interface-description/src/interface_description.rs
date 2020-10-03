@@ -27,49 +27,21 @@
 // SOFTWARE.
 //
 
-mod math;
+use crate::Class;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::fmt::Debug;
+use std::hash::Hash;
 
-use math::Vector3;
-pub(crate) use math::{Ray3D, Ray2D};
-pub use crate::math::Vector2 as Vec2;
-use std::slice::Iter;
-pub use math::funcs::Vec56;
-
-#[aleph::interface]
-#[repr(C)]
-pub struct TestSingleton {}
-
-impl TestSingleton {
-    pub fn hello_world() {
-        println!("Hello, World!");
-    }
-
-    pub fn have_a_number() -> u32 {
-        56
-    }
-
-    pub fn have_a_float() -> f32 {
-        21.0f32
-    }
-
-    pub fn sqaure_this_number(number: u32) -> u32 {
-        number * number
-    }
-
-    pub fn trace_this_ray(ray: &Ray3D) -> Vector3 {
-        ray.origin
-    }
-
-    pub fn count_this_slice(slice: &[Vector3]) -> u64 {
-        slice.len() as u64
-    }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct InterfaceDescription<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
+    pub classes: HashMap<String, Class<T>>,
 }
 
-#[aleph::interface(opaque)]
-pub struct Opaque {
-    data: u8,
-}
-
-pub struct IgnoreMe {
-    also_data: Vec<u8>,
+impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Default for InterfaceDescription<T> {
+    fn default() -> Self {
+        Self {
+            classes: HashMap::new(),
+        }
+    }
 }

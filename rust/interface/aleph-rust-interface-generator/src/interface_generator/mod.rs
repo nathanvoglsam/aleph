@@ -28,21 +28,17 @@
 //
 
 use crate::error::GeneratorError;
+use crate::interner::{Interner, StrId};
 use crate::result::Result;
-use aleph_interface_description::*;
+use aleph_interface_description::utils::drill_through_parens;
+use aleph_interface_description::{Class, Function, InterfaceDescription, Type};
 use std::collections::HashMap;
 use syn::export::Span;
-use syn::ImplItem;
-
-/// Type alias for the namespace stack
-type NameSpaceStack = Vec<String>;
-
-/// Type alias for the item iterator stack
-type ItemIterStack<'a> = Vec<std::slice::Iter<'a, syn::Item>>;
 
 pub struct InterfaceGenerator {
-    namespace_stack: NameSpaceStack,
-    description: InterfaceDescription,
+    interner: Interner,
+    namespace_stack: Vec<StrId>,
+    description: InterfaceDescription<String>,
 }
 
 // TODO: Handle `use` statements
@@ -56,19 +52,20 @@ pub struct InterfaceGenerator {
 impl InterfaceGenerator {
     pub fn new() -> Self {
         Self {
-            namespace_stack: NameSpaceStack::new(),
+            interner: Interner::with_capacity(1024),
+            namespace_stack: Vec::new(),
             description: InterfaceDescription::default(),
         }
     }
 
-    pub fn generate(mut self, file: &syn::File) -> Result<InterfaceDescription> {
+    pub fn generate(mut self, file: syn::File) -> Result<InterfaceDescription<String>> {
         let aleph_interface = Self::aleph_interface_path();
 
-        let mut item_iter_stack = ItemIterStack::new();
-        item_iter_stack.push(file.items.iter());
+        let mut item_iter_stack = Vec::new();
 
         // We need to make sure we've resolved all the structs before we try and resolve any of the
         // impl blocks on them
+        item_iter_stack.push(file.items.iter());
         'struct_outer: while let Some(mut items) = item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
@@ -83,6 +80,7 @@ impl InterfaceGenerator {
                         if let Some(content) = item.content.as_ref() {
                             // Add the module name to the namespace stack
                             let mod_name = item.ident.to_string();
+                            let mod_name = self.interner.intern(&mod_name);
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
@@ -104,10 +102,8 @@ impl InterfaceGenerator {
         debug_assert!(item_iter_stack.is_empty());
         debug_assert!(self.namespace_stack.is_empty());
 
-        // Push the root element on to the stack again as we're going to walk the AST again
-        item_iter_stack.push(file.items.iter());
-
         // Now we can iterate through all the bare impl blocks that refer to type's we've defined
+        item_iter_stack.push(file.items.iter());
         'mod_outer: while let Some(mut items) = item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
@@ -118,6 +114,7 @@ impl InterfaceGenerator {
                         if let Some(content) = item.content.as_ref() {
                             // Add the module name to the namespace stack
                             let mod_name = item.ident.to_string();
+                            let mod_name = self.interner.intern(&mod_name);
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
@@ -151,7 +148,7 @@ impl InterfaceGenerator {
                 // We only want to handle impl blocks for structs we're indexing
                 if let Some(class) = self.description.classes.get_mut(&path) {
                     for item in item.items.iter() {
-                        if let ImplItem::Method(method) = item {
+                        if let syn::ImplItem::Method(method) = item {
                             let function = Function::from_function_signature(&method.sig);
                             if let Some(function) = function {
                                 let name = method.sig.ident.to_string();
@@ -193,13 +190,11 @@ impl InterfaceGenerator {
         }
 
         let class = Class {
-            members,
+            fields: members,
             functions: HashMap::new(),
         };
 
-        self.description
-            .classes
-            .insert(struct_name, class);
+        self.description.classes.insert(struct_name, class);
 
         Ok(())
     }
@@ -210,7 +205,8 @@ impl InterfaceGenerator {
         let mut namespace = String::new();
 
         for i in 0..self.namespace_stack.len() {
-            namespace.push_str(&self.namespace_stack[i]);
+            let string = self.interner.lookup(self.namespace_stack[i]);
+            namespace.push_str(string);
             namespace.push('.');
         }
 
@@ -229,14 +225,4 @@ impl InterfaceGenerator {
 
         aleph_interface
     }
-}
-
-/// Internal function for drilling through an arbitrary level of `syn::Type::Paren` wrapping
-fn drill_through_parens(ty: &syn::Type) -> &syn::Type {
-    // Trivial to do iteratively, so do it iteratively
-    let mut ty = ty;
-    while let syn::Type::Paren(t) = ty {
-        ty = t.elem.as_ref();
-    }
-    ty
 }

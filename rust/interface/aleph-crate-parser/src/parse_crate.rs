@@ -149,7 +149,7 @@ fn resolve_module(parent_module_path: &Path, module: &mut syn::ItemMod) -> Resul
         // Check through the list of candidates
         for candidate in candidates {
             // Build a path and try to open the candidate file
-            let child_module_path = module_parent_dir.join(candidate);
+            let child_module_path = module_parent_dir.join(&candidate);
             let child_module_file = std::fs::OpenOptions::new()
                 .create(false)
                 .read(true)
@@ -162,7 +162,8 @@ fn resolve_module(parent_module_path: &Path, module: &mut syn::ItemMod) -> Resul
             // Any other IO error is an error though so we exit out of the function with
             // the error
             let mut child_module_file = if let Err(e) = child_module_file {
-                if e.kind() == ErrorKind::NotFound {
+                let kind = e.kind();
+                if kind == ErrorKind::NotFound {
                     continue;
                 } else {
                     return Err(ParserError::IOError(e));
@@ -187,7 +188,7 @@ fn resolve_module(parent_module_path: &Path, module: &mut syn::ItemMod) -> Resul
             // when we detect this edge case later. I wouldn't dream of trying to parse every valid
             // rust crate at this early a stage of development
             if child_module_parent_dir != module_parent_dir {
-                resolve_modules(child_module_parent_dir, &mut child_module_file)?;
+                resolve_modules(&child_module_path, &mut child_module_file)?;
             }
 
             // Move all the attributes to the new module
