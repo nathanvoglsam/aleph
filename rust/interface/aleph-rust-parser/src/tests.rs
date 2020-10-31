@@ -27,19 +27,49 @@
 // SOFTWARE.
 //
 
-use crate::interface_generator::InterfaceGenerator;
-use std::path::{PathBuf};
+use crate::interner::Interner;
+use crate::ast::Module;
+use crate::crate_resolver::ParserError;
+use std::path::PathBuf;
 
 #[test]
-fn test_generate_valid() {
+fn test_parse_crate_valid() {
     let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     let mut crate_root = PathBuf::from(crate_root);
-    crate_root.push("..");
-    crate_root.push("aleph-rust-parser");
     crate_root.push("test_crate_roots");
     crate_root.push("valid_1");
-    let file = aleph_rust_parser::crate_resolver::resolve_crate(&crate_root).unwrap();
+    let file = crate::crate_resolver::resolve_crate(&crate_root).unwrap();
+}
 
-    let interface = InterfaceGenerator::new().generate(file).unwrap();
-    println!("{}", serde_json::to_string_pretty(&interface).unwrap());
+#[test]
+fn test_parse_crate_malformed_graph() {
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let mut crate_root = PathBuf::from(crate_root);
+    crate_root.push("test_crate_roots");
+    crate_root.push("malformed_graph");
+    let file = crate::crate_resolver::resolve_crate(&crate_root);
+    if let Err(e) = file {
+        match e {
+            ParserError::ModuleGraphInvalid => {}
+            _ => panic!(
+                "parse_crate failed, but failed for the wrong reason: {:#?}",
+                e
+            ),
+        }
+    } else {
+        panic!("parse_crate should fail, but did not")
+    }
+}
+
+#[test]
+fn test_parse_to_internal_ast() {
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let mut crate_root = PathBuf::from(crate_root);
+    crate_root.push("test_crate_roots");
+    crate_root.push("valid_2");
+    let file = crate::crate_resolver::resolve_crate(&crate_root).unwrap();
+
+    let mut interner = Interner::with_capacity(1024);
+    let interface = Module::from_file(&mut interner, &file).unwrap();
+    interface.debug_print(&interner).unwrap();
 }

@@ -27,31 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::error::ParserError;
+use crate::crate_resolver::ParserError;
 
-#[test]
-fn test_parse_crate_valid() {
-    let path = std::env::current_dir().unwrap();
-    let path = path.join("test_crate_roots");
-    let path = path.join("valid");
-    let file = crate::parse_crate(path).unwrap();
-}
-
-#[test]
-fn test_parse_crate_malformed_graph() {
-    let path = std::env::current_dir().unwrap();
-    let path = path.join("test_crate_roots");
-    let path = path.join("malformed_graph");
-    let file = crate::parse_crate(path);
-    if let Err(e) = file {
-        match e {
-            ParserError::ModuleGraphInvalid => {}
-            _ => panic!(
-                "parse_crate failed, but failed for the wrong reason: {:#?}",
-                e
-            ),
-        }
-    } else {
-        panic!("parse_crate should fail, but did not")
-    }
-}
+/// A type alias for our own result type
+pub type Result<T> = std::result::Result<T, ParserError>;

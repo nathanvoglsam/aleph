@@ -33,13 +33,5 @@ pub mod result;
 #[cfg(test)]
 mod tests;
 
-mod ast;
 mod interface_generator;
-mod interner;
-
-pub use ast::Class;
-pub use ast::Module;
-pub use ast::ModuleItem;
-pub use ast::Path;
-pub use ast::Use;
 pub use interface_generator::InterfaceGenerator;

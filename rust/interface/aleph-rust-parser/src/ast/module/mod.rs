@@ -27,93 +27,26 @@
 // SOFTWARE.
 //
 
-use crate::error::GeneratorError;
-use crate::interner::{Interner, StrId};
-use crate::result::Result;
-use aleph_interface_description::Type;
+use crate::ast::{Path, Class, Import, Result, GeneratorError};
 use std::collections::HashMap;
+use crate::interner::{StrId, Interner};
+use aleph_interface_description::Type;
 use std::ops::Deref;
+use syn::{Visibility, UseTree};
 use syn::export::Span;
-use syn::{UseTree, Visibility};
-
-/// Internal struct for interning a rust path
-#[derive(Clone, Debug, Default)]
-pub struct Path {
-    pub segments: Vec<StrId>,
-    pub absolute: bool,
-}
-
-impl Path {
-    pub fn new<T: IntoIterator<Item = StrId>>(segments: T, absolute: bool) -> Path {
-        Path {
-            segments: segments.into_iter().collect(),
-            absolute,
-        }
-    }
-
-    pub fn from_syn(interner: &mut Interner, path: &syn::Path) -> Path {
-        let segments: Vec<StrId> = path
-            .segments
-            .iter()
-            .map(|v| interner.intern(v.ident.to_string()))
-            .collect();
-        Self {
-            segments,
-            absolute: false,
-        }
-    }
-
-    pub fn to_string(&self, interner: &Interner) -> String {
-        let mut out = String::new();
-        if self.absolute {
-            out.push_str("::");
-        }
-        if self.segments.is_empty() {
-            out
-        } else {
-            self.segments[0..self.segments.len() - 1]
-                .iter()
-                .for_each(|v| {
-                    out.push_str(interner.lookup(*v));
-                    out.push_str("::");
-                });
-            out.push_str(interner.lookup(*self.segments.last().unwrap()));
-            out
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Class {
-    /// The inner class object we're wrapping
-    pub inner: aleph_interface_description::Class<String>,
-
-    /// Whether the class has public visibility
-    pub public: bool,
-}
-
-/// Internal struct for handling use statements
-#[derive(Clone, Debug)]
-pub struct Use {
-    /// The fully qualified path to the concrete item the `use` statement refers to
-    pub concrete: Path,
-
-    /// Whether this is a `pub use` or a `use` statement
-    pub public: bool,
-}
 
 /// Represents the union of a class, module or use import. Primarily used as a function return type
 pub enum ModuleItem<'a> {
     Class(&'a Class),
     Module(&'a Module),
-    Use((Path, &'a Use)),
+    Import((Path, &'a Import)),
 }
 
 /// Represents the union of a class, module or use import. Primarily used as a function return type
 pub enum ModuleItemMut<'a> {
     Class(&'a mut Class),
     Module(&'a mut Module),
-    Use((Path, &'a mut Use)),
+    Import((Path, &'a mut Import)),
 }
 
 /// Represents the union of a class and module. Primarily used as a function return type
@@ -132,7 +65,7 @@ pub enum ModuleObjectMut<'a> {
 #[derive(Clone, Debug, Default)]
 pub struct Module {
     /// The list of named entities in scope in this module from use statements
-    pub uses: HashMap<StrId, Use>,
+    pub imports: HashMap<StrId, Import>,
 
     //pub uses2: HashMap<StrId, Use>,
     /// The set of structs in this module
@@ -161,7 +94,7 @@ impl Module {
         for seg in path.segments.iter() {
             return match state {
                 State::Module(i) => {
-                    if let Some(u) = i.uses.get(seg) {
+                    if let Some(u) = i.imports.get(seg) {
                         let use_path = if u.concrete.absolute {
                             u.concrete.clone()
                         } else {
@@ -170,7 +103,7 @@ impl Module {
                             Path::new(segments, true)
                         };
                         state = State::Terminal;
-                        out = Some(ModuleItem::Use((use_path, u)));
+                        out = Some(ModuleItem::Import((use_path, u)));
                         depth += 1;
                         continue;
                     }
@@ -204,11 +137,11 @@ impl Module {
             // enforce that the whole object is mutably borrowed with a call to this function so we
             // can't give out aliasing mutable references with this interface
             #[allow(mutable_transmutes)]
-            unsafe {
+                unsafe {
                 match v {
                     ModuleItem::Class(i) => ModuleItemMut::Class(core::mem::transmute(i)),
                     ModuleItem::Module(i) => ModuleItemMut::Module(core::mem::transmute(i)),
-                    ModuleItem::Use(i) => ModuleItemMut::Use(core::mem::transmute(i)),
+                    ModuleItem::Import(i) => ModuleItemMut::Import(core::mem::transmute(i)),
                 }
             }
         })
@@ -254,7 +187,7 @@ impl Module {
                     };
                     return Some((path, ModuleObject::Module(i)));
                 }
-                ModuleItem::Use((i, _)) => current = State::Owned(i),
+                ModuleItem::Import((i, _)) => current = State::Owned(i),
             }
         }
         None
@@ -276,7 +209,7 @@ impl Module {
             // enforce that the whole object is mutably borrowed with a call to this function so we
             // can't give out aliasing mutable references with this interface
             #[allow(mutable_transmutes)]
-            let object = unsafe {
+                let object = unsafe {
                 match object {
                     ModuleObject::Class(i) => ModuleObjectMut::Class(core::mem::transmute(i)),
                     ModuleObject::Module(i) => ModuleObjectMut::Module(core::mem::transmute(i)),
@@ -307,7 +240,7 @@ impl Module {
                     .for_each(|v| print!("{}::", interner.lookup(*v)));
                 print!("{}\n", interner.lookup(module_name));
 
-                for (u_name, u) in module.uses.iter() {
+                for (u_name, u) in module.imports.iter() {
                     let vis = if u.public { "public" } else { "" };
                     let u_name_str = interner.lookup(*u_name);
                     let u_path_str = u.concrete.to_string(interner);
@@ -397,7 +330,7 @@ impl Module {
                             let public = Self::resolve_visibility(&item.vis)?;
                             Self::resolve_use_into(
                                 interner,
-                                &mut internal_module.uses,
+                                &mut internal_module.imports,
                                 None,
                                 public,
                                 &item.tree,
@@ -475,7 +408,7 @@ impl Module {
         stack.push(module);
         while let Some(module) = stack.pop() {
             // Make sure no `uses` import colliding names
-            for (name, _) in module.uses.iter() {
+            for (name, _) in module.imports.iter() {
                 if module.structs.contains_key(name) {
                     return Err(GeneratorError::MultipleObjectsWithSameName);
                 }
@@ -525,7 +458,7 @@ impl Module {
                 let mut to_remove = Vec::new();
 
                 // Pass one, resolve all simple cases
-                for (u_name, u) in module.uses.iter_mut() {
+                for (u_name, u) in module.imports.iter_mut() {
                     // The first segment will let us decide where the path intends to begin
                     // resolving from
                     let first = *u.concrete.segments.first().unwrap();
@@ -569,10 +502,10 @@ impl Module {
                 // could be referring to external crates so we can check if any types are trying to
                 // generate interfaces for have external crate's stuff in any of their signatures.
                 for (remove_name, requires_name) in to_remove {
-                    let used_into_scope = module.uses.contains_key(&requires_name);
+                    let used_into_scope = module.imports.contains_key(&requires_name);
                     let sub_mod_in_scope = module.sub_modules.contains_key(&requires_name);
                     if !(used_into_scope || sub_mod_in_scope) {
-                        module.uses.remove(&remove_name);
+                        module.imports.remove(&remove_name);
                     }
                 }
 
@@ -612,7 +545,7 @@ impl Module {
                 //let module_path_str = module_path.to_string(interner);
 
                 // Iterate over all the uses to find the ones we need to resolve to absolute paths
-                for (u_name, u) in module.uses.iter() {
+                for (u_name, u) in module.imports.iter() {
                     // We only want to operate on relative paths
                     if !u.concrete.absolute {
                         let mut new_path = module_path.segments.clone();
@@ -651,7 +584,7 @@ impl Module {
 
         for (import_path, new_path) in to_patch {
             match root.lookup_mut(&import_path).unwrap() {
-                ModuleItemMut::Use((_, u)) => {
+                ModuleItemMut::Import((_, u)) => {
                     u.concrete = new_path;
                 }
                 _ => unreachable!(),
@@ -704,7 +637,7 @@ impl Module {
 
     fn resolve_use_into(
         interner: &mut Interner,
-        into: &mut HashMap<StrId, Use>,
+        into: &mut HashMap<StrId, Import>,
         prefix: Option<Path>,
         public: bool,
         item: &syn::UseTree,
@@ -762,7 +695,7 @@ impl Module {
                         path.segments.push(seg);
 
                         // Construct a use entry
-                        let val = Use {
+                        let val = Import {
                             concrete: path,
                             public,
                         };
@@ -787,7 +720,7 @@ impl Module {
                         let rename = interner.intern(rename);
 
                         // Construct a use entry
-                        let val = Use {
+                        let val = Import {
                             concrete: path,
                             public,
                         };
@@ -807,7 +740,7 @@ impl Module {
                         path.segments.push(seg);
 
                         // Construct a use entry
-                        let val = Use {
+                        let val = Import {
                             concrete: path,
                             public,
                         };

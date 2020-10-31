@@ -27,19 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::interface_generator::InterfaceGenerator;
-use std::path::{PathBuf};
+pub mod crate_resolver;
+pub mod ast;
+pub mod interner;
 
-#[test]
-fn test_generate_valid() {
-    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let mut crate_root = PathBuf::from(crate_root);
-    crate_root.push("..");
-    crate_root.push("aleph-rust-parser");
-    crate_root.push("test_crate_roots");
-    crate_root.push("valid_1");
-    let file = aleph_rust_parser::crate_resolver::resolve_crate(&crate_root).unwrap();
-
-    let interface = InterfaceGenerator::new().generate(file).unwrap();
-    println!("{}", serde_json::to_string_pretty(&interface).unwrap());
-}
+#[cfg(test)]
+mod tests;

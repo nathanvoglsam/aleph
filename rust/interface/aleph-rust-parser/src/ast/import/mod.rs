@@ -27,19 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::interface_generator::InterfaceGenerator;
-use std::path::{PathBuf};
+use crate::ast::Path;
 
-#[test]
-fn test_generate_valid() {
-    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let mut crate_root = PathBuf::from(crate_root);
-    crate_root.push("..");
-    crate_root.push("aleph-rust-parser");
-    crate_root.push("test_crate_roots");
-    crate_root.push("valid_1");
-    let file = aleph_rust_parser::crate_resolver::resolve_crate(&crate_root).unwrap();
+/// Internal struct for handling use statements
+#[derive(Clone, Debug)]
+pub struct Import {
+    /// The fully qualified path to the concrete item the `use` statement refers to
+    pub concrete: Path,
 
-    let interface = InterfaceGenerator::new().generate(file).unwrap();
-    println!("{}", serde_json::to_string_pretty(&interface).unwrap());
+    /// Whether this is a `pub use` or a `use` statement
+    pub public: bool,
 }

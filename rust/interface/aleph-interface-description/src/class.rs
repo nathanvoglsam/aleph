@@ -36,7 +36,7 @@ use std::hash::Hash;
 
 /// This struct represents a struct or class like object
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Class<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
+pub struct Class<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str> = String> {
     pub fields: HashMap<String, Type<T>>,
     pub functions: HashMap<String, Function<T>>,
 }

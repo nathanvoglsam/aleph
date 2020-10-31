@@ -43,7 +43,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-aleph-crate-parser = { path = "../aleph-crate-parser", version = "0.1.0" }
+aleph-rust-parser = { path = "../aleph-rust-parser", version = "0.1.0" }
 aleph-interface-description = { path = "../aleph-interface-description", version = "0.1.0" }
 aleph-rust-codegen = { path = "../aleph-rust-codegen", version = "0.1.0" }
 

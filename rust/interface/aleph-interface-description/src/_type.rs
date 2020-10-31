@@ -101,7 +101,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// Returns if this type is exactly the `This` variant
     ///
     /// ```
-    /// use aleph_interface_description::Type;
+    /// type Type = aleph_interface_description::Type<String>;
     ///
     /// assert!(Type::This.is_this());
     /// assert!(!Type::I8.is_this());
@@ -117,7 +117,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// `Type::MutableReference(Type::This)`
     ///
     /// ```
-    /// use aleph_interface_description::Type;
+    /// type Type = aleph_interface_description::Type<String>;
     ///
     /// let this_type = Type::This;
     ///
@@ -142,7 +142,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// `Type::MutablePointer(Type::This)`
     ///
     /// ```
-    /// use aleph_interface_description::Type;
+    /// type Type = aleph_interface_description::Type<String>;
     ///
     /// let this_type = Type::This;
     ///
@@ -197,7 +197,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// Does this type encode, at any level of nesting, a `This` variant.
     ///
     /// ```
-    /// use aleph_interface_description::Type;
+    /// type Type = aleph_interface_description::Type<String>;
     ///
     /// assert!(Type::This.contains_this());
     ///
@@ -207,8 +207,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// let mutref_ref_this = Type::MutableReference(Box::new(ref_this.clone()));
     /// assert!(mutref_ref_this.contains_this());
     ///
-    /// let slice = (None, mutref_ref_this.boxed_clone());
-    /// let slice_mutref_ref_this = Type::ConstSlice(slice);
+    /// let slice_mutref_ref_this = Type::Slice(ref_this.boxed_clone());
     /// assert!(slice_mutref_ref_this.contains_this());
     ///
     /// assert!(!Type::U8.contains_this());
@@ -244,7 +243,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// don't want to chain functions or nest functions
     ///
     /// ```
-    /// use aleph_interface_description::Type;
+    /// type Type = aleph_interface_description::Type<String>;
     ///
     /// let t = Type::F32;
     /// let ref_t = Type::ConstReference(t.boxed_clone());

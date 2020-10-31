@@ -27,30 +27,30 @@
 // SOFTWARE.
 //
 
-use crate::error::ParserError;
-use crate::module_file_candidates::ModuleFileCandidates;
-use crate::result::Result;
+use crate::crate_resolver::ParserError;
+use crate::crate_resolver::Result;
+use crate::crate_resolver::ModuleFileCandidates;
 use std::io::{ErrorKind, Read};
 use std::path::Path;
 use syn::Item;
 
 ///
-/// Takes the source directory of a crate and attempts to parse the entire crate's file tree into a
-/// single AST.
+/// Takes the source directory of a crate and attempts to resolve the entire crate's file tree into
+/// a single AST.
 ///
 /// Depending on how big the crate is this could use quite a bit of memory.
 ///
 /// # Example
 ///
 /// ```
-/// use aleph_crate_parser::parse_crate;
+/// use aleph_rust_parser::crate_resolver::resolve_crate;
 ///
 /// // Assuming you're working dir contains the Cargo.toml for a library crate
 /// let path = std::env::current_dir().unwrap();
-/// parse_crate(path.join("src")).unwrap();
+/// resolve_crate(path.join("src")).unwrap();
 /// ```
 ///
-pub fn parse_crate<P: AsRef<Path>>(root_dir: P) -> Result<syn::File> {
+pub fn resolve_crate<P: AsRef<Path>>(root_dir: P) -> Result<syn::File> {
     let root_dir = root_dir.as_ref();
 
     // Try to open the root file of the crate, mapping not found to a more descriptive error

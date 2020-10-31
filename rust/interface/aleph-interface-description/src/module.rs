@@ -34,7 +34,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct Module<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
+pub struct Module<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str> = String> {
     pub classes: HashMap<String, Class<T>>,
     pub sub_modules: HashMap<String, Module<T>>,
 }

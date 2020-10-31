@@ -33,7 +33,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct Function<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
+pub struct Function<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str> = String> {
     /// The arguments of the function
     pub args: Vec<Type<T>>,
 

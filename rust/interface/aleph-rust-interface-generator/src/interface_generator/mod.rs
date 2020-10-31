@@ -28,7 +28,6 @@
 //
 
 use crate::error::GeneratorError;
-use crate::interner::{Interner, StrId};
 use crate::result::Result;
 use aleph_interface_description::utils::drill_through_parens;
 use aleph_interface_description::{Class, Function, InterfaceDescription, Type};
@@ -36,8 +35,7 @@ use std::collections::HashMap;
 use syn::export::Span;
 
 pub struct InterfaceGenerator {
-    interner: Interner,
-    namespace_stack: Vec<StrId>,
+    namespace_stack: Vec<String>,
     description: InterfaceDescription<String>,
 }
 
@@ -52,7 +50,6 @@ pub struct InterfaceGenerator {
 impl InterfaceGenerator {
     pub fn new() -> Self {
         Self {
-            interner: Interner::with_capacity(1024),
             namespace_stack: Vec::new(),
             description: InterfaceDescription::default(),
         }
@@ -80,7 +77,6 @@ impl InterfaceGenerator {
                         if let Some(content) = item.content.as_ref() {
                             // Add the module name to the namespace stack
                             let mod_name = item.ident.to_string();
-                            let mod_name = self.interner.intern(&mod_name);
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
@@ -114,7 +110,6 @@ impl InterfaceGenerator {
                         if let Some(content) = item.content.as_ref() {
                             // Add the module name to the namespace stack
                             let mod_name = item.ident.to_string();
-                            let mod_name = self.interner.intern(&mod_name);
                             self.namespace_stack.push(mod_name);
 
                             // Backup the current iterator onto the iterator stack
@@ -205,8 +200,7 @@ impl InterfaceGenerator {
         let mut namespace = String::new();
 
         for i in 0..self.namespace_stack.len() {
-            let string = self.interner.lookup(self.namespace_stack[i]);
-            namespace.push_str(string);
+            namespace.push_str(&self.namespace_stack[i]);
             namespace.push('.');
         }
 

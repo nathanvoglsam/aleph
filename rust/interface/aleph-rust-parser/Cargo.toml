@@ -28,19 +28,22 @@
 ##
 
 [package]
-name = "aleph-crate-parser"
+name = "aleph-rust-parser"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "A library for parsing an entire crate graph into a single AST with `syn`"
+description = "A library for parsing an entire rust crate into a single AST with `syn`"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-crate-parser/"
+documentation = "https://docs.rs/aleph-rust-parser/"
 readme = "README.md"
 ## TODO: keywords = ["build", "compilation", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+aleph-interface-description = { path = "../aleph-interface-description", version = "0.1.0" }
 
 [dependencies.syn]
 version = "1.0"

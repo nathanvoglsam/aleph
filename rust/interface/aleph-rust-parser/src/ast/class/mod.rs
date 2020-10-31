@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-pub mod error;
-pub mod result;
+#[derive(Clone, Debug, Default)]
+pub struct Class {
+    /// The inner class object we're wrapping
+    pub inner: aleph_interface_description::Class<String>,
 
-mod module_file_candidates;
-mod parse_crate;
-
-#[cfg(test)]
-mod tests;
-
-pub use parse_crate::parse_crate;
+    /// Whether the class has public visibility
+    pub public: bool,
+}

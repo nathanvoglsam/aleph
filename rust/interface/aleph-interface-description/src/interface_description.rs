@@ -34,7 +34,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct InterfaceDescription<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
+pub struct InterfaceDescription<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str> = String> {
     pub classes: HashMap<String, Class<T>>,
 }
 
