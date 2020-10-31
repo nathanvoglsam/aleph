@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-pub mod crate_resolver;
 pub mod ast;
+pub mod crate_resolver;
 pub mod interner;
 
 #[cfg(test)]

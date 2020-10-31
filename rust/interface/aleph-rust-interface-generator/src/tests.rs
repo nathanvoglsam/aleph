@@ -28,7 +28,7 @@
 //
 
 use crate::interface_generator::InterfaceGenerator;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 #[test]
 fn test_generate_valid() {

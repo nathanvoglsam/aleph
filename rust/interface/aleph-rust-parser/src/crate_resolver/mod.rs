@@ -28,9 +28,9 @@
 //
 
 mod error;
-mod result;
 mod module_file_candidates;
 mod resolver;
+mod result;
 
 pub use error::ParserError;
 pub use result::Result;

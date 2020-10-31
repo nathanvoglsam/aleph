@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::crate_resolver::ModuleFileCandidates;
 use crate::crate_resolver::ParserError;
 use crate::crate_resolver::Result;
-use crate::crate_resolver::ModuleFileCandidates;
 use std::io::{ErrorKind, Read};
 use std::path::Path;
 use syn::Item;

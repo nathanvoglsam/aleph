@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interner::{StrId, Interner};
+use crate::interner::{Interner, StrId};
 
 /// Internal struct for interning a rust path
 #[derive(Clone, Debug, Default)]

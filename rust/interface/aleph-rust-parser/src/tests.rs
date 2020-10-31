@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::interner::Interner;
 use crate::ast::Module;
 use crate::crate_resolver::ParserError;
+use crate::interner::Interner;
 use std::path::PathBuf;
 
 #[test]

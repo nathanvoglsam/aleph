@@ -27,16 +27,39 @@
 // SOFTWARE.
 //
 
-mod class;
-mod error;
-mod import;
-mod module;
-mod path;
-mod result;
+use crate::ast::Module;
+use crate::interner::StrId;
 
-pub use class::Class;
-pub use error::GeneratorError;
-pub use import::Import;
-pub use module::Module;
-pub use path::Path;
-pub use result::Result;
+/// Internal iterator type used for walking a module graph in a depth first traversal.
+pub enum IterUnionMut<'a> {
+    Root(Option<(StrId, &'a mut Module)>),
+    Map(std::collections::hash_map::IterMut<'a, StrId, Module>),
+}
+
+impl<'a> Iterator for IterUnionMut<'a> {
+    type Item = (StrId, &'a mut Module);
+
+    fn next(&mut self) -> Option<(StrId, &'a mut Module)> {
+        match self {
+            IterUnionMut::Root(item) => item.take(),
+            IterUnionMut::Map(iter) => iter.next().map(|v| (*v.0, v.1)),
+        }
+    }
+}
+
+/// Internal iterator type used for walking a module graph in a depth first traversal.
+pub enum IterUnion<'a> {
+    Root(Option<(StrId, &'a Module)>),
+    Map(std::collections::hash_map::Iter<'a, StrId, Module>),
+}
+
+impl<'a> Iterator for IterUnion<'a> {
+    type Item = (StrId, &'a Module);
+
+    fn next(&mut self) -> Option<(StrId, &'a Module)> {
+        match self {
+            IterUnion::Root(item) => item.take(),
+            IterUnion::Map(iter) => iter.next().map(|v| (*v.0, v.1)),
+        }
+    }
+}
