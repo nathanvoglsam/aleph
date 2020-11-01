@@ -81,6 +81,13 @@ impl Module {
             module_stack.last_mut().unwrap(), // Must Exist
         )?;
 
+        // Now that everything is an absolute path we can check that every path trying to refer to
+        // a type, actually refers to a type
+        Self::struct_path_check_stage(
+            interner,
+            module_stack.last_mut().unwrap(), // Must Exist
+        )?;
+
         Ok(module_stack.pop().unwrap())
     }
 
@@ -674,16 +681,14 @@ impl Module {
         Ok(())
     }
 
-    fn struct_path_resolve_stage(interner: &mut Interner, module: &mut Module) -> Result<()> {
+    fn struct_path_resolve_stage(interner: &mut Interner, root: &mut Module) -> Result<()> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
-        let super_ident = interner.intern("super");
-        let self_ident = interner.intern("self");
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
         let mut iter_stack: Vec<IterUnionMut> =
-            vec![IterUnionMut::Root(Some((crate_ident, module)))];
+            vec![IterUnionMut::Root(Some((crate_ident, root)))];
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
@@ -699,6 +704,37 @@ impl Module {
 
                 iter_stack.push(iter);
                 iter_stack.push(IterUnionMut::Map(module.sub_modules.iter_mut()));
+                continue 'outer;
+            }
+            name_stack.pop();
+        }
+
+        Ok(())
+    }
+
+    fn struct_path_check_stage(interner: &mut Interner, root: &mut Module) -> Result<()> {
+        // Intern some identifiers that we'll need
+        let crate_ident = interner.intern("crate");
+
+        // Set up our on heap stack for our depth first traversal
+        let mut name_stack = vec![];
+        let mut iter_stack: Vec<IterUnion> =
+            vec![IterUnion::Root(Some((crate_ident, root)))];
+
+        'outer: while let Some(mut iter) = iter_stack.pop() {
+            while let Some((module_name, module)) = iter.next() {
+                name_stack.push(module_name);
+                for (_, class) in module.classes.iter() {
+                    for (_, field) in class.fields.iter() {
+                        field.check_path_exists_as_class_in_module(root)?;
+                    }
+                    for (_, func) in class.functions.iter() {
+                        func.check_path_exists_as_class_in_module(root)?;
+                    }
+                }
+
+                iter_stack.push(iter);
+                iter_stack.push(IterUnion::Map(module.sub_modules.iter()));
                 continue 'outer;
             }
             name_stack.pop();

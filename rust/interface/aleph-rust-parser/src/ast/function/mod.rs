@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ast::Type;
+use crate::ast::{Type, Module};
 use crate::interner::{Interner, StrId};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -65,6 +65,18 @@ impl Function {
     /// Put `self` into a `Box`
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
+    }
+
+    ///
+    pub(crate) fn check_path_exists_as_class_in_module(
+        &self,
+        module: &Module,
+    ) -> crate::ast::Result<()> {
+        self.returns.check_path_exists_as_class_in_module(module)?;
+        for arg in self.args.iter() {
+            arg.check_path_exists_as_class_in_module(module)?;
+        }
+        Ok(())
     }
 
     /// Will convert drill down recursively until a `Type::Path` variant is reached, where it will

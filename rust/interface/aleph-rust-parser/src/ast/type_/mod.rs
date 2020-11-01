@@ -27,11 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Function, GeneratorError, Path};
+use crate::ast::{Function, GeneratorError, Path, Module};
 use crate::interner::{Interner, StrId};
 use crate::utils::{drill_through_parens, path_to_string, relative_to_absolute_path};
 use std::fmt::Debug;
 use std::hash::Hash;
+use crate::ast::module::ModuleObject;
 
 /// The supported set of types in the Aleph IDL
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -374,6 +375,59 @@ impl Type {
             }
         }
         Ok(())
+    }
+
+    ///
+    pub(crate) fn check_path_exists_as_class_in_module(
+        &self,
+        module: &Module,
+    ) -> crate::ast::Result<()> {
+        match self {
+            Type::U8
+            | Type::U16
+            | Type::U32
+            | Type::U64
+            | Type::I8
+            | Type::I16
+            | Type::I32
+            | Type::I64
+            | Type::F32
+            | Type::F64
+            | Type::Void
+            | Type::This
+            | Type::SelfType => Ok(()),
+            Type::FunctionPointer(func) => {
+                func.check_path_exists_as_class_in_module(module)
+            }
+            Type::Slice(t) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::Array((_, t)) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::ConstReference(t) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::MutableReference(t) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::ConstPointer(t) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::MutablePointer(t) => {
+                t.check_path_exists_as_class_in_module(module)
+            }
+            Type::Path(path) => {
+                if let Some((_, object)) = module.lookup_object(path) {
+                    match object {
+                        ModuleObject::Class(_) => Ok(()),
+                        ModuleObject::Module(_) => Err(GeneratorError::ReferencedObjectDoesNotExist)
+                    }
+                } else {
+                    Err(GeneratorError::ReferencedObjectDoesNotExist)
+                }
+            }
+        }
     }
 
     /// Takes a `syn::Path` and converts it to a `Type`. This will check for and coerce to one of

@@ -60,4 +60,7 @@ pub enum GeneratorError {
 
     /// Occurs when a `use` statement tries to import an object which doesn't exist in the crate
     ImportedObjectDoesNotExist,
+
+    /// Occurs when a type that doesn't exist is referred to
+    ReferencedObjectDoesNotExist,
 }
