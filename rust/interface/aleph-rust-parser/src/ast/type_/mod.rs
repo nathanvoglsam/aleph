@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ast::module::ModuleObject;
+use crate::ast::module::ModuleObjectType;
 use crate::ast::{Function, GeneratorError, Module, Path};
 use crate::interner::{Interner, StrId};
 use crate::utils::{drill_through_parens, path_to_string, relative_to_absolute_path};
@@ -404,13 +404,13 @@ impl Type {
             Type::ConstPointer(t) => t.check_path_exists_as_class_in_module(module),
             Type::MutablePointer(t) => t.check_path_exists_as_class_in_module(module),
             Type::Path(path) => {
-                if let Some((_, object)) = module.lookup_object(path) {
+                if let Some(object) = module.object_exists(path) {
                     match object {
-                        ModuleObject::Class(_) => Ok(()),
-                        ModuleObject::Module(_) => {
+                        ModuleObjectType::Class => Ok(()),
+                        ModuleObjectType::Module => {
                             Err(GeneratorError::ReferencedObjectDoesNotExist)
                         }
-                        ModuleObject::Interface(_) => Ok(()),
+                        ModuleObjectType::Interface => Ok(()),
                     }
                 } else {
                     Err(GeneratorError::ReferencedObjectDoesNotExist)

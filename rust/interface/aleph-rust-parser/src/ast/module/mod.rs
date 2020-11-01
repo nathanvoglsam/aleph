@@ -33,50 +33,79 @@ mod parser;
 use crate::ast::module::iter::IterUnion;
 use crate::ast::{Class, Import, Interface, Path};
 use crate::interner::{Interner, StrId};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+enum ModuleItemInternal<'a> {
+    Class(&'a RefCell<Class>),
+    Module(*const Module),
+    Interface(&'a RefCell<Interface>),
+    Import((Path, &'a RefCell<Import>)),
+}
+
+enum ModuleObjectInternal<'a> {
+    Class(&'a RefCell<Class>),
+    Module(*const Module),
+    Interface(&'a RefCell<Interface>),
+}
+
+/// Represents the set of types of ModuleItem
+pub enum ModuleItemType {
+    Class,
+    Module,
+    Interface,
+    Import,
+}
+
 /// Represents the union of a class, module or use import. Primarily used as a function return type
 pub enum ModuleItem<'a> {
-    Class(&'a Class),
+    Class(std::cell::Ref<'a, Class>),
     Module(&'a Module),
-    Interface(&'a Interface),
-    Import((Path, &'a Import)),
+    Interface(std::cell::Ref<'a, Interface>),
+    Import((Path, std::cell::Ref<'a, Import>)),
 }
 
 /// Represents the union of a class, module or use import. Primarily used as a function return type
 pub enum ModuleItemMut<'a> {
-    Class(&'a mut Class),
+    Class(std::cell::RefMut<'a, Class>),
     Module(&'a mut Module),
-    Interface(&'a mut Interface),
-    Import((Path, &'a mut Import)),
+    Interface(std::cell::RefMut<'a, Interface>),
+    Import((Path, std::cell::RefMut<'a, Import>)),
+}
+
+/// Represents the set of types of ModuleItem
+pub enum ModuleObjectType {
+    Class,
+    Module,
+    Interface,
 }
 
 /// Represents the union of a class and module. Primarily used as a function return type
 pub enum ModuleObject<'a> {
-    Class(&'a Class),
+    Class(std::cell::Ref<'a, Class>),
     Module(&'a Module),
-    Interface(&'a Interface),
+    Interface(std::cell::Ref<'a, Interface>),
 }
 
 /// Represents the union of a class and module. Primarily used as a function return type
 pub enum ModuleObjectMut<'a> {
-    Class(&'a mut Class),
+    Class(std::cell::RefMut<'a, Class>),
     Module(&'a mut Module),
-    Interface(&'a mut Interface),
+    Interface(std::cell::RefMut<'a, Interface>),
 }
 
 /// Internal struct for representing a module graph
 #[derive(Clone, Debug, Default)]
 pub struct Module {
     /// The list of named entities in scope in this module from use statements
-    pub imports: HashMap<StrId, Import>,
+    pub imports: HashMap<StrId, RefCell<Import>>,
 
     /// The set of structs in this module
-    pub classes: HashMap<StrId, Class>,
+    pub classes: HashMap<StrId, RefCell<Class>>,
 
     /// The set of interfaces defined in this module
-    pub interfaces: HashMap<StrId, Interface>,
+    pub interfaces: HashMap<StrId, RefCell<Interface>>,
 
     /// A map of submodules
     pub sub_modules: HashMap<StrId, Module>,
@@ -84,7 +113,22 @@ pub struct Module {
 
 // Functions that implement behavior on a completely constructed module
 impl Module {
-    pub fn lookup(&self, path: &Path) -> Option<ModuleItem> {
+    /// Internal function for handling the nearly identical implementation of an immutable and
+    /// mutable getter.
+    ///
+    /// Uses the given path to attempt to look up the item that the path refers to.
+    ///
+    /// An item can refer to an interface, class, module or an import.
+    ///
+    /// If the path is trying to lookup an object through an import then this function will
+    /// terminate before fully resolving the path through the import and will instead return the
+    /// import statement itself.
+    ///
+    /// Further logic needs to be implemented on top of this function to fully resolve a path down
+    /// to an object (interface, class or module)
+    ///
+    #[inline(always)]
+    fn lookup_internal(&self, path: &Path) -> Option<ModuleItemInternal> {
         enum State<'a> {
             Module(&'a Module),
             Terminal,
@@ -97,38 +141,39 @@ impl Module {
 
         let mut depth = 0;
         let mut state = State::Module(self);
-        let mut out: Option<ModuleItem> = None;
+        let mut out: Option<ModuleItemInternal> = None;
         for seg in path.segments.iter() {
             return match state {
                 State::Module(i) => {
-                    if let Some(u) = i.imports.get(seg) {
-                        let use_path = if u.concrete.absolute {
-                            u.concrete.clone()
+                    if let Some(import) = i.imports.get(seg) {
+                        let import_ref = import.borrow();
+                        let use_path = if import_ref.concrete.absolute {
+                            import_ref.concrete.clone()
                         } else {
                             let mut segments = path.segments[0..depth].to_vec();
-                            segments.extend_from_slice(&u.concrete.segments);
+                            segments.extend_from_slice(&import_ref.concrete.segments);
                             Path::new(segments, true)
                         };
                         state = State::Terminal;
-                        out = Some(ModuleItem::Import((use_path, u)));
+                        out = Some(ModuleItemInternal::Import((use_path, import)));
                         depth += 1;
                         continue;
                     }
                     if let Some(module) = i.sub_modules.get(seg) {
                         state = State::Module(module);
-                        out = Some(ModuleItem::Module(module));
+                        out = Some(ModuleItemInternal::Module(module as *const Module));
                         depth += 1;
                         continue;
                     }
                     if let Some(class) = i.classes.get(seg) {
                         state = State::Terminal;
-                        out = Some(ModuleItem::Class(class));
+                        out = Some(ModuleItemInternal::Class(class));
                         depth += 1;
                         continue;
                     }
                     if let Some(interface) = i.interfaces.get(seg) {
                         state = State::Terminal;
-                        out = Some(ModuleItem::Interface(interface));
+                        out = Some(ModuleItemInternal::Interface(interface));
                         depth += 1;
                         continue;
                     }
@@ -141,34 +186,16 @@ impl Module {
         out
     }
 
-    pub fn lookup_mut(&mut self, path: &Path) -> Option<ModuleItemMut> {
-        self.lookup(path).map(|v| {
-            // Safety:
-            // Because I don't want to duplicate literally the same code just to look up a mutable
-            // reference to an object I use this unsafe solution to cast a shared reference to a
-            // mutable reference. The interface remains safe to use as the `&mut self` bound will
-            // enforce that the whole object is mutably borrowed with a call to this function so we
-            // can't give out aliasing mutable references with this interface
-            #[allow(mutable_transmutes)]
-            unsafe {
-                match v {
-                    ModuleItem::Class(i) => ModuleItemMut::Class(core::mem::transmute(i)),
-                    ModuleItem::Module(i) => ModuleItemMut::Module(core::mem::transmute(i)),
-                    ModuleItem::Interface(i) => ModuleItemMut::Interface(core::mem::transmute(i)),
-                    ModuleItem::Import(i) => ModuleItemMut::Import(core::mem::transmute(i)),
-                }
-            }
-        })
-    }
-
-    ///
+    /// This function implements further logic on top of the `Self::lookup_internal` function to
+    /// fully resolve a path down to a concrete object (interface, class or module)
     ///
     /// # Warning
     ///
     /// This only works if all `use` imports that import objects from external crates have been
     /// stripped from the module graph
     ///
-    pub fn lookup_object(&self, path: &Path) -> Option<(Path, ModuleObject)> {
+    #[inline(always)]
+    fn lookup_object_internal(&self, path: &Path) -> Option<(Path, ModuleObjectInternal)> {
         enum State<'a> {
             Owned(Path),
             Ref(&'a Path),
@@ -185,62 +212,148 @@ impl Module {
         }
 
         let mut current = State::Ref(path);
-        while let Some(item) = self.lookup(&*current) {
+        while let Some(item) = self.lookup_internal(&*current) {
             match item {
-                ModuleItem::Class(i) => {
+                ModuleItemInternal::Class(i) => {
                     let path = match current {
                         State::Owned(i) => i,
                         State::Ref(i) => i.clone(),
                     };
-                    return Some((path, ModuleObject::Class(i)));
+                    return Some((path, ModuleObjectInternal::Class(i)));
                 }
-                ModuleItem::Module(i) => {
+                ModuleItemInternal::Module(i) => {
                     let path = match current {
                         State::Owned(i) => i,
                         State::Ref(i) => i.clone(),
                     };
-                    return Some((path, ModuleObject::Module(i)));
+                    return Some((path, ModuleObjectInternal::Module(i)));
                 }
-                ModuleItem::Interface(i) => {
+                ModuleItemInternal::Interface(i) => {
                     let path = match current {
                         State::Owned(i) => i,
                         State::Ref(i) => i.clone(),
                     };
-                    return Some((path, ModuleObject::Interface(i)));
+                    return Some((path, ModuleObjectInternal::Interface(i)));
                 }
-                ModuleItem::Import((i, _)) => current = State::Owned(i),
+                ModuleItemInternal::Import((i, _)) => current = State::Owned(i),
             }
         }
         None
     }
 
-    ///
+    /// Returns the type of item the path refers to if it exists, or `None` if the path does not
+    /// refer to anything
+    pub fn item_exists(&self, path: &Path) -> Option<ModuleItemType> {
+        match self.lookup_internal(path) {
+            None => None,
+            Some(i) => match i {
+                ModuleItemInternal::Class(_) => Some(ModuleItemType::Class),
+                ModuleItemInternal::Module(_) => Some(ModuleItemType::Module),
+                ModuleItemInternal::Interface(_) => Some(ModuleItemType::Interface),
+                ModuleItemInternal::Import(_) => Some(ModuleItemType::Import),
+            },
+        }
+    }
+
+    /// Get a reference to the item path refers to if it exists
+    pub fn lookup(&self, path: &Path) -> Option<ModuleItem> {
+        match self.lookup_internal(path) {
+            None => None,
+            Some(object) => match object {
+                ModuleItemInternal::Class(i) => Some(ModuleItem::Class(i.borrow())),
+                ModuleItemInternal::Module(i) => {
+                    let i = unsafe { &*i };
+                    Some(ModuleItem::Module(i))
+                }
+                ModuleItemInternal::Interface(i) => Some(ModuleItem::Interface(i.borrow())),
+                ModuleItemInternal::Import((path, i)) => {
+                    Some(ModuleItem::Import((path, i.borrow())))
+                }
+            },
+        }
+    }
+
+    /// Get a mutable reference to the item path refers to if it exists
+    pub fn lookup_mut(&mut self, path: &Path) -> Option<ModuleItemMut> {
+        match self.lookup_internal(path) {
+            None => None,
+            Some(object) => match object {
+                ModuleItemInternal::Class(i) => Some(ModuleItemMut::Class(i.borrow_mut())),
+                ModuleItemInternal::Module(i) => {
+                    let i = i as *mut Module;
+                    let i = unsafe { &mut *i };
+                    Some(ModuleItemMut::Module(i))
+                }
+                ModuleItemInternal::Interface(i) => Some(ModuleItemMut::Interface(i.borrow_mut())),
+                ModuleItemInternal::Import((path, i)) => {
+                    Some(ModuleItemMut::Import((path, i.borrow_mut())))
+                }
+            },
+        }
+    }
+
+    /// Returns the type of object path refers to, or `None` if the object doesn't refer to anything
+    pub fn object_exists(&self, path: &Path) -> Option<ModuleObjectType> {
+        match self.lookup_object_internal(path) {
+            None => None,
+            Some((_, i)) => match i {
+                ModuleObjectInternal::Class(_) => Some(ModuleObjectType::Class),
+                ModuleObjectInternal::Module(_) => Some(ModuleObjectType::Module),
+                ModuleObjectInternal::Interface(_) => Some(ModuleObjectType::Interface),
+            },
+        }
+    }
+
+    /// Returns a reference to the object path refers to, or `None` if the path doesn't refer to
+    /// any object.
     ///
     /// # Warning
     ///
     /// This only works if all `use` imports that import objects from external crates have been
     /// stripped from the module graph
     ///
-    pub fn lookup_object_mut(&mut self, path: &Path) -> Option<(Path, ModuleObjectMut)> {
-        self.lookup_object(path).map(|(path, object)| {
-            // Safety:
-            // Because I don't want to duplicate literally the same code just to look up a mutable
-            // reference to an object I use this unsafe solution to cast a shared reference to a
-            // mutable reference. The interface remains safe to use as the `&mut self` bound will
-            // enforce that the whole object is mutably borrowed with a call to this function so we
-            // can't give out aliasing mutable references with this interface
-            #[allow(mutable_transmutes)]
-            let object = unsafe {
-                match object {
-                    ModuleObject::Class(i) => ModuleObjectMut::Class(core::mem::transmute(i)),
-                    ModuleObject::Module(i) => ModuleObjectMut::Module(core::mem::transmute(i)),
-                    ModuleObject::Interface(i) => {
-                        ModuleObjectMut::Interface(core::mem::transmute(i))
+    pub fn lookup_object(&self, path: &Path) -> Option<(Path, ModuleObject)> {
+        match self.lookup_object_internal(path) {
+            None => None,
+            Some((path, i)) => {
+                let out = match i {
+                    ModuleObjectInternal::Class(i) => ModuleObject::Class(i.borrow()),
+                    ModuleObjectInternal::Module(i) => {
+                        let i = unsafe { &*i };
+                        ModuleObject::Module(i)
                     }
-                }
-            };
-            (path, object)
-        })
+                    ModuleObjectInternal::Interface(i) => ModuleObject::Interface(i.borrow()),
+                };
+                Some((path, out))
+            }
+        }
+    }
+
+    /// Returns a mutable reference to the object path refers to, or `None` if the path doesn't
+    /// refer to any object.
+    /// # Warning
+    ///
+    /// This only works if all `use` imports that import objects from external crates have been
+    /// stripped from the module graph
+    ///
+    pub fn lookup_object_mut(&mut self, path: &Path) -> Option<(Path, ModuleObjectMut)> {
+        match self.lookup_object_internal(path) {
+            None => None,
+            Some((path, i)) => {
+                let out = match i {
+                    ModuleObjectInternal::Class(i) => ModuleObjectMut::Class(i.borrow_mut()),
+                    ModuleObjectInternal::Module(i) => {
+                        let i = i as *mut Module;
+                        let i = unsafe { &mut *i };
+                        ModuleObjectMut::Module(i)
+                    }
+                    ModuleObjectInternal::Interface(i) => {
+                        ModuleObjectMut::Interface(i.borrow_mut())
+                    }
+                };
+                Some((path, out))
+            }
+        }
     }
 
     /// Internal function used for debug printing the AST with full names and not StrId indexes
@@ -265,6 +378,7 @@ impl Module {
                 print!("{}\n", interner.lookup(module_name));
 
                 for (u_name, u) in module.imports.iter() {
+                    let u = u.borrow();
                     let vis = if u.public { "public" } else { "" };
                     let u_name_str = interner.lookup(*u_name);
                     let u_path_str = u.concrete.to_string(interner);
@@ -275,6 +389,7 @@ impl Module {
                 }
 
                 for (class_name, class) in module.classes.iter() {
+                    let class = class.borrow();
                     let tag = if class.public {
                         "public class"
                     } else {
@@ -302,6 +417,7 @@ impl Module {
                 }
 
                 for (interface_name, interface) in module.interfaces.iter() {
+                    let interface = interface.borrow();
                     let tag = if interface.public {
                         "public interface"
                     } else {

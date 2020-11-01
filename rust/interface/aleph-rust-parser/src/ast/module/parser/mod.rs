@@ -28,10 +28,11 @@
 //
 
 use crate::ast::module::iter::{IterUnion, IterUnionMut};
-use crate::ast::module::{ModuleItemMut, ModuleObject, ModuleObjectMut};
+use crate::ast::module::{ModuleItemMut, ModuleObjectMut, ModuleObjectType};
 use crate::ast::{Class, Function, GeneratorError, Import, Interface, Module, Path, Result, Type};
 use crate::interner::{Interner, StrId};
 use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use syn::export::Span;
 
@@ -162,7 +163,9 @@ impl Module {
                                 class.fields.insert(field_name, ty);
                             }
 
-                            internal_module.classes.insert(struct_name, class);
+                            internal_module
+                                .classes
+                                .insert(struct_name, RefCell::new(class));
                         }
                     }
                     syn::Item::Trait(item) => {
@@ -196,7 +199,9 @@ impl Module {
                                 }
                             }
 
-                            internal_module.interfaces.insert(interface_name, interface);
+                            internal_module
+                                .interfaces
+                                .insert(interface_name, RefCell::new(interface));
                         }
                     }
                     _ => {}
@@ -278,7 +283,8 @@ impl Module {
                 let mut to_remove = Vec::new();
 
                 // Pass one, resolve all simple cases
-                for (u_name, u) in module.imports.iter_mut() {
+                for (u_name, u) in module.imports.iter() {
+                    let mut u = u.borrow_mut();
                     // The first segment will let us decide where the path intends to begin
                     // resolving from
                     let first = *u.concrete.segments.first().unwrap();
@@ -366,6 +372,7 @@ impl Module {
 
                 // Iterate over all the uses to find the ones we need to resolve to absolute paths
                 for (u_name, u) in module.imports.iter() {
+                    let u = u.borrow();
                     // We only want to operate on relative paths
                     if !u.concrete.absolute {
                         let mut new_path = module_path.segments.clone();
@@ -375,7 +382,7 @@ impl Module {
 
                         // OBJECT LOOKUP RESOLUTION
                         // Lookup the underlying object (resolving through all chained imports)
-                        if let Some((_, _)) = root.lookup_object(&new_path) {
+                        if root.object_exists(&new_path).is_some() {
                             // Build a path to the actual import itself
                             let mut import_path = module_path.segments.clone();
                             import_path.push(*u_name);
@@ -404,7 +411,7 @@ impl Module {
 
         for (import_path, new_path) in to_patch {
             match root.lookup_mut(&import_path).unwrap() {
-                ModuleItemMut::Import((_, u)) => {
+                ModuleItemMut::Import((_, mut u)) => {
                     u.concrete = new_path;
                 }
                 _ => unreachable!(),
@@ -416,7 +423,7 @@ impl Module {
 
     fn resolve_use_into(
         interner: &mut Interner,
-        into: &mut HashMap<StrId, Import>,
+        into: &mut HashMap<StrId, RefCell<Import>>,
         prefix: Option<Path>,
         public: bool,
         item: &syn::UseTree,
@@ -480,7 +487,7 @@ impl Module {
                         };
 
                         // Push to the list
-                        if into.insert(seg, val).is_some() {
+                        if into.insert(seg, RefCell::new(val)).is_some() {
                             return Err(GeneratorError::MultipleObjectsWithSameName);
                         }
 
@@ -505,7 +512,7 @@ impl Module {
                         };
 
                         // Push to the list
-                        if into.insert(rename, val).is_some() {
+                        if into.insert(rename, RefCell::new(val)).is_some() {
                             return Err(GeneratorError::MultipleObjectsWithSameName);
                         }
 
@@ -525,7 +532,7 @@ impl Module {
                         };
 
                         // Push to the list
-                        if into.insert(seg, val).is_some() {
+                        if into.insert(seg, RefCell::new(val)).is_some() {
                             return Err(GeneratorError::MultipleObjectsWithSameName);
                         }
 
@@ -607,7 +614,7 @@ impl Module {
         // make sure the impl block is defined on a struct and not something else so we also emit
         // an error for this case
         let object = module.lookup_object_mut(&path);
-        if let Some((_, ModuleObjectMut::Class(class))) = object {
+        if let Some((_, ModuleObjectMut::Class(mut class))) = object {
             // Now that we know we should be parsing this impl block we can check some error cases
             // that would only be errors for impl blocks on interface structs. Here we're checking
             // if we've got any generics in the impl signature, which we can't properly handle right
@@ -648,46 +655,19 @@ impl Module {
         Ok(())
     }
 
-    fn struct_path_resolve_stage(mut root: Module, interner: &mut Interner) -> Result<Module> {
+    fn struct_path_resolve_stage(root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
 
-        // SAFETY:
-        // We own the `root` module so we, by definition, must be the only place in the code that
-        // has a reference to this object.
-        //
-        // Based on this it means this function holds exclusive access to the root module. Due to
-        // the nature of what we're doing we need to check for the existence of an object within
-        // the module graph itself while mutably iterating the module graph. The borrow checker
-        // does not like this.
-        //
-        // The module graph's structure (links) is never modified so technically we aren't actually
-        // mutable borrowing the graph, only some of the contents of the graph. Which is something
-        // the borrow checker can't really represent in a sane way and something we can't work
-        // around in safe code without riddling the code with RefCell.
-        //
-        // For now I will use a super unsafe workaround that, to my knowledge, is still safe as the
-        // single use of the aliased data only reads data that isn't written to anyway so even if
-        // the compiler does some funky optimizations it can't break what we're doing anyway.
-        //
-        // Yes I know undefined behaviour means the compiler can do literally anything it wants, but
-        // there's nothing sane it could do to break this so I'm going to stick with it for now
-        //
-        // I might try the RefCell solution but that's going to make the code *way* uglier
-        let root_unsafe: &Module = unsafe {
-            let root_unsafe: *const Module = core::mem::transmute(&root);
-            &*root_unsafe
-        };
-
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
-        let mut iter_stack: Vec<IterUnionMut> =
-            vec![IterUnionMut::Root(Some((crate_ident, &mut root)))];
+        let mut iter_stack: Vec<IterUnion> = vec![IterUnion::Root(Some((crate_ident, &root)))];
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
                 name_stack.push(module_name);
-                for (_, class) in module.classes.iter_mut() {
+                for (_, class) in module.classes.iter() {
+                    let mut class = class.borrow_mut();
                     for (_, field) in class.fields.iter_mut() {
                         field.relative_to_absolute_path(&name_stack[1..], interner)?;
                     }
@@ -695,22 +675,23 @@ impl Module {
                         func.relative_to_absolute_path(&name_stack[1..], interner)?;
                     }
                     class.implements.retain(|v| {
-                        let object = root_unsafe.lookup_object(v);
-                        if let Some((_, ModuleObject::Interface(_))) = object {
+                        let object = root.object_exists(v);
+                        if let Some(ModuleObjectType::Interface) = object {
                             true
                         } else {
                             false
                         }
                     });
                 }
-                for (_, interface) in module.interfaces.iter_mut() {
+                for (_, interface) in module.interfaces.iter() {
+                    let mut interface = interface.borrow_mut();
                     for (_, func) in interface.functions.iter_mut() {
                         func.relative_to_absolute_path(&name_stack[1..], interner)?;
                     }
                 }
 
                 iter_stack.push(iter);
-                iter_stack.push(IterUnionMut::Map(module.sub_modules.iter_mut()));
+                iter_stack.push(IterUnion::Map(module.sub_modules.iter()));
                 continue 'outer;
             }
             name_stack.pop();
@@ -731,6 +712,7 @@ impl Module {
             while let Some((module_name, module)) = iter.next() {
                 name_stack.push(module_name);
                 for (_, class) in module.classes.iter() {
+                    let class = class.borrow_mut();
                     for (_, field) in class.fields.iter() {
                         field.check_path_exists_as_class_in_module(&root)?;
                     }
@@ -739,6 +721,7 @@ impl Module {
                     }
                 }
                 for (_, interface) in module.interfaces.iter() {
+                    let interface = interface.borrow_mut();
                     for (_, func) in interface.functions.iter() {
                         func.check_path_exists_as_class_in_module(&root)?;
                     }
