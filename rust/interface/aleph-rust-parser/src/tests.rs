@@ -63,8 +63,9 @@ fn test_parse_crate_malformed_graph() {
 
 #[test]
 fn test_parse_to_internal_ast() {
-    let crate_root = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    let mut crate_root = PathBuf::from(crate_root);
+    let mut crate_root = std::env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir().unwrap());
     crate_root.push("test_crate_roots");
     crate_root.push("valid_2");
     let file = crate::crate_resolver::resolve_crate(&crate_root).unwrap();

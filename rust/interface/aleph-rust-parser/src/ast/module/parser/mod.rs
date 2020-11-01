@@ -28,13 +28,12 @@
 //
 
 use crate::ast::module::iter::{IterUnion, IterUnionMut};
-use crate::ast::module::ModuleItemMut;
+use crate::ast::module::{ModuleItemMut, ModuleObjectMut};
 use crate::ast::{Class, GeneratorError, Import, Module, Path, Result};
 use crate::interner::{Interner, StrId};
-use aleph_interface_description::Type;
+use aleph_interface_description::{Function, Type};
 use std::collections::HashMap;
 use syn::export::Span;
-use syn::{UseTree, Visibility};
 
 // Functions for constructing a module
 impl Module {
@@ -64,6 +63,16 @@ impl Module {
         Self::use_fixup_stage(
             module_stack.last_mut().unwrap(), // Must exist
             interner,
+        )?;
+
+        // Iterate over the file a second time. We now know all of the structs we need to generate
+        // interfaces for so we can look for impl blocks that associated functions with the structs
+        item_iter_stack.push(file.items.iter());
+        Self::impl_resolve_stage(
+            interner,
+            &mut namespace_stack,
+            &mut item_iter_stack,
+            module_stack.last_mut().unwrap(), // Must Exist
         )?;
 
         Ok(module_stack.pop().unwrap())
@@ -115,7 +124,19 @@ impl Module {
                         }
                     }
                     syn::Item::Struct(item) => {
-                        if item.attrs.iter().any(|attr| &attr.path == &aleph_interface) {
+                        let has_attr = item.attrs.iter().any(|attr| &attr.path == &aleph_interface);
+                        let has_generics =
+                            item.generics.gt_token.is_some() || item.generics.lt_token.is_some();
+
+                        // Defining the attribute on a struct with generic parameters is an error as
+                        // there is no sane way to represent generics across an FFI boundary
+                        if has_attr && has_generics {
+                            return Err(GeneratorError::AttributeOnGenericObject);
+                        }
+
+                        // We only need to check for the attribute here as we've already guarded
+                        // from the `has_generics` case by exiting in the above block
+                        if has_attr {
                             let public = Self::resolve_visibility(&item.vis)?;
                             let struct_name = item.ident.to_string();
                             let struct_name = interner.intern(struct_name);
@@ -369,9 +390,9 @@ impl Module {
 
     fn resolve_visibility(vis: &syn::Visibility) -> Result<bool> {
         match vis {
-            Visibility::Public(_) => Ok(true),
-            Visibility::Crate(_) => unimplemented!(),
-            Visibility::Restricted(i) => {
+            syn::Visibility::Public(_) => Ok(true),
+            syn::Visibility::Crate(_) => unimplemented!(),
+            syn::Visibility::Restricted(i) => {
                 if i.in_token.is_some() {
                     Err(GeneratorError::UnsupportedVisibility)
                 } else {
@@ -391,7 +412,7 @@ impl Module {
                     }
                 }
             }
-            Visibility::Inherited => Ok(false),
+            syn::Visibility::Inherited => Ok(false),
         }
     }
 
@@ -413,15 +434,15 @@ impl Module {
 
         // Resolve the initial state (and throw errors if invalid syntax detected)
         let mut state = match current {
-            UseTree::Path(_) => State::Path,
-            UseTree::Name(_) | UseTree::Rename(_) | UseTree::Glob(_) => {
+            syn::UseTree::Path(_) => State::Path,
+            syn::UseTree::Name(_) | syn::UseTree::Rename(_) | syn::UseTree::Glob(_) => {
                 if path.segments.is_empty() {
                     return Err(GeneratorError::InvalidUseSyntax);
                 } else {
                     State::Tail
                 }
             }
-            UseTree::Group(_) => State::Tail,
+            syn::UseTree::Group(_) => State::Tail,
         };
 
         // This is a recursive function flattened into a loop and is a hand written parser state
@@ -431,7 +452,7 @@ impl Module {
                 State::Path => match current {
                     // If we've got another path push it's segment onto the path we're currently
                     // building and update the `current` to point to the next item in the chain
-                    UseTree::Path(i) => {
+                    syn::UseTree::Path(i) => {
                         // Get the segment's ident as a string and intern it and push to the current
                         // path
                         let seg = i.ident.to_string();
@@ -441,13 +462,13 @@ impl Module {
                         // Step to the next node in the use tree
                         current = &i.tree;
                     }
-                    UseTree::Name(_) => state = State::Tail,
-                    UseTree::Rename(_) => state = State::Tail,
-                    UseTree::Glob(_) => state = State::Tail,
-                    UseTree::Group(_) => state = State::Tail,
+                    syn::UseTree::Name(_) => state = State::Tail,
+                    syn::UseTree::Rename(_) => state = State::Tail,
+                    syn::UseTree::Glob(_) => state = State::Tail,
+                    syn::UseTree::Group(_) => state = State::Tail,
                 },
                 State::Tail => match current {
-                    UseTree::Name(item) => {
+                    syn::UseTree::Name(item) => {
                         // Get the segment's ident as a string and intern it and push to the current
                         // path
                         let seg = item.ident.to_string();
@@ -468,7 +489,7 @@ impl Module {
                         // This is a terminal state so exit the function
                         return Ok(());
                     }
-                    UseTree::Rename(item) => {
+                    syn::UseTree::Rename(item) => {
                         // Get the segment's ident as a string and intern it and push to the current
                         // path
                         let seg = item.ident.to_string();
@@ -493,7 +514,7 @@ impl Module {
                         // This is a terminal state so exit the function
                         return Ok(());
                     }
-                    UseTree::Glob(_) => {
+                    syn::UseTree::Glob(_) => {
                         // Get the segment's ident as a string and intern it and push to the current
                         // path
                         let seg = interner.intern("*");
@@ -513,16 +534,132 @@ impl Module {
                         // This is a terminal state so exit the function
                         return Ok(());
                     }
-                    UseTree::Group(item) => {
+                    syn::UseTree::Group(item) => {
                         for v in item.items.iter() {
                             Self::resolve_use_into(interner, into, Some(path.clone()), public, v)?;
                         }
                         return Ok(());
                     }
-                    UseTree::Path(_) => unreachable!(),
+                    syn::UseTree::Path(_) => unreachable!(),
                 },
             }
         }
+    }
+
+    fn impl_resolve_stage(
+        interner: &mut Interner,
+        namespace_stack: &mut Vec<StrId>,
+        item_iter_stack: &mut Vec<std::slice::Iter<syn::Item>>,
+        module: &mut Module,
+    ) -> Result<()> {
+        'outer: while let Some(mut items) = item_iter_stack.pop() {
+            while let Some(item) = items.next() {
+                match item {
+                    syn::Item::Mod(item) => {
+                        if let Some(content) = item.content.as_ref() {
+                            // Add the module name to the namespace stack
+                            let mod_name = item.ident.to_string();
+                            let mod_name = interner.intern(&mod_name);
+                            namespace_stack.push(mod_name);
+
+                            // Backup the current iterator and module and push the new ones for the
+                            // next iteration
+                            item_iter_stack.push(items);
+                            item_iter_stack.push(content.1.iter());
+                            continue 'outer;
+                        }
+                    }
+                    syn::Item::Impl(item) => match &item.self_ty.as_ref() {
+                        syn::Type::Path(path) => {
+                            Self::handle_impl_on_path(
+                                interner,
+                                namespace_stack,
+                                module,
+                                &item,
+                                path,
+                            )?;
+                            // We only care about impl blocks on a `TypePath` as that will refer to
+                            // a struct. We can't handle an impl on anything else in a sane way so
+                            // we just skip them all.
+                            //
+                            // We also don't handle traits yet so we're going to skip those
+                            let is_trait_impl = item.trait_.is_some();
+                            if !is_trait_impl {}
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
+
+            namespace_stack.pop();
+        }
+        Ok(())
+    }
+
+    fn handle_impl_on_path(
+        interner: &mut Interner,
+        namespace_stack: &mut Vec<StrId>,
+        module: &mut Module,
+        item: &syn::ItemImpl,
+        path: &syn::TypePath,
+    ) -> Result<()> {
+        // Skip trait impl blocks for now, as we don't handle these yet
+        let is_trait_impl = item.trait_.is_some();
+        if is_trait_impl {
+            return Ok(());
+        }
+
+        // Intern the path and resolve to an absolute path
+        let mut path = Path::from_syn(interner, &path.path);
+        relative_to_absolute_path(interner, namespace_stack, &mut path);
+
+        // Now we need to check if this impl block is actually implementing functions on a struct
+        // that we should be generating an interface for. We already have every struct we should
+        // care about in the module, so we just look up the object with the absolute path we
+        // created. If it exists in the module then we should parse the impl block. We also need to
+        // make sure the impl block is defined on a struct and not something else so we also emit
+        // an error for this case
+        let object = module.lookup_object_mut(&path);
+        if let Some((_, class)) = object {
+            // Now that we know we should be parsing this impl block we can check some error cases
+            // that would only be errors for impl blocks on interface structs. Here we're checking
+            // if we've got any generics in the impl signature, which we can't properly handle right
+            // now.
+            let has_generics = item.generics.lt_token.is_some() || item.generics.gt_token.is_some();
+            if has_generics {
+                return Err(GeneratorError::AttributeOnGenericObject);
+            }
+
+            // Check if we're actually implementing functions on a struct and error if we aren't.
+            if let ModuleObjectMut::Class(class) = class {
+                Self::handle_impl_class(interner, namespace_stack, class, item)?;
+            } else {
+                return Result::Err(GeneratorError::ImplBlockOnModule);
+            }
+        }
+        Ok(())
+    }
+
+    fn handle_impl_class(
+        interner: &mut Interner,
+        namespace_stack: &mut Vec<StrId>,
+        class: &mut Class,
+        item: &syn::ItemImpl,
+    ) -> Result<()> {
+        // Iterate over all items in the impl block
+        for item in item.items.iter() {
+            // And select only the function/method declarations as those are the only ones we care
+            // about
+            if let syn::ImplItem::Method(method) = item {
+                // Attempt to parse the function signature and add it to the class's list of functions
+                let function = Function::from_function_signature(&method.sig)
+                    .ok_or(GeneratorError::UnsupportedMethodSignature)?;
+                let name = method.sig.ident.to_string();
+                class.inner.functions.insert(name, function);
+            }
+        }
+        Ok(())
     }
 }
 
@@ -535,5 +672,43 @@ fn clone_namespace_stack(stack: &[StrId]) -> Vec<StrId> {
         stack.to_vec()
     } else {
         stack[1..].to_vec()
+    }
+}
+
+fn relative_to_absolute_path(interner: &mut Interner, name_stack: &[StrId], path: &mut Path) {
+    // Intern some identifiers that we'll need
+    let crate_ident = interner.intern("crate");
+    let super_ident = interner.intern("super");
+    let self_ident = interner.intern("self");
+
+    // The first segment will let us decide where the path intends to begin
+    // resolving from
+    let first = *path.segments.first().unwrap();
+    if first == super_ident {
+        // "super" means to begin resolving from the parent module so substitute the
+        // old path with an absolute path that resolves from the crate root
+        let mut new_path = name_stack.to_vec();
+        new_path.pop();
+        new_path.extend_from_slice(&path.segments[1..]);
+        path.segments = new_path;
+        path.absolute = true;
+    } else if first == self_ident {
+        // "self" in a use statement means to resolve from within the module itself
+        // so replace the old "self" path with an absolute path
+        let mut new_path = name_stack.to_vec();
+        new_path.extend_from_slice(&path.segments[1..]);
+        path.segments = new_path;
+        path.absolute = true;
+    } else if first == crate_ident {
+        // The only other special path segment is "crate" which means to start from
+        // the crate root. We handle absolute paths differently in our internal path
+        // type so we remove the "crate" segment and mark as absolute
+        path.segments = path.segments[1..].to_vec();
+        path.absolute = true;
+    } else {
+        let mut new_path = name_stack.to_vec();
+        new_path.extend_from_slice(&path.segments);
+        path.segments = new_path;
+        path.absolute = true;
     }
 }

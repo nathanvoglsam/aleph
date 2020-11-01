@@ -32,6 +32,21 @@ impl Vector3 {
         self.x += other.x;
         self.y += other.y;
     }
+
+    pub fn sub(&mut self, other: &Self) {
+        self.x -= other.x;
+        self.y -= other.y;
+    }
+
+    pub fn div(&mut self, other: &self::Vector2) {
+        self.x /= other.x;
+        self.y /= other.y;
+    }
+
+    pub fn mul(&mut self, other: &super::math::Vector2) {
+        self.x *= other.x;
+        self.y *= other.y;
+    }
 }
 
 #[aleph::interface]

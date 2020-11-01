@@ -69,8 +69,13 @@ pub enum Type<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> {
     /// void primitive type (only really useful for return type)
     Void,
 
-    /// special "this" or "self" type to be used by member functions
+    /// special "this" or "self" type to be used by member functions. This is distinct from `Self_`
+    /// as self is purely for resolving a concrete type while `This` is for representing a
+    /// "this ptr".
     This,
+
+    /// rust's "Self" type that is used to refer to the type the function is defined on
+    SelfType,
 
     /// A function pointer, with the given signature
     FunctionPointer(Box<Function<T>>),
@@ -163,13 +168,25 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
         }
     }
 
-    /// Returns if the outermost `Type` is mutable.
+    /// Returns whether this type is a data reference and mutable.
     ///
-    /// Primitives and `Struct` are *not* mutable under the semantics of this interface.
+    /// Will return `None` if the type is not a data reference (ConstReference, MutablePointer, etc)
+    ///
+    /// Will return `Some(bool)` if the type is a data reference where bool depends on whether the
+    /// reference is mutable.
+    ///
+    /// # Warning
+    ///
+    /// `Slice` and `Array` are not data references they are concrete types that are only sane to
+    /// expose through a reference, so a bare `Array` or `Slice` will return `None`.
+    ///
+    /// `FunctionPointer`, while being a reference, does not refer to "data" that can be read and so
+    /// would strictly always be immutable. `None` will be returned for a `FunctionPointer` as I
+    /// believe it is enough of an edge case to not consider in this function.
     ///
     /// ```
     /// ```
-    pub fn is_mutable(&self) -> bool {
+    pub fn is_mutable_ref(&self) -> Option<bool> {
         match self {
             Type::U8
             | Type::U16
@@ -183,14 +200,13 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
             | Type::F64
             | Type::Void
             | Type::This
-            | Type::ConstReference(_)
-            | Type::ConstPointer(_)
+            | Type::SelfType
             | Type::Path(_)
-            | Type::FunctionPointer(_) => false,
-            Type::Array(_)
-            | Type::Slice(_)
-            | Type::MutableReference(_)
-            | Type::MutablePointer(_) => true,
+            | Type::FunctionPointer(_)
+            | Type::Array(_)
+            | Type::Slice(_) => None,
+            Type::ConstReference(_) | Type::ConstPointer(_) => Some(false),
+            Type::MutableReference(_) | Type::MutablePointer(_) => Some(true),
         }
     }
 
@@ -225,6 +241,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
             | Type::F32
             | Type::F64
             | Type::Void
+            | Type::SelfType
             | Type::Path(_) => false,
             Type::This => true,
             Type::FunctionPointer(v) => v.contains_this(),
@@ -249,7 +266,7 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Type<T> {
     /// let ref_t = Type::ConstReference(t.boxed_clone());
     ///
     /// assert_eq!(t, Type::F32);
-    /// assert!(!ref_t.is_mutable());
+    /// assert!(ref_t.is_mutable_ref().is_none());
     /// ```
     pub fn boxed_clone(&self) -> Box<Self> {
         Box::new(self.clone())
@@ -278,6 +295,7 @@ impl Type<String> {
             "i64" => Some(Type::I64),
             "f32" => Some(Type::F32),
             "f64" => Some(Type::F64),
+            "Self" => Some(Type::SelfType),
             "usize" => None, // Unsupported type
             "isize" => None, // Unsupported type
             "i128" => None,  // Unsupported type
