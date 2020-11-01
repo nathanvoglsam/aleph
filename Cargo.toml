@@ -41,7 +41,6 @@ members = [
     "rust/build/aleph-target-build",
     "rust/config/aleph-app-info",
     "rust/config/aleph-settings",
-    "rust/dotnet/aleph-core-clr",
     "rust/interface/aleph-interface-description",
     "rust/interface/aleph-rust-codegen",
     "rust/interface/aleph-rust-parser",
