@@ -30,7 +30,7 @@
 use crate::interner::{Interner, StrId};
 
 /// Internal struct for interning a rust path
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct Path {
     pub segments: Vec<StrId>,
     pub absolute: bool,

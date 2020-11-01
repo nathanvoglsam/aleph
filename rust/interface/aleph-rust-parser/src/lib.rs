@@ -31,5 +31,7 @@ pub mod ast;
 pub mod crate_resolver;
 pub mod interner;
 
+mod utils;
+
 #[cfg(test)]
 mod tests;

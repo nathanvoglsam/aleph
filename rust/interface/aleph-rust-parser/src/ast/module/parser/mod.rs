@@ -29,9 +29,9 @@
 
 use crate::ast::module::iter::{IterUnion, IterUnionMut};
 use crate::ast::module::{ModuleItemMut, ModuleObjectMut};
-use crate::ast::{Class, GeneratorError, Import, Module, Path, Result};
+use crate::ast::{Class, Function, GeneratorError, Import, Module, Path, Result, Type};
 use crate::interner::{Interner, StrId};
-use aleph_interface_description::{Function, Type};
+use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
 use std::collections::HashMap;
 use syn::export::Span;
 
@@ -72,6 +72,12 @@ impl Module {
             interner,
             &mut namespace_stack,
             &mut item_iter_stack,
+            module_stack.last_mut().unwrap(), // Must Exist
+        )?;
+
+        // Iterate over the module again to resolve all paths to be absolute
+        Self::struct_path_resolve_stage(
+            interner,
             module_stack.last_mut().unwrap(), // Must Exist
         )?;
 
@@ -142,23 +148,27 @@ impl Module {
                             let struct_name = interner.intern(struct_name);
 
                             let mut class = Class {
-                                inner: Default::default(),
+                                fields: Default::default(),
+                                functions: Default::default(),
                                 public,
                             };
 
                             for field in item.fields.iter() {
                                 let field_name = field.ident.as_ref().unwrap().to_string();
+                                let field_name = interner.intern(field_name);
 
-                                let ty = if let Some(ty) = Type::from_struct_field(&field.ty) {
+                                let ty = if let Some(ty) =
+                                    Type::from_struct_field(interner, &field.ty)
+                                {
                                     ty
                                 } else {
                                     return Err(GeneratorError::UnsupportedStructField);
                                 };
 
-                                class.inner.fields.insert(field_name, ty);
+                                class.fields.insert(field_name, ty);
                             }
 
-                            internal_module.structs.insert(struct_name, class);
+                            internal_module.classes.insert(struct_name, class);
                         }
                     }
                     _ => {}
@@ -190,7 +200,7 @@ impl Module {
         while let Some(module) = stack.pop() {
             // Make sure no `uses` import colliding names
             for (name, _) in module.imports.iter() {
-                if module.structs.contains_key(name) {
+                if module.classes.contains_key(name) {
                     return Err(GeneratorError::MultipleObjectsWithSameName);
                 }
                 if module.sub_modules.contains_key(name) {
@@ -200,7 +210,7 @@ impl Module {
 
             // Make sure no module name collides with a struct name
             for (name, sub_module) in module.sub_modules.iter() {
-                if module.structs.contains_key(name) {
+                if module.classes.contains_key(name) {
                     return Err(GeneratorError::MultipleObjectsWithSameName);
                 }
                 stack.push(sub_module);
@@ -612,7 +622,8 @@ impl Module {
 
         // Intern the path and resolve to an absolute path
         let mut path = Path::from_syn(interner, &path.path);
-        relative_to_absolute_path(interner, namespace_stack, &mut path);
+        relative_to_absolute_path(interner, namespace_stack, &mut path)
+            .ok_or(GeneratorError::InvalidUsePath)?;
 
         // Now we need to check if this impl block is actually implementing functions on a struct
         // that we should be generating an interface for. We already have every struct we should
@@ -653,62 +664,46 @@ impl Module {
             // about
             if let syn::ImplItem::Method(method) = item {
                 // Attempt to parse the function signature and add it to the class's list of functions
-                let function = Function::from_function_signature(&method.sig)
+                let function = Function::from_function_signature(interner, &method.sig)
                     .ok_or(GeneratorError::UnsupportedMethodSignature)?;
                 let name = method.sig.ident.to_string();
-                class.inner.functions.insert(name, function);
+                let name = interner.intern(name);
+                class.functions.insert(name, function);
             }
         }
         Ok(())
     }
-}
 
-///
-/// An internal function for cloning the namespace stack that handles an edge case where we need to
-/// discard the first element when the len > 0
-///
-fn clone_namespace_stack(stack: &[StrId]) -> Vec<StrId> {
-    if stack.is_empty() {
-        stack.to_vec()
-    } else {
-        stack[1..].to_vec()
-    }
-}
+    fn struct_path_resolve_stage(interner: &mut Interner, module: &mut Module) -> Result<()> {
+        // Intern some identifiers that we'll need
+        let crate_ident = interner.intern("crate");
+        let super_ident = interner.intern("super");
+        let self_ident = interner.intern("self");
 
-fn relative_to_absolute_path(interner: &mut Interner, name_stack: &[StrId], path: &mut Path) {
-    // Intern some identifiers that we'll need
-    let crate_ident = interner.intern("crate");
-    let super_ident = interner.intern("super");
-    let self_ident = interner.intern("self");
+        // Set up our on heap stack for our depth first traversal
+        let mut name_stack = vec![];
+        let mut iter_stack: Vec<IterUnionMut> =
+            vec![IterUnionMut::Root(Some((crate_ident, module)))];
 
-    // The first segment will let us decide where the path intends to begin
-    // resolving from
-    let first = *path.segments.first().unwrap();
-    if first == super_ident {
-        // "super" means to begin resolving from the parent module so substitute the
-        // old path with an absolute path that resolves from the crate root
-        let mut new_path = name_stack.to_vec();
-        new_path.pop();
-        new_path.extend_from_slice(&path.segments[1..]);
-        path.segments = new_path;
-        path.absolute = true;
-    } else if first == self_ident {
-        // "self" in a use statement means to resolve from within the module itself
-        // so replace the old "self" path with an absolute path
-        let mut new_path = name_stack.to_vec();
-        new_path.extend_from_slice(&path.segments[1..]);
-        path.segments = new_path;
-        path.absolute = true;
-    } else if first == crate_ident {
-        // The only other special path segment is "crate" which means to start from
-        // the crate root. We handle absolute paths differently in our internal path
-        // type so we remove the "crate" segment and mark as absolute
-        path.segments = path.segments[1..].to_vec();
-        path.absolute = true;
-    } else {
-        let mut new_path = name_stack.to_vec();
-        new_path.extend_from_slice(&path.segments);
-        path.segments = new_path;
-        path.absolute = true;
+        'outer: while let Some(mut iter) = iter_stack.pop() {
+            while let Some((module_name, module)) = iter.next() {
+                name_stack.push(module_name);
+                for (_, class) in module.classes.iter_mut() {
+                    for (_, field) in class.fields.iter_mut() {
+                        field.relative_to_absolute_path(&name_stack[1..], interner)?;
+                    }
+                    for (_, func) in class.functions.iter_mut() {
+                        func.relative_to_absolute_path(&name_stack[1..], interner)?;
+                    }
+                }
+
+                iter_stack.push(iter);
+                iter_stack.push(IterUnionMut::Map(module.sub_modules.iter_mut()));
+                continue 'outer;
+            }
+            name_stack.pop();
+        }
+
+        Ok(())
     }
 }

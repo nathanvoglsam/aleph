@@ -53,7 +53,7 @@ impl Vector3 {
 #[repr(C)]
 #[derive(Clone)]
 pub struct Ray3D {
-    origin: Vector3,
+    origin: self::Vector3,
     dir: Vector3
 }
 
@@ -61,6 +61,6 @@ pub struct Ray3D {
 #[repr(C)]
 #[derive(Clone)]
 pub struct Ray2D {
-    origin: Vector2,
-    dir: Vector2
+    origin: super::math::Vector2,
+    dir: crate::math::Vector2
 }

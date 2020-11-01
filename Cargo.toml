@@ -44,7 +44,6 @@ members = [
     "rust/dotnet/aleph-core-clr",
     "rust/interface/aleph-interface-description",
     "rust/interface/aleph-rust-codegen",
-    "rust/interface/aleph-rust-interface-generator",
     "rust/interface/aleph-rust-parser",
     "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",

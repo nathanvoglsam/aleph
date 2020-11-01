@@ -68,9 +68,8 @@ pub struct Module {
     /// The list of named entities in scope in this module from use statements
     pub imports: HashMap<StrId, Import>,
 
-    //pub uses2: HashMap<StrId, Use>,
     /// The set of structs in this module
-    pub structs: HashMap<StrId, Class>,
+    pub classes: HashMap<StrId, Class>,
 
     /// A map of submodules
     pub sub_modules: HashMap<StrId, Module>,
@@ -114,7 +113,7 @@ impl Module {
                         depth += 1;
                         continue;
                     }
-                    if let Some(class) = i.structs.get(seg) {
+                    if let Some(class) = i.classes.get(seg) {
                         state = State::Terminal;
                         out = Some(ModuleItem::Class(class));
                         depth += 1;
@@ -230,7 +229,7 @@ impl Module {
                 let indent = {
                     let mut indent = String::new();
                     for _ in 0..name_stack.len() {
-                        indent.push_str("  ");
+                        indent.push_str("|   ");
                     }
                     indent
                 };
@@ -245,24 +244,32 @@ impl Module {
                     let vis = if u.public { "public" } else { "" };
                     let u_name_str = interner.lookup(*u_name);
                     let u_path_str = u.concrete.to_string(interner);
-                    println!("{}  use {} as {} {}", &indent, &u_path_str, u_name_str, vis);
+                    println!(
+                        "{}|   use {} as {} {}",
+                        &indent, &u_path_str, u_name_str, vis
+                    );
                 }
 
-                for (class_name, class) in module.structs.iter() {
+                for (class_name, class) in module.classes.iter() {
                     let tag = if class.public {
                         "public class"
                     } else {
                         "class"
                     };
-                    println!("{}  {} {}", &indent, tag, interner.lookup(*class_name));
-                    for (field_name, field) in class.inner.fields.iter() {
-                        println!("{}    field {}: {:?}", &indent, &field_name, &field);
+                    println!("{}|   {} {}", &indent, tag, interner.lookup(*class_name));
+                    for (field_name, field) in class.fields.iter() {
+                        let field_name = interner.lookup(*field_name);
+                        let field_type = field.to_string(interner);
+                        println!("{}|   |   field {}: {}", &indent, field_name, &field_type);
                     }
-                    for (function_name, function) in class.inner.functions.iter() {
-                        println!(
-                            "{}    function [{}]: {:?}",
-                            &indent, &function_name, &function
-                        );
+                    for (function_name, function) in class.functions.iter() {
+                        let function_name = interner.lookup(*function_name);
+                        print!("{}|   |   fn {}(", &indent, function_name);
+                        for arg in function.args.iter() {
+                            let arg_str = arg.to_string(interner);
+                            print!("{},", arg_str);
+                        }
+                        println!(") -> {}", function.returns.to_string(interner));
                     }
                 }
 

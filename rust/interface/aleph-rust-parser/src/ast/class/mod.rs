@@ -27,10 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::ast::{Function, Type};
+use crate::interner::StrId;
+use std::collections::HashMap;
+
 #[derive(Clone, Debug, Default)]
 pub struct Class {
-    /// The inner class object we're wrapping
-    pub inner: aleph_interface_description::Class<String>,
+    pub fields: HashMap<StrId, Type>,
+    pub functions: HashMap<StrId, Function>,
 
     /// Whether the class has public visibility
     pub public: bool,

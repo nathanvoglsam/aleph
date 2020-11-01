@@ -29,14 +29,18 @@
 
 mod class;
 mod error;
+mod function;
 mod import;
 mod module;
 mod path;
 mod result;
+mod type_;
 
 pub use class::Class;
 pub use error::GeneratorError;
+pub use function::Function;
 pub use import::Import;
 pub use module::Module;
 pub use path::Path;
 pub use result::Result;
+pub use type_::Type;

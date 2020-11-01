@@ -27,21 +27,21 @@
 // SOFTWARE.
 //
 
-use crate::Type;
-use serde::{Deserialize, Serialize};
+use crate::ast::Type;
+use crate::interner::{Interner, StrId};
 use std::fmt::Debug;
 use std::hash::Hash;
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash, Serialize, Deserialize)]
-pub struct Function<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str> = String> {
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct Function {
     /// The arguments of the function
-    pub args: Vec<Type<T>>,
+    pub args: Vec<Type>,
 
     /// The return type of the function
-    pub returns: Type<T>,
+    pub returns: Type,
 }
 
-impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Function<T> {
+impl Function {
     /// Is this function a static function. This is similar to a function being a free function, but
     /// a static can still be associated with a `Class`
     pub fn is_static(&self) -> bool {
@@ -65,5 +65,33 @@ impl<T: Clone + Debug + Eq + PartialEq + Hash + AsRef<str>> Function<T> {
     /// Put `self` into a `Box`
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
+    }
+
+    /// Will convert drill down recursively until a `Type::Path` variant is reached, where it will
+    /// convert the relative path to an absolute path
+    pub(crate) fn relative_to_absolute_path(
+        &mut self,
+        name_stack: &[StrId],
+        interner: &mut Interner,
+    ) -> crate::ast::Result<()> {
+        self.returns
+            .relative_to_absolute_path(name_stack, interner)?;
+        for arg in self.args.iter_mut() {
+            arg.relative_to_absolute_path(name_stack, interner)?;
+        }
+        Ok(())
+    }
+
+    pub fn from_function_signature(interner: &mut Interner, sig: &syn::Signature) -> Option<Self> {
+        let returns = Type::from_return_type(interner, &sig.output)?;
+
+        let mut args = Vec::new();
+        for arg in sig.inputs.iter() {
+            args.push(Type::from_function_arg(interner, arg)?);
+        }
+
+        let out = Function { args, returns };
+
+        Some(out)
     }
 }

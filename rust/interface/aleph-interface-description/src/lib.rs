@@ -32,7 +32,6 @@ mod class;
 mod function;
 mod interface_description;
 mod module;
-pub mod utils;
 
 pub use _type::Type;
 pub use class::Class;
