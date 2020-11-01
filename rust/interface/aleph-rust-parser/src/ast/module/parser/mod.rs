@@ -28,7 +28,7 @@
 //
 
 use crate::ast::module::iter::{IterUnion, IterUnionMut};
-use crate::ast::module::{ModuleItemMut, ModuleObjectMut, ModuleObjectType};
+use crate::ast::module::{ModuleObjectMut, ModuleObjectType};
 use crate::ast::{Class, Function, GeneratorError, Import, Interface, Module, Path, Result, Type};
 use crate::interner::{Interner, StrId};
 use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
@@ -346,19 +346,13 @@ impl Module {
         Ok(root)
     }
 
-    fn use_fixup_stage_pass_2(mut root: Module, interner: &mut Interner) -> Result<Module> {
+    fn use_fixup_stage_pass_2(root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
         let mut iter_stack: Vec<IterUnion> = vec![IterUnion::Root(Some((crate_ident, &root)))];
-
-        // We need a list of the use names to patch so we can patch them in a separate pass. To
-        // satisfy the borrow checker we can't mutate any of the modules while we're iterating over
-        // them so we push the actual path patching to a second pass where we can keep the borrow
-        // checker happy
-        let mut to_patch = Vec::new();
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
@@ -371,27 +365,18 @@ impl Module {
                 //let module_path_str = module_path.to_string(interner);
 
                 // Iterate over all the uses to find the ones we need to resolve to absolute paths
-                for (u_name, u) in module.imports.iter() {
-                    let u = u.borrow();
+                for (_, import) in module.imports.iter() {
+                    let mut import = import.borrow_mut();
                     // We only want to operate on relative paths
-                    if !u.concrete.absolute {
+                    if !import.concrete.absolute {
                         let mut new_path = module_path.segments.clone();
-                        new_path.extend_from_slice(&u.concrete.segments);
+                        new_path.extend_from_slice(&import.concrete.segments);
                         let new_path = Path::new(new_path, true);
-                        //let new_path_str = new_path.to_string(interner);
 
                         // OBJECT LOOKUP RESOLUTION
                         // Lookup the underlying object (resolving through all chained imports)
                         if root.object_exists(&new_path).is_some() {
-                            // Build a path to the actual import itself
-                            let mut import_path = module_path.segments.clone();
-                            import_path.push(*u_name);
-                            let import_path = Path::new(import_path, true);
-                            //let import_path_str = import_path.to_string(interner);
-
-                            // Add this import to the list of imports to patch alongside the path to
-                            // patch onto the import
-                            to_patch.push((import_path, new_path));
+                            import.concrete = new_path;
                         } else {
                             // If we couldn't find anything at the end of the import chain it means
                             // that the object is not defined in the crate and we should surface an
@@ -407,15 +392,6 @@ impl Module {
                 continue 'outer;
             }
             name_stack.pop();
-        }
-
-        for (import_path, new_path) in to_patch {
-            match root.lookup_mut(&import_path).unwrap() {
-                ModuleItemMut::Import((_, mut u)) => {
-                    u.concrete = new_path;
-                }
-                _ => unreachable!(),
-            }
         }
 
         Ok(root)
