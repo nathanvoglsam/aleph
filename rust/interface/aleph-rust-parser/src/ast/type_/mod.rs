@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Function, GeneratorError, Path, Module};
+use crate::ast::module::ModuleObject;
+use crate::ast::{Function, GeneratorError, Module, Path};
 use crate::interner::{Interner, StrId};
 use crate::utils::{drill_through_parens, path_to_string, relative_to_absolute_path};
 use std::fmt::Debug;
 use std::hash::Hash;
-use crate::ast::module::ModuleObject;
 
 /// The supported set of types in the Aleph IDL
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -396,32 +396,21 @@ impl Type {
             | Type::Void
             | Type::This
             | Type::SelfType => Ok(()),
-            Type::FunctionPointer(func) => {
-                func.check_path_exists_as_class_in_module(module)
-            }
-            Type::Slice(t) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
-            Type::Array((_, t)) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
-            Type::ConstReference(t) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
-            Type::MutableReference(t) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
-            Type::ConstPointer(t) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
-            Type::MutablePointer(t) => {
-                t.check_path_exists_as_class_in_module(module)
-            }
+            Type::FunctionPointer(func) => func.check_path_exists_as_class_in_module(module),
+            Type::Slice(t) => t.check_path_exists_as_class_in_module(module),
+            Type::Array((_, t)) => t.check_path_exists_as_class_in_module(module),
+            Type::ConstReference(t) => t.check_path_exists_as_class_in_module(module),
+            Type::MutableReference(t) => t.check_path_exists_as_class_in_module(module),
+            Type::ConstPointer(t) => t.check_path_exists_as_class_in_module(module),
+            Type::MutablePointer(t) => t.check_path_exists_as_class_in_module(module),
             Type::Path(path) => {
                 if let Some((_, object)) = module.lookup_object(path) {
                     match object {
                         ModuleObject::Class(_) => Ok(()),
-                        ModuleObject::Module(_) => Err(GeneratorError::ReferencedObjectDoesNotExist)
+                        ModuleObject::Module(_) => {
+                            Err(GeneratorError::ReferencedObjectDoesNotExist)
+                        }
+                        ModuleObject::Interface(_) => Ok(()),
                     }
                 } else {
                     Err(GeneratorError::ReferencedObjectDoesNotExist)

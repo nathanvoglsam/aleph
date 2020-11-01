@@ -28,8 +28,8 @@
 //
 
 use crate::ast::module::iter::{IterUnion, IterUnionMut};
-use crate::ast::module::{ModuleItemMut, ModuleObjectMut};
-use crate::ast::{Class, Function, GeneratorError, Import, Module, Path, Result, Type};
+use crate::ast::module::{ModuleItemMut, ModuleObject, ModuleObjectMut};
+use crate::ast::{Class, Function, GeneratorError, Import, Interface, Module, Path, Result, Type};
 use crate::interner::{Interner, StrId};
 use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
 use std::collections::HashMap;
@@ -52,43 +52,29 @@ impl Module {
             &mut item_iter_stack,
             &mut module_stack,
         )?;
+        let root = module_stack.pop().unwrap(); // Must exist
 
         // Validate that there are no name collisions between structs and imported objects
-        Self::use_collision_validation_stage(
-            module_stack.last().unwrap(), // Must exist
-        )?;
+        let root = Self::use_collision_validation_stage(root)?;
 
         // Pass back over the module tree and resolve all use statements to a fully qualified path,
         // prune imports from external crates and enforce that all uses refer to a valid object
-        Self::use_fixup_stage(
-            module_stack.last_mut().unwrap(), // Must exist
-            interner,
-        )?;
+        let root = Self::use_fixup_stage(root, interner)?;
 
         // Iterate over the file a second time. We now know all of the structs we need to generate
         // interfaces for so we can look for impl blocks that associated functions with the structs
         item_iter_stack.push(file.items.iter());
-        Self::impl_resolve_stage(
-            interner,
-            &mut namespace_stack,
-            &mut item_iter_stack,
-            module_stack.last_mut().unwrap(), // Must Exist
-        )?;
+        let root =
+            Self::impl_resolve_stage(root, interner, &mut namespace_stack, &mut item_iter_stack)?;
 
         // Iterate over the module again to resolve all paths to be absolute
-        Self::struct_path_resolve_stage(
-            interner,
-            module_stack.last_mut().unwrap(), // Must Exist
-        )?;
+        let root = Self::struct_path_resolve_stage(root, interner)?;
 
         // Now that everything is an absolute path we can check that every path trying to refer to
         // a type, actually refers to a type
-        Self::struct_path_check_stage(
-            interner,
-            module_stack.last_mut().unwrap(), // Must Exist
-        )?;
+        let root = Self::struct_path_check_stage(root, interner)?;
 
-        Ok(module_stack.pop().unwrap())
+        Ok(root)
     }
 
     fn use_resolve_stage(
@@ -157,6 +143,7 @@ impl Module {
                             let mut class = Class {
                                 fields: Default::default(),
                                 functions: Default::default(),
+                                implements: Default::default(),
                                 public,
                             };
 
@@ -176,6 +163,40 @@ impl Module {
                             }
 
                             internal_module.classes.insert(struct_name, class);
+                        }
+                    }
+                    syn::Item::Trait(item) => {
+                        let has_attr = item.attrs.iter().any(|attr| &attr.path == &aleph_interface);
+                        let has_generics =
+                            item.generics.gt_token.is_some() || item.generics.lt_token.is_some();
+
+                        // Defining the attribute on a struct with generic parameters is an error as
+                        // there is no sane way to represent generics across an FFI boundary
+                        if has_attr && has_generics {
+                            return Err(GeneratorError::AttributeOnGenericObject);
+                        }
+
+                        if has_attr {
+                            let public = Self::resolve_visibility(&item.vis)?;
+                            let interface_name = item.ident.to_string();
+                            let interface_name = interner.intern(interface_name);
+
+                            let mut interface = Interface {
+                                functions: Default::default(),
+                                public,
+                            };
+
+                            for trait_item in item.items.iter() {
+                                if let syn::TraitItem::Method(m) = trait_item {
+                                    let f_name = m.sig.ident.to_string();
+                                    let f_name = interner.intern(f_name);
+                                    let f = Function::from_function_signature(interner, &m.sig)
+                                        .ok_or(GeneratorError::UnsupportedMethodSignature)?;
+                                    interface.functions.insert(f_name, f);
+                                }
+                            }
+
+                            internal_module.interfaces.insert(interface_name, interface);
                         }
                     }
                     _ => {}
@@ -201,9 +222,9 @@ impl Module {
         Ok(())
     }
 
-    fn use_collision_validation_stage(module: &Module) -> Result<()> {
+    fn use_collision_validation_stage(root: Module) -> Result<Module> {
         let mut stack = Vec::new();
-        stack.push(module);
+        stack.push(&root);
         while let Some(module) = stack.pop() {
             // Make sure no `uses` import colliding names
             for (name, _) in module.imports.iter() {
@@ -223,23 +244,23 @@ impl Module {
                 stack.push(sub_module);
             }
         }
-        Ok(())
+        Ok(root)
     }
 
-    fn use_fixup_stage(root: &mut Module, interner: &mut Interner) -> Result<()> {
+    fn use_fixup_stage(root: Module, interner: &mut Interner) -> Result<Module> {
         // The first pass resolves all paths to be fully qualified but may not actually be valid
         // paths to an object (module or struct)
-        Self::use_fixup_stage_pass_1(root, interner)?;
+        let root = Self::use_fixup_stage_pass_1(root, interner)?;
 
         // The second pass will validate that all use statements that refer to objects within the
         // crate refer to an object. This should mean any path not prefixed with crate:: must refer
         // to an external crate and can be ignored
-        Self::use_fixup_stage_pass_2(root, interner)?;
+        let root = Self::use_fixup_stage_pass_2(root, interner)?;
 
-        Ok(())
+        Ok(root)
     }
 
-    fn use_fixup_stage_pass_1(root: &mut Module, interner: &mut Interner) -> Result<()> {
+    fn use_fixup_stage_pass_1(mut root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
         let super_ident = interner.intern("super");
@@ -247,7 +268,8 @@ impl Module {
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
-        let mut iter_stack: Vec<IterUnionMut> = vec![IterUnionMut::Root(Some((crate_ident, root)))];
+        let mut iter_stack: Vec<IterUnionMut> =
+            vec![IterUnionMut::Root(Some((crate_ident, &mut root)))];
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
@@ -315,16 +337,16 @@ impl Module {
             name_stack.pop();
         }
 
-        Ok(())
+        Ok(root)
     }
 
-    fn use_fixup_stage_pass_2(root: &mut Module, interner: &mut Interner) -> Result<()> {
+    fn use_fixup_stage_pass_2(mut root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
-        let mut iter_stack: Vec<IterUnion> = vec![IterUnion::Root(Some((crate_ident, root)))];
+        let mut iter_stack: Vec<IterUnion> = vec![IterUnion::Root(Some((crate_ident, &root)))];
 
         // We need a list of the use names to patch so we can patch them in a separate pass. To
         // satisfy the borrow checker we can't mutate any of the modules while we're iterating over
@@ -389,48 +411,7 @@ impl Module {
             }
         }
 
-        Ok(())
-    }
-
-    /// Internal function for getting the path "aleph::interface"
-    fn aleph_interface_path() -> syn::Path {
-        // Common identifiers
-        let aleph = syn::Ident::new("aleph", Span::call_site());
-        let interface = syn::Ident::new("interface", Span::call_site());
-
-        // Make path for `aleph::interface`
-        let mut aleph_interface = syn::Path::from(aleph);
-        aleph_interface.segments.push(interface.into());
-
-        aleph_interface
-    }
-
-    fn resolve_visibility(vis: &syn::Visibility) -> Result<bool> {
-        match vis {
-            syn::Visibility::Public(_) => Ok(true),
-            syn::Visibility::Crate(_) => unimplemented!(),
-            syn::Visibility::Restricted(i) => {
-                if i.in_token.is_some() {
-                    Err(GeneratorError::UnsupportedVisibility)
-                } else {
-                    if let Some(ident) = i.path.segments.first() {
-                        let ident = ident.ident.to_string();
-                        if &ident == "crate" {
-                            Ok(true)
-                        } else if &ident == "self" {
-                            Ok(false)
-                        } else if &ident == "super" {
-                            Err(GeneratorError::UnsupportedVisibility)
-                        } else {
-                            Err(GeneratorError::InvalidUseSyntax)
-                        }
-                    } else {
-                        Err(GeneratorError::InvalidUseSyntax)
-                    }
-                }
-            }
-            syn::Visibility::Inherited => Ok(false),
-        }
+        Ok(root)
     }
 
     fn resolve_use_into(
@@ -564,11 +545,11 @@ impl Module {
     }
 
     fn impl_resolve_stage(
+        mut root: Module,
         interner: &mut Interner,
         namespace_stack: &mut Vec<StrId>,
         item_iter_stack: &mut Vec<std::slice::Iter<syn::Item>>,
-        module: &mut Module,
-    ) -> Result<()> {
+    ) -> Result<Module> {
         'outer: while let Some(mut items) = item_iter_stack.pop() {
             while let Some(item) = items.next() {
                 match item {
@@ -591,17 +572,10 @@ impl Module {
                             Self::handle_impl_on_path(
                                 interner,
                                 namespace_stack,
-                                module,
+                                &mut root,
                                 &item,
                                 path,
                             )?;
-                            // We only care about impl blocks on a `TypePath` as that will refer to
-                            // a struct. We can't handle an impl on anything else in a sane way so
-                            // we just skip them all.
-                            //
-                            // We also don't handle traits yet so we're going to skip those
-                            let is_trait_impl = item.trait_.is_some();
-                            if !is_trait_impl {}
                         }
                         _ => {}
                     },
@@ -611,7 +585,7 @@ impl Module {
 
             namespace_stack.pop();
         }
-        Ok(())
+        Ok(root)
     }
 
     fn handle_impl_on_path(
@@ -621,12 +595,6 @@ impl Module {
         item: &syn::ItemImpl,
         path: &syn::TypePath,
     ) -> Result<()> {
-        // Skip trait impl blocks for now, as we don't handle these yet
-        let is_trait_impl = item.trait_.is_some();
-        if is_trait_impl {
-            return Ok(());
-        }
-
         // Intern the path and resolve to an absolute path
         let mut path = Path::from_syn(interner, &path.path);
         relative_to_absolute_path(interner, namespace_stack, &mut path)
@@ -639,7 +607,7 @@ impl Module {
         // make sure the impl block is defined on a struct and not something else so we also emit
         // an error for this case
         let object = module.lookup_object_mut(&path);
-        if let Some((_, class)) = object {
+        if let Some((_, ModuleObjectMut::Class(class))) = object {
             // Now that we know we should be parsing this impl block we can check some error cases
             // that would only be errors for impl blocks on interface structs. Here we're checking
             // if we've got any generics in the impl signature, which we can't properly handle right
@@ -649,46 +617,72 @@ impl Module {
                 return Err(GeneratorError::AttributeOnGenericObject);
             }
 
-            // Check if we're actually implementing functions on a struct and error if we aren't.
-            if let ModuleObjectMut::Class(class) = class {
-                Self::handle_impl_class(interner, namespace_stack, class, item)?;
+            if let Some((negative_token, trait_path, _)) = &item.trait_ {
+                // We don't care about negative trait bounds as there's no information useful to
+                // generating the FFI interface in them
+                if negative_token.is_some() {
+                    return Ok(());
+                }
+
+                let mut trait_path = Path::from_syn(interner, trait_path);
+                relative_to_absolute_path(interner, namespace_stack, &mut trait_path)
+                    .ok_or(GeneratorError::InvalidUsePath)?;
+                class.implements.push(trait_path);
             } else {
-                return Result::Err(GeneratorError::ImplBlockOnModule);
+                // Iterate over all items in the impl block
+                for item in item.items.iter() {
+                    // And select only the function/method declarations as those are the only ones
+                    // we care about
+                    if let syn::ImplItem::Method(method) = item {
+                        // Attempt to parse the function signature and add it to the class's list of
+                        // functions
+                        let function = Function::from_function_signature(interner, &method.sig)
+                            .ok_or(GeneratorError::UnsupportedMethodSignature)?;
+                        let name = method.sig.ident.to_string();
+                        let name = interner.intern(name);
+                        class.functions.insert(name, function);
+                    }
+                }
             }
         }
         Ok(())
     }
 
-    fn handle_impl_class(
-        interner: &mut Interner,
-        namespace_stack: &mut Vec<StrId>,
-        class: &mut Class,
-        item: &syn::ItemImpl,
-    ) -> Result<()> {
-        // Iterate over all items in the impl block
-        for item in item.items.iter() {
-            // And select only the function/method declarations as those are the only ones we care
-            // about
-            if let syn::ImplItem::Method(method) = item {
-                // Attempt to parse the function signature and add it to the class's list of functions
-                let function = Function::from_function_signature(interner, &method.sig)
-                    .ok_or(GeneratorError::UnsupportedMethodSignature)?;
-                let name = method.sig.ident.to_string();
-                let name = interner.intern(name);
-                class.functions.insert(name, function);
-            }
-        }
-        Ok(())
-    }
-
-    fn struct_path_resolve_stage(interner: &mut Interner, root: &mut Module) -> Result<()> {
+    fn struct_path_resolve_stage(mut root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
+
+        // SAFETY:
+        // We own the `root` module so we, by definition, must be the only place in the code that
+        // has a reference to this object.
+        //
+        // Based on this it means this function holds exclusive access to the root module. Due to
+        // the nature of what we're doing we need to check for the existence of an object within
+        // the module graph itself while mutably iterating the module graph. The borrow checker
+        // does not like this.
+        //
+        // The module graph's structure (links) is never modified so technically we aren't actually
+        // mutable borrowing the graph, only some of the contents of the graph. Which is something
+        // the borrow checker can't really represent in a sane way and something we can't work
+        // around in safe code without riddling the code with RefCell.
+        //
+        // For now I will use a super unsafe workaround that, to my knowledge, is still safe as the
+        // single use of the aliased data only reads data that isn't written to anyway so even if
+        // the compiler does some funky optimizations it can't break what we're doing anyway.
+        //
+        // Yes I know undefined behaviour means the compiler can do literally anything it wants, but
+        // there's nothing sane it could do to break this so I'm going to stick with it for now
+        //
+        // I might try the RefCell solution but that's going to make the code *way* uglier
+        let root_unsafe: &Module = unsafe {
+            let root_unsafe: *const Module = core::mem::transmute(&root);
+            &*root_unsafe
+        };
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
         let mut iter_stack: Vec<IterUnionMut> =
-            vec![IterUnionMut::Root(Some((crate_ident, root)))];
+            vec![IterUnionMut::Root(Some((crate_ident, &mut root)))];
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
@@ -700,6 +694,19 @@ impl Module {
                     for (_, func) in class.functions.iter_mut() {
                         func.relative_to_absolute_path(&name_stack[1..], interner)?;
                     }
+                    class.implements.retain(|v| {
+                        let object = root_unsafe.lookup_object(v);
+                        if let Some((_, ModuleObject::Interface(_))) = object {
+                            true
+                        } else {
+                            false
+                        }
+                    });
+                }
+                for (_, interface) in module.interfaces.iter_mut() {
+                    for (_, func) in interface.functions.iter_mut() {
+                        func.relative_to_absolute_path(&name_stack[1..], interner)?;
+                    }
                 }
 
                 iter_stack.push(iter);
@@ -709,27 +716,31 @@ impl Module {
             name_stack.pop();
         }
 
-        Ok(())
+        Ok(root)
     }
 
-    fn struct_path_check_stage(interner: &mut Interner, root: &mut Module) -> Result<()> {
+    fn struct_path_check_stage(root: Module, interner: &mut Interner) -> Result<Module> {
         // Intern some identifiers that we'll need
         let crate_ident = interner.intern("crate");
 
         // Set up our on heap stack for our depth first traversal
         let mut name_stack = vec![];
-        let mut iter_stack: Vec<IterUnion> =
-            vec![IterUnion::Root(Some((crate_ident, root)))];
+        let mut iter_stack: Vec<IterUnion> = vec![IterUnion::Root(Some((crate_ident, &root)))];
 
         'outer: while let Some(mut iter) = iter_stack.pop() {
             while let Some((module_name, module)) = iter.next() {
                 name_stack.push(module_name);
                 for (_, class) in module.classes.iter() {
                     for (_, field) in class.fields.iter() {
-                        field.check_path_exists_as_class_in_module(root)?;
+                        field.check_path_exists_as_class_in_module(&root)?;
                     }
                     for (_, func) in class.functions.iter() {
-                        func.check_path_exists_as_class_in_module(root)?;
+                        func.check_path_exists_as_class_in_module(&root)?;
+                    }
+                }
+                for (_, interface) in module.interfaces.iter() {
+                    for (_, func) in interface.functions.iter() {
+                        func.check_path_exists_as_class_in_module(&root)?;
                     }
                 }
 
@@ -740,6 +751,47 @@ impl Module {
             name_stack.pop();
         }
 
-        Ok(())
+        Ok(root)
+    }
+
+    /// Internal function for getting the path "aleph::interface"
+    fn aleph_interface_path() -> syn::Path {
+        // Common identifiers
+        let aleph = syn::Ident::new("aleph", Span::call_site());
+        let interface = syn::Ident::new("interface", Span::call_site());
+
+        // Make path for `aleph::interface`
+        let mut aleph_interface = syn::Path::from(aleph);
+        aleph_interface.segments.push(interface.into());
+
+        aleph_interface
+    }
+
+    fn resolve_visibility(vis: &syn::Visibility) -> Result<bool> {
+        match vis {
+            syn::Visibility::Public(_) => Ok(true),
+            syn::Visibility::Crate(_) => unimplemented!(),
+            syn::Visibility::Restricted(i) => {
+                if i.in_token.is_some() {
+                    Err(GeneratorError::UnsupportedVisibility)
+                } else {
+                    if let Some(ident) = i.path.segments.first() {
+                        let ident = ident.ident.to_string();
+                        if &ident == "crate" {
+                            Ok(true)
+                        } else if &ident == "self" {
+                            Ok(false)
+                        } else if &ident == "super" {
+                            Err(GeneratorError::UnsupportedVisibility)
+                        } else {
+                            Err(GeneratorError::InvalidUseSyntax)
+                        }
+                    } else {
+                        Err(GeneratorError::InvalidUseSyntax)
+                    }
+                }
+            }
+            syn::Visibility::Inherited => Ok(false),
+        }
     }
 }

@@ -20,6 +20,20 @@ impl Vector3 {
 }
 
 #[aleph::interface]
+pub trait TestTrait {
+    fn trait_fn(&self) -> Vector2;
+}
+
+impl TestTrait for Vector3 {
+    fn trait_fn(&self) -> Vector2 {
+        Vector2 {
+            x: self.x,
+            y: self.y
+        }
+    }
+}
+
+#[aleph::interface]
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Vector2 {
@@ -27,7 +41,7 @@ pub struct Vector2 {
     y: f32
 }
 
-impl Vector3 {
+impl Vector2 {
     pub fn add(&mut self, other: &Vector2) {
         self.x += other.x;
         self.y += other.y;

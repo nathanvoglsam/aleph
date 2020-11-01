@@ -31,7 +31,7 @@ mod iter;
 mod parser;
 
 use crate::ast::module::iter::IterUnion;
-use crate::ast::{Class, Import, Path};
+use crate::ast::{Class, Import, Interface, Path};
 use crate::interner::{Interner, StrId};
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -40,6 +40,7 @@ use std::ops::Deref;
 pub enum ModuleItem<'a> {
     Class(&'a Class),
     Module(&'a Module),
+    Interface(&'a Interface),
     Import((Path, &'a Import)),
 }
 
@@ -47,6 +48,7 @@ pub enum ModuleItem<'a> {
 pub enum ModuleItemMut<'a> {
     Class(&'a mut Class),
     Module(&'a mut Module),
+    Interface(&'a mut Interface),
     Import((Path, &'a mut Import)),
 }
 
@@ -54,12 +56,14 @@ pub enum ModuleItemMut<'a> {
 pub enum ModuleObject<'a> {
     Class(&'a Class),
     Module(&'a Module),
+    Interface(&'a Interface),
 }
 
 /// Represents the union of a class and module. Primarily used as a function return type
 pub enum ModuleObjectMut<'a> {
     Class(&'a mut Class),
     Module(&'a mut Module),
+    Interface(&'a mut Interface),
 }
 
 /// Internal struct for representing a module graph
@@ -70,6 +74,9 @@ pub struct Module {
 
     /// The set of structs in this module
     pub classes: HashMap<StrId, Class>,
+
+    /// The set of interfaces defined in this module
+    pub interfaces: HashMap<StrId, Interface>,
 
     /// A map of submodules
     pub sub_modules: HashMap<StrId, Module>,
@@ -119,6 +126,12 @@ impl Module {
                         depth += 1;
                         continue;
                     }
+                    if let Some(interface) = i.interfaces.get(seg) {
+                        state = State::Terminal;
+                        out = Some(ModuleItem::Interface(interface));
+                        depth += 1;
+                        continue;
+                    }
                     None
                 }
                 State::Terminal => None,
@@ -141,6 +154,7 @@ impl Module {
                 match v {
                     ModuleItem::Class(i) => ModuleItemMut::Class(core::mem::transmute(i)),
                     ModuleItem::Module(i) => ModuleItemMut::Module(core::mem::transmute(i)),
+                    ModuleItem::Interface(i) => ModuleItemMut::Interface(core::mem::transmute(i)),
                     ModuleItem::Import(i) => ModuleItemMut::Import(core::mem::transmute(i)),
                 }
             }
@@ -187,6 +201,13 @@ impl Module {
                     };
                     return Some((path, ModuleObject::Module(i)));
                 }
+                ModuleItem::Interface(i) => {
+                    let path = match current {
+                        State::Owned(i) => i,
+                        State::Ref(i) => i.clone(),
+                    };
+                    return Some((path, ModuleObject::Interface(i)));
+                }
                 ModuleItem::Import((i, _)) => current = State::Owned(i),
             }
         }
@@ -213,6 +234,9 @@ impl Module {
                 match object {
                     ModuleObject::Class(i) => ModuleObjectMut::Class(core::mem::transmute(i)),
                     ModuleObject::Module(i) => ModuleObjectMut::Module(core::mem::transmute(i)),
+                    ModuleObject::Interface(i) => {
+                        ModuleObjectMut::Interface(core::mem::transmute(i))
+                    }
                 }
             };
             (path, object)
@@ -263,6 +287,33 @@ impl Module {
                         println!("{}|   |   field {}: {}", &indent, field_name, &field_type);
                     }
                     for (function_name, function) in class.functions.iter() {
+                        let function_name = interner.lookup(*function_name);
+                        print!("{}|   |   fn {}(", &indent, function_name);
+                        for arg in function.args.iter() {
+                            let arg_str = arg.to_string(interner);
+                            print!("{},", arg_str);
+                        }
+                        println!(") -> {}", function.returns.to_string(interner));
+                    }
+                    for implements in class.implements.iter() {
+                        let string = implements.to_string(interner);
+                        println!("|   |   implements {}", string);
+                    }
+                }
+
+                for (interface_name, interface) in module.interfaces.iter() {
+                    let tag = if interface.public {
+                        "public interface"
+                    } else {
+                        "interface"
+                    };
+                    println!(
+                        "{}|   {} {}",
+                        &indent,
+                        tag,
+                        interner.lookup(*interface_name)
+                    );
+                    for (function_name, function) in interface.functions.iter() {
                         let function_name = interner.lookup(*function_name);
                         print!("{}|   |   fn {}(", &indent, function_name);
                         for arg in function.args.iter() {

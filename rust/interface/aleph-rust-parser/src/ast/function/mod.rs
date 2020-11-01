@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Type, Module};
+use crate::ast::{Module, Type};
 use crate::interner::{Interner, StrId};
 use std::fmt::Debug;
 use std::hash::Hash;

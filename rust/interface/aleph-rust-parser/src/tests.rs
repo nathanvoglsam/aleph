@@ -38,7 +38,7 @@ fn test_parse_crate_valid() {
     let mut crate_root = PathBuf::from(crate_root);
     crate_root.push("test_crate_roots");
     crate_root.push("valid_1");
-    let file = crate::crate_resolver::resolve_crate(&crate_root).unwrap();
+    crate::crate_resolver::resolve_crate(&crate_root).unwrap();
 }
 
 #[test]

@@ -27,22 +27,14 @@
 // SOFTWARE.
 //
 
-mod class;
-mod error;
-mod function;
-mod import;
-mod interface;
-mod module;
-mod path;
-mod result;
-mod type_;
+use crate::ast::Function;
+use crate::interner::StrId;
+use std::collections::HashMap;
 
-pub use class::Class;
-pub use error::GeneratorError;
-pub use function::Function;
-pub use import::Import;
-pub use interface::Interface;
-pub use module::Module;
-pub use path::Path;
-pub use result::Result;
-pub use type_::Type;
+#[derive(Clone, Debug, Default)]
+pub struct Interface {
+    pub functions: HashMap<StrId, Function>,
+
+    /// Whether the interface has public visibility
+    pub public: bool,
+}

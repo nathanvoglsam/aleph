@@ -36,9 +36,6 @@ pub enum GeneratorError {
     /// Tried to generate an interface for a struct field with an unsupported type
     UnsupportedStructField,
 
-    /// This error occurs when user code tries to define an impl block on a module
-    ImplBlockOnModule,
-
     /// This error occurs when the code being parsed has attached the interface attribute to an
     /// object with generic parameters.
     AttributeOnGenericObject,

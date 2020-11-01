@@ -27,14 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Function, Type};
+use crate::ast::{Function, Path, Type};
 use crate::interner::StrId;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default)]
 pub struct Class {
+    /// The list of data fields on the class
     pub fields: HashMap<StrId, Type>,
+
+    /// The list of functions implemented directly for the class
     pub functions: HashMap<StrId, Function>,
+
+    /// The list of interfaces the class implements
+    pub implements: Vec<Path>,
 
     /// Whether the class has public visibility
     pub public: bool,
