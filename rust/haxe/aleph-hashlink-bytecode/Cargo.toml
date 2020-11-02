@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-hashlink-module"
+name = "aleph-hashlink-bytecode"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "A parser for loading and operating on hashlink modules"
+description = "A parser for loading and operating on hashlink bytecode"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-hashlink-module/"
+documentation = "https://docs.rs/aleph-hashlink-bytecode/"
 readme = "README.md"
 ##TODO: keywords = ["build", "compilation", "utility"]
 ##TODO: categories = ["development-tools::build-utils"]
@@ -43,3 +43,7 @@ edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
+
+[dependencies]
+byteorder = "1.3"
+

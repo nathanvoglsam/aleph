@@ -26,3 +26,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+use std::io::Error;
+
+/// Represents the set of errors that can be encountered when reading a hashlink module
+#[derive(Debug)]
+pub enum CodeReadError {
+    IOError(std::io::Error),
+    InvalidFileHeader,
+    InvalidIndexUnsignedLessThanOne,
+}
+
+impl From<std::io::Error> for CodeReadError {
+    fn from(err: Error) -> Self {
+        CodeReadError::IOError(err)
+    }
+}
+
+/// Result for module reading
+pub type Result<T> = std::result::Result<T, CodeReadError>;
