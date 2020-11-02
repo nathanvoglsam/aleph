@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::code::Code;
 use std::io::BufReader;
 use std::path::PathBuf;
-use crate::code::Code;
 
 #[test]
 pub fn parse_test_1() {
@@ -47,5 +47,7 @@ pub fn parse_test_1() {
 
     let mut file = BufReader::new(file);
 
-    Code::read(&mut file).unwrap();
+    let code = Code::read(&mut file).unwrap();
+
+    code.debug_print();
 }

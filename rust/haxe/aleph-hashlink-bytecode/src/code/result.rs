@@ -35,6 +35,11 @@ pub enum CodeReadError {
     IOError(std::io::Error),
     InvalidFileHeader,
     InvalidIndexUnsignedLessThanOne,
+    InvalidStringNotValidUTF8,
+    InvalidTypeKindDoesNotExist,
+    InvalidTypeKindInvalidType,
+    InvalidTypeBadIndex,
+    InvalidStringBadIndex,
 }
 
 impl From<std::io::Error> for CodeReadError {
