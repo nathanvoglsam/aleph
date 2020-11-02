@@ -27,38 +27,19 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
 
-[workspace]
+[package]
+name = "aleph-hashlink-module"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "A parser for loading and operating on hashlink modules"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-hashlink-module/"
+readme = "README.md"
+##TODO: keywords = ["build", "compilation", "utility"]
+##TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
 
-members = [
-    "rust/build/aleph-compile",
-    "rust/build/aleph-target",
-    "rust/build/aleph-target-build",
-    "rust/config/aleph-app-info",
-    "rust/config/aleph-settings",
-    "rust/interface/aleph-rust-codegen",
-    "rust/interface/aleph-rust-parser",
-    "rust/engine/aleph-embedded-data",
-    "rust/engine/aleph-engine",
-    "rust/graphics/aleph-render",
-    "rust/graphics/aleph-render-graph",
-    "rust/graphics/aleph-vulkan",
-    "rust/graphics/aleph-vulkan-alloc",
-    "rust/graphics/aleph-vulkan-alloc-sys",
-    "rust/graphics/aleph-vulkan-core",
-    "rust/haxe/aleph-hashlink-module",
-    "rust/ktx/aleph-ktx",
-    "rust/ktx/aleph-vk-format",
-    "rust/logging/aleph-log",
-    "rust/logging/aleph-logger",
-    "rust/platform/aleph-cpu-info",
-    "rust/platform/aleph-platform",
-    "rust/platform/aleph-platform-imgui",
-    "rust/utils/aleph-macros",
-    "game/aleph-test",
-]
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
