@@ -29,12 +29,14 @@
 
 mod result;
 mod type_;
+mod native;
 
 pub use result::{CodeReadError, Result};
 pub use type_::{
     Abstract, Enum, EnumConstruct, Field, Function, Object, ObjectProto, Type, TypeKind, TypeParam,
     TypeVariant, Virtual,
 };
+pub use native::Native;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
@@ -43,20 +45,52 @@ const HEADER_H: u8 = 0x48;
 const HEADER_L: u8 = 0x4C;
 const HEADER_B: u8 = 0x42;
 
+/// This struct is a direct representation of a hashlink module *as read from disk*. The original C
+/// hashlink code deserializes directly into the datastructures used by the JIT and runtime. This
+/// implementation is completely distinct from any runtime and serves purely as a utility for
+/// reading, operating on and writing hashlink modules so any information that is not read directly
+/// from a hashlink file or is only used by the runtime is not stored here.
+///
+/// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
+/// runtime but is not appropriate to be consumed directly by the runtime.
 pub struct Code {
+    /// The version of the bytecode file that was read from disk
     pub version: u32,
+
+    /// A general flags field used by the file format
     pub flags: u32,
+
+    /// The file's integer table
     pub ints: Vec<i32>,
+
+    /// The file's float table
     pub floats: Vec<f64>,
+
+    /// The file's string table
     pub strings: Vec<String>,
+
+    /// The file's bytes blob
     pub bytes: Vec<u8>,
+
+    /// The file's byte offets table
     pub byte_offsets: Vec<usize>,
+
+    /// The file's debug file table
     pub debug_files: Vec<String>,
+
+    /// The file's type table
     pub types: Vec<Type>,
+
+    /// The file's natives table
+    pub natives: Vec<Native>,
+
+    /// The file's global table (list of indices into type table)
+    pub globals: Vec<u32>,
 }
 
 impl Code {
-    pub fn debug_print(&self) {
+    /// Internal utility function for printing a file to stdout
+    pub(crate) fn debug_print(&self) {
         println!("version: {}", self.version);
         println!("flags: {}", self.flags);
 
@@ -86,6 +120,7 @@ impl Code {
         }
     }
 
+    /// Will attempt to read a hashlink module from the given stream
     pub fn read(stream: &mut impl Read) -> Result<Code> {
         //
         // READ AND VALIDATE FLE HEADER
@@ -120,20 +155,25 @@ impl Code {
         let entrypoint = read_uindex(stream)?;
         let has_debug = (flags & 1) != 0;
 
+        // Read the integer table
         let mut ints = vec![0i32; num_ints as usize];
         stream.read_i32_into::<LittleEndian>(&mut ints)?;
 
+        // Read the float table
         let mut floats = vec![0f64; num_floats as usize];
         stream.read_f64_into::<LittleEndian>(&mut floats)?;
 
+        // Read the string table
         let strings = read_strings(num_strings as usize, stream)?;
 
+        // Read the byte block and byte offset table
         let (bytes, byte_offsets) = if version >= 5 {
             read_bytes(num_bytes as usize, stream)?
         } else {
             (Vec::new(), Vec::new())
         };
 
+        // Read off the debug file table, if it is marked as existing
         let debug_files = if has_debug {
             let num_debug_files = read_uindex(stream)?;
             let debug_files = read_strings(num_debug_files as usize, stream)?;
@@ -142,14 +182,34 @@ impl Code {
             Vec::new()
         };
 
+        // Read the type table
         let mut types = Vec::with_capacity(num_types as usize);
         for _ in 0..num_types {
             let type_ = read_type(stream, num_types, num_strings)?;
             types.push(type_);
         }
 
-        // TODO: Read globals
-        // TODO: Read natives
+        // Read the globals table
+        let mut globals = Vec::with_capacity(num_globals as usize);
+        for _ in 0..num_globals {
+            let global = get_type(stream, num_types)?;
+            globals.push(global);
+        }
+
+        let mut natives = Vec::with_capacity(num_natives as usize);
+        for _ in 0..num_natives {
+            let lib = get_string(stream, num_strings)?;
+            let name = get_string(stream, num_strings)?;
+            let type_ = get_type(stream, num_types)?;
+            let f_index = read_uindex(stream)?;
+            natives.push(Native {
+                lib,
+                name,
+                type_,
+                f_index
+            });
+        }
+
         // TODO: Read functions
         // TODO: Read constants
 
@@ -163,6 +223,8 @@ impl Code {
             byte_offsets,
             debug_files,
             types,
+            natives,
+            globals
         };
         Ok(out)
     }
