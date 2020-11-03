@@ -27,27 +27,33 @@
 // SOFTWARE.
 //
 
-use std::io::Error;
-
-/// Represents the set of errors that can be encountered when reading a hashlink module
-#[derive(Debug)]
-pub enum CodeReadError {
-    IOError(std::io::Error),
-    InvalidFileHeader,
-    InvalidIndexUnsignedLessThanOne,
-    InvalidStringNotValidUTF8,
-    InvalidTypeKindDoesNotExist,
-    InvalidTypeKindInvalidType,
-    InvalidTypeBadIndex,
-    InvalidStringBadIndex,
-    InvalidOpCodeUnknown,
+pub enum OpCodeType {
+    OpNoParam,
+    OpOneParam,
+    OpTwoParam,
+    OpThreeParam,
+    OpFourParam,
+    OpFiveParam,
+    OpSixParam,
+    OpCallNParam,
+    OpSwitchParam,
 }
 
-impl From<std::io::Error> for CodeReadError {
-    fn from(err: Error) -> Self {
-        CodeReadError::IOError(err)
+impl OpCodeType {
+    /// Returns the static arg count for the given opcode.
+    ///
+    /// Will return `None` if the opcode has a dynamic arg count
+    pub fn arg_num(&self) -> Option<usize> {
+        match self {
+            OpCodeType::OpNoParam => Some(0),
+            OpCodeType::OpOneParam => Some(1),
+            OpCodeType::OpTwoParam => Some(2),
+            OpCodeType::OpThreeParam => Some(3),
+            OpCodeType::OpFourParam => Some(4),
+            OpCodeType::OpFiveParam => Some(5),
+            OpCodeType::OpSixParam => Some(6),
+            OpCodeType::OpCallNParam => None,
+            OpCodeType::OpSwitchParam => None,
+        }
     }
 }
-
-/// Result for module reading
-pub type Result<T> = std::result::Result<T, CodeReadError>;

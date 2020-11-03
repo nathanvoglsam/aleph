@@ -27,27 +27,55 @@
 // SOFTWARE.
 //
 
-use std::io::Error;
-
-/// Represents the set of errors that can be encountered when reading a hashlink module
-#[derive(Debug)]
-pub enum CodeReadError {
-    IOError(std::io::Error),
-    InvalidFileHeader,
-    InvalidIndexUnsignedLessThanOne,
-    InvalidStringNotValidUTF8,
-    InvalidTypeKindDoesNotExist,
-    InvalidTypeKindInvalidType,
-    InvalidTypeBadIndex,
-    InvalidStringBadIndex,
-    InvalidOpCodeUnknown,
+pub struct OpOneParam {
+    pub param_1: i32,
 }
 
-impl From<std::io::Error> for CodeReadError {
-    fn from(err: Error) -> Self {
-        CodeReadError::IOError(err)
-    }
+pub struct OpTwoParam {
+    pub param_1: i32,
+    pub param_2: i32,
 }
 
-/// Result for module reading
-pub type Result<T> = std::result::Result<T, CodeReadError>;
+pub struct OpThreeParam {
+    pub param_1: i32,
+    pub param_2: i32,
+    pub param_3: i32,
+}
+
+pub struct OpFourParam {
+    pub param_1: i32,
+    pub param_2: i32,
+    pub param_3: i32,
+    pub param_4: i32,
+}
+
+pub struct OpFiveParam {
+    pub param_1: i32,
+    pub param_2: i32,
+    pub param_3: i32,
+    pub param_4: i32,
+    pub param_5: i32,
+}
+
+pub struct OpSixParam {
+    pub param_1: i32,
+    pub param_2: i32,
+    pub param_3: i32,
+    pub param_4: i32,
+    pub param_5: i32,
+    pub param_6: i32,
+}
+
+pub struct OpCallNParam {
+    pub param_1: i32,
+    pub param_2: i32,
+    pub param_3: u8,
+    pub extra: Vec<i32>,
+}
+
+pub struct OpSwitchParam {
+    pub param_1: u32,
+    pub param_2: u32,
+    pub extra: Vec<u32>,
+    pub param_3: u32,
+}

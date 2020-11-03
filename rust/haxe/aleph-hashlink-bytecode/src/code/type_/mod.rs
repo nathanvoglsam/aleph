@@ -29,12 +29,12 @@
 
 use crate::code::Code;
 
-#[cfg(feature="serde")]
-use serde::{Serialize, Deserialize};
+#[cfg(feature = "derive_serde")]
+use serde::{Deserialize, Serialize};
 
 #[repr(i32)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub enum TypeKind {
     Void = 0,
     UI8 = 1,
@@ -95,7 +95,7 @@ impl TypeKind {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct Type {
     /// The type kind of this type
     pub kind: TypeKind,
@@ -117,14 +117,14 @@ impl Type {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub enum TypeVariant {
-    Function(Function),
-    Object(Object),
-    Enum(Enum),
-    Virtual(Virtual),
+    Function(TypeFunction),
+    Object(TypeObject),
+    Enum(TypeEnum),
+    Virtual(TypeVirtual),
     TypeParam(TypeParam),
-    Abstract(Abstract),
+    Abstract(TypeAbstract),
     Other,
 }
 
@@ -159,14 +159,22 @@ impl TypeVariant {
                     let field_name = &code.strings[field.name as usize];
                     let field_ty = &code.types[field.type_ as usize];
                     if let Some(field_str) = field_ty.to_string(code) {
-                        std::fmt::write(&mut string, format_args!("{}: {},", field_name, field_str)).unwrap();
+                        std::fmt::write(
+                            &mut string,
+                            format_args!("{}: {},", field_name, field_str),
+                        )
+                        .unwrap();
                     } else {
-                        std::fmt::write(&mut string, format_args!("{}: {},", field_name, field.type_)).unwrap();
+                        std::fmt::write(
+                            &mut string,
+                            format_args!("{}: {},", field_name, field.type_),
+                        )
+                        .unwrap();
                     }
                 }
 
                 string
-            },
+            }
             TypeVariant::Enum(e) => "".to_string(),
             TypeVariant::Virtual(v) => "".to_string(),
             TypeVariant::TypeParam(t) => "".to_string(),
@@ -189,7 +197,7 @@ impl TypeVariant {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct ObjectProto {
     /// Index into string table for the name
     pub name: u32,
@@ -202,7 +210,7 @@ pub struct ObjectProto {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct Field {
     /// Index into string table for the field name
     pub name: u32,
@@ -212,7 +220,7 @@ pub struct Field {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct EnumConstruct {
     /// Index into string table for the name
     pub name: u32,
@@ -222,8 +230,8 @@ pub struct EnumConstruct {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
-pub struct Function {
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
     pub args: Vec<u32>,
 
@@ -232,8 +240,8 @@ pub struct Function {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
-pub struct Object {
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+pub struct TypeObject {
     /// Index into string table for the name
     pub name: u32,
 
@@ -254,8 +262,8 @@ pub struct Object {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
-pub struct Enum {
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+pub struct TypeEnum {
     /// Index into string table for the name
     pub name: u32,
 
@@ -267,22 +275,22 @@ pub struct Enum {
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
-pub struct Virtual {
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+pub struct TypeVirtual {
     /// The list of fields on this virtual
     pub fields: Vec<Field>,
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct TypeParam {
     /// Index into the type table
     pub type_: u32,
 }
 
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
-pub struct Abstract {
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+pub struct TypeAbstract {
     /// Index into the string table for the name
     pub name: u32,
 }

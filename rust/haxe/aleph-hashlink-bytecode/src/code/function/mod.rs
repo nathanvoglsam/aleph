@@ -27,27 +27,18 @@
 // SOFTWARE.
 //
 
-use std::io::Error;
+use crate::code::OpCode;
 
-/// Represents the set of errors that can be encountered when reading a hashlink module
-#[derive(Debug)]
-pub enum CodeReadError {
-    IOError(std::io::Error),
-    InvalidFileHeader,
-    InvalidIndexUnsignedLessThanOne,
-    InvalidStringNotValidUTF8,
-    InvalidTypeKindDoesNotExist,
-    InvalidTypeKindInvalidType,
-    InvalidTypeBadIndex,
-    InvalidStringBadIndex,
-    InvalidOpCodeUnknown,
+pub struct Function {
+    /// Index into the type table for the type signature of this function
+    pub type_: u32,
+
+    /// ?
+    pub f_index: u32,
+
+    /// List of registers for the function's bytecode
+    pub registers: Vec<u32>,
+
+    /// Opcode stream
+    pub ops: Vec<OpCode>,
 }
-
-impl From<std::io::Error> for CodeReadError {
-    fn from(err: Error) -> Self {
-        CodeReadError::IOError(err)
-    }
-}
-
-/// Result for module reading
-pub type Result<T> = std::result::Result<T, CodeReadError>;

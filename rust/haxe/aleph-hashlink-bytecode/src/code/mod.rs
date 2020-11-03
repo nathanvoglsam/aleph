@@ -27,22 +27,29 @@
 // SOFTWARE.
 //
 
+mod function;
+mod native;
+mod opcode;
 mod result;
 mod type_;
-mod native;
 
+pub use function::Function;
+pub use native::Native;
+pub use opcode::{
+    OpCallNParam, OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam,
+    OpSixParam, OpSwitchParam, OpThreeParam, OpTwoParam,
+};
 pub use result::{CodeReadError, Result};
 pub use type_::{
-    Abstract, Enum, EnumConstruct, Field, Function, Object, ObjectProto, Type, TypeKind, TypeParam,
-    TypeVariant, Virtual,
+    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeKind,
+    TypeObject, TypeParam, TypeVariant, TypeVirtual,
 };
-pub use native::Native;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
 
-#[cfg(feature="serde")]
-use serde::{Serialize, Deserialize};
+#[cfg(feature = "derive_serde")]
+use serde::{Deserialize, Serialize};
 
 const HEADER_H: u8 = 0x48;
 const HEADER_L: u8 = 0x4C;
@@ -57,7 +64,7 @@ const HEADER_B: u8 = 0x42;
 /// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
 /// runtime but is not appropriate to be consumed directly by the runtime.
 #[derive(Clone)]
-#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct Code {
     /// The version of the bytecode file that was read from disk
     pub version: u32,
@@ -211,11 +218,16 @@ impl Code {
                 lib,
                 name,
                 type_,
-                f_index
+                f_index,
             });
         }
 
-        // TODO: Read functions
+        let mut functions = Vec::with_capacity(num_functions as usize);
+        for _ in 0..num_functions {
+            functions.push(read_function(stream, num_types)?);
+            // TODO: Read debug infos
+        }
+        
         // TODO: Read constants
 
         let out = Code {
@@ -229,7 +241,7 @@ impl Code {
             debug_files,
             types,
             natives,
-            globals
+            globals,
         };
         Ok(out)
     }
@@ -326,7 +338,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
             let returns = get_type(stream, num_types)?;
 
             // Package with the original type kind
-            let variant = TypeVariant::Function(Function { args, returns });
+            let variant = TypeVariant::Function(TypeFunction { args, returns });
             Type { kind, variant }
         }
         TypeKind::Obj | TypeKind::Struct => {
@@ -372,7 +384,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 Some(super_ as u32)
             };
 
-            let variant = TypeVariant::Object(Object {
+            let variant = TypeVariant::Object(TypeObject {
                 name,
                 fields,
                 protos,
@@ -389,7 +401,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
             Type { kind, variant }
         }
         TypeKind::Abstract => {
-            let variant = TypeVariant::Abstract(Abstract {
+            let variant = TypeVariant::Abstract(TypeAbstract {
                 name: get_string(stream, num_strings)?,
             });
             Type { kind, variant }
@@ -402,7 +414,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 let type_ = get_type(stream, num_types)?;
                 fields.push(Field { name, type_ });
             }
-            let variant = TypeVariant::Virtual(Virtual { fields });
+            let variant = TypeVariant::Virtual(TypeVirtual { fields });
             Type { kind, variant }
         }
         TypeKind::Enum => {
@@ -419,7 +431,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 }
                 constructs.push(EnumConstruct { name, params });
             }
-            let variant = TypeVariant::Enum(Enum {
+            let variant = TypeVariant::Enum(TypeEnum {
                 name,
                 constructs,
                 global,
@@ -432,6 +444,131 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
         },
     };
     Ok(t)
+}
+
+fn read_function(stream: &mut impl Read, num_types: u32) -> Result<Function> {
+    let type_ = get_type(stream, num_types)?;
+    let f_index = read_uindex(stream)?;
+    let num_regs = read_uindex(stream)?;
+    let num_ops = read_uindex(stream)?;
+
+    let mut registers = Vec::with_capacity(num_regs as usize);
+    for _ in 0..num_regs {
+        registers.push(get_type(stream, num_types)?);
+    }
+
+    let mut ops = Vec::with_capacity(num_ops as usize);
+    for _ in 0..num_ops {
+        let op = stream.read_u8()?;
+        let op = OpCodeNumber::from_raw(op).ok_or(CodeReadError::InvalidOpCodeUnknown)?;
+
+        match op.opcode_type() {
+            OpCodeType::OpNoParam => {
+                let op = OpCode::from_no_param(op).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpOneParam => {
+                let params = OpOneParam {
+                    param_1: read_index(stream)?,
+                };
+                let op = OpCode::from_one_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpTwoParam => {
+                let params = OpTwoParam {
+                    param_1: read_index(stream)?,
+                    param_2: read_index(stream)?,
+                };
+                let op = OpCode::from_two_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpThreeParam => {
+                let params = OpThreeParam {
+                    param_1: read_index(stream)?,
+                    param_2: read_index(stream)?,
+                    param_3: read_index(stream)?,
+                };
+                let op = OpCode::from_three_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpFourParam => {
+                let params = OpFourParam {
+                    param_1: read_index(stream)?,
+                    param_2: read_index(stream)?,
+                    param_3: read_index(stream)?,
+                    param_4: read_index(stream)?,
+                };
+                let op = OpCode::from_four_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpFiveParam => {
+                let params = OpFiveParam {
+                    param_1: read_index(stream)?,
+                    param_2: read_index(stream)?,
+                    param_3: read_index(stream)?,
+                    param_4: read_index(stream)?,
+                    param_5: read_index(stream)?,
+                };
+                let op = OpCode::from_five_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpSixParam => {
+                let params = OpSixParam {
+                    param_1: read_index(stream)?,
+                    param_2: read_index(stream)?,
+                    param_3: read_index(stream)?,
+                    param_4: read_index(stream)?,
+                    param_5: read_index(stream)?,
+                    param_6: read_index(stream)?,
+                };
+                let op = OpCode::from_six_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpCallNParam => {
+                let param_1 = read_index(stream)?;
+                let param_2 = read_index(stream)?;
+                let param_3 = stream.read_u8()?;
+
+                let mut extra = Vec::with_capacity(param_3 as usize);
+                for _ in 0..param_3 {
+                    extra.push(read_index(stream)?);
+                }
+
+                let params = OpCallNParam {
+                    param_1,
+                    param_2,
+                    param_3,
+                    extra,
+                };
+                let op = OpCode::from_call_n_param(op, params).unwrap();
+                ops.push(op);
+            }
+            OpCodeType::OpSwitchParam => {
+                let param_1 = read_uindex(stream)?;
+                let param_2 = read_uindex(stream)?;
+                let mut extra = Vec::with_capacity(param_2 as usize);
+                for _ in 0..param_2 {
+                    extra.push(read_uindex(stream)?);
+                }
+                let param_3 = read_uindex(stream)?;
+                let params = OpSwitchParam {
+                    param_1,
+                    param_2,
+                    extra,
+                    param_3,
+                };
+                let op = OpCode::from_switch_param(op, params).unwrap();
+                ops.push(op);
+            }
+        }
+    }
+
+    Ok(Function {
+        type_,
+        f_index,
+        registers,
+        ops,
+    })
 }
 
 fn get_type(stream: &mut impl Read, num_types: u32) -> Result<u32> {
