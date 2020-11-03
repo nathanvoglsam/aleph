@@ -29,8 +29,12 @@
 
 use crate::code::Code;
 
+#[cfg(feature="serde")]
+use serde::{Serialize, Deserialize};
+
 #[repr(i32)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub enum TypeKind {
     Void = 0,
     UI8 = 1,
@@ -90,6 +94,8 @@ impl TypeKind {
     }
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Type {
     /// The type kind of this type
     pub kind: TypeKind,
@@ -98,6 +104,20 @@ pub struct Type {
     pub variant: TypeVariant,
 }
 
+impl Type {
+    pub fn to_string(&self, code: &Code) -> Option<String> {
+        if let Some(name) = self.variant.name(code) {
+            Some(name.to_string())
+        } else if let TypeVariant::Other = &self.variant {
+            Some(format!("{:?}", self.kind))
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub enum TypeVariant {
     Function(Function),
     Object(Object),
@@ -116,26 +136,37 @@ impl TypeVariant {
                 for arg_idx in f.args.iter() {
                     let arg_idx = *arg_idx as usize;
                     let arg = &code.types[arg_idx];
-                    if let Some(name) = arg.variant.name(code) {
-                        std::fmt::write(&mut string, format_args!("{},", name)).unwrap();
-                    } else if let TypeVariant::Other = &arg.variant {
-                        std::fmt::write(&mut string, format_args!("{:?},", arg.kind)).unwrap();
+                    if let Some(arg_str) = arg.to_string(code) {
+                        std::fmt::write(&mut string, format_args!("{},", arg_str)).unwrap();
                     } else {
                         std::fmt::write(&mut string, format_args!("{},", arg_idx)).unwrap();
                     }
                 }
                 let returns_idx = f.returns as usize;
                 let returns = &code.types[returns_idx];
-                if let Some(name) = returns.variant.name(code) {
-                    std::fmt::write(&mut string, format_args!(") -> {})", name)).unwrap();
-                } else if let TypeVariant::Other = &returns.variant {
-                    std::fmt::write(&mut string, format_args!(") -> {:?})", returns.kind)).unwrap();
+                if let Some(returns_str) = returns.to_string(code) {
+                    std::fmt::write(&mut string, format_args!(") -> {})", returns_str)).unwrap();
                 } else {
                     std::fmt::write(&mut string, format_args!(") -> {})", returns_idx)).unwrap();
                 }
                 string
             }
-            TypeVariant::Object(o) => "".to_string(),
+            TypeVariant::Object(o) => {
+                let mut string = code.strings[o.name as usize].to_string();
+                string.push('(');
+
+                for field in o.fields.iter() {
+                    let field_name = &code.strings[field.name as usize];
+                    let field_ty = &code.types[field.type_ as usize];
+                    if let Some(field_str) = field_ty.to_string(code) {
+                        std::fmt::write(&mut string, format_args!("{}: {},", field_name, field_str)).unwrap();
+                    } else {
+                        std::fmt::write(&mut string, format_args!("{}: {},", field_name, field.type_)).unwrap();
+                    }
+                }
+
+                string
+            },
             TypeVariant::Enum(e) => "".to_string(),
             TypeVariant::Virtual(v) => "".to_string(),
             TypeVariant::TypeParam(t) => "".to_string(),
@@ -157,6 +188,8 @@ impl TypeVariant {
     }
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct ObjectProto {
     /// Index into string table for the name
     pub name: u32,
@@ -168,6 +201,8 @@ pub struct ObjectProto {
     pub p_index: i32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Field {
     /// Index into string table for the field name
     pub name: u32,
@@ -176,6 +211,8 @@ pub struct Field {
     pub type_: u32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct EnumConstruct {
     /// Index into string table for the name
     pub name: u32,
@@ -184,6 +221,8 @@ pub struct EnumConstruct {
     pub params: Vec<u32>,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Function {
     /// List of indexes into type table for the function arguments
     pub args: Vec<u32>,
@@ -192,6 +231,8 @@ pub struct Function {
     pub returns: u32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Object {
     /// Index into string table for the name
     pub name: u32,
@@ -212,6 +253,8 @@ pub struct Object {
     pub global: u32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Enum {
     /// Index into string table for the name
     pub name: u32,
@@ -223,16 +266,22 @@ pub struct Enum {
     pub global: u32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Virtual {
     /// The list of fields on this virtual
     pub fields: Vec<Field>,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct TypeParam {
     /// Index into the type table
     pub type_: u32,
 }
 
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Abstract {
     /// Index into the string table for the name
     pub name: u32,

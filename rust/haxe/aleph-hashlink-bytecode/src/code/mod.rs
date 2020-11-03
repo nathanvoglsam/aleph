@@ -41,6 +41,9 @@ pub use native::Native;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
 
+#[cfg(feature="serde")]
+use serde::{Serialize, Deserialize};
+
 const HEADER_H: u8 = 0x48;
 const HEADER_L: u8 = 0x4C;
 const HEADER_B: u8 = 0x42;
@@ -53,6 +56,8 @@ const HEADER_B: u8 = 0x42;
 ///
 /// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
 /// runtime but is not appropriate to be consumed directly by the runtime.
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Code {
     /// The version of the bytecode file that was read from disk
     pub version: u32,

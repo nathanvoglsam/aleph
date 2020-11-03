@@ -27,6 +27,11 @@
 // SOFTWARE.
 //
 
+#[cfg(feature="serde")]
+use serde::{Serialize, Deserialize};
+
+#[derive(Clone)]
+#[cfg_attr(feature="serde", derive(Serialize, Deserialize))]
 pub struct Native {
     /// Index into the string table for library name
     pub lib: u32,

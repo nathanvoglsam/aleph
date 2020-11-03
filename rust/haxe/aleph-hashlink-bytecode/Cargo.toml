@@ -46,4 +46,9 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 
 [dependencies]
 byteorder = "1.3"
+serde = { version = "1", features = ["derive"], optional = true }
+
+[features]
+default = []
+derive_serde = ["serde"]
 
