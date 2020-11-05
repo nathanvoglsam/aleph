@@ -47,7 +47,30 @@ pub fn parse_test_1() {
 
     let mut file = BufReader::new(file);
 
+    Code::read(&mut file).unwrap();
+}
+
+#[test]
+pub fn test_serialization() {
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir().unwrap());
+
+    let path = crate_root.join("build.hl");
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(false)
+        .create(false)
+        .open(path)
+        .unwrap();
+
+    let mut file = BufReader::new(file);
+
     let code = Code::read(&mut file).unwrap();
 
-    code.debug_print();
+    let string = serde_json::to_string_pretty(&code).unwrap();
+    let bytes = rmp_serde::to_vec(&code).unwrap();
+
+    //std::fs::write(crate_root.join("out.json"), string.as_bytes()).unwrap();
+    //std::fs::write(crate_root.join("out.msgpack"), &bytes).unwrap();
 }

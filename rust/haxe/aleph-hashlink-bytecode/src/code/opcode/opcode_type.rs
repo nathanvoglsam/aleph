@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-#[cfg(feature = "derive_serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum OpCodeType {
     OpNoParam,
     OpOneParam,

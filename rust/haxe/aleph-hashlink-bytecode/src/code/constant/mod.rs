@@ -27,9 +27,13 @@
 // SOFTWARE.
 //
 
-// TODO: Investigate a tracing, precise, moving, generational, stop the world garbage collector
+use serde::{Deserialize, Serialize};
 
-pub mod code;
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Constant {
+    ///
+    pub global: u32,
 
-#[cfg(test)]
-mod tests;
+    ///
+    pub fields: Vec<u32>,
+}

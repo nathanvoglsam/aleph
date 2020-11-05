@@ -27,14 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::code::Code;
-
-#[cfg(feature = "derive_serde")]
 use serde::{Deserialize, Serialize};
 
 #[repr(i32)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum TypeKind {
     Void = 0,
     UI8 = 1,
@@ -94,8 +90,7 @@ impl TypeKind {
     }
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Type {
     /// The type kind of this type
     pub kind: TypeKind,
@@ -104,20 +99,7 @@ pub struct Type {
     pub variant: TypeVariant,
 }
 
-impl Type {
-    pub fn to_string(&self, code: &Code) -> Option<String> {
-        if let Some(name) = self.variant.name(code) {
-            Some(name.to_string())
-        } else if let TypeVariant::Other = &self.variant {
-            Some(format!("{:?}", self.kind))
-        } else {
-            None
-        }
-    }
-}
-
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum TypeVariant {
     Function(TypeFunction),
     Object(TypeObject),
@@ -128,76 +110,7 @@ pub enum TypeVariant {
     Other,
 }
 
-impl TypeVariant {
-    pub fn to_string(&self, code: &Code) -> String {
-        match self {
-            TypeVariant::Function(f) => {
-                let mut string = "(".to_string();
-                for arg_idx in f.args.iter() {
-                    let arg_idx = *arg_idx as usize;
-                    let arg = &code.types[arg_idx];
-                    if let Some(arg_str) = arg.to_string(code) {
-                        std::fmt::write(&mut string, format_args!("{},", arg_str)).unwrap();
-                    } else {
-                        std::fmt::write(&mut string, format_args!("{},", arg_idx)).unwrap();
-                    }
-                }
-                let returns_idx = f.returns as usize;
-                let returns = &code.types[returns_idx];
-                if let Some(returns_str) = returns.to_string(code) {
-                    std::fmt::write(&mut string, format_args!(") -> {})", returns_str)).unwrap();
-                } else {
-                    std::fmt::write(&mut string, format_args!(") -> {})", returns_idx)).unwrap();
-                }
-                string
-            }
-            TypeVariant::Object(o) => {
-                let mut string = code.strings[o.name as usize].to_string();
-                string.push('(');
-
-                for field in o.fields.iter() {
-                    let field_name = &code.strings[field.name as usize];
-                    let field_ty = &code.types[field.type_ as usize];
-                    if let Some(field_str) = field_ty.to_string(code) {
-                        std::fmt::write(
-                            &mut string,
-                            format_args!("{}: {},", field_name, field_str),
-                        )
-                        .unwrap();
-                    } else {
-                        std::fmt::write(
-                            &mut string,
-                            format_args!("{}: {},", field_name, field.type_),
-                        )
-                        .unwrap();
-                    }
-                }
-
-                string
-            }
-            TypeVariant::Enum(e) => "".to_string(),
-            TypeVariant::Virtual(v) => "".to_string(),
-            TypeVariant::TypeParam(t) => "".to_string(),
-            TypeVariant::Abstract(a) => "".to_string(),
-            TypeVariant::Other => "".to_string(),
-        }
-    }
-
-    pub fn name<'a, 'b>(&'a self, code: &'b Code) -> Option<&'b str> {
-        match self {
-            TypeVariant::Function(_) => None,
-            TypeVariant::Object(o) => Some(&code.strings[o.name as usize]),
-            TypeVariant::Enum(e) => Some(&code.strings[e.name as usize]),
-            TypeVariant::Virtual(_) => None,
-            TypeVariant::TypeParam(_) => None,
-            TypeVariant::Abstract(a) => Some(&code.strings[a.name as usize]),
-            TypeVariant::Other => None,
-        }
-    }
-}
-
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ObjectProto {
     /// Index into string table for the name
     pub name: u32,
@@ -209,8 +122,7 @@ pub struct ObjectProto {
     pub p_index: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Field {
     /// Index into string table for the field name
     pub name: u32,
@@ -219,8 +131,7 @@ pub struct Field {
     pub type_: u32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EnumConstruct {
     /// Index into string table for the name
     pub name: u32,
@@ -229,8 +140,7 @@ pub struct EnumConstruct {
     pub params: Vec<u32>,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
     pub args: Vec<u32>,
@@ -239,8 +149,7 @@ pub struct TypeFunction {
     pub returns: u32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeObject {
     /// Index into string table for the name
     pub name: u32,
@@ -261,8 +170,7 @@ pub struct TypeObject {
     pub global: u32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeEnum {
     /// Index into string table for the name
     pub name: u32,
@@ -274,22 +182,19 @@ pub struct TypeEnum {
     pub global: u32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeVirtual {
     /// The list of fields on this virtual
     pub fields: Vec<Field>,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeParam {
     /// Index into the type table
     pub type_: u32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
     pub name: u32,

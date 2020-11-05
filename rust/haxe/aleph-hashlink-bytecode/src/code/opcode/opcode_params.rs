@@ -27,32 +27,27 @@
 // SOFTWARE.
 //
 
-#[cfg(feature = "derive_serde")]
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpOneParam {
     pub param_1: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpTwoParam {
     pub param_1: i32,
     pub param_2: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpThreeParam {
     pub param_1: i32,
     pub param_2: i32,
     pub param_3: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpFourParam {
     pub param_1: i32,
     pub param_2: i32,
@@ -60,8 +55,7 @@ pub struct OpFourParam {
     pub param_4: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpFiveParam {
     pub param_1: i32,
     pub param_2: i32,
@@ -70,8 +64,7 @@ pub struct OpFiveParam {
     pub param_5: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpSixParam {
     pub param_1: i32,
     pub param_2: i32,
@@ -81,8 +74,7 @@ pub struct OpSixParam {
     pub param_6: i32,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpCallNParam {
     pub param_1: i32,
     pub param_2: i32,
@@ -90,8 +82,7 @@ pub struct OpCallNParam {
     pub extra: Vec<i32>,
 }
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OpSwitchParam {
     pub param_1: u32,
     pub param_2: u32,

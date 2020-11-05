@@ -27,12 +27,15 @@
 // SOFTWARE.
 //
 
+mod constant;
 mod function;
 mod native;
 mod opcode;
 mod result;
 mod type_;
+mod version;
 
+pub use crate::code::constant::Constant;
 pub use function::Function;
 pub use native::Native;
 pub use opcode::{
@@ -44,78 +47,16 @@ pub use type_::{
     EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeKind,
     TypeObject, TypeParam, TypeVariant, TypeVirtual,
 };
+pub use version::Version;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
 
-#[cfg(feature = "derive_serde")]
 use serde::{Deserialize, Serialize};
 
 const HEADER_H: u8 = 0x48;
 const HEADER_L: u8 = 0x4C;
 const HEADER_B: u8 = 0x42;
-
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum Version {
-    V1,
-    V2,
-    V3,
-    V4,
-    V5,
-}
-
-impl Version {
-    pub fn from_raw(raw: u8) -> Option<Version> {
-        match raw {
-            1 => Some(Version::V1),
-            2 => Some(Version::V2),
-            3 => Some(Version::V3),
-            4 => Some(Version::V4),
-            5 => Some(Version::V5),
-            _ => None,
-        }
-    }
-
-    pub fn needs_skip_assigns(&self) -> bool {
-        match self {
-            Version::V1 => false,
-            Version::V2 => false,
-            Version::V3 => true,
-            Version::V4 => true,
-            Version::V5 => true,
-        }
-    }
-
-    pub fn is_supported(&self) -> bool {
-        match self {
-            Version::V1 => false,
-            Version::V2 => false,
-            Version::V3 => false,
-            Version::V4 => true,
-            Version::V5 => true,
-        }
-    }
-
-    pub fn has_bytes_table(&self) -> bool {
-        match self {
-            Version::V1 => false,
-            Version::V2 => false,
-            Version::V3 => false,
-            Version::V4 => false,
-            Version::V5 => true,
-        }
-    }
-
-    pub fn has_constants_table(&self) -> bool {
-        match self {
-            Version::V1 => false,
-            Version::V2 => false,
-            Version::V3 => false,
-            Version::V4 => true,
-            Version::V5 => true,
-        }
-    }
-}
 
 /// This struct is a direct representation of a hashlink module *as read from disk*. The original C
 /// hashlink code deserializes directly into the datastructures used by the JIT and runtime. This
@@ -125,8 +66,7 @@ impl Version {
 ///
 /// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
 /// runtime but is not appropriate to be consumed directly by the runtime.
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Code {
     /// The version of the bytecode file that was read from disk
     pub version: Version,
@@ -160,40 +100,18 @@ pub struct Code {
 
     /// The file's global table (list of indices into type table)
     pub globals: Vec<u32>,
+
+    /// The file's function table
+    pub functions: Vec<Function>,
+
+    /// The file's constants table
+    pub constants: Vec<Constant>,
+
+    /// Index into the functions table for specifying which function is the entrypoint
+    pub entrypoint: u32,
 }
 
 impl Code {
-    /// Internal utility function for printing a file to stdout
-    pub(crate) fn debug_print(&self) {
-        println!("version: {:#?}", self.version);
-        println!("flags: {}", self.flags);
-
-        println!("ints: ");
-        for (i, int) in self.ints.iter().enumerate() {
-            println!("[{}] {}", i, int);
-        }
-
-        println!("floats: ");
-        for (i, float) in self.floats.iter().enumerate() {
-            println!("[{}] {}", i, float);
-        }
-
-        println!("strings: ");
-        for (i, string) in self.strings.iter().enumerate() {
-            println!("[{}] {}", i, string);
-        }
-
-        println!("debug_files: ");
-        for (i, debug_file) in self.debug_files.iter().enumerate() {
-            println!("[{}] {}", i, debug_file);
-        }
-
-        println!("types: ");
-        for (i, type_) in self.types.iter().enumerate() {
-            println!("[{}] {:?} {}", i, type_.kind, type_.variant.to_string(self));
-        }
-    }
-
     /// Will attempt to read a hashlink module from the given stream
     pub fn read(stream: &mut impl Read) -> Result<Code> {
         //
@@ -300,7 +218,18 @@ impl Code {
             )?);
         }
 
-        // TODO: Read constants
+        let mut constants = Vec::with_capacity(num_constants as usize);
+        for _ in 0..num_constants {
+            let global = read_uindex(stream)?;
+            let num_fields = read_uindex(stream)?;
+
+            let mut fields = Vec::with_capacity(num_fields as usize);
+            for _ in 0..num_fields {
+                fields.push(read_uindex(stream)?);
+            }
+
+            constants.push(Constant { global, fields });
+        }
 
         let out = Code {
             version,
@@ -314,6 +243,9 @@ impl Code {
             types,
             natives,
             globals,
+            functions,
+            constants,
+            entrypoint,
         };
         Ok(out)
     }

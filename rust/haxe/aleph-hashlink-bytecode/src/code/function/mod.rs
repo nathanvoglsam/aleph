@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-#[cfg(feature = "derive_serde")]
 use serde::{Deserialize, Serialize};
 
 use crate::code::OpCode;
 
-#[derive(Clone)]
-#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: u32,
