@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+#[cfg(feature = "derive_serde")]
+use serde::{Deserialize, Serialize};
+
 mod opcode_number;
 mod opcode_params;
 mod opcode_type;
@@ -38,6 +41,8 @@ pub use opcode_params::{
 };
 pub use opcode_type::OpCodeType;
 
+#[derive(Clone)]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub enum OpCode {
     OpMov(OpTwoParam),
     OpInt(OpTwoParam),

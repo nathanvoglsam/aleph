@@ -55,6 +55,68 @@ const HEADER_H: u8 = 0x48;
 const HEADER_L: u8 = 0x4C;
 const HEADER_B: u8 = 0x42;
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum Version {
+    V1,
+    V2,
+    V3,
+    V4,
+    V5,
+}
+
+impl Version {
+    pub fn from_raw(raw: u8) -> Option<Version> {
+        match raw {
+            1 => Some(Version::V1),
+            2 => Some(Version::V2),
+            3 => Some(Version::V3),
+            4 => Some(Version::V4),
+            5 => Some(Version::V5),
+            _ => None,
+        }
+    }
+
+    pub fn needs_skip_assigns(&self) -> bool {
+        match self {
+            Version::V1 => false,
+            Version::V2 => false,
+            Version::V3 => true,
+            Version::V4 => true,
+            Version::V5 => true,
+        }
+    }
+
+    pub fn is_supported(&self) -> bool {
+        match self {
+            Version::V1 => false,
+            Version::V2 => false,
+            Version::V3 => false,
+            Version::V4 => true,
+            Version::V5 => true,
+        }
+    }
+
+    pub fn has_bytes_table(&self) -> bool {
+        match self {
+            Version::V1 => false,
+            Version::V2 => false,
+            Version::V3 => false,
+            Version::V4 => false,
+            Version::V5 => true,
+        }
+    }
+
+    pub fn has_constants_table(&self) -> bool {
+        match self {
+            Version::V1 => false,
+            Version::V2 => false,
+            Version::V3 => false,
+            Version::V4 => true,
+            Version::V5 => true,
+        }
+    }
+}
+
 /// This struct is a direct representation of a hashlink module *as read from disk*. The original C
 /// hashlink code deserializes directly into the datastructures used by the JIT and runtime. This
 /// implementation is completely distinct from any runtime and serves purely as a utility for
@@ -67,7 +129,7 @@ const HEADER_B: u8 = 0x42;
 #[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct Code {
     /// The version of the bytecode file that was read from disk
-    pub version: u32,
+    pub version: Version,
 
     /// A general flags field used by the file format
     pub flags: u32,
@@ -103,7 +165,7 @@ pub struct Code {
 impl Code {
     /// Internal utility function for printing a file to stdout
     pub(crate) fn debug_print(&self) {
-        println!("version: {}", self.version);
+        println!("version: {:#?}", self.version);
         println!("flags: {}", self.flags);
 
         println!("ints: ");
@@ -143,14 +205,20 @@ impl Code {
         if h != HEADER_H || l != HEADER_L || b != HEADER_B {
             return Err(CodeReadError::InvalidFileHeader);
         }
-        let version = stream.read_u8()? as u32;
+
+        // Read and validate file version
+        let version = stream.read_u8()?;
+        let version = Version::from_raw(version).ok_or(CodeReadError::InvalidVersionUnknown)?;
+        if !version.is_supported() {
+            return Err(CodeReadError::InvalidVersionUnsupported);
+        }
 
         // Load file description that lists flags and the sizes of various tables
         let flags = read_uindex(stream)? as u32;
         let num_ints = read_uindex(stream)?;
         let num_floats = read_uindex(stream)?;
         let num_strings = read_uindex(stream)?;
-        let num_bytes = if version >= 5 {
+        let num_bytes = if version.has_bytes_table() {
             read_uindex(stream)?
         } else {
             0
@@ -159,7 +227,7 @@ impl Code {
         let num_globals = read_uindex(stream)?;
         let num_natives = read_uindex(stream)?;
         let num_functions = read_uindex(stream)?;
-        let num_constants = if version >= 4 {
+        let num_constants = if version.has_constants_table() {
             read_uindex(stream)?
         } else {
             0
@@ -179,7 +247,7 @@ impl Code {
         let strings = read_strings(num_strings as usize, stream)?;
 
         // Read the byte block and byte offset table
-        let (bytes, byte_offsets) = if version >= 5 {
+        let (bytes, byte_offsets) = if version.has_bytes_table() {
             read_bytes(num_bytes as usize, stream)?
         } else {
             (Vec::new(), Vec::new())
@@ -224,10 +292,14 @@ impl Code {
 
         let mut functions = Vec::with_capacity(num_functions as usize);
         for _ in 0..num_functions {
-            functions.push(read_function(stream, num_types)?);
-            // TODO: Read debug infos
+            functions.push(read_function(
+                stream,
+                num_types,
+                debug_files.len() as _,
+                has_debug,
+            )?);
         }
-        
+
         // TODO: Read constants
 
         let out = Code {
@@ -446,7 +518,12 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
     Ok(t)
 }
 
-fn read_function(stream: &mut impl Read, num_types: u32) -> Result<Function> {
+fn read_function(
+    stream: &mut impl Read,
+    num_types: u32,
+    num_debug_files: u32,
+    has_debug: bool,
+) -> Result<Function> {
     let type_ = get_type(stream, num_types)?;
     let f_index = read_uindex(stream)?;
     let num_regs = read_uindex(stream)?;
@@ -563,11 +640,68 @@ fn read_function(stream: &mut impl Read, num_types: u32) -> Result<Function> {
         }
     }
 
+    let mut debug_infos = Vec::with_capacity(num_ops as usize * 2);
+    if has_debug {
+        let mut current_file: i32 = -1;
+        let mut current_line: i32 = 0;
+        while debug_infos.len() < num_ops as usize {
+            let c = stream.read_u8()? as i32;
+            if (c & 1) != 0 {
+                // Read in the current file
+
+                // Unpack from file
+                let byte = stream.read_u8()? as i32;
+                current_file = c >> 1;
+                current_file = (current_file << 8) | byte;
+
+                // Validate refers to a file in the table
+                if current_file >= num_debug_files as i32 {
+                    return Err(CodeReadError::InvalidDebugInfoBadFileIndex);
+                }
+            } else if (c & 2) != 0 {
+                // Read in a packed form of `n` copies of the current `current_line`
+
+                // Unpack from the file
+                let delta = c >> 6;
+                let count = (c >> 2) & 15;
+
+                // Validate that it does not produce more entries than opcodes in the function
+                if (debug_infos.len() + count as usize) > num_ops as usize {
+                    return Err(CodeReadError::InvalidDebugInfoOutsideRange);
+                }
+
+                // Push `n` (current_file, current_line) into the list
+                for _ in 0..count {
+                    debug_infos.push((current_file, current_line));
+                }
+
+                // Update current line
+                current_line += delta;
+            } else if (c & 4) != 0 {
+                // Read in a current line shift value and push a new debug info set
+                current_line += c >> 3;
+                debug_infos.push((current_file, current_line));
+            } else {
+                // Read a different form of packed number for updating the current line and push
+                let b2 = stream.read_u8()? as i32;
+                let b3 = stream.read_u8()? as i32;
+                current_line = (c >> 3) | (b2 << 5) | (b3 << 13);
+                debug_infos.push((current_file, current_line));
+            }
+        }
+        let num_assigns = read_uindex(stream)?;
+        for _ in 0..num_assigns {
+            read_uindex(stream)?;
+            read_index(stream)?;
+        }
+    }
+
     Ok(Function {
         type_,
         f_index,
         registers,
         ops,
+        debug_infos,
     })
 }
 

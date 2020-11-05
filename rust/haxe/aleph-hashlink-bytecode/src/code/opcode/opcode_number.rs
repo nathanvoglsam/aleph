@@ -27,9 +27,13 @@
 // SOFTWARE.
 //
 
+#[cfg(feature = "derive_serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::code::OpCodeType;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub enum OpCodeNumber {
     OpMov = 0,
     OpInt = 1,

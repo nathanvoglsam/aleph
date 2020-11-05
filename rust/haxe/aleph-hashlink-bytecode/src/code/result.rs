@@ -41,6 +41,10 @@ pub enum CodeReadError {
     InvalidTypeBadIndex,
     InvalidStringBadIndex,
     InvalidOpCodeUnknown,
+    InvalidVersionUnknown,
+    InvalidVersionUnsupported,
+    InvalidDebugInfoBadFileIndex,
+    InvalidDebugInfoOutsideRange,
 }
 
 impl From<std::io::Error> for CodeReadError {

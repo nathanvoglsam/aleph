@@ -27,8 +27,13 @@
 // SOFTWARE.
 //
 
+#[cfg(feature = "derive_serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::code::OpCode;
 
+#[derive(Clone)]
+#[cfg_attr(feature = "derive_serde", derive(Serialize, Deserialize))]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: u32,
@@ -41,4 +46,7 @@ pub struct Function {
 
     /// Opcode stream
     pub ops: Vec<OpCode>,
+
+    /// Debug info
+    pub debug_infos: Vec<(i32, i32)>,
 }
