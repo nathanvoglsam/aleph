@@ -27,7 +27,5 @@
 // SOFTWARE.
 //
 
-pub mod code;
-
 #[cfg(test)]
 mod tests;
