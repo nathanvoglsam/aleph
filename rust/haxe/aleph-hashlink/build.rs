@@ -107,13 +107,7 @@ fn locate_llvm_root() -> Option<PathBuf> {
 
     // First we check if the prefix env variable points to a valid LLVM library root, as this should
     // always take priority
-    let prefix = env::var_os(ENV_LLVM_PREFIX)
-        .map(|p| PathBuf::from(p))
-        .filter(|p| {
-            let p = p.canonicalize().unwrap();
-            let cargo_target = compile::cargo_target_dir().canonicalize().unwrap();
-            p != cargo_target
-        });
+    let prefix = env::var_os(ENV_LLVM_PREFIX).map(|p| PathBuf::from(p));
     if let Some(prefix) = prefix {
         let bin_dir = prefix.join("bin");
         if bin_dir.is_dir() {
@@ -131,7 +125,16 @@ fn locate_llvm_root() -> Option<PathBuf> {
     // then the folder it is in is likely an LLVM install's bin dir so we can use this as our LLVM
     // root
     let path = env::var("PATH").unwrap();
-    let path_iter = path.split(path_separator).map(|v| PathBuf::from(v));
+    let path_iter = path
+        .split(path_separator)
+        .filter(|v| !v.is_empty())
+        .map(|v| PathBuf::from(v))
+        .filter(|p| {
+            let p = p.canonicalize().unwrap();
+            let cargo_target = compile::cargo_target_dir().canonicalize().unwrap();
+            let cargo_target_parent = cargo_target.parent().unwrap();
+            &p != &cargo_target && &p != cargo_target_parent
+        });
 
     // Check every entry in the path, return upon the first successful match
     for check_dir in path_iter {
@@ -262,8 +265,10 @@ fn main() {
         println!("cargo:rustc-link-lib=dylib=LLVM-C");
 
         let dll = bin_dir.join("LLVM-C.dll");
-        compile::copy_file_to_artifacts_dir(&dll)
-            .expect(&format!("Failed to copy {} into artifacts dir", dll.display()));
+        compile::copy_file_to_artifacts_dir(&dll).expect(&format!(
+            "Failed to copy {} into artifacts dir",
+            dll.display()
+        ));
         compile::copy_file_to_target_dir(&dll)
             .expect(&format!("Failed to copy {} into target dir", dll.display()));
     } else {
