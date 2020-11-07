@@ -107,7 +107,13 @@ fn locate_llvm_root() -> Option<PathBuf> {
 
     // First we check if the prefix env variable points to a valid LLVM library root, as this should
     // always take priority
-    let prefix = env::var_os(ENV_LLVM_PREFIX).map(|p| PathBuf::from(p));
+    let prefix = env::var_os(ENV_LLVM_PREFIX)
+        .map(|p| PathBuf::from(p))
+        .filter(|p| {
+            let p = p.canonicalize().unwrap();
+            let cargo_target = compile::cargo_target_dir().canonicalize().unwrap();
+            p != cargo_target
+        });
     if let Some(prefix) = prefix {
         let bin_dir = prefix.join("bin");
         if bin_dir.is_dir() {
@@ -240,11 +246,6 @@ fn main() {
     // Behavior can be significantly affected by these vars.
     println!("cargo:rerun-if-env-changed={}", ENV_LLVM_PREFIX);
 
-    if LLVM_CONFIG_PATH.is_none() {
-        println!("cargo:rustc-cfg=LLVM_SYS_NOT_FOUND");
-        return;
-    }
-
     if LLVM_ROOT.is_none() {
         panic!("Couldn't find LLVM root");
     }
@@ -260,16 +261,17 @@ fn main() {
         println!("cargo:rustc-link-search=native={}", lib_dir.display());
         println!("cargo:rustc-link-lib=dylib=LLVM-C");
 
-        // This probably shouldn't be here but it stays for now
-        if is_llvm_debug() {
-            println!("cargo:rustc-link-lib={}", "msvcrtd");
+        let dll = bin_dir.join("LLVM-C.dll");
+        compile::copy_file_to_artifacts_dir(&dll)
+            .expect(&format!("Failed to copy {} into artifacts dir", dll.display()));
+        compile::copy_file_to_target_dir(&dll)
+            .expect(&format!("Failed to copy {} into target dir", dll.display()));
+    } else {
+        if LLVM_CONFIG_PATH.is_none() {
+            println!("cargo:rustc-cfg=LLVM_SYS_NOT_FOUND");
+            return;
         }
 
-        compile::copy_file_to_artifacts_dir(&bin_dir.join("LLVM-C.dll"))
-            .expect("Failed to copy LLVM-C.dll into artifacts dir");
-        compile::copy_file_to_target_dir(&bin_dir.join("LLVM-C.dll"))
-            .expect("Failed to copy LLVM-C.dll to target dir");
-    } else {
         // Get the llvm library dir
         let lib_dir = llvm_config("--libdir");
 

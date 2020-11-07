@@ -60,9 +60,9 @@ pub fn cargo_out_dir() -> PathBuf {
 ///
 pub fn cargo_target_dir() -> PathBuf {
     let mut out_dir = cargo_out_dir();
-    out_dir.push("..");
-    out_dir.push("..");
-    out_dir.push("..");
+    assert!(out_dir.pop());
+    assert!(out_dir.pop());
+    assert!(out_dir.pop());
     out_dir
 }
 

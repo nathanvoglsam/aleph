@@ -47,7 +47,11 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 
 [dependencies]
 aleph-hashlink-bytecode = { path = "../aleph-hashlink-bytecode", version = "0.1.0" }
-llvm-sys = { version = "110.0", features = ["no-llvm-linking"] }
+
+[dependencies.llvm-sys]
+git = "https://gitlab.com/MindSpunk/llvm-sys.rs.git"
+branch = "build-with-custom-linking-fix"
+features = ["no-llvm-linking", "disable-alltargets-init"]
 
 [build-dependencies]
 aleph-target-build = { path = "../../build/aleph-target-build", version = "2.0.0" }

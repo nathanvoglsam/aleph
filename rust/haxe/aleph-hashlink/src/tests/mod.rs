@@ -79,8 +79,12 @@ pub fn llvm_test() {
         // each of these calls is necessary to setup an execution engine which compiles to native
         // code
         LLVMLinkInMCJIT();
-        LLVM_InitializeNativeTarget();
-        LLVM_InitializeNativeAsmPrinter();
+        LLVMInitializeX86Target();
+        LLVMInitializeX86TargetMC();
+        LLVMInitializeX86TargetInfo();
+        LLVMInitializeX86Disassembler();
+        LLVMInitializeX86AsmParser();
+        LLVMInitializeX86AsmPrinter();
 
         // takes ownership of the module
         LLVMCreateExecutionEngineForModule(&mut ee, module, &mut out);
