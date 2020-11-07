@@ -270,29 +270,25 @@ fn main() {
         compile::copy_file_to_target_dir(&bin_dir.join("LLVM-C.dll"))
             .expect("Failed to copy LLVM-C.dll to target dir");
     } else {
-        let libdir = llvm_config("--libdir");
+        // Get the llvm library dir
+        let lib_dir = llvm_config("--libdir");
 
-        // Export information to other crates
-        println!(
-            "cargo:config_path={}",
-            LLVM_CONFIG_PATH.clone().unwrap().display()
-        );
+        // Add library dir to libdir and link search path
+        println!("cargo:libdir={}", lib_dir);
+        println!("cargo:rustc-link-search=native={}", lib_dir);
 
-        println!("cargo:libdir={}", libdir); // DEP_LLVM_LIBDIR
-
-        println!("cargo:rustc-link-search=native={}", libdir);
+        // Statically link LLVM
         for name in get_link_libraries() {
             println!("cargo:rustc-link-lib=static={}", name);
         }
 
+        // Dynamically link to LLVM dependencies
         for name in get_system_libraries() {
             println!("cargo:rustc-link-lib=dylib={}", name);
         }
 
+        // We also need to link against stdc++ and libffi
         println!("cargo:rustc-link-lib=dylib={}", "stdc++");
-
-        if !target_platform().is_msvc() {
-            println!("cargo:rustc-link-lib=dylib={}", "ffi");
-        }
+        println!("cargo:rustc-link-lib=dylib={}", "ffi");
     }
 }
