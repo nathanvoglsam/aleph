@@ -240,11 +240,6 @@ fn get_link_libraries() -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-fn is_llvm_debug() -> bool {
-    // Has to be either Debug or Release
-    llvm_config("--build-mode").contains("Debug")
-}
-
 fn main() {
     // Behavior can be significantly affected by these vars.
     println!("cargo:rerun-if-env-changed={}", ENV_LLVM_PREFIX);
