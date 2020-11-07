@@ -291,7 +291,7 @@ fn main() {
 
         println!("cargo:rustc-link-lib=dylib={}", "stdc++");
 
-        if target_platform().is_windows() {
+        if !target_platform().is_msvc() {
             println!("cargo:rustc-link-lib=dylib={}", "ffi");
         }
     }
