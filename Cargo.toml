@@ -53,6 +53,7 @@ members = [
     "rust/graphics/aleph-vulkan-core",
     "rust/haxe/aleph-hashlink",
     "rust/haxe/aleph-hashlink-bytecode",
+    "rust/haxe/aleph-llvm",
     "rust/ktx/aleph-ktx",
     "rust/ktx/aleph-vk-format",
     "rust/logging/aleph-log",

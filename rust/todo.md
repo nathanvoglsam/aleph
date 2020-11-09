@@ -35,6 +35,9 @@
         - Use this to define a sequence of scopes
         - Next we need to
 - Need to figure out how to implement exceptions
+- Optimization Passes
+    - Look at lifetimes of allocated objects and conservatively deduce when stack allocation is
+      applicable to avoid allocation overhead and reduce GC pressure
 
 ## LLVM Issues
 - May need to temporarily switch to a nightly compiler due to linkage problems on windows gnu target
