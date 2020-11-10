@@ -27,24 +27,39 @@
 // SOFTWARE.
 //
 
-#[cfg(test)]
-mod tests;
+use crate::utils::cstr_or_empty;
+use crate::{Context, Type, Value};
+use llvm_sys::core::*;
+use llvm_sys::prelude::*;
+use std::ffi::CStr;
+use std::marker::PhantomData;
 
-mod basic_block;
-mod builder;
-mod context;
-mod execution_engine;
-mod module;
-mod type_;
-mod utils;
-mod value;
+#[repr(transparent)]
+pub struct Module<'a> {
+    pub(crate) inner: LLVMModuleRef,
+    pub(crate) phantom: PhantomData<&'a Context>,
+}
 
-pub use llvm_sys::LLVMIntPredicate as IntPredicate;
+impl<'a> Module<'a> {
+    pub fn add_function(&self, name: Option<&CStr>, t: Type) -> Value {
+        unsafe {
+            let inner = LLVMAddFunction(self.inner, cstr_or_empty(name), t.inner);
+            Value {
+                inner,
+                phantom: Default::default(),
+            }
+        }
+    }
 
-pub use basic_block::BasicBlock;
-pub use builder::Builder;
-pub use context::Context;
-pub use execution_engine::{ExecutionEngine, ExecutionEngineCreateError};
-pub use module::Module;
-pub use type_::Type;
-pub use value::Value;
+    pub fn dump(&self) {
+        unsafe { LLVMDumpModule(self.inner) }
+    }
+}
+
+impl<'a> Drop for Module<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            LLVMDisposeModule(self.inner);
+        }
+    }
+}

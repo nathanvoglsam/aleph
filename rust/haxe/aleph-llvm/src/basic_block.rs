@@ -27,24 +27,13 @@
 // SOFTWARE.
 //
 
-#[cfg(test)]
-mod tests;
+use crate::Context;
+use llvm_sys::prelude::LLVMBasicBlockRef;
+use std::marker::PhantomData;
 
-mod basic_block;
-mod builder;
-mod context;
-mod execution_engine;
-mod module;
-mod type_;
-mod utils;
-mod value;
-
-pub use llvm_sys::LLVMIntPredicate as IntPredicate;
-
-pub use basic_block::BasicBlock;
-pub use builder::Builder;
-pub use context::Context;
-pub use execution_engine::{ExecutionEngine, ExecutionEngineCreateError};
-pub use module::Module;
-pub use type_::Type;
-pub use value::Value;
+#[derive(Copy, Clone)]
+#[repr(transparent)]
+pub struct BasicBlock<'a> {
+    pub(crate) inner: LLVMBasicBlockRef,
+    pub(crate) phantom: PhantomData<&'a Context>,
+}

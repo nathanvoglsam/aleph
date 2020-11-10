@@ -27,24 +27,14 @@
 // SOFTWARE.
 //
 
-#[cfg(test)]
-mod tests;
+use std::ffi::CStr;
+use std::os::raw::c_char;
 
-mod basic_block;
-mod builder;
-mod context;
-mod execution_engine;
-mod module;
-mod type_;
-mod utils;
-mod value;
+const EMPTY_STRING: *const c_char = b"\0".as_ptr() as *const c_char;
 
-pub use llvm_sys::LLVMIntPredicate as IntPredicate;
-
-pub use basic_block::BasicBlock;
-pub use builder::Builder;
-pub use context::Context;
-pub use execution_engine::{ExecutionEngine, ExecutionEngineCreateError};
-pub use module::Module;
-pub use type_::Type;
-pub use value::Value;
+pub fn cstr_or_empty(cstr: Option<&CStr>) -> *const c_char {
+    match cstr {
+        None => EMPTY_STRING,
+        Some(inner) => inner.as_ptr(),
+    }
+}
