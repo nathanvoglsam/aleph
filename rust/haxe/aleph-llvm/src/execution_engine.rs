@@ -34,9 +34,6 @@ use llvm_sys::target::*;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::str::Utf8Error;
-use std::sync::atomic::{AtomicBool, Ordering};
-
-static TARGET_INIT_GUARD: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Debug)]
 pub enum ExecutionEngineCreateError {
