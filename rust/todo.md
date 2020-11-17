@@ -1,5 +1,18 @@
 # HashLink VM
 
+The immediate list of things needed are:
+
+- Need to analyze the best architecture for analyzing and transforming the hash-link bytecode to
+  SSA form
+- Need to decide on a solution for this that also allows for some simple lifetime annotation
+- Need to be able to easily add optimization passes over the top of the bytecode when such
+  opportunities arise.
+    - An example would be determining when objects do not out live the function they are allocated
+      in so we can use plain stack allocation rather than a full GC alloc.
+        - Do not use the "C" stack to prevent stack overflows, make this stack an explicit part of
+          the GC to allow for dynamic allocation as long as the value doesn't outlive the stack
+          frame.
+
 ## Garbage Collector
 - Investigate a tracing, precise, moving, generational, stop the world garbage collector
     - Ideally find an off the shelf algorithm and implement it
