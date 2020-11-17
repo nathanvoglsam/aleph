@@ -49,8 +49,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", buil
 libc = "0.2"
 
 [dependencies.llvm-sys]
-git = "https://gitlab.com/MindSpunk/llvm-sys.rs.git"
-branch = "build-with-custom-linking-fix"
+git = "https://gitlab.com/taricorp/llvm-sys.rs.git"
+#branch = "build-with-custom-linking-fix"
 features = ["no-llvm-linking", "disable-alltargets-init"]
 
 [build-dependencies]
