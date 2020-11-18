@@ -52,6 +52,34 @@ impl<'a> Builder<'a> {
         }
     }
 
+    pub fn build_sub(&self, lhs: Value, rhs: Value, name: Option<&CStr>) -> Value {
+        unsafe {
+            let inner = LLVMBuildSub(self.inner, lhs.inner, rhs.inner, cstr_or_empty(name));
+            Value::new(inner)
+        }
+    }
+
+    pub fn build_mul(&self, lhs: Value, rhs: Value, name: Option<&CStr>) -> Value {
+        unsafe {
+            let inner = LLVMBuildMul(self.inner, lhs.inner, rhs.inner, cstr_or_empty(name));
+            Value::new(inner)
+        }
+    }
+
+    pub fn build_sdiv(&self, lhs: Value, rhs: Value, name: Option<&CStr>) -> Value {
+        unsafe {
+            let inner = LLVMBuildSDiv(self.inner, lhs.inner, rhs.inner, cstr_or_empty(name));
+            Value::new(inner)
+        }
+    }
+
+    pub fn build_udiv(&self, lhs: Value, rhs: Value, name: Option<&CStr>) -> Value {
+        unsafe {
+            let inner = LLVMBuildUDiv(self.inner, lhs.inner, rhs.inner, cstr_or_empty(name));
+            Value::new(inner)
+        }
+    }
+
     pub fn build_load(&self, val: Value, name: Option<&CStr>) -> Value {
         unsafe {
             let inner = LLVMBuildLoad(self.inner, val.inner, cstr_or_empty(name));
