@@ -95,6 +95,8 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/haxe/aleph-hashlink-bytecode/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/haxe/aleph-hashlink/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/haxe/aleph-llvm/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/haxe/eon-bytecode/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/haxe/hashlink-bytecode/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />

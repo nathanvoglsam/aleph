@@ -27,7 +27,26 @@
 // SOFTWARE.
 //
 
-pub mod code;
+mod code;
+mod constant;
+mod function;
+mod native;
+mod opcode;
+mod result;
+mod type_;
+mod version;
 
-#[cfg(test)]
-mod tests;
+pub use code::Code;
+pub use constant::Constant;
+pub use function::Function;
+pub use native::Native;
+pub use opcode::{
+    OpCallNParam, OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam,
+    OpSixParam, OpSwitchParam, OpThreeParam, OpTwoParam,
+};
+pub use result::{CodeReadError, Result};
+pub use type_::{
+    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeKind,
+    TypeObject, TypeParam, TypeVariant, TypeVirtual,
+};
+pub use version::Version;

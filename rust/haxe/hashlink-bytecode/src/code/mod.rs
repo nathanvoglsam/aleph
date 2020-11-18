@@ -27,31 +27,15 @@
 // SOFTWARE.
 //
 
-mod constant;
-mod function;
-mod native;
-mod opcode;
-mod result;
-mod type_;
-mod version;
-
-pub use crate::code::constant::Constant;
-pub use function::Function;
-pub use native::Native;
-pub use opcode::{
-    OpCallNParam, OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam,
-    OpSixParam, OpSwitchParam, OpThreeParam, OpTwoParam,
-};
-pub use result::{CodeReadError, Result};
-pub use type_::{
-    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeKind,
-    TypeObject, TypeParam, TypeVariant, TypeVirtual,
-};
-pub use version::Version;
-
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
 
+use crate::{
+    CodeReadError, Constant, EnumConstruct, Field, Function, Native, ObjectProto, OpCallNParam,
+    OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam, OpSixParam,
+    OpSwitchParam, OpThreeParam, OpTwoParam, Result, Type, TypeAbstract, TypeEnum, TypeFunction,
+    TypeKind, TypeObject, TypeParam, TypeVariant, TypeVirtual, Version,
+};
 use serde::{Deserialize, Serialize};
 
 const HEADER_H: u8 = 0x48;

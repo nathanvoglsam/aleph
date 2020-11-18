@@ -29,7 +29,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::code::OpCodeType;
+use crate::OpCodeType;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub enum OpCodeNumber {

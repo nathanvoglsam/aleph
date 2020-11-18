@@ -29,7 +29,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::code::OpCode;
+use crate::OpCode;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Function {
