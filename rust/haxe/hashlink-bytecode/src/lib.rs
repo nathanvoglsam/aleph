@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+#[cfg(test)]
+mod tests;
+
 mod code;
 mod constant;
 mod function;
