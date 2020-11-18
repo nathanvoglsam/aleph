@@ -43,6 +43,12 @@ pub struct SSAValue {
     /// Index into the function's Register table that states what original value this SSA value is
     /// considered a version of
     pub register: u32,
+
+    /// The index of the basic block that assigns this SSA value
+    pub basic_block: u32,
+
+    /// The index into the basic block for the instruction that assigns this SSA value
+    pub instruction: u32,
 }
 
 #[derive(Clone, Debug)]
