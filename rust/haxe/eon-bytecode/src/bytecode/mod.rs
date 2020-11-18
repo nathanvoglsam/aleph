@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-pub mod bytecode;
+mod function;
+mod opcode;
 
-#[cfg(test)]
-mod tests;
+pub use opcode::CallParam;
+pub use opcode::OpCode;
+pub use opcode::SwitchParam;
