@@ -29,23 +29,23 @@
 
 use crate::bytecode::OpCode;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Register {
     /// Index into the type table for the type of value this register holds
     pub type_: u32,
 
-    /// Does the allocated value outlive the function
+    /// Does the allocated value outlive the function. Used for optimizing allocations
     pub outlives_function: bool,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SSAValue {
     /// Index into the function's Register table that states what original value this SSA value is
     /// considered a version of
     pub register: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct BasicBlock {
     /// This vector can be more considered a "map", which maps an index into the function's
     /// register table to a (maybe none) index into the SSA values table. If the map does yield an
@@ -59,7 +59,7 @@ pub struct BasicBlock {
     pub ops: Vec<OpCode>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: u32,
@@ -67,15 +67,13 @@ pub struct Function {
     /// ?
     pub f_index: u32,
 
-    /// List of registers for the function's bytecode. This maps almost directly to hashlink
-    /// bytecodes VMs but with additional information needed for forming an SSA graph
+    /// List of registers for the function's bytecode. This maps almost directly to the register
+    /// system in hashlink bytecode but with some additional information.
     pub registers: Vec<Register>,
 
     /// This is the list of SSA values that get referred to by the
     pub ssa_values: Vec<SSAValue>,
 
+    /// The list of basic blocks within the function
     pub basic_blocks: Vec<BasicBlock>,
-
-    /// Opcode stream
-    pub ops: Vec<OpCode>,
 }

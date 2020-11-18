@@ -41,6 +41,13 @@ pub struct SwitchParam {
 }
 
 #[derive(Clone, Debug)]
+pub struct PhiParam {
+    /// A list of value pairs for loading specific values from other basic blocks when they branch
+    /// into the basic block the phi instruction is in
+    pub block_values: Vec<(u32, u32)>,
+}
+
+#[derive(Clone, Debug)]
 pub enum OpCode {
     // Type and value initialization op codes
     OpMov([i32; 2]),
@@ -112,6 +119,7 @@ pub enum OpCode {
     OpLabel,
     OpRet(i32),
     OpSwitch(SwitchParam),
+    OpPhi(PhiParam),
 
     // Casting opcodes
     OpToDyn([i32; 2]),
@@ -266,6 +274,7 @@ impl OpCode {
             OpCode::OpRefData(v) => v,
             OpCode::OpRefOffset(v) => v,
             OpCode::OpNop => &EMPTY,
+            OpCode::OpPhi(_) => &EMPTY,
         }
     }
 }
