@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::OpCode;
+use crate::bytecode::opcode::OpCode;
 
 #[derive(Clone, Debug)]
 pub struct Register {

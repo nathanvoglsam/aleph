@@ -27,9 +27,5 @@
 // SOFTWARE.
 //
 
-mod function;
-mod opcode;
-
-pub use opcode::CallParam;
-pub use opcode::OpCode;
-pub use opcode::SwitchParam;
+pub mod function;
+pub mod opcode;

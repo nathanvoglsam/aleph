@@ -35,7 +35,7 @@ pub struct CallParam {
 
 #[derive(Clone, Debug)]
 pub struct SwitchParam {
-    pub input_reg: u32,
+    pub input_reg: i32,
     pub jump_table: Vec<u32>,
     pub fallback: u32,
 }
@@ -245,7 +245,7 @@ impl OpCode {
             OpCode::OpRet(v) => std::slice::from_ref(v),
             OpCode::OpThrow(v) => std::slice::from_ref(v),
             OpCode::OpRethrow(v) => std::slice::from_ref(v),
-            OpCode::OpSwitch(v) => &std::slice::from_ref(&v.input_reg),
+            OpCode::OpSwitch(v) => std::slice::from_ref(&v.input_reg),
             OpCode::OpNullCheck(v) => std::slice::from_ref(v),
             OpCode::OpTrap(v) => v,
             OpCode::OpEndTrap(v) => std::slice::from_ref(v),
