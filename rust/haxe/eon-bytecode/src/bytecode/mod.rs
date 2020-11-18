@@ -29,3 +29,4 @@
 
 pub mod function;
 pub mod opcode;
+pub mod type_;
