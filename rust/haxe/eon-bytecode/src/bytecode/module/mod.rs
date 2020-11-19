@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::bytecode::constant::Constant;
 use crate::bytecode::function::Function;
+use crate::bytecode::native::Native;
 use crate::bytecode::type_::Type;
 
 /// This struct is a direct representation of a hashlink module *as read from disk*. The original C
@@ -38,7 +40,7 @@ use crate::bytecode::type_::Type;
 ///
 /// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
 /// runtime but is not appropriate to be consumed directly by the runtime.
-#[derive(Clone, Serialize, Debug)]
+#[derive(Clone, Debug)]
 pub struct Module {
     /// The file's integer table
     pub ints: Vec<i32>,
@@ -62,7 +64,7 @@ pub struct Module {
     pub types: Vec<Type>,
 
     /// The file's natives table
-    pub natives: Vec<_>,
+    pub natives: Vec<Native>,
 
     /// The file's global table (list of indices into type table)
     pub globals: Vec<usize>,
@@ -71,7 +73,7 @@ pub struct Module {
     pub functions: Vec<Function>,
 
     /// The file's constants table
-    pub constants: Vec<_>,
+    pub constants: Vec<Constant>,
 
     /// Index into the functions table for specifying which function is the entrypoint
     pub entrypoint: usize,

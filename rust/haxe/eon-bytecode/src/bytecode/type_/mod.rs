@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum TypeKind {
+#[derive(Clone, Debug)]
+pub enum Type {
+    // Primitive types
     Void,
     UI8,
     UI16,
@@ -37,40 +38,113 @@ pub enum TypeKind {
     F32,
     F64,
     Bool,
+
     Bytes,
     Dynamic,
-    Function,
-    Obj,
     Array,
     Type,
-    Ref,
-    Virtual,
     DynObject,
-    Abstract,
-    Enum,
-    Null,
-    Method,
-    Struct,
-}
-
-#[derive(Clone, Debug)]
-pub struct Type {
-    /// The type kind of this type
-    pub kind: TypeKind,
-
-    /// Extra data associated with some type variants
-    pub variant: TypeVariant,
-}
-
-#[derive(Clone, Debug)]
-pub enum TypeVariant {
     Function(TypeFunction),
-    Object(TypeObject),
-    Enum(TypeEnum),
+    Method(TypeFunction),
+    Ref(TypeParam),
+    Null(TypeParam),
+    Obj(TypeObject),
+    Struct(TypeObject),
     Virtual(TypeVirtual),
-    TypeParam(TypeParam),
     Abstract(TypeAbstract),
-    Other,
+    Enum(TypeEnum),
+}
+
+impl Type {
+    pub fn get_type_function(&self) -> Option<&TypeFunction> {
+        match self {
+            Type::Function(v) => Some(v),
+            Type::Method(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_param(&self) -> Option<&TypeParam> {
+        match self {
+            Type::Ref(v) => Some(v),
+            Type::Null(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_object(&self) -> Option<&TypeObject> {
+        match self {
+            Type::Obj(v) => Some(v),
+            Type::Struct(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_virtual(&self) -> Option<&TypeVirtual> {
+        match self {
+            Type::Virtual(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_abstract(&self) -> Option<&TypeAbstract> {
+        match self {
+            Type::Abstract(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_enum(&self) -> Option<&TypeEnum> {
+        match self {
+            Type::Enum(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_function_mut(&mut self) -> Option<&mut TypeFunction> {
+        match self {
+            Type::Function(v) => Some(v),
+            Type::Method(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_param_mut(&mut self) -> Option<&mut TypeParam> {
+        match self {
+            Type::Ref(v) => Some(v),
+            Type::Null(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_object_mut(&mut self) -> Option<&mut TypeObject> {
+        match self {
+            Type::Obj(v) => Some(v),
+            Type::Struct(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_virtual_mut(&mut self) -> Option<&mut TypeVirtual> {
+        match self {
+            Type::Virtual(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_abstract_mut(&mut self) -> Option<&mut TypeAbstract> {
+        match self {
+            Type::Abstract(v) => Some(v),
+            _ => None,
+        }
+    }
+
+    pub fn get_type_enum_mut(&mut self) -> Option<&mut TypeEnum> {
+        match self {
+            Type::Enum(v) => Some(v),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

@@ -262,7 +262,6 @@ pub enum OpCode {
     OpJEq(CompBranch),
     OpJNotEq(CompBranch),
     OpJAlways(usize),
-    OpLabel,
     OpRet(usize),
     OpSwitch(Switch),
     OpPhi(Phi),

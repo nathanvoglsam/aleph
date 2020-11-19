@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct Constant {
     /// An index into the globals table
-    pub global: u32,
+    pub global: usize,
 
     /// A list of indexes into various tables that are used for initializing globals
-    pub fields: Vec<u32>,
+    pub fields: Vec<usize>,
 }

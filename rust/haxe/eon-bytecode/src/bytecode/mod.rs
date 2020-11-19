@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
+pub mod constant;
 pub mod function;
 pub mod module;
+pub mod native;
 pub mod opcode;
 pub mod type_;

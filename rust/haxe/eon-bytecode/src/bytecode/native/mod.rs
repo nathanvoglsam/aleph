@@ -27,13 +27,17 @@
 // SOFTWARE.
 //
 
-use serde::{Deserialize, Serialize};
+#[derive(Clone, Debug)]
+pub struct Native {
+    /// Index into the string table for library name
+    pub lib: usize,
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Constant {
-    /// An index into the globals table
-    pub global: u32,
+    /// Index into the string table for the native name
+    pub name: usize,
 
-    /// A list of indexes into various tables that are used for initializing globals
-    pub fields: Vec<u32>,
+    /// Index into the type table for the type
+    pub type_: usize,
+
+    /// ?
+    pub f_index: usize,
 }
