@@ -76,46 +76,46 @@ pub enum TypeVariant {
 #[derive(Clone, Debug)]
 pub struct ObjectProto {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: usize,
 
     /// ?
-    pub f_index: u32,
+    pub f_index: usize,
 
     /// ?
-    pub p_index: i32,
+    pub p_index: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct Field {
     /// Index into string table for the field name
-    pub name: u32,
+    pub name: usize,
 
     /// Index into type table for the type name
-    pub type_: u32,
+    pub type_: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct EnumConstruct {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: usize,
 
     /// List of indexes into the type table
-    pub params: Vec<u32>,
+    pub params: Vec<usize>,
 }
 
 #[derive(Clone, Debug)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
-    pub args: Vec<u32>,
+    pub args: Vec<usize>,
 
     /// Index into the type table for the return type
-    pub returns: u32,
+    pub returns: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct TypeObject {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: usize,
 
     /// List of fields on this object
     pub fields: Vec<Field>,
@@ -124,25 +124,25 @@ pub struct TypeObject {
     pub protos: Vec<ObjectProto>,
 
     /// ?
-    pub bindings: Vec<u32>,
+    pub bindings: Vec<usize>,
 
     /// ?
-    pub super_: Option<u32>,
+    pub super_: Option<usize>,
 
     /// ?
-    pub global: u32,
+    pub global: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct TypeEnum {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: usize,
 
     /// ?
     pub constructs: Vec<EnumConstruct>,
 
     /// ?
-    pub global: u32,
+    pub global: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -154,11 +154,11 @@ pub struct TypeVirtual {
 #[derive(Clone, Debug)]
 pub struct TypeParam {
     /// Index into the type table
-    pub type_: u32,
+    pub type_: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
-    pub name: u32,
+    pub name: usize,
 }

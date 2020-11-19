@@ -29,12 +29,26 @@
 
 use crate::bytecode::opcode::OpCode;
 
+/// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
+/// on to the information the "registers" provide because it makes some analysis passes easier as we
+/// don't need to reconstruct this information from the SSA graph every time we need it
 #[derive(Clone, Debug)]
 pub struct Register {
-    /// Index into the type table for the type of value this register holds
-    pub type_: u32,
-
-    /// Does the allocated value outlive the function. Used for optimizing allocations
+    /// Does the allocated value outlive the function. Used for optimizing allocations.
+    ///
+    /// This only really has meaning for allocated types. Value types like plain integers and floats
+    /// will never outlive a function as they don't have the concept of a lifetime. Value types are
+    /// always copied when they assign to something else so they will only ever live as long as the
+    /// scope they are defined in.
+    ///
+    /// An allocated type (something created with `new`) can have the lifetime extended beyond the
+    /// scope it was created in by passing the pointer around. The pointer itself is a value type
+    /// but what it points to will always be alive as long as a pointer to it exists.
+    ///
+    /// We can do some analysis to decide if the allocated object will outlive the function it was
+    /// created in so we leave a spot here to fill the information in later.
+    ///
+    /// This should default to true.
     pub outlives_function: bool,
 }
 
@@ -42,13 +56,13 @@ pub struct Register {
 pub struct SSAValue {
     /// Index into the function's Register table that states what original value this SSA value is
     /// considered a version of
-    pub register: u32,
+    pub register: usize,
 
     /// The index of the basic block that assigns this SSA value
-    pub basic_block: u32,
+    pub basic_block: usize,
 
     /// The index into the basic block for the instruction that assigns this SSA value
-    pub instruction: u32,
+    pub instruction: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -59,7 +73,7 @@ pub struct BasicBlock {
     ///
     /// This is used to identify the SSA value which holds the final state of a register at the end
     /// of a basic block so we can use this to build phi nodes when lowering to LLVM IR
-    pub register_final_writes: Vec<Option<u32>>,
+    pub register_final_writes: Vec<Option<usize>>,
 
     /// This is just a flat, sequential list of opcodes
     pub ops: Vec<OpCode>,
@@ -68,11 +82,38 @@ pub struct BasicBlock {
 #[derive(Clone, Debug)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
-    pub type_: u32,
+    pub type_: usize,
 
     /// ?
     pub f_index: u32,
 
+    /// This is the list of SSA values that get referred to by the
+    pub ssa_values: Vec<SSAValue>,
+
+    /// The list of basic blocks within the function
+    pub basic_blocks: Vec<BasicBlock>,
+
+    /// This holds all metadata information for the struct and is used *ONLY* in the analysis and
+    /// optimization passes. Nothing in this change the semantics of the code. It only stores extra
+    /// information needed by different parts of the transpiler.
+    ///
+    /// There is no guarantee that any of this information will be valid or up to date at any given
+    /// point. It is imperative that information is kept up to date as code transformations are
+    /// applied and that data is filled as it is generated.
+    ///
+    /// This is done to simplify the types involved and try to keep everything as plain old data.
+    /// The consequences of this mean you have to be careful to run certain things in the right
+    /// order to make sure that information being used has actually been generated.
+    pub metadata: Metadata,
+}
+
+#[derive(Clone, Debug)]
+pub struct Metadata {
+    pub reg_data: RegisterMetadata,
+}
+
+#[derive(Clone, Debug)]
+pub struct RegisterMetadata {
     /// List of registers for the function's bytecode. This maps almost directly to the register
     /// system in hashlink bytecode but with some additional information.
     ///
@@ -80,9 +121,6 @@ pub struct Function {
     /// analyzing the bytecode for optimization opportunities is easier.
     pub registers: Vec<Register>,
 
-    /// This is the list of SSA values that get referred to by the
-    pub ssa_values: Vec<SSAValue>,
-
-    /// The list of basic blocks within the function
-    pub basic_blocks: Vec<BasicBlock>,
+    /// Maps an SSA value to a register in the register list
+    pub register_map: Vec<(usize, usize)>,
 }

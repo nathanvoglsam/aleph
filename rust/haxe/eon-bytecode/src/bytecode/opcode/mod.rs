@@ -31,43 +31,43 @@
 #[derive(Clone, Debug)]
 pub struct Load {
     /// SSA value to load into
-    pub target: u32,
+    pub target: usize,
 
     /// What to load from, precise meaning depends on the exact opcode
-    pub load: u32,
+    pub load: usize,
 }
 
 /// Layout for storing type instructions that store an SSA value into some destination
 #[derive(Clone, Debug)]
 pub struct Store {
     /// SSA value to store into target
-    pub source: u32,
+    pub source: usize,
 
     /// Where to store to, precise meaning depends on the exact opcode
-    pub target: u32,
+    pub target: usize,
 }
 
 /// Layout for the various binop arithmetic instructions
 #[derive(Clone, Debug)]
 pub struct Binop {
     /// SSA value to store the result of the operation into
-    pub target: u32,
+    pub target: usize,
 
     /// Op left hand side
-    pub lhs: u32,
+    pub lhs: usize,
 
     /// Op right hand side
-    pub rhs: u32,
+    pub rhs: usize,
 }
 
 /// Layout for the various unop arithmetic instructions
 #[derive(Clone, Debug)]
 pub struct Unop {
     /// SSA value to store the result of the operation into
-    pub target: u32,
+    pub target: usize,
 
     /// The single operand for this operation
-    pub operand: u32,
+    pub operand: usize,
 }
 
 /// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
@@ -75,10 +75,10 @@ pub struct Unop {
 #[derive(Clone, Debug)]
 pub struct Call {
     /// SSA value to store the result of the operation into
-    pub target: u32,
+    pub target: usize,
 
     /// The ID of the function to call
-    pub function: u32,
+    pub function: usize,
 
     /// The list of function arguments
     pub fn_params: Vec<i32>,
@@ -95,39 +95,39 @@ pub struct Call {
 #[derive(Clone, Debug)]
 pub struct Switch {
     /// The SSA value to use as the index into the jump table
-    pub input: u32,
+    pub input: usize,
 
     /// A list of basic block indexes to map the input to which basic block to jump to
-    pub jump_table: Vec<u32>,
+    pub jump_table: Vec<usize>,
 
     /// The fallback basic block for if the input does not match any of our jump table entires
-    pub fallback: u32,
+    pub fallback: usize,
 }
 
 /// Layout for a field load from an object
 #[derive(Clone, Debug)]
 pub struct FieldLoad {
     /// The SSA value to store the result of the load into
-    pub target: u32,
+    pub target: usize,
 
     /// The SSA value that holds the object to load the field from
-    pub object: u32,
+    pub object: usize,
 
     /// The index of the field to load from
-    pub field: u32,
+    pub field: usize,
 }
 
 /// Layout for a field store to an object
 #[derive(Clone, Debug)]
 pub struct FieldStore {
     /// The SSA value that holds the object to store into
-    pub object: u32,
+    pub object: usize,
 
     /// The field index on the object to store into
-    pub field: u32,
+    pub field: usize,
 
     /// The SSA value to store into the field
-    pub source: u32,
+    pub source: usize,
 }
 
 /// Layout for loading from `this`. A less general form of `FieldLoad` where `object` is implicitly
@@ -135,10 +135,10 @@ pub struct FieldStore {
 #[derive(Clone, Debug)]
 pub struct ThisFieldLoad {
     /// The SSA value to store the result of the load into
-    pub target: u32,
+    pub target: usize,
 
     /// The index of the field to load from
-    pub field: u32,
+    pub field: usize,
 }
 
 /// Layout for storing to `this`. A less general form of `FieldStore` where object is implicitly the
@@ -146,10 +146,10 @@ pub struct ThisFieldLoad {
 #[derive(Clone, Debug)]
 pub struct ThisFieldStore {
     /// The field index on the object to store into
-    pub field: u32,
+    pub field: usize,
 
     /// The SSA value to store into the field
-    pub source: u32,
+    pub source: usize,
 }
 
 /// Layout for a conditional branch where the comparison value is implicit to the opcode itself.
@@ -162,10 +162,10 @@ pub struct ThisFieldStore {
 #[derive(Clone, Debug)]
 pub struct CondBranch {
     /// Value to check
-    pub check: u32,
+    pub check: usize,
 
     /// Basic block to jump to upon success
-    pub destination: u32,
+    pub destination: usize,
 }
 
 /// Layout for a comparison branch where we compare two provided values to decide whether to branch
@@ -177,9 +177,9 @@ pub struct CondBranch {
 /// See `CondBranch` docs for an explanation to how this differs from HashLink
 #[derive(Clone, Debug)]
 pub struct CompBranch {
-    pub lhs: u32,
-    pub rhs: u32,
-    pub destination: u32,
+    pub lhs: usize,
+    pub rhs: usize,
+    pub destination: usize,
 }
 
 /// Layout for our phi instruction.
@@ -189,7 +189,7 @@ pub struct CompBranch {
 pub struct Phi {
     /// A list of value pairs for loading specific values from other basic blocks when they branch
     /// into the basic block the phi instruction is in
-    pub block_values: Vec<(u32, u32)>,
+    pub block_values: Vec<(usize, usize)>,
 }
 
 #[derive(Clone, Debug)]
@@ -201,7 +201,7 @@ pub enum OpCode {
     OpBool(Load),
     OpBytes(Load),
     OpString(Load),
-    OpNull(u32),
+    OpNull(usize),
 
     // Arithmetic opcodes
     OpAdd(Binop),
@@ -220,8 +220,8 @@ pub enum OpCode {
     OpNeg(Unop),
     OpNot(Unop),
 
-    OpIncr(u32), // TODO: Decay these to adding a constant 1
-    OpDecr(u32), // TODO: Decay these to adding a constant 1
+    OpIncr(usize), // TODO: Decay these to adding a constant 1
+    OpDecr(usize), // TODO: Decay these to adding a constant 1
 
     // Function calling opcodes
     OpCall(Call),
@@ -261,9 +261,9 @@ pub enum OpCode {
     OpJNotGte(CompBranch),
     OpJEq(CompBranch),
     OpJNotEq(CompBranch),
-    OpJAlways(u32),
+    OpJAlways(usize),
     OpLabel,
-    OpRet(u32),
+    OpRet(usize),
     OpSwitch(Switch),
     OpPhi(Phi),
 
@@ -295,7 +295,7 @@ pub enum OpCode {
     OpSetMem([i32; 3]),
     OpSetArray([i32; 3]),
 
-    OpNew(i32),
+    OpNew(usize),
     OpArraySize([i32; 2]),
     OpType([i32; 2]),
     OpGetType([i32; 2]),

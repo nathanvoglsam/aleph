@@ -28,5 +28,6 @@
 //
 
 pub mod function;
+pub mod module;
 pub mod opcode;
 pub mod type_;
