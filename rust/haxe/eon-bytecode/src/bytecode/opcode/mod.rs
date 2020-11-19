@@ -27,21 +27,166 @@
 // SOFTWARE.
 //
 
+/// Layout for loading type instructions that load something into an SSA value
 #[derive(Clone, Debug)]
-pub struct CallParam {
-    pub op_params: [i32; 2],
+pub struct Load {
+    /// SSA value to load into
+    pub target: u32,
+
+    /// What to load from, precise meaning depends on the exact opcode
+    pub load: u32,
+}
+
+/// Layout for storing type instructions that store an SSA value into some destination
+#[derive(Clone, Debug)]
+pub struct Store {
+    /// SSA value to store into target
+    pub source: u32,
+
+    /// Where to store to, precise meaning depends on the exact opcode
+    pub target: u32,
+}
+
+/// Layout for the various binop arithmetic instructions
+#[derive(Clone, Debug)]
+pub struct Binop {
+    /// SSA value to store the result of the operation into
+    pub target: u32,
+
+    /// Op left hand side
+    pub lhs: u32,
+
+    /// Op right hand side
+    pub rhs: u32,
+}
+
+/// Layout for the various unop arithmetic instructions
+#[derive(Clone, Debug)]
+pub struct Unop {
+    /// SSA value to store the result of the operation into
+    pub target: u32,
+
+    /// The single operand for this operation
+    pub operand: u32,
+}
+
+/// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
+/// a single representation as I don't see any benefit to this.
+#[derive(Clone, Debug)]
+pub struct Call {
+    /// SSA value to store the result of the operation into
+    pub target: u32,
+
+    /// The ID of the function to call
+    pub function: u32,
+
+    /// The list of function arguments
     pub fn_params: Vec<i32>,
 }
 
+/// Layout for the switch instruction.
+///
+/// HashLink's encoding represents a jump table where the instruction encodes a list of instruction
+/// indexes to jump to based on the input register, which indexes into the table. If the index
+/// register is out of bounds it jumps to the fallback instruction index.
+///
+/// Because we need to move to SSA form we change this instruction's meaning slightly. Instead of
+/// jumping to an instruction index, we specify a table of *basic block* indexes to jump to.
 #[derive(Clone, Debug)]
-pub struct SwitchParam {
-    pub input_reg: i32,
+pub struct Switch {
+    /// The SSA value to use as the index into the jump table
+    pub input: u32,
+
+    /// A list of basic block indexes to map the input to which basic block to jump to
     pub jump_table: Vec<u32>,
+
+    /// The fallback basic block for if the input does not match any of our jump table entires
     pub fallback: u32,
 }
 
+/// Layout for a field load from an object
 #[derive(Clone, Debug)]
-pub struct PhiParam {
+pub struct FieldLoad {
+    /// The SSA value to store the result of the load into
+    pub target: u32,
+
+    /// The SSA value that holds the object to load the field from
+    pub object: u32,
+
+    /// The index of the field to load from
+    pub field: u32,
+}
+
+/// Layout for a field store to an object
+#[derive(Clone, Debug)]
+pub struct FieldStore {
+    /// The SSA value that holds the object to store into
+    pub object: u32,
+
+    /// The field index on the object to store into
+    pub field: u32,
+
+    /// The SSA value to store into the field
+    pub source: u32,
+}
+
+/// Layout for loading from `this`. A less general form of `FieldLoad` where `object` is implicitly
+/// the first function parameter
+#[derive(Clone, Debug)]
+pub struct ThisFieldLoad {
+    /// The SSA value to store the result of the load into
+    pub target: u32,
+
+    /// The index of the field to load from
+    pub field: u32,
+}
+
+/// Layout for storing to `this`. A less general form of `FieldStore` where object is implicitly the
+/// first function parameter
+#[derive(Clone, Debug)]
+pub struct ThisFieldStore {
+    /// The field index on the object to store into
+    pub field: u32,
+
+    /// The SSA value to store into the field
+    pub source: u32,
+}
+
+/// Layout for a conditional branch where the comparison value is implicit to the opcode itself.
+///
+/// Once again, like with `Switch` we have to change the meaning slightly. HashLink specifies jumps
+/// in relation to instruction indexes, we need to specify them in relation to basic blocks.
+///
+/// As such the destination will now refer to the basic block to jump to instead of the instruction
+/// index.
+#[derive(Clone, Debug)]
+pub struct CondBranch {
+    /// Value to check
+    pub check: u32,
+
+    /// Basic block to jump to upon success
+    pub destination: u32,
+}
+
+/// Layout for a comparison branch where we compare two provided values to decide whether to branch
+/// or not.
+///
+/// This is a more general form of `CondBranch` where the value to compare against can also be
+/// be provided.
+///
+/// See `CondBranch` docs for an explanation to how this differs from HashLink
+#[derive(Clone, Debug)]
+pub struct CompBranch {
+    pub lhs: u32,
+    pub rhs: u32,
+    pub destination: u32,
+}
+
+/// Layout for our phi instruction.
+///
+/// This is an opcode we add to the bytecode ourselves during the translation process.
+#[derive(Clone, Debug)]
+pub struct Phi {
     /// A list of value pairs for loading specific values from other basic blocks when they branch
     /// into the basic block the phi instruction is in
     pub block_values: Vec<(u32, u32)>,
@@ -50,38 +195,39 @@ pub struct PhiParam {
 #[derive(Clone, Debug)]
 pub enum OpCode {
     // Type and value initialization op codes
-    OpMov([i32; 2]),
-    OpInt([i32; 2]),
-    OpFloat([i32; 2]),
-    OpBool([i32; 2]),
-    OpBytes([i32; 2]),
-    OpString([i32; 2]),
-    OpNull(i32),
+    OpMov(Load),
+    OpInt(Load),
+    OpFloat(Load),
+    OpBool(Load),
+    OpBytes(Load),
+    OpString(Load),
+    OpNull(u32),
 
     // Arithmetic opcodes
-    OpAdd([i32; 3]),
-    OpSub([i32; 3]),
-    OpMul([i32; 3]),
-    OpSDiv([i32; 3]),
-    OpUDiv([i32; 3]),
-    OpSMod([i32; 3]),
-    OpUMod([i32; 3]),
-    OpShl([i32; 3]),
-    OpSShr([i32; 3]),
-    OpUShr([i32; 3]),
-    OpAnd([i32; 3]),
-    OpOr([i32; 3]),
-    OpXor([i32; 3]),
-    OpNeg([i32; 2]),
-    OpNot([i32; 2]),
-    OpIncr(i32),
-    OpDecr(i32),
+    OpAdd(Binop),
+    OpSub(Binop),
+    OpMul(Binop),
+    OpSDiv(Binop),
+    OpUDiv(Binop),
+    OpSMod(Binop),
+    OpUMod(Binop),
+    OpShl(Binop),
+    OpSShr(Binop),
+    OpUShr(Binop),
+    OpAnd(Binop),
+    OpOr(Binop),
+    OpXor(Binop),
+    OpNeg(Unop),
+    OpNot(Unop),
+
+    OpIncr(u32), // TODO: Decay these to adding a constant 1
+    OpDecr(u32), // TODO: Decay these to adding a constant 1
 
     // Function calling opcodes
-    OpCall(CallParam),
-    OpCallMethod(CallParam),
-    OpCallThis(CallParam),
-    OpCallClosure(CallParam),
+    OpCall(Call),
+    OpCallMethod(Call),
+    OpCallThis(Call),
+    OpCallClosure(Call),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
     OpStaticClosure([i32; 2]),
@@ -89,37 +235,37 @@ pub enum OpCode {
     OpVirtualClosure([i32; 3]),
 
     // Global getting and setting opcodes
-    OpGetGlobal([i32; 2]),
-    OpSetGlobal([i32; 2]),
+    OpGetGlobal(Load),
+    OpSetGlobal(Store),
 
     // Object field access
-    OpField([i32; 3]),    // Gets a field on the given object
-    OpSetField([i32; 3]), // Sets a field on the given object
-    OpGetThis([i32; 2]),  // Gets a field on `this` (just OpField with object implicitly reg 0)
-    OpSetThis([i32; 2]),  // Sets a field on `this` (just OpSetField with object implicitly reg 0)
-    OpDynGet([i32; 3]),   // Gets a field on a dyn object
-    OpDynSet([i32; 3]),   // Sets a field on a dyn object
+    OpGetField(FieldLoad),
+    OpSetField(FieldStore),
+    OpGetThis(ThisFieldLoad),
+    OpSetThis(ThisFieldStore),
+    OpDynGet(FieldLoad),
+    OpDynSet(FieldStore),
 
     // Branching opcodes
-    OpJTrue([i32; 2]),
-    OpJFalse([i32; 2]),
-    OpJNull([i32; 2]),
-    OpJNotNull([i32; 2]),
-    OpJSLt([i32; 3]),
-    OpJSGte([i32; 3]),
-    OpJSGt([i32; 3]),
-    OpJSLte([i32; 3]),
-    OpJULt([i32; 3]),
-    OpJUGte([i32; 3]),
-    OpJNotLt([i32; 3]),
-    OpJNotGte([i32; 3]),
-    OpJEq([i32; 3]),
-    OpJNotEq([i32; 3]),
-    OpJAlways(i32),
+    OpJTrue(CondBranch),
+    OpJFalse(CondBranch),
+    OpJNull(CondBranch),
+    OpJNotNull(CondBranch),
+    OpJSLt(CompBranch),
+    OpJSGte(CompBranch),
+    OpJSGt(CompBranch),
+    OpJSLte(CompBranch),
+    OpJULt(CompBranch),
+    OpJUGte(CompBranch),
+    OpJNotLt(CompBranch),
+    OpJNotGte(CompBranch),
+    OpJEq(CompBranch),
+    OpJNotEq(CompBranch),
+    OpJAlways(u32),
     OpLabel,
-    OpRet(i32),
-    OpSwitch(SwitchParam),
-    OpPhi(PhiParam),
+    OpRet(u32),
+    OpSwitch(Switch),
+    OpPhi(Phi),
 
     // Casting opcodes
     OpToDyn([i32; 2]),
@@ -148,6 +294,7 @@ pub enum OpCode {
     OpSetI16([i32; 3]),
     OpSetMem([i32; 3]),
     OpSetArray([i32; 3]),
+
     OpNew(i32),
     OpArraySize([i32; 2]),
     OpType([i32; 2]),
@@ -160,7 +307,7 @@ pub enum OpCode {
     OpSetRef([i32; 2]),
 
     // Enum opcodes
-    OpMakeEnum(CallParam),
+    OpMakeEnum(Call),
     OpEnumAlloc([i32; 2]),
     OpEnumIndex([i32; 2]),
     OpEnumField([i32; 4]),
@@ -173,108 +320,4 @@ pub enum OpCode {
 
     // Noop
     OpNop,
-}
-
-static EMPTY: [i32; 0] = [];
-
-impl OpCode {
-    pub fn op_params(&self) -> &[i32] {
-        match self {
-            OpCode::OpMov(v) => v,
-            OpCode::OpInt(v) => v,
-            OpCode::OpFloat(v) => v,
-            OpCode::OpBool(v) => v,
-            OpCode::OpBytes(v) => v,
-            OpCode::OpString(v) => v,
-            OpCode::OpNull(v) => std::slice::from_ref(v),
-            OpCode::OpAdd(v) => v,
-            OpCode::OpSub(v) => v,
-            OpCode::OpMul(v) => v,
-            OpCode::OpSDiv(v) => v,
-            OpCode::OpUDiv(v) => v,
-            OpCode::OpSMod(v) => v,
-            OpCode::OpUMod(v) => v,
-            OpCode::OpShl(v) => v,
-            OpCode::OpSShr(v) => v,
-            OpCode::OpUShr(v) => v,
-            OpCode::OpAnd(v) => v,
-            OpCode::OpOr(v) => v,
-            OpCode::OpXor(v) => v,
-            OpCode::OpNeg(v) => v,
-            OpCode::OpNot(v) => v,
-            OpCode::OpIncr(v) => std::slice::from_ref(v),
-            OpCode::OpDecr(v) => std::slice::from_ref(v),
-            OpCode::OpCall(v) => &v.op_params,
-            OpCode::OpCallMethod(v) => &v.op_params,
-            OpCode::OpCallThis(v) => &v.op_params,
-            OpCode::OpCallClosure(v) => &v.op_params,
-            OpCode::OpStaticClosure(v) => v,
-            OpCode::OpInstanceClosure(v) => v,
-            OpCode::OpVirtualClosure(v) => v,
-            OpCode::OpGetGlobal(v) => v,
-            OpCode::OpSetGlobal(v) => v,
-            OpCode::OpField(v) => v,
-            OpCode::OpSetField(v) => v,
-            OpCode::OpGetThis(v) => v,
-            OpCode::OpSetThis(v) => v,
-            OpCode::OpDynGet(v) => v,
-            OpCode::OpDynSet(v) => v,
-            OpCode::OpJTrue(v) => v,
-            OpCode::OpJFalse(v) => v,
-            OpCode::OpJNull(v) => v,
-            OpCode::OpJNotNull(v) => v,
-            OpCode::OpJSLt(v) => v,
-            OpCode::OpJSGte(v) => v,
-            OpCode::OpJSGt(v) => v,
-            OpCode::OpJSLte(v) => v,
-            OpCode::OpJULt(v) => v,
-            OpCode::OpJUGte(v) => v,
-            OpCode::OpJNotLt(v) => v,
-            OpCode::OpJNotGte(v) => v,
-            OpCode::OpJEq(v) => v,
-            OpCode::OpJNotEq(v) => v,
-            OpCode::OpJAlways(v) => std::slice::from_ref(v),
-            OpCode::OpToDyn(v) => v,
-            OpCode::OpToSFloat(v) => v,
-            OpCode::OpToUFloat(v) => v,
-            OpCode::OpToInt(v) => v,
-            OpCode::OpSafeCast(v) => v,
-            OpCode::OpUnsafeCast(v) => v,
-            OpCode::OpToVirtual(v) => v,
-            OpCode::OpLabel => &EMPTY,
-            OpCode::OpRet(v) => std::slice::from_ref(v),
-            OpCode::OpThrow(v) => std::slice::from_ref(v),
-            OpCode::OpRethrow(v) => std::slice::from_ref(v),
-            OpCode::OpSwitch(v) => std::slice::from_ref(&v.input_reg),
-            OpCode::OpNullCheck(v) => std::slice::from_ref(v),
-            OpCode::OpTrap(v) => v,
-            OpCode::OpEndTrap(v) => std::slice::from_ref(v),
-            OpCode::OpGetI8(v) => v,
-            OpCode::OpGetI16(v) => v,
-            OpCode::OpGetMem(v) => v,
-            OpCode::OpGetArray(v) => v,
-            OpCode::OpSetI8(v) => v,
-            OpCode::OpSetI16(v) => v,
-            OpCode::OpSetMem(v) => v,
-            OpCode::OpSetArray(v) => v,
-            OpCode::OpNew(v) => std::slice::from_ref(v),
-            OpCode::OpArraySize(v) => v,
-            OpCode::OpType(v) => v,
-            OpCode::OpGetType(v) => v,
-            OpCode::OpGetTID(v) => v,
-            OpCode::OpRef(v) => v,
-            OpCode::OpUnref(v) => v,
-            OpCode::OpSetRef(v) => v,
-            OpCode::OpMakeEnum(v) => &v.op_params,
-            OpCode::OpEnumAlloc(v) => v,
-            OpCode::OpEnumIndex(v) => v,
-            OpCode::OpEnumField(v) => v,
-            OpCode::OpSetEnumField(v) => v,
-            OpCode::OpAssert => &EMPTY,
-            OpCode::OpRefData(v) => v,
-            OpCode::OpRefOffset(v) => v,
-            OpCode::OpNop => &EMPTY,
-            OpCode::OpPhi(_) => &EMPTY,
-        }
-    }
 }

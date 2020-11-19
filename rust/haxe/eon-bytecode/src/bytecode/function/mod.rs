@@ -75,6 +75,9 @@ pub struct Function {
 
     /// List of registers for the function's bytecode. This maps almost directly to the register
     /// system in hashlink bytecode but with some additional information.
+    ///
+    /// We hold on to this so we can simplify tracking what actual values the SSA items refer to so
+    /// analyzing the bytecode for optimization opportunities is easier.
     pub registers: Vec<Register>,
 
     /// This is the list of SSA values that get referred to by the
