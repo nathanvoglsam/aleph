@@ -35,3 +35,12 @@ pub struct Constant {
     /// A list of indexes into various tables that are used for initializing globals
     pub fields: Vec<usize>,
 }
+
+impl From<hashlink_bytecode::Constant> for Constant {
+    fn from(mut v: hashlink_bytecode::Constant) -> Self {
+        Self {
+            global: v.global as usize,
+            fields: v.fields.drain(..).map(|v| v as usize).collect(),
+        }
+    }
+}

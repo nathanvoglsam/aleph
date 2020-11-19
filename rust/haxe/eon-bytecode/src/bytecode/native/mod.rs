@@ -41,3 +41,14 @@ pub struct Native {
     /// ?
     pub f_index: usize,
 }
+
+impl From<hashlink_bytecode::Native> for Native {
+    fn from(v: hashlink_bytecode::Native) -> Self {
+        Self {
+            lib: v.lib as usize,
+            name: v.name as usize,
+            type_: v.type_ as usize,
+            f_index: v.f_index as usize,
+        }
+    }
+}
