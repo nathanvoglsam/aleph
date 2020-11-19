@@ -41,6 +41,9 @@ pub enum TranspileError {
     /// error will never actually happen as it's not possible to encode an invalid type in the
     /// on-disk hashlink format but one could be made after being loaded from disk.
     InvalidType,
+
+    /// This error occurs when transpiling a function from the hashlink module fails
+    InvalidFunction,
 }
 
 pub type TranspileResult<T> = Result<T, TranspileError>;
@@ -94,7 +97,11 @@ pub struct Module {
 
 impl Module {
     pub fn from_hashlink(mut code: hashlink_bytecode::Code) -> TranspileResult<Self> {
-        let out = Self {
+        // First we translate all the direct stuff
+        //
+        // The only thing we massively change is the actual function instructions as we move that
+        // into SSA form.
+        let mut module = Self {
             ints: code.ints,
             floats: code.floats,
             strings: code.strings,
@@ -108,7 +115,23 @@ impl Module {
             constants: translate_constants(code.constants)?,
             entrypoint: code.entrypoint as usize,
         };
-        Ok(out)
+
+        // Now we do the fun part, we transpile the hashlink bytecode to our own bytecode form.
+        //
+        // We don't do any optimizations yet, we save that for later
+        let mut functions = Vec::new();
+        for f in code.functions.drain(..) {
+            if let Some(new) = Function::transpile_hashlink(&module, f) {
+                functions.push(new);
+            } else {
+                return Err(TranspileError::InvalidFunction);
+            }
+        }
+
+        module.functions = functions;
+
+        // Finally output our finished module
+        Ok(module)
     }
 }
 
