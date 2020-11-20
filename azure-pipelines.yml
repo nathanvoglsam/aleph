@@ -1,0 +1,25 @@
+jobs:
+  - job: Windows
+    pool:
+      vmImage: "windows-latest"
+    steps:
+      - template: "ci/rust-ci.yml"
+        parameters:
+          setupSteps:
+            - powershell: |
+                choco install ninja
+                choco install llvm
+              displayName: Install Binary Dependencies
+  - job: Linux
+    pool:
+      vmImage: "ubuntu-20.04"
+    steps:
+      - template: "ci/rust-ci.yml"
+        parameters:
+          setupSteps:
+            - powershell: |
+                wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+                sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
+                sudo apt -y update -qq
+                sudo apt -y install -qq wget cmake libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar libllvm11 llvm-11 llvm-11-dev libclang-common-11-dev libclang-11-dev libffi-dev
+              displayName: Install Dependencies
