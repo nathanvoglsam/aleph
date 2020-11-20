@@ -129,11 +129,15 @@ fn locate_llvm_root() -> Option<PathBuf> {
         .split(path_separator)
         .filter(|v| !v.is_empty())
         .map(|v| PathBuf::from(v))
-        .filter(|p| {
-            let p = p.canonicalize().unwrap();
-            let cargo_target = compile::cargo_target_dir().canonicalize().unwrap();
-            let cargo_target_parent = cargo_target.parent().unwrap();
-            &p != &cargo_target && &p != cargo_target_parent
+        .filter_map(|v| {
+            let p = v.canonicalize().ok()?;
+            let cargo_target = compile::cargo_target_dir().canonicalize().ok()?;
+            let cargo_target_parent = cargo_target.parent()?;
+            if &p != &cargo_target && &p != cargo_target_parent {
+                Some(v)
+            } else {
+                None
+            }
         });
 
     // Check every entry in the path, return upon the first successful match
