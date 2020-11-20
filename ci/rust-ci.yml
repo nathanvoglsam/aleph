@@ -89,7 +89,7 @@ steps:
   # The actual build
   - pwsh: |
       if ($IsWindows) {
-          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM\bin"
+          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM"
       }
       cargo build --release
 
@@ -97,7 +97,7 @@ steps:
 
   - pwsh: |
       if ($IsWindows) {
-          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM\bin"
+          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM"
       }
       cargo build --release
     displayName: Test
