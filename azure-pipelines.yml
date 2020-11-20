@@ -9,7 +9,7 @@ jobs:
             - powershell: |
                 choco install ninja
                 choco install llvm
-                refreshenv
+                Update-SessionEnvironment
               displayName: Install Binary Dependencies
   - job: Linux
     pool:

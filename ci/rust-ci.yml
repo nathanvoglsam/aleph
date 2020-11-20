@@ -88,11 +88,9 @@ steps:
 
   # The actual build
   - powershell: |
-      refreshenv
       cargo build --release
     displayName: Build
 
   - powershell: |
-      refreshenv
       cargo test --release
     displayName: Test
