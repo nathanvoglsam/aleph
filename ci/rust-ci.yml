@@ -68,7 +68,7 @@ steps:
   ## Dump the version info so we can debug what compiler version we're on
 
   # See what we got
-  - powershell: |
+  - pwsh: |
       rustc --version
       cargo --version
       rustup --version
@@ -87,10 +87,17 @@ steps:
           ${{ pair.key }}: ${{ pair.value }}
 
   # The actual build
-  - powershell: |
+  - pwsh: |
+      if ($IsWindows) {
+          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM\bin"
+      }
       cargo build --release
+
     displayName: Build
 
-  - powershell: |
-      cargo test --release
+  - pwsh: |
+      if ($IsWindows) {
+          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM\bin"
+      }
+      cargo build --release
     displayName: Test
