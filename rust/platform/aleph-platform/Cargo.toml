@@ -57,4 +57,4 @@ aleph-compile = { path = "../../build/aleph-compile", version = "1.0.0" }
 aleph-target-build = { path = "../../build/aleph-target-build", version = "2.0.0" }
 
 [badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

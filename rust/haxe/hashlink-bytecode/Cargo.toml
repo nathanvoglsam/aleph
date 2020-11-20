@@ -42,7 +42,7 @@ readme = "README.md"
 edition = "2018"
 
 [badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
 byteorder = "1.3"

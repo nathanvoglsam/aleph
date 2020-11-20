@@ -43,7 +43,7 @@ edition = "2018"
 build = "build.rs"
 
 [badges]
-azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "Aleph-CI", build = "1" }
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
 libc = "0.2"

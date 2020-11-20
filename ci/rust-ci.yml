@@ -14,7 +14,13 @@ parameters:
     default: []
 
 steps:
-  ## First we install the rust toolchain through w/e platform specific means are required
+  ## First we need to configure how the project is pulled down
+
+  - checkout: self
+    lfs: true
+    submodules: recursive
+
+  ## Then we install the rust toolchain through w/e platform specific means are required
 
   # Linux and macOS.
   - script: |
