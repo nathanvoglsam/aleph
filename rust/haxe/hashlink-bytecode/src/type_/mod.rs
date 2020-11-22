@@ -91,12 +91,113 @@ impl TypeKind {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Type {
-    /// The type kind of this type
-    pub kind: TypeKind,
+pub enum Type {
+    // Primitive types
+    Void,
+    UI8,
+    UI16,
+    I32,
+    I64,
+    F32,
+    F64,
+    Bool,
+    Bytes,
+    Dynamic,
+    Array,
+    Type,
+    DynObject,
+    Function(TypeFunction),
+    Method(TypeFunction),
+    Ref(TypeParam),
+    Null(TypeParam),
+    Obj(TypeObject),
+    Struct(TypeObject),
+    Virtual(TypeVirtual),
+    Abstract(TypeAbstract),
+    Enum(TypeEnum),
+}
 
-    /// Extra data associated with some type variants
-    pub variant: TypeVariant,
+impl Type {
+    pub fn new(kind: TypeKind, variant: TypeVariant) -> Option<Self> {
+        match kind {
+            TypeKind::Void => Some(Type::Void),
+            TypeKind::UI8 => Some(Type::UI8),
+            TypeKind::UI16 => Some(Type::UI16),
+            TypeKind::I32 => Some(Type::I32),
+            TypeKind::I64 => Some(Type::I64),
+            TypeKind::F32 => Some(Type::F32),
+            TypeKind::F64 => Some(Type::F64),
+            TypeKind::Bool => Some(Type::Bool),
+            TypeKind::Bytes => Some(Type::Bytes),
+            TypeKind::Dynamic => Some(Type::Dynamic),
+            TypeKind::Function => {
+                if let TypeVariant::Function(f) = variant {
+                    Some(Type::Function(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Obj => {
+                if let TypeVariant::Object(f) = variant {
+                    Some(Type::Obj(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Array => Some(Type::Array),
+            TypeKind::Type => Some(Type::Type),
+            TypeKind::Ref => {
+                if let TypeVariant::TypeParam(f) = variant {
+                    Some(Type::Ref(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Virtual => {
+                if let TypeVariant::Virtual(f) = variant {
+                    Some(Type::Virtual(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::DynObject => Some(Type::DynObject),
+            TypeKind::Abstract => {
+                if let TypeVariant::Abstract(f) = variant {
+                    Some(Type::Abstract(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Enum => {
+                if let TypeVariant::Enum(f) = variant {
+                    Some(Type::Enum(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Null => {
+                if let TypeVariant::TypeParam(f) = variant {
+                    Some(Type::Null(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Method => {
+                if let TypeVariant::Function(f) = variant {
+                    Some(Type::Method(f))
+                } else {
+                    None
+                }
+            }
+            TypeKind::Struct => {
+                if let TypeVariant::Object(f) = variant {
+                    Some(Type::Struct(f))
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

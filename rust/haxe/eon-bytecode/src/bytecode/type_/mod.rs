@@ -55,6 +55,35 @@ pub enum Type {
     Enum(TypeEnum),
 }
 
+impl From<hashlink_bytecode::Type> for Type {
+    fn from(v: hashlink_bytecode::Type) -> Self {
+        match v {
+            hashlink_bytecode::Type::Void => Type::Void,
+            hashlink_bytecode::Type::UI8 => Type::UI8,
+            hashlink_bytecode::Type::UI16 => Type::UI16,
+            hashlink_bytecode::Type::I32 => Type::I32,
+            hashlink_bytecode::Type::I64 => Type::I64,
+            hashlink_bytecode::Type::F32 => Type::F32,
+            hashlink_bytecode::Type::F64 => Type::F64,
+            hashlink_bytecode::Type::Bool => Type::Bool,
+            hashlink_bytecode::Type::Bytes => Type::Bytes,
+            hashlink_bytecode::Type::Dynamic => Type::Dynamic,
+            hashlink_bytecode::Type::Array => Type::Array,
+            hashlink_bytecode::Type::Type => Type::Type,
+            hashlink_bytecode::Type::DynObject => Type::DynObject,
+            hashlink_bytecode::Type::Function(v) => Type::Function(v.into()),
+            hashlink_bytecode::Type::Method(v) => Type::Method(v.into()),
+            hashlink_bytecode::Type::Ref(v) => Type::Ref(v.into()),
+            hashlink_bytecode::Type::Null(v) => Type::Null(v.into()),
+            hashlink_bytecode::Type::Obj(v) => Type::Obj(v.into()),
+            hashlink_bytecode::Type::Struct(v) => Type::Struct(v.into()),
+            hashlink_bytecode::Type::Virtual(v) => Type::Virtual(v.into()),
+            hashlink_bytecode::Type::Abstract(v) => Type::Abstract(v.into()),
+            hashlink_bytecode::Type::Enum(v) => Type::Enum(v.into()),
+        }
+    }
+}
+
 impl Type {
     pub fn get_type_function(&self) -> Option<&TypeFunction> {
         match self {

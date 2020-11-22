@@ -39,6 +39,7 @@ pub enum CodeReadError {
     InvalidTypeKindDoesNotExist,
     InvalidTypeKindInvalidType,
     InvalidTypeBadIndex,
+    InvalidType,
     InvalidStringBadIndex,
     InvalidOpCodeUnknown,
     InvalidVersionUnknown,

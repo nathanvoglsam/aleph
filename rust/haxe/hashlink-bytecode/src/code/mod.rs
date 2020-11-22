@@ -327,7 +327,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
 
             // Package with the original type kind
             let variant = TypeVariant::Function(TypeFunction { args, returns });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
         TypeKind::Obj | TypeKind::Struct => {
             let name = get_string(stream, num_strings)?;
@@ -380,19 +380,19 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 super_,
                 global,
             });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
         TypeKind::Null | TypeKind::Ref => {
             let variant = TypeVariant::TypeParam(TypeParam {
                 type_: get_type(stream, num_types)?,
             });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
         TypeKind::Abstract => {
             let variant = TypeVariant::Abstract(TypeAbstract {
                 name: get_string(stream, num_strings)?,
             });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
         TypeKind::Virtual => {
             let num_fields = read_uindex(stream)?;
@@ -403,7 +403,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 fields.push(Field { name, type_ });
             }
             let variant = TypeVariant::Virtual(TypeVirtual { fields });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
         TypeKind::Enum => {
             let name = get_string(stream, num_strings)?;
@@ -424,12 +424,9 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 constructs,
                 global,
             });
-            Type { kind, variant }
+            Type::new(kind, variant).ok_or(CodeReadError::InvalidType)?
         }
-        _ => Type {
-            kind,
-            variant: TypeVariant::Other,
-        },
+        _ => Type::new(kind, TypeVariant::Other).ok_or(CodeReadError::InvalidType)?,
     };
     Ok(t)
 }
