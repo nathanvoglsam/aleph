@@ -30,9 +30,7 @@
 use crate::bytecode::constant::Constant;
 use crate::bytecode::function::Function;
 use crate::bytecode::native::Native;
-use crate::bytecode::type_::{
-    Type, TypeAbstract, TypeEnum, TypeFunction, TypeObject, TypeParam, TypeVirtual,
-};
+use crate::bytecode::type_::Type;
 
 /// Set of all errors that can occur when transpiling from hashlink bytecode
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
@@ -108,11 +106,11 @@ impl Module {
             bytes: code.bytes,
             byte_offsets: code.byte_offsets,
             debug_files: code.debug_files,
-            types: translate_types(code.types)?,
-            natives: translate_natives(code.natives)?,
-            globals: translate_globals(code.globals)?,
-            functions: vec![],
-            constants: translate_constants(code.constants)?,
+            types: translate_types(code.types),
+            natives: translate_natives(code.natives),
+            globals: translate_globals(code.globals),
+            functions: Vec::new(),
+            constants: translate_constants(code.constants),
             entrypoint: code.entrypoint as usize,
         };
 
@@ -135,20 +133,18 @@ impl Module {
     }
 }
 
-fn translate_types(mut input: Vec<hashlink_bytecode::Type>) -> TranspileResult<Vec<Type>> {
-    Ok(input.drain(..).map(Type::from).collect())
+fn translate_types(mut input: Vec<hashlink_bytecode::Type>) -> Vec<Type> {
+    input.drain(..).map(Type::from).collect()
 }
 
-fn translate_natives(mut input: Vec<hashlink_bytecode::Native>) -> TranspileResult<Vec<Native>> {
-    Ok(input.drain(..).map(Native::from).collect())
+fn translate_natives(mut input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
+    input.drain(..).map(Native::from).collect()
 }
 
-fn translate_globals(mut input: Vec<u32>) -> TranspileResult<Vec<usize>> {
-    Ok(input.drain(..).map(|v| v as usize).collect())
+fn translate_globals(mut input: Vec<u32>) -> Vec<usize> {
+    input.drain(..).map(|v| v as usize).collect()
 }
 
-fn translate_constants(
-    mut input: Vec<hashlink_bytecode::Constant>,
-) -> TranspileResult<Vec<Constant>> {
-    Ok(input.drain(..).map(Constant::from).collect())
+fn translate_constants(mut input: Vec<hashlink_bytecode::Constant>) -> Vec<Constant> {
+    input.drain(..).map(Constant::from).collect()
 }

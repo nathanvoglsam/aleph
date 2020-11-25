@@ -297,6 +297,35 @@ impl OpCode {
         }
     }
 
+    pub fn is_branch(&self) -> bool {
+        match self {
+            OpCode::OpJTrue(_)
+            | OpCode::OpJFalse(_)
+            | OpCode::OpJNull(_)
+            | OpCode::OpJNotNull(_)
+            | OpCode::OpJSLt(_)
+            | OpCode::OpJSGte(_)
+            | OpCode::OpJSGt(_)
+            | OpCode::OpJSLte(_)
+            | OpCode::OpJULt(_)
+            | OpCode::OpJUGte(_)
+            | OpCode::OpJNotLt(_)
+            | OpCode::OpJNotGte(_)
+            | OpCode::OpJEq(_)
+            | OpCode::OpJNotEq(_)
+            | OpCode::OpJAlways(_)
+            | OpCode::OpSwitch(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_ret(&self) -> bool {
+        match self {
+            OpCode::OpRet(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn arg_count(&self) -> Option<usize> {
         self.opcode_number().opcode_type().arg_num()
     }

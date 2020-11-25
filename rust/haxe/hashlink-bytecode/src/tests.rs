@@ -68,8 +68,8 @@ pub fn test_serialization() {
 
     let code = Code::read(&mut file).unwrap();
 
-    let string = serde_json::to_string_pretty(&code).unwrap();
-    let bytes = rmp_serde::to_vec(&code).unwrap();
+    let _string = serde_json::to_string_pretty(&code).unwrap();
+    let _bytes = rmp_serde::to_vec(&code).unwrap();
 
     //std::fs::write(crate_root.join("out.json"), string.as_bytes()).unwrap();
     //std::fs::write(crate_root.join("out.msgpack"), &bytes).unwrap();
