@@ -37,10 +37,10 @@ pub struct Constant {
 }
 
 impl From<hashlink_bytecode::Constant> for Constant {
-    fn from(mut v: hashlink_bytecode::Constant) -> Self {
+    fn from(v: hashlink_bytecode::Constant) -> Self {
         Self {
             global: v.global as usize,
-            fields: v.fields.drain(..).map(|v| v as usize).collect(),
+            fields: v.fields.into_iter().map(|v| v as usize).collect(),
         }
     }
 }

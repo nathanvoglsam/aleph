@@ -94,7 +94,7 @@ pub struct Module {
 }
 
 impl Module {
-    pub fn from_hashlink(mut code: hashlink_bytecode::Code) -> TranspileResult<Self> {
+    pub fn from_hashlink(code: hashlink_bytecode::Code) -> TranspileResult<Self> {
         // First we translate all the direct stuff
         //
         // The only thing we massively change is the actual function instructions as we move that
@@ -118,7 +118,7 @@ impl Module {
         //
         // We don't do any optimizations yet, we save that for later
         let mut functions = Vec::new();
-        for f in code.functions.drain(..) {
+        for f in code.functions.into_iter() {
             if let Some(new) = Function::transpile_hashlink(&module, f) {
                 functions.push(new);
             } else {
@@ -133,18 +133,18 @@ impl Module {
     }
 }
 
-fn translate_types(mut input: Vec<hashlink_bytecode::Type>) -> Vec<Type> {
-    input.drain(..).map(Type::from).collect()
+fn translate_types(input: Vec<hashlink_bytecode::Type>) -> Vec<Type> {
+    input.into_iter().map(Type::from).collect()
 }
 
-fn translate_natives(mut input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
-    input.drain(..).map(Native::from).collect()
+fn translate_natives(input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
+    input.into_iter().map(Native::from).collect()
 }
 
-fn translate_globals(mut input: Vec<u32>) -> Vec<usize> {
-    input.drain(..).map(|v| v as usize).collect()
+fn translate_globals(input: Vec<u32>) -> Vec<usize> {
+    input.into_iter().map(|v| v as usize).collect()
 }
 
-fn translate_constants(mut input: Vec<hashlink_bytecode::Constant>) -> Vec<Constant> {
-    input.drain(..).map(Constant::from).collect()
+fn translate_constants(input: Vec<hashlink_bytecode::Constant>) -> Vec<Constant> {
+    input.into_iter().map(Constant::from).collect()
 }

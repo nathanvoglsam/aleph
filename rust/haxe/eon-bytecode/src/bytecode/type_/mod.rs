@@ -226,10 +226,10 @@ pub struct EnumConstruct {
 }
 
 impl From<hashlink_bytecode::EnumConstruct> for EnumConstruct {
-    fn from(mut v: hashlink_bytecode::EnumConstruct) -> Self {
+    fn from(v: hashlink_bytecode::EnumConstruct) -> Self {
         EnumConstruct {
             name: v.name as usize,
-            params: v.params.drain(..).map(|v| v as usize).collect(),
+            params: v.params.into_iter().map(|v| v as usize).collect(),
         }
     }
 }
@@ -244,9 +244,9 @@ pub struct TypeFunction {
 }
 
 impl From<hashlink_bytecode::TypeFunction> for TypeFunction {
-    fn from(mut v: hashlink_bytecode::TypeFunction) -> Self {
+    fn from(v: hashlink_bytecode::TypeFunction) -> Self {
         TypeFunction {
-            args: v.args.drain(..).map(|v| v as usize).collect(),
+            args: v.args.into_iter().map(|v| v as usize).collect(),
             returns: v.returns as usize,
         }
     }
@@ -274,12 +274,12 @@ pub struct TypeObject {
 }
 
 impl From<hashlink_bytecode::TypeObject> for TypeObject {
-    fn from(mut v: hashlink_bytecode::TypeObject) -> Self {
+    fn from(v: hashlink_bytecode::TypeObject) -> Self {
         TypeObject {
             name: v.name as usize,
-            fields: v.fields.drain(..).map(Field::from).collect(),
-            protos: v.protos.drain(..).map(ObjectProto::from).collect(),
-            bindings: v.bindings.drain(..).map(|v| v as usize).collect(),
+            fields: v.fields.into_iter().map(Field::from).collect(),
+            protos: v.protos.into_iter().map(ObjectProto::from).collect(),
+            bindings: v.bindings.into_iter().map(|v| v as usize).collect(),
             super_: v.super_.map(|v| v as usize),
             global: v.global as usize,
         }
@@ -299,10 +299,10 @@ pub struct TypeEnum {
 }
 
 impl From<hashlink_bytecode::TypeEnum> for TypeEnum {
-    fn from(mut v: hashlink_bytecode::TypeEnum) -> Self {
+    fn from(v: hashlink_bytecode::TypeEnum) -> Self {
         TypeEnum {
             name: v.name as usize,
-            constructs: v.constructs.drain(..).map(EnumConstruct::from).collect(),
+            constructs: v.constructs.into_iter().map(EnumConstruct::from).collect(),
             global: v.global as usize,
         }
     }
@@ -315,9 +315,9 @@ pub struct TypeVirtual {
 }
 
 impl From<hashlink_bytecode::TypeVirtual> for TypeVirtual {
-    fn from(mut v: hashlink_bytecode::TypeVirtual) -> Self {
+    fn from(v: hashlink_bytecode::TypeVirtual) -> Self {
         TypeVirtual {
-            fields: v.fields.drain(..).map(Field::from).collect(),
+            fields: v.fields.into_iter().map(Field::from).collect(),
         }
     }
 }
