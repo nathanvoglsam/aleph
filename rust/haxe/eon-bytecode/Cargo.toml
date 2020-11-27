@@ -46,4 +46,5 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-llvm = { path = "../aleph-llvm", version = "0.1.0" }
+serde = { version = "1", features = ["derive"] }
 hashlink-bytecode = { path = "../hashlink-bytecode", version = "0.1.0" }

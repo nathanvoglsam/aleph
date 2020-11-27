@@ -32,6 +32,8 @@ use crate::bytecode::function::Function;
 use crate::bytecode::native::Native;
 use crate::bytecode::type_::Type;
 
+use serde::{Deserialize, Serialize};
+
 /// Set of all errors that can occur when transpiling from hashlink bytecode
 #[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum TranspileError {
@@ -54,7 +56,7 @@ pub type TranspileResult<T> = Result<T, TranspileError>;
 ///
 /// This struct can be used as a component for reading hashlink modules to be consumed by a JIT
 /// runtime but is not appropriate to be consumed directly by the runtime.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Module {
     /// The file's integer table
     pub ints: Vec<i32>,

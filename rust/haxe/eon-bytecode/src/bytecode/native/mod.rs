@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-#[derive(Clone, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Native {
     /// Index into the string table for library name
     pub lib: usize,

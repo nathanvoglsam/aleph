@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+use serde::{Deserialize, Serialize};
+
 /// Layout for loading type instructions that load something into an SSA value
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Load {
     /// SSA value to load into
     pub target: usize,
@@ -38,7 +40,7 @@ pub struct Load {
 }
 
 /// Layout for storing type instructions that store an SSA value into some destination
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Store {
     /// SSA value to store into target
     pub source: usize,
@@ -48,7 +50,7 @@ pub struct Store {
 }
 
 /// Layout for the various binop arithmetic instructions
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Binop {
     /// SSA value to store the result of the operation into
     pub target: usize,
@@ -61,7 +63,7 @@ pub struct Binop {
 }
 
 /// Layout for the various unop arithmetic instructions
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Unop {
     /// SSA value to store the result of the operation into
     pub target: usize,
@@ -72,7 +74,7 @@ pub struct Unop {
 
 /// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
 /// a single representation as I don't see any benefit to this.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Call {
     /// SSA value to store the result of the operation into
     pub target: usize,
@@ -92,7 +94,7 @@ pub struct Call {
 ///
 /// Because we need to move to SSA form we change this instruction's meaning slightly. Instead of
 /// jumping to an instruction index, we specify a table of *basic block* indexes to jump to.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Switch {
     /// The SSA value to use as the index into the jump table
     pub input: usize,
@@ -105,7 +107,7 @@ pub struct Switch {
 }
 
 /// Layout for a field load from an object
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FieldLoad {
     /// The SSA value to store the result of the load into
     pub target: usize,
@@ -118,7 +120,7 @@ pub struct FieldLoad {
 }
 
 /// Layout for a field store to an object
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FieldStore {
     /// The SSA value that holds the object to store into
     pub object: usize,
@@ -132,7 +134,7 @@ pub struct FieldStore {
 
 /// Layout for loading from `this`. A less general form of `FieldLoad` where `object` is implicitly
 /// the first function parameter
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThisFieldLoad {
     /// The SSA value to store the result of the load into
     pub target: usize,
@@ -143,7 +145,7 @@ pub struct ThisFieldLoad {
 
 /// Layout for storing to `this`. A less general form of `FieldStore` where object is implicitly the
 /// first function parameter
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThisFieldStore {
     /// The field index on the object to store into
     pub field: usize,
@@ -159,7 +161,7 @@ pub struct ThisFieldStore {
 ///
 /// As such the destination will now refer to the basic block to jump to instead of the instruction
 /// index.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CondBranch {
     /// Value to check
     pub check: usize,
@@ -175,7 +177,7 @@ pub struct CondBranch {
 /// be provided.
 ///
 /// See `CondBranch` docs for an explanation to how this differs from HashLink
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CompBranch {
     pub lhs: usize,
     pub rhs: usize,
@@ -185,14 +187,14 @@ pub struct CompBranch {
 /// Layout for our phi instruction.
 ///
 /// This is an opcode we add to the bytecode ourselves during the translation process.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Phi {
     /// A list of value pairs for loading specific values from other basic blocks when they branch
     /// into the basic block the phi instruction is in
     pub block_values: Vec<(usize, usize)>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
     OpMov(Load),

@@ -34,10 +34,12 @@ use crate::bytecode::module::Module;
 use crate::bytecode::opcode::OpCode;
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 /// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
 /// on to the information the "registers" provide because it makes some analysis passes easier as we
 /// don't need to reconstruct this information from the SSA graph every time we need it
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Register {
     /// Does the allocated value outlive the function. Used for optimizing allocations.
     ///
@@ -55,7 +57,7 @@ pub struct Register {
     pub outlives_function: Option<bool>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SSAValue {
     /// Index into the function's Register table that states what original value this SSA value is
     /// considered a version of
@@ -68,7 +70,7 @@ pub struct SSAValue {
     pub instruction: usize,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BasicBlock {
     /// This vector can be more considered a "map", which maps an index into the function's
     /// register table to a (maybe none) index into the SSA values table. If the map does yield an
@@ -82,7 +84,7 @@ pub struct BasicBlock {
     pub ops: Vec<OpCode>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: usize,
@@ -135,12 +137,12 @@ impl Function {
 /// Every field is optional as we can't generate it all at once and much of it requires multiple
 /// passes to fully and correctly generate. Some metadata depends on other metadata existing before
 /// it can itself be generated.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
     pub reg_data: Option<RegisterMetadata>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RegisterMetadata {
     /// List of registers for the function's bytecode. This maps almost directly to the register
     /// system in hashlink bytecode but with some additional information.

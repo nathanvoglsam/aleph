@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-#[derive(Clone, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Constant {
     /// An index into the globals table
     pub global: usize,
