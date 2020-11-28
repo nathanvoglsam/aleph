@@ -175,6 +175,8 @@ pub enum Type {
     /// semantics of a pointer
     Struct(TypeObject),
 
+    /// This type represents a virtual interface that can be stamped out from an object or dyn-obj.
+    /// This is essentially just a bare vtable and this-pointer pair.
     Virtual(TypeVirtual),
 
     /// This represents an object type with a definition external to the compiled HashLink module.
