@@ -420,7 +420,7 @@ impl OpCode {
             OpCode::OpRefData(v) => Some(v.param_1),
             OpCode::OpRefOffset(v) => Some(v.param_1),
 
-            OpCode::OpTrap(v) => {}
+            OpCode::OpTrap(v) => Some(v.param_1),
 
             _ => None,
         }
