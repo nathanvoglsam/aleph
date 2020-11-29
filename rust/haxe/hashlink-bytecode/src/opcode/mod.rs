@@ -326,6 +326,267 @@ impl OpCode {
         }
     }
 
+    /// Returns the index for which register the instruction performs a write to, if it makes a
+    /// write
+    pub fn register_write(&self) -> Option<i32> {
+        match self {
+            // Init opcodes
+            OpCode::OpMov(v) => Some(v.param_1),
+            OpCode::OpInt(v) => Some(v.param_1),
+            OpCode::OpFloat(v) => Some(v.param_1),
+            OpCode::OpBool(v) => Some(v.param_1),
+            OpCode::OpBytes(v) => Some(v.param_1),
+            OpCode::OpString(v) => Some(v.param_1),
+            OpCode::OpNull(v) => Some(v.param_1),
+
+            // Arithmetic opcodes
+            OpCode::OpAdd(v) => Some(v.param_1),
+            OpCode::OpSub(v) => Some(v.param_1),
+            OpCode::OpMul(v) => Some(v.param_1),
+            OpCode::OpSDiv(v) => Some(v.param_1),
+            OpCode::OpUDiv(v) => Some(v.param_1),
+            OpCode::OpSMod(v) => Some(v.param_1),
+            OpCode::OpUMod(v) => Some(v.param_1),
+            OpCode::OpShl(v) => Some(v.param_1),
+            OpCode::OpSShr(v) => Some(v.param_1),
+            OpCode::OpUShr(v) => Some(v.param_1),
+            OpCode::OpAnd(v) => Some(v.param_1),
+            OpCode::OpOr(v) => Some(v.param_1),
+            OpCode::OpXor(v) => Some(v.param_1),
+            OpCode::OpNeg(v) => Some(v.param_1),
+            OpCode::OpNot(v) => Some(v.param_1),
+            OpCode::OpIncr(v) => Some(v.param_1),
+            OpCode::OpDecr(v) => Some(v.param_1),
+
+            // Call opcodes
+            OpCode::OpCall0(v) => Some(v.param_1),
+            OpCode::OpCall1(v) => Some(v.param_1),
+            OpCode::OpCall2(v) => Some(v.param_1),
+            OpCode::OpCall3(v) => Some(v.param_1),
+            OpCode::OpCall4(v) => Some(v.param_1),
+            OpCode::OpCallN(v) => Some(v.param_1),
+            OpCode::OpCallMethod(v) => Some(v.param_1),
+            OpCode::OpCallThis(v) => Some(v.param_1),
+            OpCode::OpCallClosure(v) => Some(v.param_1),
+
+            // Closure creation opcodes
+            OpCode::OpStaticClosure(v) => Some(v.param_1),
+            OpCode::OpInstanceClosure(v) => Some(v.param_1),
+            OpCode::OpVirtualClosure(v) => Some(v.param_1),
+
+            // Global opcodes
+            OpCode::OpGetGlobal(v) => Some(v.param_1),
+            OpCode::OpSetGlobal(v) => Some(v.param_1),
+
+            // Field access opcodes
+            OpCode::OpField(v) => Some(v.param_1),
+            OpCode::OpGetThis(v) => Some(v.param_1),
+            OpCode::OpDynGet(v) => Some(v.param_1),
+
+            // Casting opcodes
+            OpCode::OpToDyn(v) => Some(v.param_1),
+            OpCode::OpToSFloat(v) => Some(v.param_1),
+            OpCode::OpToUFloat(v) => Some(v.param_1),
+            OpCode::OpToInt(v) => Some(v.param_1),
+            OpCode::OpSafeCast(v) => Some(v.param_1),
+            OpCode::OpUnsafeCast(v) => Some(v.param_1),
+            OpCode::OpToVirtual(v) => Some(v.param_1),
+
+            OpCode::OpGetI8(v) => Some(v.param_1),
+            OpCode::OpGetI16(v) => Some(v.param_1),
+            OpCode::OpGetMem(v) => Some(v.param_1),
+            OpCode::OpGetArray(v) => Some(v.param_1),
+
+            // Allocate
+            OpCode::OpNew(v) => Some(v.param_1),
+
+            OpCode::OpArraySize(v) => Some(v.param_1),
+
+            OpCode::OpType(v) => Some(v.param_1),
+            OpCode::OpGetType(v) => Some(v.param_1),
+            OpCode::OpGetTID(v) => Some(v.param_1),
+
+            OpCode::OpRef(v) => Some(v.param_1),
+            OpCode::OpUnRef(v) => Some(v.param_1),
+
+            // Enum opcodes
+            OpCode::OpMakeEnum(v) => Some(v.param_1),
+            OpCode::OpEnumAlloc(v) => Some(v.param_1),
+            OpCode::OpEnumIndex(v) => Some(v.param_1),
+            OpCode::OpEnumField(v) => Some(v.param_1),
+            OpCode::OpSetEnumField(v) => Some(v.param_1),
+
+            // Stuff
+            OpCode::OpRefData(v) => Some(v.param_1),
+            OpCode::OpRefOffset(v) => Some(v.param_1),
+
+            OpCode::OpTrap(v) => {}
+
+            _ => None,
+        }
+    }
+
+    /// This returns the list of registers that are read by this instruction.
+    ///
+    /// # Information
+    ///
+    /// Some of the information provided may be a little unintuitive. For many of the object access
+    /// opcodes the `obj` parameter is marked as a read, even if the operation is to write to the
+    /// object. For example: `OpSetField`.
+    ///
+    /// `OpSetField` takes 3 arguments, the register that holds the object, the index of the field
+    /// to perform the write to and the register to use as the source of the write. The access to
+    /// `obj` in this opcode is considered a *read*, not a *write*.
+    ///
+    /// This is where i'm making stuff up as I go because there's about three fifths of fuck all
+    /// documentation for HashLink's actual bytecode semantics. If I understand Haxe and the general
+    /// semantics of an Java/C# like GC'd OO language correctly, then I would expect that a register
+    /// that holds a non primitive type (i.e holds an object) would have the semantics of a
+    /// *pointer* to the object somewhere in memory, rather than the object register being a value
+    /// type in of itself.
+    ///
+    /// What this means is that the `OpSetField` encodes a *read* of the pointer so it can be
+    /// de-referenced to the memory the object is stored in and the actual write can be performed.
+    ///
+    /// This code here was designed to be used for transpiling HashLink bytecode to LLVM-IR which
+    /// encodes the instructions as SSA form. Memory ops escape the SSA form (as they should) and so
+    /// a write to memory does not imply a write to the pointer.
+    ///
+    /// The `register_reads` and `register_writes` functions are intended to be used for building an
+    /// SSA graph from the flat register slot system HashLink uses and so these functions are
+    /// tailored for that purpose so some of the return values may seem a little odd compared to
+    /// what would normally be expected
+    pub fn register_reads(&self) -> Option<Vec<i32>> {
+        match self {
+            // Init opcodes
+            OpCode::OpMov(v) => Some(vec![v.param_2]),
+
+            // Arithmetic opcodes
+            OpCode::OpAdd(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpSub(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpMul(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpSDiv(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpUDiv(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpSMod(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpUMod(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpShl(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpSShr(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpUShr(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpAnd(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpOr(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpXor(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpNeg(v) => Some(vec![v.param_2]),
+            OpCode::OpNot(v) => Some(vec![v.param_2]),
+            OpCode::OpIncr(v) => Some(vec![v.param_1]),
+            OpCode::OpDecr(v) => Some(vec![v.param_1]),
+
+            // Call opcodes
+            OpCode::OpCall1(v) => Some(vec![v.param_3]),
+            OpCode::OpCall2(v) => Some(vec![v.param_3, v.param_4]),
+            OpCode::OpCall3(v) => Some(vec![v.param_3, v.param_4, v.param_5]),
+            OpCode::OpCall4(v) => Some(vec![v.param_3, v.param_4, v.param_5, v.param_6]),
+
+            // Call N opcodes
+            OpCode::OpCallN(v) => Some(v.extra.clone()),
+            OpCode::OpCallMethod(v) => {
+                let mut list = Vec::new();
+                list.push(v.param_2);
+                list.extend_from_slice(&v.extra);
+                Some(list)
+            }
+            OpCode::OpCallThis(v) => {
+                let mut list = Vec::new();
+                list.push(0);
+                list.extend_from_slice(&v.extra);
+                Some(list)
+            }
+            OpCode::OpCallClosure(v) => {
+                let mut list = Vec::new();
+                list.push(v.param_2);
+                list.extend_from_slice(&v.extra);
+                Some(list)
+            }
+
+            // Closure creation
+            OpCode::OpInstanceClosure(v) => Some(vec![v.param_3]),
+            OpCode::OpVirtualClosure(v) => Some(vec![v.param_2]),
+
+            OpCode::OpSetGlobal(v) => Some(vec![v.param_2]),
+
+            OpCode::OpField(v) => Some(vec![v.param_2]),
+            OpCode::OpSetField(v) => Some(vec![v.param_1, v.param_3]),
+            OpCode::OpGetThis(_) => Some(vec![0]),
+            OpCode::OpSetThis(v) => Some(vec![0, v.param_2]),
+            OpCode::OpDynGet(v) => Some(vec![v.param_2]),
+            OpCode::OpDynSet(v) => Some(vec![v.param_1, v.param_3]),
+            OpCode::OpNullCheck(v) => Some(vec![v.param_1]),
+
+            // Jump on implicit condition
+            OpCode::OpJTrue(v) => Some(vec![v.param_1]),
+            OpCode::OpJFalse(v) => Some(vec![v.param_1]),
+            OpCode::OpJNull(v) => Some(vec![v.param_1]),
+            OpCode::OpJNotNull(v) => Some(vec![v.param_1]),
+
+            // Comparison based jumps
+            OpCode::OpJSLt(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJSGte(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJSGt(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJSLte(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJULt(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJUGte(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJNotLt(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJNotGte(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJEq(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJNotEq(v) => Some(vec![v.param_1, v.param_2]),
+
+            // Conversion
+            OpCode::OpToDyn(v) => Some(vec![v.param_2]),
+            OpCode::OpToSFloat(v) => Some(vec![v.param_2]),
+            OpCode::OpToUFloat(v) => Some(vec![v.param_2]),
+            OpCode::OpToInt(v) => Some(vec![v.param_2]),
+
+            OpCode::OpSafeCast(v) => Some(vec![v.param_2]),
+            OpCode::OpUnsafeCast(v) => Some(vec![v.param_2]),
+            OpCode::OpToVirtual(v) => Some(vec![v.param_2]),
+
+            OpCode::OpRet(v) => Some(vec![v.param_1]),
+            OpCode::OpSwitch(v) => Some(vec![v.param_1 as i32]),
+
+            OpCode::OpThrow(v) => Some(vec![v.param_1]),
+            OpCode::OpRethrow(v) => Some(vec![v.param_1]),
+            OpCode::OpTrap(v) => Some(vec![v.param_1]),
+
+            OpCode::OpGetI8(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpGetI16(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpGetMem(v) => Some(vec![v.param_2, v.param_3]),
+
+            OpCode::OpSetI8(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
+            OpCode::OpSetI16(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
+            OpCode::OpSetMem(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
+
+            OpCode::OpArraySize(v) => Some(vec![v.param_2]),
+            OpCode::OpGetArray(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpSetArray(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
+
+            OpCode::OpGetType(v) => Some(vec![v.param_2]),
+            OpCode::OpGetTID(v) => Some(vec![v.param_2]),
+
+            OpCode::OpRef(v) => Some(vec![v.param_2]),
+            OpCode::OpUnRef(v) => Some(vec![v.param_2]),
+            OpCode::OpSetRef(v) => Some(vec![v.param_2]),
+
+            OpCode::OpMakeEnum(v) => Some(v.extra.clone()),
+            OpCode::OpEnumIndex(v) => Some(vec![v.param_2]),
+            OpCode::OpEnumField(v) => Some(vec![v.param_2]),
+            OpCode::OpSetEnumField(v) => Some(vec![v.param_3]),
+
+            OpCode::OpRefData(v) => Some(vec![v.param_2]),
+            OpCode::OpRefOffset(v) => Some(vec![v.param_2, v.param_3]),
+
+            _ => None,
+        }
+    }
+
     pub fn arg_count(&self) -> Option<usize> {
         self.opcode_number().opcode_type().arg_num()
     }
