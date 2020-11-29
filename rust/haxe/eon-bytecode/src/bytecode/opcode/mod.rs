@@ -222,8 +222,8 @@ pub enum OpCode {
     OpNeg(Unop),
     OpNot(Unop),
 
-    OpIncr(usize), // TODO: Decay these to adding a constant 1
-    OpDecr(usize), // TODO: Decay these to adding a constant 1
+    OpIncr(Unop),
+    OpDecr(Unop),
 
     // Function calling opcodes
     OpCall(Call),
