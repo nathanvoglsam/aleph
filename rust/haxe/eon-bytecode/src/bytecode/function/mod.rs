@@ -27,14 +27,17 @@
 // SOFTWARE.
 //
 
+mod bb_build;
 mod bb_graph;
 mod bb_spans;
 
+use crate::bytecode::indexes::{
+    BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
+};
 use crate::bytecode::module::Module;
 use crate::bytecode::opcode::OpCode;
-use std::collections::HashMap;
-
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 /// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
 /// on to the information the "registers" provide because it makes some analysis passes easier as we
@@ -59,27 +62,18 @@ pub struct Register {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SSAValue {
-    /// Index into the function's Register table that states what original value this SSA value is
-    /// considered a version of
-    pub register: usize,
+    /// The type this ssa value holds
+    pub type_: TypeIndex,
 
     /// The index of the basic block that assigns this SSA value
-    pub basic_block: usize,
+    pub basic_block: BasicBlockIndex,
 
     /// The index into the basic block for the instruction that assigns this SSA value
-    pub instruction: usize,
+    pub instruction: InstructionIndex,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct BasicBlock {
-    /// This vector can be more considered a "map", which maps an index into the function's
-    /// register table to a (maybe none) index into the SSA values table. If the map does yield an
-    /// index then this index refers to the last write performed for the given register.
-    ///
-    /// This is used to identify the SSA value which holds the final state of a register at the end
-    /// of a basic block so we can use this to build phi nodes when lowering to LLVM IR
-    pub register_final_writes: Vec<Option<usize>>,
-
     /// This is just a flat, sequential list of opcodes
     pub ops: Vec<OpCode>,
 }
@@ -87,7 +81,7 @@ pub struct BasicBlock {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
-    pub type_: usize,
+    pub type_: TypeIndex,
 
     /// ?
     pub f_index: u32,
@@ -114,8 +108,8 @@ pub struct Function {
 
 impl Function {
     pub fn transpile_hashlink(module: &Module, f: hashlink_bytecode::Function) -> Option<Self> {
-        let out = Self {
-            type_: f.type_ as usize,
+        let mut out = Self {
+            type_: TypeIndex(f.type_ as usize),
             f_index: f.f_index,
             ssa_values: vec![],
             basic_blocks: vec![],
@@ -127,6 +121,8 @@ impl Function {
 
         // Now we need to compute a list of spans for all the basic blocks in the bytecode
         let spans = bb_spans::compute_bb_spans(&f, &bb_graph)?;
+
+        bb_build::build_bb(&mut out, &module, &f, bb_graph, spans)?;
 
         Some(out)
     }
@@ -152,5 +148,13 @@ pub struct RegisterMetadata {
     pub registers: Vec<Register>,
 
     /// Maps an SSA value to a register in the register list
-    pub register_map: Vec<(usize, usize)>,
+    pub register_map: Vec<RegisterIndex>,
+
+    /// This list associates with each basic block the list of *registers* that it reads
+    pub basic_block_registers_read: Vec<HashSet<RegisterIndex>>,
+
+    /// This list associates with each basic block the set of registers that it writes to, and the
+    /// SSA value index that corresponds to the last write (final state) of the register within that
+    /// basic block
+    pub basic_block_registers_written: Vec<HashMap<RegisterIndex, ValueIndex>>,
 }

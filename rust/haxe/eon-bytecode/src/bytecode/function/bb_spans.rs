@@ -28,21 +28,26 @@
 //
 
 use crate::bytecode::function::bb_graph::BBGraph;
+use crate::bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
     f: &hashlink_bytecode::Function,
     bb_graph: &BBGraph,
-) -> Option<Vec<(usize, usize)>> {
+) -> Option<Vec<(InstructionIndex, InstructionIndex)>> {
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
     let mut spans = Vec::new();
 
     // Go over all the points that are branched to and find the next branch so we can produce a
     // list of spans for all the basic blocks
     for start in bb_graph.destination_sources.keys().map(|v| *v) {
+        let start = start.0;
         let mut found_branch = false;
         for (i, op) in f.ops[start..].iter().enumerate() {
             if op.is_branch() || op.is_ret() {
-                spans.push((start, start + i));
+                let a = InstructionIndex(start);
+                let b = InstructionIndex(start + i);
+                let span = (a, b);
+                spans.push(span);
                 found_branch = true;
                 break;
             }
@@ -55,11 +60,17 @@ pub fn compute_bb_spans(
     // There's no guarantee that the first instruction is in the above list so we have to handle
     // the first instruction separately if it isn't. The first instruction is an implicit
     // beginning of a basic block.
-    if !bb_graph.destination_sources.contains_key(&0) {
+    if !bb_graph
+        .destination_sources
+        .contains_key(&InstructionIndex(0))
+    {
         let mut found_branch = false;
         for (i, op) in f.ops.iter().enumerate() {
             if op.is_branch() || op.is_ret() {
-                spans.push((0, i));
+                let a = InstructionIndex(0);
+                let b = InstructionIndex(i);
+                let span = (a, b);
+                spans.push(span);
                 found_branch = true;
                 break;
             }

@@ -29,9 +29,9 @@
 
 use crate::bytecode::constant::Constant;
 use crate::bytecode::function::Function;
+use crate::bytecode::indexes::{FunctionIndex, TypeIndex};
 use crate::bytecode::native::Native;
 use crate::bytecode::type_::Type;
-
 use serde::{Deserialize, Serialize};
 
 /// Set of all errors that can occur when transpiling from hashlink bytecode
@@ -83,7 +83,7 @@ pub struct Module {
     pub natives: Vec<Native>,
 
     /// The file's global table (list of indices into type table)
-    pub globals: Vec<usize>,
+    pub globals: Vec<TypeIndex>,
 
     /// The file's function table
     pub functions: Vec<Function>,
@@ -92,7 +92,7 @@ pub struct Module {
     pub constants: Vec<Constant>,
 
     /// Index into the functions table for specifying which function is the entrypoint
-    pub entrypoint: usize,
+    pub entrypoint: FunctionIndex,
 }
 
 impl Module {
@@ -113,7 +113,7 @@ impl Module {
             globals: translate_globals(code.globals),
             functions: Vec::new(),
             constants: translate_constants(code.constants),
-            entrypoint: code.entrypoint as usize,
+            entrypoint: FunctionIndex(code.entrypoint as usize),
         };
 
         // Now we do the fun part, we transpile the hashlink bytecode to our own bytecode form.
@@ -143,8 +143,8 @@ fn translate_natives(input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
     input.into_iter().map(Native::from).collect()
 }
 
-fn translate_globals(input: Vec<u32>) -> Vec<usize> {
-    input.into_iter().map(|v| v as usize).collect()
+fn translate_globals(input: Vec<u32>) -> Vec<TypeIndex> {
+    input.into_iter().map(|v| TypeIndex(v as usize)).collect()
 }
 
 fn translate_constants(input: Vec<hashlink_bytecode::Constant>) -> Vec<Constant> {

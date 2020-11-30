@@ -27,26 +27,26 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::module::Module;
-use crate::bytecode::opcode::OpCode;
-use std::collections::HashMap;
+use crate::bytecode::indexes::InstructionIndex;
+use std::collections::{HashMap, HashSet};
 
 pub struct BBGraph {
-    /// Maps an instruction index to the list of instructions
-    pub destination_sources: HashMap<usize, Vec<usize>>,
+    /// Maps an instruction index to the set of instructions that branch to it
+    pub destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>>,
 
     /// A list of all of the branch instruction indexes in the function
-    pub branches: Vec<usize>,
+    pub branches: HashSet<InstructionIndex>,
 }
 
 /// Produces SSA graph nodes and edges
 pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BBGraph> {
     // Holds the list of instruction indexes that have instructions that branch to the
     // instruction given by the key
-    let mut destination_sources: HashMap<usize, Vec<usize>> = HashMap::new();
+    let mut destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>> =
+        HashMap::new();
 
     // A flat list of all instructions which are branching instructions
-    let mut branches: Vec<usize> = Vec::new();
+    let mut branches: HashSet<InstructionIndex> = HashSet::new();
 
     for (index, op) in f.ops.iter().enumerate() {
         compute_bb_graph_loop_inner(f, index, op, &mut destination_sources, &mut branches)?;
@@ -62,8 +62,8 @@ fn compute_bb_graph_loop_inner(
     f: &hashlink_bytecode::Function,
     index: usize,
     op: &hashlink_bytecode::OpCode,
-    destination_sources: &mut HashMap<usize, Vec<usize>>,
-    branches: &mut Vec<usize>,
+    destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
+    branches: &mut HashSet<InstructionIndex>,
 ) -> Option<()> {
     // We need to handle switch specially as it holds an array of branch targets rather than
     // a single target
@@ -81,24 +81,14 @@ fn compute_bb_graph_loop_inner_switch(
     f: &hashlink_bytecode::Function,
     index: usize,
     op: &hashlink_bytecode::OpSwitchParam,
-    destination_sources: &mut HashMap<usize, Vec<usize>>,
-    branches: &mut Vec<usize>,
+    destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
+    branches: &mut HashSet<InstructionIndex>,
 ) -> Option<()> {
-    // A switch contains a list of targets in an array so first we need to deduplicate
-    // the jump table by constructing an iterator that will do it for us.
-    //
-    // This isn't particularly efficient but the input sizes will be typically small
-    // enough where the high constant cost of a better algorithm (big O better) will
-    // hide whatever benefit it would bring with the very rare inputs large enough for
-    // it to be faster. Our good friend latency vs throughput at it again.
-    let table = op
-        .extra
-        .iter()
-        .map(|v| *v)
-        .filter(|v| !op.extra.contains(v));
+    // Handle all the distinct branch targets from the switch's jump table
+    for offset in op.extra.iter() {
+        // De-reference so we can just use it like an int
+        let offset = *offset;
 
-    // Now we can handle all the distinct branch targets from the switch's jump table
-    for offset in table {
         // The inputs will never be bigger than `i32::max` because of how they're stored
         // so this shouldn't truncate anything. Even if it does the overflow and bounds
         // checks mean that it shouldn't cause issues anyway
@@ -116,18 +106,16 @@ fn compute_bb_graph_loop_inner_switch(
         // encode a negative offset for w/e reason so we can just go straight to adding
         // it
 
-        let block_source = destination_sources.entry(target).or_default();
-        block_source.push(index);
+        let block_source = destination_sources
+            .entry(InstructionIndex(target))
+            .or_default();
+        block_source.insert(InstructionIndex(index));
     }
 
-    // Lastly we handle the "fallback" branch
-
-    // Same as in the jump table, this is fine as all errors this cast could cause are
-    // correctly checked
-    let offset = op.param_3 as i32;
-
-    // Once again, perform the offset
-    let target = offset_from(index, offset)?;
+    // Lastly we handle the "fallback" branch. The fallback branch occurs when the switch index is
+    // out of bounds of the jump table. When the index is out of bounds we just skip over the switch
+    // and continue so it's effectively a branch with offset 0
+    let target = offset_from(index, 0)?;
 
     // Perform a bounds check
     if target >= f.ops.len() {
@@ -135,11 +123,13 @@ fn compute_bb_graph_loop_inner_switch(
     }
 
     // Add the final branch target
-    let block_source = destination_sources.entry(target).or_default();
-    block_source.push(index);
+    let block_source = destination_sources
+        .entry(InstructionIndex(target))
+        .or_default();
+    block_source.insert(InstructionIndex(index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.push(index);
+    branches.insert(InstructionIndex(index));
 
     Some(())
 }
@@ -148,8 +138,8 @@ fn compute_bb_graph_loop_inner_unconditional(
     f: &hashlink_bytecode::Function,
     index: usize,
     op: &hashlink_bytecode::OpOneParam,
-    destination_sources: &mut HashMap<usize, Vec<usize>>,
-    branches: &mut Vec<usize>,
+    destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
+    branches: &mut HashSet<InstructionIndex>,
 ) -> Option<()> {
     let target = offset_from(index, op.param_1)?;
 
@@ -167,11 +157,13 @@ fn compute_bb_graph_loop_inner_unconditional(
     }
 
     // We only have a single branch target, as this is an unconditional branch
-    let block_source = destination_sources.entry(target).or_default();
-    block_source.push(index);
+    let block_source = destination_sources
+        .entry(InstructionIndex(target))
+        .or_default();
+    block_source.insert(InstructionIndex(index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.push(index);
+    branches.insert(InstructionIndex(index));
 
     Some(())
 }
@@ -180,8 +172,8 @@ fn compute_bb_graph_loop_inner_conditional(
     f: &hashlink_bytecode::Function,
     index: usize,
     op: &hashlink_bytecode::OpCode,
-    destination_sources: &mut HashMap<usize, Vec<usize>>,
-    branches: &mut Vec<usize>,
+    destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
+    branches: &mut HashSet<InstructionIndex>,
 ) -> Option<()> {
     // Get the branch target offset if it exists, otherwise skip to the next instruction
     let offset = match op {
@@ -224,16 +216,20 @@ fn compute_bb_graph_loop_inner_conditional(
 
     // First we add this instruction to the list of branch sources for the success
     // target
-    let block_source = destination_sources.entry(target).or_default();
-    block_source.push(index);
+    let block_source = destination_sources
+        .entry(InstructionIndex(target))
+        .or_default();
+    block_source.insert(InstructionIndex(index));
 
     // Now we add this instruction to the list of branch sources for the fail target,
     // which is just the instruction after the branch
-    let block_source = destination_sources.entry(target_fail).or_default();
-    block_source.push(index);
+    let block_source = destination_sources
+        .entry(InstructionIndex(target_fail))
+        .or_default();
+    block_source.insert(InstructionIndex(index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.push(index);
+    branches.insert(InstructionIndex(index));
 
     Some(())
 }

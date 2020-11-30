@@ -27,18 +27,19 @@
 // SOFTWARE.
 //
 
+use crate::bytecode::indexes::{StringIndex, TypeIndex};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Native {
     /// Index into the string table for library name
-    pub lib: usize,
+    pub lib: StringIndex,
 
     /// Index into the string table for the native name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// Index into the type table for the type
-    pub type_: usize,
+    pub type_: TypeIndex,
 
     /// ?
     pub f_index: usize,
@@ -47,9 +48,9 @@ pub struct Native {
 impl From<hashlink_bytecode::Native> for Native {
     fn from(v: hashlink_bytecode::Native) -> Self {
         Self {
-            lib: v.lib as usize,
-            name: v.name as usize,
-            type_: v.type_ as usize,
+            lib: StringIndex(v.lib as usize),
+            name: StringIndex(v.name as usize),
+            type_: TypeIndex(v.type_ as usize),
             f_index: v.f_index as usize,
         }
     }

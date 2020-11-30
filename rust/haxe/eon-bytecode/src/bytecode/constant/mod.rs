@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
+use crate::bytecode::indexes::GlobalIndex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Constant {
     /// An index into the globals table
-    pub global: usize,
+    pub global: GlobalIndex,
 
     /// A list of indexes into various tables that are used for initializing globals
     pub fields: Vec<usize>,
@@ -41,7 +42,7 @@ pub struct Constant {
 impl From<hashlink_bytecode::Constant> for Constant {
     fn from(v: hashlink_bytecode::Constant) -> Self {
         Self {
-            global: v.global as usize,
+            global: GlobalIndex(v.global as usize),
             fields: v.fields.into_iter().map(|v| v as usize).collect(),
         }
     }

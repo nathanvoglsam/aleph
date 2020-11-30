@@ -29,6 +29,7 @@
 
 pub mod constant;
 pub mod function;
+pub mod indexes;
 pub mod module;
 pub mod native;
 pub mod opcode;

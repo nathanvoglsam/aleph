@@ -27,49 +27,150 @@
 // SOFTWARE.
 //
 
+use crate::bytecode::indexes::{
+    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
+};
 use serde::{Deserialize, Serialize};
+
+/// Layout for instructions that perform a load of some kind from a SSA value and assigns it to a
+/// new SSA value
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Load {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The SSA value to read from from
+    pub source: ValueIndex,
+}
+
+/// Layout for the `OpInt` instruction for initializing an SSA value from the integer table
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadInt {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The integer in the integer table to load
+    pub integer: IntegerIndex,
+}
 
 /// Layout for loading type instructions that load something into an SSA value
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Load {
-    /// SSA value to load into
-    pub target: usize,
+pub struct LoadFloat {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
 
-    /// What to load from, precise meaning depends on the exact opcode
-    pub load: usize,
+    /// The float in the float table to load
+    pub float: FloatIndex,
 }
 
-/// Layout for storing type instructions that store an SSA value into some destination
+/// Layout for loading type instructions that load something into an SSA value
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadBool {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The boolean value to store into the destination
+    pub value: bool,
+}
+
+/// Layout for loading type instructions that load something into an SSA value
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadBytes {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The bytes index to use to load the bytes value from
+    pub bytes: BytesIndex,
+}
+
+/// Layout for loading type instructions that load something into an SSA value
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadString {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The string index to use to load the string from
+    pub string: StringIndex,
+}
+
+/// Layout for the `OpGetGlobal` instruction for loading values from the global table
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadGlobal {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// Index into the global table to load from
+    pub source: GlobalIndex,
+}
+
+/// Layout for the `OpType` instruction for loading values from the type table
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadType {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// Index into the global table to load from
+    pub source: TypeIndex,
+}
+
+/// Layout for `OpEnumField`. Loads a given field from an enum.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LoadEnumField {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The SSA value to read from from
+    pub source: ValueIndex,
+
+    /// The index of the constructor/variant of the enum to load the field from
+    pub constructor: ConstructorIndex,
+
+    /// The index of the field on the enum to load from
+    pub field_index: FieldIndex,
+}
+
+/// Layout for `OpSetGlobal` for storing a value into a global
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoreGlobal {
+    /// SSA value to store into target
+    pub source: ValueIndex,
+
+    /// The index into the global table to store source into
+    pub target: GlobalIndex,
+}
+
+/// Layout for instructions that perform a store from one register into another
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Store {
     /// SSA value to store into target
-    pub source: usize,
+    pub source: ValueIndex,
 
-    /// Where to store to, precise meaning depends on the exact opcode
-    pub target: usize,
+    /// The index into the global table to store source into
+    pub assigns: ValueIndex,
 }
 
 /// Layout for the various binop arithmetic instructions
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Binop {
     /// SSA value to store the result of the operation into
-    pub target: usize,
+    pub assigns: ValueIndex,
 
     /// Op left hand side
-    pub lhs: usize,
+    pub lhs: ValueIndex,
 
     /// Op right hand side
-    pub rhs: usize,
+    pub rhs: ValueIndex,
 }
 
 /// Layout for the various unop arithmetic instructions
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Unop {
     /// SSA value to store the result of the operation into
-    pub target: usize,
+    pub assigns: ValueIndex,
 
     /// The single operand for this operation
-    pub operand: usize,
+    pub operand: ValueIndex,
 }
 
 /// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
@@ -77,13 +178,13 @@ pub struct Unop {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Call {
     /// SSA value to store the result of the operation into
-    pub target: usize,
+    pub assigns: ValueIndex,
 
     /// The ID of the function to call
-    pub function: usize,
+    pub function: FunctionIndex,
 
     /// The list of function arguments
-    pub fn_params: Vec<i32>,
+    pub fn_params: Vec<ValueIndex>,
 }
 
 /// Layout for the switch instruction.
@@ -97,39 +198,39 @@ pub struct Call {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Switch {
     /// The SSA value to use as the index into the jump table
-    pub input: usize,
+    pub input: ValueIndex,
 
     /// A list of basic block indexes to map the input to which basic block to jump to
-    pub jump_table: Vec<usize>,
+    pub jump_table: Vec<BasicBlockIndex>,
 
     /// The fallback basic block for if the input does not match any of our jump table entires
-    pub fallback: usize,
+    pub fallback: BasicBlockIndex,
 }
 
 /// Layout for a field load from an object
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FieldLoad {
     /// The SSA value to store the result of the load into
-    pub target: usize,
+    pub assigns: ValueIndex,
 
     /// The SSA value that holds the object to load the field from
-    pub object: usize,
+    pub object: ValueIndex,
 
     /// The index of the field to load from
-    pub field: usize,
+    pub field: FieldIndex,
 }
 
 /// Layout for a field store to an object
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FieldStore {
     /// The SSA value that holds the object to store into
-    pub object: usize,
+    pub object: ValueIndex,
 
     /// The field index on the object to store into
-    pub field: usize,
+    pub field: FieldIndex,
 
     /// The SSA value to store into the field
-    pub source: usize,
+    pub source: ValueIndex,
 }
 
 /// Layout for loading from `this`. A less general form of `FieldLoad` where `object` is implicitly
@@ -137,10 +238,10 @@ pub struct FieldStore {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThisFieldLoad {
     /// The SSA value to store the result of the load into
-    pub target: usize,
+    pub assigns: ValueIndex,
 
     /// The index of the field to load from
-    pub field: usize,
+    pub field: FieldIndex,
 }
 
 /// Layout for storing to `this`. A less general form of `FieldStore` where object is implicitly the
@@ -148,10 +249,10 @@ pub struct ThisFieldLoad {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ThisFieldStore {
     /// The field index on the object to store into
-    pub field: usize,
+    pub field: FieldIndex,
 
     /// The SSA value to store into the field
-    pub source: usize,
+    pub source: ValueIndex,
 }
 
 /// Layout for a conditional branch where the comparison value is implicit to the opcode itself.
@@ -164,10 +265,10 @@ pub struct ThisFieldStore {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CondBranch {
     /// Value to check
-    pub check: usize,
+    pub check: ValueIndex,
 
     /// Basic block to jump to upon success
-    pub destination: usize,
+    pub destination: BasicBlockIndex,
 }
 
 /// Layout for a comparison branch where we compare two provided values to decide whether to branch
@@ -179,9 +280,14 @@ pub struct CondBranch {
 /// See `CondBranch` docs for an explanation to how this differs from HashLink
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CompBranch {
-    pub lhs: usize,
-    pub rhs: usize,
-    pub destination: usize,
+    /// Left hand side of comparison
+    pub lhs: ValueIndex,
+
+    /// Right hand side of comparison
+    pub rhs: ValueIndex,
+
+    /// The basic block to jump to on the comparison yielding true
+    pub destination: BasicBlockIndex,
 }
 
 /// Layout for our phi instruction.
@@ -191,19 +297,118 @@ pub struct CompBranch {
 pub struct Phi {
     /// A list of value pairs for loading specific values from other basic blocks when they branch
     /// into the basic block the phi instruction is in
-    pub block_values: Vec<(usize, usize)>,
+    pub block_values: Vec<(ValueIndex, BasicBlockIndex)>,
+}
+
+/// Layout for the `OpStaticClosure` instruction. This creates a "static" closure from the given
+/// function. This essentially just creates a bare function pointer
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StaticClosure {
+    /// The SSA value to store the result of creating the static closure into
+    pub assigns: ValueIndex,
+
+    /// The index of the function to produce a static closure for
+    pub function: FunctionIndex,
+}
+
+/// Layout for the `OpInstanceClosure` instruction. This creates a closure that carries an object
+/// pointer with it which should be applied as the first argument when the closure is called.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct InstanceClosure {
+    /// The SSA value to store the result of the instruction into
+    pub assigns: ValueIndex,
+
+    /// The index of the function to produce a closure for
+    pub function: FunctionIndex,
+
+    /// The object to store alongside the function pointer that should be applied as the first arg
+    /// when the closure is called
+    pub object: ValueIndex,
+}
+
+/// Layout for the `OpVirtualClosure` instruction.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct VirtualClosure {
+    /// The SSA value to store the result of the instruction into
+    pub assigns: ValueIndex,
+
+    /// The object to store alongside the function pointer that should be applied as the first arg
+    /// when the closure is called
+    pub object: ValueIndex,
+
+    /// The index of the field to load as a function to use for the closure
+    pub field: FieldIndex,
+}
+
+/// Layout for the conversion instructions that convert one type to another
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Cast {
+    /// SSA value to move into
+    pub assigns: ValueIndex,
+
+    /// The SSA value to load from and convert into the target's type
+    pub source: ValueIndex,
+}
+
+/// Layout used for the memory read style instructions
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ReadMemory {
+    /// SSA value to read into
+    pub assigns: ValueIndex,
+
+    /// The value which is used as the source for reading memory from
+    pub source: ValueIndex,
+
+    /// An extra register which is used for applying an offset to read from
+    pub offset: ValueIndex,
+}
+
+/// Layout used for the memory write style instructions
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct WriteMemory {
+    /// The value which is used as the source for reading memory from
+    pub target: ValueIndex,
+
+    /// An extra register which is used for applying an offset to read from
+    pub offset: ValueIndex,
+
+    /// SSA value to store to memory
+    pub source: ValueIndex,
+}
+
+/// Layout for `OpMakeEnum`
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MakeEnum {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The enum constructor/variant to build
+    pub constructor: ConstructorIndex,
+
+    /// The list of arguments
+    pub args: Vec<ValueIndex>,
+}
+
+/// Layout for `OpEnumAlloc`
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AllocEnum {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The enum constructor/variant to build
+    pub constructor: ConstructorIndex,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
     OpMov(Load),
-    OpInt(Load),
-    OpFloat(Load),
-    OpBool(Load),
-    OpBytes(Load),
-    OpString(Load),
-    OpNull(usize),
+    OpInt(LoadInt),
+    OpFloat(LoadFloat),
+    OpBool(LoadBool),
+    OpBytes(LoadBytes),
+    OpString(LoadString),
+    OpNull(ValueIndex),
 
     // Arithmetic opcodes
     OpAdd(Binop),
@@ -232,13 +437,13 @@ pub enum OpCode {
     OpCallClosure(Call),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
-    OpStaticClosure([i32; 2]),
-    OpInstanceClosure([i32; 3]),
-    OpVirtualClosure([i32; 3]),
+    OpStaticClosure(StaticClosure),
+    OpInstanceClosure(InstanceClosure),
+    OpVirtualClosure(VirtualClosure),
 
     // Global getting and setting opcodes
-    OpGetGlobal(Load),
-    OpSetGlobal(Store),
+    OpGetGlobal(LoadGlobal),
+    OpSetGlobal(StoreGlobal),
 
     // Object field access
     OpGetField(FieldLoad),
@@ -263,55 +468,55 @@ pub enum OpCode {
     OpJNotGte(CompBranch),
     OpJEq(CompBranch),
     OpJNotEq(CompBranch),
-    OpJAlways(usize),
-    OpRet(usize),
+    OpJAlways(BasicBlockIndex),
+    OpRet(ValueIndex),
     OpSwitch(Switch),
     OpPhi(Phi),
 
     // Casting opcodes
-    OpToDyn([i32; 2]),
-    OpToSFloat([i32; 2]),
-    OpToUFloat([i32; 2]),
-    OpToInt([i32; 2]),
+    OpToDyn(Cast),
+    OpToSFloat(Cast),
+    OpToUFloat(Cast),
+    OpToInt(Cast),
 
     // Coercions opcodes
-    OpSafeCast([i32; 2]),
-    OpUnsafeCast([i32; 2]),
-    OpToVirtual([i32; 2]),
+    OpSafeCast(Cast),
+    OpUnsafeCast(Cast),
+    OpToVirtual(Cast),
 
     // Exception opcodes
-    OpThrow(i32),
-    OpRethrow(i32),
+    OpThrow(ValueIndex),
+    OpRethrow(ValueIndex),
     OpTrap([i32; 2]),
-    OpEndTrap(i32),
-    OpNullCheck(i32),
+    OpEndTrap(bool),
+    OpNullCheck(ValueIndex),
 
     // Bytes section reading opcodes
-    OpGetI8([i32; 3]),
-    OpGetI16([i32; 3]),
-    OpGetMem([i32; 3]),
-    OpGetArray([i32; 3]),
-    OpSetI8([i32; 3]),
-    OpSetI16([i32; 3]),
-    OpSetMem([i32; 3]),
-    OpSetArray([i32; 3]),
+    OpGetI8(ReadMemory),
+    OpGetI16(ReadMemory),
+    OpGetMem(ReadMemory),
+    OpGetArray(ReadMemory),
+    OpSetI8(WriteMemory),
+    OpSetI16(WriteMemory),
+    OpSetMem(WriteMemory),
+    OpSetArray(WriteMemory),
 
-    OpNew(usize),
-    OpArraySize([i32; 2]),
-    OpType([i32; 2]),
-    OpGetType([i32; 2]),
-    OpGetTID([i32; 2]),
+    OpNew(ValueIndex),
+    OpArraySize(Load),
+    OpType(LoadType),
+    OpGetType(Load),
+    OpGetTID(Load),
 
     // Reference opcodes
-    OpRef([i32; 2]),
-    OpUnref([i32; 2]),
-    OpSetRef([i32; 2]),
+    OpRef(Load),
+    OpUnref(Load),
+    OpSetRef(Store),
 
     // Enum opcodes
-    OpMakeEnum(Call),
-    OpEnumAlloc([i32; 2]),
-    OpEnumIndex([i32; 2]),
-    OpEnumField([i32; 4]),
+    OpMakeEnum(MakeEnum),
+    OpEnumAlloc(AllocEnum),
+    OpEnumIndex(Load),
+    OpEnumField(LoadEnumField),
     OpSetEnumField([i32; 3]),
 
     // Not really sure at the moment
