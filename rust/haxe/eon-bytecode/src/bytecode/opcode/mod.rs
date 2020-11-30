@@ -293,7 +293,7 @@ pub struct CompBranch {
 
     /// The basic block to jump to upon the check succeeding
     pub success: BasicBlockIndex,
-    
+
     /// The basic block to jump to upon the check failing
     pub failure: BasicBlockIndex,
 }

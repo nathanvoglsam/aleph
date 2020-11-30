@@ -29,7 +29,9 @@
 
 use crate::bytecode::function::bb_graph::BBGraph;
 use crate::bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
-use crate::bytecode::indexes::{BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex};
+use crate::bytecode::indexes::{
+    BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
+};
 use crate::bytecode::module::Module;
 use std::collections::{HashMap, HashSet};
 
@@ -112,7 +114,6 @@ pub fn build_bb(
             if let Some(write) = op.register_write() {
                 reg_writes.insert(RegisterIndex(write as usize), ValueIndex(0));
             }
-
             reg_meta.basic_block_registers_read.push(reg_reads);
             reg_meta.basic_block_registers_written.push(reg_writes);
         }
