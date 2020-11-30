@@ -30,7 +30,7 @@
 use crate::bytecode::indexes::GlobalIndex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Constant {
     /// An index into the globals table
     pub global: GlobalIndex,

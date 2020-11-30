@@ -29,7 +29,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum Type {
     // Primitive types
     Void,
@@ -178,7 +178,7 @@ impl Type {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct ObjectProto {
     /// Index into string table for the name
     pub name: usize,
@@ -200,7 +200,7 @@ impl From<hashlink_bytecode::ObjectProto> for ObjectProto {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Field {
     /// Index into string table for the field name
     pub name: usize,
@@ -218,7 +218,7 @@ impl From<hashlink_bytecode::Field> for Field {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct EnumConstruct {
     /// Index into string table for the name
     pub name: usize,
@@ -236,7 +236,7 @@ impl From<hashlink_bytecode::EnumConstruct> for EnumConstruct {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
     pub args: Vec<usize>,
@@ -254,7 +254,7 @@ impl From<hashlink_bytecode::TypeFunction> for TypeFunction {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeObject {
     /// Index into string table for the name
     pub name: usize,
@@ -288,7 +288,7 @@ impl From<hashlink_bytecode::TypeObject> for TypeObject {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeEnum {
     /// Index into string table for the name
     pub name: usize,
@@ -310,7 +310,7 @@ impl From<hashlink_bytecode::TypeEnum> for TypeEnum {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeVirtual {
     /// The list of fields on this virtual
     pub fields: Vec<Field>,
@@ -324,7 +324,7 @@ impl From<hashlink_bytecode::TypeVirtual> for TypeVirtual {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeParam {
     /// Index into the type table
     pub type_: usize,
@@ -338,7 +338,7 @@ impl From<hashlink_bytecode::TypeParam> for TypeParam {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
     pub name: usize,

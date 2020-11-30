@@ -42,7 +42,7 @@ use std::collections::{HashMap, HashSet};
 /// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
 /// on to the information the "registers" provide because it makes some analysis passes easier as we
 /// don't need to reconstruct this information from the SSA graph every time we need it
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Default, Serialize, Deserialize)]
 pub struct Register {
     /// Does the allocated value outlive the function. Used for optimizing allocations.
     ///
@@ -60,7 +60,7 @@ pub struct Register {
     pub outlives_function: Option<bool>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct SSAValue {
     /// The type this ssa value holds
     pub type_: TypeIndex,
@@ -72,7 +72,7 @@ pub struct SSAValue {
     pub instruction: InstructionIndex,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct BasicBlock {
     /// This is just a flat, sequential list of opcodes
     pub ops: Vec<OpCode>,

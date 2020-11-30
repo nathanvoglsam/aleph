@@ -30,7 +30,7 @@
 use crate::bytecode::indexes::{StringIndex, TypeIndex};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Native {
     /// Index into the string table for library name
     pub lib: StringIndex,
