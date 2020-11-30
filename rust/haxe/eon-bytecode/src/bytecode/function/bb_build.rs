@@ -29,7 +29,7 @@
 
 use crate::bytecode::function::bb_graph::BBGraph;
 use crate::bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
-use crate::bytecode::indexes::{BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex};
+use crate::bytecode::indexes::{BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex};
 use crate::bytecode::module::Module;
 use std::collections::{HashMap, HashSet};
 
@@ -97,13 +97,24 @@ pub fn build_bb(
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
     for span in &spans {
-        let ops = &f.ops[span.0..=span.1];
+        let lower_bound = span.0.0;
+        let upper_bound = span.1.0;
+        let ops = &f.ops[lower_bound..=upper_bound];
         for op in ops {
-            let mut reg_writes = HashMap::new();
             let mut reg_reads = HashSet::new();
+            let mut reg_writes = HashMap::new();
 
-            if let Some(write) = op.register_write() {}
-            if let Some(reads) = op.register_reads() {}
+            if let Some(reads) = op.register_reads() {
+                for read in reads {
+                    reg_reads.insert(RegisterIndex(read as usize));
+                }
+            }
+            if let Some(write) = op.register_write() {
+                reg_writes.insert(RegisterIndex(write as usize), ValueIndex(0));
+            }
+
+            reg_meta.basic_block_registers_read.push(reg_reads);
+            reg_meta.basic_block_registers_written.push(reg_writes);
         }
     }
 
