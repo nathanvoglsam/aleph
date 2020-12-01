@@ -40,7 +40,7 @@ pub use opcode_params::{
 };
 pub use opcode_type::OpCodeType;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Debug, Deserialize)]
 pub enum OpCode {
     OpMov(OpTwoParam),
     OpInt(OpTwoParam),
@@ -358,8 +358,6 @@ impl OpCode {
             | OpCode::OpType(v)
             | OpCode::OpGetType(v)
             | OpCode::OpGetTID(v)
-            | OpCode::OpRef(v)
-            | OpCode::OpUnRef(v)
             | OpCode::OpRef(v)
             | OpCode::OpUnRef(v)
             | OpCode::OpEnumAlloc(v)

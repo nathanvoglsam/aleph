@@ -39,6 +39,8 @@ mod result;
 mod type_;
 mod version;
 
+pub mod utils;
+
 pub use code::Code;
 pub use constant::Constant;
 pub use function::Function;

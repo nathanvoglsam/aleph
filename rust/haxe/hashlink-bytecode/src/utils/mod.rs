@@ -27,5 +27,6 @@
 // SOFTWARE.
 //
 
-#[test]
-pub fn test_for_compilation() {}
+mod test_opcode_iterator;
+
+pub use test_opcode_iterator::TestOpCodeIter;

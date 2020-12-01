@@ -28,6 +28,8 @@
 //
 
 use crate::code::Code;
+use crate::utils::TestOpCodeIter;
+use crate::OpCode;
 use std::io::BufReader;
 use std::path::PathBuf;
 
@@ -73,4 +75,29 @@ pub fn test_serialization() {
 
     //std::fs::write(crate_root.join("out.json"), string.as_bytes()).unwrap();
     //std::fs::write(crate_root.join("out.msgpack"), &bytes).unwrap();
+}
+
+/// Force that only explicitly documented instructions do not perform a register read or write.
+///
+/// That is, we need to explicitly "whitelist" all opcodes that
+#[test]
+pub fn test_op_read_write_coverage() {
+    for op in TestOpCodeIter::new() {
+        match op {
+            OpCode::OpJAlways(_)
+            | OpCode::OpEndTrap(_)
+            | OpCode::OpLabel
+            | OpCode::OpAssert
+            | OpCode::OpNop => {}
+            _ => {
+                let reads_register = op.register_reads().is_some();
+                let writes_register = op.register_write().is_some();
+                assert!(
+                    reads_register || writes_register,
+                    "Opcode doesn't read or write registers, {:?}",
+                    op
+                );
+            }
+        }
+    }
 }
