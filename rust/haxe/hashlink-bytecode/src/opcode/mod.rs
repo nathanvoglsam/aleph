@@ -330,97 +330,79 @@ impl OpCode {
     /// write
     pub fn register_write(&self) -> Option<i32> {
         match self {
-            // Init opcodes
-            OpCode::OpMov(v) => Some(v.param_1),
-            OpCode::OpInt(v) => Some(v.param_1),
-            OpCode::OpFloat(v) => Some(v.param_1),
-            OpCode::OpBool(v) => Some(v.param_1),
-            OpCode::OpBytes(v) => Some(v.param_1),
-            OpCode::OpString(v) => Some(v.param_1),
-            OpCode::OpNull(v) => Some(v.param_1),
+            OpCode::OpNull(v) | OpCode::OpIncr(v) | OpCode::OpDecr(v) | OpCode::OpNew(v) => {
+                Some(v.param_1)
+            }
+
+            OpCode::OpMov(v)
+            | OpCode::OpInt(v)
+            | OpCode::OpFloat(v)
+            | OpCode::OpBool(v)
+            | OpCode::OpBytes(v)
+            | OpCode::OpCall0(v)
+            | OpCode::OpString(v)
+            | OpCode::OpNeg(v)
+            | OpCode::OpNot(v)
+            | OpCode::OpStaticClosure(v)
+            | OpCode::OpGetGlobal(v)
+            | OpCode::OpSetGlobal(v)
+            | OpCode::OpToDyn(v)
+            | OpCode::OpToSFloat(v)
+            | OpCode::OpToUFloat(v)
+            | OpCode::OpToInt(v)
+            | OpCode::OpSafeCast(v)
+            | OpCode::OpUnsafeCast(v)
+            | OpCode::OpToVirtual(v)
+            | OpCode::OpGetThis(v)
+            | OpCode::OpArraySize(v)
+            | OpCode::OpType(v)
+            | OpCode::OpGetType(v)
+            | OpCode::OpGetTID(v)
+            | OpCode::OpRef(v)
+            | OpCode::OpUnRef(v)
+            | OpCode::OpRef(v)
+            | OpCode::OpUnRef(v)
+            | OpCode::OpEnumAlloc(v)
+            | OpCode::OpEnumIndex(v)
+            | OpCode::OpRefData(v)
+            | OpCode::OpTrap(v) => Some(v.param_1),
 
             // Arithmetic opcodes
-            OpCode::OpAdd(v) => Some(v.param_1),
-            OpCode::OpSub(v) => Some(v.param_1),
-            OpCode::OpMul(v) => Some(v.param_1),
-            OpCode::OpSDiv(v) => Some(v.param_1),
-            OpCode::OpUDiv(v) => Some(v.param_1),
-            OpCode::OpSMod(v) => Some(v.param_1),
-            OpCode::OpUMod(v) => Some(v.param_1),
-            OpCode::OpShl(v) => Some(v.param_1),
-            OpCode::OpSShr(v) => Some(v.param_1),
-            OpCode::OpUShr(v) => Some(v.param_1),
-            OpCode::OpAnd(v) => Some(v.param_1),
-            OpCode::OpOr(v) => Some(v.param_1),
-            OpCode::OpXor(v) => Some(v.param_1),
-            OpCode::OpNeg(v) => Some(v.param_1),
-            OpCode::OpNot(v) => Some(v.param_1),
-            OpCode::OpIncr(v) => Some(v.param_1),
-            OpCode::OpDecr(v) => Some(v.param_1),
+            OpCode::OpAdd(v)
+            | OpCode::OpSub(v)
+            | OpCode::OpMul(v)
+            | OpCode::OpSDiv(v)
+            | OpCode::OpUDiv(v)
+            | OpCode::OpSMod(v)
+            | OpCode::OpUMod(v)
+            | OpCode::OpShl(v)
+            | OpCode::OpSShr(v)
+            | OpCode::OpUShr(v)
+            | OpCode::OpAnd(v)
+            | OpCode::OpOr(v)
+            | OpCode::OpXor(v)
+            | OpCode::OpCall1(v)
+            | OpCode::OpInstanceClosure(v)
+            | OpCode::OpVirtualClosure(v)
+            | OpCode::OpGetI8(v)
+            | OpCode::OpGetI16(v)
+            | OpCode::OpGetMem(v)
+            | OpCode::OpGetArray(v)
+            | OpCode::OpField(v)
+            | OpCode::OpDynGet(v)
+            | OpCode::OpSetEnumField(v)
+            | OpCode::OpRefOffset(v) => Some(v.param_1),
 
-            // Call opcodes
-            OpCode::OpCall0(v) => Some(v.param_1),
-            OpCode::OpCall1(v) => Some(v.param_1),
-            OpCode::OpCall2(v) => Some(v.param_1),
+            OpCode::OpCall2(v) | OpCode::OpEnumField(v) => Some(v.param_1),
+
             OpCode::OpCall3(v) => Some(v.param_1),
             OpCode::OpCall4(v) => Some(v.param_1),
-            OpCode::OpCallN(v) => Some(v.param_1),
-            OpCode::OpCallMethod(v) => Some(v.param_1),
-            OpCode::OpCallThis(v) => Some(v.param_1),
-            OpCode::OpCallClosure(v) => Some(v.param_1),
 
-            // Closure creation opcodes
-            OpCode::OpStaticClosure(v) => Some(v.param_1),
-            OpCode::OpInstanceClosure(v) => Some(v.param_1),
-            OpCode::OpVirtualClosure(v) => Some(v.param_1),
-
-            // Global opcodes
-            OpCode::OpGetGlobal(v) => Some(v.param_1),
-            OpCode::OpSetGlobal(v) => Some(v.param_1),
-
-            // Field access opcodes
-            OpCode::OpField(v) => Some(v.param_1),
-            OpCode::OpGetThis(v) => Some(v.param_1),
-            OpCode::OpDynGet(v) => Some(v.param_1),
-
-            // Casting opcodes
-            OpCode::OpToDyn(v) => Some(v.param_1),
-            OpCode::OpToSFloat(v) => Some(v.param_1),
-            OpCode::OpToUFloat(v) => Some(v.param_1),
-            OpCode::OpToInt(v) => Some(v.param_1),
-            OpCode::OpSafeCast(v) => Some(v.param_1),
-            OpCode::OpUnsafeCast(v) => Some(v.param_1),
-            OpCode::OpToVirtual(v) => Some(v.param_1),
-
-            OpCode::OpGetI8(v) => Some(v.param_1),
-            OpCode::OpGetI16(v) => Some(v.param_1),
-            OpCode::OpGetMem(v) => Some(v.param_1),
-            OpCode::OpGetArray(v) => Some(v.param_1),
-
-            // Allocate
-            OpCode::OpNew(v) => Some(v.param_1),
-
-            OpCode::OpArraySize(v) => Some(v.param_1),
-
-            OpCode::OpType(v) => Some(v.param_1),
-            OpCode::OpGetType(v) => Some(v.param_1),
-            OpCode::OpGetTID(v) => Some(v.param_1),
-
-            OpCode::OpRef(v) => Some(v.param_1),
-            OpCode::OpUnRef(v) => Some(v.param_1),
-
-            // Enum opcodes
-            OpCode::OpMakeEnum(v) => Some(v.param_1),
-            OpCode::OpEnumAlloc(v) => Some(v.param_1),
-            OpCode::OpEnumIndex(v) => Some(v.param_1),
-            OpCode::OpEnumField(v) => Some(v.param_1),
-            OpCode::OpSetEnumField(v) => Some(v.param_1),
-
-            // Stuff
-            OpCode::OpRefData(v) => Some(v.param_1),
-            OpCode::OpRefOffset(v) => Some(v.param_1),
-
-            OpCode::OpTrap(v) => Some(v.param_1),
+            OpCode::OpCallN(v)
+            | OpCode::OpCallMethod(v)
+            | OpCode::OpCallThis(v)
+            | OpCode::OpCallClosure(v)
+            | OpCode::OpMakeEnum(v) => Some(v.param_1),
 
             _ => None,
         }
@@ -462,23 +444,23 @@ impl OpCode {
             OpCode::OpMov(v) => Some(vec![v.param_2]),
 
             // Arithmetic opcodes
-            OpCode::OpAdd(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpSub(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpMul(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpSDiv(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpUDiv(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpSMod(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpUMod(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpShl(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpSShr(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpUShr(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpAnd(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpOr(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpXor(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpNeg(v) => Some(vec![v.param_2]),
-            OpCode::OpNot(v) => Some(vec![v.param_2]),
-            OpCode::OpIncr(v) => Some(vec![v.param_1]),
-            OpCode::OpDecr(v) => Some(vec![v.param_1]),
+            OpCode::OpAdd(v)
+            | OpCode::OpSub(v)
+            | OpCode::OpMul(v)
+            | OpCode::OpSDiv(v)
+            | OpCode::OpUDiv(v)
+            | OpCode::OpSMod(v)
+            | OpCode::OpUMod(v)
+            | OpCode::OpShl(v)
+            | OpCode::OpSShr(v)
+            | OpCode::OpUShr(v)
+            | OpCode::OpAnd(v)
+            | OpCode::OpOr(v)
+            | OpCode::OpXor(v) => Some(vec![v.param_2, v.param_3]),
+
+            OpCode::OpNeg(v) | OpCode::OpNot(v) => Some(vec![v.param_2]),
+
+            OpCode::OpIncr(v) | OpCode::OpDecr(v) => Some(vec![v.param_1]),
 
             // Call opcodes
             OpCode::OpCall1(v) => Some(vec![v.param_3]),
@@ -488,7 +470,7 @@ impl OpCode {
 
             // Call N opcodes
             OpCode::OpCallN(v) => Some(v.extra.clone()),
-            OpCode::OpCallMethod(v) => {
+            OpCode::OpCallMethod(v) | OpCode::OpCallClosure(v) => {
                 let mut list = Vec::new();
                 list.push(v.param_2);
                 list.extend_from_slice(&v.extra);
@@ -497,12 +479,6 @@ impl OpCode {
             OpCode::OpCallThis(v) => {
                 let mut list = Vec::new();
                 list.push(0);
-                list.extend_from_slice(&v.extra);
-                Some(list)
-            }
-            OpCode::OpCallClosure(v) => {
-                let mut list = Vec::new();
-                list.push(v.param_2);
                 list.extend_from_slice(&v.extra);
                 Some(list)
             }
@@ -522,58 +498,55 @@ impl OpCode {
             OpCode::OpNullCheck(v) => Some(vec![v.param_1]),
 
             // Jump on implicit condition
-            OpCode::OpJTrue(v) => Some(vec![v.param_1]),
-            OpCode::OpJFalse(v) => Some(vec![v.param_1]),
-            OpCode::OpJNull(v) => Some(vec![v.param_1]),
-            OpCode::OpJNotNull(v) => Some(vec![v.param_1]),
+            OpCode::OpJTrue(v)
+            | OpCode::OpJFalse(v)
+            | OpCode::OpJNull(v)
+            | OpCode::OpJNotNull(v) => Some(vec![v.param_1]),
 
             // Comparison based jumps
-            OpCode::OpJSLt(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJSGte(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJSGt(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJSLte(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJULt(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJUGte(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJNotLt(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJNotGte(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJEq(v) => Some(vec![v.param_1, v.param_2]),
-            OpCode::OpJNotEq(v) => Some(vec![v.param_1, v.param_2]),
+            OpCode::OpJSLt(v)
+            | OpCode::OpJSGte(v)
+            | OpCode::OpJSGt(v)
+            | OpCode::OpJSLte(v)
+            | OpCode::OpJULt(v)
+            | OpCode::OpJUGte(v)
+            | OpCode::OpJNotLt(v)
+            | OpCode::OpJNotGte(v)
+            | OpCode::OpJEq(v)
+            | OpCode::OpJNotEq(v) => Some(vec![v.param_1, v.param_2]),
 
             // Conversion
-            OpCode::OpToDyn(v) => Some(vec![v.param_2]),
-            OpCode::OpToSFloat(v) => Some(vec![v.param_2]),
-            OpCode::OpToUFloat(v) => Some(vec![v.param_2]),
-            OpCode::OpToInt(v) => Some(vec![v.param_2]),
+            OpCode::OpToDyn(v)
+            | OpCode::OpToSFloat(v)
+            | OpCode::OpToUFloat(v)
+            | OpCode::OpToInt(v) => Some(vec![v.param_2]),
 
-            OpCode::OpSafeCast(v) => Some(vec![v.param_2]),
-            OpCode::OpUnsafeCast(v) => Some(vec![v.param_2]),
-            OpCode::OpToVirtual(v) => Some(vec![v.param_2]),
+            OpCode::OpSafeCast(v) | OpCode::OpUnsafeCast(v) | OpCode::OpToVirtual(v) => {
+                Some(vec![v.param_2])
+            }
 
             OpCode::OpRet(v) => Some(vec![v.param_1]),
             OpCode::OpSwitch(v) => Some(vec![v.param_1 as i32]),
 
-            OpCode::OpThrow(v) => Some(vec![v.param_1]),
-            OpCode::OpRethrow(v) => Some(vec![v.param_1]),
+            OpCode::OpThrow(v) | OpCode::OpRethrow(v) => Some(vec![v.param_1]),
+
             OpCode::OpTrap(v) => Some(vec![v.param_1]),
 
-            OpCode::OpGetI8(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpGetI16(v) => Some(vec![v.param_2, v.param_3]),
-            OpCode::OpGetMem(v) => Some(vec![v.param_2, v.param_3]),
+            OpCode::OpGetI8(v) | OpCode::OpGetI16(v) | OpCode::OpGetMem(v) => {
+                Some(vec![v.param_2, v.param_3])
+            }
 
-            OpCode::OpSetI8(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
-            OpCode::OpSetI16(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
-            OpCode::OpSetMem(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
+            OpCode::OpSetI8(v) | OpCode::OpSetI16(v) | OpCode::OpSetMem(v) => {
+                Some(vec![v.param_1, v.param_2, v.param_3])
+            }
 
             OpCode::OpArraySize(v) => Some(vec![v.param_2]),
             OpCode::OpGetArray(v) => Some(vec![v.param_2, v.param_3]),
             OpCode::OpSetArray(v) => Some(vec![v.param_1, v.param_2, v.param_3]),
 
-            OpCode::OpGetType(v) => Some(vec![v.param_2]),
-            OpCode::OpGetTID(v) => Some(vec![v.param_2]),
+            OpCode::OpGetType(v) | OpCode::OpGetTID(v) => Some(vec![v.param_2]),
 
-            OpCode::OpRef(v) => Some(vec![v.param_2]),
-            OpCode::OpUnRef(v) => Some(vec![v.param_2]),
-            OpCode::OpSetRef(v) => Some(vec![v.param_2]),
+            OpCode::OpRef(v) | OpCode::OpUnRef(v) | OpCode::OpSetRef(v) => Some(vec![v.param_2]),
 
             OpCode::OpMakeEnum(v) => Some(v.extra.clone()),
             OpCode::OpEnumIndex(v) => Some(vec![v.param_2]),
