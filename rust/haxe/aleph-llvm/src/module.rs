@@ -34,6 +34,7 @@ use llvm_sys::prelude::*;
 use std::ffi::CStr;
 use std::marker::PhantomData;
 
+/// A safe rusty wrapper around the `LLVMModule` type
 #[repr(transparent)]
 pub struct Module<'a> {
     pub(crate) inner: LLVMModuleRef,
@@ -41,6 +42,7 @@ pub struct Module<'a> {
 }
 
 impl<'a> Module<'a> {
+    /// Adds a new function with the given name and type
     pub fn add_function(&self, name: Option<&CStr>, t: Type) -> Value {
         unsafe {
             let inner = LLVMAddFunction(self.inner, cstr_or_empty(name), t.inner);
@@ -51,8 +53,43 @@ impl<'a> Module<'a> {
         }
     }
 
+    /// Wraps the `LLVMDumpModule` function to dump the LLVM-IR to stdout
     pub fn dump(&self) {
         unsafe { LLVMDumpModule(self.inner) }
+    }
+
+    /// Returns the module's current target triple
+    pub fn get_target(&self) -> String {
+        unsafe {
+            let result = LLVMGetTarget(self.inner);
+            let result = CStr::from_ptr(result);
+            let result = result.to_str().unwrap();
+            result.to_string()
+        }
+    }
+
+    /// Sets the module's target triple to the provided value
+    pub fn set_target(&self, triple: &CStr) {
+        unsafe {
+            LLVMSetTarget(self.inner, triple.as_ptr());
+        }
+    }
+
+    /// Get the module's data layout as a string
+    pub fn get_data_layout_string(&self) -> String {
+        unsafe {
+            let result = LLVMGetDataLayoutStr(self.inner);
+            let result = CStr::from_ptr(result);
+            let result = result.to_str().unwrap();
+            result.to_string()
+        }
+    }
+
+    /// Set the module's data layout based on the string provided
+    pub fn set_data_layout_from_string(&self, layout: &CStr) {
+        unsafe {
+            LLVMSetDataLayout(self.inner,  layout.as_ptr());
+        }
     }
 }
 
