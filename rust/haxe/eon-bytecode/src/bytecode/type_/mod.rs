@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::bytecode::indexes::{StringIndex, TypeIndex};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
@@ -181,7 +182,7 @@ impl Type {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct ObjectProto {
     /// Index into string table for the name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// ?
     pub f_index: usize,
@@ -193,7 +194,7 @@ pub struct ObjectProto {
 impl From<hashlink_bytecode::ObjectProto> for ObjectProto {
     fn from(v: hashlink_bytecode::ObjectProto) -> Self {
         ObjectProto {
-            name: v.name as usize,
+            name: StringIndex(v.name as usize),
             f_index: v.f_index as usize,
             p_index: v.p_index as usize,
         }
@@ -203,17 +204,17 @@ impl From<hashlink_bytecode::ObjectProto> for ObjectProto {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Field {
     /// Index into string table for the field name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// Index into type table for the type name
-    pub type_: usize,
+    pub type_: TypeIndex,
 }
 
 impl From<hashlink_bytecode::Field> for Field {
     fn from(v: hashlink_bytecode::Field) -> Self {
         Field {
-            name: v.name as usize,
-            type_: v.type_ as usize,
+            name: StringIndex(v.name as usize),
+            type_: TypeIndex(v.type_ as usize),
         }
     }
 }
@@ -221,17 +222,21 @@ impl From<hashlink_bytecode::Field> for Field {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct EnumConstruct {
     /// Index into string table for the name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// List of indexes into the type table
-    pub params: Vec<usize>,
+    pub params: Vec<TypeIndex>,
 }
 
 impl From<hashlink_bytecode::EnumConstruct> for EnumConstruct {
     fn from(v: hashlink_bytecode::EnumConstruct) -> Self {
         EnumConstruct {
-            name: v.name as usize,
-            params: v.params.into_iter().map(|v| v as usize).collect(),
+            name: StringIndex(v.name as usize),
+            params: v
+                .params
+                .into_iter()
+                .map(|v| TypeIndex(v as usize))
+                .collect(),
         }
     }
 }
@@ -239,17 +244,17 @@ impl From<hashlink_bytecode::EnumConstruct> for EnumConstruct {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
-    pub args: Vec<usize>,
+    pub args: Vec<TypeIndex>,
 
     /// Index into the type table for the return type
-    pub returns: usize,
+    pub returns: TypeIndex,
 }
 
 impl From<hashlink_bytecode::TypeFunction> for TypeFunction {
     fn from(v: hashlink_bytecode::TypeFunction) -> Self {
         TypeFunction {
-            args: v.args.into_iter().map(|v| v as usize).collect(),
-            returns: v.returns as usize,
+            args: v.args.into_iter().map(|v| TypeIndex(v as usize)).collect(),
+            returns: TypeIndex(v.returns as usize),
         }
     }
 }
@@ -257,7 +262,7 @@ impl From<hashlink_bytecode::TypeFunction> for TypeFunction {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeObject {
     /// Index into string table for the name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// List of fields on this object
     pub fields: Vec<Field>,
@@ -278,7 +283,7 @@ pub struct TypeObject {
 impl From<hashlink_bytecode::TypeObject> for TypeObject {
     fn from(v: hashlink_bytecode::TypeObject) -> Self {
         TypeObject {
-            name: v.name as usize,
+            name: StringIndex(v.name as usize),
             fields: v.fields.into_iter().map(Field::from).collect(),
             protos: v.protos.into_iter().map(ObjectProto::from).collect(),
             bindings: v.bindings.into_iter().map(|v| v as usize).collect(),
@@ -291,7 +296,7 @@ impl From<hashlink_bytecode::TypeObject> for TypeObject {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeEnum {
     /// Index into string table for the name
-    pub name: usize,
+    pub name: StringIndex,
 
     /// ?
     pub constructs: Vec<EnumConstruct>,
@@ -303,7 +308,7 @@ pub struct TypeEnum {
 impl From<hashlink_bytecode::TypeEnum> for TypeEnum {
     fn from(v: hashlink_bytecode::TypeEnum) -> Self {
         TypeEnum {
-            name: v.name as usize,
+            name: StringIndex(v.name as usize),
             constructs: v.constructs.into_iter().map(EnumConstruct::from).collect(),
             global: v.global as usize,
         }
@@ -327,13 +332,13 @@ impl From<hashlink_bytecode::TypeVirtual> for TypeVirtual {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeParam {
     /// Index into the type table
-    pub type_: usize,
+    pub type_: TypeIndex,
 }
 
 impl From<hashlink_bytecode::TypeParam> for TypeParam {
     fn from(v: hashlink_bytecode::TypeParam) -> Self {
         TypeParam {
-            type_: v.type_ as usize,
+            type_: TypeIndex(v.type_ as usize),
         }
     }
 }
@@ -341,13 +346,13 @@ impl From<hashlink_bytecode::TypeParam> for TypeParam {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
-    pub name: usize,
+    pub name: StringIndex,
 }
 
 impl From<hashlink_bytecode::TypeAbstract> for TypeAbstract {
     fn from(v: hashlink_bytecode::TypeAbstract) -> Self {
         TypeAbstract {
-            name: v.name as usize,
+            name: StringIndex(v.name as usize),
         }
     }
 }

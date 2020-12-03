@@ -187,6 +187,32 @@ pub struct Call {
     pub fn_params: Vec<ValueIndex>,
 }
 
+/// Layout for a member method call.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct CallField {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The field that contains the function to call
+    pub function: FieldIndex,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+}
+
+/// Layout for a closure call.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct CallClosure {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The value that contains the closure to call
+    pub closure: ValueIndex,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+}
+
 /// Layout for the switch instruction.
 ///
 /// HashLink's encoding represents a jump table where the instruction encodes a list of instruction
@@ -407,6 +433,49 @@ pub struct AllocEnum {
     pub constructor: ConstructorIndex,
 }
 
+/// Layout for `OpRefData`
+///
+/// The instruction essentially converts an array into a pointer to the first element of the array
+/// + the type
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct RefData {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The array to make the reference from
+    pub source: ValueIndex,
+}
+
+/// Layout for `OpRefOffset`
+///
+/// This is almost exactly the same as `OpRefData` except it also takes an extra register argument
+/// which will hold an integer offset into the array which should be used as the base for the
+/// reference to be created
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct RefOffset {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The array to make the reference from
+    pub source: ValueIndex,
+
+    /// The register which holds the offset index which should be used as the base element
+    pub offset: ValueIndex,
+}
+
+/// Layout for `OpSetEnumField`
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct StoreEnumField {
+    /// The enum to store into
+    pub target: ValueIndex,
+
+    /// The field index to set which field to set
+    pub field: FieldIndex,
+
+    /// The register to set on the enum
+    pub source: ValueIndex,
+}
+
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
@@ -440,9 +509,9 @@ pub enum OpCode {
 
     // Function calling opcodes
     OpCall(Call),
-    OpCallMethod(Call),
-    OpCallThis(Call),
-    OpCallClosure(Call),
+    OpCallMethod(CallField),
+    OpCallThis(CallField),
+    OpCallClosure(CallClosure),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
     OpStaticClosure(StaticClosure),
@@ -517,7 +586,7 @@ pub enum OpCode {
 
     // Reference opcodes
     OpRef(Load),
-    OpUnref(Load),
+    OpUnRef(Load),
     OpSetRef(Store),
 
     // Enum opcodes
@@ -525,13 +594,611 @@ pub enum OpCode {
     OpEnumAlloc(AllocEnum),
     OpEnumIndex(Load),
     OpEnumField(LoadEnumField),
-    OpSetEnumField([i32; 3]),
+    OpSetEnumField(StoreEnumField),
 
     // Not really sure at the moment
     OpAssert,
-    OpRefData([i32; 2]),
-    OpRefOffset([i32; 3]),
+    OpRefData(RefData),
+    OpRefOffset(RefOffset),
 
     // Noop
     OpNop,
+}
+
+impl OpCode {
+    pub fn translate_load(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = Load { assigns, source };
+        match f {
+            hashlink_bytecode::OpCode::OpMov(_) => Some(OpCode::OpMov(inner)),
+            hashlink_bytecode::OpCode::OpArraySize(_) => Some(OpCode::OpArraySize(inner)),
+            hashlink_bytecode::OpCode::OpGetType(_) => Some(OpCode::OpGetType(inner)),
+            hashlink_bytecode::OpCode::OpGetTID(_) => Some(OpCode::OpGetTID(inner)),
+            hashlink_bytecode::OpCode::OpRef(_) => Some(OpCode::OpRef(inner)),
+            hashlink_bytecode::OpCode::OpUnRef(_) => Some(OpCode::OpUnRef(inner)),
+            hashlink_bytecode::OpCode::OpEnumIndex(_) => Some(OpCode::OpEnumIndex(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_int(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        integer: IntegerIndex,
+    ) -> Option<Self> {
+        let inner = LoadInt { assigns, integer };
+        match f {
+            hashlink_bytecode::OpCode::OpInt(_) => Some(OpCode::OpInt(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_float(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        float: FloatIndex,
+    ) -> Option<Self> {
+        let inner = LoadFloat { assigns, float };
+        match f {
+            hashlink_bytecode::OpCode::OpFloat(_) => Some(OpCode::OpFloat(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_bool(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        value: bool,
+    ) -> Option<Self> {
+        let inner = LoadBool { assigns, value };
+        match f {
+            hashlink_bytecode::OpCode::OpBool(_) => Some(OpCode::OpBool(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_bytes(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        bytes: BytesIndex,
+    ) -> Option<Self> {
+        let inner = LoadBytes { assigns, bytes };
+        match f {
+            hashlink_bytecode::OpCode::OpBytes(_) => Some(OpCode::OpBytes(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_string(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        string: StringIndex,
+    ) -> Option<Self> {
+        let inner = LoadString { assigns, string };
+        match f {
+            hashlink_bytecode::OpCode::OpString(_) => Some(OpCode::OpString(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_global(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: GlobalIndex,
+    ) -> Option<Self> {
+        let inner = LoadGlobal { assigns, source };
+        match f {
+            hashlink_bytecode::OpCode::OpGetGlobal(_) => Some(OpCode::OpGetGlobal(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_type(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: TypeIndex,
+    ) -> Option<Self> {
+        let inner = LoadType { assigns, source };
+        match f {
+            hashlink_bytecode::OpCode::OpType(_) => Some(OpCode::OpType(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_load_enum_field(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+        constructor: ConstructorIndex,
+        field_index: FieldIndex,
+    ) -> Option<Self> {
+        let inner = LoadEnumField {
+            assigns,
+            source,
+            constructor,
+            field_index,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpEnumField(_) => Some(OpCode::OpEnumField(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_store_enum_field(
+        f: &hashlink_bytecode::OpCode,
+        target: ValueIndex,
+        field: FieldIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = StoreEnumField {
+            target,
+            field,
+            source,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpSetEnumField(_) => Some(OpCode::OpSetEnumField(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_store_global(
+        f: &hashlink_bytecode::OpCode,
+        source: ValueIndex,
+        target: GlobalIndex,
+    ) -> Option<Self> {
+        let inner = StoreGlobal { source, target };
+        match f {
+            hashlink_bytecode::OpCode::OpSetGlobal(_) => Some(OpCode::OpSetGlobal(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_store(
+        f: &hashlink_bytecode::OpCode,
+        source: ValueIndex,
+        assigns: ValueIndex,
+    ) -> Option<Self> {
+        let inner = Store { source, assigns };
+        match f {
+            hashlink_bytecode::OpCode::OpSetRef(_) => Some(OpCode::OpSetRef(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_binop(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        lhs: ValueIndex,
+        rhs: ValueIndex,
+    ) -> Option<Self> {
+        let inner = Binop { assigns, lhs, rhs };
+        match f {
+            hashlink_bytecode::OpCode::OpAdd(_) => Some(OpCode::OpAdd(inner)),
+            hashlink_bytecode::OpCode::OpSub(_) => Some(OpCode::OpSub(inner)),
+            hashlink_bytecode::OpCode::OpMul(_) => Some(OpCode::OpMul(inner)),
+            hashlink_bytecode::OpCode::OpSDiv(_) => Some(OpCode::OpSDiv(inner)),
+            hashlink_bytecode::OpCode::OpUDiv(_) => Some(OpCode::OpUDiv(inner)),
+            hashlink_bytecode::OpCode::OpSMod(_) => Some(OpCode::OpSMod(inner)),
+            hashlink_bytecode::OpCode::OpUMod(_) => Some(OpCode::OpUMod(inner)),
+            hashlink_bytecode::OpCode::OpShl(_) => Some(OpCode::OpShl(inner)),
+            hashlink_bytecode::OpCode::OpSShr(_) => Some(OpCode::OpSShr(inner)),
+            hashlink_bytecode::OpCode::OpUShr(_) => Some(OpCode::OpUShr(inner)),
+            hashlink_bytecode::OpCode::OpAnd(_) => Some(OpCode::OpAnd(inner)),
+            hashlink_bytecode::OpCode::OpOr(_) => Some(OpCode::OpOr(inner)),
+            hashlink_bytecode::OpCode::OpXor(_) => Some(OpCode::OpXor(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_unop(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        operand: ValueIndex,
+    ) -> Option<Self> {
+        let inner = Unop { assigns, operand };
+        match f {
+            hashlink_bytecode::OpCode::OpNeg(_) => Some(OpCode::OpNeg(inner)),
+            hashlink_bytecode::OpCode::OpNot(_) => Some(OpCode::OpNot(inner)),
+            hashlink_bytecode::OpCode::OpIncr(_) => Some(OpCode::OpIncr(inner)),
+            hashlink_bytecode::OpCode::OpDecr(_) => Some(OpCode::OpDecr(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_call(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        function: FunctionIndex,
+        fn_params: Vec<ValueIndex>,
+    ) -> Option<Self> {
+        let inner = Call {
+            assigns,
+            function,
+            fn_params,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpCall0(_) => Some(OpCode::OpCall(inner)),
+            hashlink_bytecode::OpCode::OpCall1(_) => Some(OpCode::OpCall(inner)),
+            hashlink_bytecode::OpCode::OpCall2(_) => Some(OpCode::OpCall(inner)),
+            hashlink_bytecode::OpCode::OpCall3(_) => Some(OpCode::OpCall(inner)),
+            hashlink_bytecode::OpCode::OpCall4(_) => Some(OpCode::OpCall(inner)),
+            hashlink_bytecode::OpCode::OpCallN(_) => Some(OpCode::OpCall(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_call_field(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        function: FieldIndex,
+        fn_params: Vec<ValueIndex>,
+    ) -> Option<Self> {
+        let inner = CallField {
+            assigns,
+            function,
+            fn_params,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpCallMethod(_) => Some(OpCode::OpCallMethod(inner)),
+            hashlink_bytecode::OpCode::OpCallThis(_) => Some(OpCode::OpCallThis(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_call_closure(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        closure: ValueIndex,
+        fn_params: Vec<ValueIndex>,
+    ) -> Option<Self> {
+        let inner = CallClosure {
+            assigns,
+            closure,
+            fn_params,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpCallClosure(_) => Some(OpCode::OpCallClosure(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_switch(
+        f: &hashlink_bytecode::OpCode,
+        input: ValueIndex,
+        jump_table: Vec<BasicBlockIndex>,
+        fallback: BasicBlockIndex,
+    ) -> Option<Self> {
+        let inner = Switch {
+            input,
+            jump_table,
+            fallback,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpSwitch(_) => Some(OpCode::OpSwitch(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_field_load(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        object: ValueIndex,
+        field: FieldIndex,
+    ) -> Option<Self> {
+        let inner = FieldLoad {
+            assigns,
+            object,
+            field,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpField(_) => Some(OpCode::OpGetField(inner)),
+            hashlink_bytecode::OpCode::OpDynGet(_) => Some(OpCode::OpDynGet(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_field_store(
+        f: &hashlink_bytecode::OpCode,
+        object: ValueIndex,
+        field: FieldIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = FieldStore {
+            object,
+            field,
+            source,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpSetField(_) => Some(OpCode::OpSetField(inner)),
+            hashlink_bytecode::OpCode::OpDynSet(_) => Some(OpCode::OpDynSet(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_this_field_load(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        field: FieldIndex,
+    ) -> Option<Self> {
+        let inner = ThisFieldLoad { assigns, field };
+        match f {
+            hashlink_bytecode::OpCode::OpGetThis(_) => Some(OpCode::OpGetThis(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_this_field_store(
+        f: &hashlink_bytecode::OpCode,
+        field: FieldIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = ThisFieldStore { field, source };
+        match f {
+            hashlink_bytecode::OpCode::OpSetThis(_) => Some(OpCode::OpSetThis(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_cond_branch(
+        f: &hashlink_bytecode::OpCode,
+        check: ValueIndex,
+        success: BasicBlockIndex,
+        failure: BasicBlockIndex,
+    ) -> Option<Self> {
+        let inner = CondBranch {
+            check,
+            success,
+            failure,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpJTrue(_) => Some(OpCode::OpJTrue(inner)),
+            hashlink_bytecode::OpCode::OpJFalse(_) => Some(OpCode::OpJFalse(inner)),
+            hashlink_bytecode::OpCode::OpJNull(_) => Some(OpCode::OpJNull(inner)),
+            hashlink_bytecode::OpCode::OpJNotNull(_) => Some(OpCode::OpJNotNull(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_comp_branch(
+        f: &hashlink_bytecode::OpCode,
+        lhs: ValueIndex,
+        rhs: ValueIndex,
+        success: BasicBlockIndex,
+        failure: BasicBlockIndex,
+    ) -> Option<Self> {
+        let inner = CompBranch {
+            lhs,
+            success,
+            failure,
+            rhs,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpJSLt(_) => Some(OpCode::OpJSLt(inner)),
+            hashlink_bytecode::OpCode::OpJSGte(_) => Some(OpCode::OpJSGte(inner)),
+            hashlink_bytecode::OpCode::OpJSGt(_) => Some(OpCode::OpJSGt(inner)),
+            hashlink_bytecode::OpCode::OpJSLte(_) => Some(OpCode::OpJSLte(inner)),
+            hashlink_bytecode::OpCode::OpJULt(_) => Some(OpCode::OpJULt(inner)),
+            hashlink_bytecode::OpCode::OpJUGte(_) => Some(OpCode::OpJUGte(inner)),
+            hashlink_bytecode::OpCode::OpJNotLt(_) => Some(OpCode::OpJNotLt(inner)),
+            hashlink_bytecode::OpCode::OpJNotGte(_) => Some(OpCode::OpJNotGte(inner)),
+            hashlink_bytecode::OpCode::OpJEq(_) => Some(OpCode::OpJEq(inner)),
+            hashlink_bytecode::OpCode::OpJNotEq(_) => Some(OpCode::OpJNotEq(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_static_closure(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        function: FunctionIndex,
+    ) -> Option<Self> {
+        let inner = StaticClosure { assigns, function };
+        match f {
+            hashlink_bytecode::OpCode::OpStaticClosure(_) => Some(OpCode::OpStaticClosure(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_instance_closure(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        function: FunctionIndex,
+        object: ValueIndex,
+    ) -> Option<Self> {
+        let inner = InstanceClosure {
+            assigns,
+            function,
+            object,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpInstanceClosure(_) => {
+                Some(OpCode::OpInstanceClosure(inner))
+            }
+            _ => None,
+        }
+    }
+
+    pub fn translate_virtual_closure(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        object: ValueIndex,
+        field: FieldIndex,
+    ) -> Option<Self> {
+        let inner = VirtualClosure {
+            assigns,
+            object,
+            field,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpVirtualClosure(_) => Some(OpCode::OpVirtualClosure(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_cast(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = Cast { assigns, source };
+        match f {
+            hashlink_bytecode::OpCode::OpToDyn(_) => Some(OpCode::OpToDyn(inner)),
+            hashlink_bytecode::OpCode::OpToSFloat(_) => Some(OpCode::OpToSFloat(inner)),
+            hashlink_bytecode::OpCode::OpToUFloat(_) => Some(OpCode::OpToUFloat(inner)),
+            hashlink_bytecode::OpCode::OpToInt(_) => Some(OpCode::OpToInt(inner)),
+            hashlink_bytecode::OpCode::OpSafeCast(_) => Some(OpCode::OpSafeCast(inner)),
+            hashlink_bytecode::OpCode::OpUnsafeCast(_) => Some(OpCode::OpUnsafeCast(inner)),
+            hashlink_bytecode::OpCode::OpToVirtual(_) => Some(OpCode::OpToVirtual(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_read_memory(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+        offset: ValueIndex,
+    ) -> Option<Self> {
+        let inner = ReadMemory {
+            assigns,
+            source,
+            offset,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpGetI8(_) => Some(OpCode::OpGetI8(inner)),
+            hashlink_bytecode::OpCode::OpGetI16(_) => Some(OpCode::OpGetI16(inner)),
+            hashlink_bytecode::OpCode::OpGetMem(_) => Some(OpCode::OpGetMem(inner)),
+            hashlink_bytecode::OpCode::OpGetArray(_) => Some(OpCode::OpGetArray(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_write_memory(
+        f: &hashlink_bytecode::OpCode,
+        target: ValueIndex,
+        offset: ValueIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = WriteMemory {
+            target,
+            source,
+            offset,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpSetI8(_) => Some(OpCode::OpSetI8(inner)),
+            hashlink_bytecode::OpCode::OpSetI16(_) => Some(OpCode::OpSetI16(inner)),
+            hashlink_bytecode::OpCode::OpSetMem(_) => Some(OpCode::OpSetMem(inner)),
+            hashlink_bytecode::OpCode::OpSetArray(_) => Some(OpCode::OpSetArray(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_make_enum(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        constructor: ConstructorIndex,
+        args: Vec<ValueIndex>,
+    ) -> Option<Self> {
+        let inner = MakeEnum {
+            assigns,
+            constructor,
+            args,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpMakeEnum(_) => Some(OpCode::OpMakeEnum(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_alloc_enum(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        constructor: ConstructorIndex,
+    ) -> Option<Self> {
+        let inner = AllocEnum {
+            assigns,
+            constructor,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpEnumAlloc(_) => Some(OpCode::OpEnumAlloc(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_value_index(f: &hashlink_bytecode::OpCode, inner: ValueIndex) -> Option<Self> {
+        match f {
+            hashlink_bytecode::OpCode::OpNull(_) => Some(OpCode::OpNull(inner)),
+            hashlink_bytecode::OpCode::OpRet(_) => Some(OpCode::OpRet(inner)),
+            hashlink_bytecode::OpCode::OpThrow(_) => Some(OpCode::OpThrow(inner)),
+            hashlink_bytecode::OpCode::OpRethrow(_) => Some(OpCode::OpRethrow(inner)),
+            hashlink_bytecode::OpCode::OpNullCheck(_) => Some(OpCode::OpNullCheck(inner)),
+            hashlink_bytecode::OpCode::OpNew(_) => Some(OpCode::OpNew(inner)),
+            _ => None,
+        }
+    }
+
+    //pub fn translate_trap(f: &hashlink_bytecode::OpCode) -> Option<Self> {
+    //    match f {
+    //        hashlink_bytecode::OpCode::OpTrap(_) => None,
+    //        _ => None,
+    //    }
+    //}
+    //
+    //pub fn translate_end_trap(f: &hashlink_bytecode::OpCode, inner: bool) -> Option<Self> {
+    //    match f {
+    //        hashlink_bytecode::OpCode::OpEndTrap(_) => Some(OpCode::OpEndTrap(inner)),
+    //        _ => None,
+    //    }
+    //}
+
+    pub fn translate_unconditional_branch(
+        f: &hashlink_bytecode::OpCode,
+        inner: BasicBlockIndex,
+    ) -> Option<Self> {
+        match f {
+            hashlink_bytecode::OpCode::OpJAlways(_) => Some(OpCode::OpJAlways(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_ref_data(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+    ) -> Option<Self> {
+        let inner = RefData { assigns, source };
+        match f {
+            hashlink_bytecode::OpCode::OpRefData(_) => Some(OpCode::OpRefData(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_ref_offset(
+        f: &hashlink_bytecode::OpCode,
+        assigns: ValueIndex,
+        source: ValueIndex,
+        offset: ValueIndex,
+    ) -> Option<Self> {
+        let inner = RefOffset {
+            assigns,
+            source,
+            offset,
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpRefOffset(_) => Some(OpCode::OpRefOffset(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_no_params(f: &hashlink_bytecode::OpCode) -> Option<Self> {
+        match f {
+            hashlink_bytecode::OpCode::OpAssert => Some(OpCode::OpAssert),
+            hashlink_bytecode::OpCode::OpNop => Some(OpCode::OpNop),
+            hashlink_bytecode::OpCode::OpLabel => Some(OpCode::OpNop),
+            _ => None,
+        }
+    }
 }

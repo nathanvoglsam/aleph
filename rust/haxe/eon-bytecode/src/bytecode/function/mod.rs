@@ -65,11 +65,9 @@ pub struct SSAValue {
     /// The type this ssa value holds
     pub type_: TypeIndex,
 
-    /// The index of the basic block that assigns this SSA value
-    pub basic_block: BasicBlockIndex,
-
-    /// The index into the basic block for the instruction that assigns this SSA value
-    pub instruction: InstructionIndex,
+    /// Maps the value back to the instruction that assigned it. If the value is `None` then this
+    /// value was assigned as part of the function signature
+    pub assigned_at: Option<(BasicBlockIndex, InstructionIndex)>,
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
