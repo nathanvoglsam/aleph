@@ -189,9 +189,12 @@ pub struct Call {
 
 /// Layout for a member method call.
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct CallField {
+pub struct CallMethod {
     /// SSA value to store the result of the operation into
     pub assigns: ValueIndex,
+
+    /// The object that the method should be called on
+    pub object: ValueIndex,
 
     /// The field that contains the function to call
     pub function: FieldIndex,
@@ -254,28 +257,6 @@ pub struct FieldStore {
     /// The SSA value that holds the object to store into
     pub object: ValueIndex,
 
-    /// The field index on the object to store into
-    pub field: FieldIndex,
-
-    /// The SSA value to store into the field
-    pub source: ValueIndex,
-}
-
-/// Layout for loading from `this`. A less general form of `FieldLoad` where `object` is implicitly
-/// the first function parameter
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct ThisFieldLoad {
-    /// The SSA value to store the result of the load into
-    pub assigns: ValueIndex,
-
-    /// The index of the field to load from
-    pub field: FieldIndex,
-}
-
-/// Layout for storing to `this`. A less general form of `FieldStore` where object is implicitly the
-/// first function parameter
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct ThisFieldStore {
     /// The field index on the object to store into
     pub field: FieldIndex,
 
@@ -527,8 +508,7 @@ pub enum OpCode {
 
     // Function calling opcodes
     OpCall(Call),
-    OpCallMethod(CallField),
-    OpCallThis(CallField),
+    OpCallMethod(CallMethod),
     OpCallClosure(CallClosure),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
@@ -543,8 +523,6 @@ pub enum OpCode {
     // Object field access
     OpGetField(FieldLoad),
     OpSetField(FieldStore),
-    OpGetThis(ThisFieldLoad),
-    OpSetThis(ThisFieldStore),
     OpDynGet(FieldLoad),
     OpDynSet(FieldStore),
 
@@ -852,17 +830,19 @@ impl OpCode {
     pub fn translate_call_field(
         f: &hashlink_bytecode::OpCode,
         assigns: ValueIndex,
+        object: ValueIndex,
         function: FieldIndex,
         fn_params: Vec<ValueIndex>,
     ) -> Option<Self> {
-        let inner = CallField {
+        let inner = CallMethod {
             assigns,
+            object,
             function,
             fn_params,
         };
         match f {
             hashlink_bytecode::OpCode::OpCallMethod(_) => Some(OpCode::OpCallMethod(inner)),
-            hashlink_bytecode::OpCode::OpCallThis(_) => Some(OpCode::OpCallThis(inner)),
+            hashlink_bytecode::OpCode::OpCallThis(_) => Some(OpCode::OpCallMethod(inner)),
             _ => None,
         }
     }
@@ -914,6 +894,7 @@ impl OpCode {
         };
         match f {
             hashlink_bytecode::OpCode::OpField(_) => Some(OpCode::OpGetField(inner)),
+            hashlink_bytecode::OpCode::OpGetThis(_) => Some(OpCode::OpGetField(inner)),
             hashlink_bytecode::OpCode::OpDynGet(_) => Some(OpCode::OpDynGet(inner)),
             _ => None,
         }
@@ -932,31 +913,8 @@ impl OpCode {
         };
         match f {
             hashlink_bytecode::OpCode::OpSetField(_) => Some(OpCode::OpSetField(inner)),
+            hashlink_bytecode::OpCode::OpSetThis(_) => Some(OpCode::OpSetField(inner)),
             hashlink_bytecode::OpCode::OpDynSet(_) => Some(OpCode::OpDynSet(inner)),
-            _ => None,
-        }
-    }
-
-    pub fn translate_this_field_load(
-        f: &hashlink_bytecode::OpCode,
-        assigns: ValueIndex,
-        field: FieldIndex,
-    ) -> Option<Self> {
-        let inner = ThisFieldLoad { assigns, field };
-        match f {
-            hashlink_bytecode::OpCode::OpGetThis(_) => Some(OpCode::OpGetThis(inner)),
-            _ => None,
-        }
-    }
-
-    pub fn translate_this_field_store(
-        f: &hashlink_bytecode::OpCode,
-        field: FieldIndex,
-        source: ValueIndex,
-    ) -> Option<Self> {
-        let inner = ThisFieldStore { field, source };
-        match f {
-            hashlink_bytecode::OpCode::OpSetThis(_) => Some(OpCode::OpSetThis(inner)),
             _ => None,
         }
     }
@@ -1159,10 +1117,11 @@ impl OpCode {
         }
     }
 
-    pub fn translate_trap(f: &hashlink_bytecode::OpCode, destination: BasicBlockIndex) -> Option<Self> {
-        let inner = Trap {
-            destination
-        };
+    pub fn translate_trap(
+        f: &hashlink_bytecode::OpCode,
+        destination: BasicBlockIndex,
+    ) -> Option<Self> {
+        let inner = Trap { destination };
         match f {
             hashlink_bytecode::OpCode::OpTrap(_) => Some(OpCode::OpTrap(inner)),
             _ => None,

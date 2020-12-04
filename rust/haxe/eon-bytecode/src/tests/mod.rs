@@ -100,7 +100,7 @@ pub fn test_translation_coverage() {
 
             hashlink_bytecode::OpCode::OpCallMethod(_)
             | hashlink_bytecode::OpCode::OpCallThis(_) => {
-                OpCode::translate_call_field(&op, vi, ff, Vec::new()).unwrap()
+                OpCode::translate_call_field(&op, vi, vi, ff, Vec::new()).unwrap()
             }
 
             hashlink_bytecode::OpCode::OpCallClosure(_) => {
@@ -124,18 +124,15 @@ pub fn test_translation_coverage() {
                 OpCode::translate_store_global(&op, vi, gi).unwrap()
             }
 
-            hashlink_bytecode::OpCode::OpGetThis(_) => {
-                OpCode::translate_this_field_load(&op, vi, ff).unwrap()
-            }
-            hashlink_bytecode::OpCode::OpSetThis(_) => {
-                OpCode::translate_this_field_store(&op, ff, vi).unwrap()
-            }
-
-            hashlink_bytecode::OpCode::OpField(_) | hashlink_bytecode::OpCode::OpDynGet(_) => {
+            hashlink_bytecode::OpCode::OpField(_)
+            | hashlink_bytecode::OpCode::OpGetThis(_)
+            | hashlink_bytecode::OpCode::OpDynGet(_) => {
                 OpCode::translate_field_load(&op, vi, vi, ff).unwrap()
             }
 
-            hashlink_bytecode::OpCode::OpSetField(_) | hashlink_bytecode::OpCode::OpDynSet(_) => {
+            hashlink_bytecode::OpCode::OpSetField(_)
+            | hashlink_bytecode::OpCode::OpSetThis(_)
+            | hashlink_bytecode::OpCode::OpDynSet(_) => {
                 OpCode::translate_field_store(&op, vi, ff, vi).unwrap()
             }
 
@@ -177,7 +174,9 @@ pub fn test_translation_coverage() {
                 OpCode::translate_switch(&op, vi, Vec::new(), bb).unwrap()
             }
             hashlink_bytecode::OpCode::OpTrap(_) => OpCode::translate_trap(&op, bb).unwrap(),
-            hashlink_bytecode::OpCode::OpEndTrap(_) => OpCode::translate_end_trap(&op, false).unwrap(),
+            hashlink_bytecode::OpCode::OpEndTrap(_) => {
+                OpCode::translate_end_trap(&op, false).unwrap()
+            }
 
             hashlink_bytecode::OpCode::OpGetI8(_)
             | hashlink_bytecode::OpCode::OpGetI16(_)

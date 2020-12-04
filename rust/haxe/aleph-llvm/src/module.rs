@@ -88,7 +88,7 @@ impl<'a> Module<'a> {
     /// Set the module's data layout based on the string provided
     pub fn set_data_layout_from_string(&self, layout: &CStr) {
         unsafe {
-            LLVMSetDataLayout(self.inner,  layout.as_ptr());
+            LLVMSetDataLayout(self.inner, layout.as_ptr());
         }
     }
 }
