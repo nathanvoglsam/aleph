@@ -34,7 +34,7 @@ use serde::{Deserialize, Serialize};
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct StringIndex(pub(crate) usize);
+pub struct StringIndex(pub usize);
 
 /// New-type for representing an index into the registers within a function. This is only used in
 /// meta-data that is generated when transpiling from HashLink bytecode
@@ -42,81 +42,81 @@ pub struct StringIndex(pub(crate) usize);
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct RegisterIndex(pub(crate) usize);
+pub struct RegisterIndex(pub usize);
 
 /// New-type for representing an index that refers to a distinct SSA value within a function.
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct ValueIndex(pub(crate) usize);
+pub struct ValueIndex(pub usize);
 
 /// New-type for representing an index into the "globals" table
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct GlobalIndex(pub(crate) usize);
+pub struct GlobalIndex(pub usize);
 
 /// New-type for representing an index into the "types" table
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct TypeIndex(pub(crate) usize);
+pub struct TypeIndex(pub usize);
 
 /// New-type for representing an index into the list of basic blocks inside a function
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct BasicBlockIndex(pub(crate) usize);
+pub struct BasicBlockIndex(pub usize);
 
 /// New-type for representing an index into the list of instructions within a function
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct InstructionIndex(pub(crate) usize);
+pub struct InstructionIndex(pub usize);
 
 /// New-type for representing a function index
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct FunctionIndex(pub(crate) usize);
+pub struct FunctionIndex(pub usize);
 
 /// New-type for representing a field index (indexes into list of fields on an object)
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct FieldIndex(pub(crate) usize);
+pub struct FieldIndex(pub usize);
 
 /// New-type for an index into the integer table
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct IntegerIndex(pub(crate) usize);
+pub struct IntegerIndex(pub usize);
 
 /// New-type for an index into the float table
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct FloatIndex(pub(crate) usize);
+pub struct FloatIndex(pub usize);
 
 /// New-type for an index into the bytes table
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct BytesIndex(pub(crate) usize);
+pub struct BytesIndex(pub usize);
 
 /// New-type for an index into the list of constructors/variants associated with an enum
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct ConstructorIndex(pub(crate) usize);
+pub struct ConstructorIndex(pub usize);
