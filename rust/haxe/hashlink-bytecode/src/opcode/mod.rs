@@ -326,6 +326,20 @@ impl OpCode {
         }
     }
 
+    pub fn is_trap(&self) -> bool {
+        match self {
+            OpCode::OpTrap(_) => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_end_trap(&self) -> bool {
+        match self {
+            OpCode::OpEndTrap(_) => true,
+            _ => false,
+        }
+    }
+
     /// Returns the index for which register the instruction performs a write to, if it makes a
     /// write
     pub fn register_write(&self) -> Option<i32> {
