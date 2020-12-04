@@ -476,6 +476,24 @@ pub struct StoreEnumField {
     pub source: ValueIndex,
 }
 
+/// Layout for `OpSetEnumField`
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct Trap {
+    /// The basic block index to jump to if an exception is thrown
+    pub destination: BasicBlockIndex,
+}
+
+/// Layout for `OpReceiveException`
+///
+/// This instruction *must* be the first instruction of an exception handling basic block. It serves
+/// to assign the SSA value that holds the exception value.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct ReceiveException {
+    /// The SSA value that should be assigned with the value of the exception if the handler block
+    /// is jumped to
+    pub assigns: ValueIndex,
+}
+
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
@@ -564,8 +582,9 @@ pub enum OpCode {
     // Exception opcodes
     OpThrow(ValueIndex),
     OpRethrow(ValueIndex),
-    OpTrap([i32; 2]),
+    OpTrap(Trap),
     OpEndTrap(bool),
+    OpReceiveException(ReceiveException),
     OpNullCheck(ValueIndex),
 
     // Bytes section reading opcodes
@@ -1140,19 +1159,22 @@ impl OpCode {
         }
     }
 
-    //pub fn translate_trap(f: &hashlink_bytecode::OpCode) -> Option<Self> {
-    //    match f {
-    //        hashlink_bytecode::OpCode::OpTrap(_) => None,
-    //        _ => None,
-    //    }
-    //}
-    //
-    //pub fn translate_end_trap(f: &hashlink_bytecode::OpCode, inner: bool) -> Option<Self> {
-    //    match f {
-    //        hashlink_bytecode::OpCode::OpEndTrap(_) => Some(OpCode::OpEndTrap(inner)),
-    //        _ => None,
-    //    }
-    //}
+    pub fn translate_trap(f: &hashlink_bytecode::OpCode, destination: BasicBlockIndex) -> Option<Self> {
+        let inner = Trap {
+            destination
+        };
+        match f {
+            hashlink_bytecode::OpCode::OpTrap(_) => Some(OpCode::OpTrap(inner)),
+            _ => None,
+        }
+    }
+
+    pub fn translate_end_trap(f: &hashlink_bytecode::OpCode, inner: bool) -> Option<Self> {
+        match f {
+            hashlink_bytecode::OpCode::OpEndTrap(_) => Some(OpCode::OpEndTrap(inner)),
+            _ => None,
+        }
+    }
 
     pub fn translate_unconditional_branch(
         f: &hashlink_bytecode::OpCode,

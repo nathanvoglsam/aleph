@@ -176,8 +176,8 @@ pub fn test_translation_coverage() {
             hashlink_bytecode::OpCode::OpSwitch(_) => {
                 OpCode::translate_switch(&op, vi, Vec::new(), bb).unwrap()
             }
-            hashlink_bytecode::OpCode::OpTrap(_) => panic!("Trap"),
-            hashlink_bytecode::OpCode::OpEndTrap(_) => panic!("EndTrap"),
+            hashlink_bytecode::OpCode::OpTrap(_) => OpCode::translate_trap(&op, bb).unwrap(),
+            hashlink_bytecode::OpCode::OpEndTrap(_) => OpCode::translate_end_trap(&op, false).unwrap(),
 
             hashlink_bytecode::OpCode::OpGetI8(_)
             | hashlink_bytecode::OpCode::OpGetI16(_)
