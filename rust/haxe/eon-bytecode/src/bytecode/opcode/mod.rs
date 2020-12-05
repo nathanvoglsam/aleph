@@ -1105,14 +1105,14 @@ impl OpCode {
         }
     }
 
-    pub fn translate_value_index(op: &hashlink_bytecode::OpCode, inner: ValueIndex) -> Option<Self> {
+    pub fn translate_value_index(op: &hashlink_bytecode::OpCode, assigns: ValueIndex) -> Option<Self> {
         match op {
-            hashlink_bytecode::OpCode::OpNull(_) => Some(OpCode::OpNull(inner)),
-            hashlink_bytecode::OpCode::OpRet(_) => Some(OpCode::OpRet(inner)),
-            hashlink_bytecode::OpCode::OpThrow(_) => Some(OpCode::OpThrow(inner)),
-            hashlink_bytecode::OpCode::OpRethrow(_) => Some(OpCode::OpRethrow(inner)),
-            hashlink_bytecode::OpCode::OpNullCheck(_) => Some(OpCode::OpNullCheck(inner)),
-            hashlink_bytecode::OpCode::OpNew(_) => Some(OpCode::OpNew(inner)),
+            hashlink_bytecode::OpCode::OpNull(_) => Some(OpCode::OpNull(assigns)),
+            hashlink_bytecode::OpCode::OpRet(_) => Some(OpCode::OpRet(assigns)),
+            hashlink_bytecode::OpCode::OpThrow(_) => Some(OpCode::OpThrow(assigns)),
+            hashlink_bytecode::OpCode::OpRethrow(_) => Some(OpCode::OpRethrow(assigns)),
+            hashlink_bytecode::OpCode::OpNullCheck(_) => Some(OpCode::OpNullCheck(assigns)),
+            hashlink_bytecode::OpCode::OpNew(_) => Some(OpCode::OpNew(assigns)),
             _ => None,
         }
     }
