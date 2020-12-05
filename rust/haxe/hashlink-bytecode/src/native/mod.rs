@@ -32,14 +32,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Native {
     /// Index into the string table for library name
-    pub lib: u32,
+    pub lib: i32,
 
     /// Index into the string table for the native name
-    pub name: u32,
+    pub name: i32,
 
     /// Index into the type table for the type
-    pub type_: u32,
+    pub type_: i32,
 
     /// ?
-    pub f_index: u32,
+    pub f_index: i32,
 }

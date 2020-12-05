@@ -289,10 +289,10 @@ pub enum TypeVariant {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ObjectProto {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: i32,
 
     /// ?
-    pub f_index: u32,
+    pub f_index: i32,
 
     /// ?
     pub p_index: i32,
@@ -301,34 +301,34 @@ pub struct ObjectProto {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Field {
     /// Index into string table for the field name
-    pub name: u32,
+    pub name: i32,
 
     /// Index into type table for the type name
-    pub type_: u32,
+    pub type_: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EnumConstruct {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: i32,
 
     /// List of indexes into the type table
-    pub params: Vec<u32>,
+    pub params: Vec<i32>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
-    pub args: Vec<u32>,
+    pub args: Vec<i32>,
 
     /// Index into the type table for the return type
-    pub returns: u32,
+    pub returns: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TypeObject {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: i32,
 
     /// List of fields on this object
     pub fields: Vec<Field>,
@@ -337,25 +337,25 @@ pub struct TypeObject {
     pub protos: Vec<ObjectProto>,
 
     /// ?
-    pub bindings: Vec<u32>,
+    pub bindings: Vec<i32>,
 
     /// ?
-    pub super_: Option<u32>,
+    pub super_: Option<i32>,
 
     /// ?
-    pub global: u32,
+    pub global: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TypeEnum {
     /// Index into string table for the name
-    pub name: u32,
+    pub name: i32,
 
     /// ?
     pub constructs: Vec<EnumConstruct>,
 
     /// ?
-    pub global: u32,
+    pub global: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -367,11 +367,11 @@ pub struct TypeVirtual {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TypeParam {
     /// Index into the type table
-    pub type_: u32,
+    pub type_: i32,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
-    pub name: u32,
+    pub name: i32,
 }

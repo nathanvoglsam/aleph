@@ -84,8 +84,8 @@ pub struct OpCallNParam {
 
 #[derive(Clone, Serialize, Default, Debug, Deserialize)]
 pub struct OpSwitchParam {
-    pub param_1: u32,
-    pub param_2: u32,
-    pub extra: Vec<u32>,
-    pub param_3: u32,
+    pub param_1: i32,
+    pub param_2: i32,
+    pub extra: Vec<i32>,
+    pub param_3: i32,
 }

@@ -572,8 +572,129 @@ impl OpCode {
         }
     }
 
-    pub fn arg_count(&self) -> Option<usize> {
+    /// Returns the number of parameters taken by this instruction
+    pub fn opcode_param_count(&self) -> Option<usize> {
         self.opcode_number().opcode_type().arg_num()
+    }
+
+    /// Returns a vector of the arguments for static calls. This is useful for being able to handle
+    /// all the static call variants (OpCall0, OpCall1, etc) without having to match them all
+    /// separately.
+    ///
+    /// Returns none for all opcodes other than `OpCall0`, `OpCall1`, `OpCall2`, `OpCall3`,
+    /// `OpCall4` and `OpCall5`.
+    ///
+    /// For `OpCall0` will return an empty array as this variant implies calling a function that
+    /// takes no arguments
+    pub fn get_static_call_args(&self) -> Option<Vec<i32>> {
+        match self {
+            OpCode::OpCall0(v) => Some(Vec::new()),
+            OpCode::OpCall1(v) => Some(vec![v.param_3]),
+            OpCode::OpCall2(v) => Some(vec![v.param_3, v.param_4]),
+            OpCode::OpCall3(v) => Some(vec![v.param_3, v.param_4, v.param_5]),
+            OpCode::OpCall4(v) => Some(vec![v.param_3, v.param_4, v.param_5, v.param_6]),
+            OpCode::OpCallN(v) => Some(v.extra.clone()),
+            _ => None,
+        }
+    }
+
+    /// Returns param_2 for this variant. Useful for getting individual params when matching over a
+    /// group of variants
+    pub fn get_param_2(&self) -> Option<i32> {
+        match self {
+            OpCode::OpMov(v)
+            | OpCode::OpInt(v)
+            | OpCode::OpFloat(v)
+            | OpCode::OpBool(v)
+            | OpCode::OpBytes(v)
+            | OpCode::OpCall0(v)
+            | OpCode::OpString(v)
+            | OpCode::OpNeg(v)
+            | OpCode::OpNot(v)
+            | OpCode::OpStaticClosure(v)
+            | OpCode::OpGetGlobal(v)
+            | OpCode::OpSetGlobal(v)
+            | OpCode::OpToDyn(v)
+            | OpCode::OpToSFloat(v)
+            | OpCode::OpToUFloat(v)
+            | OpCode::OpToInt(v)
+            | OpCode::OpSafeCast(v)
+            | OpCode::OpUnsafeCast(v)
+            | OpCode::OpToVirtual(v)
+            | OpCode::OpGetThis(v)
+            | OpCode::OpArraySize(v)
+            | OpCode::OpType(v)
+            | OpCode::OpGetType(v)
+            | OpCode::OpGetTID(v)
+            | OpCode::OpRef(v)
+            | OpCode::OpUnRef(v)
+            | OpCode::OpEnumAlloc(v)
+            | OpCode::OpEnumIndex(v)
+            | OpCode::OpRefData(v)
+            | OpCode::OpTrap(v)
+            | OpCode::OpSetThis(v)
+            | OpCode::OpJTrue(v)
+            | OpCode::OpJFalse(v)
+            | OpCode::OpJNull(v)
+            | OpCode::OpJNotNull(v)
+            | OpCode::OpSetRef(v) => Some(v.param_2),
+
+            OpCode::OpAdd(v)
+            | OpCode::OpSub(v)
+            | OpCode::OpMul(v)
+            | OpCode::OpSDiv(v)
+            | OpCode::OpUDiv(v)
+            | OpCode::OpSMod(v)
+            | OpCode::OpUMod(v)
+            | OpCode::OpShl(v)
+            | OpCode::OpSShr(v)
+            | OpCode::OpUShr(v)
+            | OpCode::OpAnd(v)
+            | OpCode::OpOr(v)
+            | OpCode::OpXor(v)
+            | OpCode::OpCall1(v)
+            | OpCode::OpInstanceClosure(v)
+            | OpCode::OpVirtualClosure(v)
+            | OpCode::OpGetI8(v)
+            | OpCode::OpGetI16(v)
+            | OpCode::OpGetMem(v)
+            | OpCode::OpGetArray(v)
+            | OpCode::OpField(v)
+            | OpCode::OpDynGet(v)
+            | OpCode::OpSetEnumField(v)
+            | OpCode::OpRefOffset(v)
+            | OpCode::OpSetField(v)
+            | OpCode::OpDynSet(v)
+            | OpCode::OpJSLt(v)
+            | OpCode::OpJSGte(v)
+            | OpCode::OpJSGt(v)
+            | OpCode::OpJSLte(v)
+            | OpCode::OpJULt(v)
+            | OpCode::OpJUGte(v)
+            | OpCode::OpJNotLt(v)
+            | OpCode::OpJNotGte(v)
+            | OpCode::OpJEq(v)
+            | OpCode::OpJNotEq(v)
+            | OpCode::OpSetI8(v)
+            | OpCode::OpSetI16(v)
+            | OpCode::OpSetMem(v)
+            | OpCode::OpSetArray(v) => Some(v.param_2),
+
+            OpCode::OpCall2(v) | OpCode::OpEnumField(v) => Some(v.param_2),
+
+            OpCode::OpCall3(v) => Some(v.param_2),
+            OpCode::OpCall4(v) => Some(v.param_2),
+
+            OpCode::OpCallN(v)
+            | OpCode::OpCallMethod(v)
+            | OpCode::OpCallThis(v)
+            | OpCode::OpCallClosure(v)
+            | OpCode::OpMakeEnum(v) => Some(v.param_2),
+
+            OpCode::OpSwitch(v) => Some(v.param_2),
+
+            _ => None,
+        }
     }
 
     pub fn opcode_type(&self) -> OpCodeType {

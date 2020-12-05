@@ -34,13 +34,13 @@ use crate::OpCode;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
-    pub type_: u32,
+    pub type_: i32,
 
     /// ?
-    pub f_index: u32,
+    pub f_index: i32,
 
     /// List of registers for the function's bytecode
-    pub registers: Vec<u32>,
+    pub registers: Vec<i32>,
 
     /// Opcode stream
     pub ops: Vec<OpCode>,

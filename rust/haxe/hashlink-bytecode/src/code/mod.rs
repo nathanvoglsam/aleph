@@ -83,7 +83,7 @@ pub struct Code {
     pub natives: Vec<Native>,
 
     /// The file's global table (list of indices into type table)
-    pub globals: Vec<u32>,
+    pub globals: Vec<i32>,
 
     /// The file's function table
     pub functions: Vec<Function>,
@@ -92,7 +92,7 @@ pub struct Code {
     pub constants: Vec<Constant>,
 
     /// Index into the functions table for specifying which function is the entrypoint
-    pub entrypoint: u32,
+    pub entrypoint: i32,
 }
 
 impl Code {
@@ -257,12 +257,12 @@ fn read_index(stream: &mut impl Read) -> Result<i32> {
     }
 }
 
-fn read_uindex(stream: &mut impl Read) -> Result<u32> {
+fn read_uindex(stream: &mut impl Read) -> Result<i32> {
     let i = read_index(stream)?;
     if i < 0 {
         Err(CodeReadError::InvalidIndexUnsignedLessThanOne)
     } else {
-        Ok(i as u32)
+        Ok(i)
     }
 }
 
@@ -309,7 +309,7 @@ fn read_bytes(num_bytes: usize, stream: &mut impl Read) -> Result<(Vec<u8>, Vec<
     Ok((bytes, offsets))
 }
 
-fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result<Type> {
+fn read_type(stream: &mut impl Read, num_types: i32, num_strings: i32) -> Result<Type> {
     let kind = stream.read_u8()? as i32;
     let kind = TypeKind::from_raw(kind).ok_or(CodeReadError::InvalidTypeKindDoesNotExist)?;
     let t = match kind {
@@ -356,7 +356,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
                 });
             }
 
-            let mut bindings = vec![0u32; num_bindings as usize * 2];
+            let mut bindings = vec![0i32; num_bindings as usize * 2];
             for i in 0..num_bindings {
                 let a = read_uindex(stream)?;
                 let b = read_uindex(stream)?;
@@ -369,7 +369,7 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
             let super_ = if super_ < 0 {
                 None
             } else {
-                Some(super_ as u32)
+                Some(super_)
             };
 
             let variant = TypeVariant::Object(TypeObject {
@@ -433,8 +433,8 @@ fn read_type(stream: &mut impl Read, num_types: u32, num_strings: u32) -> Result
 
 fn read_function(
     stream: &mut impl Read,
-    num_types: u32,
-    num_debug_files: u32,
+    num_types: i32,
+    num_debug_files: i32,
     has_debug: bool,
 ) -> Result<Function> {
     let type_ = get_type(stream, num_types)?;
@@ -618,20 +618,20 @@ fn read_function(
     })
 }
 
-fn get_type(stream: &mut impl Read, num_types: u32) -> Result<u32> {
+fn get_type(stream: &mut impl Read, num_types: i32) -> Result<i32> {
     let t = read_index(stream)?;
-    if t < 0 || t as u32 >= num_types {
+    if t < 0 || t >= num_types {
         return Err(CodeReadError::InvalidTypeBadIndex);
     } else {
-        Ok(t as u32)
+        Ok(t)
     }
 }
 
-fn get_string(stream: &mut impl Read, num_strings: u32) -> Result<u32> {
+fn get_string(stream: &mut impl Read, num_strings: i32) -> Result<i32> {
     let string = read_index(stream)?;
-    if string < 0 || string as u32 >= num_strings {
+    if string < 0 || string >= num_strings {
         return Err(CodeReadError::InvalidStringBadIndex);
     } else {
-        Ok(string as u32)
+        Ok(string)
     }
 }
