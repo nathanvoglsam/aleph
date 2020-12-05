@@ -86,13 +86,10 @@ fn compute_bb_graph_loop_inner_switch(
 ) -> Option<()> {
     // Handle all the distinct branch targets from the switch's jump table
     for offset in op.extra.iter() {
-        // De-reference so we can just use it like an int
-        let offset = *offset;
-
         // The inputs will never be bigger than `i32::max` because of how they're stored
         // so this shouldn't truncate anything. Even if it does the overflow and bounds
         // checks mean that it shouldn't cause issues anyway
-        let offset = offset as i32;
+        let offset = *offset as i32;
 
         // Calculate the actual offset
         let target = offset_from(index, offset)?;
