@@ -366,11 +366,7 @@ fn read_type(stream: &mut impl Read, num_types: i32, num_strings: i32) -> Result
                 bindings[i2 as usize] = b;
             }
 
-            let super_ = if super_ < 0 {
-                None
-            } else {
-                Some(super_)
-            };
+            let super_ = if super_ < 0 { None } else { Some(super_) };
 
             let variant = TypeVariant::Object(TypeObject {
                 name,
