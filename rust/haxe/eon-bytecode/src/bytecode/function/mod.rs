@@ -64,10 +64,6 @@ pub struct Register {
 pub struct SSAValue {
     /// The type this ssa value holds
     pub type_: TypeIndex,
-
-    /// Maps the value back to the instruction that assigned it. If the value is `None` then this
-    /// value was assigned as part of the function signature
-    pub assigned_at: Option<(BasicBlockIndex, InstructionIndex)>,
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
@@ -111,7 +107,10 @@ impl Function {
             f_index: f.f_index,
             ssa_values: vec![],
             basic_blocks: vec![],
-            metadata: Metadata { reg_data: None },
+            metadata: Metadata {
+                value_data: None,
+                reg_data: None,
+            },
         };
 
         // First we need to find all branch instructions and where they branch to
@@ -133,7 +132,13 @@ impl Function {
 /// it can itself be generated.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Metadata {
+    pub value_data: Option<ValueMetadata>,
     pub reg_data: Option<RegisterMetadata>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ValueMetadata {
+    pub assigned_at: Vec<(BasicBlockIndex, InstructionIndex)>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
