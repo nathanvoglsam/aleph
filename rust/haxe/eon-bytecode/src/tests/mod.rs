@@ -57,6 +57,12 @@ pub fn test_translation_1() {
     let code = Code::read(&mut file).unwrap();
 
     let module = Module::from_hashlink(code).unwrap();
+
+    let _string = serde_json::to_string_pretty(&module).unwrap();
+    let _bytes = rmp_serde::to_vec(&module).unwrap();
+
+    //std::fs::write(crate_root.join("out.json"), _string.as_bytes()).unwrap();
+    //std::fs::write(crate_root.join("out.msgpack"), &_bytes).unwrap();
 }
 
 #[test]
