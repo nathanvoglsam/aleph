@@ -89,16 +89,6 @@ pub fn build_bb(
     // we can use it to produce the final SSA form instruction stream
     build_register_usage_map(&f, &spans, &mut reg_meta);
 
-    println!("{:#?}", fn_ty);
-    println!("{:#?}", &f.ops);
-    println!("{:#?}", spans);
-    println!("{:#?}", &bb_graph);
-    println!("{:#?}", &reg_meta);
-    println!();
-    println!();
-    println!();
-    println!();
-
     // Now begins the fun part where we start translating the HashLink bytecode
     translate_basic_blocks(out, &f, &bb_graph, fn_ty, &spans, &mut reg_meta)?;
 

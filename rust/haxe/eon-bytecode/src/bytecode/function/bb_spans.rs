@@ -43,7 +43,7 @@ pub fn compute_bb_spans(
         let start = start.0;
         let mut found_branch = false;
         for (i, op) in f.ops[start..].iter().enumerate() {
-            if op.is_branch() || op.is_ret() || op.is_throw() {
+            if is_block_terminator(op) {
                 let a = InstructionIndex(start);
                 let b = InstructionIndex(start + i);
                 let span = (a, b);
@@ -66,7 +66,7 @@ pub fn compute_bb_spans(
     {
         let mut found_branch = false;
         for (i, op) in f.ops.iter().enumerate() {
-            if op.is_branch() || op.is_ret() {
+            if is_block_terminator(op) {
                 let a = InstructionIndex(0);
                 let b = InstructionIndex(i);
                 let span = (a, b);
@@ -81,4 +81,8 @@ pub fn compute_bb_spans(
     }
 
     Some(spans)
+}
+
+fn is_block_terminator(op: &hashlink_bytecode::OpCode) -> bool {
+    op.is_branch() || op.is_ret() || op.is_throw()
 }

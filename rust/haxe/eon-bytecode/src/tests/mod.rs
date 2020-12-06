@@ -57,8 +57,6 @@ pub fn test_translation_1() {
     let code = Code::read(&mut file).unwrap();
 
     let module = Module::from_hashlink(code).unwrap();
-
-    println!("{:#?}", &module);
 }
 
 #[test]
