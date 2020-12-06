@@ -27,12 +27,29 @@
 // SOFTWARE.
 //
 
-pub mod constant;
-pub mod function;
-pub mod indexes;
-pub mod module;
-pub mod native;
-pub mod opcode;
-pub mod type_;
+// We need to apply the offset to the current instruction index. We do it in this
+// convoluted way so that we don't discard the full bit width of a usize in order
+// to apply the offset. If we cast the index to isize and applied using a simple add
+// then we could only represent offsets up to `isize::max`.
+//
+// Because we're going to this effort I may as well make it panic on overflow
+pub fn offset_from(base: usize, offset: i32) -> Option<usize> {
+    if offset.is_negative() {
+        // Convert negative to positive so it will fit into a usize
+        let offset = -offset;
+        let offset = offset as usize;
 
-mod utils;
+        // Subtract the inverted negative offset. This is mathematically identical to just
+        // adding a signed offset but does not discard the precision of the base value
+        let out = base.checked_sub(offset)?;
+        let out = out.checked_add(1)?;
+
+        Some(out)
+    } else {
+        // If the offset is positive we can just cast it straight to usize and add
+        let out = base.checked_add(offset as usize)?;
+        let out = out.checked_add(1)?;
+
+        Some(out)
+    }
+}

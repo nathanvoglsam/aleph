@@ -78,7 +78,7 @@ pub struct Function {
     pub type_: TypeIndex,
 
     /// ?
-    pub f_index: u32,
+    pub f_index: i32,
 
     /// This is the list of SSA values that get referred to by the
     pub ssa_values: Vec<SSAValue>,

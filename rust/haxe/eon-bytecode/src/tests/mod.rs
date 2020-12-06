@@ -31,8 +31,35 @@ use crate::bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
+use crate::bytecode::module::Module;
 use crate::bytecode::opcode::OpCode;
 use hashlink_bytecode::utils::TestOpCodeIter;
+use hashlink_bytecode::Code;
+use std::io::BufReader;
+use std::path::PathBuf;
+
+#[test]
+pub fn test_translation_1() {
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir().unwrap());
+
+    let path = crate_root.join("build.hl");
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(false)
+        .create(false)
+        .open(path)
+        .unwrap();
+
+    let mut file = BufReader::new(file);
+
+    let code = Code::read(&mut file).unwrap();
+
+    let module = Module::from_hashlink(code).unwrap();
+
+    println!("{:#?}", &module);
+}
 
 #[test]
 pub fn test_translation_coverage() {

@@ -326,6 +326,14 @@ impl OpCode {
         }
     }
 
+    pub fn is_throw(&self) -> bool {
+        match self {
+            OpCode::OpThrow(_) => true,
+            OpCode::OpRethrow(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_trap(&self) -> bool {
         match self {
             OpCode::OpTrap(_) => true,

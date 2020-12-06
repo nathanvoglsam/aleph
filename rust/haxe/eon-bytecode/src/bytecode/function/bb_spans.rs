@@ -43,7 +43,7 @@ pub fn compute_bb_spans(
         let start = start.0;
         let mut found_branch = false;
         for (i, op) in f.ops[start..].iter().enumerate() {
-            if op.is_branch() || op.is_ret() {
+            if op.is_branch() || op.is_ret() || op.is_throw() {
                 let a = InstructionIndex(start);
                 let b = InstructionIndex(start + i);
                 let span = (a, b);

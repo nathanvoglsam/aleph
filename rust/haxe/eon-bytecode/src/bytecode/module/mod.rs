@@ -143,7 +143,7 @@ fn translate_natives(input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
     input.into_iter().map(Native::from).collect()
 }
 
-fn translate_globals(input: Vec<u32>) -> Vec<TypeIndex> {
+fn translate_globals(input: Vec<i32>) -> Vec<TypeIndex> {
     input.into_iter().map(|v| TypeIndex(v as usize)).collect()
 }
 

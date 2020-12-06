@@ -28,8 +28,10 @@
 //
 
 use crate::bytecode::indexes::InstructionIndex;
+use crate::bytecode::utils::offset_from;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Clone, Debug)]
 pub struct BBGraph {
     /// Maps an instruction index to the set of instructions that branch to it
     pub destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>>,
@@ -110,9 +112,9 @@ fn compute_bb_graph_loop_inner_switch(
     }
 
     // Lastly we handle the "fallback" branch. The fallback branch occurs when the switch index is
-    // out of bounds of the jump table. When the index is out of bounds we just skip over the switch
-    // and continue so it's effectively a branch with offset 0
-    let target = offset_from(index, 0)?;
+    // out of bounds of the jump table. When the index is out of bounds we use the third parameter
+    // as an offset to jump to.
+    let target = offset_from(index, op.param_3)?;
 
     // Perform a bounds check
     if target >= f.ops.len() {
@@ -196,7 +198,7 @@ fn compute_bb_graph_loop_inner_conditional(
 
     // These branch to either the next instruction or the target depending on the result
     // of some comparison
-    let target_fail = offset_from(index, 1)?;
+    let target_fail = offset_from(index, 0)?;
 
     // Check if the computed index is in bounds
     if target >= f.ops.len() || target_fail >= f.ops.len() {
@@ -229,31 +231,4 @@ fn compute_bb_graph_loop_inner_conditional(
     branches.insert(InstructionIndex(index));
 
     Some(())
-}
-
-// We need to apply the offset to the current instruction index. We do it in this
-// convoluted way so that we don't discard the full bit width of a usize in order
-// to apply the offset. If we cast the index to isize and applied using a simple add
-// then we could only represent offsets up to `isize::max`.
-//
-// Because we're going to this effort I may as well make it panic on overflow
-fn offset_from(base: usize, offset: i32) -> Option<usize> {
-    if offset.is_negative() {
-        // Convert negative to positive so it will fit into a usize
-        let offset = -offset;
-        let offset = offset as usize;
-
-        // Subtract the inverted negative offset. This is mathematically identical to just
-        // adding a signed offset but does not discard the precision of the base value
-        let out = base.checked_sub(offset)?;
-        let out = out.checked_add(1)?;
-
-        Some(out)
-    } else {
-        // If the offset is positive we can just cast it straight to usize and add
-        let out = base.checked_add(offset as usize)?;
-        let out = out.checked_add(1)?;
-
-        Some(out)
-    }
 }

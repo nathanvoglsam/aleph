@@ -144,10 +144,11 @@ pub struct StoreGlobal {
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Store {
     /// SSA value to store into target
-    pub source: ValueIndex,
+    pub target: ValueIndex,
 
-    /// The index into the global table to store source into
-    pub assigns: ValueIndex,
+    /// The index of the value that should be stored through the reference. This is a *read* not
+    /// a write
+    pub source: ValueIndex,
 }
 
 /// Layout for the various binop arithmetic instructions
@@ -310,6 +311,9 @@ pub struct CompBranch {
 /// This is an opcode we add to the bytecode ourselves during the translation process.
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Phi {
+    /// The value that the phi instruction assigns to
+    pub assigns: ValueIndex,
+
     /// A list of value pairs for loading specific values from other basic blocks when they branch
     /// into the basic block the phi instruction is in
     pub block_values: Vec<(ValueIndex, BasicBlockIndex)>,
@@ -755,10 +759,10 @@ impl OpCode {
 
     pub fn translate_store(
         op: &hashlink_bytecode::OpCode,
+        target: ValueIndex,
         source: ValueIndex,
-        assigns: ValueIndex,
     ) -> Option<Self> {
-        let inner = Store { source, assigns };
+        let inner = Store { target, source };
         match op {
             hashlink_bytecode::OpCode::OpSetRef(_) => Some(OpCode::OpSetRef(inner)),
             _ => None,
@@ -1105,7 +1109,10 @@ impl OpCode {
         }
     }
 
-    pub fn translate_value_index(op: &hashlink_bytecode::OpCode, value: ValueIndex) -> Option<Self> {
+    pub fn translate_value_index(
+        op: &hashlink_bytecode::OpCode,
+        value: ValueIndex,
+    ) -> Option<Self> {
         match op {
             hashlink_bytecode::OpCode::OpNull(_) => Some(OpCode::OpNull(value)),
             hashlink_bytecode::OpCode::OpRet(_) => Some(OpCode::OpRet(value)),
