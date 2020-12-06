@@ -27,20 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::{StringIndex, TypeIndex};
-use serde::{Deserialize, Serialize};
+/// Set of all errors that can occur when transpiling from hashlink bytecode
+#[derive(Clone, PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
+pub enum TranspileError {
+    /// This occurs when there is an error when translating the type definitions. Generally this
+    /// error will never actually happen as it's not possible to encode an invalid type in the
+    /// on-disk hashlink format but one could be made after being loaded from disk.
+    InvalidType,
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct Native {
-    /// Index into the string table for library name
-    pub lib: StringIndex,
-
-    /// Index into the string table for the native name
-    pub name: StringIndex,
-
-    /// Index into the type table for the type
-    pub type_: TypeIndex,
-
-    /// ?
-    pub f_index: usize,
+    /// This error occurs when transpiling a function from the hashlink module fails
+    InvalidFunction,
 }
+
+pub type TranspileResult<T> = Result<T, TranspileError>;

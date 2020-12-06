@@ -27,14 +27,9 @@
 // SOFTWARE.
 //
 
-mod bb_build;
-mod bb_graph;
-mod bb_spans;
-
 use crate::bytecode::indexes::{
     BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
 };
-use crate::bytecode::module::Module;
 use crate::bytecode::opcode::OpCode;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -98,31 +93,6 @@ pub struct Function {
     /// The consequences of this mean you have to be careful to run certain things in the right
     /// order to make sure that information being used has actually been generated.
     pub metadata: Metadata,
-}
-
-impl Function {
-    pub fn transpile_hashlink(module: &Module, f: hashlink_bytecode::Function) -> Option<Self> {
-        let mut out = Self {
-            type_: TypeIndex(f.type_ as usize),
-            f_index: f.f_index,
-            ssa_values: vec![],
-            basic_blocks: vec![],
-            metadata: Metadata {
-                value_data: None,
-                reg_data: None,
-            },
-        };
-
-        // First we need to find all branch instructions and where they branch to
-        let bb_graph = bb_graph::compute_bb_graph(&f)?;
-
-        // Now we need to compute a list of spans for all the basic blocks in the bytecode
-        let spans = bb_spans::compute_bb_spans(&f, &bb_graph)?;
-
-        bb_build::build_bb(&mut out, &module, &f, bb_graph, spans)?;
-
-        Some(out)
-    }
 }
 
 /// Holds all function metadata that is used in the various optimization stages

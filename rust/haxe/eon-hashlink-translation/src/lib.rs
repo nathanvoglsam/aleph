@@ -26,3 +26,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+mod basic_block_build;
+mod basic_block_graph;
+mod basic_block_spans;
+mod drivers;
+mod utils;
+
+pub mod error;
+pub mod opcode_translators;
+pub mod translators;
+
+#[cfg(test)]
+mod tests;
+
+pub use drivers::translate_hashlink_module;
+pub use drivers::transpile_hashlink_function;

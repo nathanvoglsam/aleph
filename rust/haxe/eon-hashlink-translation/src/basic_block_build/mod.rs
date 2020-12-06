@@ -27,23 +27,37 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::function::bb_graph::BBGraph;
-use crate::bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
-use crate::bytecode::indexes::{
+use crate::basic_block_graph::BasicBlockGraph;
+use crate::opcode_translators::{
+    translate_alloc_enum, translate_binop, translate_call, translate_call_closure,
+    translate_call_field, translate_cast, translate_comp_branch, translate_cond_branch,
+    translate_end_trap, translate_field_load, translate_field_store, translate_instance_closure,
+    translate_load, translate_load_bool, translate_load_bytes, translate_load_enum_field,
+    translate_load_float, translate_load_global, translate_load_int, translate_load_string,
+    translate_load_type, translate_make_enum, translate_no_params, translate_read_memory,
+    translate_ref_data, translate_ref_offset, translate_static_closure, translate_store,
+    translate_store_enum_field, translate_store_global, translate_switch, translate_trap,
+    translate_unconditional_branch, translate_unop, translate_value_index,
+    translate_virtual_closure, translate_write_memory,
+};
+use crate::utils::offset_from;
+use eon_bytecode::bytecode::function::{
+    BasicBlock, Function, Register, RegisterMetadata, SSAValue,
+};
+use eon_bytecode::bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
-use crate::bytecode::module::Module;
-use crate::bytecode::opcode::{OpCode, Phi, ReceiveException};
-use crate::bytecode::type_::TypeFunction;
-use crate::bytecode::utils::offset_from;
+use eon_bytecode::bytecode::module::Module;
+use eon_bytecode::bytecode::opcode::{OpCode, Phi, ReceiveException};
+use eon_bytecode::bytecode::type_::TypeFunction;
 use std::collections::{HashMap, HashSet};
 
 pub fn build_bb(
     out: &mut Function,
     module: &Module,
     f: &hashlink_bytecode::Function,
-    bb_graph: BBGraph,
+    bb_graph: BasicBlockGraph,
     mut spans: Vec<(InstructionIndex, InstructionIndex)>,
 ) -> Option<()> {
     // Get the actual function type value, checking to ensure it is of the correct type category
@@ -97,7 +111,7 @@ pub fn build_bb(
     Some(())
 }
 
-fn type_check_signature(
+pub fn type_check_signature(
     out: &mut Function,
     f: &hashlink_bytecode::Function,
     fn_ty: &TypeFunction,
@@ -128,7 +142,7 @@ fn type_check_signature(
     Some(())
 }
 
-fn build_register_usage_map(
+pub fn build_register_usage_map(
     f: &hashlink_bytecode::Function,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
     reg_meta: &mut RegisterMetadata,
@@ -163,10 +177,10 @@ fn build_register_usage_map(
     }
 }
 
-fn translate_basic_blocks(
+pub fn translate_basic_blocks(
     out: &mut Function,
     f: &hashlink_bytecode::Function,
-    bb_graph: &BBGraph,
+    bb_graph: &BasicBlockGraph,
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
     reg_meta: &mut RegisterMetadata,
@@ -278,7 +292,7 @@ fn translate_basic_blocks(
 /// actually contain the *register index* directly copied from the HashLink source. A later pass
 /// over the translated instructions is needed to correctly map the register indexes to the value
 /// indexes.
-fn translate_opcode(
+pub fn translate_opcode(
     out: &mut Function,
     f: &hashlink_bytecode::Function,
     spans: &[(InstructionIndex, InstructionIndex)],
@@ -301,7 +315,7 @@ fn translate_opcode(
             // Temporarily store the register of the read in the second parameter to be
             // remapped later
             let source = ValueIndex(params.param_2 as usize);
-            OpCode::translate_load(old_op, assigns, source)?
+            translate_load(old_op, assigns, source)?
         }
         hashlink_bytecode::OpCode::OpInt(params) => {
             // Assign a new SSA value for the result of the operation
@@ -316,7 +330,7 @@ fn translate_opcode(
             // Unpack the index into the integer table
             let integer = IntegerIndex(params.param_2 as usize);
 
-            OpCode::translate_load_int(old_op, assigns, integer)?
+            translate_load_int(old_op, assigns, integer)?
         }
         hashlink_bytecode::OpCode::OpFloat(params) => {
             // Assign a new SSA value for the result of the operation
@@ -331,7 +345,7 @@ fn translate_opcode(
             // Unpack the index into the float table
             let float = FloatIndex(params.param_2 as usize);
 
-            OpCode::translate_load_float(old_op, assigns, float)?
+            translate_load_float(old_op, assigns, float)?
         }
         hashlink_bytecode::OpCode::OpBool(params) => {
             // Assign a new SSA value for the result of the operation
@@ -348,7 +362,7 @@ fn translate_opcode(
             // then pack the value directly into the instruction too.
             let value = params.param_2 != 0;
 
-            OpCode::translate_load_bool(old_op, assigns, value)?
+            translate_load_bool(old_op, assigns, value)?
         }
         hashlink_bytecode::OpCode::OpBytes(params) => {
             // Assign a new SSA value for the result of the operation
@@ -363,7 +377,7 @@ fn translate_opcode(
             // Unpack the index into the bytes table
             let bytes = BytesIndex(params.param_2 as usize);
 
-            OpCode::translate_load_bytes(old_op, assigns, bytes)?
+            translate_load_bytes(old_op, assigns, bytes)?
         }
         hashlink_bytecode::OpCode::OpString(params) => {
             // Assign a new SSA value for the result of the operation
@@ -378,7 +392,7 @@ fn translate_opcode(
             // Unpack the index into the string table
             let string = StringIndex(params.param_2 as usize);
 
-            OpCode::translate_load_string(old_op, assigns, string)?
+            translate_load_string(old_op, assigns, string)?
         }
 
         hashlink_bytecode::OpCode::OpNull(params) => {
@@ -391,7 +405,7 @@ fn translate_opcode(
                 RegisterIndex(params.param_1 as usize),
             )?;
 
-            OpCode::translate_value_index(old_op, assigns)?
+            translate_value_index(old_op, assigns)?
         }
 
         hashlink_bytecode::OpCode::OpAdd(params)
@@ -420,7 +434,7 @@ fn translate_opcode(
             let lhs = ValueIndex(params.param_2 as usize);
             let rhs = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_binop(old_op, assigns, lhs, rhs)?
+            translate_binop(old_op, assigns, lhs, rhs)?
         }
 
         hashlink_bytecode::OpCode::OpNeg(params) | hashlink_bytecode::OpCode::OpNot(params) => {
@@ -437,7 +451,7 @@ fn translate_opcode(
             // the assignment target and operand so we can just translate this directly
             let operand = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_unop(old_op, assigns, operand)?
+            translate_unop(old_op, assigns, operand)?
         }
 
         hashlink_bytecode::OpCode::OpIncr(params) | hashlink_bytecode::OpCode::OpDecr(params) => {
@@ -458,7 +472,7 @@ fn translate_opcode(
             // to the actual SSA value later
             let operand = ValueIndex(params.param_1 as usize);
 
-            OpCode::translate_unop(old_op, assigns, operand)?
+            translate_unop(old_op, assigns, operand)?
         }
 
         hashlink_bytecode::OpCode::OpCall0(_)
@@ -483,7 +497,7 @@ fn translate_opcode(
                 .map(|v| ValueIndex(v as usize))
                 .collect();
 
-            OpCode::translate_call(old_op, assigns, function, fn_params)?
+            translate_call(old_op, assigns, function, fn_params)?
         }
 
         hashlink_bytecode::OpCode::OpCallMethod(params) => {
@@ -516,7 +530,7 @@ fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            OpCode::translate_call_field(old_op, assigns, object, function, fn_params)?
+            translate_call_field(old_op, assigns, object, function, fn_params)?
         }
         hashlink_bytecode::OpCode::OpCallThis(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -547,7 +561,7 @@ fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            OpCode::translate_call_field(old_op, assigns, object, function, fn_params)?
+            translate_call_field(old_op, assigns, object, function, fn_params)?
         }
 
         hashlink_bytecode::OpCode::OpCallClosure(params) => {
@@ -571,7 +585,7 @@ fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            OpCode::translate_call_closure(old_op, assigns, closure, fn_params)?
+            translate_call_closure(old_op, assigns, closure, fn_params)?
         }
 
         hashlink_bytecode::OpCode::OpStaticClosure(params) => {
@@ -587,7 +601,7 @@ fn translate_opcode(
             // Get the function index to call
             let function = FunctionIndex(params.param_2 as usize);
 
-            OpCode::translate_static_closure(old_op, assigns, function)?
+            translate_static_closure(old_op, assigns, function)?
         }
         hashlink_bytecode::OpCode::OpInstanceClosure(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -605,7 +619,7 @@ fn translate_opcode(
             // Register index for remapping later
             let object = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_instance_closure(old_op, assigns, function, object)?
+            translate_instance_closure(old_op, assigns, function, object)?
         }
         hashlink_bytecode::OpCode::OpVirtualClosure(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -623,7 +637,7 @@ fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_3 as usize);
 
-            OpCode::translate_virtual_closure(old_op, assigns, object, field)?
+            translate_virtual_closure(old_op, assigns, object, field)?
         }
 
         hashlink_bytecode::OpCode::OpGetGlobal(params) => {
@@ -639,7 +653,7 @@ fn translate_opcode(
             // Map into global index
             let source = GlobalIndex(params.param_2 as usize);
 
-            OpCode::translate_load_global(old_op, assigns, source)?
+            translate_load_global(old_op, assigns, source)?
         }
         hashlink_bytecode::OpCode::OpSetGlobal(params) => {
             // The register index for remapping later. This reads the register into the
@@ -649,7 +663,7 @@ fn translate_opcode(
             // The global to write into
             let target = GlobalIndex(params.param_2 as usize);
 
-            OpCode::translate_store_global(old_op, source, target)?
+            translate_store_global(old_op, source, target)?
         }
 
         hashlink_bytecode::OpCode::OpGetThis(params) => {
@@ -668,7 +682,7 @@ fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_2 as usize);
 
-            OpCode::translate_field_load(old_op, assigns, object, field)?
+            translate_field_load(old_op, assigns, object, field)?
         }
 
         hashlink_bytecode::OpCode::OpField(params)
@@ -688,7 +702,7 @@ fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_3 as usize);
 
-            OpCode::translate_field_load(old_op, assigns, object, field)?
+            translate_field_load(old_op, assigns, object, field)?
         }
 
         hashlink_bytecode::OpCode::OpSetThis(params) => {
@@ -701,7 +715,7 @@ fn translate_opcode(
             // Register index of source to read into object
             let source = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_field_store(old_op, object, field, source)?
+            translate_field_store(old_op, object, field, source)?
         }
 
         hashlink_bytecode::OpCode::OpSetField(params)
@@ -715,7 +729,7 @@ fn translate_opcode(
             // Register index of source to read into object
             let source = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_field_store(old_op, object, field, source)?
+            translate_field_store(old_op, object, field, source)?
         }
 
         hashlink_bytecode::OpCode::OpJTrue(params)
@@ -748,7 +762,7 @@ fn translate_opcode(
             let failure = find_source_span(spans, op_index + 1)?;
             let failure = BasicBlockIndex(failure);
 
-            OpCode::translate_cond_branch(old_op, check, success, failure)?
+            translate_cond_branch(old_op, check, success, failure)?
         }
 
         hashlink_bytecode::OpCode::OpJSLt(params)
@@ -774,7 +788,7 @@ fn translate_opcode(
             let failure = find_source_span(spans, op_index + 1)?;
             let failure = BasicBlockIndex(failure);
 
-            OpCode::translate_comp_branch(old_op, lhs, rhs, success, failure)?
+            translate_comp_branch(old_op, lhs, rhs, success, failure)?
         }
 
         hashlink_bytecode::OpCode::OpJAlways(params) => {
@@ -783,7 +797,7 @@ fn translate_opcode(
             let inner = find_source_span(spans, inner)?; // Find block
             let inner = BasicBlockIndex(inner); // Wrap value
 
-            OpCode::translate_unconditional_branch(old_op, inner)?
+            translate_unconditional_branch(old_op, inner)?
         }
 
         hashlink_bytecode::OpCode::OpToDyn(params)
@@ -805,7 +819,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_cast(old_op, assigns, source)?
+            translate_cast(old_op, assigns, source)?
         }
 
         hashlink_bytecode::OpCode::OpSwitch(params) => {
@@ -829,14 +843,14 @@ fn translate_opcode(
             let fallback = find_source_span(spans, fallback)?;
             let fallback = BasicBlockIndex(fallback);
 
-            OpCode::translate_switch(old_op, input, jump_table, fallback)?
+            translate_switch(old_op, input, jump_table, fallback)?
         }
         hashlink_bytecode::OpCode::OpTrap(params) => {
             // See above for explanation
             let destination = offset_from(op_index, params.param_1)?; // Apply offset
             let destination = find_source_span(spans, destination)?; // Find block
             let destination = BasicBlockIndex(destination); // Wrap value
-            OpCode::translate_trap(old_op, destination)?
+            translate_trap(old_op, destination)?
         }
         hashlink_bytecode::OpCode::OpEndTrap(params) => {
             // The `OpEndTrap` instruction has a boolean value. I currently have no idea
@@ -851,7 +865,7 @@ fn translate_opcode(
             // Either way, this translates the raw integer into a native boolean type.
             let inner = params.param_1 != 0;
 
-            OpCode::translate_end_trap(old_op, inner)?
+            translate_end_trap(old_op, inner)?
         }
 
         hashlink_bytecode::OpCode::OpGetI8(params)
@@ -873,7 +887,7 @@ fn translate_opcode(
             // Register index
             let offset = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_read_memory(old_op, assigns, source, offset)?
+            translate_read_memory(old_op, assigns, source, offset)?
         }
 
         hashlink_bytecode::OpCode::OpSetI8(params)
@@ -889,7 +903,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_write_memory(old_op, target, offset, source)?
+            translate_write_memory(old_op, target, offset, source)?
         }
 
         hashlink_bytecode::OpCode::OpType(params) => {
@@ -905,7 +919,7 @@ fn translate_opcode(
             // Type index
             let source = TypeIndex(params.param_2 as usize);
 
-            OpCode::translate_load_type(old_op, assigns, source)?
+            translate_load_type(old_op, assigns, source)?
         }
 
         hashlink_bytecode::OpCode::OpRet(params)
@@ -915,7 +929,7 @@ fn translate_opcode(
             // Register index
             let value = ValueIndex(params.param_1 as usize);
 
-            OpCode::translate_value_index(old_op, value)?
+            translate_value_index(old_op, value)?
         }
 
         hashlink_bytecode::OpCode::OpNew(params) => {
@@ -928,7 +942,7 @@ fn translate_opcode(
                 RegisterIndex(params.param_1 as usize),
             )?;
 
-            OpCode::translate_value_index(old_op, assigns)?
+            translate_value_index(old_op, assigns)?
         }
 
         hashlink_bytecode::OpCode::OpArraySize(params)
@@ -949,7 +963,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_load(old_op, assigns, source)?
+            translate_load(old_op, assigns, source)?
         }
 
         hashlink_bytecode::OpCode::OpSetRef(params) => {
@@ -959,7 +973,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_store(old_op, target, source)?
+            translate_store(old_op, target, source)?
         }
         hashlink_bytecode::OpCode::OpMakeEnum(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -982,7 +996,7 @@ fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            OpCode::translate_make_enum(old_op, assigns, constructor, args)?
+            translate_make_enum(old_op, assigns, constructor, args)?
         }
         hashlink_bytecode::OpCode::OpEnumAlloc(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -997,7 +1011,7 @@ fn translate_opcode(
             // Constructor index
             let constructor = ConstructorIndex(params.param_2 as usize);
 
-            OpCode::translate_alloc_enum(old_op, assigns, constructor)?
+            translate_alloc_enum(old_op, assigns, constructor)?
         }
         hashlink_bytecode::OpCode::OpEnumField(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -1018,7 +1032,7 @@ fn translate_opcode(
             // Constructor index
             let field_index = FieldIndex(params.param_4 as usize);
 
-            OpCode::translate_load_enum_field(old_op, assigns, source, constructor, field_index)?
+            translate_load_enum_field(old_op, assigns, source, constructor, field_index)?
         }
         hashlink_bytecode::OpCode::OpSetEnumField(params) => {
             // Register index
@@ -1030,7 +1044,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_store_enum_field(old_op, target, field, source)?
+            translate_store_enum_field(old_op, target, field, source)?
         }
         hashlink_bytecode::OpCode::OpRefData(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -1045,7 +1059,7 @@ fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            OpCode::translate_ref_data(old_op, assigns, source)?
+            translate_ref_data(old_op, assigns, source)?
         }
         hashlink_bytecode::OpCode::OpRefOffset(params) => {
             // Allocate a new SSA value for the call to assign into
@@ -1063,12 +1077,12 @@ fn translate_opcode(
             // Register index
             let offset = ValueIndex(params.param_3 as usize);
 
-            OpCode::translate_ref_offset(old_op, assigns, source, offset)?
+            translate_ref_offset(old_op, assigns, source, offset)?
         }
 
         hashlink_bytecode::OpCode::OpAssert
         | hashlink_bytecode::OpCode::OpNop
-        | hashlink_bytecode::OpCode::OpLabel => OpCode::translate_no_params(old_op)?,
+        | hashlink_bytecode::OpCode::OpLabel => translate_no_params(old_op)?,
     };
     Some(new_op)
 }
@@ -1078,9 +1092,9 @@ fn translate_opcode(
 /// about the basic block in question.
 ///
 /// This function also does some error checking
-fn get_basic_block_info(
+pub fn get_basic_block_info(
     f: &hashlink_bytecode::Function,
-    bb_graph: &BBGraph,
+    bb_graph: &BasicBlockGraph,
     first_instruction_index: usize,
 ) -> Option<(bool, bool, bool, bool, usize)> {
     // Whether this basic block has more than one predecessor
@@ -1166,8 +1180,8 @@ fn get_basic_block_info(
 
 // Get the set of predecessor basic blocks for the basic block that starts with instruction
 // `first_instruction_index`
-fn get_basic_block_predecessor_list(
-    bb_graph: &BBGraph,
+pub fn get_basic_block_predecessor_list(
+    bb_graph: &BasicBlockGraph,
     spans: &[(InstructionIndex, InstructionIndex)],
     first_instruction_index: usize,
 ) -> Option<HashSet<BasicBlockIndex>> {
@@ -1192,7 +1206,7 @@ fn get_basic_block_predecessor_list(
 }
 
 /// Find the span, in the given list, that holds the given instruction index
-fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize) -> Option<usize> {
+pub fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize) -> Option<usize> {
     spans
         .iter()
         .enumerate()
@@ -1201,7 +1215,7 @@ fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize) ->
 }
 
 /// Simple function that handles creating and adding SSA values for instructions
-fn handle_ssa_phi_import(
+pub fn handle_ssa_phi_import(
     out: &mut Function,
     reg_meta: &mut RegisterMetadata,
     f: &hashlink_bytecode::Function,

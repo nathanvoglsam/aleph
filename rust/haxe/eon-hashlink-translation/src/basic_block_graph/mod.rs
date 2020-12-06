@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::InstructionIndex;
-use crate::bytecode::utils::offset_from;
+use crate::utils::offset_from;
+use eon_bytecode::bytecode::indexes::InstructionIndex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]
-pub struct BBGraph {
+pub struct BasicBlockGraph {
     /// Maps an instruction index to the set of instructions that branch to it
     pub destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>>,
 
@@ -41,7 +41,7 @@ pub struct BBGraph {
 }
 
 /// Produces SSA graph nodes and edges
-pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BBGraph> {
+pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BasicBlockGraph> {
     // Holds the list of instruction indexes that have instructions that branch to the
     // instruction given by the key
     let mut destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>> =
@@ -54,7 +54,7 @@ pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BBGraph> {
         compute_bb_graph_loop_inner(f, index, op, &mut destination_sources, &mut branches)?;
     }
 
-    Some(BBGraph {
+    Some(BasicBlockGraph {
         destination_sources,
         branches,
     })

@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::function::bb_graph::BBGraph;
-use crate::bytecode::indexes::InstructionIndex;
+use crate::basic_block_graph::BasicBlockGraph;
+use eon_bytecode::bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
     f: &hashlink_bytecode::Function,
-    bb_graph: &BBGraph,
+    bb_graph: &BasicBlockGraph,
 ) -> Option<Vec<(InstructionIndex, InstructionIndex)>> {
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
     let mut spans = Vec::new();

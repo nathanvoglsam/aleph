@@ -40,7 +40,6 @@ readme = "README.md"
 ##TODO: keywords = ["build", "compilation", "utility"]
 ##TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
-build = "build.rs"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
@@ -48,3 +47,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 eon-bytecode = { path = "../eon-bytecode", version = "0.1.0" }
 hashlink-bytecode = { path = "../hashlink-bytecode", version = "0.1.0" }
+
+[dev-dependencies]
+serde_json = "1.0"
+rmp-serde = "0.14"

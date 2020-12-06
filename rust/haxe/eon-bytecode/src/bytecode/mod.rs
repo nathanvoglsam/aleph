@@ -34,5 +34,3 @@ pub mod module;
 pub mod native;
 pub mod opcode;
 pub mod type_;
-
-mod utils;
