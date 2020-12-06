@@ -41,8 +41,8 @@ pub fn offset_from(base: usize, offset: i32) -> Option<usize> {
 
         // Subtract the inverted negative offset. This is mathematically identical to just
         // adding a signed offset but does not discard the precision of the base value
-        let out = base.checked_sub(offset)?;
-        let out = out.checked_add(1)?;
+        let out = base.checked_add(1)?;
+        let out = out.checked_sub(offset)?;
 
         Some(out)
     } else {
