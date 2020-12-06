@@ -27,7 +27,13 @@
 // SOFTWARE.
 //
 
-pub mod bytecode;
+pub mod constant;
+pub mod function;
+pub mod indexes;
+pub mod module;
+pub mod native;
+pub mod opcode;
+pub mod type_;
 
 #[cfg(test)]
 mod tests;
