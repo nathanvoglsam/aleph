@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::{
+use crate::indexes::{
     BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
 };
-use crate::bytecode::opcode::OpCode;
+use crate::opcode::OpCode;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 

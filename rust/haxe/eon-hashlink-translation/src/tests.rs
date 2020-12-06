@@ -40,7 +40,7 @@ use crate::opcode_translators::{
     translate_unconditional_branch, translate_unop, translate_value_index,
     translate_virtual_closure, translate_write_memory,
 };
-use eon_bytecode::bytecode::indexes::{
+use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };

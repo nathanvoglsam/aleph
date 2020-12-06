@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::GlobalIndex;
+use crate::indexes::GlobalIndex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]

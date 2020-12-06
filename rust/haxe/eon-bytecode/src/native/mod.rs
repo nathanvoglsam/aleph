@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::{StringIndex, TypeIndex};
+use crate::indexes::{StringIndex, TypeIndex};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]

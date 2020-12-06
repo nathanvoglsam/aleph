@@ -39,9 +39,9 @@ use crate::error::{TranspileError, TranspileResult};
 use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,
 };
-use eon_bytecode::bytecode::function::{Function, Metadata};
-use eon_bytecode::bytecode::indexes::{FunctionIndex, TypeIndex};
-use eon_bytecode::bytecode::module::Module;
+use eon_bytecode::function::{Function, Metadata};
+use eon_bytecode::indexes::{FunctionIndex, TypeIndex};
+use eon_bytecode::module::Module;
 
 ///
 /// Takes ownership of the given HashLink module and translate/transpile it into a new Eon module.

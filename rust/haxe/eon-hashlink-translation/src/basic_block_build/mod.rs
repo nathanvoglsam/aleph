@@ -41,16 +41,14 @@ use crate::opcode_translators::{
     translate_virtual_closure, translate_write_memory,
 };
 use crate::utils::offset_from;
-use eon_bytecode::bytecode::function::{
-    BasicBlock, Function, Register, RegisterMetadata, SSAValue,
-};
-use eon_bytecode::bytecode::indexes::{
+use eon_bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
+use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
-use eon_bytecode::bytecode::module::Module;
-use eon_bytecode::bytecode::opcode::{OpCode, Phi, ReceiveException};
-use eon_bytecode::bytecode::type_::TypeFunction;
+use eon_bytecode::module::Module;
+use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
+use eon_bytecode::type_::TypeFunction;
 use std::collections::{HashMap, HashSet};
 
 pub fn build_bb(

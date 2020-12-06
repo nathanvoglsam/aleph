@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::indexes::{
+use crate::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };

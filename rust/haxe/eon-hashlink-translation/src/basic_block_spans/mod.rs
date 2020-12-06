@@ -28,7 +28,7 @@
 //
 
 use crate::basic_block_graph::BasicBlockGraph;
-use eon_bytecode::bytecode::indexes::InstructionIndex;
+use eon_bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
     f: &hashlink_bytecode::Function,

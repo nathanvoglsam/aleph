@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::bytecode::constant::Constant;
-use crate::bytecode::function::Function;
-use crate::bytecode::indexes::{FunctionIndex, TypeIndex};
-use crate::bytecode::native::Native;
-use crate::bytecode::type_::Type;
+use crate::constant::Constant;
+use crate::function::Function;
+use crate::indexes::{FunctionIndex, TypeIndex};
+use crate::native::Native;
+use crate::type_::Type;
 use serde::{Deserialize, Serialize};
 
 /// This struct is a direct representation of a hashlink module *as read from disk*. The original C

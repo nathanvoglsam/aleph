@@ -28,7 +28,7 @@
 //
 
 use crate::utils::offset_from;
-use eon_bytecode::bytecode::indexes::InstructionIndex;
+use eon_bytecode::indexes::InstructionIndex;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug)]

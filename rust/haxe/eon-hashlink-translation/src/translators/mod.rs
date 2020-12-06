@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use eon_bytecode::bytecode::constant::Constant;
-use eon_bytecode::bytecode::indexes::{GlobalIndex, StringIndex, TypeIndex, ValueIndex};
-use eon_bytecode::bytecode::native::Native;
-use eon_bytecode::bytecode::type_::{
+use eon_bytecode::constant::Constant;
+use eon_bytecode::indexes::{GlobalIndex, StringIndex, TypeIndex, ValueIndex};
+use eon_bytecode::native::Native;
+use eon_bytecode::type_::{
     EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeObject,
     TypeParam, TypeVirtual,
 };
