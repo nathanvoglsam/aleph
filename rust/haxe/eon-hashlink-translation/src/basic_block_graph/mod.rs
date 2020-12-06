@@ -41,7 +41,7 @@ pub struct BasicBlockGraph {
 }
 
 /// Produces SSA graph nodes and edges
-pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BasicBlockGraph> {
+pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> Option<BasicBlockGraph> {
     // Holds the list of instruction indexes that have instructions that branch to the
     // instruction given by the key
     let mut destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>> =
@@ -50,8 +50,14 @@ pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BasicBlockGra
     // A flat list of all instructions which are branching instructions
     let mut branches: HashSet<InstructionIndex> = HashSet::new();
 
-    for (index, op) in f.ops.iter().enumerate() {
-        compute_bb_graph_loop_inner(f, index, op, &mut destination_sources, &mut branches)?;
+    for (instruction_index, op) in old_fn.ops.iter().enumerate() {
+        compute_bb_graph_loop_inner(
+            old_fn,
+            instruction_index,
+            op,
+            &mut destination_sources,
+            &mut branches,
+        )?;
     }
 
     Some(BasicBlockGraph {
@@ -61,8 +67,8 @@ pub fn compute_bb_graph(f: &hashlink_bytecode::Function) -> Option<BasicBlockGra
 }
 
 fn compute_bb_graph_loop_inner(
-    f: &hashlink_bytecode::Function,
-    index: usize,
+    old_fn: &hashlink_bytecode::Function,
+    instruction_index: usize,
     op: &hashlink_bytecode::OpCode,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
@@ -70,21 +76,39 @@ fn compute_bb_graph_loop_inner(
     // We need to handle switch specially as it holds an array of branch targets rather than
     // a single target
     if let hashlink_bytecode::OpCode::OpSwitch(op) = op {
-        compute_bb_graph_loop_inner_switch(f, index, op, destination_sources, branches)?;
+        compute_bb_graph_loop_inner_switch(
+            destination_sources,
+            branches,
+            old_fn,
+            instruction_index,
+            op,
+        )?;
     } else if let hashlink_bytecode::OpCode::OpJAlways(op) = op {
-        compute_bb_graph_loop_inner_unconditional(f, index, op, destination_sources, branches)?;
+        compute_bb_graph_loop_inner_unconditional(
+            destination_sources,
+            branches,
+            old_fn,
+            instruction_index,
+            op,
+        )?;
     } else {
-        compute_bb_graph_loop_inner_conditional(f, index, op, destination_sources, branches)?;
+        compute_bb_graph_loop_inner_conditional(
+            destination_sources,
+            branches,
+            old_fn,
+            instruction_index,
+            op,
+        )?;
     }
     Some(())
 }
 
 fn compute_bb_graph_loop_inner_switch(
-    f: &hashlink_bytecode::Function,
-    index: usize,
-    op: &hashlink_bytecode::OpSwitchParam,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
+    old_fn: &hashlink_bytecode::Function,
+    instruction_index: usize,
+    op: &hashlink_bytecode::OpSwitchParam,
 ) -> Option<()> {
     // Handle all the distinct branch targets from the switch's jump table
     for offset in op.extra.iter() {
@@ -94,10 +118,10 @@ fn compute_bb_graph_loop_inner_switch(
         let offset = *offset as i32;
 
         // Calculate the actual offset
-        let target = offset_from(index, offset)?;
+        let target = offset_from(instruction_index, offset)?;
 
         // Perform a bounds check
-        if target >= f.ops.len() {
+        if target >= old_fn.ops.len() {
             return None; // Out of bounds
         }
 
@@ -108,16 +132,16 @@ fn compute_bb_graph_loop_inner_switch(
         let block_source = destination_sources
             .entry(InstructionIndex(target))
             .or_default();
-        block_source.insert(InstructionIndex(index));
+        block_source.insert(InstructionIndex(instruction_index));
     }
 
     // Lastly we handle the "fallback" branch. The fallback branch occurs when the switch index is
     // out of bounds of the jump table. When the index is out of bounds we use the third parameter
     // as an offset to jump to.
-    let target = offset_from(index, op.param_3)?;
+    let target = offset_from(instruction_index, op.param_3)?;
 
     // Perform a bounds check
-    if target >= f.ops.len() {
+    if target >= old_fn.ops.len() {
         return None; // Out of bounds
     }
 
@@ -125,31 +149,31 @@ fn compute_bb_graph_loop_inner_switch(
     let block_source = destination_sources
         .entry(InstructionIndex(target))
         .or_default();
-    block_source.insert(InstructionIndex(index));
+    block_source.insert(InstructionIndex(instruction_index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.insert(InstructionIndex(index));
+    branches.insert(InstructionIndex(instruction_index));
 
     Some(())
 }
 
 fn compute_bb_graph_loop_inner_unconditional(
-    f: &hashlink_bytecode::Function,
-    index: usize,
-    op: &hashlink_bytecode::OpOneParam,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
+    old_fn: &hashlink_bytecode::Function,
+    instruction_index: usize,
+    op: &hashlink_bytecode::OpOneParam,
 ) -> Option<()> {
-    let target = offset_from(index, op.param_1)?;
+    let target = offset_from(instruction_index, op.param_1)?;
 
     // Check if the computed index is in bounds
-    if target >= f.ops.len() {
+    if target >= old_fn.ops.len() {
         return None; // Out of bounds
     }
 
     // Check if a negative index offset branch does not branch to a label opcode
     if op.param_1 < 0 {
-        match &f.ops[target] {
+        match &old_fn.ops[target] {
             hashlink_bytecode::OpCode::OpLabel => {}
             _ => return None, //negative offset not targeting label
         }
@@ -159,20 +183,20 @@ fn compute_bb_graph_loop_inner_unconditional(
     let block_source = destination_sources
         .entry(InstructionIndex(target))
         .or_default();
-    block_source.insert(InstructionIndex(index));
+    block_source.insert(InstructionIndex(instruction_index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.insert(InstructionIndex(index));
+    branches.insert(InstructionIndex(instruction_index));
 
     Some(())
 }
 
 fn compute_bb_graph_loop_inner_conditional(
-    f: &hashlink_bytecode::Function,
-    index: usize,
-    op: &hashlink_bytecode::OpCode,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
+    old_fn: &hashlink_bytecode::Function,
+    instruction_index: usize,
+    op: &hashlink_bytecode::OpCode,
 ) -> Option<()> {
     // Get the branch target offset if it exists, otherwise skip to the next instruction
     let offset = match op {
@@ -194,20 +218,20 @@ fn compute_bb_graph_loop_inner_conditional(
     };
 
     // Apply the offset
-    let target = offset_from(index, offset)?;
+    let target = offset_from(instruction_index, offset)?;
 
     // These branch to either the next instruction or the target depending on the result
     // of some comparison
-    let target_fail = offset_from(index, 0)?;
+    let target_fail = offset_from(instruction_index, 0)?;
 
     // Check if the computed index is in bounds
-    if target >= f.ops.len() || target_fail >= f.ops.len() {
+    if target >= old_fn.ops.len() || target_fail >= old_fn.ops.len() {
         return None; // Out of bounds
     }
 
     // Check if a negative index offset branch does not branch to a label opcode
     if offset < 0 {
-        match &f.ops[target] {
+        match &old_fn.ops[target] {
             hashlink_bytecode::OpCode::OpLabel => {}
             _ => return None, //negative offset not targeting label
         }
@@ -218,17 +242,17 @@ fn compute_bb_graph_loop_inner_conditional(
     let block_source = destination_sources
         .entry(InstructionIndex(target))
         .or_default();
-    block_source.insert(InstructionIndex(index));
+    block_source.insert(InstructionIndex(instruction_index));
 
     // Now we add this instruction to the list of branch sources for the fail target,
     // which is just the instruction after the branch
     let block_source = destination_sources
         .entry(InstructionIndex(target_fail))
         .or_default();
-    block_source.insert(InstructionIndex(index));
+    block_source.insert(InstructionIndex(instruction_index));
 
     // Add this instruction to the list of branch instruction indexes
-    branches.insert(InstructionIndex(index));
+    branches.insert(InstructionIndex(instruction_index));
 
     Some(())
 }

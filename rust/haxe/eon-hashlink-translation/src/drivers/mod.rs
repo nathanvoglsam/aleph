@@ -95,9 +95,9 @@ pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResu
     //
     // We don't do any optimizations yet, we save that for later
     let mut functions = Vec::new();
-    for f in code.functions.into_iter() {
-        if let Some(new) = transpile_hashlink_function(&module, f) {
-            functions.push(new);
+    for old_fn in code.functions.into_iter() {
+        if let Some(new_fn) = transpile_hashlink_function(&module, old_fn) {
+            functions.push(new_fn);
         } else {
             return Err(TranspileError::InvalidFunction);
         }
@@ -111,11 +111,11 @@ pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResu
 
 pub fn transpile_hashlink_function(
     module: &Module,
-    f: hashlink_bytecode::Function,
+    old_fn: hashlink_bytecode::Function,
 ) -> Option<Function> {
-    let mut out = Function {
-        type_: TypeIndex(f.type_ as usize),
-        f_index: f.f_index,
+    let mut new_fn = Function {
+        type_: TypeIndex(old_fn.type_ as usize),
+        f_index: old_fn.f_index,
         ssa_values: vec![],
         basic_blocks: vec![],
         metadata: Metadata {
@@ -125,12 +125,12 @@ pub fn transpile_hashlink_function(
     };
 
     // First we need to find all branch instructions and where they branch to
-    let bb_graph = compute_bb_graph(&f)?;
+    let bb_graph = compute_bb_graph(&old_fn)?;
 
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
-    let spans = compute_bb_spans(&f, &bb_graph)?;
+    let spans = compute_bb_spans(&old_fn, &bb_graph)?;
 
-    build_bb(&mut out, &module, &f, bb_graph, spans)?;
+    build_bb(&mut new_fn, &old_fn, module, bb_graph, spans)?;
 
-    Some(out)
+    Some(new_fn)
 }

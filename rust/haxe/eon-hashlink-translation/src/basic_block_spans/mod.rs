@@ -31,7 +31,7 @@ use crate::basic_block_graph::BasicBlockGraph;
 use eon_bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
-    f: &hashlink_bytecode::Function,
+    old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
 ) -> Option<Vec<(InstructionIndex, InstructionIndex)>> {
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
@@ -42,7 +42,7 @@ pub fn compute_bb_spans(
     for start in bb_graph.destination_sources.keys().map(|v| *v) {
         let start = start.0;
         let mut found_branch = false;
-        for (i, op) in f.ops[start..].iter().enumerate() {
+        for (i, op) in old_fn.ops[start..].iter().enumerate() {
             if is_block_terminator(op) {
                 let a = InstructionIndex(start);
                 let b = InstructionIndex(start + i);
@@ -65,7 +65,7 @@ pub fn compute_bb_spans(
         .contains_key(&InstructionIndex(0))
     {
         let mut found_branch = false;
-        for (i, op) in f.ops.iter().enumerate() {
+        for (i, op) in old_fn.ops.iter().enumerate() {
             if is_block_terminator(op) {
                 let a = InstructionIndex(0);
                 let b = InstructionIndex(i);

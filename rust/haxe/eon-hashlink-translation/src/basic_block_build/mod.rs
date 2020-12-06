@@ -52,19 +52,19 @@ use eon_bytecode::type_::TypeFunction;
 use std::collections::{HashMap, HashSet};
 
 pub fn build_bb(
-    out: &mut Function,
+    new_fn: &mut Function,
+    old_fn: &hashlink_bytecode::Function,
     module: &Module,
-    f: &hashlink_bytecode::Function,
     bb_graph: BasicBlockGraph,
     mut spans: Vec<(InstructionIndex, InstructionIndex)>,
 ) -> Option<()> {
     // Get the actual function type value, checking to ensure it is of the correct type category
     // (Function or Method)
-    let fn_ty = &module.types[out.type_.0];
+    let fn_ty = &module.types[new_fn.type_.0];
     let fn_ty = fn_ty.get_type_function()?;
 
     // As we go we'll be generating various bits of metadata about the transcoded instructions
-    let registers = vec![Register::default(); f.registers.len()];
+    let registers = vec![Register::default(); old_fn.registers.len()];
     let register_map = Vec::new();
     let basic_block_registers_read = Vec::new();
     let basic_block_registers_written = Vec::new();
@@ -77,12 +77,12 @@ pub fn build_bb(
 
     // Pre allocate the list of empty basic blocks
     for _ in 0..spans.len() {
-        out.basic_blocks.push(BasicBlock { ops: Vec::new() });
+        new_fn.basic_blocks.push(BasicBlock { ops: Vec::new() });
     }
 
     // This will check the type signature of the function against the registers the definition says
     // the arguments should be
-    type_check_signature(out, f, fn_ty, &mut reg_meta)?;
+    type_check_signature(new_fn, &mut reg_meta, old_fn, fn_ty)?;
 
     // The spans array is a list of ranges into the source hashlink bytecode. Each entry encodes the
     // span of instructions that should be encoded into a basic block.
@@ -99,27 +99,27 @@ pub fn build_bb(
 
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
-    build_register_usage_map(&f, &spans, &mut reg_meta);
+    build_register_usage_map(&mut reg_meta, &old_fn, &spans);
 
     // Now begins the fun part where we start translating the HashLink bytecode
-    translate_basic_blocks(out, &f, &bb_graph, fn_ty, &spans, &mut reg_meta)?;
+    translate_basic_blocks(new_fn, &mut reg_meta, &old_fn, &bb_graph, fn_ty, &spans)?;
 
-    out.metadata.reg_data = Some(reg_meta);
+    new_fn.metadata.reg_data = Some(reg_meta);
 
     Some(())
 }
 
 pub fn type_check_signature(
-    out: &mut Function,
-    f: &hashlink_bytecode::Function,
-    fn_ty: &TypeFunction,
+    new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    old_fn: &hashlink_bytecode::Function,
+    fn_ty: &TypeFunction,
 ) -> Option<()> {
     // Go over the function arguments and check that the types in the signature match the registers
     // in the actual function definition while inserting the SSA values for them at the same time
     for (i, arg_ty) in fn_ty.args.iter().enumerate() {
         // Get the type for the register that matches the function argument
-        let reg_ty = f.registers[i] as usize;
+        let reg_ty = old_fn.registers[i] as usize;
 
         // Error if the types don't match
         if arg_ty.0 != reg_ty {
@@ -129,7 +129,7 @@ pub fn type_check_signature(
         // Insert an SSA value for this argument that points to the first instruction in the first
         // basic block. The first instruction will always be a special no-op type instruction so
         // that bb: 0 and instr: 0 can be used as a marker for function arguments.
-        out.ssa_values.push(SSAValue {
+        new_fn.ssa_values.push(SSAValue {
             type_: TypeIndex(reg_ty),
         });
 
@@ -141,15 +141,15 @@ pub fn type_check_signature(
 }
 
 pub fn build_register_usage_map(
-    f: &hashlink_bytecode::Function,
-    spans: &Vec<(InstructionIndex, InstructionIndex)>,
     reg_meta: &mut RegisterMetadata,
+    old_fn: &hashlink_bytecode::Function,
+    spans: &Vec<(InstructionIndex, InstructionIndex)>,
 ) {
     for (lower_bound, upper_bound) in spans {
         // Unwrap the bounds and get the sub slice that the span refers to
         let lower_bound = lower_bound.0;
         let upper_bound = upper_bound.0;
-        let ops = &f.ops[lower_bound..=upper_bound];
+        let ops = &old_fn.ops[lower_bound..=upper_bound];
 
         let mut reg_reads = HashSet::new();
         let mut reg_writes = HashMap::new();
@@ -176,12 +176,12 @@ pub fn build_register_usage_map(
 }
 
 pub fn translate_basic_blocks(
-    out: &mut Function,
-    f: &hashlink_bytecode::Function,
+    new_fn: &mut Function,
+    reg_meta: &mut RegisterMetadata,
+    old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
-    reg_meta: &mut RegisterMetadata,
 ) -> Option<()> {
     for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // Unwrap the lower and upper bounds from the reference and new-type
@@ -195,7 +195,7 @@ pub fn translate_basic_blocks(
             has_no_predecessor,
             is_trap_handler,
             trap_register,
-        ) = get_basic_block_info(&f, bb_graph, lower_bound)?;
+        ) = get_basic_block_info(&old_fn, bb_graph, lower_bound)?;
 
         // Get the set of predecessor basic block indexes that we will need for emitting phi
         // instructions
@@ -204,12 +204,12 @@ pub fn translate_basic_blocks(
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
         if has_multiple_predecessors {
-            for reg in 0..f.registers.len() {
+            for reg in 0..old_fn.registers.len() {
                 // Dereference and new-type the register into our own type
                 let reg = RegisterIndex(reg);
 
                 // We allocate a new SSA value for the result of our phi instruction
-                let assigns = handle_ssa_phi_import(out, reg_meta, f, bb_index, reg)?;
+                let assigns = handle_ssa_phi_import(new_fn, old_fn, reg_meta, bb_index, reg)?;
 
                 // We produce the list of source blocks for the phi instruction with a
                 // ValueIndex that actually holds the *register index* so we can remap it later
@@ -229,7 +229,7 @@ pub fn translate_basic_blocks(
                 let phi = OpCode::OpPhi(phi);
 
                 // And insert the new instruction
-                out.basic_blocks[bb_index].ops.push(phi);
+                new_fn.basic_blocks[bb_index].ops.push(phi);
             }
         }
 
@@ -240,8 +240,13 @@ pub fn translate_basic_blocks(
         // `has_multiple_predecessors` and `is_trap_handler` are implicitly mutually exclusive
         if is_trap_handler {
             // Emit a new SSA value that gets assigned the exception value
-            let assigns =
-                handle_ssa_write(out, reg_meta, f, bb_index, RegisterIndex(trap_register))?;
+            let assigns = handle_ssa_write(
+                new_fn,
+                old_fn,
+                reg_meta,
+                bb_index,
+                RegisterIndex(trap_register),
+            )?;
 
             // Build the instruction layout
             let receive_exception = ReceiveException { assigns };
@@ -250,18 +255,19 @@ pub fn translate_basic_blocks(
             let receive_exception = OpCode::OpReceiveException(receive_exception);
 
             // Insert the new instruction
-            out.basic_blocks[bb_index].ops.push(receive_exception);
+            new_fn.basic_blocks[bb_index].ops.push(receive_exception);
         }
 
         // Iterate over all the opcodes that we've deduced to be a part of this basic block
-        for (i, old_op) in f.ops[lower_bound..=upper_bound].iter().enumerate() {
+        for (i, old_op) in old_fn.ops[lower_bound..=upper_bound].iter().enumerate() {
             // Get the actual index in the opcode array rather than the index in the sub-slice
             // we've taken
             let op_index = lower_bound + i;
 
-            let new_op = translate_opcode(out, f, spans, reg_meta, bb_index, op_index, old_op)?;
+            let new_op =
+                translate_opcode(new_fn, reg_meta, old_fn, spans, bb_index, op_index, old_op)?;
 
-            out.basic_blocks[bb_index].ops.push(new_op);
+            new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
     }
 
@@ -291,10 +297,10 @@ pub fn translate_basic_blocks(
 /// over the translated instructions is needed to correctly map the register indexes to the value
 /// indexes.
 pub fn translate_opcode(
-    out: &mut Function,
-    f: &hashlink_bytecode::Function,
-    spans: &[(InstructionIndex, InstructionIndex)],
+    new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    old_fn: &hashlink_bytecode::Function,
+    spans: &[(InstructionIndex, InstructionIndex)],
     bb_index: usize,
     op_index: usize,
     old_op: &hashlink_bytecode::OpCode,
@@ -303,9 +309,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpMov(params) => {
             // Allocate new SSA value for the assignment param
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -318,9 +324,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpInt(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -333,9 +339,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpFloat(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -348,9 +354,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpBool(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -365,9 +371,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpBytes(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -380,9 +386,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpString(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -396,9 +402,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpNull(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -421,9 +427,9 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpXor(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -438,9 +444,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpNeg(params) | hashlink_bytecode::OpCode::OpNot(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -455,9 +461,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpIncr(params) | hashlink_bytecode::OpCode::OpDecr(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -481,7 +487,8 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpCallN(_) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = old_op.register_write()? as usize;
-            let assigns = handle_ssa_write(out, reg_meta, f, bb_index, RegisterIndex(assigns))?;
+            let assigns =
+                handle_ssa_write(new_fn, old_fn, reg_meta, bb_index, RegisterIndex(assigns))?;
 
             // Unpack the function index
             let function = FunctionIndex(old_op.get_param_2()? as usize);
@@ -501,9 +508,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpCallMethod(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -533,9 +540,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpCallThis(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -565,9 +572,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpCallClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -589,9 +596,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpStaticClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -604,9 +611,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpInstanceClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -622,9 +629,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpVirtualClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -641,9 +648,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpGetGlobal(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -667,9 +674,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpGetThis(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -687,9 +694,9 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpDynGet(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -807,9 +814,9 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpToVirtual(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -872,9 +879,9 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpGetArray(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -907,9 +914,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpType(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -933,9 +940,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpNew(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -951,9 +958,9 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpEnumIndex(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -976,9 +983,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpMakeEnum(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -999,9 +1006,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpEnumAlloc(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -1014,9 +1021,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpEnumField(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -1047,9 +1054,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpRefData(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -1062,9 +1069,9 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpRefOffset(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
-                out,
+                new_fn,
+                old_fn,
                 reg_meta,
-                f,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
             )?;
@@ -1091,7 +1098,7 @@ pub fn translate_opcode(
 ///
 /// This function also does some error checking
 pub fn get_basic_block_info(
-    f: &hashlink_bytecode::Function,
+    old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
     first_instruction_index: usize,
 ) -> Option<(bool, bool, bool, bool, usize)> {
@@ -1132,7 +1139,7 @@ pub fn get_basic_block_info(
 
         // Here we filter out and create a vector of only the trap instructions. This way
         let mut trap_sources = sources.iter().filter_map(|v| {
-            let source_op = &f.ops[v.0];
+            let source_op = &old_fn.ops[v.0];
             match source_op {
                 hashlink_bytecode::OpCode::OpTrap(v) => Some(v),
                 _ => None,
@@ -1214,21 +1221,21 @@ pub fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize
 
 /// Simple function that handles creating and adding SSA values for instructions
 pub fn handle_ssa_phi_import(
-    out: &mut Function,
+    new_fn: &mut Function,
+    old_fn: &hashlink_bytecode::Function,
     reg_meta: &mut RegisterMetadata,
-    f: &hashlink_bytecode::Function,
     bb_index: usize,
     v: RegisterIndex,
 ) -> Option<ValueIndex> {
     // Assert that the two lengths match so that the vec will continue to work as a map
-    debug_assert!(reg_meta.register_map.len() == out.ssa_values.len());
+    debug_assert!(reg_meta.register_map.len() == new_fn.ssa_values.len());
 
     // Lookup the type from the source HashLink (we use the same indices)
-    let type_ = f.registers[v.0] as usize;
+    let type_ = old_fn.registers[v.0] as usize;
 
     // Add the new SSA value to the function, yielding an index to it
-    let value = ValueIndex(out.ssa_values.len());
-    out.ssa_values.push(SSAValue {
+    let value = ValueIndex(new_fn.ssa_values.len());
+    new_fn.ssa_values.push(SSAValue {
         type_: TypeIndex(type_),
     });
 
@@ -1243,21 +1250,21 @@ pub fn handle_ssa_phi_import(
 
 /// Simple function that handles creating and adding SSA values for instructions
 fn handle_ssa_write(
-    out: &mut Function,
+    new_fn: &mut Function,
+    old_fn: &hashlink_bytecode::Function,
     reg_meta: &mut RegisterMetadata,
-    f: &hashlink_bytecode::Function,
     bb_index: usize,
     v: RegisterIndex,
 ) -> Option<ValueIndex> {
     // Assert that the two lengths match so that the vec will continue to work as a map
-    debug_assert!(reg_meta.register_map.len() == out.ssa_values.len());
+    debug_assert!(reg_meta.register_map.len() == new_fn.ssa_values.len());
 
     // Lookup the type from the source HashLink (we use the same indices)
-    let type_ = f.registers[v.0] as usize;
+    let type_ = old_fn.registers[v.0] as usize;
 
     // Add the new SSA value to the function, yielding an index to it
-    let value = ValueIndex(out.ssa_values.len());
-    out.ssa_values.push(SSAValue {
+    let value = ValueIndex(new_fn.ssa_values.len());
+    new_fn.ssa_values.push(SSAValue {
         type_: TypeIndex(type_),
     });
 
