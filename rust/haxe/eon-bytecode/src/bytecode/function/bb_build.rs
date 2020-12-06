@@ -1185,7 +1185,10 @@ fn get_basic_block_predecessor_list(
 
     // Get the list of predecessors and map the instruction back to the basic block (span) that it
     // came from
-    if let Some(predecessors) = bb_graph.destination_sources.get(&InstructionIndex(first_instruction_index)) {
+    if let Some(predecessors) = bb_graph
+        .destination_sources
+        .get(&InstructionIndex(first_instruction_index))
+    {
         for predecessor in predecessors {
             // Find the source span
             let block = find_source_span(spans, predecessor.0)?;
