@@ -588,7 +588,7 @@ impl OpCode {
     /// takes no arguments
     pub fn get_static_call_args(&self) -> Option<Vec<i32>> {
         match self {
-            OpCode::OpCall0(v) => Some(Vec::new()),
+            OpCode::OpCall0(_) => Some(Vec::new()),
             OpCode::OpCall1(v) => Some(vec![v.param_3]),
             OpCode::OpCall2(v) => Some(vec![v.param_3, v.param_4]),
             OpCode::OpCall3(v) => Some(vec![v.param_3, v.param_4, v.param_5]),
