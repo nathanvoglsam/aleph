@@ -51,6 +51,32 @@ pub fn translate_value_index(v: i32) -> ValueIndex {
     ValueIndex(v as usize)
 }
 
+/// This translates a HashLink type into the matching Eon type definition. The return value may be
+/// a potentially invalid type that needs further processing into the correct underlying type.
+///
+/// # Warning
+///
+/// As stated above, the type returned from this may be invalid. Currently this is only the case
+/// when translating the following HashLink types:
+///
+/// - `hashlink_byteocde::Type::Array`
+///
+/// ## `Type::Array`
+///
+/// HashLink's bytecode erases the type of the elements stored in an array from the type system and
+/// leaves it to be handled at runtime. This is, to be frank, fucking stupid. What's the point of an
+/// array type that doesn't even have its element type in the type signature, it may as well just be
+/// a raw pointer.
+///
+/// HashLink doesn't even take advantage of the flexibility this could provide, where the type of
+/// the elements could be changed at runtime.
+///
+/// To remedy this we need to try and reconstruct this information and rebuild a sane type
+/// definition for arrays. That algorithm will be explained elsewhere. The important information is
+/// that `Type::Array` will be translated to `Type::Array(0)` in every case. We then need to pass
+/// over the module and emit a new type for every Array -> Element Type pair and remap all uses of
+/// the types accordingly.
+///
 pub fn translate_type(v: hashlink_bytecode::Type) -> Type {
     match v {
         hashlink_bytecode::Type::Void => Type::Void,
@@ -63,7 +89,7 @@ pub fn translate_type(v: hashlink_bytecode::Type) -> Type {
         hashlink_bytecode::Type::Bool => Type::Bool,
         hashlink_bytecode::Type::Bytes => Type::Bytes,
         hashlink_bytecode::Type::Dynamic => Type::Dynamic,
-        hashlink_bytecode::Type::Array => Type::Array,
+        hashlink_bytecode::Type::Array => Type::Array(TypeParam{ type_: TypeIndex(0) }),
         hashlink_bytecode::Type::Type => Type::Type,
         hashlink_bytecode::Type::DynObject => Type::DynObject,
         hashlink_bytecode::Type::Function(v) => Type::Function(translate_type_function(v)),

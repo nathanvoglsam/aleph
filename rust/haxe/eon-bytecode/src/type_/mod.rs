@@ -68,24 +68,12 @@ pub enum Type {
     /// value itself.
     Dynamic,
 
-    /// This type is on suicide watch. For some idiotic reason HashLink doesn't encode the type of
-    /// element an array holds in the type signature itself. It's encoded *AT RUNTIME* in the
-    /// object's in memory implementation. This means indexing the array requires dynamically
-    /// looking up the element size ON EVERY ACCESS.
-    ///
-    /// I intent to break compatibility with HashLink on this, and encode the element type as part
-    /// of the array's type signature. This allows for generating faster code, makes the garbage
-    /// collection algorithm simpler and is just all around better.
-    ///
-    /// I can't find a single good reason HashLink decided their implementation was a good idea.
-    Array,
-
     /// Currently I'm keeping the old HashLink like `Array` type variant around until I have a solid
     /// story for replacing it.
     ///
     /// This type represents an array of elements with a single type. The representation is very
     /// straight forward. It's just a pointer + element count pair.
-    NewArray(TypeParam),
+    Array(TypeParam),
 
     /// This type represents a value that holds a type identifier
     Type,
