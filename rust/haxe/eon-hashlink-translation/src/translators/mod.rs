@@ -54,8 +54,8 @@ pub fn translate_value_index(v: i32) -> ValueIndex {
 pub fn translate_type(v: hashlink_bytecode::Type) -> Type {
     match v {
         hashlink_bytecode::Type::Void => Type::Void,
-        hashlink_bytecode::Type::UI8 => Type::UI8,
-        hashlink_bytecode::Type::UI16 => Type::UI16,
+        hashlink_bytecode::Type::UI8 => Type::U8,
+        hashlink_bytecode::Type::UI16 => Type::U16,
         hashlink_bytecode::Type::I32 => Type::I32,
         hashlink_bytecode::Type::I64 => Type::I64,
         hashlink_bytecode::Type::F32 => Type::F32,

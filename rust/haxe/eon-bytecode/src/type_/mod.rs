@@ -32,29 +32,117 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum Type {
-    // Primitive types
+    /// Similar to void in C, represents a "nothing type". i.e a function that returns void returns
+    /// no value.
     Void,
-    UI8,
-    UI16,
+
+    /// 8-bit unsigned integer
+    U8,
+
+    /// 16-bit unsigned integer
+    U16,
+
+    /// 32-bit signed integer
     I32,
+
+    /// 64-bit signed integer
     I64,
+
+    /// 32-bit single-precision floating point
     F32,
+
+    /// 64-bit double-precision floating point
     F64,
+
+    /// An abstract boolean type with a platform defined size
     Bool,
 
+    /// A plain, untyped, nullable pointer
     Bytes,
+
+    /// Represents a boxed, dynamically typed object. This could also be thought of as an `Any`
+    /// type.
+    ///
+    /// This is essentially a pointer to a dynamically allocated block of memory that that contains
+    /// a type value pair. The type describes the runtime type of the value, and the value is the
+    /// value itself.
     Dynamic,
+
+
+    /// This type is on suicide watch. For some idiotic reason HashLink doesn't encode the type of
+    /// element an array holds in the type signature itself. It's encoded *AT RUNTIME* in the
+    /// object's in memory implementation. This means indexing the array requires dynamically
+    /// looking up the element size ON EVERY ACCESS.
+    ///
+    /// I intent to break compatibility with HashLink on this, and encode the element type as part
+    /// of the array's type signature. This allows for generating faster code, makes the garbage
+    /// collection algorithm simpler and is just all around better.
+    ///
+    /// I can't find a single good reason HashLink decided their implementation was a good idea.
     Array,
+
+    /// Currently I'm keeping the old HashLink like `Array` type variant around until I have a solid
+    /// story for replacing it.
+    ///
+    /// This type represents an array of elements with a single type. The representation is very
+    /// straight forward. It's just a pointer + element count pair.
+    NewArray(TypeParam),
+
+    /// This type represents a value that holds a type identifier
     Type,
+
+    /// This represents a pointer to a dynamically typed object. This type also has the semantics of
+    /// a pointer. `DynObject` is similar to an object but is closer to what JavaScript or Lua would
+    /// call an object where all fields are dynamic to add and remove. This can be sort of thought
+    /// of as a hash-table (as that's basically what JS objects are) mapping a name to a value. The
+    /// value could be any type (primitive, an object, a closure)
     DynObject,
+
+    /// Represents a static function paired with its signature
     Function(TypeFunction),
+
+    /// Represents a member function for an object paired with its signature
     Method(TypeFunction),
+
+    /// This type wraps another underlying type to apply reference semantics to it. This would
+    /// primarily have the use case of passing references to value types through function arguments.
+    ///
+    /// A value of this type would have the semantics of a pointer
     Ref(TypeParam),
+
+    /// `Null` wraps an underlying type to make that underlying type capable of being nullable, if
+    /// it otherwise wouldn't be.
+    ///
+    /// The semantics of the type *DO NOT CHANGE* when wrapped by this, other than the value now
+    /// being able to represent `null`. An integer will remain a value type, will continue to be
+    /// passed by copying into functions, etc.
+    ///
+    /// The primary use case for this is optional values, like optional members or optional function
+    /// arguments.
     Null(TypeParam),
+
+    /// Represents a regular object, paired with its definition. A value of this type has the
+    /// semantics of a pointer
     Obj(TypeObject),
+
+    /// Represents an anonymous struct, paired with its definition. A value of this type has the
+    /// semantics of a pointer
     Struct(TypeObject),
+
+    /// This type represents a virtual interface that can be stamped out from an object or dyn-obj.
+    /// This is essentially just a bare vtable and this-pointer pair.
     Virtual(TypeVirtual),
+
+    /// This represents an object type with a definition external to the compiled HashLink module.
+    /// This is a tool for allowing an object's memory layout to be opaque and defined by the host
+    /// application. It's a tool for integrating with native code.
     Abstract(TypeAbstract),
+
+    /// Represents an enum type. An enum type is a type which represents a collection of "variants"
+    /// that the type can contain.
+    ///
+    /// An enum is a *value* type and *NOT* a pointer. The whole structure is passed through
+    /// functions by *value*.
     Enum(TypeEnum),
 }
 
