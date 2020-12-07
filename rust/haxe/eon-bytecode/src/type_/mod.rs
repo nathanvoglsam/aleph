@@ -30,7 +30,7 @@
 use crate::indexes::{StringIndex, TypeIndex};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Type {
     /// Similar to void in C, represents a "nothing type". i.e a function that returns void returns
     /// no value.
@@ -237,7 +237,7 @@ impl Type {
     }
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ObjectProto {
     /// Index into string table for the name
     pub name: StringIndex,
@@ -249,7 +249,7 @@ pub struct ObjectProto {
     pub p_index: usize,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Field {
     /// Index into string table for the field name
     pub name: StringIndex,
@@ -258,7 +258,7 @@ pub struct Field {
     pub type_: TypeIndex,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EnumConstruct {
     /// Index into string table for the name
     pub name: StringIndex,
@@ -267,7 +267,7 @@ pub struct EnumConstruct {
     pub params: Vec<TypeIndex>,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeFunction {
     /// List of indexes into type table for the function arguments
     pub args: Vec<TypeIndex>,
@@ -276,7 +276,7 @@ pub struct TypeFunction {
     pub returns: TypeIndex,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeObject {
     /// Index into string table for the name
     pub name: StringIndex,
@@ -297,7 +297,7 @@ pub struct TypeObject {
     pub global: usize,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeEnum {
     /// Index into string table for the name
     pub name: StringIndex,
@@ -309,19 +309,19 @@ pub struct TypeEnum {
     pub global: usize,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeVirtual {
     /// The list of fields on this virtual
     pub fields: Vec<Field>,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeParam {
     /// Index into the type table
     pub type_: TypeIndex,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TypeAbstract {
     /// Index into the string table for the name
     pub name: StringIndex,
