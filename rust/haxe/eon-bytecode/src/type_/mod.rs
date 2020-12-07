@@ -68,7 +68,6 @@ pub enum Type {
     /// value itself.
     Dynamic,
 
-
     /// This type is on suicide watch. For some idiotic reason HashLink doesn't encode the type of
     /// element an array holds in the type signature itself. It's encoded *AT RUNTIME* in the
     /// object's in memory implementation. This means indexing the array requires dynamically
