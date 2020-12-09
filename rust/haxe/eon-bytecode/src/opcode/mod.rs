@@ -47,7 +47,7 @@ pub struct Load {
 }
 
 impl Load {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
     }
 }
@@ -63,7 +63,7 @@ pub struct LoadInt {
 }
 
 impl LoadInt {
-    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, module: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} {}",
             mnemonic, self.assigns.0, module.ints[self.integer.0]
@@ -82,7 +82,7 @@ pub struct LoadFloat {
 }
 
 impl LoadFloat {
-    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, module: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} {}",
             mnemonic, self.assigns.0, module.floats[self.float.0]
@@ -101,7 +101,7 @@ pub struct LoadBool {
 }
 
 impl LoadBool {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} {}", mnemonic, self.assigns.0, self.value)
     }
 }
@@ -117,7 +117,7 @@ pub struct LoadBytes {
 }
 
 impl LoadBytes {
-    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, module: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} offset[{}]",
             mnemonic, self.assigns.0, module.byte_offsets[self.bytes.0]
@@ -136,7 +136,7 @@ pub struct LoadString {
 }
 
 impl LoadString {
-    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, module: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} \"{}\"",
             mnemonic, self.assigns.0, &module.strings[self.string.0]
@@ -155,7 +155,7 @@ pub struct LoadGlobal {
 }
 
 impl LoadGlobal {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} global[{}]", mnemonic, self.assigns.0, self.source.0)
     }
 }
@@ -171,7 +171,7 @@ pub struct LoadType {
 }
 
 impl LoadType {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} type[{}]", mnemonic, self.assigns.0, self.source.0)
     }
 }
@@ -193,7 +193,7 @@ pub struct LoadEnumField {
 }
 
 impl LoadEnumField {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{}.c_{}.f_{}",
             mnemonic, self.assigns.0, self.source.0, self.constructor.0, self.field_index.0
@@ -212,7 +212,7 @@ pub struct StoreGlobal {
 }
 
 impl StoreGlobal {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} global[{}] %{}", mnemonic, self.target.0, self.source.0)
     }
 }
@@ -229,7 +229,7 @@ pub struct Store {
 }
 
 impl Store {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} %{}", mnemonic, self.target.0, self.source.0)
     }
 }
@@ -248,7 +248,7 @@ pub struct Binop {
 }
 
 impl Binop {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{} %{}",
             mnemonic, self.assigns.0, self.lhs.0, self.rhs.0
@@ -267,7 +267,7 @@ pub struct Unop {
 }
 
 impl Unop {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} %{}", mnemonic, self.assigns.0, self.operand.0)
     }
 }
@@ -287,7 +287,7 @@ pub struct Call {
 }
 
 impl Call {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut args = String::new();
         for p in &self.fn_params {
             write!(&mut args, "%{}, ", p.0).unwrap();
@@ -316,7 +316,7 @@ pub struct CallMethod {
 }
 
 impl CallMethod {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut args = String::new();
         for p in &self.fn_params {
             write!(&mut args, "%{}, ", p.0).unwrap();
@@ -342,7 +342,7 @@ pub struct CallClosure {
 }
 
 impl CallClosure {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut args = String::new();
         for p in &self.fn_params {
             write!(&mut args, "%{}, ", p.0).unwrap();
@@ -377,7 +377,7 @@ pub struct Switch {
 }
 
 impl Switch {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut table = String::new();
         for p in &self.jump_table {
             write!(&mut table, "${}, ", p.0).unwrap();
@@ -403,7 +403,7 @@ pub struct FieldLoad {
 }
 
 impl FieldLoad {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{}.f_{}",
             mnemonic, self.assigns.0, self.object.0, self.field.0
@@ -425,7 +425,7 @@ pub struct FieldStore {
 }
 
 impl FieldStore {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{}.f_{} %{}",
             mnemonic, self.object.0, self.field.0, self.source.0
@@ -453,7 +453,7 @@ pub struct CondBranch {
 }
 
 impl CondBranch {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} ${} ${}",
             mnemonic, self.check.0, self.success.0, self.failure.0
@@ -484,7 +484,7 @@ pub struct CompBranch {
 }
 
 impl CompBranch {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{} ${} ${}",
             mnemonic, self.lhs.0, self.rhs.0, self.success.0, self.failure.0
@@ -506,7 +506,7 @@ pub struct Phi {
 }
 
 impl Phi {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut table = String::new();
         for (v, b) in &self.block_values {
             write!(&mut table, "[%{} ${}], ", v.0, b.0).unwrap();
@@ -527,7 +527,7 @@ pub struct StaticClosure {
 }
 
 impl StaticClosure {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} fn[{}]", mnemonic, self.assigns.0, self.function.0)
     }
 }
@@ -548,7 +548,7 @@ pub struct InstanceClosure {
 }
 
 impl InstanceClosure {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} fn[{}] %{}",
             mnemonic, self.assigns.0, self.function.0, self.object.0
@@ -571,7 +571,7 @@ pub struct VirtualClosure {
 }
 
 impl VirtualClosure {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{}.f_{}",
             mnemonic, self.assigns.0, self.object.0, self.field.0
@@ -590,7 +590,7 @@ pub struct Cast {
 }
 
 impl Cast {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
     }
 }
@@ -609,7 +609,7 @@ pub struct ReadMemory {
 }
 
 impl ReadMemory {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{}[%{}]",
             mnemonic, self.assigns.0, self.source.0, self.offset.0
@@ -631,7 +631,7 @@ pub struct WriteMemory {
 }
 
 impl WriteMemory {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{}[%{}] %{}",
             mnemonic, self.target.0, self.offset.0, self.source.0
@@ -653,7 +653,7 @@ pub struct MakeEnum {
 }
 
 impl MakeEnum {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         let mut table = String::new();
         for a in &self.args {
             write!(&mut table, "%{}, ", a.0).unwrap();
@@ -676,7 +676,7 @@ pub struct AllocEnum {
 }
 
 impl AllocEnum {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} c_{}", mnemonic, self.assigns.0, self.constructor.0)
     }
 }
@@ -695,7 +695,7 @@ pub struct RefData {
 }
 
 impl RefData {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
     }
 }
@@ -718,7 +718,7 @@ pub struct RefOffset {
 }
 
 impl RefOffset {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{} %{}[%{}]",
             mnemonic, self.assigns.0, self.source.0, self.offset.0
@@ -740,7 +740,7 @@ pub struct StoreEnumField {
 }
 
 impl StoreEnumField {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
             "{} %{}.f_{} %{}",
             mnemonic, self.target.0, self.field.0, self.source.0
@@ -756,7 +756,7 @@ pub struct Trap {
 }
 
 impl Trap {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} ${}", mnemonic, self.destination.0)
     }
 }
@@ -773,20 +773,12 @@ pub struct ReceiveException {
 }
 
 impl ReceiveException {
-    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!("{} %{}", mnemonic, self.assigns.0)
     }
 }
 
-fn value_to_pretty_string(v: &ValueIndex, _: &Module, mnemonic: &str) -> String {
-    format!("{} %{}", mnemonic, v.0)
-}
-
-fn bb_to_pretty_string(v: &BasicBlockIndex, _: &Module, mnemonic: &str) -> String {
-    format!("{} ${}", mnemonic, v.0)
-}
-
-fn bool_to_pretty_string(v: &bool, _: &Module, mnemonic: &str) -> String {
+fn bool_opcode_dump(v: &bool, _: &Module, mnemonic: &str) -> String {
     format!("{} {}", mnemonic, v)
 }
 
@@ -918,99 +910,99 @@ pub enum OpCode {
 }
 
 impl OpCode {
-    pub fn to_pretty_string(&self, module: &Module) -> String {
+    pub fn opcode_dump(&self, module: &Module) -> String {
         match self {
-            OpCode::OpMov(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpInt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpBool(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpBytes(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpString(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpNull(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpAdd(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSub(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpMul(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSDiv(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpUDiv(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSMod(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpUMod(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpShl(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSShr(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpUShr(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpAnd(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpOr(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpXor(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpNeg(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpNot(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpIncr(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpDecr(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpCall(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpCallMethod(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpCallClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpStaticClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpInstanceClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpVirtualClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetGlobal(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetGlobal(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetField(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetField(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpDynGet(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpDynSet(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJTrue(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJFalse(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJNull(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJNotNull(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJSLt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJSGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJSGt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJSLte(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJULt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJUGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJNotLt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJNotGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJEq(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJNotEq(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpJAlways(v) => bb_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpRet(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpSwitch(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpPhi(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpToDyn(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpToSFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpToUFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpToInt(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSafeCast(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpUnsafeCast(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpToVirtual(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpThrow(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpRethrow(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpTrap(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpEndTrap(v) => bool_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpReceiveException(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpNullCheck(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpGetI8(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetI16(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetMem(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetArray(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetI8(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetI16(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetMem(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetArray(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpNew(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
-            OpCode::OpArraySize(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpType(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetType(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpGetTID(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpUnRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpMakeEnum(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpEnumAlloc(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpEnumIndex(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpEnumField(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpSetEnumField(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpMov(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpFloat(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpBool(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpBytes(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpString(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpNull(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpAdd(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSub(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpMul(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSDiv(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUDiv(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSMod(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUMod(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpShl(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSShr(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUShr(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpAnd(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpOr(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpXor(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpNeg(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpNot(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpIncr(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpDecr(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpCall(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpCallMethod(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpCallClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpStaticClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInstanceClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpVirtualClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetGlobal(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetGlobal(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetField(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetField(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpDynGet(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpDynSet(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJTrue(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJFalse(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJNull(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJNotNull(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJSLt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJSGte(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJSGt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJSLte(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJULt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJUGte(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJNotLt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJNotGte(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJEq(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJNotEq(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpJAlways(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpRet(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSwitch(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpPhi(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpToDyn(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpToSFloat(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpToUFloat(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpToInt(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSafeCast(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUnsafeCast(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpToVirtual(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpThrow(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpRethrow(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpTrap(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpEndTrap(v) => bool_opcode_dump(v, module, self.get_mnemonic()),
+            OpCode::OpReceiveException(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpNullCheck(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetI8(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetI16(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetMem(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetArray(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetI8(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetI16(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetMem(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetArray(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpNew(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpArraySize(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpType(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetType(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpGetTID(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpRef(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUnRef(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetRef(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpMakeEnum(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpEnumAlloc(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpEnumIndex(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpEnumField(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpSetEnumField(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpAssert => self.get_mnemonic().to_string(),
-            OpCode::OpRefData(v) => v.to_pretty_string(module, self.get_mnemonic()),
-            OpCode::OpRefOffset(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpRefData(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpRefOffset(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpNop => self.get_mnemonic().to_string(),
         }
     }

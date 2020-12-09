@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::module::Module;
 use serde::{Deserialize, Serialize};
 
 /// New-type for representing an index into the static "strings" table
@@ -51,6 +52,12 @@ pub struct RegisterIndex(pub usize);
 )]
 pub struct ValueIndex(pub usize);
 
+impl ValueIndex {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{}", mnemonic, self.0)
+    }
+}
+
 /// New-type for representing an index into the "globals" table
 #[repr(transparent)]
 #[derive(
@@ -71,6 +78,12 @@ pub struct TypeIndex(pub usize);
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
 pub struct BasicBlockIndex(pub usize);
+
+impl BasicBlockIndex {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} ${}", mnemonic, self.0)
+    }
+}
 
 /// New-type for representing an index into the list of instructions within a function
 #[repr(transparent)]

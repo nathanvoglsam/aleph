@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
+use crate::function::Function;
+use crate::indexes::TypeIndex;
 use crate::module::Module;
 use crate::native::Native;
 use crate::type_::Type;
-use crate::indexes::TypeIndex;
-use crate::function::Function;
 use std::fmt::Write;
 
 pub fn dump_to_string(module: &Module) -> Result<String, std::fmt::Error> {
@@ -276,7 +276,7 @@ fn dump_functions(
                     "{space:indent$}{op}",
                     space = " ",
                     indent = indent * 3,
-                    op = op.to_pretty_string(module)
+                    op = op.opcode_dump(module)
                 )?;
             }
         }
@@ -312,14 +312,14 @@ fn get_type_name(module: &Module, t: &Type) -> Option<String> {
                     "{}, ",
                     get_type_name(module, &module.types[a.0])?
                 )
-                    .ok()?;
+                .ok()?;
             }
             write!(
                 &mut string,
                 ") -> {}",
                 get_type_name(module, &module.types[v.returns.0])?
             )
-                .ok()?;
+            .ok()?;
             Some(string)
         }
         Type::Method(v) => {
@@ -331,14 +331,14 @@ fn get_type_name(module: &Module, t: &Type) -> Option<String> {
                     "{}, ",
                     get_type_name(module, &module.types[a.0])?
                 )
-                    .ok()?;
+                .ok()?;
             }
             write!(
                 &mut string,
                 ") -> {}",
                 get_type_name(module, &module.types[v.returns.0])?
             )
-                .ok()?;
+            .ok()?;
             Some(string)
         }
         Type::Ref(v) => Some(format!(
