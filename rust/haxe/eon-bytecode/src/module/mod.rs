@@ -34,6 +34,8 @@ use crate::native::Native;
 use crate::type_::Type;
 use serde::{Deserialize, Serialize};
 
+pub mod dump;
+
 /// This struct is a direct representation of a hashlink module *as read from disk*. The original C
 /// hashlink code deserializes directly into the datastructures used by the JIT and runtime. This
 /// implementation is completely distinct from any runtime and serves purely as a utility for
@@ -56,7 +58,7 @@ pub struct Module {
     /// The file's bytes blob
     pub bytes: Vec<u8>,
 
-    /// The file's byte offets table
+    /// The file's byte offsets table
     pub byte_offsets: Vec<usize>,
 
     /// The file's debug file table

@@ -69,10 +69,12 @@ pub fn test_translation_1() {
 
     let module = translate_hashlink_module(code).unwrap();
 
-    let _string = serde_json::to_string_pretty(&module).unwrap();
+    let _string = eon_bytecode::module::dump::dump_to_string(&module).unwrap();
+    let _json = serde_json::to_string_pretty(&module).unwrap();
     let _bytes = rmp_serde::to_vec(&module).unwrap();
 
-    //std::fs::write(crate_root.join("out.json"), _string.as_bytes()).unwrap();
+    std::fs::write(crate_root.join("out.dump"), _string).unwrap();
+    //std::fs::write(crate_root.join("out.json"), _json.as_bytes()).unwrap();
     //std::fs::write(crate_root.join("out.msgpack"), &_bytes).unwrap();
 }
 

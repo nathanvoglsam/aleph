@@ -89,7 +89,9 @@ pub fn translate_type(v: hashlink_bytecode::Type) -> Type {
         hashlink_bytecode::Type::Bool => Type::Bool,
         hashlink_bytecode::Type::Bytes => Type::Bytes,
         hashlink_bytecode::Type::Dynamic => Type::Dynamic,
-        hashlink_bytecode::Type::Array => Type::Array(TypeParam{ type_: TypeIndex(0) }),
+        hashlink_bytecode::Type::Array => Type::Array(TypeParam {
+            type_: TypeIndex(0),
+        }),
         hashlink_bytecode::Type::Type => Type::Type,
         hashlink_bytecode::Type::DynObject => Type::DynObject,
         hashlink_bytecode::Type::Function(v) => Type::Function(translate_type_function(v)),

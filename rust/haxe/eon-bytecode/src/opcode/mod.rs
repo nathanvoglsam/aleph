@@ -31,7 +31,9 @@ use crate::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
+use crate::module::Module;
 use serde::{Deserialize, Serialize};
+use std::fmt::Write;
 
 /// Layout for instructions that perform a load of some kind from a SSA value and assigns it to a
 /// new SSA value
@@ -44,6 +46,12 @@ pub struct Load {
     pub source: ValueIndex,
 }
 
+impl Load {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
+    }
+}
+
 /// Layout for the `OpInt` instruction for initializing an SSA value from the integer table
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct LoadInt {
@@ -52,6 +60,15 @@ pub struct LoadInt {
 
     /// The integer in the integer table to load
     pub integer: IntegerIndex,
+}
+
+impl LoadInt {
+    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} {}",
+            mnemonic, self.assigns.0, module.ints[self.integer.0]
+        )
+    }
 }
 
 /// Layout for loading type instructions that load something into an SSA value
@@ -64,6 +81,15 @@ pub struct LoadFloat {
     pub float: FloatIndex,
 }
 
+impl LoadFloat {
+    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} {}",
+            mnemonic, self.assigns.0, module.floats[self.float.0]
+        )
+    }
+}
+
 /// Layout for loading type instructions that load something into an SSA value
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct LoadBool {
@@ -72,6 +98,12 @@ pub struct LoadBool {
 
     /// The boolean value to store into the destination
     pub value: bool,
+}
+
+impl LoadBool {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} {}", mnemonic, self.assigns.0, self.value)
+    }
 }
 
 /// Layout for loading type instructions that load something into an SSA value
@@ -84,6 +116,15 @@ pub struct LoadBytes {
     pub bytes: BytesIndex,
 }
 
+impl LoadBytes {
+    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} offset[{}]",
+            mnemonic, self.assigns.0, module.byte_offsets[self.bytes.0]
+        )
+    }
+}
+
 /// Layout for loading type instructions that load something into an SSA value
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct LoadString {
@@ -92,6 +133,15 @@ pub struct LoadString {
 
     /// The string index to use to load the string from
     pub string: StringIndex,
+}
+
+impl LoadString {
+    pub fn to_pretty_string(&self, module: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} \"{}\"",
+            mnemonic, self.assigns.0, &module.strings[self.string.0]
+        )
+    }
 }
 
 /// Layout for the `OpGetGlobal` instruction for loading values from the global table
@@ -104,6 +154,12 @@ pub struct LoadGlobal {
     pub source: GlobalIndex,
 }
 
+impl LoadGlobal {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} global[{}]", mnemonic, self.assigns.0, self.source.0)
+    }
+}
+
 /// Layout for the `OpType` instruction for loading values from the type table
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct LoadType {
@@ -112,6 +168,12 @@ pub struct LoadType {
 
     /// Index into the global table to load from
     pub source: TypeIndex,
+}
+
+impl LoadType {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} type[{}]", mnemonic, self.assigns.0, self.source.0)
+    }
 }
 
 /// Layout for `OpEnumField`. Loads a given field from an enum.
@@ -130,14 +192,29 @@ pub struct LoadEnumField {
     pub field_index: FieldIndex,
 }
 
+impl LoadEnumField {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{}.c_{}.f_{}",
+            mnemonic, self.assigns.0, self.source.0, self.constructor.0, self.field_index.0
+        )
+    }
+}
+
 /// Layout for `OpSetGlobal` for storing a value into a global
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct StoreGlobal {
-    /// SSA value to store into target
-    pub source: ValueIndex,
-
     /// The index into the global table to store source into
     pub target: GlobalIndex,
+
+    /// SSA value to store into target
+    pub source: ValueIndex,
+}
+
+impl StoreGlobal {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} global[{}] %{}", mnemonic, self.target.0, self.source.0)
+    }
 }
 
 /// Layout for instructions that perform a store from one register into another
@@ -149,6 +226,12 @@ pub struct Store {
     /// The index of the value that should be stored through the reference. This is a *read* not
     /// a write
     pub source: ValueIndex,
+}
+
+impl Store {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} %{}", mnemonic, self.target.0, self.source.0)
+    }
 }
 
 /// Layout for the various binop arithmetic instructions
@@ -164,6 +247,15 @@ pub struct Binop {
     pub rhs: ValueIndex,
 }
 
+impl Binop {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{} %{}",
+            mnemonic, self.assigns.0, self.lhs.0, self.rhs.0
+        )
+    }
+}
+
 /// Layout for the various unop arithmetic instructions
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Unop {
@@ -172,6 +264,12 @@ pub struct Unop {
 
     /// The single operand for this operation
     pub operand: ValueIndex,
+}
+
+impl Unop {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} %{}", mnemonic, self.assigns.0, self.operand.0)
+    }
 }
 
 /// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
@@ -186,6 +284,19 @@ pub struct Call {
 
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
+}
+
+impl Call {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} fn[{}]({})",
+            mnemonic, self.assigns.0, self.function.0, args
+        )
+    }
 }
 
 /// Layout for a member method call.
@@ -204,6 +315,19 @@ pub struct CallMethod {
     pub fn_params: Vec<ValueIndex>,
 }
 
+impl CallMethod {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} %{} fn[{}]({})",
+            mnemonic, self.assigns.0, self.object.0, self.function.0, args
+        )
+    }
+}
+
 /// Layout for a closure call.
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct CallClosure {
@@ -215,6 +339,19 @@ pub struct CallClosure {
 
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
+}
+
+impl CallClosure {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} %{}({})",
+            mnemonic, self.assigns.0, self.closure.0, args
+        )
+    }
 }
 
 /// Layout for the switch instruction.
@@ -239,6 +376,19 @@ pub struct Switch {
     pub fallback: BasicBlockIndex,
 }
 
+impl Switch {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut table = String::new();
+        for p in &self.jump_table {
+            write!(&mut table, "${}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} [{}] ${}",
+            mnemonic, self.input.0, table, self.fallback.0
+        )
+    }
+}
+
 /// Layout for a field load from an object
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct FieldLoad {
@@ -252,6 +402,15 @@ pub struct FieldLoad {
     pub field: FieldIndex,
 }
 
+impl FieldLoad {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{}.f_{}",
+            mnemonic, self.assigns.0, self.object.0, self.field.0
+        )
+    }
+}
+
 /// Layout for a field store to an object
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct FieldStore {
@@ -263,6 +422,15 @@ pub struct FieldStore {
 
     /// The SSA value to store into the field
     pub source: ValueIndex,
+}
+
+impl FieldStore {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{}.f_{} %{}",
+            mnemonic, self.object.0, self.field.0, self.source.0
+        )
+    }
 }
 
 /// Layout for a conditional branch where the comparison value is implicit to the opcode itself.
@@ -282,6 +450,15 @@ pub struct CondBranch {
 
     /// The basic block to jump to upon the check failing
     pub failure: BasicBlockIndex,
+}
+
+impl CondBranch {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} ${} ${}",
+            mnemonic, self.check.0, self.success.0, self.failure.0
+        )
+    }
 }
 
 /// Layout for a comparison branch where we compare two provided values to decide whether to branch
@@ -306,6 +483,15 @@ pub struct CompBranch {
     pub failure: BasicBlockIndex,
 }
 
+impl CompBranch {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{} ${} ${}",
+            mnemonic, self.lhs.0, self.rhs.0, self.success.0, self.failure.0
+        )
+    }
+}
+
 /// Layout for our phi instruction.
 ///
 /// This is an opcode we add to the bytecode ourselves during the translation process.
@@ -319,6 +505,16 @@ pub struct Phi {
     pub block_values: Vec<(ValueIndex, BasicBlockIndex)>,
 }
 
+impl Phi {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut table = String::new();
+        for (v, b) in &self.block_values {
+            write!(&mut table, "[%{} ${}], ", v.0, b.0).unwrap();
+        }
+        format!("{} %{} {}", mnemonic, self.assigns.0, table)
+    }
+}
+
 /// Layout for the `OpStaticClosure` instruction. This creates a "static" closure from the given
 /// function. This essentially just creates a bare function pointer
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
@@ -328,6 +524,12 @@ pub struct StaticClosure {
 
     /// The index of the function to produce a static closure for
     pub function: FunctionIndex,
+}
+
+impl StaticClosure {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} fn[{}]", mnemonic, self.assigns.0, self.function.0)
+    }
 }
 
 /// Layout for the `OpInstanceClosure` instruction. This creates a closure that carries an object
@@ -345,6 +547,15 @@ pub struct InstanceClosure {
     pub object: ValueIndex,
 }
 
+impl InstanceClosure {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} fn[{}] %{}",
+            mnemonic, self.assigns.0, self.function.0, self.object.0
+        )
+    }
+}
+
 /// Layout for the `OpVirtualClosure` instruction.
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct VirtualClosure {
@@ -359,6 +570,15 @@ pub struct VirtualClosure {
     pub field: FieldIndex,
 }
 
+impl VirtualClosure {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{}.f_{}",
+            mnemonic, self.assigns.0, self.object.0, self.field.0
+        )
+    }
+}
+
 /// Layout for the conversion instructions that convert one type to another
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Cast {
@@ -367,6 +587,12 @@ pub struct Cast {
 
     /// The SSA value to load from and convert into the target's type
     pub source: ValueIndex,
+}
+
+impl Cast {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
+    }
 }
 
 /// Layout used for the memory read style instructions
@@ -382,6 +608,15 @@ pub struct ReadMemory {
     pub offset: ValueIndex,
 }
 
+impl ReadMemory {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{}[%{}]",
+            mnemonic, self.assigns.0, self.source.0, self.offset.0
+        )
+    }
+}
+
 /// Layout used for the memory write style instructions
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct WriteMemory {
@@ -393,6 +628,15 @@ pub struct WriteMemory {
 
     /// SSA value to store to memory
     pub source: ValueIndex,
+}
+
+impl WriteMemory {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{}[%{}] %{}",
+            mnemonic, self.target.0, self.offset.0, self.source.0
+        )
+    }
 }
 
 /// Layout for `OpMakeEnum`
@@ -408,6 +652,19 @@ pub struct MakeEnum {
     pub args: Vec<ValueIndex>,
 }
 
+impl MakeEnum {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        let mut table = String::new();
+        for a in &self.args {
+            write!(&mut table, "%{}, ", a.0).unwrap();
+        }
+        format!(
+            "{} %{} c_{}({})",
+            mnemonic, self.assigns.0, self.constructor.0, table
+        )
+    }
+}
+
 /// Layout for `OpEnumAlloc`
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct AllocEnum {
@@ -416,6 +673,12 @@ pub struct AllocEnum {
 
     /// The enum constructor/variant to build
     pub constructor: ConstructorIndex,
+}
+
+impl AllocEnum {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} c_{}", mnemonic, self.assigns.0, self.constructor.0)
+    }
 }
 
 /// Layout for `OpRefData`
@@ -429,6 +692,12 @@ pub struct RefData {
 
     /// The array to make the reference from
     pub source: ValueIndex,
+}
+
+impl RefData {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} %{}", mnemonic, self.assigns.0, self.source.0)
+    }
 }
 
 /// Layout for `OpRefOffset`
@@ -448,6 +717,15 @@ pub struct RefOffset {
     pub offset: ValueIndex,
 }
 
+impl RefOffset {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{} %{}[%{}]",
+            mnemonic, self.assigns.0, self.source.0, self.offset.0
+        )
+    }
+}
+
 /// Layout for `OpSetEnumField`
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct StoreEnumField {
@@ -461,11 +739,26 @@ pub struct StoreEnumField {
     pub source: ValueIndex,
 }
 
+impl StoreEnumField {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!(
+            "{} %{}.f_{} %{}",
+            mnemonic, self.target.0, self.field.0, self.source.0
+        )
+    }
+}
+
 /// Layout for `OpSetEnumField`
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Trap {
     /// The basic block index to jump to if an exception is thrown
     pub destination: BasicBlockIndex,
+}
+
+impl Trap {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} ${}", mnemonic, self.destination.0)
+    }
 }
 
 /// Layout for `OpReceiveException`
@@ -477,6 +770,24 @@ pub struct ReceiveException {
     /// The SSA value that should be assigned with the value of the exception if the handler block
     /// is jumped to
     pub assigns: ValueIndex,
+}
+
+impl ReceiveException {
+    pub fn to_pretty_string(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{}", mnemonic, self.assigns.0)
+    }
+}
+
+fn value_to_pretty_string(v: &ValueIndex, _: &Module, mnemonic: &str) -> String {
+    format!("{} %{}", mnemonic, v.0)
+}
+
+fn bb_to_pretty_string(v: &BasicBlockIndex, _: &Module, mnemonic: &str) -> String {
+    format!("{} ${}", mnemonic, v.0)
+}
+
+fn bool_to_pretty_string(v: &bool, _: &Module, mnemonic: &str) -> String {
+    format!("{} {}", mnemonic, v)
 }
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
@@ -604,4 +915,200 @@ pub enum OpCode {
 
     // Noop
     OpNop,
+}
+
+impl OpCode {
+    pub fn to_pretty_string(&self, module: &Module) -> String {
+        match self {
+            OpCode::OpMov(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpInt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpBool(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpBytes(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpString(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNull(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpAdd(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSub(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpMul(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSDiv(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpUDiv(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSMod(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpUMod(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpShl(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSShr(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpUShr(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpAnd(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpOr(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpXor(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNeg(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNot(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpIncr(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpDecr(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpCall(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpCallMethod(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpCallClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpStaticClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpInstanceClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpVirtualClosure(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetGlobal(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetGlobal(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetField(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetField(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpDynGet(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpDynSet(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJTrue(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJFalse(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJNull(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJNotNull(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJSLt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJSGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJSGt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJSLte(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJULt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJUGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJNotLt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJNotGte(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJEq(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJNotEq(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpJAlways(v) => bb_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpRet(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpSwitch(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpPhi(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpToDyn(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpToSFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpToUFloat(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpToInt(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSafeCast(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpUnsafeCast(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpToVirtual(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpThrow(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpRethrow(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpTrap(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpEndTrap(v) => bool_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpReceiveException(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNullCheck(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpGetI8(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetI16(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetMem(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetArray(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetI8(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetI16(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetMem(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetArray(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNew(v) => value_to_pretty_string(v, module, self.get_mnemonic()),
+            OpCode::OpArraySize(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpType(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetType(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpGetTID(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpUnRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetRef(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpMakeEnum(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpEnumAlloc(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpEnumIndex(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpEnumField(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpSetEnumField(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpAssert => self.get_mnemonic().to_string(),
+            OpCode::OpRefData(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpRefOffset(v) => v.to_pretty_string(module, self.get_mnemonic()),
+            OpCode::OpNop => self.get_mnemonic().to_string(),
+        }
+    }
+
+    pub fn get_mnemonic(&self) -> &'static str {
+        match self {
+            OpCode::OpMov(_) => "mov",
+            OpCode::OpInt(_) => "int",
+            OpCode::OpFloat(_) => "float",
+            OpCode::OpBool(_) => "bool",
+            OpCode::OpBytes(_) => "bytes",
+            OpCode::OpString(_) => "string",
+            OpCode::OpNull(_) => "null",
+            OpCode::OpAdd(_) => "add",
+            OpCode::OpSub(_) => "sub",
+            OpCode::OpMul(_) => "mul",
+            OpCode::OpSDiv(_) => "sdiv",
+            OpCode::OpUDiv(_) => "udiv",
+            OpCode::OpSMod(_) => "smod",
+            OpCode::OpUMod(_) => "umod",
+            OpCode::OpShl(_) => "shl",
+            OpCode::OpSShr(_) => "sshr",
+            OpCode::OpUShr(_) => "ushr",
+            OpCode::OpAnd(_) => "and",
+            OpCode::OpOr(_) => "or",
+            OpCode::OpXor(_) => "xor",
+            OpCode::OpNeg(_) => "neg",
+            OpCode::OpNot(_) => "not",
+            OpCode::OpIncr(_) => "incr",
+            OpCode::OpDecr(_) => "decr",
+            OpCode::OpCall(_) => "call",
+            OpCode::OpCallMethod(_) => "call_method",
+            OpCode::OpCallClosure(_) => "call_closure",
+            OpCode::OpStaticClosure(_) => "static_closure",
+            OpCode::OpInstanceClosure(_) => "instance_closure",
+            OpCode::OpVirtualClosure(_) => "virtual_closure",
+            OpCode::OpGetGlobal(_) => "get_global",
+            OpCode::OpSetGlobal(_) => "set_global",
+            OpCode::OpGetField(_) => "get_field",
+            OpCode::OpSetField(_) => "set_field",
+            OpCode::OpDynGet(_) => "dyn_get",
+            OpCode::OpDynSet(_) => "dyn_set",
+            OpCode::OpJTrue(_) => "j_true",
+            OpCode::OpJFalse(_) => "j_false",
+            OpCode::OpJNull(_) => "j_null",
+            OpCode::OpJNotNull(_) => "j_not_null",
+            OpCode::OpJSLt(_) => "j_slt",
+            OpCode::OpJSGte(_) => "j_sgte",
+            OpCode::OpJSGt(_) => "j_sgt",
+            OpCode::OpJSLte(_) => "j_slte",
+            OpCode::OpJULt(_) => "j_ult",
+            OpCode::OpJUGte(_) => "j_ugte",
+            OpCode::OpJNotLt(_) => "j_nlt",
+            OpCode::OpJNotGte(_) => "j_ngte",
+            OpCode::OpJEq(_) => "jeq",
+            OpCode::OpJNotEq(_) => "j_neq",
+            OpCode::OpJAlways(_) => "j_always",
+            OpCode::OpRet(_) => "ret",
+            OpCode::OpSwitch(_) => "switch",
+            OpCode::OpPhi(_) => "phi",
+            OpCode::OpToDyn(_) => "to_dyn",
+            OpCode::OpToSFloat(_) => "to_sfloat",
+            OpCode::OpToUFloat(_) => "to_ufloat",
+            OpCode::OpToInt(_) => "to_int",
+            OpCode::OpSafeCast(_) => "safe_cast",
+            OpCode::OpUnsafeCast(_) => "unsafe_cast",
+            OpCode::OpToVirtual(_) => "to_virtual",
+            OpCode::OpThrow(_) => "throw",
+            OpCode::OpRethrow(_) => "rethrow",
+            OpCode::OpTrap(_) => "trap",
+            OpCode::OpEndTrap(_) => "end_trap",
+            OpCode::OpReceiveException(_) => "receive_exception",
+            OpCode::OpNullCheck(_) => "null_check",
+            OpCode::OpGetI8(_) => "get_i8",
+            OpCode::OpGetI16(_) => "get_i16",
+            OpCode::OpGetMem(_) => "get_mem",
+            OpCode::OpGetArray(_) => "get_array",
+            OpCode::OpSetI8(_) => "set_i8",
+            OpCode::OpSetI16(_) => "set_i16",
+            OpCode::OpSetMem(_) => "set_mem",
+            OpCode::OpSetArray(_) => "set_array",
+            OpCode::OpNew(_) => "new",
+            OpCode::OpArraySize(_) => "array_size",
+            OpCode::OpType(_) => "type",
+            OpCode::OpGetType(_) => "get_type",
+            OpCode::OpGetTID(_) => "get_tid",
+            OpCode::OpRef(_) => "ref",
+            OpCode::OpUnRef(_) => "un_ref",
+            OpCode::OpSetRef(_) => "set_ref",
+            OpCode::OpMakeEnum(_) => "make_enum",
+            OpCode::OpEnumAlloc(_) => "enum_alloc",
+            OpCode::OpEnumIndex(_) => "enum_index",
+            OpCode::OpEnumField(_) => "enum_field",
+            OpCode::OpSetEnumField(_) => "set_enum_field",
+            OpCode::OpAssert => "assert",
+            OpCode::OpRefData(_) => "ref_data",
+            OpCode::OpRefOffset(_) => "ref_offset",
+            OpCode::OpNop => "nop",
+        }
+    }
 }
