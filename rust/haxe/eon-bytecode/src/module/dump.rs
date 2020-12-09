@@ -227,7 +227,7 @@ fn dump_functions(
     for (i, v) in functions.iter().enumerate() {
         writeln!(
             string,
-            "#{index:<align$} = [{fidx}] {ty}",
+            "#{index:<align$} = fn[{fidx}] {ty}",
             index = i,
             align = len,
             fidx = v.f_index,
@@ -246,7 +246,7 @@ fn dump_functions(
         for (i, ssa_val) in v.ssa_values.iter().enumerate() {
             writeln!(
                 string,
-                "{space:indent$}#{index:<align$} {name}",
+                "{space:indent$}%{index:<align$} {name}",
                 space = " ",
                 indent = indent * 2,
                 index = i,
