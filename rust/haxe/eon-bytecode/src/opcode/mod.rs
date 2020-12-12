@@ -928,6 +928,108 @@ pub enum OpCode {
 }
 
 impl OpCode {
+    /// This function will return the `ValueIndex` of the SSA value the instruction assigns, or None
+    /// if the instruction does not assign a value.
+    pub fn get_assigned_value(&self) -> Option<ValueIndex> {
+        match self {
+            OpCode::OpMov(v) => Some(v.assigns),
+            OpCode::OpInt(v) => Some(v.assigns),
+            OpCode::OpFloat(v) => Some(v.assigns),
+            OpCode::OpBool(v) => Some(v.assigns),
+            OpCode::OpBytes(v) => Some(v.assigns),
+            OpCode::OpString(v) => Some(v.assigns),
+            OpCode::OpNull(v) => Some(*v),
+            OpCode::OpAdd(v) => Some(v.assigns),
+            OpCode::OpSub(v) => Some(v.assigns),
+            OpCode::OpMul(v) => Some(v.assigns),
+            OpCode::OpSDiv(v) => Some(v.assigns),
+            OpCode::OpUDiv(v) => Some(v.assigns),
+            OpCode::OpSMod(v) => Some(v.assigns),
+            OpCode::OpUMod(v) => Some(v.assigns),
+            OpCode::OpShl(v) => Some(v.assigns),
+            OpCode::OpSShr(v) => Some(v.assigns),
+            OpCode::OpUShr(v) => Some(v.assigns),
+            OpCode::OpAnd(v) => Some(v.assigns),
+            OpCode::OpOr(v) => Some(v.assigns),
+            OpCode::OpXor(v) => Some(v.assigns),
+            OpCode::OpNeg(v) => Some(v.assigns),
+            OpCode::OpNot(v) => Some(v.assigns),
+            OpCode::OpIncr(v) => Some(v.assigns),
+            OpCode::OpDecr(v) => Some(v.assigns),
+            OpCode::OpCall(v) => Some(v.assigns),
+            OpCode::OpCallMethod(v) => Some(v.assigns),
+            OpCode::OpCallClosure(v) => Some(v.assigns),
+            OpCode::OpStaticClosure(v) => Some(v.assigns),
+            OpCode::OpInstanceClosure(v) => Some(v.assigns),
+            OpCode::OpVirtualClosure(v) => Some(v.assigns),
+            OpCode::OpGetGlobal(v) => Some(v.assigns),
+            OpCode::OpSetGlobal(_) => None,
+            OpCode::OpGetField(v) => Some(v.assigns),
+            OpCode::OpSetField(_) => None,
+            OpCode::OpDynGet(v) => Some(v.assigns),
+            OpCode::OpDynSet(_) => None,
+            OpCode::OpJTrue(_) => None,
+            OpCode::OpJFalse(_) => None,
+            OpCode::OpJNull(_) => None,
+            OpCode::OpJNotNull(_) => None,
+            OpCode::OpCmp(v) => Some(v.assigns),
+            OpCode::OpJAlways(_) => None,
+            OpCode::OpRet(_) => None,
+            OpCode::OpSwitch(_) => None,
+            OpCode::OpPhi(v) => Some(v.assigns),
+            OpCode::OpToDyn(v) => Some(v.assigns),
+            OpCode::OpToSFloat(v) => Some(v.assigns),
+            OpCode::OpToUFloat(v) => Some(v.assigns),
+            OpCode::OpToInt(v) => Some(v.assigns),
+            OpCode::OpSafeCast(v) => Some(v.assigns),
+            OpCode::OpUnsafeCast(v) => Some(v.assigns),
+            OpCode::OpToVirtual(v) => Some(v.assigns),
+            OpCode::OpThrow(_) => None,
+            OpCode::OpRethrow(_) => None,
+            OpCode::OpTrap(_) => None,
+            OpCode::OpEndTrap(_) => None,
+            OpCode::OpReceiveException(v) => Some(v.assigns),
+            OpCode::OpNullCheck(_) => None,
+            OpCode::OpGetI8(v) => Some(v.assigns),
+            OpCode::OpGetI16(v) => Some(v.assigns),
+            OpCode::OpGetMem(v) => Some(v.assigns),
+            OpCode::OpGetArray(v) => Some(v.assigns),
+            OpCode::OpSetI8(_) => None,
+            OpCode::OpSetI16(_) => None,
+            OpCode::OpSetMem(_) => None,
+            OpCode::OpSetArray(_) => None,
+            OpCode::OpNew(v) => Some(*v),
+            OpCode::OpArraySize(v) => Some(v.assigns),
+            OpCode::OpType(v) => Some(v.assigns),
+            OpCode::OpGetType(v) => Some(v.assigns),
+            OpCode::OpGetTID(v) => Some(v.assigns),
+            OpCode::OpRef(v) => Some(v.assigns),
+            OpCode::OpUnRef(v) => Some(v.assigns),
+            OpCode::OpSetRef(_) => None,
+            OpCode::OpMakeEnum(v) => Some(v.assigns),
+            OpCode::OpEnumAlloc(v) => Some(v.assigns),
+            OpCode::OpEnumIndex(v) => Some(v.assigns),
+            OpCode::OpEnumField(v) => Some(v.assigns),
+            OpCode::OpSetEnumField(_) => None,
+            OpCode::OpAssert => None,
+            OpCode::OpRefData(v) => Some(v.assigns),
+            OpCode::OpRefOffset(v) => Some(v.assigns),
+            OpCode::OpNop => None,
+        }
+    }
+
+    /// Produces a string that represents the instruction and its parameters.
+    ///
+    /// # Information
+    ///
+    /// This function is not intended to be used as some kind of decodable "assembler" form of the
+    /// opcode. You could likely decode from the emitted string back to the original opcode as the
+    /// translation would be quite simple, but this function is only really intended for debugging
+    /// purposes.
+    ///
+    /// *THE FORMAT EMITTED BY THIS FUNCTION IS NOT STABLE, AND NEVER WILL BE*
+    ///
+    /// Please use serde for serializing/deserializing.
     pub fn opcode_dump(&self, module: &Module) -> String {
         match self {
             OpCode::OpMov(v) => v.opcode_dump(module, self.get_mnemonic()),
@@ -1016,6 +1118,14 @@ impl OpCode {
         }
     }
 
+    /// Returns a short "mnemonic" for the instruction. For example `OpMov` -> "mov".
+    ///
+    /// This is intended to be used for debugging purposes, the primary consumer being the
+    /// `opcode_dump` function
+    ///
+    /// Much like `opcode_dump`, the output for this function is *NOT STABLE* and *NEVER WILL BE*.
+    ///
+    /// Use serde for serialization/deserialization
     pub fn get_mnemonic(&self) -> &'static str {
         match self {
             OpCode::OpMov(_) => "mov",
