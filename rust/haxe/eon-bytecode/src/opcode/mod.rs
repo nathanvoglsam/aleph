@@ -433,6 +433,61 @@ impl FieldStore {
     }
 }
 
+/// Represents the supported set of comparison types for a conditional branch/comparison
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub enum ComparisonFn {
+    SignedLT,
+    SignedGT,
+    SignedGTE,
+    SignedLTE,
+    UnsignedLT,
+    UnsignedGT,
+    UnsignedLTE,
+    UnsignedGTE,
+    Eq,
+    Ne,
+}
+
+/// Layout for a comparison instruction.
+///
+/// This instruction compares to values and assigns the given value with the result of the
+/// comparison.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct Comparison {
+    /// The type of comparison to perform on the two values
+    pub comp_fn: ComparisonFn,
+
+    /// The SSA value assigned with the result of the comparison
+    pub assigns: ValueIndex,
+
+    /// The left hand side of the comparison
+    pub lhs: ValueIndex,
+
+    /// The right hand side of the comparison
+    pub rhs: ValueIndex,
+}
+
+impl Comparison {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let text = match self.comp_fn {
+            ComparisonFn::SignedLT => "slt",
+            ComparisonFn::SignedGT => "sgt",
+            ComparisonFn::SignedGTE => "sge",
+            ComparisonFn::SignedLTE => "sle",
+            ComparisonFn::UnsignedLT => "ult",
+            ComparisonFn::UnsignedGT => "ugt",
+            ComparisonFn::UnsignedLTE => "ule",
+            ComparisonFn::UnsignedGTE => "uge",
+            ComparisonFn::Eq => "eq",
+            ComparisonFn::Ne => "ne",
+        };
+        format!(
+            "{} {} %{} %{} %{}",
+            mnemonic, text, self.assigns.0, self.lhs.0, self.rhs.0
+        )
+    }
+}
+
 /// Layout for a conditional branch where the comparison value is implicit to the opcode itself.
 ///
 /// Once again, like with `Switch` we have to change the meaning slightly. HashLink specifies jumps
@@ -457,37 +512,6 @@ impl CondBranch {
         format!(
             "{} %{} ${} ${}",
             mnemonic, self.check.0, self.success.0, self.failure.0
-        )
-    }
-}
-
-/// Layout for a comparison branch where we compare two provided values to decide whether to branch
-/// or not.
-///
-/// This is a more general form of `CondBranch` where the value to compare against can also be
-/// be provided.
-///
-/// See `CondBranch` docs for an explanation to how this differs from HashLink
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct CompBranch {
-    /// Left hand side of comparison
-    pub lhs: ValueIndex,
-
-    /// Right hand side of comparison
-    pub rhs: ValueIndex,
-
-    /// The basic block to jump to upon the check succeeding
-    pub success: BasicBlockIndex,
-
-    /// The basic block to jump to upon the check failing
-    pub failure: BasicBlockIndex,
-}
-
-impl CompBranch {
-    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!(
-            "{} %{} %{} ${} ${}",
-            mnemonic, self.lhs.0, self.rhs.0, self.success.0, self.failure.0
         )
     }
 }
@@ -838,16 +862,10 @@ pub enum OpCode {
     OpJFalse(CondBranch),
     OpJNull(CondBranch),
     OpJNotNull(CondBranch),
-    OpJSLt(CompBranch),
-    OpJSGte(CompBranch),
-    OpJSGt(CompBranch),
-    OpJSLte(CompBranch),
-    OpJULt(CompBranch),
-    OpJUGte(CompBranch),
-    OpJNotLt(CompBranch),
-    OpJNotGte(CompBranch),
-    OpJEq(CompBranch),
-    OpJNotEq(CompBranch),
+
+    // Comparison opcode
+    OpCmp(Comparison),
+
     OpJAlways(BasicBlockIndex),
     OpRet(ValueIndex),
     OpSwitch(Switch),
@@ -952,16 +970,7 @@ impl OpCode {
             OpCode::OpJFalse(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpJNull(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpJNotNull(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJSLt(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJSGte(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJSGt(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJSLte(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJULt(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJUGte(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJNotLt(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJNotGte(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJEq(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpJNotEq(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpCmp(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpJAlways(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpRet(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpSwitch(v) => v.opcode_dump(module, self.get_mnemonic()),
@@ -1049,16 +1058,7 @@ impl OpCode {
             OpCode::OpJFalse(_) => "j_false",
             OpCode::OpJNull(_) => "j_null",
             OpCode::OpJNotNull(_) => "j_not_null",
-            OpCode::OpJSLt(_) => "j_slt",
-            OpCode::OpJSGte(_) => "j_sgte",
-            OpCode::OpJSGt(_) => "j_sgt",
-            OpCode::OpJSLte(_) => "j_slte",
-            OpCode::OpJULt(_) => "j_ult",
-            OpCode::OpJUGte(_) => "j_ugte",
-            OpCode::OpJNotLt(_) => "j_nlt",
-            OpCode::OpJNotGte(_) => "j_ngte",
-            OpCode::OpJEq(_) => "jeq",
-            OpCode::OpJNotEq(_) => "j_neq",
+            OpCode::OpCmp(_) => "cmp",
             OpCode::OpJAlways(_) => "j_always",
             OpCode::OpRet(_) => "ret",
             OpCode::OpSwitch(_) => "switch",

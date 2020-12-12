@@ -32,10 +32,11 @@ use eon_bytecode::indexes::{
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{
-    AllocEnum, Binop, Call, CallClosure, CallMethod, Cast, CompBranch, CondBranch, FieldLoad,
-    FieldStore, InstanceClosure, Load, LoadBool, LoadBytes, LoadEnumField, LoadFloat, LoadGlobal,
-    LoadInt, LoadString, LoadType, MakeEnum, OpCode, ReadMemory, RefData, RefOffset, StaticClosure,
-    Store, StoreEnumField, StoreGlobal, Switch, Trap, Unop, VirtualClosure, WriteMemory,
+    AllocEnum, Binop, Call, CallClosure, CallMethod, Cast, Comparison, ComparisonFn, CondBranch,
+    FieldLoad, FieldStore, InstanceClosure, Load, LoadBool, LoadBytes, LoadEnumField, LoadFloat,
+    LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum, OpCode, ReadMemory, RefData, RefOffset,
+    StaticClosure, Store, StoreEnumField, StoreGlobal, Switch, Trap, Unop, VirtualClosure,
+    WriteMemory,
 };
 
 /// Translate a load type HashLink opcode into the corresponding form in Eon, built from the
@@ -545,6 +546,14 @@ pub fn translate_cond_branch(
 /// Translate a comparison branch type HashLink opcode into the corresponding form in Eon, built
 /// from the provided values
 ///
+/// # Warning
+///
+/// This function can *NOT* be used in isolation to translate a comparison based branch. Eon
+/// bytecode is sane, and separates the comparison from the branching instruction so to correctly
+/// translate this opcode requires emitting multiple instructions. This function will translate the
+/// branch in to a *COMPARISON*. The actual branch, which should be based on the value assigned by
+/// the comparison, will need to be emitted into the instruction stream separately
+///
 /// # Errors
 ///
 /// Will return `None` if the source HashLink opcode is not the correct type of instruction for this
@@ -552,30 +561,30 @@ pub fn translate_cond_branch(
 ///
 pub fn translate_comp_branch(
     op: &hashlink_bytecode::OpCode,
+    assigns: ValueIndex,
     lhs: ValueIndex,
     rhs: ValueIndex,
-    success: BasicBlockIndex,
-    failure: BasicBlockIndex,
 ) -> Option<OpCode> {
-    let inner = CompBranch {
+    let comp_fn = match op {
+        hashlink_bytecode::OpCode::OpJSLt(_) => Some(ComparisonFn::SignedLT),
+        hashlink_bytecode::OpCode::OpJSGte(_) => Some(ComparisonFn::SignedGTE),
+        hashlink_bytecode::OpCode::OpJSGt(_) => Some(ComparisonFn::SignedGT),
+        hashlink_bytecode::OpCode::OpJSLte(_) => Some(ComparisonFn::SignedLTE),
+        hashlink_bytecode::OpCode::OpJULt(_) => Some(ComparisonFn::UnsignedLT),
+        hashlink_bytecode::OpCode::OpJUGte(_) => Some(ComparisonFn::UnsignedGTE),
+        hashlink_bytecode::OpCode::OpJNotLt(_) => Some(ComparisonFn::SignedGTE),
+        hashlink_bytecode::OpCode::OpJNotGte(_) => Some(ComparisonFn::SignedLT),
+        hashlink_bytecode::OpCode::OpJEq(_) => Some(ComparisonFn::Eq),
+        hashlink_bytecode::OpCode::OpJNotEq(_) => Some(ComparisonFn::Ne),
+        _ => None,
+    }?;
+    let inner = Comparison {
+        comp_fn,
+        assigns,
         lhs,
-        success,
-        failure,
         rhs,
     };
-    match op {
-        hashlink_bytecode::OpCode::OpJSLt(_) => Some(OpCode::OpJSLt(inner)),
-        hashlink_bytecode::OpCode::OpJSGte(_) => Some(OpCode::OpJSGte(inner)),
-        hashlink_bytecode::OpCode::OpJSGt(_) => Some(OpCode::OpJSGt(inner)),
-        hashlink_bytecode::OpCode::OpJSLte(_) => Some(OpCode::OpJSLte(inner)),
-        hashlink_bytecode::OpCode::OpJULt(_) => Some(OpCode::OpJULt(inner)),
-        hashlink_bytecode::OpCode::OpJUGte(_) => Some(OpCode::OpJUGte(inner)),
-        hashlink_bytecode::OpCode::OpJNotLt(_) => Some(OpCode::OpJNotLt(inner)),
-        hashlink_bytecode::OpCode::OpJNotGte(_) => Some(OpCode::OpJNotGte(inner)),
-        hashlink_bytecode::OpCode::OpJEq(_) => Some(OpCode::OpJEq(inner)),
-        hashlink_bytecode::OpCode::OpJNotEq(_) => Some(OpCode::OpJNotEq(inner)),
-        _ => None,
-    }
+    Some(OpCode::OpCmp(inner))
 }
 
 /// Translate a static closure type HashLink opcode into the corresponding form in Eon, built from

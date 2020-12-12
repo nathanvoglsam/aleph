@@ -187,7 +187,7 @@ pub fn test_translation_coverage() {
             | hashlink_bytecode::OpCode::OpJNotGte(_)
             | hashlink_bytecode::OpCode::OpJEq(_)
             | hashlink_bytecode::OpCode::OpJNotEq(_) => {
-                translate_comp_branch(&op, vi, vi, bb, bb).unwrap()
+                translate_comp_branch(&op, vi, vi, vi).unwrap()
             }
 
             hashlink_bytecode::OpCode::OpJAlways(_) => {
