@@ -65,7 +65,7 @@ pub fn build_bb(
 
     // As we go we'll be generating various bits of metadata about the transcoded instructions
     let registers = vec![Register::default(); old_fn.registers.len()];
-    let register_map = Vec::new();
+    let register_map = HashMap::new();
     let basic_block_registers_read = Vec::new();
     let basic_block_registers_written = Vec::new();
     let mut reg_meta = RegisterMetadata {
@@ -134,7 +134,7 @@ pub fn type_check_signature(
         });
 
         // Insert the information to map the SSA value back to the register it refers to
-        reg_meta.register_map.push(RegisterIndex(i));
+        reg_meta.register_map.insert(ValueIndex(i), RegisterIndex(i));
     }
 
     Some(())
@@ -1227,9 +1227,6 @@ pub fn handle_ssa_phi_import(
     bb_index: usize,
     v: RegisterIndex,
 ) -> Option<ValueIndex> {
-    // Assert that the two lengths match so that the vec will continue to work as a map
-    debug_assert!(reg_meta.register_map.len() == new_fn.ssa_values.len());
-
     // Lookup the type from the source HashLink (we use the same indices)
     let type_ = old_fn.registers[v.0] as usize;
 
@@ -1243,7 +1240,7 @@ pub fn handle_ssa_phi_import(
     let _ = reg_meta.basic_block_registers_written[bb_index].insert(v, value);
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
-    reg_meta.register_map.push(v);
+    reg_meta.register_map.insert(value, v);
 
     Some(value)
 }
@@ -1256,9 +1253,6 @@ fn handle_ssa_write(
     bb_index: usize,
     v: RegisterIndex,
 ) -> Option<ValueIndex> {
-    // Assert that the two lengths match so that the vec will continue to work as a map
-    debug_assert!(reg_meta.register_map.len() == new_fn.ssa_values.len());
-
     // Lookup the type from the source HashLink (we use the same indices)
     let type_ = old_fn.registers[v.0] as usize;
 
@@ -1275,7 +1269,7 @@ fn handle_ssa_write(
     reg_meta.basic_block_registers_written[bb_index].insert(v, value)?;
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
-    reg_meta.register_map.push(v);
+    reg_meta.register_map.insert(value, v);
 
     Some(value)
 }

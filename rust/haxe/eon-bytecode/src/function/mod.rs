@@ -119,7 +119,7 @@ pub struct RegisterMetadata {
     pub registers: Vec<Register>,
 
     /// Maps an SSA value to a register in the register list
-    pub register_map: Vec<RegisterIndex>,
+    pub register_map: HashMap<ValueIndex, RegisterIndex>,
 
     /// This list associates with each basic block the list of *registers* that it reads
     pub basic_block_registers_read: Vec<HashSet<RegisterIndex>>,
