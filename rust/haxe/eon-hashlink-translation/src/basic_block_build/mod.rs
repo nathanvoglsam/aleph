@@ -28,14 +28,18 @@
 //
 
 mod opcode_translate;
+mod remap_reads;
 mod utils;
 
 pub(crate) use opcode_translate::translate_opcode;
+pub(crate) use remap_reads::remap_reads;
 pub(crate) use utils::find_source_span;
+pub(crate) use utils::get_basic_block_info;
 pub(crate) use utils::get_basic_block_predecessor_list;
 pub(crate) use utils::handle_ssa_phi_import;
 pub(crate) use utils::handle_ssa_write;
 pub(crate) use utils::handle_ssa_write_no_register;
+pub(crate) use utils::BBInfo;
 
 use crate::basic_block_graph::BasicBlockGraph;
 use eon_bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
@@ -103,7 +107,7 @@ pub fn build_bb(
 
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
-    build_register_usage_map(&mut reg_meta, &old_fn, &spans);
+    build_register_usage_map(&mut reg_meta, &old_fn, fn_ty, &spans);
 
     // Now begins the fun part where we start translating the HashLink bytecode
     translate_basic_blocks(
@@ -124,7 +128,7 @@ pub fn build_bb(
     // This is because the information needed to correctly translate these reads is only created
     // once the above first pass is completed. Now the information is available, we can use it to
     // remap the register indices to value indices
-    remap_register_indices(new_fn, &mut reg_meta)?;
+    remap_register_indices(new_fn, &mut reg_meta, &bb_graph, fn_ty, &spans)?;
 
     new_fn.metadata.reg_data = Some(reg_meta);
 
@@ -167,9 +171,10 @@ pub fn type_check_signature(
 pub fn build_register_usage_map(
     reg_meta: &mut RegisterMetadata,
     old_fn: &hashlink_bytecode::Function,
+    fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
 ) {
-    for (lower_bound, upper_bound) in spans {
+    for (i, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // Unwrap the bounds and get the sub slice that the span refers to
         let lower_bound = lower_bound.0;
         let upper_bound = upper_bound.0;
@@ -177,6 +182,14 @@ pub fn build_register_usage_map(
 
         let mut reg_reads = HashSet::new();
         let mut reg_writes = HashMap::new();
+
+        // We special case the first basic block as that will be importing the latest states from
+        // the function arguments
+        if i == 0 {
+            for (arg_index, _) in fn_ty.args.iter().enumerate() {
+                reg_writes.insert(RegisterIndex(arg_index), ValueIndex(arg_index));
+            }
+        }
 
         // Iterate over every opcode and record what registers it reads and writes
         for op in ops {
@@ -214,13 +227,7 @@ pub fn translate_basic_blocks(
         let upper_bound = upper_bound.0;
 
         // We need to get some info based on the instructions that jump to this block
-        let (
-            has_multiple_predecessors,
-            has_single_predecessor,
-            has_no_predecessor,
-            is_trap_handler,
-            trap_register,
-        ) = get_basic_block_info(&old_fn, bb_graph, lower_bound)?;
+        let bb_info = get_basic_block_info(&old_fn, bb_graph, lower_bound)?;
 
         // Get the set of predecessor basic block indexes that we will need for emitting phi
         // instructions
@@ -228,7 +235,7 @@ pub fn translate_basic_blocks(
 
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
-        if has_multiple_predecessors {
+        if bb_info.has_multiple_predecessors {
             for reg in 0..old_fn.registers.len() {
                 // Dereference and new-type the register into our own type
                 let reg = RegisterIndex(reg);
@@ -263,14 +270,14 @@ pub fn translate_basic_blocks(
         //
         // The `get_basic_block_info` function automatically checks for errors so
         // `has_multiple_predecessors` and `is_trap_handler` are implicitly mutually exclusive
-        if is_trap_handler {
+        if bb_info.is_trap_handler {
             // Emit a new SSA value that gets assigned the exception value
             let assigns = handle_ssa_write(
                 new_fn,
                 old_fn,
                 reg_meta,
                 bb_index,
-                RegisterIndex(trap_register),
+                RegisterIndex(bb_info.trap_register),
             )?;
 
             // Build the instruction layout
@@ -301,105 +308,93 @@ pub fn translate_basic_blocks(
         }
     }
 
-    Some(())
-}
-
-/// This function uses the source HashLink function, the earlier computed BBGraph and the index of
-/// the first instruction in the source HashLink of the relevant basic block to compute some info
-/// about the basic block in question.
-///
-/// This function also does some error checking
-pub fn get_basic_block_info(
-    old_fn: &hashlink_bytecode::Function,
-    bb_graph: &BasicBlockGraph,
-    first_instruction_index: usize,
-) -> Option<(bool, bool, bool, bool, usize)> {
-    // Whether this basic block has more than one predecessor
-    let has_multiple_predecessors;
-
-    // Whether this basic block is only reached from a single other basic block. This is
-    // useful so we can elide some phi instructions.
-    let has_single_predecessor;
-
-    // We also need to know if for w/e reason this block has no predecessors so we can
-    // ensure that this is *ONLY* true for the entry block
-    let has_no_predecessor;
-
-    // Whether we've detected that this basic block is intended to be used as a trap handler
-    // for when an exception is thrown. This requires us to enforce that the basic block is
-    // only reached from a single source (the OpTrap) and we need to emit our own
-    // instruction for handling reading the exception
-    let is_trap_handler;
-
-    // The register the HashLink bytecode was told to *STORE* the exception into. We need
-    // this so we can remap the HashLink `OpTrap` into our own pair of `OpTrap` and
-    // `OpReceiveException`.
-    let trap_register;
-
-    // We need to get the list of instruction indexes that contain a branch instruction
-    // with this basic block as the target so we can deduce the above information
+    // Now we need to pass over the basic blocks again and patch up some of the metadata with
+    // some missing information for the next phase of the algorithm.
     //
-    // We can use the info calculated earlier from the BBGraph
-    let sources = bb_graph
-        .destination_sources
-        .get(&InstructionIndex(first_instruction_index));
-    if let Some(sources) = sources {
-        // These are pretty self explanatory
-        has_multiple_predecessors = sources.len() > 1;
-        has_single_predecessor = sources.len() == 1;
-        has_no_predecessor = sources.len() == 0;
+    // Specifically we require that the "latest state" map holds information for the entire set of
+    // registers for every basic block
+    for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
+        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0)?;
 
-        // Here we filter out and create a vector of only the trap instructions. This way
-        let mut trap_sources = sources.iter().filter_map(|v| {
-            let source_op = &old_fn.ops[v.0];
-            match source_op {
-                hashlink_bytecode::OpCode::OpTrap(v) => Some(v),
-                _ => None,
-            }
-        });
+        if predecessors.len() == 1 {
+            let predecessor = predecessors.iter().next().unwrap();
 
-        // We only care about the first response, if there's any more than a single OpTrap that
-        // targets this basic block that is an error we need to surface.
-        if let Some(trap) = trap_sources.next() {
-            is_trap_handler = true;
-            trap_register = trap.param_1 as usize;
+            // Swap the actual map out of the array as we need to mutate another member in the array
+            let mut pred_info = HashMap::new();
+            std::mem::swap(&mut pred_info, &mut reg_meta.basic_block_registers_written[predecessor.0]);
 
-            // If a trap handler block has multiple predecessor blocks then that is an error
-            if has_multiple_predecessors {
-                return None;
+            let iterator = pred_info
+                .iter()
+                .map(|(k, v)| (*k, *v));
+            for (k, v) in iterator {
+                if !reg_meta.basic_block_registers_written[bb_index].contains_key(&k) {
+                    reg_meta.basic_block_registers_written[bb_index].insert(k, v)?;
+                }
             }
 
-            // The iterator should only yield a single result. If it can yield more then we have
-            // multiple traps leading to the same handler, which is an error.
-            if trap_sources.count() > 0 {
-                return None;
-            }
-        } else {
-            is_trap_handler = false;
-            trap_register = 0;
+            // Move the original map back in to the list. Dropping the old one is find and an empty
+            // map doesn't allocate so this should have almost no effect on performance
+            reg_meta.basic_block_registers_written[predecessor.0] = pred_info;
         }
-    } else {
-        has_multiple_predecessors = false;
-        has_single_predecessor = false;
-        has_no_predecessor = true;
-        is_trap_handler = false;
-        trap_register = 0;
     }
 
-    Some((
-        has_multiple_predecessors,
-        has_single_predecessor,
-        has_no_predecessor,
-        is_trap_handler,
-        trap_register,
-    ))
+    Some(())
 }
 
 pub fn remap_register_indices(
     new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    bb_graph: &BasicBlockGraph,
+    fn_ty: &TypeFunction,
+    spans: &Vec<(InstructionIndex, InstructionIndex)>,
 ) -> Option<()> {
-    for (bb_index, bb) in new_fn.basic_blocks.iter().enumerate() {}
+    // We allocate reuse this between iterations to save allocating every iteration
+    let mut latest_states = HashMap::new();
+
+    // Iterate over all basic blocks
+    for (bb_index, bb) in new_fn.basic_blocks.iter_mut().enumerate() {
+        let (lower_bound, _) = spans[bb_index];
+
+        // Get the set of predecessor basic block indexes that we will need for importing values
+        // in the special case of basic blocks with only a single predecessor
+        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0)?;
+
+        // The entry basic block is a special case where the latest state of the registers is
+        // imported directly from the function arguments
+        if bb_index == 0 {
+            for arg_index in 0..fn_ty.args.len() {
+                latest_states.insert(RegisterIndex(arg_index), ValueIndex(arg_index));
+            }
+        }
+
+        // If there's only a single predecessor we don't emit phi instructions but import the values
+        // directly from the predecessor blocks. Phi instructions are only needed to merge values
+        // that converge from distinct branches/execution paths.
+        //
+        // As such we fill the latest states map directly with the contents of the predecessor's
+        // final states.
+        if predecessors.len() == 1 {
+            let predecessor = predecessors.iter().next().unwrap();
+            for (r, v) in reg_meta.basic_block_registers_written[predecessor.0].iter() {
+                latest_states.insert(*r, *v);
+            }
+        }
+
+        // Iterate over every opcode, remapping reads and updating the rolling "latest state" for
+        // each register
+        for (op_index, op) in bb.ops.iter_mut().enumerate() {
+            remap_reads(op, reg_meta, &latest_states)?;
+
+            if let Some(write) = op.get_assigned_value() {
+                if let Some(register) = reg_meta.register_map.get(&write) {
+                    latest_states.insert(*register, write);
+                }
+            }
+        }
+
+        // Clear the state map for use in the next iteration, but keep the allocated memory around
+        latest_states.clear();
+    }
 
     Some(())
 }

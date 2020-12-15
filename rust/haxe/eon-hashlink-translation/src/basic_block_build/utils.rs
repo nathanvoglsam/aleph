@@ -134,3 +134,104 @@ pub fn handle_ssa_write_no_register(new_fn: &mut Function, type_: TypeIndex) -> 
     new_fn.ssa_values.push(SSAValue { type_ });
     value
 }
+
+/// A struct that represents the set of information computed from the `get_basic_block_info`
+/// function
+pub struct BBInfo {
+    /// Whether this basic block has more than one predecessor
+    pub has_multiple_predecessors: bool,
+
+    /// Whether this basic block is only reached from a single other basic block. This is
+    /// useful so we can elide some phi instructions.
+    pub has_single_predecessor: bool,
+
+    /// We also need to know if for w/e reason this block has no predecessors so we can
+    /// ensure that this is *ONLY* true for the entry block
+    pub has_no_predecessor: bool,
+
+    /// Whether we've detected that this basic block is intended to be used as a trap handler
+    /// for when an exception is thrown. This requires us to enforce that the basic block is
+    /// only reached from a single source (the OpTrap) and we need to emit our own
+    /// instruction for handling reading the exception
+    pub is_trap_handler: bool,
+
+    /// The register the HashLink bytecode was told to *STORE* the exception into. We need
+    /// this so we can remap the HashLink `OpTrap` into our own pair of `OpTrap` and
+    /// `OpReceiveException`.
+    pub trap_register: usize,
+}
+
+/// This function uses the source HashLink function, the earlier computed BBGraph and the index of
+/// the first instruction in the source HashLink of the relevant basic block to compute some info
+/// about the basic block in question.
+///
+/// This function also does some error checking
+pub fn get_basic_block_info(
+    old_fn: &hashlink_bytecode::Function,
+    bb_graph: &BasicBlockGraph,
+    first_instruction_index: usize,
+) -> Option<BBInfo> {
+    let has_multiple_predecessors;
+    let has_single_predecessor;
+    let has_no_predecessor;
+    let is_trap_handler;
+    let trap_register;
+
+    // We need to get the list of instruction indexes that contain a branch instruction
+    // with this basic block as the target so we can deduce the above information
+    //
+    // We can use the info calculated earlier from the BBGraph
+    let sources = bb_graph
+        .destination_sources
+        .get(&InstructionIndex(first_instruction_index));
+    if let Some(sources) = sources {
+        // These are pretty self explanatory
+        has_multiple_predecessors = sources.len() > 1;
+        has_single_predecessor = sources.len() == 1;
+        has_no_predecessor = sources.len() == 0;
+
+        // Here we filter out and create a vector of only the trap instructions. This way
+        let mut trap_sources = sources.iter().filter_map(|v| {
+            let source_op = &old_fn.ops[v.0];
+            match source_op {
+                hashlink_bytecode::OpCode::OpTrap(v) => Some(v),
+                _ => None,
+            }
+        });
+
+        // We only care about the first response, if there's any more than a single OpTrap that
+        // targets this basic block that is an error we need to surface.
+        if let Some(trap) = trap_sources.next() {
+            is_trap_handler = true;
+            trap_register = trap.param_1 as usize;
+
+            // If a trap handler block has multiple predecessor blocks then that is an error
+            if has_multiple_predecessors {
+                return None;
+            }
+
+            // The iterator should only yield a single result. If it can yield more then we have
+            // multiple traps leading to the same handler, which is an error.
+            if trap_sources.count() > 0 {
+                return None;
+            }
+        } else {
+            is_trap_handler = false;
+            trap_register = 0;
+        }
+    } else {
+        has_multiple_predecessors = false;
+        has_single_predecessor = false;
+        has_no_predecessor = true;
+        is_trap_handler = false;
+        trap_register = 0;
+    }
+
+    Some(BBInfo {
+        has_multiple_predecessors,
+        has_single_predecessor,
+        has_no_predecessor,
+        is_trap_handler,
+        trap_register,
+    })
+}
