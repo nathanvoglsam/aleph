@@ -36,6 +36,7 @@ use eon_bytecode::indexes::{
     GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
+use std::collections::HashSet;
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///
@@ -62,6 +63,7 @@ use eon_bytecode::opcode::{CondBranch, OpCode};
 pub fn translate_opcode(
     new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    non_reg_values: &mut HashSet<ValueIndex>,
     old_fn: &hashlink_bytecode::Function,
     spans: &[(InstructionIndex, InstructionIndex)],
     bool_type_index: TypeIndex,
@@ -597,6 +599,11 @@ pub fn translate_opcode(
             };
             let branch = OpCode::OpJTrue(inner);
 
+            // We've created a special value here that doesn't correspond to an actual register in
+            // the source HashLink bytecode. We need to hold on to this information for later
+            non_reg_values.insert(assigns);
+
+            // Add our instructions
             new_fn.basic_blocks[bb_index].ops.push(comparison);
             new_fn.basic_blocks[bb_index].ops.push(branch);
         }

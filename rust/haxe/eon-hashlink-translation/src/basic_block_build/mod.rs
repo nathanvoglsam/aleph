@@ -91,6 +91,9 @@ pub fn build_bb(
         basic_block_registers_written,
     };
 
+    // The set of values that do not have a matching register in the HashLink source.
+    let mut non_reg_values = HashSet::new();
+
     // Pre allocate the list of empty basic blocks
     for _ in 0..spans.len() {
         new_fn.basic_blocks.push(BasicBlock { ops: Vec::new() });
@@ -121,6 +124,7 @@ pub fn build_bb(
     translate_basic_blocks(
         new_fn,
         &mut reg_meta,
+        &mut non_reg_values,
         &old_fn,
         &bb_graph,
         fn_ty,
@@ -136,7 +140,14 @@ pub fn build_bb(
     // This is because the information needed to correctly translate these reads is only created
     // once the above first pass is completed. Now the information is available, we can use it to
     // remap the register indices to value indices
-    remap_register_indices(new_fn, &mut reg_meta, &bb_graph, fn_ty, &spans)?;
+    remap_register_indices(
+        new_fn,
+        &mut reg_meta,
+        &non_reg_values,
+        &bb_graph,
+        fn_ty,
+        &spans,
+    )?;
 
     new_fn.metadata.reg_data = Some(reg_meta);
 
@@ -228,6 +239,7 @@ pub fn build_register_usage_map(
 pub fn translate_basic_blocks(
     new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    non_reg_values: &mut HashSet<ValueIndex>,
     old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
     fn_ty: &TypeFunction,
@@ -311,6 +323,7 @@ pub fn translate_basic_blocks(
             translate_opcode(
                 new_fn,
                 reg_meta,
+                non_reg_values,
                 old_fn,
                 spans,
                 bool_type_index,
@@ -358,6 +371,7 @@ pub fn translate_basic_blocks(
 pub fn remap_register_indices(
     new_fn: &mut Function,
     reg_meta: &mut RegisterMetadata,
+    non_reg_values: &HashSet<ValueIndex>,
     bb_graph: &BasicBlockGraph,
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
@@ -397,7 +411,7 @@ pub fn remap_register_indices(
         // Iterate over every opcode, remapping reads and updating the rolling "latest state" for
         // each register
         for (op_index, op) in bb.ops.iter_mut().enumerate() {
-            remap_reads(op, reg_meta, &latest_states);
+            remap_reads(op, reg_meta, non_reg_values, &latest_states);
 
             if let Some(write) = op.get_assigned_value() {
                 if let Some(register) = reg_meta.register_map.get(&write) {
