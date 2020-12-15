@@ -79,6 +79,19 @@ pub fn build_bb(
         })
         .unwrap();
 
+    let void_type_index = module
+        .types
+        .iter()
+        .enumerate()
+        .find_map(|(i, v)| {
+            if let Type::Void = v {
+                Some(TypeIndex(i))
+            } else {
+                None
+            }
+        })
+        .unwrap();
+
     // As we go we'll be generating various bits of metadata about the transcoded instructions
     let registers = vec![Register::default(); old_fn.registers.len()];
     let register_map = HashMap::new();
@@ -130,6 +143,7 @@ pub fn build_bb(
         fn_ty,
         &spans,
         bool_type_index,
+        void_type_index
     )?;
 
     // The next phase requires a second pass over the now partially translated instructions.
@@ -245,6 +259,7 @@ pub fn translate_basic_blocks(
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
     bool_type_index: TypeIndex,
+    void_type_index: TypeIndex,
 ) -> TranspileResult<()> {
     for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // Unwrap the lower and upper bounds from the reference and new-type
@@ -327,6 +342,7 @@ pub fn translate_basic_blocks(
                 old_fn,
                 spans,
                 bool_type_index,
+                void_type_index,
                 bb_index,
                 op_index,
                 old_op,

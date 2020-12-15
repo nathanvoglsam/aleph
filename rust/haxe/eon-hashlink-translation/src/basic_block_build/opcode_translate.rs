@@ -67,6 +67,7 @@ pub fn translate_opcode(
     old_fn: &hashlink_bytecode::Function,
     spans: &[(InstructionIndex, InstructionIndex)],
     bool_type_index: TypeIndex,
+    void_type_index: TypeIndex,
     bb_index: usize,
     op_index: usize,
     old_op: &hashlink_bytecode::OpCode,
@@ -747,8 +748,21 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpRet(params)
-        | hashlink_bytecode::OpCode::OpThrow(params)
+        hashlink_bytecode::OpCode::OpRet(params) => {
+            // Register index
+
+            let reg_type = old_fn.registers[params.param_1 as usize] as usize;
+            let new_op = if reg_type == void_type_index.0 {
+                OpCode::OpRetVoid
+            } else {
+                let value = ValueIndex(params.param_1 as usize);
+                translate_value_index(old_op, value).unwrap()
+            };
+
+            new_fn.basic_blocks[bb_index].ops.push(new_op);
+        }
+
+        hashlink_bytecode::OpCode::OpThrow(params)
         | hashlink_bytecode::OpCode::OpRethrow(params)
         | hashlink_bytecode::OpCode::OpNullCheck(params) => {
             // Register index
