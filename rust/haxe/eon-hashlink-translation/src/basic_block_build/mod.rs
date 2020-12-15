@@ -42,6 +42,7 @@ pub(crate) use utils::handle_ssa_write_no_register;
 pub(crate) use utils::BBInfo;
 
 use crate::basic_block_graph::BasicBlockGraph;
+use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
 use eon_bytecode::indexes::{InstructionIndex, RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::module::Module;
@@ -55,21 +56,28 @@ pub fn build_bb(
     module: &Module,
     bb_graph: BasicBlockGraph,
     mut spans: Vec<(InstructionIndex, InstructionIndex)>,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // Get the actual function type value, checking to ensure it is of the correct type category
     // (Function or Method)
     let fn_ty = &module.types[new_fn.type_.0];
-    let fn_ty = fn_ty.get_type_function()?;
+    let fn_ty = fn_ty.get_type_function().ok_or(type_index_error(old_fn))?;
 
     // We need to find the index of the bool type as we need it for part of the translation process
     // later
-    let bool_type_index = module.types.iter().enumerate().find_map(|(i, v)| {
-        if let Type::Bool = v {
-            Some(TypeIndex(i))
-        } else {
-            None
-        }
-    })?;
+    //
+    // This is a hard error as realistically this should be declared in every module, so we panic.
+    let bool_type_index = module
+        .types
+        .iter()
+        .enumerate()
+        .find_map(|(i, v)| {
+            if let Type::Bool = v {
+                Some(TypeIndex(i))
+            } else {
+                None
+            }
+        })
+        .unwrap();
 
     // As we go we'll be generating various bits of metadata about the transcoded instructions
     let registers = vec![Register::default(); old_fn.registers.len()];
@@ -132,7 +140,7 @@ pub fn build_bb(
 
     new_fn.metadata.reg_data = Some(reg_meta);
 
-    Some(())
+    Ok(())
 }
 
 pub fn type_check_signature(
@@ -140,7 +148,7 @@ pub fn type_check_signature(
     reg_meta: &mut RegisterMetadata,
     old_fn: &hashlink_bytecode::Function,
     fn_ty: &TypeFunction,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // Go over the function arguments and check that the types in the signature match the registers
     // in the actual function definition while inserting the SSA values for them at the same time
     for (i, arg_ty) in fn_ty.args.iter().enumerate() {
@@ -149,7 +157,12 @@ pub fn type_check_signature(
 
         // Error if the types don't match
         if arg_ty.0 != reg_ty {
-            return None;
+            let reason = InvalidFunctionReason::FunctionSignatureArgNotMatchRegister {
+                a_index: i,
+                func: old_fn.clone(),
+            };
+            let err = TranspileError::InvalidFunction(reason);
+            return Err(err);
         }
 
         // Insert an SSA value for this argument that points to the first instruction in the first
@@ -165,7 +178,7 @@ pub fn type_check_signature(
             .insert(ValueIndex(i), RegisterIndex(i));
     }
 
-    Some(())
+    Ok(())
 }
 
 pub fn build_register_usage_map(
@@ -220,7 +233,7 @@ pub fn translate_basic_blocks(
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
     bool_type_index: TypeIndex,
-) -> Option<()> {
+) -> TranspileResult<()> {
     for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // Unwrap the lower and upper bounds from the reference and new-type
         let lower_bound = lower_bound.0;
@@ -231,7 +244,7 @@ pub fn translate_basic_blocks(
 
         // Get the set of predecessor basic block indexes that we will need for emitting phi
         // instructions
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound)?;
+        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound);
 
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
@@ -241,7 +254,7 @@ pub fn translate_basic_blocks(
                 let reg = RegisterIndex(reg);
 
                 // We allocate a new SSA value for the result of our phi instruction
-                let assigns = handle_ssa_phi_import(new_fn, old_fn, reg_meta, bb_index, reg)?;
+                let assigns = handle_ssa_phi_import(new_fn, old_fn, reg_meta, bb_index, reg);
 
                 // We produce the list of source blocks for the phi instruction with a
                 // ValueIndex that actually holds the *register index* so we can remap it later
@@ -278,7 +291,7 @@ pub fn translate_basic_blocks(
                 reg_meta,
                 bb_index,
                 RegisterIndex(bb_info.trap_register),
-            )?;
+            );
 
             // Build the instruction layout
             let receive_exception = ReceiveException { assigns };
@@ -304,7 +317,7 @@ pub fn translate_basic_blocks(
                 bb_index,
                 op_index,
                 old_op,
-            )?;
+            );
         }
     }
 
@@ -314,21 +327,22 @@ pub fn translate_basic_blocks(
     // Specifically we require that the "latest state" map holds information for the entire set of
     // registers for every basic block
     for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0)?;
+        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0);
 
         if predecessors.len() == 1 {
             let predecessor = predecessors.iter().next().unwrap();
 
             // Swap the actual map out of the array as we need to mutate another member in the array
             let mut pred_info = HashMap::new();
-            std::mem::swap(&mut pred_info, &mut reg_meta.basic_block_registers_written[predecessor.0]);
+            std::mem::swap(
+                &mut pred_info,
+                &mut reg_meta.basic_block_registers_written[predecessor.0],
+            );
 
-            let iterator = pred_info
-                .iter()
-                .map(|(k, v)| (*k, *v));
+            let iterator = pred_info.iter().map(|(k, v)| (*k, *v));
             for (k, v) in iterator {
                 if !reg_meta.basic_block_registers_written[bb_index].contains_key(&k) {
-                    reg_meta.basic_block_registers_written[bb_index].insert(k, v)?;
+                    reg_meta.basic_block_registers_written[bb_index].insert(k, v);
                 }
             }
 
@@ -338,7 +352,7 @@ pub fn translate_basic_blocks(
         }
     }
 
-    Some(())
+    Ok(())
 }
 
 pub fn remap_register_indices(
@@ -347,7 +361,7 @@ pub fn remap_register_indices(
     bb_graph: &BasicBlockGraph,
     fn_ty: &TypeFunction,
     spans: &Vec<(InstructionIndex, InstructionIndex)>,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // We allocate reuse this between iterations to save allocating every iteration
     let mut latest_states = HashMap::new();
 
@@ -357,7 +371,7 @@ pub fn remap_register_indices(
 
         // Get the set of predecessor basic block indexes that we will need for importing values
         // in the special case of basic blocks with only a single predecessor
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0)?;
+        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0);
 
         // The entry basic block is a special case where the latest state of the registers is
         // imported directly from the function arguments
@@ -383,7 +397,7 @@ pub fn remap_register_indices(
         // Iterate over every opcode, remapping reads and updating the rolling "latest state" for
         // each register
         for (op_index, op) in bb.ops.iter_mut().enumerate() {
-            remap_reads(op, reg_meta, &latest_states)?;
+            remap_reads(op, reg_meta, &latest_states);
 
             if let Some(write) = op.get_assigned_value() {
                 if let Some(register) = reg_meta.register_map.get(&write) {
@@ -396,5 +410,13 @@ pub fn remap_register_indices(
         latest_states.clear();
     }
 
-    Some(())
+    Ok(())
+}
+
+fn type_index_error(old_fn: &hashlink_bytecode::Function) -> TranspileError {
+    let reason = InvalidFunctionReason::TypeIndexNotFunction {
+        func: old_fn.clone(),
+    };
+    let err = TranspileError::InvalidFunction(reason);
+    err
 }

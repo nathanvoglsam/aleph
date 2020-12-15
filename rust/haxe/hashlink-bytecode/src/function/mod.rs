@@ -31,7 +31,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::OpCode;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: i32,

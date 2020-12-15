@@ -68,7 +68,7 @@ pub fn translate_opcode(
     bb_index: usize,
     op_index: usize,
     old_op: &hashlink_bytecode::OpCode,
-) -> Option<()> {
+) {
     match old_op {
         hashlink_bytecode::OpCode::OpMov(params) => {
             // Allocate new SSA value for the assignment param
@@ -78,12 +78,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Temporarily store the register of the read in the second parameter to be
             // remapped later
             let source = ValueIndex(params.param_2 as usize);
-            let new_op = translate_load(old_op, assigns, source)?;
+            let new_op = translate_load(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpInt(params) => {
@@ -94,12 +94,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Unpack the index into the integer table
             let integer = IntegerIndex(params.param_2 as usize);
 
-            let new_op = translate_load_int(old_op, assigns, integer)?;
+            let new_op = translate_load_int(old_op, assigns, integer).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpFloat(params) => {
@@ -110,12 +110,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Unpack the index into the float table
             let float = FloatIndex(params.param_2 as usize);
 
-            let new_op = translate_load_float(old_op, assigns, float)?;
+            let new_op = translate_load_float(old_op, assigns, float).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpBool(params) => {
@@ -126,14 +126,14 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // `OpBool` holds the value to assign directly in the opcode, not in a separate
             // table like the other opcodes. We convert this into a native boolean type and
             // then pack the value directly into the instruction too.
             let value = params.param_2 != 0;
 
-            let new_op = translate_load_bool(old_op, assigns, value)?;
+            let new_op = translate_load_bool(old_op, assigns, value).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpBytes(params) => {
@@ -144,12 +144,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Unpack the index into the bytes table
             let bytes = BytesIndex(params.param_2 as usize);
 
-            let new_op = translate_load_bytes(old_op, assigns, bytes)?;
+            let new_op = translate_load_bytes(old_op, assigns, bytes).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpString(params) => {
@@ -160,12 +160,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Unpack the index into the string table
             let string = StringIndex(params.param_2 as usize);
 
-            let new_op = translate_load_string(old_op, assigns, string)?;
+            let new_op = translate_load_string(old_op, assigns, string).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -177,9 +177,9 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
-            let new_op = translate_value_index(old_op, assigns)?;
+            let new_op = translate_value_index(old_op, assigns).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -203,13 +203,13 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Once again, these are *register indexes* for remapping later
             let lhs = ValueIndex(params.param_2 as usize);
             let rhs = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_binop(old_op, assigns, lhs, rhs)?;
+            let new_op = translate_binop(old_op, assigns, lhs, rhs).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -221,13 +221,13 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // These are both unops where the HashLink source actually separately encodes
             // the assignment target and operand so we can just translate this directly
             let operand = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_unop(old_op, assigns, operand)?;
+            let new_op = translate_unop(old_op, assigns, operand).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -239,7 +239,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // A unop in HashLink is similar to a `i++` statement where it both reads and
             // writes to the register it specifies. Such an operation requires a separate
@@ -249,7 +249,7 @@ pub fn translate_opcode(
             // to the actual SSA value later
             let operand = ValueIndex(params.param_1 as usize);
 
-            let new_op = translate_unop(old_op, assigns, operand)?;
+            let new_op = translate_unop(old_op, assigns, operand).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -260,23 +260,23 @@ pub fn translate_opcode(
         | hashlink_bytecode::OpCode::OpCall4(_)
         | hashlink_bytecode::OpCode::OpCallN(_) => {
             // Allocate a new SSA value for the call to assign into
-            let assigns = old_op.register_write()? as usize;
+            let assigns = old_op.register_write().unwrap() as usize;
             let assigns =
-                handle_ssa_write(new_fn, old_fn, reg_meta, bb_index, RegisterIndex(assigns))?;
+                handle_ssa_write(new_fn, old_fn, reg_meta, bb_index, RegisterIndex(assigns));
 
             // Unpack the function index
-            let function = FunctionIndex(old_op.get_param_2()? as usize);
+            let function = FunctionIndex(old_op.get_param_2().unwrap() as usize);
 
             // Convert the parameter list. It will produce a list of *register indexes*
             // disguised as value indexes which we need to remap in a later pass over the
             // translated instructions
-            let fn_params = old_op.get_static_call_args()?;
+            let fn_params = old_op.get_static_call_args().unwrap();
             let fn_params = fn_params
                 .into_iter()
                 .map(|v| ValueIndex(v as usize))
                 .collect();
 
-            let new_op = translate_call(old_op, assigns, function, fn_params)?;
+            let new_op = translate_call(old_op, assigns, function, fn_params).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -288,7 +288,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Convert the field index into the form we need
             let function = FieldIndex(params.param_2 as usize);
@@ -310,7 +310,8 @@ pub fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            let new_op = translate_call_field(old_op, assigns, object, function, fn_params)?;
+            let new_op =
+                translate_call_field(old_op, assigns, object, function, fn_params).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpCallThis(params) => {
@@ -321,7 +322,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // `OpCallThis` implicitly refers to register 0 as the first argument when
             // calling the function. There is no sane way to represent this in an SSA form
@@ -342,7 +343,8 @@ pub fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            let new_op = translate_call_field(old_op, assigns, object, function, fn_params)?;
+            let new_op =
+                translate_call_field(old_op, assigns, object, function, fn_params).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -354,7 +356,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // The closure which is read and used as the function to call
             let closure = ValueIndex(params.param_2 as usize);
@@ -367,7 +369,7 @@ pub fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            let new_op = translate_call_closure(old_op, assigns, closure, fn_params)?;
+            let new_op = translate_call_closure(old_op, assigns, closure, fn_params).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -379,12 +381,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Get the function index to call
             let function = FunctionIndex(params.param_2 as usize);
 
-            let new_op = translate_static_closure(old_op, assigns, function)?;
+            let new_op = translate_static_closure(old_op, assigns, function).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpInstanceClosure(params) => {
@@ -395,7 +397,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Get the function index to call
             let function = FunctionIndex(params.param_2 as usize);
@@ -403,7 +405,7 @@ pub fn translate_opcode(
             // Register index for remapping later
             let object = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_instance_closure(old_op, assigns, function, object)?;
+            let new_op = translate_instance_closure(old_op, assigns, function, object).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpVirtualClosure(params) => {
@@ -414,7 +416,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index for remapping later
             let object = ValueIndex(params.param_2 as usize);
@@ -422,7 +424,7 @@ pub fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_3 as usize);
 
-            let new_op = translate_virtual_closure(old_op, assigns, object, field)?;
+            let new_op = translate_virtual_closure(old_op, assigns, object, field).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -434,12 +436,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Map into global index
             let source = GlobalIndex(params.param_2 as usize);
 
-            let new_op = translate_load_global(old_op, assigns, source)?;
+            let new_op = translate_load_global(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpSetGlobal(params) => {
@@ -450,7 +452,7 @@ pub fn translate_opcode(
             // The global to write into
             let target = GlobalIndex(params.param_2 as usize);
 
-            let new_op = translate_store_global(old_op, source, target)?;
+            let new_op = translate_store_global(old_op, source, target).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -462,7 +464,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let object = ValueIndex(0);
@@ -470,7 +472,7 @@ pub fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_2 as usize);
 
-            let new_op = translate_field_load(old_op, assigns, object, field)?;
+            let new_op = translate_field_load(old_op, assigns, object, field).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -483,7 +485,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let object = ValueIndex(params.param_2 as usize);
@@ -491,7 +493,7 @@ pub fn translate_opcode(
             // Field index
             let field = FieldIndex(params.param_3 as usize);
 
-            let new_op = translate_field_load(old_op, assigns, object, field)?;
+            let new_op = translate_field_load(old_op, assigns, object, field).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -505,7 +507,7 @@ pub fn translate_opcode(
             // Register index of source to read into object
             let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_field_store(old_op, object, field, source)?;
+            let new_op = translate_field_store(old_op, object, field, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -520,7 +522,7 @@ pub fn translate_opcode(
             // Register index of source to read into object
             let source = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_field_store(old_op, object, field, source)?;
+            let new_op = translate_field_store(old_op, object, field, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -536,8 +538,8 @@ pub fn translate_opcode(
             // it's jump destinations. Our bytecode uses basic block indices. As such we
             // need to find the basic block we're jumping to by looking for what span the
             // calculated index is in.
-            let success = offset_from(op_index, params.param_2)?; // Apply offset
-            let success = find_source_span(spans, success)?; // Find block
+            let success = offset_from(op_index, params.param_2).unwrap(); // Apply offset
+            let success = find_source_span(spans, success).unwrap(); // Find block
             let success = BasicBlockIndex(success); // Wrap value
 
             // The HashLink bytecode encodes two branch edges, one with the parameter and
@@ -551,10 +553,10 @@ pub fn translate_opcode(
             // We explicitly encode both edges, as we branch to basic blocks and not to
             // instruction indices. Here we find the basic block the next instruction can be
             // found in and use that as the branch target for the failure case
-            let failure = find_source_span(spans, op_index + 1)?;
+            let failure = find_source_span(spans, op_index + 1).unwrap();
             let failure = BasicBlockIndex(failure);
 
-            let new_op = translate_cond_branch(old_op, check, success, failure)?;
+            let new_op = translate_cond_branch(old_op, check, success, failure).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -579,14 +581,14 @@ pub fn translate_opcode(
             let rhs = ValueIndex(params.param_2 as usize);
 
             // See OpJTrue/OpJFalse/etc for explanation
-            let success = offset_from(op_index, params.param_3)?; // Apply offset
-            let success = find_source_span(spans, success)?; // Find block
+            let success = offset_from(op_index, params.param_3).unwrap(); // Apply offset
+            let success = find_source_span(spans, success).unwrap(); // Find block
             let success = BasicBlockIndex(success); // Wrap value
 
-            let failure = find_source_span(spans, op_index + 1)?;
+            let failure = find_source_span(spans, op_index + 1).unwrap();
             let failure = BasicBlockIndex(failure);
 
-            let comparison = translate_comp_branch(old_op, assigns, lhs, rhs)?;
+            let comparison = translate_comp_branch(old_op, assigns, lhs, rhs).unwrap();
 
             let inner = CondBranch {
                 check: assigns,
@@ -601,11 +603,11 @@ pub fn translate_opcode(
 
         hashlink_bytecode::OpCode::OpJAlways(params) => {
             // See above for explanation
-            let inner = offset_from(op_index, params.param_1)?; // Apply offset
-            let inner = find_source_span(spans, inner)?; // Find block
+            let inner = offset_from(op_index, params.param_1).unwrap(); // Apply offset
+            let inner = find_source_span(spans, inner).unwrap(); // Find block
             let inner = BasicBlockIndex(inner); // Wrap value
 
-            let new_op = translate_unconditional_branch(old_op, inner)?;
+            let new_op = translate_unconditional_branch(old_op, inner).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -623,12 +625,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_cast(old_op, assigns, source)?;
+            let new_op = translate_cast(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -640,8 +642,8 @@ pub fn translate_opcode(
             // need which jumps to basic block indices
             let mut jump_table = Vec::new();
             for destination in &params.extra {
-                let destination = offset_from(op_index, *destination)?;
-                let destination = find_source_span(spans, destination)?;
+                let destination = offset_from(op_index, *destination).unwrap();
+                let destination = find_source_span(spans, destination).unwrap();
                 let destination = BasicBlockIndex(destination);
                 jump_table.push(destination);
             }
@@ -649,19 +651,19 @@ pub fn translate_opcode(
             // Translate and map the fallback branch offset into the basic block it is
             // supposed to jump to
             let fallback = params.param_3;
-            let fallback = offset_from(op_index, fallback)?;
-            let fallback = find_source_span(spans, fallback)?;
+            let fallback = offset_from(op_index, fallback).unwrap();
+            let fallback = find_source_span(spans, fallback).unwrap();
             let fallback = BasicBlockIndex(fallback);
 
-            let new_op = translate_switch(old_op, input, jump_table, fallback)?;
+            let new_op = translate_switch(old_op, input, jump_table, fallback).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpTrap(params) => {
             // See above for explanation
-            let destination = offset_from(op_index, params.param_1)?; // Apply offset
-            let destination = find_source_span(spans, destination)?; // Find block
+            let destination = offset_from(op_index, params.param_1).unwrap(); // Apply offset
+            let destination = find_source_span(spans, destination).unwrap(); // Find block
             let destination = BasicBlockIndex(destination); // Wrap value
-            let new_op = translate_trap(old_op, destination)?;
+            let new_op = translate_trap(old_op, destination).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpEndTrap(params) => {
@@ -677,7 +679,7 @@ pub fn translate_opcode(
             // Either way, this translates the raw integer into a native boolean type.
             let inner = params.param_1 != 0;
 
-            let new_op = translate_end_trap(old_op, inner)?;
+            let new_op = translate_end_trap(old_op, inner).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -692,7 +694,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let source = ValueIndex(params.param_2 as usize);
@@ -700,7 +702,7 @@ pub fn translate_opcode(
             // Register index
             let offset = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_read_memory(old_op, assigns, source, offset)?;
+            let new_op = translate_read_memory(old_op, assigns, source, offset).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -717,7 +719,7 @@ pub fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_write_memory(old_op, target, offset, source)?;
+            let new_op = translate_write_memory(old_op, target, offset, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -729,12 +731,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Type index
             let source = TypeIndex(params.param_2 as usize);
 
-            let new_op = translate_load_type(old_op, assigns, source)?;
+            let new_op = translate_load_type(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -745,7 +747,7 @@ pub fn translate_opcode(
             // Register index
             let value = ValueIndex(params.param_1 as usize);
 
-            let new_op = translate_value_index(old_op, value)?;
+            let new_op = translate_value_index(old_op, value).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -757,9 +759,9 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
-            let new_op = translate_value_index(old_op, assigns)?;
+            let new_op = translate_value_index(old_op, assigns).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -776,12 +778,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_load(old_op, assigns, source)?;
+            let new_op = translate_load(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -792,7 +794,7 @@ pub fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_store(old_op, target, source)?;
+            let new_op = translate_store(old_op, target, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpMakeEnum(params) => {
@@ -803,7 +805,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Constructor index
             let constructor = ConstructorIndex(params.param_2 as usize);
@@ -816,7 +818,7 @@ pub fn translate_opcode(
                 .map(|v| ValueIndex(*v as usize))
                 .collect();
 
-            let new_op = translate_make_enum(old_op, assigns, constructor, args)?;
+            let new_op = translate_make_enum(old_op, assigns, constructor, args).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpEnumAlloc(params) => {
@@ -827,12 +829,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Constructor index
             let constructor = ConstructorIndex(params.param_2 as usize);
 
-            let new_op = translate_alloc_enum(old_op, assigns, constructor)?;
+            let new_op = translate_alloc_enum(old_op, assigns, constructor).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpEnumField(params) => {
@@ -843,7 +845,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Constructor index
             let source = ValueIndex(params.param_2 as usize);
@@ -855,7 +857,8 @@ pub fn translate_opcode(
             let field_index = FieldIndex(params.param_4 as usize);
 
             let new_op =
-                translate_load_enum_field(old_op, assigns, source, constructor, field_index)?;
+                translate_load_enum_field(old_op, assigns, source, constructor, field_index)
+                    .unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpSetEnumField(params) => {
@@ -868,7 +871,7 @@ pub fn translate_opcode(
             // Register index
             let source = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_store_enum_field(old_op, target, field, source)?;
+            let new_op = translate_store_enum_field(old_op, target, field, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpRefData(params) => {
@@ -879,12 +882,12 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_ref_data(old_op, assigns, source)?;
+            let new_op = translate_ref_data(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink_bytecode::OpCode::OpRefOffset(params) => {
@@ -895,7 +898,7 @@ pub fn translate_opcode(
                 reg_meta,
                 bb_index,
                 RegisterIndex(params.param_1 as usize),
-            )?;
+            );
 
             // Register index
             let source = ValueIndex(params.param_2 as usize);
@@ -903,16 +906,15 @@ pub fn translate_opcode(
             // Register index
             let offset = ValueIndex(params.param_3 as usize);
 
-            let new_op = translate_ref_offset(old_op, assigns, source, offset)?;
+            let new_op = translate_ref_offset(old_op, assigns, source, offset).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
         hashlink_bytecode::OpCode::OpAssert
         | hashlink_bytecode::OpCode::OpNop
         | hashlink_bytecode::OpCode::OpLabel => {
-            let new_op = translate_no_params(old_op)?;
+            let new_op = translate_no_params(old_op).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
     };
-    Some(())
 }

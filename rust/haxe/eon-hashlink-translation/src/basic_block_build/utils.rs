@@ -28,6 +28,7 @@
 //
 
 use crate::basic_block_graph::BasicBlockGraph;
+use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{Function, RegisterMetadata, SSAValue};
 use eon_bytecode::indexes::{
     BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
@@ -40,7 +41,7 @@ pub fn get_basic_block_predecessor_list(
     bb_graph: &BasicBlockGraph,
     spans: &[(InstructionIndex, InstructionIndex)],
     first_instruction_index: usize,
-) -> Option<HashSet<BasicBlockIndex>> {
+) -> HashSet<BasicBlockIndex> {
     let mut mapped_predecessors = HashSet::new();
 
     // Get the list of predecessors and map the instruction back to the basic block (span) that it
@@ -51,14 +52,18 @@ pub fn get_basic_block_predecessor_list(
     {
         for predecessor in predecessors {
             // Find the source span
-            let block = find_source_span(spans, predecessor.0)?;
+            //
+            // Hard fail here as failing to find the source span for the predecessor is a bug in the
+            // algorithm. Bugs are not errors and should be very violently surfaced so they can be
+            // found and fixed
+            let block = find_source_span(spans, predecessor.0).unwrap();
 
             // Insert our mapped index into our new list
             mapped_predecessors.insert(BasicBlockIndex(block));
         }
     }
 
-    Some(mapped_predecessors)
+    mapped_predecessors
 }
 
 /// Find the span, in the given list, that holds the given instruction index
@@ -77,7 +82,7 @@ pub fn handle_ssa_phi_import(
     reg_meta: &mut RegisterMetadata,
     bb_index: usize,
     v: RegisterIndex,
-) -> Option<ValueIndex> {
+) -> ValueIndex {
     // Lookup the type from the source HashLink (we use the same indices)
     let type_ = old_fn.registers[v.0] as usize;
 
@@ -93,7 +98,7 @@ pub fn handle_ssa_phi_import(
     // Add to the register map so we can map the ValueIndex back to the register it represents
     reg_meta.register_map.insert(value, v);
 
-    Some(value)
+    value
 }
 
 /// Simple function that handles creating and adding SSA values for instructions
@@ -103,7 +108,7 @@ pub fn handle_ssa_write(
     reg_meta: &mut RegisterMetadata,
     bb_index: usize,
     v: RegisterIndex,
-) -> Option<ValueIndex> {
+) -> ValueIndex {
     // Lookup the type from the source HashLink (we use the same indices)
     let type_ = old_fn.registers[v.0] as usize;
 
@@ -117,12 +122,18 @@ pub fn handle_ssa_write(
     // the register was not already marked as being written in this basic block. We already found
     // the set of registers that a basic block writes to in an earlier pass, trying to say we write
     // any more at this stage is an error.
-    reg_meta.basic_block_registers_written[bb_index].insert(v, value)?;
+    //
+    // Once again, an error here is a bug and so should be surfaced as a panic
+    reg_meta.basic_block_registers_written[bb_index]
+        .insert(v, value)
+        .unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
-    reg_meta.register_map.insert(value, v);
+    //
+    // This should never overwrite another value so we panic if it does
+    assert!(reg_meta.register_map.insert(value, v).is_none());
 
-    Some(value)
+    value
 }
 
 /// Simple function that handles creating and adding SSA values for instructions. This is a special
@@ -170,7 +181,7 @@ pub fn get_basic_block_info(
     old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
     first_instruction_index: usize,
-) -> Option<BBInfo> {
+) -> TranspileResult<BBInfo> {
     let has_multiple_predecessors;
     let has_single_predecessor;
     let has_no_predecessor;
@@ -205,15 +216,23 @@ pub fn get_basic_block_info(
             is_trap_handler = true;
             trap_register = trap.param_1 as usize;
 
-            // If a trap handler block has multiple predecessor blocks then that is an error
-            if has_multiple_predecessors {
-                return None;
-            }
-
             // The iterator should only yield a single result. If it can yield more then we have
             // multiple traps leading to the same handler, which is an error.
             if trap_sources.count() > 0 {
-                return None;
+                let reason = InvalidFunctionReason::TrapHandlerHasMultipleTrapPredecessors {
+                    func: old_fn.clone(),
+                };
+                let err = TranspileError::InvalidFunction(reason);
+                return Err(err);
+            }
+
+            // If a trap handler block has multiple predecessor blocks then that is an error
+            if has_multiple_predecessors {
+                let reason = InvalidFunctionReason::TrapHandlerHasMultiplePredecessors {
+                    func: old_fn.clone(),
+                };
+                let err = TranspileError::InvalidFunction(reason);
+                return Err(err);
             }
         } else {
             is_trap_handler = false;
@@ -227,7 +246,7 @@ pub fn get_basic_block_info(
         trap_register = 0;
     }
 
-    Some(BBInfo {
+    Ok(BBInfo {
         has_multiple_predecessors,
         has_single_predecessor,
         has_no_predecessor,

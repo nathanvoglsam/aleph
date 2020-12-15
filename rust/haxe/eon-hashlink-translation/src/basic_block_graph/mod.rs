@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::offset_from;
 use eon_bytecode::indexes::InstructionIndex;
 use std::collections::{HashMap, HashSet};
@@ -41,7 +42,7 @@ pub struct BasicBlockGraph {
 }
 
 /// Produces SSA graph nodes and edges
-pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> Option<BasicBlockGraph> {
+pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> TranspileResult<BasicBlockGraph> {
     // Holds the list of instruction indexes that have instructions that branch to the
     // instruction given by the key
     let mut destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>> =
@@ -60,7 +61,7 @@ pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> Option<BasicBlo
         )?;
     }
 
-    Some(BasicBlockGraph {
+    Ok(BasicBlockGraph {
         destination_sources,
         branches,
     })
@@ -72,7 +73,7 @@ fn compute_bb_graph_loop_inner(
     op: &hashlink_bytecode::OpCode,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // We need to handle switch specially as it holds an array of branch targets rather than
     // a single target
     if let hashlink_bytecode::OpCode::OpSwitch(op) = op {
@@ -100,7 +101,7 @@ fn compute_bb_graph_loop_inner(
             op,
         )?;
     }
-    Some(())
+    Ok(())
 }
 
 fn compute_bb_graph_loop_inner_switch(
@@ -109,7 +110,7 @@ fn compute_bb_graph_loop_inner_switch(
     old_fn: &hashlink_bytecode::Function,
     instruction_index: usize,
     op: &hashlink_bytecode::OpSwitchParam,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // Handle all the distinct branch targets from the switch's jump table
     for offset in op.extra.iter() {
         // The inputs will never be bigger than `i32::max` because of how they're stored
@@ -118,12 +119,11 @@ fn compute_bb_graph_loop_inner_switch(
         let offset = *offset as i32;
 
         // Calculate the actual offset
-        let target = offset_from(instruction_index, offset)?;
+        let target = offset_from(instruction_index, offset)
+            .ok_or(offset_error(instruction_index, old_fn))?;
 
         // Perform a bounds check
-        if target >= old_fn.ops.len() {
-            return None; // Out of bounds
-        }
+        bounds_check_offset(target, instruction_index, old_fn)?;
 
         // We don't need to check if the target branch is `OpLabel` as switches can't
         // encode a negative offset for w/e reason so we can just go straight to adding
@@ -138,12 +138,11 @@ fn compute_bb_graph_loop_inner_switch(
     // Lastly we handle the "fallback" branch. The fallback branch occurs when the switch index is
     // out of bounds of the jump table. When the index is out of bounds we use the third parameter
     // as an offset to jump to.
-    let target = offset_from(instruction_index, op.param_3)?;
+    let target = offset_from(instruction_index, op.param_3)
+        .ok_or(offset_error(instruction_index, old_fn))?;
 
     // Perform a bounds check
-    if target >= old_fn.ops.len() {
-        return None; // Out of bounds
-    }
+    bounds_check_offset(target, instruction_index, old_fn)?;
 
     // Add the final branch target
     let block_source = destination_sources
@@ -154,7 +153,7 @@ fn compute_bb_graph_loop_inner_switch(
     // Add this instruction to the list of branch instruction indexes
     branches.insert(InstructionIndex(instruction_index));
 
-    Some(())
+    Ok(())
 }
 
 fn compute_bb_graph_loop_inner_unconditional(
@@ -163,19 +162,21 @@ fn compute_bb_graph_loop_inner_unconditional(
     old_fn: &hashlink_bytecode::Function,
     instruction_index: usize,
     op: &hashlink_bytecode::OpOneParam,
-) -> Option<()> {
-    let target = offset_from(instruction_index, op.param_1)?;
+) -> TranspileResult<()> {
+    let target = offset_from(instruction_index, op.param_1)
+        .ok_or(offset_error(instruction_index, old_fn))?;
 
     // Check if the computed index is in bounds
-    if target >= old_fn.ops.len() {
-        return None; // Out of bounds
-    }
+    bounds_check_offset(target, instruction_index, old_fn)?;
 
     // Check if a negative index offset branch does not branch to a label opcode
     if op.param_1 < 0 {
         match &old_fn.ops[target] {
             hashlink_bytecode::OpCode::OpLabel => {}
-            _ => return None, //negative offset not targeting label
+            _ => {
+                //negative offset not targeting label
+                return Err(negative_offset_error(instruction_index, old_fn));
+            }
         }
     }
 
@@ -188,7 +189,7 @@ fn compute_bb_graph_loop_inner_unconditional(
     // Add this instruction to the list of branch instruction indexes
     branches.insert(InstructionIndex(instruction_index));
 
-    Some(())
+    Ok(())
 }
 
 fn compute_bb_graph_loop_inner_conditional(
@@ -197,7 +198,7 @@ fn compute_bb_graph_loop_inner_conditional(
     old_fn: &hashlink_bytecode::Function,
     instruction_index: usize,
     op: &hashlink_bytecode::OpCode,
-) -> Option<()> {
+) -> TranspileResult<()> {
     // Get the branch target offset if it exists, otherwise skip to the next instruction
     let offset = match op {
         hashlink_bytecode::OpCode::OpJTrue(v) => v.param_2,
@@ -214,26 +215,30 @@ fn compute_bb_graph_loop_inner_conditional(
         hashlink_bytecode::OpCode::OpJNotGte(v) => v.param_3,
         hashlink_bytecode::OpCode::OpJEq(v) => v.param_3,
         hashlink_bytecode::OpCode::OpJNotEq(v) => v.param_3,
-        _ => return Some(()),
+        _ => return Ok(()),
     };
 
     // Apply the offset
-    let target = offset_from(instruction_index, offset)?;
+    let target =
+        offset_from(instruction_index, offset).ok_or(offset_error(instruction_index, old_fn))?;
 
     // These branch to either the next instruction or the target depending on the result
     // of some comparison
-    let target_fail = offset_from(instruction_index, 0)?;
+    let target_fail =
+        offset_from(instruction_index, 0).ok_or(offset_error(instruction_index, old_fn))?;
 
     // Check if the computed index is in bounds
-    if target >= old_fn.ops.len() || target_fail >= old_fn.ops.len() {
-        return None; // Out of bounds
-    }
+    bounds_check_offset(target, instruction_index, old_fn)?;
+    bounds_check_offset(target_fail, instruction_index, old_fn)?;
 
     // Check if a negative index offset branch does not branch to a label opcode
     if offset < 0 {
         match &old_fn.ops[target] {
             hashlink_bytecode::OpCode::OpLabel => {}
-            _ => return None, //negative offset not targeting label
+            _ => {
+                //negative offset not targeting label
+                return Err(negative_offset_error(instruction_index, old_fn));
+            }
         }
     }
 
@@ -254,5 +259,39 @@ fn compute_bb_graph_loop_inner_conditional(
     // Add this instruction to the list of branch instruction indexes
     branches.insert(InstructionIndex(instruction_index));
 
-    Some(())
+    Ok(())
+}
+
+fn bounds_check_offset(
+    target: usize,
+    i_index: usize,
+    old_fn: &hashlink_bytecode::Function,
+) -> TranspileResult<()> {
+    if target >= old_fn.ops.len() {
+        let reason = InvalidFunctionReason::JumpOffsetOutOfBounds {
+            i_index,
+            func: old_fn.clone(),
+        };
+        let err = TranspileError::InvalidFunction(reason);
+        return Err(err); // Out of bounds
+    }
+    Ok(())
+}
+
+fn negative_offset_error(i_index: usize, old_fn: &hashlink_bytecode::Function) -> TranspileError {
+    let reason = InvalidFunctionReason::JumpNegativeOffsetNotTargetingLabel {
+        i_index,
+        func: old_fn.clone(),
+    };
+    let err = TranspileError::InvalidFunction(reason);
+    err
+}
+
+fn offset_error(i_index: usize, old_fn: &hashlink_bytecode::Function) -> TranspileError {
+    let reason = InvalidFunctionReason::JumpInvalidOffset {
+        i_index,
+        func: old_fn.clone(),
+    };
+    let err = TranspileError::InvalidFunction(reason);
+    err
 }

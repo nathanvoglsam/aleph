@@ -28,12 +28,13 @@
 //
 
 use crate::basic_block_graph::BasicBlockGraph;
+use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
     old_fn: &hashlink_bytecode::Function,
     bb_graph: &BasicBlockGraph,
-) -> Option<Vec<(InstructionIndex, InstructionIndex)>> {
+) -> TranspileResult<Vec<(InstructionIndex, InstructionIndex)>> {
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
     let mut spans = Vec::new();
 
@@ -41,19 +42,23 @@ pub fn compute_bb_spans(
     // list of spans for all the basic blocks
     for start in bb_graph.destination_sources.keys().map(|v| *v) {
         let start = start.0;
-        let mut found_branch = false;
+        let mut found_terminator = false;
         for (i, op) in old_fn.ops[start..].iter().enumerate() {
             if is_block_terminator(op) {
                 let a = InstructionIndex(start);
                 let b = InstructionIndex(start + i);
                 let span = (a, b);
                 spans.push(span);
-                found_branch = true;
+                found_terminator = true;
                 break;
             }
         }
-        if !found_branch {
-            return None;
+        if !found_terminator {
+            let reason = InvalidFunctionReason::SpanFoundNoBlockTerminator {
+                func: old_fn.clone(),
+            };
+            let err = TranspileError::InvalidFunction(reason);
+            return Err(err);
         }
     }
 
@@ -64,23 +69,27 @@ pub fn compute_bb_spans(
         .destination_sources
         .contains_key(&InstructionIndex(0))
     {
-        let mut found_branch = false;
+        let mut found_terminator = false;
         for (i, op) in old_fn.ops.iter().enumerate() {
             if is_block_terminator(op) {
                 let a = InstructionIndex(0);
                 let b = InstructionIndex(i);
                 let span = (a, b);
                 spans.push(span);
-                found_branch = true;
+                found_terminator = true;
                 break;
             }
         }
-        if !found_branch {
-            return None;
+        if !found_terminator {
+            let reason = InvalidFunctionReason::SpanFoundNoBlockTerminator {
+                func: old_fn.clone(),
+            };
+            let err = TranspileError::InvalidFunction(reason);
+            return Err(err);
         }
     }
 
-    Some(spans)
+    Ok(spans)
 }
 
 fn is_block_terminator(op: &hashlink_bytecode::OpCode) -> bool {

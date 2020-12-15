@@ -35,7 +35,7 @@
 use crate::basic_block_build::build_bb;
 use crate::basic_block_graph::compute_bb_graph;
 use crate::basic_block_spans::compute_bb_spans;
-use crate::error::{TranspileError, TranspileResult};
+use crate::error::TranspileResult;
 use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,
 };
@@ -96,11 +96,8 @@ pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResu
     // We don't do any optimizations yet, we save that for later
     let mut functions = Vec::new();
     for old_fn in code.functions.into_iter() {
-        if let Some(new_fn) = transpile_hashlink_function(&module, old_fn) {
-            functions.push(new_fn);
-        } else {
-            return Err(TranspileError::InvalidFunction);
-        }
+        let new_fn = transpile_hashlink_function(&module, old_fn)?;
+        functions.push(new_fn);
     }
 
     module.functions = functions;
@@ -112,7 +109,7 @@ pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResu
 pub fn transpile_hashlink_function(
     module: &Module,
     mut old_fn: hashlink_bytecode::Function,
-) -> Option<Function> {
+) -> TranspileResult<Function> {
     let mut new_fn = Function {
         type_: TypeIndex(old_fn.type_ as usize),
         f_index: old_fn.f_index,
@@ -162,5 +159,5 @@ pub fn transpile_hashlink_function(
 
     build_bb(&mut new_fn, &old_fn, module, bb_graph, spans)?;
 
-    Some(new_fn)
+    Ok(new_fn)
 }
