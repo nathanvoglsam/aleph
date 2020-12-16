@@ -1016,7 +1016,7 @@ impl OpCode {
             OpCode::OpRefData(v) => Some(v.assigns),
             OpCode::OpRefOffset(v) => Some(v.assigns),
             OpCode::OpNop => None,
-            OpCode::OpRetVoid => None
+            OpCode::OpRetVoid => None,
         }
     }
 
@@ -1214,7 +1214,7 @@ impl OpCode {
             OpCode::OpRefData(_) => "ref_data",
             OpCode::OpRefOffset(_) => "ref_offset",
             OpCode::OpNop => "nop",
-            OpCode::OpRetVoid => "ret_void"
+            OpCode::OpRetVoid => "ret_void",
         }
     }
 }
