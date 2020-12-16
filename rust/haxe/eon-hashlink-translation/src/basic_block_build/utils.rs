@@ -93,7 +93,7 @@ pub fn handle_ssa_phi_import(
     });
 
     // We ignore if this returns None deliberately as a phi instruction isn't a real write
-    let _ = reg_meta.basic_block_registers_written[bb_index].insert(v, value);
+    let _ = reg_meta.block_live_registers[bb_index].insert(v, value);
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     reg_meta.register_map.insert(value, v);
@@ -124,7 +124,7 @@ pub fn handle_ssa_write(
     // any more at this stage is an error.
     //
     // Once again, an error here is a bug and so should be surfaced as a panic
-    reg_meta.basic_block_registers_written[bb_index]
+    reg_meta.block_live_registers[bb_index]
         .insert(v, value)
         .unwrap();
 

@@ -109,7 +109,7 @@ pub fn remap_reads(
         }
         OpCode::OpPhi(v) => {
             for (v, bb) in v.block_values.iter_mut() {
-                let latest_in_block = *reg_meta.basic_block_registers_written[bb.0]
+                let latest_in_block = *reg_meta.block_live_registers[bb.0]
                     .get(&RegisterIndex(v.0))
                     .unwrap();
                 *v = latest_in_block;

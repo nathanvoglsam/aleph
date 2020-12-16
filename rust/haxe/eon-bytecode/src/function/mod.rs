@@ -30,7 +30,7 @@
 use crate::indexes::{BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex};
 use crate::opcode::OpCode;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
 /// on to the information the "registers" provide because it makes some analysis passes easier as we
@@ -121,11 +121,8 @@ pub struct RegisterMetadata {
     /// Maps an SSA value to a register in the register list
     pub register_map: HashMap<ValueIndex, RegisterIndex>,
 
-    /// This list associates with each basic block the list of *registers* that it reads
-    pub basic_block_registers_read: Vec<HashSet<RegisterIndex>>,
-
     /// This list associates with each basic block the set of registers that it writes to, and the
     /// SSA value index that corresponds to the last write (final state) of the register within that
     /// basic block
-    pub basic_block_registers_written: Vec<HashMap<RegisterIndex, ValueIndex>>,
+    pub block_live_registers: Vec<HashMap<RegisterIndex, ValueIndex>>,
 }

@@ -95,13 +95,11 @@ pub fn build_bb(
     // As we go we'll be generating various bits of metadata about the transcoded instructions
     let registers = vec![Register::default(); old_fn.registers.len()];
     let register_map = HashMap::new();
-    let basic_block_registers_read = Vec::new();
-    let basic_block_registers_written = Vec::new();
+    let block_live_registers = Vec::new();
     let mut reg_meta = RegisterMetadata {
         registers,
         register_map,
-        basic_block_registers_read,
-        basic_block_registers_written,
+        block_live_registers,
     };
 
     // The set of values that do not have a matching register in the HashLink source.
@@ -131,7 +129,7 @@ pub fn build_bb(
 
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
-    build_register_usage_map(&mut reg_meta, &old_fn, fn_ty, &spans);
+    build_register_live_sets(&mut reg_meta, &old_fn, fn_ty, &spans);
 
     // Now begins the fun part where we start translating the HashLink bytecode
     translate_basic_blocks(
@@ -206,7 +204,7 @@ pub fn type_check_signature(
     Ok(())
 }
 
-pub fn build_register_usage_map(
+pub fn build_register_live_sets(
     reg_meta: &mut RegisterMetadata,
     old_fn: &hashlink_bytecode::Function,
     fn_ty: &TypeFunction,
@@ -218,7 +216,6 @@ pub fn build_register_usage_map(
         let upper_bound = upper_bound.0;
         let ops = &old_fn.ops[lower_bound..=upper_bound];
 
-        let mut reg_reads = HashSet::new();
         let mut reg_writes = HashMap::new();
 
         // We special case the first basic block as that will be importing the latest states from
@@ -231,13 +228,6 @@ pub fn build_register_usage_map(
 
         // Iterate over every opcode and record what registers it reads and writes
         for op in ops {
-            // Build the set of reads
-            if let Some(reads) = op.register_reads() {
-                for read in reads {
-                    reg_reads.insert(RegisterIndex(read as usize));
-                }
-            }
-
             // Build the set of writes
             if let Some(write) = op.register_write() {
                 reg_writes.insert(RegisterIndex(write as usize), ValueIndex(0));
@@ -245,8 +235,7 @@ pub fn build_register_usage_map(
         }
 
         // Add to the metadata
-        reg_meta.basic_block_registers_read.push(reg_reads);
-        reg_meta.basic_block_registers_written.push(reg_writes);
+        reg_meta.block_live_registers.push(reg_writes);
     }
 }
 
@@ -365,19 +354,19 @@ pub fn translate_basic_blocks(
             let mut pred_info = HashMap::new();
             std::mem::swap(
                 &mut pred_info,
-                &mut reg_meta.basic_block_registers_written[predecessor.0],
+                &mut reg_meta.block_live_registers[predecessor.0],
             );
 
             let iterator = pred_info.iter().map(|(k, v)| (*k, *v));
             for (k, v) in iterator {
-                if !reg_meta.basic_block_registers_written[bb_index].contains_key(&k) {
-                    reg_meta.basic_block_registers_written[bb_index].insert(k, v);
+                if !reg_meta.block_live_registers[bb_index].contains_key(&k) {
+                    reg_meta.block_live_registers[bb_index].insert(k, v);
                 }
             }
 
             // Move the original map back in to the list. Dropping the old one is find and an empty
             // map doesn't allocate so this should have almost no effect on performance
-            reg_meta.basic_block_registers_written[predecessor.0] = pred_info;
+            reg_meta.block_live_registers[predecessor.0] = pred_info;
         }
     }
 
@@ -419,7 +408,7 @@ pub fn remap_register_indices(
         // final states.
         if predecessors.len() == 1 {
             let predecessor = predecessors.iter().next().unwrap();
-            for (r, v) in reg_meta.basic_block_registers_written[predecessor.0].iter() {
+            for (r, v) in reg_meta.block_live_registers[predecessor.0].iter() {
                 latest_states.insert(*r, *v);
             }
         }
