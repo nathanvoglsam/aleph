@@ -66,31 +66,8 @@ pub fn build_bb(
     // later
     //
     // This is a hard error as realistically this should be declared in every module, so we panic.
-    let bool_type_index = module
-        .types
-        .iter()
-        .enumerate()
-        .find_map(|(i, v)| {
-            if let Type::Bool = v {
-                Some(TypeIndex(i))
-            } else {
-                None
-            }
-        })
-        .unwrap();
-
-    let void_type_index = module
-        .types
-        .iter()
-        .enumerate()
-        .find_map(|(i, v)| {
-            if let Type::Void = v {
-                Some(TypeIndex(i))
-            } else {
-                None
-            }
-        })
-        .unwrap();
+    let bool_type_index = find_type_index_for(&module.types, &Type::Bool).unwrap();
+    let void_type_index = find_type_index_for(&module.types, &Type::Void).unwrap();
 
     // As we go we'll be generating various bits of metadata about the transcoded instructions
     let registers = vec![Register::default(); old_fn.registers.len()];
@@ -438,4 +415,11 @@ fn type_index_error(old_fn: &hashlink_bytecode::Function) -> TranspileError {
     };
     let err = TranspileError::InvalidFunction(reason);
     err
+}
+
+fn find_type_index_for(types: &[Type], val: &Type) -> Option<TypeIndex> {
+    types
+        .iter()
+        .enumerate()
+        .find_map(|(i, v)| if v == val { Some(TypeIndex(i)) } else { None })
 }
