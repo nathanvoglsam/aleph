@@ -31,32 +31,68 @@ mod opcode_translate;
 mod remap_reads;
 mod utils;
 
-pub(crate) use opcode_translate::translate_opcode;
-pub(crate) use remap_reads::remap_reads;
-pub(crate) use utils::find_source_span;
-pub(crate) use utils::get_basic_block_info;
-pub(crate) use utils::get_basic_block_predecessor_list;
-pub(crate) use utils::handle_ssa_phi_import;
-pub(crate) use utils::handle_ssa_write;
-pub(crate) use utils::handle_ssa_write_no_register;
-pub(crate) use utils::BBInfo;
+pub use opcode_translate::translate_opcode;
+pub use remap_reads::remap_reads;
+pub use utils::build_basic_block_predecessor_sets;
+pub use utils::find_source_span;
+pub use utils::build_basic_block_infos;
+pub use utils::handle_ssa_phi_import;
+pub use utils::handle_ssa_write;
+pub use utils::handle_ssa_write_no_register;
+pub use utils::find_type_index_for;
+pub use utils::BBInfo;
 
 use crate::basic_block_graph::BasicBlockGraph;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
-use eon_bytecode::function::{BasicBlock, Function, Register, RegisterMetadata, SSAValue};
-use eon_bytecode::indexes::{InstructionIndex, RegisterIndex, TypeIndex, ValueIndex};
+use eon_bytecode::function::{BasicBlock, Function, Register, SSAValue};
+use eon_bytecode::indexes::{
+    BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
+};
 use eon_bytecode::module::Module;
 use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
 use eon_bytecode::type_::{Type, TypeFunction};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
+pub struct RegisterData {
+    /// List of registers for the function's bytecode. This maps almost directly to the register
+    /// system in hashlink bytecode but with some additional information.
+    ///
+    /// We hold on to this so we can simplify tracking what actual values the SSA items refer to so
+    /// analyzing the bytecode for optimization opportunities is easier.
+    pub registers: Vec<Register>,
+
+    /// Maps an SSA value to a register in the register list
+    pub register_map: HashMap<ValueIndex, RegisterIndex>,
+
+    /// This list associates with each basic block the set of registers that it writes to, and the
+    /// SSA value index that corresponds to the last write (final state) of the register within that
+    /// basic block
+    pub block_live_registers: Vec<HashMap<RegisterIndex, ValueIndex>>,
+}
+
+pub struct BuildContext<'a> {
+    pub new_fn: RefCell<Function>,
+    pub old_fn: &'a hashlink_bytecode::Function,
+    pub module: &'a Module,
+    pub bb_graph: RefCell<BasicBlockGraph>,
+    pub spans: RefCell<Vec<(InstructionIndex, InstructionIndex)>>,
+    pub fn_ty: &'a TypeFunction,
+    pub bool_type_index: TypeIndex,
+    pub void_type_index: TypeIndex,
+    pub non_reg_values: RefCell<HashSet<ValueIndex>>,
+    pub reg_meta: RefCell<RegisterData>,
+    pub predecessors: RefCell<Vec<HashSet<BasicBlockIndex>>>,
+    pub bb_infos: RefCell<Vec<BBInfo>>,
+}
+
 pub fn build_bb(
-    new_fn: &mut Function,
+    mut new_fn: Function,
+    spans: Vec<(InstructionIndex, InstructionIndex)>,
     old_fn: &hashlink_bytecode::Function,
     module: &Module,
     bb_graph: BasicBlockGraph,
-    mut spans: Vec<(InstructionIndex, InstructionIndex)>,
-) -> TranspileResult<()> {
+) -> TranspileResult<Function> {
     // Get the actual function type value, checking to ensure it is of the correct type category
     // (Function or Method)
     let fn_ty = &module.types[new_fn.type_.0];
@@ -73,53 +109,52 @@ pub fn build_bb(
     let registers = vec![Register::default(); old_fn.registers.len()];
     let register_map = HashMap::new();
     let block_live_registers = Vec::new();
-    let mut reg_meta = RegisterMetadata {
+    let reg_meta = RegisterData {
         registers,
         register_map,
         block_live_registers,
     };
-
-    // The set of values that do not have a matching register in the HashLink source.
-    let mut non_reg_values = HashSet::new();
 
     // Pre allocate the list of empty basic blocks
     for _ in 0..spans.len() {
         new_fn.basic_blocks.push(BasicBlock { ops: Vec::new() });
     }
 
+    // Calculate the set of predecessor blocks for all basic blocks
+    let predecessors = build_basic_block_predecessor_sets(&bb_graph, &spans);
+
+    // Precompute some information about all basic blocks
+    let bb_infos = build_basic_block_infos(old_fn, &bb_graph, &spans)?;
+
+    let mut ctx = BuildContext {
+        new_fn: RefCell::new(new_fn),
+        old_fn,
+        module,
+        bb_graph: RefCell::new(bb_graph),
+        spans: RefCell::new(spans),
+        fn_ty,
+        bool_type_index,
+        void_type_index,
+        non_reg_values: RefCell::new(HashSet::new()),
+        reg_meta: RefCell::new(reg_meta),
+        predecessors: RefCell::new(predecessors),
+        bb_infos: RefCell::new(bb_infos),
+    };
+
     // This will check the type signature of the function against the registers the definition says
     // the arguments should be
-    type_check_signature(new_fn, &mut reg_meta, old_fn, fn_ty)?;
-
-    // The spans array is a list of ranges into the source hashlink bytecode. Each entry encodes the
-    // span of instructions that should be encoded into a basic block.
-    //
-    // Instruction index 0 in the source bytecode is special as it **must** be the first instruction
-    // of the first basic block (the function entry point). The algorithm that generates the spans
-    // list does not guarantee that the first span corresponds to the first instruction in the
-    // source.
-    //
-    // To fix this we sort the array so that the span for instruction 0 will be the first item in
-    // the array, meaning we can transparently handle all of them and it will always be the first
-    // basic block
-    spans.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    type_check_signature(&mut ctx)?;
 
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
-    build_register_live_sets(&mut reg_meta, &old_fn, fn_ty, &spans);
+    build_register_live_sets(&mut ctx);
+
+    // Now we need to propagate the live sets through the entire basic block graph, which requires
+    // a tree walk
+    propagate_predecessor_live_sets(&mut ctx);
 
     // Now begins the fun part where we start translating the HashLink bytecode
-    translate_basic_blocks(
-        new_fn,
-        &mut reg_meta,
-        &mut non_reg_values,
-        &old_fn,
-        &bb_graph,
-        fn_ty,
-        &spans,
-        bool_type_index,
-        void_type_index,
-    )?;
+    translate_basic_blocks(&mut ctx)?;
 
     // The next phase requires a second pass over the now partially translated instructions.
     // Currently all OpCodes are now in Eon form but the OpCodes are not all encoded in a valid
@@ -129,26 +164,18 @@ pub fn build_bb(
     // This is because the information needed to correctly translate these reads is only created
     // once the above first pass is completed. Now the information is available, we can use it to
     // remap the register indices to value indices
-    remap_register_indices(
-        new_fn,
-        &mut reg_meta,
-        &non_reg_values,
-        &bb_graph,
-        fn_ty,
-        &spans,
-    )?;
+    remap_register_indices(&mut ctx)?;
 
-    new_fn.metadata.reg_data = Some(reg_meta);
-
-    Ok(())
+    Ok(ctx.new_fn.into_inner())
 }
 
-pub fn type_check_signature(
-    new_fn: &mut Function,
-    reg_meta: &mut RegisterMetadata,
-    old_fn: &hashlink_bytecode::Function,
-    fn_ty: &TypeFunction,
-) -> TranspileResult<()> {
+pub fn type_check_signature(ctx: &mut BuildContext) -> TranspileResult<()> {
+    // Unpack arguments from Cells
+    let mut new_fn = ctx.new_fn.borrow_mut();
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let old_fn = ctx.old_fn;
+    let fn_ty = ctx.fn_ty;
+
     // Go over the function arguments and check that the types in the signature match the registers
     // in the actual function definition while inserting the SSA values for them at the same time
     for (i, arg_ty) in fn_ty.args.iter().enumerate() {
@@ -181,12 +208,13 @@ pub fn type_check_signature(
     Ok(())
 }
 
-pub fn build_register_live_sets(
-    reg_meta: &mut RegisterMetadata,
-    old_fn: &hashlink_bytecode::Function,
-    fn_ty: &TypeFunction,
-    spans: &Vec<(InstructionIndex, InstructionIndex)>,
-) {
+pub fn build_register_live_sets(ctx: &mut BuildContext) {
+    // Take from cells
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let spans = ctx.spans.borrow();
+    let old_fn = ctx.old_fn;
+    let fn_ty = ctx.fn_ty;
+
     for (i, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // Unwrap the bounds and get the sub slice that the span refers to
         let lower_bound = lower_bound.0;
@@ -216,28 +244,42 @@ pub fn build_register_live_sets(
     }
 }
 
-pub fn translate_basic_blocks(
-    new_fn: &mut Function,
-    reg_meta: &mut RegisterMetadata,
-    non_reg_values: &mut HashSet<ValueIndex>,
-    old_fn: &hashlink_bytecode::Function,
-    bb_graph: &BasicBlockGraph,
-    fn_ty: &TypeFunction,
-    spans: &Vec<(InstructionIndex, InstructionIndex)>,
-    bool_type_index: TypeIndex,
-    void_type_index: TypeIndex,
-) -> TranspileResult<()> {
-    for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
-        // Unwrap the lower and upper bounds from the reference and new-type
-        let lower_bound = lower_bound.0;
-        let upper_bound = upper_bound.0;
+pub fn propagate_predecessor_live_sets(ctx: &mut BuildContext) {
+    //let reg_meta = ctx.reg_meta.borrow();
+    //let spans = ctx.spans.borrow();
+    //let bb_graph = ctx.bb_graph.borrow();
+    //let predecessors = ctx.predecessors.borrow();
+    //let old_fn = ctx.old_fn;
+    //let fn_ty = ctx.fn_ty;
+    //
+    //let mut handled = vec![false; spans.len()];
+    //
+    //for i in 0..handled.len() {
+    //    if !handled[i] {}
+    //}
+    //for (bb_index, (lower_bound, _)) in spans.iter().enumerate() {
+    //    let predecessors = &predecessors[bb_index];
+    //}
+}
 
+pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
+    let mut new_fn = ctx.new_fn.borrow_mut();
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let mut non_reg_values = ctx.non_reg_values.borrow_mut();
+    let spans = ctx.spans.borrow();
+    let predecessors = ctx.predecessors.borrow();
+    let bb_infos = ctx.bb_infos.borrow();
+    let old_fn = ctx.old_fn;
+    let bool_type_index = ctx.bool_type_index;
+    let void_type_index = ctx.void_type_index;
+
+    for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
         // We need to get some info based on the instructions that jump to this block
-        let bb_info = get_basic_block_info(&old_fn, bb_graph, lower_bound)?;
+        let bb_info = &bb_infos[bb_index];
 
         // Get the set of predecessor basic block indexes that we will need for emitting phi
         // instructions
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound);
+        let predecessors = &predecessors[bb_index];
 
         // We need to produce a set of register indices that holds the intersection of the live sets
         // from all the predecessors.
@@ -277,7 +319,8 @@ pub fn translate_basic_blocks(
                 let reg = RegisterIndex(reg);
 
                 // We allocate a new SSA value for the result of our phi instruction
-                let assigns = handle_ssa_phi_import(new_fn, old_fn, reg_meta, bb_index, reg);
+                let assigns =
+                    handle_ssa_phi_import(&mut new_fn, old_fn, &mut reg_meta, bb_index, reg);
 
                 // We produce the list of source blocks for the phi instruction with a
                 // ValueIndex that actually holds the *register index* so we can remap it later
@@ -309,9 +352,9 @@ pub fn translate_basic_blocks(
         if bb_info.is_trap_handler {
             // Emit a new SSA value that gets assigned the exception value
             let assigns = handle_ssa_write(
-                new_fn,
+                &mut new_fn,
                 old_fn,
-                reg_meta,
+                &mut reg_meta,
                 bb_index,
                 RegisterIndex(bb_info.trap_register),
             );
@@ -327,16 +370,16 @@ pub fn translate_basic_blocks(
         }
 
         // Iterate over all the opcodes that we've deduced to be a part of this basic block
-        for (i, old_op) in old_fn.ops[lower_bound..=upper_bound].iter().enumerate() {
+        for (i, old_op) in old_fn.ops[lower_bound.0..=upper_bound.0].iter().enumerate() {
             // Get the actual index in the opcode array rather than the index in the sub-slice
             // we've taken
-            let op_index = lower_bound + i;
+            let op_index = lower_bound.0 + i;
             translate_opcode(
-                new_fn,
-                reg_meta,
-                non_reg_values,
+                &mut new_fn,
+                &mut reg_meta,
+                &mut non_reg_values,
                 old_fn,
-                spans,
+                &spans,
                 bool_type_index,
                 void_type_index,
                 bb_index,
@@ -351,8 +394,8 @@ pub fn translate_basic_blocks(
     //
     // Specifically we require that the "latest state" map holds information for the entire set of
     // registers for every basic block
-    for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0);
+    for bb_index in 0..new_fn.basic_blocks.len() {
+        let predecessors = &predecessors[bb_index];
 
         if predecessors.len() == 1 {
             let predecessor = predecessors.iter().next().unwrap();
@@ -376,28 +419,24 @@ pub fn translate_basic_blocks(
             reg_meta.block_live_registers[predecessor.0] = pred_info;
         }
     }
-
     Ok(())
 }
 
-pub fn remap_register_indices(
-    new_fn: &mut Function,
-    reg_meta: &mut RegisterMetadata,
-    non_reg_values: &HashSet<ValueIndex>,
-    bb_graph: &BasicBlockGraph,
-    fn_ty: &TypeFunction,
-    spans: &Vec<(InstructionIndex, InstructionIndex)>,
-) -> TranspileResult<()> {
+pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
+    let mut new_fn = ctx.new_fn.borrow_mut();
+    let reg_meta = ctx.reg_meta.borrow();
+    let non_reg_values = ctx.non_reg_values.borrow();
+    let predecessors = ctx.predecessors.borrow();
+    let fn_ty = ctx.fn_ty;
+
     // We allocate reuse this between iterations to save allocating every iteration
     let mut latest_states = HashMap::new();
 
     // Iterate over all basic blocks
     for (bb_index, bb) in new_fn.basic_blocks.iter_mut().enumerate() {
-        let (lower_bound, _) = spans[bb_index];
-
         // Get the set of predecessor basic block indexes that we will need for importing values
         // in the special case of basic blocks with only a single predecessor
-        let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound.0);
+        let predecessors = &predecessors[bb_index];
 
         // The entry basic block is a special case where the latest state of the registers is
         // imported directly from the function arguments
@@ -422,8 +461,8 @@ pub fn remap_register_indices(
 
         // Iterate over every opcode, remapping reads and updating the rolling "latest state" for
         // each register
-        for (op_index, op) in bb.ops.iter_mut().enumerate() {
-            remap_reads(op, reg_meta, non_reg_values, &latest_states);
+        for op in bb.ops.iter_mut() {
+            remap_reads(op, &reg_meta, &non_reg_values, &latest_states);
 
             if let Some(write) = op.get_assigned_value() {
                 if let Some(register) = reg_meta.register_map.get(&write) {
@@ -435,7 +474,6 @@ pub fn remap_register_indices(
         // Clear the state map for use in the next iteration, but keep the allocated memory around
         latest_states.clear();
     }
-
     Ok(())
 }
 
@@ -445,11 +483,4 @@ fn type_index_error(old_fn: &hashlink_bytecode::Function) -> TranspileError {
     };
     let err = TranspileError::InvalidFunction(reason);
     err
-}
-
-fn find_type_index_for(types: &[Type], val: &Type) -> Option<TypeIndex> {
-    types
-        .iter()
-        .enumerate()
-        .find_map(|(i, v)| if v == val { Some(TypeIndex(i)) } else { None })
 }

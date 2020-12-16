@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::basic_block_build::{find_source_span, handle_ssa_write, handle_ssa_write_no_register};
+use crate::basic_block_build::{
+    find_source_span, handle_ssa_write, handle_ssa_write_no_register, RegisterData,
+};
 use crate::opcode_translators::*;
 use crate::utils::offset_from;
-use eon_bytecode::function::{Function, RegisterMetadata};
+use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
@@ -62,7 +64,7 @@ use std::collections::HashSet;
 /// indexes.
 pub fn translate_opcode(
     new_fn: &mut Function,
-    reg_meta: &mut RegisterMetadata,
+    reg_meta: &mut RegisterData,
     non_reg_values: &mut HashSet<ValueIndex>,
     old_fn: &hashlink_bytecode::Function,
     spans: &[(InstructionIndex, InstructionIndex)],

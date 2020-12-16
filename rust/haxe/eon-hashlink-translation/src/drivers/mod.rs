@@ -39,7 +39,7 @@ use crate::error::TranspileResult;
 use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,
 };
-use eon_bytecode::function::{Function, Metadata};
+use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{FunctionIndex, TypeIndex};
 use eon_bytecode::module::Module;
 
@@ -110,17 +110,6 @@ pub fn transpile_hashlink_function(
     module: &Module,
     mut old_fn: hashlink_bytecode::Function,
 ) -> TranspileResult<Function> {
-    let mut new_fn = Function {
-        type_: TypeIndex(old_fn.type_ as usize),
-        f_index: old_fn.f_index,
-        ssa_values: vec![],
-        basic_blocks: vec![],
-        metadata: Metadata {
-            value_data: None,
-            reg_data: None,
-        },
-    };
-
     // This is a very, very, very, very hacky thing we inject into the instruction stream of every
     // function we translate.
     //
@@ -157,7 +146,12 @@ pub fn transpile_hashlink_function(
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
     let spans = compute_bb_spans(&old_fn, &bb_graph)?;
 
-    build_bb(&mut new_fn, &old_fn, module, bb_graph, spans)?;
-
+    let new_fn = Function {
+        type_: TypeIndex(old_fn.type_ as usize),
+        f_index: old_fn.f_index,
+        ssa_values: vec![],
+        basic_blocks: vec![],
+    };
+    let new_fn = build_bb(new_fn, spans, &old_fn, module, bb_graph)?;
     Ok(new_fn)
 }

@@ -89,6 +89,19 @@ pub fn compute_bb_spans(
         }
     }
 
+    // The spans array is a list of ranges into the source hashlink bytecode. Each entry encodes the
+    // span of instructions that should be encoded into a basic block.
+    //
+    // Instruction index 0 in the source bytecode is special as it **must** be the first instruction
+    // of the first basic block (the function entry point). The algorithm that generates the spans
+    // list does not guarantee that the first span corresponds to the first instruction in the
+    // source.
+    //
+    // To fix this we sort the array so that the span for instruction 0 will be the first item in
+    // the array, meaning we can transparently handle all of them and it will always be the first
+    // basic block
+    spans.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
     Ok(spans)
 }
 

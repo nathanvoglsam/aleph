@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use eon_bytecode::function::RegisterMetadata;
+use crate::basic_block_build::RegisterData;
 use eon_bytecode::indexes::{RegisterIndex, ValueIndex};
 use eon_bytecode::opcode::OpCode;
 use std::collections::{HashMap, HashSet};
 
 pub fn remap_reads(
     op: &mut OpCode,
-    reg_meta: &RegisterMetadata,
+    reg_meta: &RegisterData,
     non_reg_values: &HashSet<ValueIndex>,
     latest_states: &HashMap<RegisterIndex, ValueIndex>,
 ) {
