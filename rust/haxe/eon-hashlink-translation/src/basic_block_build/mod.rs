@@ -143,7 +143,7 @@ pub fn build_bb(
         fn_ty,
         &spans,
         bool_type_index,
-        void_type_index
+        void_type_index,
     )?;
 
     // The next phase requires a second pass over the now partially translated instructions.
