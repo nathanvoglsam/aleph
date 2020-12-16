@@ -193,13 +193,13 @@ pub fn build_register_live_sets(
         let upper_bound = upper_bound.0;
         let ops = &old_fn.ops[lower_bound..=upper_bound];
 
-        let mut reg_writes = HashMap::new();
+        let mut live_regs = HashMap::new();
 
         // We special case the first basic block as that will be importing the latest states from
         // the function arguments
         if i == 0 {
             for (arg_index, _) in fn_ty.args.iter().enumerate() {
-                reg_writes.insert(RegisterIndex(arg_index), ValueIndex(arg_index));
+                live_regs.insert(RegisterIndex(arg_index), ValueIndex(arg_index));
             }
         }
 
@@ -207,12 +207,12 @@ pub fn build_register_live_sets(
         for op in ops {
             // Build the set of writes
             if let Some(write) = op.register_write() {
-                reg_writes.insert(RegisterIndex(write as usize), ValueIndex(0));
+                live_regs.insert(RegisterIndex(write as usize), ValueIndex(0));
             }
         }
 
         // Add to the metadata
-        reg_meta.block_live_registers.push(reg_writes);
+        reg_meta.block_live_registers.push(live_regs);
     }
 }
 
