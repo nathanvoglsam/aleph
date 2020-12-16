@@ -155,7 +155,7 @@ pub fn test_translation_coverage() {
                 translate_load_global(&op, vi, gi).unwrap()
             }
             hashlink_bytecode::OpCode::OpSetGlobal(_) => {
-                translate_store_global(&op, vi, gi).unwrap()
+                translate_store_global(&op, gi, vi).unwrap()
             }
 
             hashlink_bytecode::OpCode::OpField(_)

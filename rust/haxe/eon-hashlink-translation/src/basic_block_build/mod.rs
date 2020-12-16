@@ -33,13 +33,13 @@ mod utils;
 
 pub use opcode_translate::translate_opcode;
 pub use remap_reads::remap_reads;
+pub use utils::build_basic_block_infos;
 pub use utils::build_basic_block_predecessor_sets;
 pub use utils::find_source_span;
-pub use utils::build_basic_block_infos;
+pub use utils::find_type_index_for;
 pub use utils::handle_ssa_phi_import;
 pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
-pub use utils::find_type_index_for;
 pub use utils::BBInfo;
 
 use crate::basic_block_graph::BasicBlockGraph;
@@ -84,6 +84,7 @@ pub struct BuildContext<'a> {
     pub reg_meta: RefCell<RegisterData>,
     pub predecessors: RefCell<Vec<HashSet<BasicBlockIndex>>>,
     pub bb_infos: RefCell<Vec<BBInfo>>,
+    pub bb_phi_imports: RefCell<Vec<Vec<RegisterIndex>>>,
 }
 
 pub fn build_bb(
@@ -126,6 +127,8 @@ pub fn build_bb(
     // Precompute some information about all basic blocks
     let bb_infos = build_basic_block_infos(old_fn, &bb_graph, &spans)?;
 
+    let bb_phi_imports = vec![Vec::new(); spans.len()];
+
     let mut ctx = BuildContext {
         new_fn: RefCell::new(new_fn),
         old_fn,
@@ -139,6 +142,7 @@ pub fn build_bb(
         reg_meta: RefCell::new(reg_meta),
         predecessors: RefCell::new(predecessors),
         bb_infos: RefCell::new(bb_infos),
+        bb_phi_imports: RefCell::new(bb_phi_imports),
     };
 
     // This will check the type signature of the function against the registers the definition says
@@ -245,21 +249,116 @@ pub fn build_register_live_sets(ctx: &mut BuildContext) {
 }
 
 pub fn propagate_predecessor_live_sets(ctx: &mut BuildContext) {
-    //let reg_meta = ctx.reg_meta.borrow();
-    //let spans = ctx.spans.borrow();
-    //let bb_graph = ctx.bb_graph.borrow();
-    //let predecessors = ctx.predecessors.borrow();
-    //let old_fn = ctx.old_fn;
-    //let fn_ty = ctx.fn_ty;
-    //
-    //let mut handled = vec![false; spans.len()];
-    //
-    //for i in 0..handled.len() {
-    //    if !handled[i] {}
-    //}
-    //for (bb_index, (lower_bound, _)) in spans.iter().enumerate() {
-    //    let predecessors = &predecessors[bb_index];
-    //}
+    let mut bb_phi_imports = ctx.bb_phi_imports.borrow_mut();
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let new_fn = ctx.new_fn.borrow();
+    let predecessors = ctx.predecessors.borrow();
+    let bb_infos = ctx.bb_infos.borrow();
+    let old_fn = ctx.old_fn;
+
+    let mut handled_count = 0;
+    let mut handled = vec![false; new_fn.basic_blocks.len()];
+
+    // Continuously repeat this until we have handled all basic blocks
+    while handled_count < new_fn.basic_blocks.len() {
+        for bb_index in 0..handled.len() {
+            // Get this block's predecessor set
+            let block_predecessors = &predecessors[bb_index];
+            let block_info = &bb_infos[bb_index];
+
+            // We can only operate on basic blocks that have not been handled yet, and have had all
+            // their predecessors handled
+            let not_handled = !handled[bb_index];
+            let all_predecessors_handled =
+                block_predecessors.iter().find(|v| !handled[v.0]).is_none();
+
+            // Only handle blocks that match the above preconditions
+            if not_handled && all_predecessors_handled {
+                // We need to do this swap stuff because the borrow checker will think we're
+                // aliasing a mutable reference (if we borrowed this mutably, we couldn't look at
+                // any other block's live set which we need to do).
+                //
+                // Solution: take ownership of the value by swapping it out of the array, replacing
+                // with an empty value, and then returning it back to the array once we're done.
+                let mut our_live_set = HashMap::new();
+                std::mem::swap(
+                    &mut our_live_set,
+                    &mut reg_meta.block_live_registers[bb_index],
+                );
+
+                // With a single predecessor we import the live set verbatim from the predecessor
+                // block
+                if block_info.has_single_predecessor {
+                    // Get the first (and only) predecessor in the set
+                    let predecessor = block_predecessors.iter().next().unwrap();
+
+                    // Get the live set associated with the predecessor block
+                    let live_set = &reg_meta.block_live_registers[predecessor.0];
+
+                    // Insert all live values into the currently being handled block's set with
+                    // default values. We'll need the ValueIndex part ourselves later
+                    for reg in live_set.keys() {
+                        our_live_set.insert(*reg, ValueIndex(0));
+                    }
+                }
+
+                // With multiple predecessors we need to compute the common set of live values
+                // between all predecessors and import only those live registers.
+                if block_info.has_multiple_predecessors {
+                    // This is a "flat map" that maps a register index to the number of predecessors it is live
+                    // in. We use this to decide which registers are live in all predecessor blocks.
+                    let mut live_count = vec![0usize; old_fn.registers.len()];
+
+                    // Now we iterate over all the predecessors and accumulate into the `live_count` flat_map
+                    //
+                    // Each slot in the map corresponds to a count for each register. Each slot is used to
+                    // accumulate the number of predecessors the register is live in. If the count is lower than
+                    // the number of predecessors then the register is not live in all of them and we must not
+                    // emit phi instructions for that register
+                    for pred in block_predecessors.iter() {
+                        let pred = &reg_meta.block_live_registers[pred.0];
+                        for reg in pred.keys() {
+                            live_count[reg.0] += 1;
+                        }
+                    }
+
+                    // We will need the information we produce here later so rather than using the
+                    // iterator directly we collect into a vector
+                    //
+                    // Regardless, this filters out all registers that are not live in all
+                    // predecessor blocks
+                    let phi_imports = live_count
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(r, v)| {
+                            if *v == block_predecessors.len() {
+                                Some(RegisterIndex(r))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+
+                    bb_phi_imports[bb_index] = phi_imports;
+
+                    // Insert our live subset into the block's live set
+                    for reg in &bb_phi_imports[bb_index] {
+                        our_live_set.insert(*reg, ValueIndex(0));
+                    }
+                }
+
+                // Put the swapped out value back in to the array
+                reg_meta.block_live_registers[bb_index] = our_live_set;
+
+                // Mark this block as handled
+                handled[bb_index] = true;
+                handled_count += 1;
+            }
+        }
+    }
+
+    // Debug assertion to ensure we have actually handled all basic blocks
+    debug_assert!(!handled.contains(&false));
 }
 
 pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
@@ -269,6 +368,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let spans = ctx.spans.borrow();
     let predecessors = ctx.predecessors.borrow();
     let bb_infos = ctx.bb_infos.borrow();
+    let bb_phi_imports = ctx.bb_phi_imports.borrow();
     let old_fn = ctx.old_fn;
     let bool_type_index = ctx.bool_type_index;
     let void_type_index = ctx.void_type_index;
@@ -281,46 +381,13 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
         // instructions
         let predecessors = &predecessors[bb_index];
 
-        // We need to produce a set of register indices that holds the intersection of the live sets
-        // from all the predecessors.
-        //
-        // It is only sane behaviour to import SSA values that are live in all predecessor blocks so
-        // we need to produce this subset so we can correctly inject phi instructions.
-        //
-        // The algorithm to do this will be explained below
-
-        // This is a "flat map" that maps a register index to the number of predecessors it is live
-        // in. We use this to decide which registers are live in all predecessor blocks.
-        let mut live_count = vec![0usize; old_fn.registers.len()];
-
-        // Now we iterate over all the predecessors and accumulate into the `live_count` flat_map
-        //
-        // Each slot in the map corresponds to a count for each register. Each slot is used to
-        // accumulate the number of predecessors the register is live in. If the count is lower than
-        // the number of predecessors then the register is not live in all of them and we must not
-        // emit phi instructions for that register
-        for pred in predecessors.iter() {
-            let pred = &reg_meta.block_live_registers[pred.0];
-            for reg in pred.keys() {
-                live_count[reg.0] += 1;
-            }
-        }
-
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
         if bb_info.has_multiple_predecessors {
-            // Filter out all registers that are not live in all predecessor blocks
-            let live_regs = live_count
-                .iter()
-                .enumerate()
-                .filter(|(_, v)| **v == predecessors.len());
-            for (reg, _) in live_regs {
-                // Dereference and new-type the register into our own type
-                let reg = RegisterIndex(reg);
-
+            for reg in &bb_phi_imports[bb_index] {
                 // We allocate a new SSA value for the result of our phi instruction
                 let assigns =
-                    handle_ssa_phi_import(&mut new_fn, old_fn, &mut reg_meta, bb_index, reg);
+                    handle_ssa_phi_import(&mut new_fn, old_fn, &mut reg_meta, bb_index, *reg);
 
                 // We produce the list of source blocks for the phi instruction with a
                 // ValueIndex that actually holds the *register index* so we can remap it later
@@ -386,37 +453,6 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
                 op_index,
                 old_op,
             );
-        }
-    }
-
-    // Now we need to pass over the basic blocks again and patch up some of the metadata with
-    // some missing information for the next phase of the algorithm.
-    //
-    // Specifically we require that the "latest state" map holds information for the entire set of
-    // registers for every basic block
-    for bb_index in 0..new_fn.basic_blocks.len() {
-        let predecessors = &predecessors[bb_index];
-
-        if predecessors.len() == 1 {
-            let predecessor = predecessors.iter().next().unwrap();
-
-            // Swap the actual map out of the array as we need to mutate another member in the array
-            let mut pred_info = HashMap::new();
-            std::mem::swap(
-                &mut pred_info,
-                &mut reg_meta.block_live_registers[predecessor.0],
-            );
-
-            let iterator = pred_info.iter().map(|(k, v)| (*k, *v));
-            for (k, v) in iterator {
-                if !reg_meta.block_live_registers[bb_index].contains_key(&k) {
-                    reg_meta.block_live_registers[bb_index].insert(k, v);
-                }
-            }
-
-            // Move the original map back in to the list. Dropping the old one is find and an empty
-            // map doesn't allocate so this should have almost no effect on performance
-            reg_meta.block_live_registers[predecessor.0] = pred_info;
         }
     }
     Ok(())

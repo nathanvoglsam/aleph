@@ -452,12 +452,12 @@ pub fn translate_opcode(
         hashlink_bytecode::OpCode::OpSetGlobal(params) => {
             // The register index for remapping later. This reads the register into the
             // target global
-            let source = ValueIndex(params.param_1 as usize);
+            let target = GlobalIndex(params.param_1 as usize);
 
             // The global to write into
-            let target = GlobalIndex(params.param_2 as usize);
+            let source = ValueIndex(params.param_2 as usize);
 
-            let new_op = translate_store_global(old_op, source, target).unwrap();
+            let new_op = translate_store_global(old_op, target, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 

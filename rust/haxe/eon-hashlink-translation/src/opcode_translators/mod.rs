@@ -267,10 +267,10 @@ pub fn translate_store_enum_field(
 ///
 pub fn translate_store_global(
     op: &hashlink_bytecode::OpCode,
-    source: ValueIndex,
     target: GlobalIndex,
+    source: ValueIndex,
 ) -> Option<OpCode> {
-    let inner = StoreGlobal { source, target };
+    let inner = StoreGlobal { target, source };
     match op {
         hashlink_bytecode::OpCode::OpSetGlobal(_) => Some(OpCode::OpSetGlobal(inner)),
         _ => None,

@@ -96,8 +96,11 @@ pub fn handle_ssa_phi_import(
         type_: TypeIndex(type_),
     });
 
-    // We ignore if this returns None deliberately as a phi instruction isn't a real write
-    let _ = reg_meta.block_live_registers[bb_index].insert(v, value);
+    // While this isn't a real write, the basic block should already have this marked as live from
+    // an earlier part of the algorithm. If it doesn't then it is likely a bug
+    reg_meta.block_live_registers[bb_index]
+        .insert(v, value)
+        .unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     reg_meta.register_map.insert(value, v);
