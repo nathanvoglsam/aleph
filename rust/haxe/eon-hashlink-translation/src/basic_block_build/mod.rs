@@ -239,10 +239,40 @@ pub fn translate_basic_blocks(
         // instructions
         let predecessors = get_basic_block_predecessor_list(bb_graph, spans, lower_bound);
 
+        // We need to produce a set of register indices that holds the intersection of the live sets
+        // from all the predecessors.
+        //
+        // It is only sane behaviour to import SSA values that are live in all predecessor blocks so
+        // we need to produce this subset so we can correctly inject phi instructions.
+        //
+        // The algorithm to do this will be explained below
+
+        // This is a "flat map" that maps a register index to the number of predecessors it is live
+        // in. We use this to decide which registers are live in all predecessor blocks.
+        let mut live_count = vec![0usize; old_fn.registers.len()];
+
+        // Now we iterate over all the predecessors and accumulate into the `live_count` flat_map
+        //
+        // Each slot in the map corresponds to a count for each register. Each slot is used to
+        // accumulate the number of predecessors the register is live in. If the count is lower than
+        // the number of predecessors then the register is not live in all of them and we must not
+        // emit phi instructions for that register
+        for pred in predecessors.iter() {
+            let pred = &reg_meta.block_live_registers[pred.0];
+            for reg in pred.keys() {
+                live_count[reg.0] += 1;
+            }
+        }
+
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
         if bb_info.has_multiple_predecessors {
-            for reg in 0..old_fn.registers.len() {
+            // Filter out all registers that are not live in all predecessor blocks
+            let live_regs = live_count
+                .iter()
+                .enumerate()
+                .filter(|(_, v)| **v == predecessors.len());
+            for (reg, _) in live_regs {
                 // Dereference and new-type the register into our own type
                 let reg = RegisterIndex(reg);
 
