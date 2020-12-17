@@ -326,6 +326,21 @@ impl OpCode {
         }
     }
 
+    pub fn is_call(&self) -> bool {
+        match self {
+            OpCode::OpCall0(_)
+            | OpCode::OpCall1(_)
+            | OpCode::OpCall2(_)
+            | OpCode::OpCall3(_)
+            | OpCode::OpCall4(_)
+            | OpCode::OpCallN(_)
+            | OpCode::OpCallMethod(_)
+            | OpCode::OpCallThis(_)
+            | OpCode::OpCallClosure(_) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_throw(&self) -> bool {
         match self {
             OpCode::OpThrow(_) => true,
