@@ -42,7 +42,7 @@ pub struct BasicBlockGraph {
 }
 
 /// Produces SSA graph nodes and edges
-pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> TranspileResult<BasicBlockGraph> {
+pub fn compute_bb_graph(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockGraph> {
     // Holds the list of instruction indexes that have instructions that branch to the
     // instruction given by the key
     let mut destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>> =
@@ -68,15 +68,15 @@ pub fn compute_bb_graph(old_fn: &hashlink_bytecode::Function) -> TranspileResult
 }
 
 fn compute_bb_graph_loop_inner(
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     instruction_index: usize,
-    op: &hashlink_bytecode::OpCode,
+    op: &hashlink::OpCode,
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
 ) -> TranspileResult<()> {
     // We need to handle switch specially as it holds an array of branch targets rather than
     // a single target
-    if let hashlink_bytecode::OpCode::OpSwitch(op) = op {
+    if let hashlink::OpCode::OpSwitch(op) = op {
         compute_bb_graph_loop_inner_switch(
             destination_sources,
             branches,
@@ -84,7 +84,7 @@ fn compute_bb_graph_loop_inner(
             instruction_index,
             op,
         )?;
-    } else if let hashlink_bytecode::OpCode::OpJAlways(op) = op {
+    } else if let hashlink::OpCode::OpJAlways(op) = op {
         compute_bb_graph_loop_inner_unconditional(
             destination_sources,
             branches,
@@ -107,9 +107,9 @@ fn compute_bb_graph_loop_inner(
 fn compute_bb_graph_loop_inner_switch(
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     instruction_index: usize,
-    op: &hashlink_bytecode::OpSwitchParam,
+    op: &hashlink::OpSwitchParam,
 ) -> TranspileResult<()> {
     // Handle all the distinct branch targets from the switch's jump table
     for offset in op.extra.iter() {
@@ -159,9 +159,9 @@ fn compute_bb_graph_loop_inner_switch(
 fn compute_bb_graph_loop_inner_unconditional(
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     instruction_index: usize,
-    op: &hashlink_bytecode::OpOneParam,
+    op: &hashlink::OpOneParam,
 ) -> TranspileResult<()> {
     let target = offset_from(instruction_index, op.param_1)
         .ok_or(offset_error(instruction_index, old_fn))?;
@@ -172,7 +172,7 @@ fn compute_bb_graph_loop_inner_unconditional(
     // Check if a negative index offset branch does not branch to a label opcode
     if op.param_1 < 0 {
         match &old_fn.ops[target] {
-            hashlink_bytecode::OpCode::OpLabel => {}
+            hashlink::OpCode::OpLabel => {}
             _ => {
                 //negative offset not targeting label
                 return Err(negative_offset_error(instruction_index, old_fn));
@@ -195,26 +195,26 @@ fn compute_bb_graph_loop_inner_unconditional(
 fn compute_bb_graph_loop_inner_conditional(
     destination_sources: &mut HashMap<InstructionIndex, HashSet<InstructionIndex>>,
     branches: &mut HashSet<InstructionIndex>,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     instruction_index: usize,
-    op: &hashlink_bytecode::OpCode,
+    op: &hashlink::OpCode,
 ) -> TranspileResult<()> {
     // Get the branch target offset if it exists, otherwise skip to the next instruction
     let offset = match op {
-        hashlink_bytecode::OpCode::OpJTrue(v) => v.param_2,
-        hashlink_bytecode::OpCode::OpJFalse(v) => v.param_2,
-        hashlink_bytecode::OpCode::OpJNull(v) => v.param_2,
-        hashlink_bytecode::OpCode::OpJNotNull(v) => v.param_2,
-        hashlink_bytecode::OpCode::OpJSLt(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJSGte(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJSGt(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJSLte(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJULt(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJUGte(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJNotLt(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJNotGte(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJEq(v) => v.param_3,
-        hashlink_bytecode::OpCode::OpJNotEq(v) => v.param_3,
+        hashlink::OpCode::OpJTrue(v) => v.param_2,
+        hashlink::OpCode::OpJFalse(v) => v.param_2,
+        hashlink::OpCode::OpJNull(v) => v.param_2,
+        hashlink::OpCode::OpJNotNull(v) => v.param_2,
+        hashlink::OpCode::OpJSLt(v) => v.param_3,
+        hashlink::OpCode::OpJSGte(v) => v.param_3,
+        hashlink::OpCode::OpJSGt(v) => v.param_3,
+        hashlink::OpCode::OpJSLte(v) => v.param_3,
+        hashlink::OpCode::OpJULt(v) => v.param_3,
+        hashlink::OpCode::OpJUGte(v) => v.param_3,
+        hashlink::OpCode::OpJNotLt(v) => v.param_3,
+        hashlink::OpCode::OpJNotGte(v) => v.param_3,
+        hashlink::OpCode::OpJEq(v) => v.param_3,
+        hashlink::OpCode::OpJNotEq(v) => v.param_3,
         _ => return Ok(()),
     };
 
@@ -234,7 +234,7 @@ fn compute_bb_graph_loop_inner_conditional(
     // Check if a negative index offset branch does not branch to a label opcode
     if offset < 0 {
         match &old_fn.ops[target] {
-            hashlink_bytecode::OpCode::OpLabel => {}
+            hashlink::OpCode::OpLabel => {}
             _ => {
                 //negative offset not targeting label
                 return Err(negative_offset_error(instruction_index, old_fn));
@@ -265,7 +265,7 @@ fn compute_bb_graph_loop_inner_conditional(
 fn bounds_check_offset(
     target: usize,
     i_index: usize,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
 ) -> TranspileResult<()> {
     if target >= old_fn.ops.len() {
         let reason = InvalidFunctionReason::JumpOffsetOutOfBounds {
@@ -278,7 +278,7 @@ fn bounds_check_offset(
     Ok(())
 }
 
-fn negative_offset_error(i_index: usize, old_fn: &hashlink_bytecode::Function) -> TranspileError {
+fn negative_offset_error(i_index: usize, old_fn: &hashlink::Function) -> TranspileError {
     let reason = InvalidFunctionReason::JumpNegativeOffsetNotTargetingLabel {
         i_index,
         func: old_fn.clone(),
@@ -287,7 +287,7 @@ fn negative_offset_error(i_index: usize, old_fn: &hashlink_bytecode::Function) -
     err
 }
 
-fn offset_error(i_index: usize, old_fn: &hashlink_bytecode::Function) -> TranspileError {
+fn offset_error(i_index: usize, old_fn: &hashlink::Function) -> TranspileError {
     let reason = InvalidFunctionReason::JumpInvalidOffset {
         i_index,
         func: old_fn.clone(),

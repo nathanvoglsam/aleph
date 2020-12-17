@@ -82,7 +82,7 @@ pub fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize
 /// Simple function that handles creating and adding SSA values for instructions
 pub fn handle_ssa_phi_import(
     new_fn: &mut Function,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     reg_meta: &mut RegisterData,
     bb_index: usize,
     v: RegisterIndex,
@@ -111,7 +111,7 @@ pub fn handle_ssa_phi_import(
 /// Simple function that handles creating and adding SSA values for instructions
 pub fn handle_ssa_write(
     new_fn: &mut Function,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     reg_meta: &mut RegisterData,
     bb_index: usize,
     v: RegisterIndex,
@@ -185,7 +185,7 @@ pub struct BBInfo {
 ///
 /// This function also does some error checking
 pub fn build_basic_block_infos(
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     bb_graph: &BasicBlockGraph,
     spans: &[(InstructionIndex, InstructionIndex)],
 ) -> TranspileResult<Vec<BBInfo>> {
@@ -213,7 +213,7 @@ pub fn build_basic_block_infos(
             let mut trap_sources = sources.iter().filter_map(|v| {
                 let source_op = &old_fn.ops[v.0];
                 match source_op {
-                    hashlink_bytecode::OpCode::OpTrap(v) => Some(v),
+                    hashlink::OpCode::OpTrap(v) => Some(v),
                     _ => None,
                 }
             });

@@ -863,6 +863,7 @@ impl StoreEnumField {
     }
 }
 
+// TODO: Remove this
 /// Layout for `OpSetEnumField`
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct Trap {
@@ -980,8 +981,8 @@ pub enum OpCode {
     // Exception opcodes
     OpThrow(ValueIndex),
     OpRethrow(ValueIndex),
-    OpTrap(Trap),
-    OpEndTrap(bool),
+    OpTrap(Trap),    // TODO: Remove these
+    OpEndTrap(bool), // TODO: Remove these
     OpReceiveException(ReceiveException),
     OpNullCheck(ValueIndex),
 

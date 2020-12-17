@@ -71,7 +71,7 @@ use eon_bytecode::module::Module;
 /// We implement this at a higher level layer where the semantics of the code are much simpler and
 /// so we'll almost certainly do this faster and more reliably than LLVM could've.
 ///
-pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResult<Module> {
+pub fn translate_hashlink_module(code: hashlink::Code) -> TranspileResult<Module> {
     // First we translate all the direct stuff
     //
     // The only thing we massively change is the actual function instructions as we move that
@@ -108,7 +108,7 @@ pub fn translate_hashlink_module(code: hashlink_bytecode::Code) -> TranspileResu
 
 pub fn transpile_hashlink_function(
     module: &Module,
-    mut old_fn: hashlink_bytecode::Function,
+    mut old_fn: hashlink::Function,
 ) -> TranspileResult<Function> {
     // This is a very, very, very, very hacky thing we inject into the instruction stream of every
     // function we translate.
@@ -136,8 +136,8 @@ pub fn transpile_hashlink_function(
     // basic block will encode that edge explicitly so we don't need to handle any edge cases when
     // emitting phi instructions for branch target blocks (there's no sane way to handle having the
     // first instruction be a branch target otherwise).
-    let noop_jump = hashlink_bytecode::OpOneParam { param_1: 0 };
-    let noop_jump = hashlink_bytecode::OpCode::OpJAlways(noop_jump);
+    let noop_jump = hashlink::OpOneParam { param_1: 0 };
+    let noop_jump = hashlink::OpCode::OpJAlways(noop_jump);
     old_fn.ops.insert(0, noop_jump);
 
     // First we need to find all branch instructions and where they branch to

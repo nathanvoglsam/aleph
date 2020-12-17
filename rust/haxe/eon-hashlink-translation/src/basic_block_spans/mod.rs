@@ -32,7 +32,7 @@ use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::indexes::InstructionIndex;
 
 pub fn compute_bb_spans(
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     bb_graph: &BasicBlockGraph,
 ) -> TranspileResult<Vec<(InstructionIndex, InstructionIndex)>> {
     // Now we need to compute a list of spans for all the basic blocks in the bytecode
@@ -41,25 +41,7 @@ pub fn compute_bb_spans(
     // Go over all the points that are branched to and find the next branch so we can produce a
     // list of spans for all the basic blocks
     for start in bb_graph.destination_sources.keys().map(|v| *v) {
-        let start = start.0;
-        let mut found_terminator = false;
-        for (i, op) in old_fn.ops[start..].iter().enumerate() {
-            if is_block_terminator(op) {
-                let a = InstructionIndex(start);
-                let b = InstructionIndex(start + i);
-                let span = (a, b);
-                spans.push(span);
-                found_terminator = true;
-                break;
-            }
-        }
-        if !found_terminator {
-            let reason = InvalidFunctionReason::SpanFoundNoBlockTerminator {
-                func: old_fn.clone(),
-            };
-            let err = TranspileError::InvalidFunction(reason);
-            return Err(err);
-        }
+        find_span_end(old_fn, &mut spans, start)?;
     }
 
     // There's no guarantee that the first instruction is in the above list so we have to handle
@@ -69,24 +51,7 @@ pub fn compute_bb_spans(
         .destination_sources
         .contains_key(&InstructionIndex(0))
     {
-        let mut found_terminator = false;
-        for (i, op) in old_fn.ops.iter().enumerate() {
-            if is_block_terminator(op) {
-                let a = InstructionIndex(0);
-                let b = InstructionIndex(i);
-                let span = (a, b);
-                spans.push(span);
-                found_terminator = true;
-                break;
-            }
-        }
-        if !found_terminator {
-            let reason = InvalidFunctionReason::SpanFoundNoBlockTerminator {
-                func: old_fn.clone(),
-            };
-            let err = TranspileError::InvalidFunction(reason);
-            return Err(err);
-        }
+        find_span_end(old_fn, &mut spans, InstructionIndex(0))?;
     }
 
     // The spans array is a list of ranges into the source hashlink bytecode. Each entry encodes the
@@ -105,6 +70,33 @@ pub fn compute_bb_spans(
     Ok(spans)
 }
 
-fn is_block_terminator(op: &hashlink_bytecode::OpCode) -> bool {
+fn find_span_end(
+    old_fn: &hashlink::Function,
+    spans: &mut Vec<(InstructionIndex, InstructionIndex)>,
+    start: InstructionIndex,
+) -> TranspileResult<()> {
+    let start = start.0;
+    let mut found_terminator = false;
+    for (i, op) in old_fn.ops[start..].iter().enumerate() {
+        if is_block_terminator(op) {
+            let a = InstructionIndex(start);
+            let b = InstructionIndex(start + i);
+            let span = (a, b);
+            spans.push(span);
+            found_terminator = true;
+            break;
+        }
+    }
+    if !found_terminator {
+        let reason = InvalidFunctionReason::SpanFoundNoBlockTerminator {
+            func: old_fn.clone(),
+        };
+        let err = TranspileError::InvalidFunction(reason);
+        return Err(err);
+    }
+    Ok(())
+}
+
+fn is_block_terminator(op: &hashlink::OpCode) -> bool {
     op.is_branch() || op.is_ret() || op.is_throw()
 }

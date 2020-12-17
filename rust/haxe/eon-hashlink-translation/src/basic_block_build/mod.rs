@@ -73,7 +73,7 @@ pub struct RegisterData {
 
 pub struct BuildContext<'a> {
     pub new_fn: RefCell<Function>,
-    pub old_fn: &'a hashlink_bytecode::Function,
+    pub old_fn: &'a hashlink::Function,
     pub module: &'a Module,
     pub bb_graph: RefCell<BasicBlockGraph>,
     pub spans: RefCell<Vec<(InstructionIndex, InstructionIndex)>>,
@@ -90,7 +90,7 @@ pub struct BuildContext<'a> {
 pub fn build_bb(
     mut new_fn: Function,
     spans: Vec<(InstructionIndex, InstructionIndex)>,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     module: &Module,
     bb_graph: BasicBlockGraph,
 ) -> TranspileResult<Function> {
@@ -513,7 +513,7 @@ pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
     Ok(())
 }
 
-fn type_index_error(old_fn: &hashlink_bytecode::Function) -> TranspileError {
+fn type_index_error(old_fn: &hashlink::Function) -> TranspileError {
     let reason = InvalidFunctionReason::TypeIndexNotFunction {
         func: old_fn.clone(),
     };

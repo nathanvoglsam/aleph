@@ -66,16 +66,16 @@ pub fn translate_opcode(
     new_fn: &mut Function,
     reg_meta: &mut RegisterData,
     non_reg_values: &mut HashSet<ValueIndex>,
-    old_fn: &hashlink_bytecode::Function,
+    old_fn: &hashlink::Function,
     spans: &[(InstructionIndex, InstructionIndex)],
     bool_type_index: TypeIndex,
     void_type_index: TypeIndex,
     bb_index: usize,
     op_index: usize,
-    old_op: &hashlink_bytecode::OpCode,
+    old_op: &hashlink::OpCode,
 ) {
     match old_op {
-        hashlink_bytecode::OpCode::OpMov(params) => {
+        hashlink::OpCode::OpMov(params) => {
             // Allocate new SSA value for the assignment param
             let assigns = handle_ssa_write(
                 new_fn,
@@ -91,7 +91,7 @@ pub fn translate_opcode(
             let new_op = translate_load(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpInt(params) => {
+        hashlink::OpCode::OpInt(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -107,7 +107,7 @@ pub fn translate_opcode(
             let new_op = translate_load_int(old_op, assigns, integer).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpFloat(params) => {
+        hashlink::OpCode::OpFloat(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -123,7 +123,7 @@ pub fn translate_opcode(
             let new_op = translate_load_float(old_op, assigns, float).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpBool(params) => {
+        hashlink::OpCode::OpBool(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -141,7 +141,7 @@ pub fn translate_opcode(
             let new_op = translate_load_bool(old_op, assigns, value).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpBytes(params) => {
+        hashlink::OpCode::OpBytes(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -157,7 +157,7 @@ pub fn translate_opcode(
             let new_op = translate_load_bytes(old_op, assigns, bytes).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpString(params) => {
+        hashlink::OpCode::OpString(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -174,7 +174,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpNull(params) => {
+        hashlink::OpCode::OpNull(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -188,19 +188,19 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpAdd(params)
-        | hashlink_bytecode::OpCode::OpSub(params)
-        | hashlink_bytecode::OpCode::OpMul(params)
-        | hashlink_bytecode::OpCode::OpSDiv(params)
-        | hashlink_bytecode::OpCode::OpUDiv(params)
-        | hashlink_bytecode::OpCode::OpSMod(params)
-        | hashlink_bytecode::OpCode::OpUMod(params)
-        | hashlink_bytecode::OpCode::OpShl(params)
-        | hashlink_bytecode::OpCode::OpSShr(params)
-        | hashlink_bytecode::OpCode::OpUShr(params)
-        | hashlink_bytecode::OpCode::OpAnd(params)
-        | hashlink_bytecode::OpCode::OpOr(params)
-        | hashlink_bytecode::OpCode::OpXor(params) => {
+        hashlink::OpCode::OpAdd(params)
+        | hashlink::OpCode::OpSub(params)
+        | hashlink::OpCode::OpMul(params)
+        | hashlink::OpCode::OpSDiv(params)
+        | hashlink::OpCode::OpUDiv(params)
+        | hashlink::OpCode::OpSMod(params)
+        | hashlink::OpCode::OpUMod(params)
+        | hashlink::OpCode::OpShl(params)
+        | hashlink::OpCode::OpSShr(params)
+        | hashlink::OpCode::OpUShr(params)
+        | hashlink::OpCode::OpAnd(params)
+        | hashlink::OpCode::OpOr(params)
+        | hashlink::OpCode::OpXor(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -218,7 +218,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpNeg(params) | hashlink_bytecode::OpCode::OpNot(params) => {
+        hashlink::OpCode::OpNeg(params) | hashlink::OpCode::OpNot(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -236,7 +236,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpIncr(params) | hashlink_bytecode::OpCode::OpDecr(params) => {
+        hashlink::OpCode::OpIncr(params) | hashlink::OpCode::OpDecr(params) => {
             // Assign a new SSA value for the result of the operation
             let assigns = handle_ssa_write(
                 new_fn,
@@ -258,12 +258,12 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpCall0(_)
-        | hashlink_bytecode::OpCode::OpCall1(_)
-        | hashlink_bytecode::OpCode::OpCall2(_)
-        | hashlink_bytecode::OpCode::OpCall3(_)
-        | hashlink_bytecode::OpCode::OpCall4(_)
-        | hashlink_bytecode::OpCode::OpCallN(_) => {
+        hashlink::OpCode::OpCall0(_)
+        | hashlink::OpCode::OpCall1(_)
+        | hashlink::OpCode::OpCall2(_)
+        | hashlink::OpCode::OpCall3(_)
+        | hashlink::OpCode::OpCall4(_)
+        | hashlink::OpCode::OpCallN(_) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = old_op.register_write().unwrap() as usize;
             let assigns =
@@ -285,7 +285,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpCallMethod(params) => {
+        hashlink::OpCode::OpCallMethod(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -319,7 +319,7 @@ pub fn translate_opcode(
                 translate_call_field(old_op, assigns, object, function, fn_params).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpCallThis(params) => {
+        hashlink::OpCode::OpCallThis(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -353,7 +353,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpCallClosure(params) => {
+        hashlink::OpCode::OpCallClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -378,7 +378,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpStaticClosure(params) => {
+        hashlink::OpCode::OpStaticClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -394,7 +394,7 @@ pub fn translate_opcode(
             let new_op = translate_static_closure(old_op, assigns, function).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpInstanceClosure(params) => {
+        hashlink::OpCode::OpInstanceClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -413,7 +413,7 @@ pub fn translate_opcode(
             let new_op = translate_instance_closure(old_op, assigns, function, object).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpVirtualClosure(params) => {
+        hashlink::OpCode::OpVirtualClosure(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -433,7 +433,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpGetGlobal(params) => {
+        hashlink::OpCode::OpGetGlobal(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -449,7 +449,7 @@ pub fn translate_opcode(
             let new_op = translate_load_global(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpSetGlobal(params) => {
+        hashlink::OpCode::OpSetGlobal(params) => {
             // The register index for remapping later. This reads the register into the
             // target global
             let target = GlobalIndex(params.param_1 as usize);
@@ -461,7 +461,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpGetThis(params) => {
+        hashlink::OpCode::OpGetThis(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -481,8 +481,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpField(params)
-        | hashlink_bytecode::OpCode::OpDynGet(params) => {
+        hashlink::OpCode::OpField(params) | hashlink::OpCode::OpDynGet(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -502,7 +501,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpSetThis(params) => {
+        hashlink::OpCode::OpSetThis(params) => {
             // Register index
             let object = ValueIndex(0);
 
@@ -516,8 +515,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpSetField(params)
-        | hashlink_bytecode::OpCode::OpDynSet(params) => {
+        hashlink::OpCode::OpSetField(params) | hashlink::OpCode::OpDynSet(params) => {
             // Register index
             let object = ValueIndex(params.param_1 as usize);
 
@@ -531,10 +529,10 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpJTrue(params)
-        | hashlink_bytecode::OpCode::OpJFalse(params)
-        | hashlink_bytecode::OpCode::OpJNull(params)
-        | hashlink_bytecode::OpCode::OpJNotNull(params) => {
+        hashlink::OpCode::OpJTrue(params)
+        | hashlink::OpCode::OpJFalse(params)
+        | hashlink::OpCode::OpJNull(params)
+        | hashlink::OpCode::OpJNotNull(params) => {
             // Get the value to read for the conditional branch. Stores a *register index*
             // for remapping later
             let check = ValueIndex(params.param_1 as usize);
@@ -565,16 +563,16 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpJSLt(params)
-        | hashlink_bytecode::OpCode::OpJSGte(params)
-        | hashlink_bytecode::OpCode::OpJSGt(params)
-        | hashlink_bytecode::OpCode::OpJSLte(params)
-        | hashlink_bytecode::OpCode::OpJULt(params)
-        | hashlink_bytecode::OpCode::OpJUGte(params)
-        | hashlink_bytecode::OpCode::OpJNotLt(params)
-        | hashlink_bytecode::OpCode::OpJNotGte(params)
-        | hashlink_bytecode::OpCode::OpJEq(params)
-        | hashlink_bytecode::OpCode::OpJNotEq(params) => {
+        hashlink::OpCode::OpJSLt(params)
+        | hashlink::OpCode::OpJSGte(params)
+        | hashlink::OpCode::OpJSGt(params)
+        | hashlink::OpCode::OpJSLte(params)
+        | hashlink::OpCode::OpJULt(params)
+        | hashlink::OpCode::OpJUGte(params)
+        | hashlink::OpCode::OpJNotLt(params)
+        | hashlink::OpCode::OpJNotGte(params)
+        | hashlink::OpCode::OpJEq(params)
+        | hashlink::OpCode::OpJNotEq(params) => {
             // These opcodes get translated to two eon instructions, a OpCmp and OpJTrue/OpJFalse.
             // The OpCmp assigns an SSA value which has no corresponding register in the source code
             // so we need to avoid emitting register information for this value
@@ -611,7 +609,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(branch);
         }
 
-        hashlink_bytecode::OpCode::OpJAlways(params) => {
+        hashlink::OpCode::OpJAlways(params) => {
             // See above for explanation
             let inner = offset_from(op_index, params.param_1).unwrap(); // Apply offset
             let inner = find_source_span(spans, inner).unwrap(); // Find block
@@ -621,13 +619,13 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpToDyn(params)
-        | hashlink_bytecode::OpCode::OpToSFloat(params)
-        | hashlink_bytecode::OpCode::OpToUFloat(params)
-        | hashlink_bytecode::OpCode::OpToInt(params)
-        | hashlink_bytecode::OpCode::OpSafeCast(params)
-        | hashlink_bytecode::OpCode::OpUnsafeCast(params)
-        | hashlink_bytecode::OpCode::OpToVirtual(params) => {
+        hashlink::OpCode::OpToDyn(params)
+        | hashlink::OpCode::OpToSFloat(params)
+        | hashlink::OpCode::OpToUFloat(params)
+        | hashlink::OpCode::OpToInt(params)
+        | hashlink::OpCode::OpSafeCast(params)
+        | hashlink::OpCode::OpUnsafeCast(params)
+        | hashlink::OpCode::OpToVirtual(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -644,7 +642,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpSwitch(params) => {
+        hashlink::OpCode::OpSwitch(params) => {
             // Register index
             let input = ValueIndex(params.param_1 as usize);
 
@@ -668,7 +666,7 @@ pub fn translate_opcode(
             let new_op = translate_switch(old_op, input, jump_table, fallback).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpTrap(params) => {
+        hashlink::OpCode::OpTrap(params) => {
             // See above for explanation
             let destination = offset_from(op_index, params.param_1).unwrap(); // Apply offset
             let destination = find_source_span(spans, destination).unwrap(); // Find block
@@ -676,7 +674,7 @@ pub fn translate_opcode(
             let new_op = translate_trap(old_op, destination).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpEndTrap(params) => {
+        hashlink::OpCode::OpEndTrap(params) => {
             // The `OpEndTrap` instruction has a boolean value. I currently have no idea
             // what information it encodes and it looks like the original HashLink JIT
             // compiler doesn't actually use it. I'm going to hold on to it until I am 100%
@@ -693,10 +691,10 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpGetI8(params)
-        | hashlink_bytecode::OpCode::OpGetI16(params)
-        | hashlink_bytecode::OpCode::OpGetMem(params)
-        | hashlink_bytecode::OpCode::OpGetArray(params) => {
+        hashlink::OpCode::OpGetI8(params)
+        | hashlink::OpCode::OpGetI16(params)
+        | hashlink::OpCode::OpGetMem(params)
+        | hashlink::OpCode::OpGetArray(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -716,10 +714,10 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpSetI8(params)
-        | hashlink_bytecode::OpCode::OpSetI16(params)
-        | hashlink_bytecode::OpCode::OpSetMem(params)
-        | hashlink_bytecode::OpCode::OpSetArray(params) => {
+        hashlink::OpCode::OpSetI8(params)
+        | hashlink::OpCode::OpSetI16(params)
+        | hashlink::OpCode::OpSetMem(params)
+        | hashlink::OpCode::OpSetArray(params) => {
             // Register index
             let target = ValueIndex(params.param_1 as usize);
 
@@ -733,7 +731,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpType(params) => {
+        hashlink::OpCode::OpType(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -750,7 +748,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpRet(params) => {
+        hashlink::OpCode::OpRet(params) => {
             // Register index
 
             let reg_type = old_fn.registers[params.param_1 as usize] as usize;
@@ -764,9 +762,9 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpThrow(params)
-        | hashlink_bytecode::OpCode::OpRethrow(params)
-        | hashlink_bytecode::OpCode::OpNullCheck(params) => {
+        hashlink::OpCode::OpThrow(params)
+        | hashlink::OpCode::OpRethrow(params)
+        | hashlink::OpCode::OpNullCheck(params) => {
             // Register index
             let value = ValueIndex(params.param_1 as usize);
 
@@ -774,7 +772,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpNew(params) => {
+        hashlink::OpCode::OpNew(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -788,12 +786,12 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpArraySize(params)
-        | hashlink_bytecode::OpCode::OpGetType(params)
-        | hashlink_bytecode::OpCode::OpGetTID(params)
-        | hashlink_bytecode::OpCode::OpRef(params)
-        | hashlink_bytecode::OpCode::OpUnRef(params)
-        | hashlink_bytecode::OpCode::OpEnumIndex(params) => {
+        hashlink::OpCode::OpArraySize(params)
+        | hashlink::OpCode::OpGetType(params)
+        | hashlink::OpCode::OpGetTID(params)
+        | hashlink::OpCode::OpRef(params)
+        | hashlink::OpCode::OpUnRef(params)
+        | hashlink::OpCode::OpEnumIndex(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -810,7 +808,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpSetRef(params) => {
+        hashlink::OpCode::OpSetRef(params) => {
             // Register index
             let target = ValueIndex(params.param_1 as usize);
 
@@ -820,7 +818,7 @@ pub fn translate_opcode(
             let new_op = translate_store(old_op, target, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpMakeEnum(params) => {
+        hashlink::OpCode::OpMakeEnum(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -844,7 +842,7 @@ pub fn translate_opcode(
             let new_op = translate_make_enum(old_op, assigns, constructor, args).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpEnumAlloc(params) => {
+        hashlink::OpCode::OpEnumAlloc(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -860,7 +858,7 @@ pub fn translate_opcode(
             let new_op = translate_alloc_enum(old_op, assigns, constructor).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpEnumField(params) => {
+        hashlink::OpCode::OpEnumField(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -884,7 +882,7 @@ pub fn translate_opcode(
                     .unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpSetEnumField(params) => {
+        hashlink::OpCode::OpSetEnumField(params) => {
             // Register index
             let target = ValueIndex(params.param_1 as usize);
 
@@ -897,7 +895,7 @@ pub fn translate_opcode(
             let new_op = translate_store_enum_field(old_op, target, field, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpRefData(params) => {
+        hashlink::OpCode::OpRefData(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -913,7 +911,7 @@ pub fn translate_opcode(
             let new_op = translate_ref_data(old_op, assigns, source).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink_bytecode::OpCode::OpRefOffset(params) => {
+        hashlink::OpCode::OpRefOffset(params) => {
             // Allocate a new SSA value for the call to assign into
             let assigns = handle_ssa_write(
                 new_fn,
@@ -933,9 +931,7 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink_bytecode::OpCode::OpAssert
-        | hashlink_bytecode::OpCode::OpNop
-        | hashlink_bytecode::OpCode::OpLabel => {
+        hashlink::OpCode::OpAssert | hashlink::OpCode::OpNop | hashlink::OpCode::OpLabel => {
             let new_op = translate_no_params(old_op).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }

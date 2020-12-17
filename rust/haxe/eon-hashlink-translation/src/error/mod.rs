@@ -51,44 +51,44 @@ pub enum InvalidFunctionReason {
     /// indicative of an invalid function in HashLink too as every function should at least have one
     /// OpRet (OpRet is a terminator). If there are exactly 0 terminator instructions in a function
     /// then it is not valid in either bytecode's semantics.
-    SpanFoundNoBlockTerminator { func: hashlink_bytecode::Function },
+    SpanFoundNoBlockTerminator { func: hashlink::Function },
 
     /// When an error occurs when actually trying to convert a jump offset into an index. May be the
     /// result of integer overflow/underflow
     JumpInvalidOffset {
         i_index: usize,
-        func: hashlink_bytecode::Function,
+        func: hashlink::Function,
     },
 
     /// When a function encodes a jump offset in an opcode that will jump out of bounds of the
     /// opcode array
     JumpOffsetOutOfBounds {
         i_index: usize,
-        func: hashlink_bytecode::Function,
+        func: hashlink::Function,
     },
 
     /// This occurs when a jump instruction uses a negative offset but the target instruction is not
     /// an OpLabel (which is a requirement of HashLink bytecode)
     JumpNegativeOffsetNotTargetingLabel {
         i_index: usize,
-        func: hashlink_bytecode::Function,
+        func: hashlink::Function,
     },
 
     /// This occurs when a function's type index refers to a type that is not a function type
-    TypeIndexNotFunction { func: hashlink_bytecode::Function },
+    TypeIndexNotFunction { func: hashlink::Function },
 
     /// This occurs when a function argument's signature does not match the registers the function
     /// declares. That is, if the signature declares the argument as one type, but the register says
     /// it is another
     FunctionSignatureArgNotMatchRegister {
         a_index: usize,
-        func: hashlink_bytecode::Function,
+        func: hashlink::Function,
     },
 
     /// This occurs when a trap handling basic block has more than one predecessor. Because of how
     /// exceptions work in Eon, this is invalid as jumping into this block from anything other than
     /// an exception being thrown will mean there is no exception value that the block should use.
-    TrapHandlerHasMultiplePredecessors { func: hashlink_bytecode::Function },
+    TrapHandlerHasMultiplePredecessors { func: hashlink::Function },
 
     /// This is a similar, but more specific, form of the `TrapHandlerHasMultiplePredecessors`. This
     /// error is thrown when multiple `OpTrap` instructions mark a basic block as their trap
@@ -97,5 +97,5 @@ pub enum InvalidFunctionReason {
     /// While it would be possible for the runtime and codegen to support this, the problem has not
     /// been given much thought as of yet so it will be treated as an error until a more rigorous
     /// investigation is made.
-    TrapHandlerHasMultipleTrapPredecessors { func: hashlink_bytecode::Function },
+    TrapHandlerHasMultipleTrapPredecessors { func: hashlink::Function },
 }

@@ -77,36 +77,36 @@ pub fn translate_value_index(v: i32) -> ValueIndex {
 /// over the module and emit a new type for every Array -> Element Type pair and remap all uses of
 /// the types accordingly.
 ///
-pub fn translate_type(v: hashlink_bytecode::Type) -> Type {
+pub fn translate_type(v: hashlink::Type) -> Type {
     match v {
-        hashlink_bytecode::Type::Void => Type::Void,
-        hashlink_bytecode::Type::UI8 => Type::U8,
-        hashlink_bytecode::Type::UI16 => Type::U16,
-        hashlink_bytecode::Type::I32 => Type::I32,
-        hashlink_bytecode::Type::I64 => Type::I64,
-        hashlink_bytecode::Type::F32 => Type::F32,
-        hashlink_bytecode::Type::F64 => Type::F64,
-        hashlink_bytecode::Type::Bool => Type::Bool,
-        hashlink_bytecode::Type::Bytes => Type::Bytes,
-        hashlink_bytecode::Type::Dynamic => Type::Dynamic,
-        hashlink_bytecode::Type::Array => Type::Array(TypeParam {
+        hashlink::Type::Void => Type::Void,
+        hashlink::Type::UI8 => Type::U8,
+        hashlink::Type::UI16 => Type::U16,
+        hashlink::Type::I32 => Type::I32,
+        hashlink::Type::I64 => Type::I64,
+        hashlink::Type::F32 => Type::F32,
+        hashlink::Type::F64 => Type::F64,
+        hashlink::Type::Bool => Type::Bool,
+        hashlink::Type::Bytes => Type::Bytes,
+        hashlink::Type::Dynamic => Type::Dynamic,
+        hashlink::Type::Array => Type::Array(TypeParam {
             type_: TypeIndex(0),
         }),
-        hashlink_bytecode::Type::Type => Type::Type,
-        hashlink_bytecode::Type::DynObject => Type::DynObject,
-        hashlink_bytecode::Type::Function(v) => Type::Function(translate_type_function(v)),
-        hashlink_bytecode::Type::Method(v) => Type::Method(translate_type_function(v)),
-        hashlink_bytecode::Type::Ref(v) => Type::Ref(translate_type_param(v)),
-        hashlink_bytecode::Type::Null(v) => Type::Null(translate_type_param(v)),
-        hashlink_bytecode::Type::Obj(v) => Type::Obj(translate_type_object(v)),
-        hashlink_bytecode::Type::Struct(v) => Type::Struct(translate_type_object(v)),
-        hashlink_bytecode::Type::Virtual(v) => Type::Virtual(translate_type_virtual(v)),
-        hashlink_bytecode::Type::Abstract(v) => Type::Abstract(translate_type_abstract(v)),
-        hashlink_bytecode::Type::Enum(v) => Type::Enum(translate_type_enum(v)),
+        hashlink::Type::Type => Type::Type,
+        hashlink::Type::DynObject => Type::DynObject,
+        hashlink::Type::Function(v) => Type::Function(translate_type_function(v)),
+        hashlink::Type::Method(v) => Type::Method(translate_type_function(v)),
+        hashlink::Type::Ref(v) => Type::Ref(translate_type_param(v)),
+        hashlink::Type::Null(v) => Type::Null(translate_type_param(v)),
+        hashlink::Type::Obj(v) => Type::Obj(translate_type_object(v)),
+        hashlink::Type::Struct(v) => Type::Struct(translate_type_object(v)),
+        hashlink::Type::Virtual(v) => Type::Virtual(translate_type_virtual(v)),
+        hashlink::Type::Abstract(v) => Type::Abstract(translate_type_abstract(v)),
+        hashlink::Type::Enum(v) => Type::Enum(translate_type_enum(v)),
     }
 }
 
-pub fn translate_native(v: hashlink_bytecode::Native) -> Native {
+pub fn translate_native(v: hashlink::Native) -> Native {
     Native {
         lib: translate_string_index(v.lib),
         name: translate_string_index(v.name),
@@ -115,14 +115,14 @@ pub fn translate_native(v: hashlink_bytecode::Native) -> Native {
     }
 }
 
-pub fn translate_constant(v: hashlink_bytecode::Constant) -> Constant {
+pub fn translate_constant(v: hashlink::Constant) -> Constant {
     Constant {
         global: translate_global_index(v.global),
         fields: v.fields.into_iter().map(|v| v as usize).collect(),
     }
 }
 
-pub fn translate_object_proto(v: hashlink_bytecode::ObjectProto) -> ObjectProto {
+pub fn translate_object_proto(v: hashlink::ObjectProto) -> ObjectProto {
     ObjectProto {
         name: translate_string_index(v.name),
         f_index: v.f_index as usize,
@@ -130,28 +130,28 @@ pub fn translate_object_proto(v: hashlink_bytecode::ObjectProto) -> ObjectProto 
     }
 }
 
-pub fn translate_field(v: hashlink_bytecode::Field) -> Field {
+pub fn translate_field(v: hashlink::Field) -> Field {
     Field {
         name: translate_string_index(v.name),
         type_: translate_type_index(v.type_),
     }
 }
 
-pub fn translate_enum_construct(v: hashlink_bytecode::EnumConstruct) -> EnumConstruct {
+pub fn translate_enum_construct(v: hashlink::EnumConstruct) -> EnumConstruct {
     EnumConstruct {
         name: translate_string_index(v.name),
         params: v.params.into_iter().map(translate_type_index).collect(),
     }
 }
 
-pub fn translate_type_function(v: hashlink_bytecode::TypeFunction) -> TypeFunction {
+pub fn translate_type_function(v: hashlink::TypeFunction) -> TypeFunction {
     TypeFunction {
         args: v.args.into_iter().map(translate_type_index).collect(),
         returns: translate_type_index(v.returns),
     }
 }
 
-pub fn translate_type_enum(v: hashlink_bytecode::TypeEnum) -> TypeEnum {
+pub fn translate_type_enum(v: hashlink::TypeEnum) -> TypeEnum {
     TypeEnum {
         name: translate_string_index(v.name),
         constructs: v
@@ -163,7 +163,7 @@ pub fn translate_type_enum(v: hashlink_bytecode::TypeEnum) -> TypeEnum {
     }
 }
 
-pub fn translate_type_object(v: hashlink_bytecode::TypeObject) -> TypeObject {
+pub fn translate_type_object(v: hashlink::TypeObject) -> TypeObject {
     TypeObject {
         name: translate_string_index(v.name),
         fields: v.fields.into_iter().map(translate_field).collect(),
@@ -174,29 +174,29 @@ pub fn translate_type_object(v: hashlink_bytecode::TypeObject) -> TypeObject {
     }
 }
 
-pub fn translate_type_virtual(v: hashlink_bytecode::TypeVirtual) -> TypeVirtual {
+pub fn translate_type_virtual(v: hashlink::TypeVirtual) -> TypeVirtual {
     TypeVirtual {
         fields: v.fields.into_iter().map(translate_field).collect(),
     }
 }
 
-pub fn translate_type_param(v: hashlink_bytecode::TypeParam) -> TypeParam {
+pub fn translate_type_param(v: hashlink::TypeParam) -> TypeParam {
     TypeParam {
         type_: translate_type_index(v.type_),
     }
 }
 
-pub fn translate_type_abstract(v: hashlink_bytecode::TypeAbstract) -> TypeAbstract {
+pub fn translate_type_abstract(v: hashlink::TypeAbstract) -> TypeAbstract {
     TypeAbstract {
         name: translate_string_index(v.name),
     }
 }
 
-pub fn translate_types(input: Vec<hashlink_bytecode::Type>) -> Vec<Type> {
+pub fn translate_types(input: Vec<hashlink::Type>) -> Vec<Type> {
     input.into_iter().map(translate_type).collect()
 }
 
-pub fn translate_natives(input: Vec<hashlink_bytecode::Native>) -> Vec<Native> {
+pub fn translate_natives(input: Vec<hashlink::Native>) -> Vec<Native> {
     input.into_iter().map(translate_native).collect()
 }
 
@@ -204,6 +204,6 @@ pub fn translate_globals(input: Vec<i32>) -> Vec<TypeIndex> {
     input.into_iter().map(translate_type_index).collect()
 }
 
-pub fn translate_constants(input: Vec<hashlink_bytecode::Constant>) -> Vec<Constant> {
+pub fn translate_constants(input: Vec<hashlink::Constant>) -> Vec<Constant> {
     input.into_iter().map(translate_constant).collect()
 }
