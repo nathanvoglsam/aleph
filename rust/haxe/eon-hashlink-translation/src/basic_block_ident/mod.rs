@@ -167,7 +167,7 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
             // The final case for regular block terminators like `OpRet` and branches
             if is_block_terminator(op) {
-                let targets = OpCodeBranchTargetIter::new(old_fn, current.start + i);
+                let targets = OpCodeBranchTargetIter::new(old_fn, current_i);
                 if let Some(targets) = targets {
                     // Add the current instruction as a branch
                     out.branches.insert(current_i.into());
