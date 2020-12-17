@@ -39,7 +39,7 @@ use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,
 };
 use eon_bytecode::function::Function;
-use eon_bytecode::indexes::{FunctionIndex, TypeIndex};
+use eon_bytecode::indexes::FunctionIndex;
 use eon_bytecode::module::Module;
 
 ///

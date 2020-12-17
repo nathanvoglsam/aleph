@@ -30,6 +30,7 @@
 use crate::basic_block_build::{
     find_source_span, handle_ssa_write, handle_ssa_write_no_register, RegisterData,
 };
+use crate::basic_block_compute::BasicBlockSpans;
 use crate::opcode_translators::*;
 use crate::utils::offset_from;
 use eon_bytecode::function::Function;
@@ -39,7 +40,6 @@ use eon_bytecode::indexes::{
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;
-use crate::basic_block_compute::BasicBlockSpans;
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///

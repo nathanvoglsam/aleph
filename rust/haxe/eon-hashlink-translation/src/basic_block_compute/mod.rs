@@ -126,9 +126,6 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
         // Iterate over all instructions beginning from the start index until we either hit a block
         // terminator or hit the end of the function
         for (i, op) in old_fn.ops[current.start..].iter().enumerate() {
-            // The current instruction index
-            let current_i = current.start + i;
-
             // Identify an `OpTrap` and get its handler block target
             if let Some(handler) = is_begin_trap(i, op, old_fn) {
                 let handler = handler?;
@@ -167,37 +164,7 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
             // The final case for regular block terminators like `OpRet` and branches
             if is_block_terminator(op) {
-                let targets = OpCodeBranchTargetIter::new(old_fn, current_i);
-                if let Some(targets) = targets {
-                    // Add the current instruction as a branch
-                    out.branches.insert(current_i.into());
-
-                    for target in targets {
-                        // Propagate error
-                        let target = target?;
-
-                        // Add this instruction as a branch source for the targe instruction
-                        out.destination_sources
-                            .entry(target)
-                            .or_default()
-                            .insert(current_i.into());
-
-                        let next = NextItem {
-                            start: target.0,
-                            trap_stack: current.trap_stack.clone(),
-                        };
-                        next_stack.push(next);
-                    }
-                }
-
-                // As this terminates a block we also should emit a span for the block we just
-                // created.
-                let span = InstructionSpan {
-                    begin: current.start.into(),
-                    end: current_i.into(),
-                    trap_handler: current.trap_stack.last().cloned(),
-                };
-                out.spans.push(span);
+                handle_terminator(&mut out, &mut next_stack, old_fn, &current, i)?;
 
                 // Mark as handled
                 handled_targets.insert(current.start);
@@ -351,4 +318,49 @@ fn handle_op_call(
         trap_stack: next_trap_stack,
     };
     next_stack.push(next);
+}
+
+fn handle_terminator(
+    out: &mut BasicBlockSpans,
+    next_stack: &mut Vec<NextItem>,
+    old_fn: &hashlink::Function,
+    current: &NextItem,
+    i: usize,
+) -> TranspileResult<()> {
+    // The current instruction index
+    let current_i = current.start + i;
+
+    let targets = OpCodeBranchTargetIter::new(old_fn, current_i);
+    if let Some(targets) = targets {
+        // Add the current instruction as a branch
+        out.branches.insert(current_i.into());
+
+        for target in targets {
+            // Propagate error
+            let target = target?;
+
+            // Add this instruction as a branch source for the targe instruction
+            out.destination_sources
+                .entry(target)
+                .or_default()
+                .insert(current_i.into());
+
+            let next = NextItem {
+                start: target.0,
+                trap_stack: current.trap_stack.clone(),
+            };
+            next_stack.push(next);
+        }
+    }
+
+    // As this terminates a block we also should emit a span for the block we just
+    // created.
+    let span = InstructionSpan {
+        begin: current.start.into(),
+        end: current_i.into(),
+        trap_handler: current.trap_stack.last().cloned(),
+    };
+    out.spans.push(span);
+
+    Ok(())
 }

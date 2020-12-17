@@ -42,17 +42,15 @@ pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
 pub use utils::BBInfo;
 
+use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{BasicBlock, Function, Register, SSAValue};
-use eon_bytecode::indexes::{
-    BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex,
-};
+use eon_bytecode::indexes::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::module::Module;
 use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
 use eon_bytecode::type_::{Type, TypeFunction};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use crate::basic_block_compute::BasicBlockSpans;
 
 pub struct RegisterData {
     /// List of registers for the function's bytecode. This maps almost directly to the register

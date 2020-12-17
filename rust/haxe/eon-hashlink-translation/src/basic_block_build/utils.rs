@@ -28,14 +28,12 @@
 //
 
 use crate::basic_block_build::RegisterData;
+use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{Function, SSAValue};
-use eon_bytecode::indexes::{
-    BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex,
-};
+use eon_bytecode::indexes::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::type_::Type;
 use std::collections::HashSet;
-use crate::basic_block_compute::BasicBlockSpans;
 
 // Get the set of predecessor basic blocks for the basic block that starts with instruction
 // `first_instruction_index`
@@ -43,7 +41,8 @@ pub fn build_basic_block_predecessor_sets(
     spans: &BasicBlockSpans,
 ) -> Vec<HashSet<BasicBlockIndex>> {
     // Build the predecessor set for every basic block
-    spans.spans
+    spans
+        .spans
         .iter()
         .map(|span| {
             let lower_bound = &span.begin;
@@ -73,7 +72,8 @@ pub fn build_basic_block_predecessor_sets(
 
 /// Find the span, in the given list, that holds the given instruction index
 pub fn find_source_span(spans: &BasicBlockSpans, i: usize) -> Option<usize> {
-    spans.spans
+    spans
+        .spans
         .iter()
         .enumerate()
         .find(|(_, v)| v.begin.0 <= i && v.end.0 >= i)
