@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
-use crate::utils::offset_from;
+use crate::error::TranspileResult;
+use crate::utils::{bounds_check_target, negative_offset_error, offset_error, offset_from};
 use eon_bytecode::indexes::InstructionIndex;
 use std::collections::{HashMap, HashSet};
 
@@ -123,7 +123,7 @@ fn compute_bb_graph_loop_inner_switch(
             .ok_or(offset_error(instruction_index, old_fn))?;
 
         // Perform a bounds check
-        bounds_check_offset(target, instruction_index, old_fn)?;
+        bounds_check_target(target, old_fn, instruction_index)?;
 
         // We don't need to check if the target branch is `OpLabel` as switches can't
         // encode a negative offset for w/e reason so we can just go straight to adding
@@ -142,7 +142,7 @@ fn compute_bb_graph_loop_inner_switch(
         .ok_or(offset_error(instruction_index, old_fn))?;
 
     // Perform a bounds check
-    bounds_check_offset(target, instruction_index, old_fn)?;
+    bounds_check_target(target, old_fn, instruction_index)?;
 
     // Add the final branch target
     let block_source = destination_sources
@@ -167,7 +167,7 @@ fn compute_bb_graph_loop_inner_unconditional(
         .ok_or(offset_error(instruction_index, old_fn))?;
 
     // Check if the computed index is in bounds
-    bounds_check_offset(target, instruction_index, old_fn)?;
+    bounds_check_target(target, old_fn, instruction_index)?;
 
     // Check if a negative index offset branch does not branch to a label opcode
     if op.param_1 < 0 {
@@ -228,8 +228,8 @@ fn compute_bb_graph_loop_inner_conditional(
         offset_from(instruction_index, 0).ok_or(offset_error(instruction_index, old_fn))?;
 
     // Check if the computed index is in bounds
-    bounds_check_offset(target, instruction_index, old_fn)?;
-    bounds_check_offset(target_fail, instruction_index, old_fn)?;
+    bounds_check_target(target, old_fn, instruction_index)?;
+    bounds_check_target(target_fail, old_fn, instruction_index)?;
 
     // Check if a negative index offset branch does not branch to a label opcode
     if offset < 0 {
@@ -260,38 +260,4 @@ fn compute_bb_graph_loop_inner_conditional(
     branches.insert(InstructionIndex(instruction_index));
 
     Ok(())
-}
-
-fn bounds_check_offset(
-    target: usize,
-    i_index: usize,
-    old_fn: &hashlink::Function,
-) -> TranspileResult<()> {
-    if target >= old_fn.ops.len() {
-        let reason = InvalidFunctionReason::JumpOffsetOutOfBounds {
-            i_index,
-            func: old_fn.clone(),
-        };
-        let err = TranspileError::InvalidFunction(reason);
-        return Err(err); // Out of bounds
-    }
-    Ok(())
-}
-
-fn negative_offset_error(i_index: usize, old_fn: &hashlink::Function) -> TranspileError {
-    let reason = InvalidFunctionReason::JumpNegativeOffsetNotTargetingLabel {
-        i_index,
-        func: old_fn.clone(),
-    };
-    let err = TranspileError::InvalidFunction(reason);
-    err
-}
-
-fn offset_error(i_index: usize, old_fn: &hashlink::Function) -> TranspileError {
-    let reason = InvalidFunctionReason::JumpInvalidOffset {
-        i_index,
-        func: old_fn.clone(),
-    };
-    let err = TranspileError::InvalidFunction(reason);
-    err
 }
