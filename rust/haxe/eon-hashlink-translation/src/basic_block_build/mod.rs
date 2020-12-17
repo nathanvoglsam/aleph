@@ -42,17 +42,17 @@ pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
 pub use utils::BBInfo;
 
-use crate::basic_block_graph::BasicBlockGraph;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{BasicBlock, Function, Register, SSAValue};
 use eon_bytecode::indexes::{
-    BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
+    BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::module::Module;
 use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
 use eon_bytecode::type_::{Type, TypeFunction};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use crate::basic_block_ident::BasicBlockSpans;
 
 pub struct RegisterData {
     /// List of registers for the function's bytecode. This maps almost directly to the register
@@ -75,8 +75,7 @@ pub struct BuildContext<'a> {
     pub new_fn: RefCell<Function>,
     pub old_fn: &'a hashlink::Function,
     pub module: &'a Module,
-    pub bb_graph: RefCell<BasicBlockGraph>,
-    pub spans: RefCell<Vec<(InstructionIndex, InstructionIndex)>>,
+    pub spans: RefCell<BasicBlockSpans>,
     pub fn_ty: &'a TypeFunction,
     pub bool_type_index: TypeIndex,
     pub void_type_index: TypeIndex,
@@ -89,10 +88,9 @@ pub struct BuildContext<'a> {
 
 pub fn build_bb(
     mut new_fn: Function,
-    spans: Vec<(InstructionIndex, InstructionIndex)>,
+    spans: BasicBlockSpans,
     old_fn: &hashlink::Function,
     module: &Module,
-    bb_graph: BasicBlockGraph,
 ) -> TranspileResult<Function> {
     // Get the actual function type value, checking to ensure it is of the correct type category
     // (Function or Method)
@@ -117,23 +115,22 @@ pub fn build_bb(
     };
 
     // Pre allocate the list of empty basic blocks
-    for _ in 0..spans.len() {
+    for _ in 0..spans.spans.len() {
         new_fn.basic_blocks.push(BasicBlock { ops: Vec::new() });
     }
 
     // Calculate the set of predecessor blocks for all basic blocks
-    let predecessors = build_basic_block_predecessor_sets(&bb_graph, &spans);
+    let predecessors = build_basic_block_predecessor_sets(&spans);
 
     // Precompute some information about all basic blocks
-    let bb_infos = build_basic_block_infos(old_fn, &bb_graph, &spans)?;
+    let bb_infos = build_basic_block_infos(old_fn, &spans)?;
 
-    let bb_phi_imports = vec![Vec::new(); spans.len()];
+    let bb_phi_imports = vec![Vec::new(); spans.spans.len()];
 
     let mut ctx = BuildContext {
         new_fn: RefCell::new(new_fn),
         old_fn,
         module,
-        bb_graph: RefCell::new(bb_graph),
         spans: RefCell::new(spans),
         fn_ty,
         bool_type_index,
@@ -219,10 +216,10 @@ pub fn build_register_live_sets(ctx: &mut BuildContext) {
     let old_fn = ctx.old_fn;
     let fn_ty = ctx.fn_ty;
 
-    for (i, (lower_bound, upper_bound)) in spans.iter().enumerate() {
+    for (i, span) in spans.spans.iter().enumerate() {
         // Unwrap the bounds and get the sub slice that the span refers to
-        let lower_bound = lower_bound.0;
-        let upper_bound = upper_bound.0;
+        let lower_bound = span.begin.0;
+        let upper_bound = span.end.0;
         let ops = &old_fn.ops[lower_bound..=upper_bound];
 
         let mut live_regs = HashMap::new();
@@ -373,7 +370,10 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let bool_type_index = ctx.bool_type_index;
     let void_type_index = ctx.void_type_index;
 
-    for (bb_index, (lower_bound, upper_bound)) in spans.iter().enumerate() {
+    for (bb_index, span) in spans.spans.iter().enumerate() {
+        let lower_bound = &span.begin;
+        let upper_bound = &span.end;
+
         // We need to get some info based on the instructions that jump to this block
         let bb_info = &bb_infos[bb_index];
 

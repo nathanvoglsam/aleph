@@ -28,37 +28,38 @@
 //
 
 use crate::basic_block_build::RegisterData;
-use crate::basic_block_graph::BasicBlockGraph;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{Function, SSAValue};
 use eon_bytecode::indexes::{
-    BasicBlockIndex, InstructionIndex, RegisterIndex, TypeIndex, ValueIndex,
+    BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::type_::Type;
 use std::collections::HashSet;
+use crate::basic_block_ident::BasicBlockSpans;
 
 // Get the set of predecessor basic blocks for the basic block that starts with instruction
 // `first_instruction_index`
 pub fn build_basic_block_predecessor_sets(
-    bb_graph: &BasicBlockGraph,
-    spans: &[(InstructionIndex, InstructionIndex)],
+    spans: &BasicBlockSpans,
 ) -> Vec<HashSet<BasicBlockIndex>> {
     // Build the predecessor set for every basic block
-    spans
+    spans.spans
         .iter()
-        .map(|(lower_bound, _)| {
+        .map(|span| {
+            let lower_bound = &span.begin;
+
             let mut mapped_predecessors = HashSet::new();
 
             // Get the list of predecessors and map the instruction back to the basic block (span) that it
             // came from
-            if let Some(predecessors) = bb_graph.destination_sources.get(lower_bound) {
+            if let Some(predecessors) = spans.destination_sources.get(lower_bound) {
                 for predecessor in predecessors {
                     // Find the source span
                     //
                     // Hard fail here as failing to find the source span for the predecessor is a bug in the
                     // algorithm. Bugs are not errors and should be very violently surfaced so they can be
                     // found and fixed
-                    let block = find_source_span(&spans, predecessor.0).unwrap();
+                    let block = find_source_span(spans, predecessor.0).unwrap();
 
                     // Insert our mapped index into our new list
                     mapped_predecessors.insert(BasicBlockIndex(block));
@@ -71,11 +72,11 @@ pub fn build_basic_block_predecessor_sets(
 }
 
 /// Find the span, in the given list, that holds the given instruction index
-pub fn find_source_span(spans: &[(InstructionIndex, InstructionIndex)], i: usize) -> Option<usize> {
-    spans
+pub fn find_source_span(spans: &BasicBlockSpans, i: usize) -> Option<usize> {
+    spans.spans
         .iter()
         .enumerate()
-        .find(|(_, (l, u))| l.0 <= i && u.0 >= i)
+        .find(|(_, v)| v.begin.0 <= i && v.end.0 >= i)
         .map(|(i, _)| i)
 }
 
@@ -186,12 +187,13 @@ pub struct BBInfo {
 /// This function also does some error checking
 pub fn build_basic_block_infos(
     old_fn: &hashlink::Function,
-    bb_graph: &BasicBlockGraph,
-    spans: &[(InstructionIndex, InstructionIndex)],
+    spans: &BasicBlockSpans,
 ) -> TranspileResult<Vec<BBInfo>> {
     let mut out = Vec::new();
 
-    for (lower_bound, _) in spans.iter() {
+    for span in spans.spans.iter() {
+        let lower_bound = &span.begin;
+
         let has_multiple_predecessors;
         let has_single_predecessor;
         let has_no_predecessor;
@@ -202,7 +204,7 @@ pub fn build_basic_block_infos(
         // with this basic block as the target so we can deduce the above information
         //
         // We can use the info calculated earlier from the BBGraph
-        let sources = bb_graph.destination_sources.get(lower_bound);
+        let sources = spans.destination_sources.get(lower_bound);
         if let Some(sources) = sources {
             // These are pretty self explanatory
             has_multiple_predecessors = sources.len() > 1;

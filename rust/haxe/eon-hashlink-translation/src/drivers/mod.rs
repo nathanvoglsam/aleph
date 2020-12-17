@@ -33,8 +33,7 @@
 //!
 
 use crate::basic_block_build::build_bb;
-use crate::basic_block_graph::compute_bb_graph;
-use crate::basic_block_spans::compute_bb_spans;
+use crate::basic_block_ident::compute_bb;
 use crate::error::TranspileResult;
 use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,
@@ -140,11 +139,7 @@ pub fn transpile_hashlink_function(
     let noop_jump = hashlink::OpCode::OpJAlways(noop_jump);
     old_fn.ops.insert(0, noop_jump);
 
-    // First we need to find all branch instructions and where they branch to
-    let bb_graph = compute_bb_graph(&old_fn)?;
-
-    // Now we need to compute a list of spans for all the basic blocks in the bytecode
-    let spans = compute_bb_spans(&old_fn, &bb_graph)?;
+    let spans = compute_bb(&old_fn)?;
 
     let new_fn = Function {
         type_: TypeIndex(old_fn.type_ as usize),
@@ -152,6 +147,6 @@ pub fn transpile_hashlink_function(
         ssa_values: vec![],
         basic_blocks: vec![],
     };
-    let new_fn = build_bb(new_fn, spans, &old_fn, module, bb_graph)?;
+    let new_fn = build_bb(new_fn, spans, &old_fn, module)?;
     Ok(new_fn)
 }

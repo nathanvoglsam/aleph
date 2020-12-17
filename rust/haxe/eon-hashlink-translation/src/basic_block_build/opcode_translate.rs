@@ -35,10 +35,11 @@ use crate::utils::offset_from;
 use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
-    GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
+    GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;
+use crate::basic_block_ident::BasicBlockSpans;
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///
@@ -67,7 +68,7 @@ pub fn translate_opcode(
     reg_meta: &mut RegisterData,
     non_reg_values: &mut HashSet<ValueIndex>,
     old_fn: &hashlink::Function,
-    spans: &[(InstructionIndex, InstructionIndex)],
+    spans: &BasicBlockSpans,
     bool_type_index: TypeIndex,
     void_type_index: TypeIndex,
     bb_index: usize,
