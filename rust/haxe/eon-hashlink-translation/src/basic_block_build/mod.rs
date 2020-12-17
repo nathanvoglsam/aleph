@@ -87,11 +87,17 @@ pub struct BuildContext<'a> {
 }
 
 pub fn build_bb(
-    mut new_fn: Function,
     spans: BasicBlockSpans,
     old_fn: &hashlink::Function,
     module: &Module,
 ) -> TranspileResult<Function> {
+    let mut new_fn = Function {
+        type_: TypeIndex(old_fn.type_ as usize),
+        f_index: old_fn.f_index,
+        ssa_values: vec![],
+        basic_blocks: vec![],
+    };
+
     // Get the actual function type value, checking to ensure it is of the correct type category
     // (Function or Method)
     let fn_ty = &module.types[new_fn.type_.0];

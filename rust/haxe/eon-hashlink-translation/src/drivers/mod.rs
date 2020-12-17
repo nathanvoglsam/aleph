@@ -141,12 +141,5 @@ pub fn transpile_hashlink_function(
 
     let spans = compute_bb(&old_fn)?;
 
-    let new_fn = Function {
-        type_: TypeIndex(old_fn.type_ as usize),
-        f_index: old_fn.f_index,
-        ssa_values: vec![],
-        basic_blocks: vec![],
-    };
-    let new_fn = build_bb(new_fn, spans, &old_fn, module)?;
-    Ok(new_fn)
+    Ok(build_bb(spans, &old_fn, module)?)
 }
