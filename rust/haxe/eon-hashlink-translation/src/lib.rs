@@ -30,7 +30,7 @@
 extern crate hashlink_bytecode as hashlink;
 
 mod basic_block_build;
-mod basic_block_ident;
+mod basic_block_compute;
 mod drivers;
 mod utils;
 

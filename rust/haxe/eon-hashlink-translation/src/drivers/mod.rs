@@ -33,7 +33,7 @@
 //!
 
 use crate::basic_block_build::build_bb;
-use crate::basic_block_ident::compute_bb;
+use crate::basic_block_compute::compute_bb;
 use crate::error::TranspileResult;
 use crate::translators::{
     translate_constants, translate_globals, translate_natives, translate_types,

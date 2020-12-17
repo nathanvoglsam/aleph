@@ -29,7 +29,7 @@
 
 mod opcode_branch_target_iter;
 
-use crate::basic_block_ident::opcode_branch_target_iter::OpCodeBranchTargetIter;
+use crate::basic_block_compute::opcode_branch_target_iter::OpCodeBranchTargetIter;
 use crate::error::TranspileResult;
 use crate::utils::{is_begin_trap, is_block_terminator};
 use eon_bytecode::indexes::InstructionIndex;

@@ -35,7 +35,7 @@ use eon_bytecode::indexes::{
 };
 use eon_bytecode::type_::Type;
 use std::collections::HashSet;
-use crate::basic_block_ident::BasicBlockSpans;
+use crate::basic_block_compute::BasicBlockSpans;
 
 // Get the set of predecessor basic blocks for the basic block that starts with instruction
 // `first_instruction_index`

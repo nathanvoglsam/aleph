@@ -52,7 +52,7 @@ use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
 use eon_bytecode::type_::{Type, TypeFunction};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
-use crate::basic_block_ident::BasicBlockSpans;
+use crate::basic_block_compute::BasicBlockSpans;
 
 pub struct RegisterData {
     /// List of registers for the function's bytecode. This maps almost directly to the register

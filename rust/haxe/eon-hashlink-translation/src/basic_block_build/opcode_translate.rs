@@ -39,7 +39,7 @@ use eon_bytecode::indexes::{
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;
-use crate::basic_block_ident::BasicBlockSpans;
+use crate::basic_block_compute::BasicBlockSpans;
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///
