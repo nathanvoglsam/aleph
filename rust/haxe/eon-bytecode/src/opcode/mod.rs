@@ -354,6 +354,97 @@ impl CallClosure {
     }
 }
 
+/// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
+/// a single representation as I don't see any benefit to this.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct Invoke {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The ID of the function to call
+    pub function: FunctionIndex,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+
+    /// The target basic block if the call throws an exception
+    pub exception_target: BasicBlockIndex,
+}
+
+impl Invoke {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} fn[{}]({}) unwind ${}",
+            mnemonic, self.assigns.0, self.function.0, args, self.exception_target.0
+        )
+    }
+}
+
+/// Layout for a member method call.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct InvokeMethod {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The object that the method should be called on
+    pub object: ValueIndex,
+
+    /// The field that contains the function to call
+    pub function: FieldIndex,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+
+    /// The target basic block if the call throws an exception
+    pub exception_target: BasicBlockIndex,
+}
+
+impl InvokeMethod {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} %{} fn[{}]({}) unwind ${}",
+            mnemonic, self.assigns.0, self.object.0, self.function.0, args, self.exception_target.0
+        )
+    }
+}
+
+/// Layout for a closure call.
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct InvokeClosure {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The value that contains the closure to call
+    pub closure: ValueIndex,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+
+    /// The target basic block if the call throws an exception
+    pub exception_target: BasicBlockIndex,
+}
+
+impl InvokeClosure {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} %{}({}) unwind ${}",
+            mnemonic, self.assigns.0, self.closure.0, args, self.exception_target.0
+        )
+    }
+}
+
 /// Layout for the switch instruction.
 ///
 /// HashLink's encoding represents a jump table where the instruction encodes a list of instruction
@@ -841,6 +932,9 @@ pub enum OpCode {
     OpCall(Call),
     OpCallMethod(CallMethod),
     OpCallClosure(CallClosure),
+    OpInvoke(Invoke),
+    OpInvokeMethod(InvokeMethod),
+    OpInvokeClosure(InvokeClosure),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
     OpStaticClosure(StaticClosure),
@@ -960,6 +1054,9 @@ impl OpCode {
             OpCode::OpCall(v) => Some(v.assigns),
             OpCode::OpCallMethod(v) => Some(v.assigns),
             OpCode::OpCallClosure(v) => Some(v.assigns),
+            OpCode::OpInvoke(v) => Some(v.assigns),
+            OpCode::OpInvokeMethod(v) => Some(v.assigns),
+            OpCode::OpInvokeClosure(v) => Some(v.assigns),
             OpCode::OpStaticClosure(v) => Some(v.assigns),
             OpCode::OpInstanceClosure(v) => Some(v.assigns),
             OpCode::OpVirtualClosure(v) => Some(v.assigns),
@@ -1061,6 +1158,9 @@ impl OpCode {
             OpCode::OpCall(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpCallMethod(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpCallClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInvokeMethod(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInvokeClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpStaticClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpInstanceClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpVirtualClosure(v) => v.opcode_dump(module, self.get_mnemonic()),
@@ -1215,6 +1315,9 @@ impl OpCode {
             OpCode::OpRefOffset(_) => "ref_offset",
             OpCode::OpNop => "nop",
             OpCode::OpRetVoid => "ret_void",
+            OpCode::OpInvoke(_) => "invoke",
+            OpCode::OpInvokeMethod(_) => "invoke_method",
+            OpCode::OpInvokeClosure(_) => "invoke_closure",
         }
     }
 }
