@@ -47,11 +47,9 @@ pub fn compute_bb_spans(
     // There's no guarantee that the first instruction is in the above list so we have to handle
     // the first instruction separately if it isn't. The first instruction is an implicit
     // beginning of a basic block.
-    if !bb_graph
-        .destination_sources
-        .contains_key(&InstructionIndex(0))
-    {
-        find_span_end(old_fn, &mut spans, InstructionIndex(0))?;
+    let index_zero = InstructionIndex(0);
+    if !bb_graph.destination_sources.contains_key(&index_zero) {
+        find_span_end(old_fn, &mut spans, index_zero)?;
     }
 
     // The spans array is a list of ranges into the source hashlink bytecode. Each entry encodes the
