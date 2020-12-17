@@ -78,6 +78,22 @@ pub fn remap_reads(
                 *v = handle_value_remap(non_reg_values, latest_states, *v);
             }
         }
+        OpCode::OpInvoke(v) => {
+            for v in v.fn_params.iter_mut() {
+                *v = handle_value_remap(non_reg_values, latest_states, *v);
+            }
+        }
+        OpCode::OpInvokeMethod(v) => {
+            v.object = handle_value_remap(non_reg_values, latest_states, v.object);
+            for v in v.fn_params.iter_mut() {
+                *v = handle_value_remap(non_reg_values, latest_states, *v);
+            }
+        }
+        OpCode::OpInvokeClosure(v) => {
+            for v in v.fn_params.iter_mut() {
+                *v = handle_value_remap(non_reg_values, latest_states, *v);
+            }
+        }
         OpCode::OpInstanceClosure(v) => {
             v.object = handle_value_remap(non_reg_values, latest_states, v.object);
         }
@@ -169,7 +185,24 @@ pub fn remap_reads(
             v.source = handle_value_remap(non_reg_values, latest_states, v.source);
             v.offset = handle_value_remap(non_reg_values, latest_states, v.offset);
         }
-        _ => {}
+        OpCode::OpInt(_)
+        | OpCode::OpFloat(_)
+        | OpCode::OpBool(_)
+        | OpCode::OpBytes(_)
+        | OpCode::OpString(_)
+        | OpCode::OpNull(_)
+        | OpCode::OpStaticClosure(_)
+        | OpCode::OpGetGlobal(_)
+        | OpCode::OpJAlways(_)
+        | OpCode::OpRetVoid
+        | OpCode::OpTrap(_)
+        | OpCode::OpEndTrap(_)
+        | OpCode::OpReceiveException(_)
+        | OpCode::OpNew(_)
+        | OpCode::OpType(_)
+        | OpCode::OpEnumAlloc(_)
+        | OpCode::OpAssert
+        | OpCode::OpNop => {}
     }
 }
 
