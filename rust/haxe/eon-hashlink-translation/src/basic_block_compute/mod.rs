@@ -32,7 +32,7 @@ mod opcode_branch_target_iter;
 use crate::basic_block_compute::opcode_branch_target_iter::OpCodeBranchTargetIter;
 use crate::error::TranspileResult;
 use crate::utils::{is_begin_trap, is_block_terminator};
-use eon_bytecode::indexes::InstructionIndex;
+use eon_bytecode::indexes::{BasicBlockIndex, InstructionIndex};
 use std::collections::{HashMap, HashSet};
 
 /// Represents a range of instructions in a function. This span is inclusive, where the range should
@@ -72,6 +72,18 @@ pub struct BasicBlockSpans {
 
     /// The final output list of basic block spans
     pub spans: Vec<InstructionSpan>,
+}
+
+impl BasicBlockSpans {
+    /// Find the span that holds the given instruction index
+    pub fn find_source_span(&self, i: InstructionIndex) -> Option<BasicBlockIndex> {
+        self.spans
+            .iter()
+            .enumerate()
+            .find(|(_, v)| v.begin.0 <= i.0 && v.end.0 >= i.0)
+            .map(|(i, _)| BasicBlockIndex(i))
+    }
+
 }
 
 struct NextItem {

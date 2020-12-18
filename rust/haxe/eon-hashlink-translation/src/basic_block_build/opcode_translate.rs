@@ -27,16 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::basic_block_build::{
-    find_source_span, handle_ssa_write, handle_ssa_write_no_register, RegisterData,
-};
+use crate::basic_block_build::{handle_ssa_write, handle_ssa_write_no_register, RegisterData};
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::opcode_translators::*;
 use crate::utils::offset_from;
 use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
-    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
-    GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
+    BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex, GlobalIndex, IntegerIndex,
+    RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;
@@ -543,8 +541,7 @@ pub fn translate_opcode(
             // need to find the basic block we're jumping to by looking for what span the
             // calculated index is in.
             let success = offset_from(op_index, params.param_2).unwrap(); // Apply offset
-            let success = find_source_span(spans, success).unwrap(); // Find block
-            let success = BasicBlockIndex(success); // Wrap value
+            let success = spans.find_source_span(success.into()).unwrap(); // Find block
 
             // The HashLink bytecode encodes two branch edges, one with the parameter and
             // a second implicitly in the behaviour of the instruction. If the instruction's
@@ -557,8 +554,7 @@ pub fn translate_opcode(
             // We explicitly encode both edges, as we branch to basic blocks and not to
             // instruction indices. Here we find the basic block the next instruction can be
             // found in and use that as the branch target for the failure case
-            let failure = find_source_span(spans, op_index + 1).unwrap();
-            let failure = BasicBlockIndex(failure);
+            let failure = spans.find_source_span((op_index + 1).into()).unwrap();
 
             let new_op = translate_cond_branch(old_op, check, success, failure).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
@@ -586,11 +582,9 @@ pub fn translate_opcode(
 
             // See OpJTrue/OpJFalse/etc for explanation
             let success = offset_from(op_index, params.param_3).unwrap(); // Apply offset
-            let success = find_source_span(spans, success).unwrap(); // Find block
-            let success = BasicBlockIndex(success); // Wrap value
+            let success = spans.find_source_span(success.into()).unwrap(); // Find block
 
-            let failure = find_source_span(spans, op_index + 1).unwrap();
-            let failure = BasicBlockIndex(failure);
+            let failure = spans.find_source_span((op_index + 1).into()).unwrap();
 
             let comparison = translate_comp_branch(old_op, assigns, lhs, rhs).unwrap();
 
@@ -613,8 +607,7 @@ pub fn translate_opcode(
         hashlink::OpCode::OpJAlways(params) => {
             // See above for explanation
             let inner = offset_from(op_index, params.param_1).unwrap(); // Apply offset
-            let inner = find_source_span(spans, inner).unwrap(); // Find block
-            let inner = BasicBlockIndex(inner); // Wrap value
+            let inner = spans.find_source_span(inner.into()).unwrap(); // Find block
 
             let new_op = translate_unconditional_branch(old_op, inner).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
@@ -652,8 +645,7 @@ pub fn translate_opcode(
             let mut jump_table = Vec::new();
             for destination in &params.extra {
                 let destination = offset_from(op_index, *destination).unwrap();
-                let destination = find_source_span(spans, destination).unwrap();
-                let destination = BasicBlockIndex(destination);
+                let destination = spans.find_source_span(destination.into()).unwrap();
                 jump_table.push(destination);
             }
 
@@ -661,8 +653,7 @@ pub fn translate_opcode(
             // supposed to jump to
             let fallback = params.param_3;
             let fallback = offset_from(op_index, fallback).unwrap();
-            let fallback = find_source_span(spans, fallback).unwrap();
-            let fallback = BasicBlockIndex(fallback);
+            let fallback = spans.find_source_span(fallback.into()).unwrap();
 
             let new_op = translate_switch(old_op, input, jump_table, fallback).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
@@ -670,8 +661,7 @@ pub fn translate_opcode(
         hashlink::OpCode::OpTrap(params) => {
             // See above for explanation
             let destination = offset_from(op_index, params.param_1).unwrap(); // Apply offset
-            let destination = find_source_span(spans, destination).unwrap(); // Find block
-            let destination = BasicBlockIndex(destination); // Wrap value
+            let destination = spans.find_source_span(destination.into()).unwrap(); // Find block
             let new_op = translate_trap(old_op, destination).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }

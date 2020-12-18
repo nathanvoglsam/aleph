@@ -58,26 +58,16 @@ pub fn build_basic_block_predecessor_sets(
                     // Hard fail here as failing to find the source span for the predecessor is a bug in the
                     // algorithm. Bugs are not errors and should be very violently surfaced so they can be
                     // found and fixed
-                    let block = find_source_span(spans, predecessor.0).unwrap();
+                    let block = spans.find_source_span(*predecessor).unwrap();
 
                     // Insert our mapped index into our new list
-                    mapped_predecessors.insert(BasicBlockIndex(block));
+                    mapped_predecessors.insert(block);
                 }
             }
 
             mapped_predecessors
         })
         .collect()
-}
-
-/// Find the span, in the given list, that holds the given instruction index
-pub fn find_source_span(spans: &BasicBlockSpans, i: usize) -> Option<usize> {
-    spans
-        .spans
-        .iter()
-        .enumerate()
-        .find(|(_, v)| v.begin.0 <= i && v.end.0 >= i)
-        .map(|(i, _)| i)
 }
 
 /// Simple function that handles creating and adding SSA values for instructions
@@ -265,6 +255,14 @@ pub fn build_basic_block_infos(
         });
     }
     Ok(out)
+}
+
+/// A wrapper/utility for taking ownership of a value from a slice, and replacing it with a default
+/// initialized item using the `Default` trait.
+pub fn take_from_slice<T: Default>(slice: &mut [T], i: usize) -> T {
+    let mut out = T::default();
+    std::mem::swap(&mut out, &mut slice[i]);
+    out
 }
 
 /// Simple function that wraps an iterator to find the matching type definition in the type list and

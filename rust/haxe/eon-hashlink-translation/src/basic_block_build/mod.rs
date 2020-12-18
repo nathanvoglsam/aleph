@@ -35,13 +35,13 @@ pub use opcode_translate::translate_opcode;
 pub use remap_reads::remap_reads;
 pub use utils::build_basic_block_infos;
 pub use utils::build_basic_block_predecessor_sets;
-pub use utils::find_source_span;
 pub use utils::find_type_index_for;
 pub use utils::handle_ssa_phi_import;
 pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
 pub use utils::BBInfo;
 
+use crate::basic_block_build::utils::take_from_slice;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use eon_bytecode::function::{BasicBlock, Function, Register, SSAValue};
@@ -281,11 +281,8 @@ pub fn propagate_predecessor_live_sets(ctx: &mut BuildContext) {
                 //
                 // Solution: take ownership of the value by swapping it out of the array, replacing
                 // with an empty value, and then returning it back to the array once we're done.
-                let mut our_live_set = HashMap::new();
-                std::mem::swap(
-                    &mut our_live_set,
-                    &mut reg_meta.block_live_registers[bb_index],
-                );
+                let mut our_live_set =
+                    take_from_slice(&mut reg_meta.block_live_registers, bb_index);
 
                 // With a single predecessor we import the live set verbatim from the predecessor
                 // block
