@@ -84,6 +84,115 @@ impl BasicBlockSpans {
             .map(|(i, _)| BasicBlockIndex(i))
     }
 
+    /// This function will return the set of immediate successors. That is, it will return a set
+    /// that contains all blocks that are jumped directly to from the given basic block.
+    ///
+    /// This essentially returns all outward edges of the given "node" in the basic block graph.
+    pub fn get_block_immediate_successor_set(
+        &self,
+        func: &hashlink::Function,
+        block: BasicBlockIndex,
+    ) -> HashSet<BasicBlockIndex> {
+        let span = &self.spans[block.0];
+
+        let last_op_index = span.end.0;
+        let last_op = &func.ops[last_op_index];
+
+        let mut successor_set: HashSet<BasicBlockIndex> = HashSet::new();
+
+        // When a trap handler is in scope we need to handle `OpThrow` and `OpCall` in a special
+        // way
+        if let Some(handler) = span.trap_handler {
+            // OpCall when inside a trap handler will terminate a block with two potential targets,
+            // it will either jump to what was originally the next instruction, or to the trap
+            // handler's block
+            if last_op.is_call() {
+                let successor = last_op_index + 1;
+                let successor = self.find_source_span(successor.into()).unwrap();
+
+                let exceptional = handler.0;
+                let exceptional = self.find_source_span(exceptional.into()).unwrap();
+
+                successor_set.insert(successor.into());
+                successor_set.insert(exceptional.into());
+
+                return successor_set;
+            }
+
+            // When directly inside a trap handler an `OpThrow` is for all intents and purposes a
+            // fancy unconditional jump and so we treat it as such
+            if last_op.is_throw() {
+                let exceptional = handler.0;
+                let exceptional = self.find_source_span(exceptional.into()).unwrap();
+                successor_set.insert(exceptional.into());
+
+                return successor_set;
+            }
+        }
+
+        // If the above set of checks fail then we just use our good friend `OpCodeBranchTargetIter`
+        // to iterate over all immediate successor branches and add them to the set.
+        if let Some(targets) = OpCodeBranchTargetIter::new(func, last_op_index) {
+            for target in targets {
+                let target = target.unwrap();
+                let target = self.find_source_span(target).unwrap();
+                successor_set.insert(target.into());
+            }
+        }
+
+        successor_set
+    }
+
+    /// This function returns the set of all basic blocks that are reachable from the input block,
+    /// either immediately or recursively through any successor.
+    ///
+    /// The result of the function is essentially a "flood fill" of all basic blocks that can be
+    /// reached from the given basic block.
+    ///
+    /// The results also implicitly form a second set which is defined by all blocks that are not in
+    /// the returned data structure. This "conceptual" second set, which is the 'set difference' of
+    /// the return value with the set of all basic blocks in the function, represents the set of all
+    /// basic blocks which can *not* be reached from the given source block.
+    ///
+    /// It is possible to identify a graph with cycles by checking whether the resulting set of this
+    /// function contains the source block itself. If it does, then there are cycles as there must
+    /// exist a path `source -> n -> ... -> source` for the original block to be within its own
+    /// successor set.
+    pub fn get_block_full_successor_set(
+        &self,
+        func: &hashlink::Function,
+        block: BasicBlockIndex,
+    ) -> HashSet<BasicBlockIndex> {
+        // This is the final output set we'll accumulate into
+        let mut successor_set = HashSet::new();
+
+        // This is our queue of blocks we'll work though until empty
+        let mut next_stack = Vec::new();
+
+        // We start with our initial block, obviously
+        next_stack.push(block);
+
+        // Keep popping elements off the queue and handling them until the queue is empty
+        while let Some(current) = next_stack.pop() {
+            // Get the current block's immediate successors and add them to the set we're
+            // accumulating
+            let immediate_successors = self.get_block_immediate_successor_set(func, current);
+
+            // Now we need to add those successors to the queue, while also adding them to the set
+            // we're building
+            for successor in immediate_successors {
+                // If the successor set already contains the thing we're trying to queue then we
+                // shouldn't try and process this a second time. This should correctly terminate
+                // any cyclic graphs that would cause this function to otherwise loop infinitely and
+                // correctly produce the desired set
+                if successor_set.insert(successor) {
+                    next_stack.push(successor);
+                }
+            }
+        }
+
+        successor_set
+    }
 }
 
 struct NextItem {
