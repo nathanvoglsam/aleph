@@ -58,7 +58,7 @@ pub struct SSAValue {
     pub type_: TypeIndex,
 }
 
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, Hash, Serialize, Deserialize)]
 pub struct BasicBlock {
     /// This is just a flat, sequential list of opcodes
     pub ops: Vec<OpCode>,

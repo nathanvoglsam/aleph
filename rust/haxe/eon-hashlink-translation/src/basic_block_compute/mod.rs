@@ -84,6 +84,33 @@ impl BasicBlockSpans {
             .map(|(i, _)| BasicBlockIndex(i))
     }
 
+    pub fn get_block_immediate_predecessors(
+        &self,
+        block: BasicBlockIndex,
+    ) -> HashSet<BasicBlockIndex> {
+        let span = &self.spans[block.0];
+
+        let mut mapped_predecessors = HashSet::new();
+
+        // Get the list of predecessors and map the instruction back to the basic block (span) that it
+        // came from
+        if let Some(predecessors) = self.destination_sources.get(&span.begin) {
+            for predecessor in predecessors.iter().cloned() {
+                // Find the source span
+                //
+                // Hard fail here as failing to find the source span for the predecessor is a bug in the
+                // algorithm. Bugs are not errors and should be very violently surfaced so they can be
+                // found and fixed
+                let block = self.find_source_span(predecessor).unwrap();
+
+                // Insert our mapped index into our new list
+                mapped_predecessors.insert(block);
+            }
+        }
+
+        mapped_predecessors
+    }
+
     /// This function will return the set of immediate successors. That is, it will return a set
     /// that contains all blocks that are jumped directly to from the given basic block.
     ///

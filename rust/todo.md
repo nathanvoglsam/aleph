@@ -37,16 +37,8 @@ The immediate list of things needed are:
 
 ## JIT Compiler
 - Using LLVM
-- Need an algorithm for un-flattening the opcodes back to a graph of basic blocks
-    - Iterate over the instruction stream
-    - Look for branch instructions and mark the indexes of where a branch jumps to and where
-      branches branch from
-    - Use this to scope chunks into basic blocks
-    - Idea:
-        - Iterate over the opcodes in multiple passes
-        - First accumulate a list of all indexes that are jumped to, and where from
-        - Use this to define a sequence of scopes
-        - Next we need to
+- BUG: Current algorithm for propagating the live register set can't handled basic block graphs with
+  cycles
 - Need to figure out how to implement exceptions
 - Optimization Passes
     - Look at lifetimes of allocated objects and conservatively deduce when stack allocation is

@@ -37,36 +37,32 @@ use std::collections::HashSet;
 
 // Get the set of predecessor basic blocks for the basic block that starts with instruction
 // `first_instruction_index`
-pub fn build_basic_block_predecessor_sets(
+pub fn build_basic_block_immediate_predecessor_sets(
     spans: &BasicBlockSpans,
 ) -> Vec<HashSet<BasicBlockIndex>> {
+    (0..spans.spans.len())
+        .map(|block| spans.get_block_immediate_predecessors(block.into()))
+        .collect()
+}
+
+/// Utility for precomputing all the immediate successor sets for a basic block
+pub fn build_basic_block_immediate_successor_sets(
+    spans: &BasicBlockSpans,
+    old_fn: &hashlink::Function,
+) -> Vec<HashSet<BasicBlockIndex>> {
     // Build the predecessor set for every basic block
-    spans
-        .spans
-        .iter()
-        .map(|span| {
-            let lower_bound = &span.begin;
+    (0..spans.spans.len())
+        .map(|block| spans.get_block_immediate_successor_set(old_fn, block.into()))
+        .collect()
+}
 
-            let mut mapped_predecessors = HashSet::new();
-
-            // Get the list of predecessors and map the instruction back to the basic block (span) that it
-            // came from
-            if let Some(predecessors) = spans.destination_sources.get(lower_bound) {
-                for predecessor in predecessors {
-                    // Find the source span
-                    //
-                    // Hard fail here as failing to find the source span for the predecessor is a bug in the
-                    // algorithm. Bugs are not errors and should be very violently surfaced so they can be
-                    // found and fixed
-                    let block = spans.find_source_span(*predecessor).unwrap();
-
-                    // Insert our mapped index into our new list
-                    mapped_predecessors.insert(block);
-                }
-            }
-
-            mapped_predecessors
-        })
+pub fn build_basic_block_full_successor_sets(
+    spans: &BasicBlockSpans,
+    old_fn: &hashlink::Function,
+) -> Vec<HashSet<BasicBlockIndex>> {
+    // Build the predecessor set for every basic block
+    (0..spans.spans.len())
+        .map(|block| spans.get_block_full_successor_set(old_fn, block.into()))
         .collect()
 }
 
@@ -89,9 +85,7 @@ pub fn handle_ssa_phi_import(
 
     // While this isn't a real write, the basic block should already have this marked as live from
     // an earlier part of the algorithm. If it doesn't then it is likely a bug
-    reg_meta.block_live_registers[bb_index]
-        .insert(v, value)
-        .unwrap();
+    reg_meta.block_live_set[bb_index].insert(v, value).unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     reg_meta.register_map.insert(value, v);
@@ -122,9 +116,7 @@ pub fn handle_ssa_write(
     // any more at this stage is an error.
     //
     // Once again, an error here is a bug and so should be surfaced as a panic
-    reg_meta.block_live_registers[bb_index]
-        .insert(v, value)
-        .unwrap();
+    reg_meta.block_live_set[bb_index].insert(v, value).unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     //
