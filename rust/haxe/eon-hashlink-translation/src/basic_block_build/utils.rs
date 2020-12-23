@@ -30,41 +30,10 @@
 use crate::basic_block_build::RegisterData;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
+use crate::utils::is_begin_trap;
 use eon_bytecode::function::{Function, SSAValue};
-use eon_bytecode::indexes::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
+use eon_bytecode::indexes::{RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::type_::Type;
-use std::collections::HashSet;
-
-// Get the set of predecessor basic blocks for the basic block that starts with instruction
-// `first_instruction_index`
-pub fn build_basic_block_immediate_predecessor_sets(
-    spans: &BasicBlockSpans,
-) -> Vec<HashSet<BasicBlockIndex>> {
-    (0..spans.spans.len())
-        .map(|block| spans.get_block_immediate_predecessors(block.into()))
-        .collect()
-}
-
-/// Utility for precomputing all the immediate successor sets for a basic block
-pub fn build_basic_block_immediate_successor_sets(
-    spans: &BasicBlockSpans,
-    old_fn: &hashlink::Function,
-) -> Vec<HashSet<BasicBlockIndex>> {
-    // Build the predecessor set for every basic block
-    (0..spans.spans.len())
-        .map(|block| spans.get_block_immediate_successor_set(old_fn, block.into()))
-        .collect()
-}
-
-pub fn build_basic_block_full_successor_sets(
-    spans: &BasicBlockSpans,
-    old_fn: &hashlink::Function,
-) -> Vec<HashSet<BasicBlockIndex>> {
-    // Build the predecessor set for every basic block
-    (0..spans.spans.len())
-        .map(|block| spans.get_block_full_successor_set(old_fn, block.into()))
-        .collect()
-}
 
 /// Simple function that handles creating and adding SSA values for instructions
 pub fn handle_ssa_phi_import(
@@ -138,6 +107,7 @@ pub fn handle_ssa_write_no_register(new_fn: &mut Function, type_: TypeIndex) -> 
 
 /// A struct that represents the set of information computed from the `get_basic_block_info`
 /// function
+#[derive(Clone, Debug, Default)]
 pub struct BBInfo {
     /// Whether this basic block has more than one predecessor
     pub has_multiple_predecessors: bool,
@@ -159,7 +129,7 @@ pub struct BBInfo {
     /// The register the HashLink bytecode was told to *STORE* the exception into. We need
     /// this so we can remap the HashLink `OpTrap` into our own pair of `OpTrap` and
     /// `OpReceiveException`.
-    pub trap_register: usize,
+    pub trap_register: RegisterIndex,
 }
 
 /// This function uses the source HashLink function, the earlier computed BBGraph and the index of
@@ -171,80 +141,50 @@ pub fn build_basic_block_infos(
     old_fn: &hashlink::Function,
     spans: &BasicBlockSpans,
 ) -> TranspileResult<Vec<BBInfo>> {
-    let mut out = Vec::new();
+    let mut out: Vec<BBInfo> = vec![Default::default(); spans.spans.len()];
 
-    for span in spans.spans.iter() {
-        let lower_bound = &span.begin;
-
-        let has_multiple_predecessors;
-        let has_single_predecessor;
-        let has_no_predecessor;
-        let is_trap_handler;
-        let trap_register;
+    for span_index in 0..spans.spans.len() {
+        let span = &spans.spans[span_index];
 
         // We need to get the list of instruction indexes that contain a branch instruction
         // with this basic block as the target so we can deduce the above information
         //
         // We can use the info calculated earlier from the BBGraph
-        let sources = spans.destination_sources.get(lower_bound);
-        if let Some(sources) = sources {
-            // These are pretty self explanatory
-            has_multiple_predecessors = sources.len() > 1;
-            has_single_predecessor = sources.len() == 1;
-            has_no_predecessor = sources.len() == 0;
+        let predecessors = &spans.predecessors[span_index];
+        let has_multiple_predecessors = predecessors.len() > 1;
+        let has_single_predecessor = predecessors.len() == 1;
+        let has_no_predecessor = predecessors.len() == 0;
 
-            // Here we filter out and create a vector of only the trap instructions. This way
-            let mut trap_sources = sources.iter().filter_map(|v| {
-                let source_op = &old_fn.ops[v.0];
-                match source_op {
-                    hashlink::OpCode::OpTrap(v) => Some(v),
-                    _ => None,
-                }
-            });
+        // We check if the current block ends with an `OpTrap`, if so we need to mark the
+        // exceptional target as a trap handler
+        if let Some(op_trap) = is_begin_trap(span.end.0, &old_fn.ops[span.end.0], old_fn) {
+            // Propagate the error
+            let (register, handler) = op_trap?;
 
-            // We only care about the first response, if there's any more than a single OpTrap that
-            // targets this basic block that is an error we need to surface.
-            if let Some(trap) = trap_sources.next() {
-                is_trap_handler = true;
-                trap_register = trap.param_1 as usize;
+            // Find the basic block for the exception handler, this must exist so panic if it
+            // doesn't. (algorithm error)
+            let handler = spans.find_source_span_starting_with(handler).unwrap();
 
-                // The iterator should only yield a single result. If it can yield more then we have
-                // multiple traps leading to the same handler, which is an error.
-                if trap_sources.count() > 0 {
+            // If the handler has already been marked as a trap handler, we must ensure that the
+            // same register is used as the exception target from both
+            if out[handler.0].is_trap_handler {
+                // If the registers don't match then we need to surface an error
+                if out[handler.0].trap_register != register {
                     let reason = InvalidFunctionReason::TrapHandlerHasMultipleTrapPredecessors {
                         func: old_fn.clone(),
                     };
                     let err = TranspileError::InvalidFunction(reason);
                     return Err(err);
                 }
-
-                // If a trap handler block has multiple predecessor blocks then that is an error
-                if has_multiple_predecessors {
-                    let reason = InvalidFunctionReason::TrapHandlerHasMultiplePredecessors {
-                        func: old_fn.clone(),
-                    };
-                    let err = TranspileError::InvalidFunction(reason);
-                    return Err(err);
-                }
             } else {
-                is_trap_handler = false;
-                trap_register = 0;
+                out[handler.0].is_trap_handler = true;
+                out[handler.0].trap_register = register;
             }
-        } else {
-            has_multiple_predecessors = false;
-            has_single_predecessor = false;
-            has_no_predecessor = true;
-            is_trap_handler = false;
-            trap_register = 0;
         }
 
-        out.push(BBInfo {
-            has_multiple_predecessors,
-            has_single_predecessor,
-            has_no_predecessor,
-            is_trap_handler,
-            trap_register,
-        });
+        out[span_index].has_multiple_predecessors = has_multiple_predecessors;
+        out[span_index].has_single_predecessor = has_single_predecessor;
+        out[span_index].has_no_predecessor = has_no_predecessor;
     }
     Ok(out)
 }

@@ -33,7 +33,6 @@ mod utils;
 
 pub use opcode_translate::translate_opcode;
 pub use remap_reads::remap_reads;
-pub use utils::build_basic_block_immediate_predecessor_sets;
 pub use utils::build_basic_block_infos;
 pub use utils::find_type_index_for;
 pub use utils::handle_ssa_phi_import;
@@ -41,10 +40,7 @@ pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
 pub use utils::BBInfo;
 
-use crate::basic_block_build::utils::{
-    build_basic_block_full_successor_sets, build_basic_block_immediate_successor_sets,
-    take_from_slice,
-};
+use crate::basic_block_build::utils::take_from_slice;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::intersect_hash_sets;
@@ -56,6 +52,7 @@ use eon_bytecode::type_::{Type, TypeFunction};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Debug)]
 pub struct RegisterData {
     /// List of registers for the function's bytecode. This maps almost directly to the register
     /// system in hashlink bytecode but with some additional information.
@@ -81,6 +78,24 @@ pub struct RegisterData {
     pub block_live_set: Vec<HashMap<RegisterIndex, ValueIndex>>,
 }
 
+impl RegisterData {
+    pub fn new(register_count: usize, block_count: usize) -> Self {
+        let registers = vec![Register::default(); register_count];
+        let register_map = HashMap::new();
+        let block_writes = vec![Default::default(); block_count];
+        let block_imports = vec![Default::default(); block_count];
+        let block_live_set = vec![Default::default(); block_count];
+        RegisterData {
+            registers,
+            register_map,
+            block_writes,
+            block_imports,
+            block_live_set,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct BuildContext<'a> {
     pub new_fn: RefCell<Function>,
     pub old_fn: &'a hashlink::Function,
@@ -91,11 +106,8 @@ pub struct BuildContext<'a> {
     pub void_type_index: TypeIndex,
     pub non_reg_values: RefCell<HashSet<ValueIndex>>,
     pub reg_meta: RefCell<RegisterData>,
-    pub immediate_predecessors: RefCell<Vec<HashSet<BasicBlockIndex>>>,
-    pub immediate_successors: RefCell<Vec<HashSet<BasicBlockIndex>>>,
-    pub full_successors: RefCell<Vec<HashSet<BasicBlockIndex>>>,
+    pub block_reachability: RefCell<Vec<bool>>,
     pub bb_infos: RefCell<Vec<BBInfo>>,
-    pub bb_phi_imports: RefCell<Vec<Vec<RegisterIndex>>>,
 }
 
 pub fn build_bb(
@@ -103,71 +115,57 @@ pub fn build_bb(
     old_fn: &hashlink::Function,
     module: &Module,
 ) -> TranspileResult<Function> {
-    let mut new_fn = Function {
-        type_: TypeIndex(old_fn.type_ as usize),
-        f_index: old_fn.f_index,
-        ssa_values: vec![],
-        basic_blocks: vec![],
+    let mut ctx = {
+        let mut new_fn = Function {
+            type_: TypeIndex(old_fn.type_ as usize),
+            f_index: old_fn.f_index,
+            ssa_values: vec![],
+            basic_blocks: vec![],
+        };
+
+        // Get the actual function type value, checking to ensure it is of the correct type category
+        // (Function or Method)
+        let fn_ty = &module.types[new_fn.type_.0];
+        let fn_ty = fn_ty.get_type_function().ok_or(type_index_error(old_fn))?;
+
+        // We need to find the index of the bool type as we need it for part of the translation process
+        // later
+        //
+        // This is a hard error as realistically this should be declared in every module, so we panic.
+        let bool_type_index = find_type_index_for(&module.types, &Type::Bool).unwrap();
+        let void_type_index = find_type_index_for(&module.types, &Type::Void).unwrap();
+
+        // As we go we'll be generating various bits of metadata about the transcoded instructions
+        let reg_meta = RegisterData::new(old_fn.registers.len(), spans.spans.len());
+
+        // Pre allocate the list of empty basic blocks
+        new_fn
+            .basic_blocks
+            .resize(spans.spans.len(), Default::default());
+
+        // Calculate the set of predecessor blocks for all basic blocks
+
+        let block_reachability = vec![false; spans.spans.len()];
+
+        // Precompute some information about all basic blocks
+        let bb_infos = build_basic_block_infos(old_fn, &spans)?;
+
+        BuildContext {
+            new_fn: RefCell::new(new_fn),
+            old_fn,
+            module,
+            spans: RefCell::new(spans),
+            fn_ty,
+            bool_type_index,
+            void_type_index,
+            non_reg_values: RefCell::new(HashSet::new()),
+            reg_meta: RefCell::new(reg_meta),
+            block_reachability: RefCell::new(block_reachability),
+            bb_infos: RefCell::new(bb_infos),
+        }
     };
 
-    // Get the actual function type value, checking to ensure it is of the correct type category
-    // (Function or Method)
-    let fn_ty = &module.types[new_fn.type_.0];
-    let fn_ty = fn_ty.get_type_function().ok_or(type_index_error(old_fn))?;
-
-    // We need to find the index of the bool type as we need it for part of the translation process
-    // later
-    //
-    // This is a hard error as realistically this should be declared in every module, so we panic.
-    let bool_type_index = find_type_index_for(&module.types, &Type::Bool).unwrap();
-    let void_type_index = find_type_index_for(&module.types, &Type::Void).unwrap();
-
-    // As we go we'll be generating various bits of metadata about the transcoded instructions
-    let registers = vec![Register::default(); old_fn.registers.len()];
-    let register_map = HashMap::new();
-    let block_writes = vec![Default::default(); spans.spans.len()];
-    let block_imports = vec![Default::default(); spans.spans.len()];
-    let block_live_set = vec![Default::default(); spans.spans.len()];
-    let reg_meta = RegisterData {
-        registers,
-        register_map,
-        block_writes,
-        block_imports,
-        block_live_set,
-    };
-
-    // Pre allocate the list of empty basic blocks
-    new_fn
-        .basic_blocks
-        .resize(spans.spans.len(), Default::default());
-
-    // Calculate the set of predecessor blocks for all basic blocks
-    let immediate_predecessors = build_basic_block_immediate_predecessor_sets(&spans);
-    let immediate_successors = build_basic_block_immediate_successor_sets(&spans, old_fn);
-    let full_successors = build_basic_block_full_successor_sets(&spans, old_fn);
-
-    // Precompute some information about all basic blocks
-    let bb_infos = build_basic_block_infos(old_fn, &spans)?;
-
-    let bb_phi_imports = vec![Vec::new(); spans.spans.len()];
-
-    let mut ctx = BuildContext {
-        new_fn: RefCell::new(new_fn),
-        old_fn,
-        module,
-        spans: RefCell::new(spans),
-        fn_ty,
-        bool_type_index,
-        void_type_index,
-        non_reg_values: RefCell::new(HashSet::new()),
-        reg_meta: RefCell::new(reg_meta),
-        immediate_predecessors: RefCell::new(immediate_predecessors),
-        immediate_successors: RefCell::new(immediate_successors),
-        full_successors: RefCell::new(full_successors),
-        bb_infos: RefCell::new(bb_infos),
-        bb_phi_imports: RefCell::new(bb_phi_imports),
-    };
-    // INFO: f_index: 318
+    // INFO: f_index: 119
 
     // This will check the type signature of the function against the registers the definition says
     // the arguments should be
@@ -176,13 +174,22 @@ pub fn build_bb(
     // Initializes the live set information of the first basic block
     build_first_block_imports_and_live_set(&mut ctx);
 
+    // We need to go over each basic block and calculate whether it can actually be reached.
+    //
+    // This is needed for building the live sets as when propagating live sets we should skip
+    // importing from unreachable blocks.
+    calculate_block_reachability(&mut ctx)?;
+
     // Now we need to build information about the registers read and written by each basic block so
     // we can use it to produce the final SSA form instruction stream
     build_block_write_sets(&mut ctx);
 
     // Now we need to propagate the live sets through the entire basic block graph, which requires
     // a tree walk
-    propagate_predecessor_live_sets(&mut ctx);
+    propagate_imports(&mut ctx);
+
+    // Merges the register imports and writes for each basic block into the "live set"
+    resolve_live_sets(&mut ctx);
 
     // Now begins the fun part where we start translating the HashLink bytecode
     translate_basic_blocks(&mut ctx)?;
@@ -242,6 +249,7 @@ pub fn type_check_signature(ctx: &mut BuildContext) -> TranspileResult<()> {
 pub fn build_first_block_imports_and_live_set(ctx: &mut BuildContext) {
     // Take from cells
     let mut reg_meta = ctx.reg_meta.borrow_mut();
+
     let fn_ty = ctx.fn_ty;
 
     for (arg_index, _) in fn_ty.args.iter().enumerate() {
@@ -254,135 +262,203 @@ pub fn build_first_block_imports_and_live_set(ctx: &mut BuildContext) {
     }
 }
 
+pub fn calculate_block_reachability(ctx: &mut BuildContext) -> TranspileResult<()> {
+    let mut block_reachability = ctx.block_reachability.borrow_mut();
+    let spans = ctx.spans.borrow();
+    let immediate_predecessors = &spans.predecessors;
+
+    let entry_block = BasicBlockIndex(0);
+    block_reachability[entry_block.0] = true;
+
+    let mut handled = HashSet::with_capacity(32);
+    let mut next = Vec::with_capacity(32);
+
+    for block_being_checked in spans.spans[1..]
+        .iter()
+        .enumerate()
+        .map(|(i, _)| BasicBlockIndex(i + 1))
+    {
+        // Clear these, ready for the next iteration
+        handled.clear();
+        next.clear();
+
+        // Push the block we want to check the reachability of as the first item on the stack
+        next.push(block_being_checked);
+
+        // Keep popping items off the queue until it is empty
+        while let Some(current) = next.pop() {
+            // Get the predecessors for the current item
+            let predecessors = &immediate_predecessors[current.0];
+
+            // We check if a block has already been confirmed to be reachable from an earlier check
+            //
+            // This also checks for the entry block as the entry block is automatically marked as
+            // reachable
+            //
+            // If we can reach an already guaranteed reachable block then we know the source block
+            // we started from must also be reachable. As such we can use this as an early exit
+            if block_reachability[current.0] {
+                // If so then this block is confirmed to be reachable. Mark it as such and break
+                // from the loop
+                block_reachability[block_being_checked.0] = true;
+                break;
+            }
+
+            // Mark the current block as handled
+            handled.insert(current);
+
+            // We only want to insert items that have not been handled into the queue, otherwise we
+            // may loop infinitely.
+            //
+            // So we filter out anything that has already been handled
+            let unhandled_predecessors = predecessors
+                .iter()
+                .cloned()
+                .filter(|v| !handled.contains(v));
+
+            // Queue all unhandled predecessors
+            next.extend(unhandled_predecessors);
+        }
+    }
+
+    Ok(())
+}
+
 pub fn build_block_write_sets(ctx: &mut BuildContext) {
     // Take from cells
     let mut reg_meta = ctx.reg_meta.borrow_mut();
     let spans = ctx.spans.borrow();
+    let bb_infos = ctx.bb_infos.borrow();
+    let immediate_predecessors = &spans.predecessors;
     let old_fn = ctx.old_fn;
 
-    for (i, span) in spans.spans[1..].iter().enumerate() {
+    for (i, span) in spans.spans[1..].iter().enumerate().map(|(i, v)| (i + 1, v)) {
+        let info = &bb_infos[i];
+        let predecessors = &immediate_predecessors[i];
+
         // Unwrap the bounds and get the sub slice that the span refers to
         let lower_bound = span.begin.0;
         let upper_bound = span.end.0;
         let ops = &old_fn.ops[lower_bound..=upper_bound];
 
+        // Trap handlers are a somewhat special type of basic block that start with a unique
+        // instruction, OpReceiveException. OpReceiveException is similar to a phi instruction, but
+        // actually does perform a real write to the register and is not an import so we need to
+        // correctly flag this as such.
+        //
+        // The source HashLink does not have an `OpReceiveException`, our translation generates it.
+        // The only way for the `block_writes` set to be generated correctly is to inject the write
+        // manually with this special case.
+        if info.is_trap_handler {
+            reg_meta.block_writes[i].insert(info.trap_register);
+        }
+
         // Iterate over every opcode and record what registers it writes
         for op in ops {
             // Build the set of writes
-            if let Some(write) = op.register_write() {
-                reg_meta.block_writes[i].insert(RegisterIndex(write as usize));
+
+            // We have to ignore OpTrap specifically as although it does perform a write of sorts
+            // under the semantics of HashLink, it is considered a write for the purposes of our
+            // translation.
+            //
+            // As such we special case it out
+            if !op.is_trap() {
+                // When the op isn't an OpTrap we add the write to the set of written registers
+                if let Some(write) = op.register_write() {
+                    reg_meta.block_writes[i].insert(RegisterIndex(write as usize));
+                }
             }
         }
     }
 }
 
-pub fn propagate_predecessor_live_sets(ctx: &mut BuildContext) {
-    let mut bb_phi_imports = ctx.bb_phi_imports.borrow_mut();
+pub fn propagate_imports(ctx: &mut BuildContext) {
     let mut reg_meta = ctx.reg_meta.borrow_mut();
-    let new_fn = ctx.new_fn.borrow();
-    let predecessors = ctx.immediate_predecessors.borrow();
-    let bb_infos = ctx.bb_infos.borrow();
-    let old_fn = ctx.old_fn;
+    let spans = ctx.spans.borrow();
+    let immediate_predecessors = &spans.predecessors;
+    let immediate_successors = &spans.successors;
+    let block_reachability = ctx.block_reachability.borrow();
 
-    let mut handled_count = 0;
-    let mut handled = vec![false; new_fn.basic_blocks.len()];
+    // This stack holds the queue of instruction indices to be handled. This is the core part of
+    // our recursive tree walk of the source instruction stream
+    let mut next_stack = Vec::new();
 
-    // Continuously repeat this until we have handled all basic blocks
-    while handled_count < new_fn.basic_blocks.len() {
-        for bb_index in 0..handled.len() {
-            // Get this block's predecessor set
-            let block_predecessors = &predecessors[bb_index];
-            let block_info = &bb_infos[bb_index];
+    // We hold a set of all basic blocks that have been handled at least once
+    let mut handled_once_blocks = HashSet::new();
 
-            // We can only operate on basic blocks that have not been handled yet, and have had all
-            // their predecessors handled
-            let not_handled = !handled[bb_index];
-            let all_predecessors_handled =
-                block_predecessors.iter().find(|v| !handled[v.0]).is_none();
+    // The entry basic block is guaranteed to be valid by this point so we just flag it as valid
+    // by default
+    handled_once_blocks.insert(BasicBlockIndex(0));
 
-            // Only handle blocks that match the above preconditions
-            if not_handled && all_predecessors_handled {
-                // We need to do this swap stuff because the borrow checker will think we're
-                // aliasing a mutable reference (if we borrowed this mutably, we couldn't look at
-                // any other block's live set which we need to do).
-                //
-                // Solution: take ownership of the value by swapping it out of the array, replacing
-                // with an empty value, and then returning it back to the array once we're done.
-                let mut our_live_set = take_from_slice(&mut reg_meta.block_live_set, bb_index);
+    // We start at the first basic block after the entry block
+    next_stack.push(BasicBlockIndex(1));
 
-                // With a single predecessor we import the live set verbatim from the predecessor
-                // block
-                if block_info.has_single_predecessor {
-                    // Get the first (and only) predecessor in the set
-                    let predecessor = block_predecessors.iter().next().unwrap();
+    // Continuously loop until the queue is empty
+    while let Some(current) = next_stack.pop() {
+        // Get an iterator that yields the live set of all handled predecessors
+        let predecessors = &immediate_predecessors[current.0];
+        let handled_predecessor_live_sets = predecessors
+            .intersection(&handled_once_blocks)
+            .cloned()
+            .filter(|v| block_reachability[v.0])
+            .map(|v| {
+                reg_meta.block_writes[v.0]
+                    .union(&reg_meta.block_imports[v.0])
+                    .cloned()
+            });
 
-                    // Get the live set associated with the predecessor block
-                    let live_set = &reg_meta.block_live_set[predecessor.0];
+        // Now we need to produce the intersection of all predecessor block's live sets so we have
+        // a final set that is a subset of all handled predecessor's live set.
+        let new_imports = intersect_hash_sets(handled_predecessor_live_sets);
 
-                    // Insert all live values into the currently being handled block's set with
-                    // default values. We'll need the ValueIndex part ourselves later
-                    for reg in live_set.keys() {
-                        our_live_set.insert(*reg, ValueIndex(0));
-                    }
-                }
-
-                // With multiple predecessors we need to compute the common set of live values
-                // between all predecessors and import only those live registers.
-                if block_info.has_multiple_predecessors {
-                    // This is a "flat map" that maps a register index to the number of predecessors it is live
-                    // in. We use this to decide which registers are live in all predecessor blocks.
-                    let mut live_count = vec![0usize; old_fn.registers.len()];
-
-                    // Now we iterate over all the predecessors and accumulate into the `live_count` flat_map
-                    //
-                    // Each slot in the map corresponds to a count for each register. Each slot is used to
-                    // accumulate the number of predecessors the register is live in. If the count is lower than
-                    // the number of predecessors then the register is not live in all of them and we must not
-                    // emit phi instructions for that register
-                    for pred in block_predecessors.iter() {
-                        let pred = &reg_meta.block_live_set[pred.0];
-                        for reg in pred.keys() {
-                            live_count[reg.0] += 1;
-                        }
-                    }
-
-                    // We will need the information we produce here later so rather than using the
-                    // iterator directly we collect into a vector
-                    //
-                    // Regardless, this filters out all registers that are not live in all
-                    // predecessor blocks
-                    let phi_imports = live_count
-                        .iter()
-                        .enumerate()
-                        .filter_map(|(r, v)| {
-                            if *v == block_predecessors.len() {
-                                Some(RegisterIndex(r))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-
-                    bb_phi_imports[bb_index] = phi_imports;
-
-                    // Insert our live subset into the block's live set
-                    for reg in &bb_phi_imports[bb_index] {
-                        our_live_set.insert(*reg, ValueIndex(0));
-                    }
-                }
-
-                // Put the swapped out value back in to the array
-                reg_meta.block_live_set[bb_index] = our_live_set;
-
-                // Mark this block as handled
-                handled[bb_index] = true;
-                handled_count += 1;
-            }
+        let mut arg_indices = 0..ctx.fn_ty.args.len();
+        let arg_missing_from_import_set =
+            arg_indices.any(|v| !new_imports.contains(&RegisterIndex(v)));
+        if arg_missing_from_import_set {
+            panic!("An argument has failed to be propagated");
         }
-    }
 
-    // Debug assertion to ensure we have actually handled all basic blocks
-    debug_assert!(!handled.contains(&false));
+        // If this isn't the first time a block is being handled then we check if there was no
+        // change between the new and old set
+        //
+        // If there is no change between the new and old import set then we should terminate at the
+        // current block. If the old and new sets are identical then there is no change to propagate
+        // to successor blocks so there's no point continuing
+        let imports_changed = &new_imports != &reg_meta.block_imports[current.0];
+        let not_yet_handled = !handled_once_blocks.contains(&current);
+        if imports_changed || not_yet_handled {
+            next_stack.extend(&immediate_successors[current.0]);
+        }
+
+        // Mark as handled
+        handled_once_blocks.insert(current);
+
+        // Store the new import set
+        reg_meta.block_imports[current.0] = new_imports;
+    }
+}
+
+pub fn resolve_live_sets(ctx: &mut BuildContext) {
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+
+    // Merge the imports and writes for each block, skipping the entry block as the entry block is
+    // already resolved correctly
+    for i in 1..reg_meta.block_live_set.len() {
+        // The live set is the union of the imports and block writes
+        let live_set = reg_meta.block_writes[i]
+            .union(&reg_meta.block_imports[i])
+            .cloned();
+
+        // Build the hashmap with a dummy ValueIndex which will be patched up later
+        let mut live_set = live_set.map(|v| (v, ValueIndex(0))).collect();
+
+        // Insert the new map into the list
+        std::mem::swap(&mut reg_meta.block_live_set[i], &mut live_set);
+
+        // Debug check to make sure this function isn't overriding data (the existing set/map should
+        // be empty)
+        debug_assert!(live_set.is_empty());
+    }
 }
 
 pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
@@ -390,9 +466,9 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let mut reg_meta = ctx.reg_meta.borrow_mut();
     let mut non_reg_values = ctx.non_reg_values.borrow_mut();
     let spans = ctx.spans.borrow();
-    let predecessors = ctx.immediate_predecessors.borrow();
+    let predecessors = &spans.predecessors;
+    let block_reachability = ctx.block_reachability.borrow();
     let bb_infos = ctx.bb_infos.borrow();
-    let bb_phi_imports = ctx.bb_phi_imports.borrow();
     let old_fn = ctx.old_fn;
     let bool_type_index = ctx.bool_type_index;
     let void_type_index = ctx.void_type_index;
@@ -411,17 +487,23 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
         if bb_info.has_multiple_predecessors {
-            for reg in &bb_phi_imports[bb_index] {
+            let block_imports = take_from_slice(&mut reg_meta.block_imports, bb_index);
+
+            for reg in block_imports.iter().cloned() {
                 // We allocate a new SSA value for the result of our phi instruction
                 let assigns =
-                    handle_ssa_phi_import(&mut new_fn, old_fn, &mut reg_meta, bb_index, *reg);
+                    handle_ssa_phi_import(&mut new_fn, old_fn, &mut reg_meta, bb_index, reg);
 
                 // We produce the list of source blocks for the phi instruction with a
                 // ValueIndex that actually holds the *register index* so we can remap it later
                 // once all the information we need is available.
+                //
+                // We only import from reachable blocks
                 let block_values = predecessors
                     .iter()
-                    .map(|v| (ValueIndex(reg.0), *v))
+                    .cloned()
+                    .filter(|v| block_reachability[v.0])
+                    .map(|v| (ValueIndex(reg.0), v))
                     .collect();
 
                 // Build the phi layout
@@ -436,6 +518,8 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
                 // And insert the new instruction
                 new_fn.basic_blocks[bb_index].ops.push(phi);
             }
+
+            reg_meta.block_imports[bb_index] = block_imports;
         }
 
         // If this block is a trap handler then we need to emit an instruction to import the
@@ -450,7 +534,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
                 old_fn,
                 &mut reg_meta,
                 bb_index,
-                RegisterIndex(bb_info.trap_register),
+                bb_info.trap_register,
             );
 
             // Build the instruction layout
@@ -464,10 +548,11 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
         }
 
         // Iterate over all the opcodes that we've deduced to be a part of this basic block
-        for (i, old_op) in old_fn.ops[lower_bound.0..=upper_bound.0].iter().enumerate() {
-            // Get the actual index in the opcode array rather than the index in the sub-slice
-            // we've taken
-            let op_index = lower_bound.0 + i;
+        for (op_index, old_op) in old_fn.ops[lower_bound.0..=upper_bound.0]
+            .iter()
+            .enumerate()
+            .map(|(i, v)| (i + lower_bound.0, v))
+        {
             translate_opcode(
                 &mut new_fn,
                 &mut reg_meta,
@@ -487,10 +572,10 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
 
 pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
     let mut new_fn = ctx.new_fn.borrow_mut();
+    let spans = ctx.spans.borrow();
     let reg_meta = ctx.reg_meta.borrow();
     let non_reg_values = ctx.non_reg_values.borrow();
-    let predecessors = ctx.immediate_predecessors.borrow();
-    let fn_ty = ctx.fn_ty;
+    let predecessors = &spans.predecessors;
 
     // We allocate reuse this between iterations to save allocating every iteration
     let mut latest_states = HashMap::new();
@@ -500,14 +585,6 @@ pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
         // Get the set of predecessor basic block indexes that we will need for importing values
         // in the special case of basic blocks with only a single predecessor
         let predecessors = &predecessors[bb_index];
-
-        // The entry basic block is a special case where the latest state of the registers is
-        // imported directly from the function arguments
-        if bb_index == 0 {
-            for arg_index in 0..fn_ty.args.len() {
-                latest_states.insert(RegisterIndex(arg_index), ValueIndex(arg_index));
-            }
-        }
 
         // If there's only a single predecessor we don't emit phi instructions but import the values
         // directly from the predecessor blocks. Phi instructions are only needed to merge values

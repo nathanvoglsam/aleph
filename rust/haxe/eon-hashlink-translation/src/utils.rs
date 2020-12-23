@@ -28,7 +28,9 @@
 //
 
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
-use eon_bytecode::indexes::InstructionIndex;
+use eon_bytecode::indexes::{InstructionIndex, RegisterIndex};
+use std::collections::HashSet;
+use std::hash::Hash;
 
 // We need to apply the offset to the current instruction index. We do it in this
 // convoluted way so that we don't discard the full bit width of a usize in order
@@ -103,15 +105,85 @@ pub fn bounds_check_target(
     Ok(())
 }
 
-/// Returns whether the given instruction is an `OpTrap`, and the trap handler target index if it
+/// This function, when given an iterator that yields iterators of `T`, will produce a `HashSet<T>`
+/// that holds the intersection of all iterators of `T` that the outermost iterator yields.
+///
+/// The input should be considered an iterator of sets, where the sets themselves are represented as
+/// iterators for flexibility.
+pub fn intersect_hash_sets<T: Hash + Eq, I: Iterator<Item = T>>(
+    mut sets: impl Iterator<Item = I>,
+) -> HashSet<T> {
+    // We have to handle the first case specially so we manually pop it off the iterator first
+    if let Some(v) = sets.next() {
+        // We pre-allocate 3 sets here which get consumed in the following loop.
+        //
+        // By pre-allocating these sets we can massively reduce how many times we need to hit
+        // the memory allocator. For most inputs we'll never have to allocate in the loop
+        let mut acc = HashSet::with_capacity(24);
+        let mut scratch = HashSet::with_capacity(24);
+        let mut next = HashSet::with_capacity(24);
+
+        // Initialize the accumulator set with the initial set we're intersecting
+        v.for_each(|v| {
+            acc.insert(v);
+        });
+
+        // Intersect every set in `sets`
+        sets.for_each(|set| {
+            // Clear `scratch` and `next`
+            next.clear();
+            scratch.clear();
+
+            // Make our "scratch" set so it is exactly equal to the union iterator we get from
+            // the `sets` iterator
+            set.for_each(|v| {
+                scratch.insert(v);
+            });
+
+            // With this iteration's live set collected into the `scratch` set we can now
+            // intersect our accumulator (`acc`) with our temp set and fill the `next` set with
+            // that intersection
+            for v in acc.drain() {
+                if scratch.contains(&v) {
+                    next.insert(v);
+                }
+            }
+
+            // The next set now contains the intersection of `acc` and `scratch`, which is what
+            // we need to be in `acc` for the next intersection, or as the final output of this
+            // loop
+            //
+            // We swap `acc` and `next` to prepare for output or the next iteration
+            //
+            // `acc` now contains the intersection we want to output or use in the next
+            // iteration
+            //
+            // `next` now contains the old accumulator, the contents of which can now be
+            // discarded
+            std::mem::swap(&mut acc, &mut next);
+        });
+
+        acc
+    } else {
+        // If the iterator was empty just return the empty set
+        HashSet::new()
+    }
+}
+
+/// Returns whether the given instruction is an `OpTrap`, the register the exception will be
+/// received in, and the trap handler target index.
 /// is.
 pub fn is_begin_trap(
     i_index: usize,
     op: &hashlink::OpCode,
     old_fn: &hashlink::Function,
-) -> Option<TranspileResult<InstructionIndex>> {
+) -> Option<TranspileResult<(RegisterIndex, InstructionIndex)>> {
     match op {
-        hashlink::OpCode::OpTrap(v) => Some(offset_to_index(i_index, v.param_2, old_fn)),
+        hashlink::OpCode::OpTrap(v) => {
+            let out = offset_to_index(i_index, v.param_2, old_fn)
+                .map(|i| (RegisterIndex(v.param_1 as usize), i));
+            Some(out)
+        }
         _ => None,
     }
 }

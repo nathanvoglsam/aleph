@@ -43,6 +43,7 @@ use std::collections::{HashMap, HashSet};
 /// Extra information about the basic block is held alongside the range. Currently that includes:
 ///
 /// - Trap handler instruction index
+#[derive(Debug)]
 pub struct InstructionSpan {
     /// The beginning of the instruction span's range
     pub begin: InstructionIndex,
@@ -63,168 +64,101 @@ pub struct InstructionSpan {
 
 /// This holds all useful information computed by basic block identification algorithm for use
 /// later
+#[derive(Debug)]
 pub struct BasicBlockSpans {
-    /// Maps an instruction index to the set of instructions that branch to it
-    pub destination_sources: HashMap<InstructionIndex, HashSet<InstructionIndex>>,
-
-    /// A list of all of the branch instruction indexes in the function
-    pub branches: HashSet<InstructionIndex>,
-
     /// The final output list of basic block spans
     pub spans: Vec<InstructionSpan>,
+
+    /// Predecessor set for each block
+    pub predecessors: Vec<HashSet<BasicBlockIndex>>,
+
+    /// Successor set for each block
+    pub successors: Vec<HashSet<BasicBlockIndex>>,
 }
 
 impl BasicBlockSpans {
-    /// Find the span that holds the given instruction index
-    pub fn find_source_span(&self, i: InstructionIndex) -> Option<BasicBlockIndex> {
-        self.spans
-            .iter()
-            .enumerate()
-            .find(|(_, v)| v.begin.0 <= i.0 && v.end.0 >= i.0)
-            .map(|(i, _)| BasicBlockIndex(i))
+    #[must_use]
+    fn insert_span(&mut self, current: &NextItem, end: InstructionIndex) -> BasicBlockIndex {
+        // Build the span
+        let span = InstructionSpan {
+            begin: current.start.into(),
+            end,
+            trap_handler: current.trap_stack.last().cloned(),
+        };
+
+        // Push into span list
+        let block_index = self.spans.len();
+        self.spans.push(span);
+
+        // Get either an empty set or a set initialized with the current span's predecessor
+        let predecessors = if let Some(predecessor) = current.predecessor {
+            let mut set = HashSet::new();
+            set.insert(predecessor);
+            set
+        } else {
+            HashSet::new()
+        };
+
+        // Insert the initial predecessor and successor set
+        self.predecessors.push(predecessors);
+        self.successors.push(HashSet::new());
+
+        block_index.into()
     }
 
-    pub fn get_block_immediate_predecessors(
-        &self,
-        block: BasicBlockIndex,
-    ) -> HashSet<BasicBlockIndex> {
-        let span = &self.spans[block.0];
-
-        let mut mapped_predecessors = HashSet::new();
-
-        // Get the list of predecessors and map the instruction back to the basic block (span) that it
-        // came from
-        if let Some(predecessors) = self.destination_sources.get(&span.begin) {
-            for predecessor in predecessors.iter().cloned() {
-                // Find the source span
-                //
-                // Hard fail here as failing to find the source span for the predecessor is a bug in the
-                // algorithm. Bugs are not errors and should be very violently surfaced so they can be
-                // found and fixed
-                let block = self.find_source_span(predecessor).unwrap();
-
-                // Insert our mapped index into our new list
-                mapped_predecessors.insert(block);
-            }
+    pub fn find_source_span_starting_with(&self, i: InstructionIndex) -> Option<BasicBlockIndex> {
+        let mut iter = self.spans.iter().enumerate().filter(|(_, v)| v.begin == i);
+        if let Some((block, _)) = iter.next() {
+            // Assert that there are no other blocks that start with the same instruction
+            debug_assert!(iter.count() == 0);
+            Some(BasicBlockIndex(block))
+        } else {
+            None
         }
-
-        mapped_predecessors
-    }
-
-    /// This function will return the set of immediate successors. That is, it will return a set
-    /// that contains all blocks that are jumped directly to from the given basic block.
-    ///
-    /// This essentially returns all outward edges of the given "node" in the basic block graph.
-    pub fn get_block_immediate_successor_set(
-        &self,
-        func: &hashlink::Function,
-        block: BasicBlockIndex,
-    ) -> HashSet<BasicBlockIndex> {
-        let span = &self.spans[block.0];
-
-        let last_op_index = span.end.0;
-        let last_op = &func.ops[last_op_index];
-
-        let mut successor_set: HashSet<BasicBlockIndex> = HashSet::new();
-
-        // When a trap handler is in scope we need to handle `OpThrow` and `OpCall` in a special
-        // way
-        if let Some(handler) = span.trap_handler {
-            // OpCall when inside a trap handler will terminate a block with two potential targets,
-            // it will either jump to what was originally the next instruction, or to the trap
-            // handler's block
-            if last_op.is_call() {
-                let successor = last_op_index + 1;
-                let successor = self.find_source_span(successor.into()).unwrap();
-
-                let exceptional = handler.0;
-                let exceptional = self.find_source_span(exceptional.into()).unwrap();
-
-                successor_set.insert(successor.into());
-                successor_set.insert(exceptional.into());
-
-                return successor_set;
-            }
-
-            // When directly inside a trap handler an `OpThrow` is for all intents and purposes a
-            // fancy unconditional jump and so we treat it as such
-            if last_op.is_throw() {
-                let exceptional = handler.0;
-                let exceptional = self.find_source_span(exceptional.into()).unwrap();
-                successor_set.insert(exceptional.into());
-
-                return successor_set;
-            }
-        }
-
-        // If the above set of checks fail then we just use our good friend `OpCodeBranchTargetIter`
-        // to iterate over all immediate successor branches and add them to the set.
-        if let Some(targets) = OpCodeBranchTargetIter::new(func, last_op_index) {
-            for target in targets {
-                let target = target.unwrap();
-                let target = self.find_source_span(target).unwrap();
-                successor_set.insert(target.into());
-            }
-        }
-
-        successor_set
-    }
-
-    /// This function returns the set of all basic blocks that are reachable from the input block,
-    /// either immediately or recursively through any successor.
-    ///
-    /// The result of the function is essentially a "flood fill" of all basic blocks that can be
-    /// reached from the given basic block.
-    ///
-    /// The results also implicitly form a second set which is defined by all blocks that are not in
-    /// the returned data structure. This "conceptual" second set, which is the 'set difference' of
-    /// the return value with the set of all basic blocks in the function, represents the set of all
-    /// basic blocks which can *not* be reached from the given source block.
-    ///
-    /// It is possible to identify a graph with cycles by checking whether the resulting set of this
-    /// function contains the source block itself. If it does, then there are cycles as there must
-    /// exist a path `source -> n -> ... -> source` for the original block to be within its own
-    /// successor set.
-    pub fn get_block_full_successor_set(
-        &self,
-        func: &hashlink::Function,
-        block: BasicBlockIndex,
-    ) -> HashSet<BasicBlockIndex> {
-        // This is the final output set we'll accumulate into
-        let mut successor_set = HashSet::new();
-
-        // This is our queue of blocks we'll work though until empty
-        let mut next_stack = Vec::new();
-
-        // We start with our initial block, obviously
-        next_stack.push(block);
-
-        // Keep popping elements off the queue and handling them until the queue is empty
-        while let Some(current) = next_stack.pop() {
-            // Get the current block's immediate successors and add them to the set we're
-            // accumulating
-            let immediate_successors = self.get_block_immediate_successor_set(func, current);
-
-            // Now we need to add those successors to the queue, while also adding them to the set
-            // we're building
-            for successor in immediate_successors {
-                // If the successor set already contains the thing we're trying to queue then we
-                // shouldn't try and process this a second time. This should correctly terminate
-                // any cyclic graphs that would cause this function to otherwise loop infinitely and
-                // correctly produce the desired set
-                if successor_set.insert(successor) {
-                    next_stack.push(successor);
-                }
-            }
-        }
-
-        successor_set
     }
 }
 
 struct NextItem {
+    pub predecessor: Option<BasicBlockIndex>,
     pub start: usize,
     pub trap_stack: Vec<InstructionIndex>,
+}
+
+impl NextItem {
+    fn next(&self, predecessor: BasicBlockIndex, start: usize) -> NextItem {
+        Self {
+            predecessor: Some(predecessor),
+            start,
+            trap_stack: self.trap_stack.clone(),
+        }
+    }
+
+    fn next_popped(&self, predecessor: BasicBlockIndex, start: usize) -> NextItem {
+        let mut trap_stack = self.trap_stack.clone();
+        trap_stack.pop();
+
+        Self {
+            predecessor: Some(predecessor),
+            start,
+            trap_stack,
+        }
+    }
+
+    fn next_pushed(
+        &self,
+        predecessor: BasicBlockIndex,
+        start: usize,
+        handler: InstructionIndex,
+    ) -> NextItem {
+        let mut trap_stack = self.trap_stack.clone();
+        trap_stack.push(handler);
+
+        Self {
+            predecessor: Some(predecessor),
+            start,
+            trap_stack,
+        }
+    }
 }
 
 ///
@@ -237,7 +171,7 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
     // This holds the set of all branch targets that have already been handled and so should not
     // be handled a second time
-    let mut handled_targets = HashSet::new();
+    let mut handled_targets = HashMap::new();
 
     // This holds the current state of the "trap stack". HashLink bytecode uses nested trap
     // sections to encode try/catch blocks. This is very, very incompatible with an SSA graph. As
@@ -252,13 +186,14 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
     // The output of this function
     let mut out = BasicBlockSpans {
-        destination_sources: HashMap::new(),
-        branches: HashSet::new(),
         spans: Vec::new(),
+        predecessors: Vec::new(),
+        successors: Vec::new(),
     };
 
     // Insert the first instruction into the queue, this is always where we should begin
     let next = NextItem {
+        predecessor: None,
         start: 0,
         trap_stack: Vec::new(),
     };
@@ -267,20 +202,26 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
     // Continuously loop until the queue is empty
     while let Some(current) = next_stack.pop() {
         // Skip already handled branch targets
-        if handled_targets.contains(&current.start) {
+        if check_is_handled(&mut out, &handled_targets, &current) {
             continue;
         }
 
         // Iterate over all instructions beginning from the start index until we either hit a block
         // terminator or hit the end of the function
         for (i, op) in old_fn.ops[current.start..].iter().enumerate() {
-            // Identify an `OpTrap` and get its handler block target
-            if let Some(handler) = is_begin_trap(i, op, old_fn) {
-                let handler = handler?;
-                handle_op_trap(&mut out, &mut next_stack, &current, i, handler);
+            let current_i = current.start + i;
 
-                // Mark as handled
-                handled_targets.insert(current.start);
+            // Identify an `OpTrap` and get its handler block target
+            if let Some(handler) = is_begin_trap(current_i, op, old_fn) {
+                let (_, handler) = handler?;
+                handle_op_trap(
+                    &mut out,
+                    &mut next_stack,
+                    &mut handled_targets,
+                    &current,
+                    current_i,
+                    handler,
+                );
 
                 // Continue to the next item in the queue
                 break;
@@ -288,10 +229,13 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
             // Identify an `OpEndTrap`
             if matches!(op, hashlink::OpCode::OpEndTrap(_)) {
-                handle_op_end_trap(&mut out, &mut next_stack, &current, i);
-
-                // Mark as handled
-                handled_targets.insert(current.start);
+                handle_op_end_trap(
+                    &mut out,
+                    &mut next_stack,
+                    &mut handled_targets,
+                    &current,
+                    current_i,
+                );
 
                 // Continue to the next item in the queue
                 break;
@@ -300,10 +244,26 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
             // We need to handle some instructions specially when there is a trap handler in scope.
             if !current.trap_stack.is_empty() {
                 if op.is_call() {
-                    handle_op_call(&mut out, &mut next_stack, &current, i);
+                    handle_op_call(
+                        &mut out,
+                        &mut next_stack,
+                        &mut handled_targets,
+                        &current,
+                        current_i,
+                    );
 
-                    // Mark as handled
-                    handled_targets.insert(current.start);
+                    // Continue to the next item in the queue
+                    break;
+                }
+
+                if op.is_throw() {
+                    handle_op_throw(
+                        &mut out,
+                        &mut next_stack,
+                        &mut handled_targets,
+                        &current,
+                        current_i,
+                    );
 
                     // Continue to the next item in the queue
                     break;
@@ -312,10 +272,14 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
 
             // The final case for regular block terminators like `OpRet` and branches
             if is_block_terminator(op) {
-                handle_terminator(&mut out, &mut next_stack, old_fn, &current, i)?;
-
-                // Mark as handled
-                handled_targets.insert(current.start);
+                handle_terminator(
+                    &mut out,
+                    &mut next_stack,
+                    &mut handled_targets,
+                    old_fn,
+                    &current,
+                    current_i,
+                )?;
 
                 // Continue to the next item in the queue
                 break;
@@ -323,192 +287,142 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
         }
     }
 
+    let mut successors: Vec<HashSet<BasicBlockIndex>> = vec![Default::default(); out.spans.len()];
+    for i in 0..out.spans.len() {
+        // Mark the current block as a successor to all it's successors
+        for predecessor in out.predecessors[i].iter().cloned() {
+            successors[predecessor.0].insert(BasicBlockIndex(i));
+        }
+    }
+    out.successors = successors;
+
     Ok(out)
 }
 
 fn handle_op_trap(
     out: &mut BasicBlockSpans,
     next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
     current: &NextItem,
-    i: usize,
+    current_i: usize,
     handler: InstructionIndex,
 ) {
-    // The current instruction index
-    let current_i = current.start + i;
-
     // The target instruction index for this "branch"
-    let target = current_i + 1;
-
-    // Add the current instruction as a branch
-    out.branches.insert(current_i.into());
-
-    // Add this instruction as a branch source for the targe instruction
-    out.destination_sources
-        .entry(target.into())
-        .or_default()
-        .insert(current_i.into());
-
-    // Clone the current trap stack and push our new handler on top
-    let mut next_trap_stack = current.trap_stack.clone();
-    next_trap_stack.push(handler);
+    let target = InstructionIndex(current_i + 1);
 
     // As this terminates a block we also should emit a span for the block we just
     // created.
-    let span = InstructionSpan {
-        begin: current.start.into(),
-        end: current_i.into(),
-        trap_handler: current.trap_stack.last().cloned(),
-    };
-    out.spans.push(span);
+    let block = out.insert_span(current, current_i.into());
 
-    // We push the trap handler on to the queue as we need to produce a span for it later.
-    let next = NextItem {
-        start: handler.0,
-        trap_stack: current.trap_stack.clone(),
-    };
-    next_stack.push(next);
-
-    // A begin trap signals the end of a block, with an unconditional jump to the
-    // immediately following instruction. The exception handler target is only
-    // considered a branch on invoke and throw instructions so there is only a single
-    // branch here.
-    let next = NextItem {
-        start: target,
-        trap_stack: next_trap_stack,
-    };
-    next_stack.push(next);
+    next_stack.push(current.next_pushed(block, target.0, handler));
+    mark_handled(handled_targets, current, block);
 }
 
 fn handle_op_end_trap(
     out: &mut BasicBlockSpans,
     next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
     current: &NextItem,
-    i: usize,
+    current_i: usize,
 ) {
-    // The current instruction index
-    let current_i = current.start + i;
-
     // The target instruction index for this "branch"
-    let target = current_i + 1;
-
-    // Add the current instruction as a branch
-    out.branches.insert(current_i.into());
-
-    // Add this instruction as a branch source for the targe instruction
-    out.destination_sources
-        .entry(target.into())
-        .or_default()
-        .insert(current_i.into());
-
-    // Clone the current stack and pop the current trap handler off the top
-    let mut next_trap_stack = current.trap_stack.clone();
-    next_trap_stack.pop();
+    let target = InstructionIndex(current_i + 1);
 
     // As this terminates a block we also should emit a span for the block we just
     // created.
-    let span = InstructionSpan {
-        begin: current.start.into(),
-        end: current_i.into(),
-        trap_handler: current.trap_stack.last().cloned(),
-    };
-    out.spans.push(span);
+    let block = out.insert_span(current, current_i.into());
 
-    // An end trap signals the end of a block, with an unconditional jump to the
-    // immediately following instruction. This is needed for our exception translation
-    // algorithm to work
-    let next = NextItem {
-        start: target,
-        trap_stack: next_trap_stack,
-    };
-    next_stack.push(next);
+    next_stack.push(current.next_popped(block, target.0));
+    mark_handled(handled_targets, current, block);
 }
 
 fn handle_op_call(
     out: &mut BasicBlockSpans,
     next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
     current: &NextItem,
-    i: usize,
+    current_i: usize,
 ) {
-    // The current instruction index
-    let current_i = current.start + i;
-
     // The target instruction index for this "branch"
-    let target = current_i + 1;
-
-    // Add the current instruction as a branch
-    out.branches.insert(current_i.into());
-
-    // Add this instruction as a branch source for the targe instruction
-    out.destination_sources
-        .entry(target.into())
-        .or_default()
-        .insert(current_i.into());
-
-    // Clone the current stack
-    let next_trap_stack = current.trap_stack.clone();
+    let target = InstructionIndex(current_i + 1);
 
     // As this terminates a block we also should emit a span for the block we just
     // created.
-    let span = InstructionSpan {
-        begin: current.start.into(),
-        end: current_i.into(),
-        trap_handler: current.trap_stack.last().cloned(),
-    };
-    out.spans.push(span);
+    let block = out.insert_span(current, current_i.into());
 
-    // A call signals the end of a block, with an unconditional jump to the
-    // immediately following instruction. This is needed for our exception translation
-    // algorithm to work
-    //
-    // THE ABOVE IS ONLY TRUE WHEN A TRAP HANDLER IS IN SCOPE
-    let next = NextItem {
-        start: target,
-        trap_stack: next_trap_stack,
-    };
-    next_stack.push(next);
+    if let Some(trap_handler) = current.trap_stack.last().cloned() {
+        next_stack.push(current.next_popped(block, trap_handler.0));
+    }
+
+    next_stack.push(current.next(block, target.0));
+    mark_handled(handled_targets, current, block);
+}
+
+fn handle_op_throw(
+    out: &mut BasicBlockSpans,
+    next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
+    current: &NextItem,
+    current_i: usize,
+) {
+    // As this terminates a block we also should emit a span for the block we just
+    // created.
+    let block = out.insert_span(current, current_i.into());
+
+    if let Some(trap_handler) = current.trap_stack.last().cloned() {
+        next_stack.push(current.next_popped(block, trap_handler.0));
+    }
+
+    mark_handled(handled_targets, current, block);
 }
 
 fn handle_terminator(
     out: &mut BasicBlockSpans,
     next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
     old_fn: &hashlink::Function,
     current: &NextItem,
-    i: usize,
+    current_i: usize,
 ) -> TranspileResult<()> {
-    // The current instruction index
-    let current_i = current.start + i;
+    // As this terminates a block we also should emit a span for the block we just
+    // created.
+    let block = out.insert_span(current, current_i.into());
 
     let targets = OpCodeBranchTargetIter::new(old_fn, current_i);
     if let Some(targets) = targets {
-        // Add the current instruction as a branch
-        out.branches.insert(current_i.into());
-
         for target in targets {
-            // Propagate error
-            let target = target?;
-
-            // Add this instruction as a branch source for the targe instruction
-            out.destination_sources
-                .entry(target)
-                .or_default()
-                .insert(current_i.into());
-
-            let next = NextItem {
-                start: target.0,
-                trap_stack: current.trap_stack.clone(),
-            };
-            next_stack.push(next);
+            next_stack.push(current.next(block, target?.0));
         }
     }
 
-    // As this terminates a block we also should emit a span for the block we just
-    // created.
-    let span = InstructionSpan {
-        begin: current.start.into(),
-        end: current_i.into(),
-        trap_handler: current.trap_stack.last().cloned(),
-    };
-    out.spans.push(span);
+    mark_handled(handled_targets, current, block);
 
     Ok(())
+}
+
+fn mark_handled(
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
+    current: &NextItem,
+    block: BasicBlockIndex,
+) {
+    let previous = handled_targets.insert(current.start.into(), block);
+    debug_assert!(previous.is_none());
+}
+
+fn check_is_handled(
+    out: &mut BasicBlockSpans,
+    handled_targets: &HashMap<InstructionIndex, BasicBlockIndex>,
+    current: &NextItem,
+) -> bool {
+    if let Some(successor) = handled_targets
+        .get(&InstructionIndex(current.start))
+        .cloned()
+    {
+        if let Some(predecessor) = current.predecessor {
+            out.predecessors[successor.0].insert(predecessor);
+        }
+        true
+    } else {
+        false
+    }
 }
