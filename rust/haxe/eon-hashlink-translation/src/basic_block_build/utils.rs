@@ -143,9 +143,7 @@ pub fn build_basic_block_infos(
 ) -> TranspileResult<Vec<BBInfo>> {
     let mut out: Vec<BBInfo> = vec![Default::default(); spans.spans.len()];
 
-    for span_index in 0..spans.spans.len() {
-        let span = &spans.spans[span_index];
-
+    for (span_index, span) in spans.spans.iter().enumerate() {
         // We need to get the list of instruction indexes that contain a branch instruction
         // with this basic block as the target so we can deduce the above information
         //

@@ -33,8 +33,8 @@ use crate::opcode_translators::*;
 use crate::utils::offset_from;
 use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
-    BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex, GlobalIndex, IntegerIndex,
-    RegisterIndex, StringIndex, TypeIndex, ValueIndex,
+    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;
@@ -280,7 +280,23 @@ pub fn translate_opcode(
                 .map(|v| ValueIndex(v as usize))
                 .collect();
 
-            let new_op = translate_call(old_op, assigns, function, fn_params).unwrap();
+            let new_op = if let Some(trap_handler) = spans.spans[bb_index].trap_handler {
+                let (continuation, exception_target) =
+                    get_invoke_branches(spans, op_index, trap_handler);
+
+                translate_invoke(
+                    old_op,
+                    assigns,
+                    function,
+                    fn_params,
+                    continuation,
+                    exception_target,
+                )
+                .unwrap()
+            } else {
+                translate_call(old_op, assigns, function, fn_params).unwrap()
+            };
+
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -673,17 +689,9 @@ pub fn translate_opcode(
         hashlink::OpCode::OpTrap(params) => {
             let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
 
-            // Get the block for the continuation from entering the try/catch region
-            let continuation = offset_from(op_index, 0).unwrap();
-            let continuation = spans
-                .find_source_span_starting_with(continuation.into())
-                .unwrap();
-
-            // Get the basic block for the exception handler
             let exception_target = offset_from(op_index, params.param_2).unwrap();
-            let exception_target = spans
-                .find_source_span_starting_with(exception_target.into())
-                .unwrap();
+            let (continuation, exception_target) =
+                get_invoke_branches(spans, op_index, exception_target.into());
 
             let new_op = translate_intrinsic_invoke(
                 old_op,
@@ -698,17 +706,9 @@ pub fn translate_opcode(
         hashlink::OpCode::OpEndTrap(_) => {
             let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
 
-            // Get the block for the continuation from entering the try/catch region
-            let continuation = offset_from(op_index, 0).unwrap();
-            let continuation = spans
-                .find_source_span_starting_with(continuation.into())
-                .unwrap();
-
-            // Get the basic block for the exception handler
             let exception_target = spans.spans[bb_index].trap_handler.unwrap();
-            let exception_target = spans
-                .find_source_span_starting_with(exception_target.into())
-                .unwrap();
+            let (continuation, exception_target) =
+                get_invoke_branches(spans, op_index, exception_target);
 
             let new_op = translate_intrinsic_invoke(
                 old_op,
@@ -792,9 +792,39 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
-        hashlink::OpCode::OpThrow(params)
-        | hashlink::OpCode::OpRethrow(params)
-        | hashlink::OpCode::OpNullCheck(params) => {
+        hashlink::OpCode::OpThrow(params) | hashlink::OpCode::OpRethrow(params) => {
+            // Null assignment
+            let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
+
+            // Register index
+            let value = ValueIndex(params.param_1 as usize);
+
+            // The last basic block, as part of our translation, will always be a typically
+            // unreachable block with a single "OpUnreachable"
+            let continuation = spans.last_block_index();
+
+            // Get the basic block for the exception handler
+            let exception_target = spans.spans[bb_index]
+                .trap_handler
+                .map(|v| {
+                    spans
+                        .find_source_span_starting_with(v)
+                        .unwrap_or(spans.last_block_index())
+                })
+                .unwrap_or(spans.last_block_index());
+
+            let new_op = translate_intrinsic_invoke(
+                old_op,
+                assigns,
+                [value].iter().cloned(),
+                continuation,
+                exception_target,
+            )
+            .unwrap();
+
+            new_fn.basic_blocks[bb_index].ops.push(new_op);
+        }
+        hashlink::OpCode::OpNullCheck(params) => {
             // Null assignment
             let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
 
@@ -802,7 +832,21 @@ pub fn translate_opcode(
             let value = ValueIndex(params.param_1 as usize);
 
             // Translate
-            let new_op = translate_intrinsic(old_op, assigns, [value].iter().cloned()).unwrap();
+            let new_op = if let Some(trap_handler) = spans.spans[bb_index].trap_handler {
+                let (continuation, exception_target) =
+                    get_invoke_branches(spans, op_index, trap_handler);
+
+                translate_intrinsic_invoke(
+                    old_op,
+                    assigns,
+                    [value].iter().cloned(),
+                    continuation,
+                    exception_target,
+                )
+                .unwrap()
+            } else {
+                translate_intrinsic(old_op, assigns, [value].iter().cloned()).unwrap()
+            };
 
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
@@ -971,4 +1015,21 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
     };
+}
+
+fn get_invoke_branches(
+    spans: &BasicBlockSpans,
+    op_index: usize,
+    handler: InstructionIndex,
+) -> (BasicBlockIndex, BasicBlockIndex) {
+    // Get the block for the continuation from entering the try/catch region
+    let continuation = offset_from(op_index, 0).unwrap();
+    let continuation = spans
+        .find_source_span_starting_with(continuation.into())
+        .unwrap();
+
+    // Get the basic block for the exception handler
+    let exception_target = spans.find_source_span_starting_with(handler).unwrap();
+
+    (continuation, exception_target)
 }

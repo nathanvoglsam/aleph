@@ -274,11 +274,13 @@ pub fn calculate_block_reachability(ctx: &mut BuildContext) -> TranspileResult<(
     let mut handled = HashSet::with_capacity(32);
     let mut next = Vec::with_capacity(32);
 
-    for block_being_checked in spans.spans[1..]
+    let real_blocks = spans
+        .spans
         .iter()
         .enumerate()
-        .map(|(i, _)| BasicBlockIndex(i + 1))
-    {
+        .skip(1)
+        .map(|v| BasicBlockIndex(v.0));
+    for block_being_checked in real_blocks {
         // Clear these, ready for the next iteration
         handled.clear();
         next.clear();
@@ -332,7 +334,7 @@ pub fn build_block_write_sets(ctx: &mut BuildContext) {
     let bb_infos = ctx.bb_infos.borrow();
     let old_fn = ctx.old_fn;
 
-    for (i, span) in spans.spans[1..].iter().enumerate().map(|(i, v)| (i + 1, v)) {
+    for (i, span) in spans.spans.iter().enumerate().skip(1) {
         let info = &bb_infos[i];
 
         // Unwrap the bounds and get the sub slice that the span refers to
@@ -439,10 +441,11 @@ pub fn propagate_imports(ctx: &mut BuildContext) {
 
 pub fn resolve_live_sets(ctx: &mut BuildContext) {
     let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let spans = ctx.spans.borrow();
 
     // Merge the imports and writes for each block, skipping the entry block as the entry block is
     // already resolved correctly
-    for i in 1..reg_meta.block_live_set.len() {
+    for (i, _) in spans.spans.iter().enumerate().skip(1) {
         // The live set is the union of the imports and block writes
         let live_set = reg_meta.block_writes[i]
             .union(&reg_meta.block_imports[i])
@@ -472,7 +475,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let bool_type_index = ctx.bool_type_index;
     let void_type_index = ctx.void_type_index;
 
-    for (bb_index, span) in spans.spans.iter().enumerate() {
+    for (bb_index, span) in spans.real_block_iter().enumerate() {
         let lower_bound = &span.begin;
         let upper_bound = &span.end;
 
@@ -567,6 +570,15 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
             );
         }
     }
+
+    // Fill last block with OpUnreachable
+    new_fn
+        .basic_blocks
+        .last_mut()
+        .unwrap()
+        .ops
+        .push(OpCode::OpUnreachable);
+
     Ok(())
 }
 

@@ -194,7 +194,8 @@ pub fn remap_reads(
         | OpCode::OpType(_)
         | OpCode::OpEnumAlloc(_)
         | OpCode::OpAssert
-        | OpCode::OpNop => {}
+        | OpCode::OpNop
+        | OpCode::OpUnreachable => {}
         OpCode::OpCallIntrinsic(v) => {
             for v in v.fn_params.iter_mut() {
                 *v = handle_value_remap(non_reg_values, latest_states, *v);

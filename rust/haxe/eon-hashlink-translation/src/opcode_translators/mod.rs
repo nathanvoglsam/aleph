@@ -34,10 +34,10 @@ use eon_bytecode::indexes::{
 use eon_bytecode::intrinsic::Intrinsic;
 use eon_bytecode::opcode::{
     AllocEnum, Binop, Call, CallClosure, CallIntrinsic, CallMethod, Cast, Comparison, ComparisonFn,
-    CondBranch, FieldLoad, FieldStore, InstanceClosure, InvokeIntrinsic, Load, LoadBool, LoadBytes,
-    LoadEnumField, LoadFloat, LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum, OpCode,
-    ReadMemory, RefData, RefOffset, StaticClosure, Store, StoreEnumField, StoreGlobal, Switch,
-    Unop, VirtualClosure, WriteMemory,
+    CondBranch, FieldLoad, FieldStore, InstanceClosure, Invoke, InvokeIntrinsic, Load, LoadBool,
+    LoadBytes, LoadEnumField, LoadFloat, LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum,
+    OpCode, ReadMemory, RefData, RefOffset, StaticClosure, Store, StoreEnumField, StoreGlobal,
+    Switch, Unop, VirtualClosure, WriteMemory,
 };
 
 /// Translate a load type HashLink opcode into the corresponding form in Eon, built from the
@@ -380,6 +380,40 @@ pub fn translate_call(
         hashlink::OpCode::OpCall3(_) => Some(OpCode::OpCall(inner)),
         hashlink::OpCode::OpCall4(_) => Some(OpCode::OpCall(inner)),
         hashlink::OpCode::OpCallN(_) => Some(OpCode::OpCall(inner)),
+        _ => None,
+    }
+}
+
+/// Translate a call type HashLink opcode into the corresponding form in Eon, built from the
+/// provided values
+///
+/// # Errors
+///
+/// Will return `None` if the source HashLink opcode is not the correct type of instruction for this
+/// function
+///
+pub fn translate_invoke(
+    op: &hashlink::OpCode,
+    assigns: ValueIndex,
+    function: FunctionIndex,
+    fn_params: Vec<ValueIndex>,
+    continuation: BasicBlockIndex,
+    exception_target: BasicBlockIndex,
+) -> Option<OpCode> {
+    let inner = Invoke {
+        assigns,
+        function,
+        fn_params,
+        continuation,
+        exception_target,
+    };
+    match op {
+        hashlink::OpCode::OpCall0(_) => Some(OpCode::OpInvoke(inner)),
+        hashlink::OpCode::OpCall1(_) => Some(OpCode::OpInvoke(inner)),
+        hashlink::OpCode::OpCall2(_) => Some(OpCode::OpInvoke(inner)),
+        hashlink::OpCode::OpCall3(_) => Some(OpCode::OpInvoke(inner)),
+        hashlink::OpCode::OpCall4(_) => Some(OpCode::OpInvoke(inner)),
+        hashlink::OpCode::OpCallN(_) => Some(OpCode::OpInvoke(inner)),
         _ => None,
     }
 }
@@ -870,29 +904,23 @@ pub fn translate_intrinsic_invoke(
     exception_target: BasicBlockIndex,
 ) -> Option<OpCode> {
     let args = args.into_iter();
-    match op {
-        hashlink::OpCode::OpTrap(_) => {
-            let inner = InvokeIntrinsic {
-                assigns,
-                intrinsic: Intrinsic::BeginTrap,
-                fn_params: args.collect(),
-                continuation,
-                exception_target,
-            };
-            Some(OpCode::OpInvokeIntrinsic(inner))
-        }
-        hashlink::OpCode::OpEndTrap(_) => {
-            let inner = InvokeIntrinsic {
-                assigns,
-                intrinsic: Intrinsic::EndTrap,
-                fn_params: args.collect(),
-                continuation,
-                exception_target,
-            };
-            Some(OpCode::OpInvokeIntrinsic(inner))
-        }
+    let intrinsic = match op {
+        hashlink::OpCode::OpTrap(_) => Some(Intrinsic::BeginTrap),
+        hashlink::OpCode::OpEndTrap(_) => Some(Intrinsic::EndTrap),
+        hashlink::OpCode::OpThrow(_) => Some(Intrinsic::Throw),
+        hashlink::OpCode::OpRethrow(_) => Some(Intrinsic::Rethrow),
+        hashlink::OpCode::OpNullCheck(_) => Some(Intrinsic::NullCheck),
+        hashlink::OpCode::OpSafeCast(_) => Some(Intrinsic::SafeCast),
         _ => None,
-    }
+    };
+    let inner = InvokeIntrinsic {
+        assigns,
+        intrinsic: intrinsic?,
+        fn_params: args.collect(),
+        continuation,
+        exception_target,
+    };
+    Some(OpCode::OpInvokeIntrinsic(inner))
 }
 
 /// Translate an unconditional branch type HashLink opcode into the corresponding form in Eon, built

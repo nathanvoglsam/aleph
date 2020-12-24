@@ -106,8 +106,17 @@ impl BasicBlockSpans {
         block_index.into()
     }
 
-    // TODO: Investigate all uses of this function
-    #[deprecated]
+    pub fn last_block_index(&self) -> BasicBlockIndex {
+        (self.spans.len() - 1).into()
+    }
+
+    /// Returns an iterator over all "real" basic blocks. Some basic blocks are generated, but have
+    /// no matching span within the source bytecode so these often need to be skipped in many parts
+    /// of the program as an edge case
+    pub fn real_block_iter(&self) -> impl Iterator<Item = &InstructionSpan> {
+        self.spans[0..self.last_block_index().0].iter()
+    }
+
     pub fn find_source_span_starting_with(&self, i: InstructionIndex) -> Option<BasicBlockIndex> {
         let mut iter = self.spans.iter().enumerate().filter(|(_, v)| v.begin == i);
         if let Some((block, _)) = iter.next() {
@@ -266,15 +275,24 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
                     break;
                 }
 
-                if op.is_throw() {
-                    handle_op_throw(
-                        &mut out,
-                        &mut next_stack,
-                        &mut handled_targets,
-                        &current,
-                        current_i,
-                    );
-
+                if op.throws() {
+                    if op.is_throw() {
+                        handle_op_throw(
+                            &mut out,
+                            &mut next_stack,
+                            &mut handled_targets,
+                            &current,
+                            current_i,
+                        );
+                    } else {
+                        handle_op_maybe_throws(
+                            &mut out,
+                            &mut next_stack,
+                            &mut handled_targets,
+                            &current,
+                            current_i,
+                        );
+                    }
                     // Continue to the next item in the queue
                     break;
                 }
@@ -297,8 +315,26 @@ pub fn compute_bb(old_fn: &hashlink::Function) -> TranspileResult<BasicBlockSpan
         }
     }
 
+    // Insert a dummy span for our "unreachable" marker
+    out.spans.push(InstructionSpan {
+        begin: Default::default(),
+        end: Default::default(),
+        trap_handler: None,
+    });
+    out.predecessors.push(Default::default());
+    let last_block_index = out.last_block_index();
+
     let mut successors: Vec<HashSet<BasicBlockIndex>> = vec![Default::default(); out.spans.len()];
-    for i in 0..out.spans.len() {
+    for (i, span) in out.spans.iter().enumerate() {
+        // If not handling the last block we check if the block ends with an unconditional throw.
+        // We'll need to patch in the unreachable block as a successor
+        if i != out.spans.len() {
+            if old_fn.ops[span.end.0].is_throw() {
+                successors[i].insert(last_block_index);
+                out.predecessors[last_block_index.0].insert(i.into());
+            }
+        }
+
         // Mark the current block as a successor to all it's successors
         for predecessor in out.predecessors[i].iter().cloned() {
             successors[predecessor.0].insert(BasicBlockIndex(i));
@@ -357,9 +393,6 @@ fn handle_op_call(
     current: &NextItem,
     current_i: usize,
 ) {
-    // The target instruction index for this "branch"
-    let target = InstructionIndex(current_i + 1);
-
     // As this terminates a block we also should emit a span for the block we just
     // created.
     let block = out.insert_span(current, current_i.into());
@@ -368,7 +401,7 @@ fn handle_op_call(
         next_stack.push(current.next_popped(block, trap_handler));
     }
 
-    next_stack.push(current.next(block, target));
+    next_stack.push(current.next(block, InstructionIndex(current_i + 1)));
     mark_handled(handled_targets, current, block);
 }
 
@@ -387,6 +420,25 @@ fn handle_op_throw(
         next_stack.push(current.next_popped(block, trap_handler));
     }
 
+    mark_handled(handled_targets, current, block);
+}
+
+fn handle_op_maybe_throws(
+    out: &mut BasicBlockSpans,
+    next_stack: &mut Vec<NextItem>,
+    handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
+    current: &NextItem,
+    current_i: usize,
+) {
+    // As this terminates a block we also should emit a span for the block we just
+    // created.
+    let block = out.insert_span(current, current_i.into());
+
+    if let Some(trap_handler) = current.trap_stack.last().cloned() {
+        next_stack.push(current.next_popped(block, trap_handler));
+    }
+
+    next_stack.push(current.next(block, InstructionIndex(current_i + 1)));
     mark_handled(handled_targets, current, block);
 }
 
