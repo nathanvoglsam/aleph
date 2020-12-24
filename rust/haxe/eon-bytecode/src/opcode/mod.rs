@@ -31,6 +31,7 @@ use crate::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
+use crate::intrinsic::Intrinsic;
 use crate::module::Module;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
@@ -354,6 +355,34 @@ impl CallClosure {
     }
 }
 
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct CallIntrinsic {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The intrinsic function to call
+    pub intrinsic: Intrinsic,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+}
+
+impl CallIntrinsic {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} {}({})",
+            mnemonic,
+            self.assigns.0,
+            self.intrinsic.mnemonic(),
+            args
+        )
+    }
+}
+
 /// Layout for a function call. Our representation collapses HashLink's Call0, Call1, ..., etc into
 /// a single representation as I don't see any benefit to this.
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
@@ -463,6 +492,42 @@ impl InvokeClosure {
             mnemonic,
             self.assigns.0,
             self.closure.0,
+            args,
+            self.continuation.0,
+            self.exception_target.0
+        )
+    }
+}
+
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct InvokeIntrinsic {
+    /// SSA value to store the result of the operation into
+    pub assigns: ValueIndex,
+
+    /// The intrinsic to call
+    pub intrinsic: Intrinsic,
+
+    /// The list of function arguments
+    pub fn_params: Vec<ValueIndex>,
+
+    /// The target basic block if the call does not throw
+    pub continuation: BasicBlockIndex,
+
+    /// The target basic block if the call throws an exception
+    pub exception_target: BasicBlockIndex,
+}
+
+impl InvokeIntrinsic {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        let mut args = String::new();
+        for p in &self.fn_params {
+            write!(&mut args, "%{}, ", p.0).unwrap();
+        }
+        format!(
+            "{} %{} {}({}) cont ${} unwind ${}",
+            mnemonic,
+            self.assigns.0,
+            self.intrinsic.mnemonic(),
             args,
             self.continuation.0,
             self.exception_target.0
@@ -977,9 +1042,11 @@ pub enum OpCode {
     OpCall(Call),
     OpCallMethod(CallMethod),
     OpCallClosure(CallClosure),
+    OpCallIntrinsic(CallIntrinsic),
     OpInvoke(Invoke),
     OpInvokeMethod(InvokeMethod),
     OpInvokeClosure(InvokeClosure),
+    OpInvokeIntrinsic(InvokeIntrinsic),
 
     // No idea what the specifics of these are, but I'm guessing allocate closures
     OpStaticClosure(StaticClosure),
@@ -1163,6 +1230,8 @@ impl OpCode {
             OpCode::OpRetVoid => None,
             OpCode::OpThrowInvoke(_) => None,
             OpCode::OpRethrowInvoke(_) => None,
+            OpCode::OpCallIntrinsic(v) => Some(v.assigns),
+            OpCode::OpInvokeIntrinsic(v) => Some(v.assigns),
         }
     }
 
@@ -1269,6 +1338,8 @@ impl OpCode {
             OpCode::OpRetVoid => self.get_mnemonic().to_string(),
             OpCode::OpThrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpRethrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpCallIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpInvokeIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
         }
     }
 
@@ -1371,6 +1442,8 @@ impl OpCode {
             OpCode::OpInvokeClosure(_) => "invoke_closure",
             OpCode::OpThrowInvoke(_) => "throw_invoke",
             OpCode::OpRethrowInvoke(_) => "rethrow_invoke",
+            OpCode::OpCallIntrinsic(_) => "call_intrinsic",
+            OpCode::OpInvokeIntrinsic(_) => "invoke_intrinsic",
         }
     }
 }
