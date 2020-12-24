@@ -1066,6 +1066,12 @@ pub enum OpCode {
     OpRefData(RefData),
     OpRefOffset(RefOffset),
 
+    // Special instruction for marking the instruction, and any following instructions in the block,
+    // as unreachable.
+    //
+    // The actual execution semantics of this instruction are undefined
+    OpUnreachable,
+
     // Noop
     OpNop,
 }
@@ -1156,6 +1162,7 @@ impl OpCode {
             OpCode::OpRetVoid => None,
             OpCode::OpCallIntrinsic(v) => Some(v.assigns),
             OpCode::OpInvokeIntrinsic(v) => Some(v.assigns),
+            OpCode::OpUnreachable => None,
         }
     }
 
@@ -1254,6 +1261,7 @@ impl OpCode {
             OpCode::OpRetVoid => self.get_mnemonic().to_string(),
             OpCode::OpCallIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpInvokeIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpUnreachable => self.get_mnemonic().to_string(),
         }
     }
 
@@ -1348,6 +1356,7 @@ impl OpCode {
             OpCode::OpInvokeClosure(_) => "invoke_closure",
             OpCode::OpCallIntrinsic(_) => "call_intrinsic",
             OpCode::OpInvokeIntrinsic(_) => "invoke_intrinsic",
+            OpCode::OpUnreachable => "unreachable",
         }
     }
 }
