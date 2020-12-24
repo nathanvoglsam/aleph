@@ -39,6 +39,12 @@ pub enum Intrinsic {
     /// to do so
     SafeCast,
 
+    /// Attempts to cast a type from one value to another, triggering UB if it is not possible
+    /// TODO: I really don't like the idea of this intrinsic as it has a very, very narrow reason to
+    ///       exist. This intrinsic only exists for cases when two values are statically guaranteed
+    ///       to have compatible types. This should be replaced with static analysis
+    UnsafeCast,
+
     /// Marks when an exception handler comes into scope (needed for managing sjlj exceptions)
     BeginTrap,
 
@@ -51,6 +57,10 @@ pub enum Intrinsic {
     /// Call used for rethrowing an exception when inside an exception handler so it holds on to the
     /// stack trace from the previous exception
     Rethrow,
+
+    /// Intrinsic function for assigning a value with the exception that has been thrown inside an
+    /// exception handler
+    ReceiveException,
 }
 
 impl Intrinsic {
@@ -58,10 +68,12 @@ impl Intrinsic {
         match self {
             Intrinsic::NullCheck => "@eon.null_check",
             Intrinsic::SafeCast => "@eon.safe_cast",
+            Intrinsic::UnsafeCast => "@eon.unsafe_cast",
             Intrinsic::BeginTrap => "@eon.begin_trap",
             Intrinsic::EndTrap => "@eon.end_trap",
             Intrinsic::Throw => "@eon.throw",
             Intrinsic::Rethrow => "@eon.rethrow",
+            Intrinsic::ReceiveException => "@eon.receive_exception",
         }
     }
 }

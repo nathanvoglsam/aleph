@@ -535,25 +535,6 @@ impl InvokeIntrinsic {
     }
 }
 
-/// Layout for `OpThrowInvoke` and `OpRethrowInvoke`
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct ThrowInvoke {
-    /// SSA value to store the result of the operation into
-    pub exception: ValueIndex,
-
-    /// The exception handler to jump to
-    pub exception_target: BasicBlockIndex,
-}
-
-impl ThrowInvoke {
-    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!(
-            "{} %{} unwind ${}",
-            mnemonic, self.exception.0, self.exception_target.0
-        )
-    }
-}
-
 /// Layout for the switch instruction.
 ///
 /// HashLink's encoding represents a jump table where the instruction encodes a list of instruction
@@ -972,41 +953,6 @@ impl StoreEnumField {
     }
 }
 
-// TODO: Remove this
-/// Layout for `OpSetEnumField`
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct Trap {
-    /// The basic block index to jump to if an exception is thrown
-    pub destination: BasicBlockIndex,
-}
-
-impl Trap {
-    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!("{} ${}", mnemonic, self.destination.0)
-    }
-}
-
-/// Layout for `OpReceiveException`
-///
-/// This instruction *must* be the first instruction of an exception handling basic block. It serves
-/// to assign the SSA value that holds the exception value.
-#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
-pub struct ReceiveException {
-    /// The SSA value that should be assigned with the value of the exception if the handler block
-    /// is jumped to
-    pub assigns: ValueIndex,
-}
-
-impl ReceiveException {
-    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!("{} %{}", mnemonic, self.assigns.0)
-    }
-}
-
-fn bool_opcode_dump(v: &bool, _: &Module, mnemonic: &str) -> String {
-    format!("{} {}", mnemonic, v)
-}
-
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
@@ -1085,19 +1031,7 @@ pub enum OpCode {
     OpToInt(Cast),
 
     // Coercions opcodes
-    OpSafeCast(Cast),
-    OpUnsafeCast(Cast),
     OpToVirtual(Cast),
-
-    // Exception opcodes
-    OpThrow(ValueIndex),
-    OpThrowInvoke(ThrowInvoke),
-    OpRethrow(ValueIndex),
-    OpRethrowInvoke(ThrowInvoke),
-    OpTrap(Trap),    // TODO: Remove these
-    OpEndTrap(bool), // TODO: Remove these
-    OpReceiveException(ReceiveException),
-    OpNullCheck(ValueIndex),
 
     // Bytes section reading opcodes
     OpGetI8(ReadMemory),
@@ -1193,15 +1127,7 @@ impl OpCode {
             OpCode::OpToSFloat(v) => Some(v.assigns),
             OpCode::OpToUFloat(v) => Some(v.assigns),
             OpCode::OpToInt(v) => Some(v.assigns),
-            OpCode::OpSafeCast(v) => Some(v.assigns),
-            OpCode::OpUnsafeCast(v) => Some(v.assigns),
             OpCode::OpToVirtual(v) => Some(v.assigns),
-            OpCode::OpThrow(_) => None,
-            OpCode::OpRethrow(_) => None,
-            OpCode::OpTrap(_) => None,
-            OpCode::OpEndTrap(_) => None,
-            OpCode::OpReceiveException(v) => Some(v.assigns),
-            OpCode::OpNullCheck(_) => None,
             OpCode::OpGetI8(v) => Some(v.assigns),
             OpCode::OpGetI16(v) => Some(v.assigns),
             OpCode::OpGetMem(v) => Some(v.assigns),
@@ -1228,8 +1154,6 @@ impl OpCode {
             OpCode::OpRefOffset(v) => Some(v.assigns),
             OpCode::OpNop => None,
             OpCode::OpRetVoid => None,
-            OpCode::OpThrowInvoke(_) => None,
-            OpCode::OpRethrowInvoke(_) => None,
             OpCode::OpCallIntrinsic(v) => Some(v.assigns),
             OpCode::OpInvokeIntrinsic(v) => Some(v.assigns),
         }
@@ -1301,15 +1225,7 @@ impl OpCode {
             OpCode::OpToSFloat(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpToUFloat(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpToInt(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpSafeCast(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpUnsafeCast(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpToVirtual(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpThrow(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpRethrow(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpTrap(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpEndTrap(v) => bool_opcode_dump(v, module, self.get_mnemonic()),
-            OpCode::OpReceiveException(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpNullCheck(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpGetI8(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpGetI16(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpGetMem(v) => v.opcode_dump(module, self.get_mnemonic()),
@@ -1336,8 +1252,6 @@ impl OpCode {
             OpCode::OpRefOffset(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpNop => self.get_mnemonic().to_string(),
             OpCode::OpRetVoid => self.get_mnemonic().to_string(),
-            OpCode::OpThrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
-            OpCode::OpRethrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpCallIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpInvokeIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
         }
@@ -1402,15 +1316,7 @@ impl OpCode {
             OpCode::OpToSFloat(_) => "to_sfloat",
             OpCode::OpToUFloat(_) => "to_ufloat",
             OpCode::OpToInt(_) => "to_int",
-            OpCode::OpSafeCast(_) => "safe_cast",
-            OpCode::OpUnsafeCast(_) => "unsafe_cast",
             OpCode::OpToVirtual(_) => "to_virtual",
-            OpCode::OpThrow(_) => "throw",
-            OpCode::OpRethrow(_) => "rethrow",
-            OpCode::OpTrap(_) => "trap",
-            OpCode::OpEndTrap(_) => "end_trap",
-            OpCode::OpReceiveException(_) => "receive_exception",
-            OpCode::OpNullCheck(_) => "null_check",
             OpCode::OpGetI8(_) => "get_i8",
             OpCode::OpGetI16(_) => "get_i16",
             OpCode::OpGetMem(_) => "get_mem",
@@ -1440,8 +1346,6 @@ impl OpCode {
             OpCode::OpInvoke(_) => "invoke",
             OpCode::OpInvokeMethod(_) => "invoke_method",
             OpCode::OpInvokeClosure(_) => "invoke_closure",
-            OpCode::OpThrowInvoke(_) => "throw_invoke",
-            OpCode::OpRethrowInvoke(_) => "rethrow_invoke",
             OpCode::OpCallIntrinsic(_) => "call_intrinsic",
             OpCode::OpInvokeIntrinsic(_) => "invoke_intrinsic",
         }
