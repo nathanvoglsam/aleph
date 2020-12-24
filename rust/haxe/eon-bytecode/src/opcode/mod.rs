@@ -195,7 +195,7 @@ pub struct LoadEnumField {
 impl LoadEnumField {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{} %{}.c_{}.f_{}",
+            "{} %{} %{}.c{}.{}",
             mnemonic, self.assigns.0, self.source.0, self.constructor.0, self.field_index.0
         )
     }
@@ -540,7 +540,7 @@ pub struct FieldLoad {
 impl FieldLoad {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{} %{}.f_{}",
+            "{} %{} %{}.{}",
             mnemonic, self.assigns.0, self.object.0, self.field.0
         )
     }
@@ -562,7 +562,7 @@ pub struct FieldStore {
 impl FieldStore {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{}.f_{} %{}",
+            "{} %{}.{} %{}",
             mnemonic, self.object.0, self.field.0, self.source.0
         )
     }
@@ -732,7 +732,7 @@ pub struct VirtualClosure {
 impl VirtualClosure {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{} %{}.f_{}",
+            "{} %{} %{}.{}",
             mnemonic, self.assigns.0, self.object.0, self.field.0
         )
     }
@@ -818,7 +818,7 @@ impl MakeEnum {
             write!(&mut table, "%{}, ", a.0).unwrap();
         }
         format!(
-            "{} %{} c_{}({})",
+            "{} %{} c{}({})",
             mnemonic, self.assigns.0, self.constructor.0, table
         )
     }
@@ -836,7 +836,7 @@ pub struct AllocEnum {
 
 impl AllocEnum {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!("{} %{} c_{}", mnemonic, self.assigns.0, self.constructor.0)
+        format!("{} %{} c{}", mnemonic, self.assigns.0, self.constructor.0)
     }
 }
 
@@ -901,7 +901,7 @@ pub struct StoreEnumField {
 impl StoreEnumField {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{}.f_{} %{}",
+            "{} %{}.{} %{}",
             mnemonic, self.target.0, self.field.0, self.source.0
         )
     }
