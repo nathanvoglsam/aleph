@@ -382,7 +382,12 @@ impl Invoke {
         }
         format!(
             "{} %{} fn[{}]({}) cont ${} unwind ${}",
-            mnemonic, self.assigns.0, self.function.0, args, self.continuation.0, self.exception_target.0
+            mnemonic,
+            self.assigns.0,
+            self.function.0,
+            args,
+            self.continuation.0,
+            self.exception_target.0
         )
     }
 }
@@ -417,7 +422,13 @@ impl InvokeMethod {
         }
         format!(
             "{} %{} %{} fn[{}]({}) cont ${} unwind ${}",
-            mnemonic, self.assigns.0, self.object.0, self.function.0, args, self.continuation.0, self.exception_target.0
+            mnemonic,
+            self.assigns.0,
+            self.object.0,
+            self.function.0,
+            args,
+            self.continuation.0,
+            self.exception_target.0
         )
     }
 }
@@ -449,7 +460,12 @@ impl InvokeClosure {
         }
         format!(
             "{} %{} %{}({}) cont ${} unwind ${}",
-            mnemonic, self.assigns.0, self.closure.0, args, self.continuation.0, self.exception_target.0
+            mnemonic,
+            self.assigns.0,
+            self.closure.0,
+            args,
+            self.continuation.0,
+            self.exception_target.0
         )
     }
 }
@@ -466,7 +482,10 @@ pub struct ThrowInvoke {
 
 impl ThrowInvoke {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!("{} %{} unwind ${}", mnemonic, self.exception.0, self.exception_target.0)
+        format!(
+            "{} %{} unwind ${}",
+            mnemonic, self.exception.0, self.exception_target.0
+        )
     }
 }
 

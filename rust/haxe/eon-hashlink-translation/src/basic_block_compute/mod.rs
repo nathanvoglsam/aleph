@@ -106,6 +106,8 @@ impl BasicBlockSpans {
         block_index.into()
     }
 
+    // TODO: Investigate all uses of this function
+    #[deprecated]
     pub fn find_source_span_starting_with(&self, i: InstructionIndex) -> Option<BasicBlockIndex> {
         let mut iter = self.spans.iter().enumerate().filter(|(_, v)| v.begin == i);
         if let Some((block, _)) = iter.next() {
@@ -125,21 +127,29 @@ struct NextItem {
 }
 
 impl NextItem {
-    fn next(&self, predecessor: BasicBlockIndex, start: usize) -> NextItem {
+    fn next(&self, predecessor: BasicBlockIndex, start: InstructionIndex) -> NextItem {
         Self {
             predecessor: Some(predecessor),
-            start,
+            start: start.into(),
             trap_stack: self.trap_stack.clone(),
         }
     }
 
-    fn next_popped(&self, predecessor: BasicBlockIndex, start: usize) -> NextItem {
+    fn next_no_predecessor(&self, start: InstructionIndex) -> NextItem {
+        Self {
+            predecessor: None,
+            start: start.into(),
+            trap_stack: self.trap_stack.clone(),
+        }
+    }
+
+    fn next_popped(&self, predecessor: BasicBlockIndex, start: InstructionIndex) -> NextItem {
         let mut trap_stack = self.trap_stack.clone();
         trap_stack.pop();
 
         Self {
             predecessor: Some(predecessor),
-            start,
+            start: start.into(),
             trap_stack,
         }
     }
@@ -147,7 +157,7 @@ impl NextItem {
     fn next_pushed(
         &self,
         predecessor: BasicBlockIndex,
-        start: usize,
+        start: InstructionIndex,
         handler: InstructionIndex,
     ) -> NextItem {
         let mut trap_stack = self.trap_stack.clone();
@@ -155,7 +165,7 @@ impl NextItem {
 
         Self {
             predecessor: Some(predecessor),
-            start,
+            start: start.into(),
             trap_stack,
         }
     }
@@ -314,7 +324,11 @@ fn handle_op_trap(
     // created.
     let block = out.insert_span(current, current_i.into());
 
-    next_stack.push(current.next_pushed(block, target.0, handler));
+    // Push the trap handler but with not predecessor so we guarantee that the trap handler will
+    // have a basic block, even if it is unreachable
+    next_stack.push(current.next_no_predecessor(handler));
+
+    next_stack.push(current.next_pushed(block, target, handler));
     mark_handled(handled_targets, current, block);
 }
 
@@ -332,7 +346,7 @@ fn handle_op_end_trap(
     // created.
     let block = out.insert_span(current, current_i.into());
 
-    next_stack.push(current.next_popped(block, target.0));
+    next_stack.push(current.next_popped(block, target));
     mark_handled(handled_targets, current, block);
 }
 
@@ -351,10 +365,10 @@ fn handle_op_call(
     let block = out.insert_span(current, current_i.into());
 
     if let Some(trap_handler) = current.trap_stack.last().cloned() {
-        next_stack.push(current.next_popped(block, trap_handler.0));
+        next_stack.push(current.next_popped(block, trap_handler));
     }
 
-    next_stack.push(current.next(block, target.0));
+    next_stack.push(current.next(block, target));
     mark_handled(handled_targets, current, block);
 }
 
@@ -370,7 +384,7 @@ fn handle_op_throw(
     let block = out.insert_span(current, current_i.into());
 
     if let Some(trap_handler) = current.trap_stack.last().cloned() {
-        next_stack.push(current.next_popped(block, trap_handler.0));
+        next_stack.push(current.next_popped(block, trap_handler));
     }
 
     mark_handled(handled_targets, current, block);
@@ -391,7 +405,7 @@ fn handle_terminator(
     let targets = OpCodeBranchTargetIter::new(old_fn, current_i);
     if let Some(targets) = targets {
         for target in targets {
-            next_stack.push(current.next(block, target?.0));
+            next_stack.push(current.next(block, target?));
         }
     }
 

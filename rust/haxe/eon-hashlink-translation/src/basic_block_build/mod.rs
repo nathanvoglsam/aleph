@@ -329,12 +329,10 @@ pub fn build_block_write_sets(ctx: &mut BuildContext) {
     let mut reg_meta = ctx.reg_meta.borrow_mut();
     let spans = ctx.spans.borrow();
     let bb_infos = ctx.bb_infos.borrow();
-    let immediate_predecessors = &spans.predecessors;
     let old_fn = ctx.old_fn;
 
     for (i, span) in spans.spans[1..].iter().enumerate().map(|(i, v)| (i + 1, v)) {
         let info = &bb_infos[i];
-        let predecessors = &immediate_predecessors[i];
 
         // Unwrap the bounds and get the sub slice that the span refers to
         let lower_bound = span.begin.0;
