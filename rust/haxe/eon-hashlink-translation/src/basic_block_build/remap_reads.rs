@@ -209,6 +209,16 @@ pub fn remap_reads(
         OpCode::OpRethrowInvoke(v) => {
             v.exception = handle_value_remap(non_reg_values, latest_states, v.exception);
         }
+        OpCode::OpCallIntrinsic(v) => {
+            for v in v.fn_params.iter_mut() {
+                *v = handle_value_remap(non_reg_values, latest_states, *v);
+            }
+        }
+        OpCode::OpInvokeIntrinsic(v) => {
+            for v in v.fn_params.iter_mut() {
+                *v = handle_value_remap(non_reg_values, latest_states, *v);
+            }
+        }
     }
 }
 

@@ -80,9 +80,7 @@ impl<'a> Iterator for OpCodeBranchTargetIter<'a> {
             hashlink::OpCode::OpSwitch(op) => {
                 let offset = match self.branch_index.cmp(&op.extra.len()) {
                     Ordering::Less => op.extra[self.branch_index],
-                    Ordering::Equal => {
-                        0
-                    }
+                    Ordering::Equal => 0,
                     Ordering::Greater => {
                         return None;
                     }
