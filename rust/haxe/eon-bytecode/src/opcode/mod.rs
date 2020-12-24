@@ -367,6 +367,9 @@ pub struct Invoke {
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
 
+    /// The target basic block if the call does not throw
+    pub continuation: BasicBlockIndex,
+
     /// The target basic block if the call throws an exception
     pub exception_target: BasicBlockIndex,
 }
@@ -378,8 +381,8 @@ impl Invoke {
             write!(&mut args, "%{}, ", p.0).unwrap();
         }
         format!(
-            "{} %{} fn[{}]({}) unwind ${}",
-            mnemonic, self.assigns.0, self.function.0, args, self.exception_target.0
+            "{} %{} fn[{}]({}) cont ${} unwind ${}",
+            mnemonic, self.assigns.0, self.function.0, args, self.continuation.0, self.exception_target.0
         )
     }
 }
@@ -399,6 +402,9 @@ pub struct InvokeMethod {
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
 
+    /// The target basic block if the call does not throw
+    pub continuation: BasicBlockIndex,
+
     /// The target basic block if the call throws an exception
     pub exception_target: BasicBlockIndex,
 }
@@ -410,8 +416,8 @@ impl InvokeMethod {
             write!(&mut args, "%{}, ", p.0).unwrap();
         }
         format!(
-            "{} %{} %{} fn[{}]({}) unwind ${}",
-            mnemonic, self.assigns.0, self.object.0, self.function.0, args, self.exception_target.0
+            "{} %{} %{} fn[{}]({}) cont ${} unwind ${}",
+            mnemonic, self.assigns.0, self.object.0, self.function.0, args, self.continuation.0, self.exception_target.0
         )
     }
 }
@@ -428,6 +434,9 @@ pub struct InvokeClosure {
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
 
+    /// The target basic block if the call does not throw
+    pub continuation: BasicBlockIndex,
+
     /// The target basic block if the call throws an exception
     pub exception_target: BasicBlockIndex,
 }
@@ -439,9 +448,25 @@ impl InvokeClosure {
             write!(&mut args, "%{}, ", p.0).unwrap();
         }
         format!(
-            "{} %{} %{}({}) unwind ${}",
-            mnemonic, self.assigns.0, self.closure.0, args, self.exception_target.0
+            "{} %{} %{}({}) cont ${} unwind ${}",
+            mnemonic, self.assigns.0, self.closure.0, args, self.continuation.0, self.exception_target.0
         )
+    }
+}
+
+/// Layout for `OpThrowInvoke` and `OpRethrowInvoke`
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct ThrowInvoke {
+    /// SSA value to store the result of the operation into
+    pub exception: ValueIndex,
+
+    /// The exception handler to jump to
+    pub exception_target: BasicBlockIndex,
+}
+
+impl ThrowInvoke {
+    pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
+        format!("{} %{} unwind ${}", mnemonic, self.exception.0, self.exception_target.0)
     }
 }
 
@@ -980,7 +1005,9 @@ pub enum OpCode {
 
     // Exception opcodes
     OpThrow(ValueIndex),
+    OpThrowInvoke(ThrowInvoke),
     OpRethrow(ValueIndex),
+    OpRethrowInvoke(ThrowInvoke),
     OpTrap(Trap),    // TODO: Remove these
     OpEndTrap(bool), // TODO: Remove these
     OpReceiveException(ReceiveException),
@@ -1115,6 +1142,8 @@ impl OpCode {
             OpCode::OpRefOffset(v) => Some(v.assigns),
             OpCode::OpNop => None,
             OpCode::OpRetVoid => None,
+            OpCode::OpThrowInvoke(_) => None,
+            OpCode::OpRethrowInvoke(_) => None,
         }
     }
 
@@ -1219,6 +1248,8 @@ impl OpCode {
             OpCode::OpRefOffset(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpNop => self.get_mnemonic().to_string(),
             OpCode::OpRetVoid => self.get_mnemonic().to_string(),
+            OpCode::OpThrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
+            OpCode::OpRethrowInvoke(v) => v.opcode_dump(module, self.get_mnemonic()),
         }
     }
 
@@ -1319,6 +1350,8 @@ impl OpCode {
             OpCode::OpInvoke(_) => "invoke",
             OpCode::OpInvokeMethod(_) => "invoke_method",
             OpCode::OpInvokeClosure(_) => "invoke_closure",
+            OpCode::OpThrowInvoke(_) => "throw_invoke",
+            OpCode::OpRethrowInvoke(_) => "rethrow_invoke",
         }
     }
 }

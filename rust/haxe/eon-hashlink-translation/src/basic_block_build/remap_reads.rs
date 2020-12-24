@@ -203,6 +203,12 @@ pub fn remap_reads(
         | OpCode::OpEnumAlloc(_)
         | OpCode::OpAssert
         | OpCode::OpNop => {}
+        OpCode::OpThrowInvoke(v) => {
+            v.exception = handle_value_remap(non_reg_values, latest_states, v.exception);
+        }
+        OpCode::OpRethrowInvoke(v) => {
+            v.exception = handle_value_remap(non_reg_values, latest_states, v.exception);
+        }
     }
 }
 
