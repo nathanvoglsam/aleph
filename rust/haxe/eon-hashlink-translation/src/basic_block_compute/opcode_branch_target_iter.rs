@@ -81,7 +81,7 @@ impl<'a> Iterator for OpCodeBranchTargetIter<'a> {
                 let offset = match self.branch_index.cmp(&op.extra.len()) {
                     Ordering::Less => op.extra[self.branch_index],
                     Ordering::Equal => {
-                        0 // TODO: Still don't know if i'm supposed to jump to `end`
+                        0
                     }
                     Ordering::Greater => {
                         return None;
