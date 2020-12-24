@@ -671,28 +671,53 @@ pub fn translate_opcode(
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
         hashlink::OpCode::OpTrap(params) => {
-            // See above for explanation
-            let destination = offset_from(op_index, params.param_2).unwrap(); // Apply offset
-            let destination = spans
-                .find_source_span_starting_with(destination.into())
-                .unwrap(); // Find block
-            let new_op = translate_trap(old_op, destination).unwrap();
+            let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
+
+            // Get the block for the continuation from entering the try/catch region
+            let continuation = offset_from(op_index, 0).unwrap();
+            let continuation = spans
+                .find_source_span_starting_with(continuation.into())
+                .unwrap();
+
+            // Get the basic block for the exception handler
+            let exception_target = offset_from(op_index, params.param_2).unwrap();
+            let exception_target = spans
+                .find_source_span_starting_with(exception_target.into())
+                .unwrap();
+
+            let new_op = translate_intrinsic_invoke(
+                old_op,
+                assigns,
+                Vec::new(),
+                continuation,
+                exception_target,
+            )
+            .unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
-        hashlink::OpCode::OpEndTrap(params) => {
-            // The `OpEndTrap` instruction has a boolean value. I currently have no idea
-            // what information it encodes and it looks like the original HashLink JIT
-            // compiler doesn't actually use it. I'm going to hold on to it until I am 100%
-            // confident in the information being useless.
-            //
-            // The interpreter in the Haxe compiler doesn't read the parameter either so I
-            // don't believe it encodes any useful semantics for execution. Maybe it gets
-            // used by the optimizer?
-            //
-            // Either way, this translates the raw integer into a native boolean type.
-            let inner = params.param_1 != 0;
+        hashlink::OpCode::OpEndTrap(_) => {
+            let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
 
-            let new_op = translate_end_trap(old_op, inner).unwrap();
+            // Get the block for the continuation from entering the try/catch region
+            let continuation = offset_from(op_index, 0).unwrap();
+            let continuation = spans
+                .find_source_span_starting_with(continuation.into())
+                .unwrap();
+
+            // Get the basic block for the exception handler
+            let exception_target = spans.spans[bb_index].trap_handler.unwrap();
+            let exception_target = spans
+                .find_source_span_starting_with(exception_target.into())
+                .unwrap();
+
+            let new_op = translate_intrinsic_invoke(
+                old_op,
+                assigns,
+                Vec::new(),
+                continuation,
+                exception_target,
+            )
+            .unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 
@@ -770,10 +795,15 @@ pub fn translate_opcode(
         hashlink::OpCode::OpThrow(params)
         | hashlink::OpCode::OpRethrow(params)
         | hashlink::OpCode::OpNullCheck(params) => {
+            // Null assignment
+            let assigns = handle_ssa_write_no_register(new_fn, void_type_index);
+
             // Register index
             let value = ValueIndex(params.param_1 as usize);
 
-            let new_op = translate_value_index(old_op, value).unwrap();
+            // Translate
+            let new_op = translate_intrinsic(old_op, assigns, [value].iter().cloned()).unwrap();
+
             new_fn.basic_blocks[bb_index].ops.push(new_op);
         }
 

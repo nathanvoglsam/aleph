@@ -135,13 +135,8 @@ pub fn remap_reads(
         | OpCode::OpToSFloat(v)
         | OpCode::OpToUFloat(v)
         | OpCode::OpToInt(v)
-        | OpCode::OpSafeCast(v)
-        | OpCode::OpUnsafeCast(v)
         | OpCode::OpToVirtual(v) => {
             v.source = handle_value_remap(non_reg_values, latest_states, v.source);
-        }
-        OpCode::OpThrow(v) | OpCode::OpRethrow(v) | OpCode::OpNullCheck(v) => {
-            *v = handle_value_remap(non_reg_values, latest_states, *v);
         }
         OpCode::OpGetI8(v) | OpCode::OpGetI16(v) | OpCode::OpGetMem(v) | OpCode::OpGetArray(v) => {
             v.source = handle_value_remap(non_reg_values, latest_states, v.source);
@@ -195,20 +190,11 @@ pub fn remap_reads(
         | OpCode::OpGetGlobal(_)
         | OpCode::OpJAlways(_)
         | OpCode::OpRetVoid
-        | OpCode::OpTrap(_)
-        | OpCode::OpEndTrap(_)
-        | OpCode::OpReceiveException(_)
         | OpCode::OpNew(_)
         | OpCode::OpType(_)
         | OpCode::OpEnumAlloc(_)
         | OpCode::OpAssert
         | OpCode::OpNop => {}
-        OpCode::OpThrowInvoke(v) => {
-            v.exception = handle_value_remap(non_reg_values, latest_states, v.exception);
-        }
-        OpCode::OpRethrowInvoke(v) => {
-            v.exception = handle_value_remap(non_reg_values, latest_states, v.exception);
-        }
         OpCode::OpCallIntrinsic(v) => {
             for v in v.fn_params.iter_mut() {
                 *v = handle_value_remap(non_reg_values, latest_states, *v);

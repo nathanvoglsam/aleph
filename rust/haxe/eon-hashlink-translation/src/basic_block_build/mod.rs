@@ -46,8 +46,9 @@ use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::intersect_hash_sets;
 use eon_bytecode::function::{Function, Register, SSAValue};
 use eon_bytecode::indexes::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
+use eon_bytecode::intrinsic::Intrinsic;
 use eon_bytecode::module::Module;
-use eon_bytecode::opcode::{OpCode, Phi, ReceiveException};
+use eon_bytecode::opcode::{CallIntrinsic, OpCode, Phi};
 use eon_bytecode::type_::{Type, TypeFunction};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
@@ -535,11 +536,12 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
                 bb_info.trap_register,
             );
 
-            // Build the instruction layout
-            let receive_exception = ReceiveException { assigns };
-
-            // Package the instruction enum
-            let receive_exception = OpCode::OpReceiveException(receive_exception);
+            let receive_exception = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::ReceiveException,
+                fn_params: Vec::new(),
+            };
+            let receive_exception = OpCode::OpCallIntrinsic(receive_exception);
 
             // Insert the new instruction
             new_fn.basic_blocks[bb_index].ops.push(receive_exception);

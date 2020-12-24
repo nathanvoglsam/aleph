@@ -31,12 +31,12 @@ use crate::drivers::translate_hashlink_module;
 use crate::opcode_translators::{
     translate_alloc_enum, translate_binop, translate_call, translate_call_closure,
     translate_call_field, translate_cast, translate_comp_branch, translate_cond_branch,
-    translate_end_trap, translate_field_load, translate_field_store, translate_instance_closure,
-    translate_load, translate_load_bool, translate_load_bytes, translate_load_enum_field,
-    translate_load_float, translate_load_global, translate_load_int, translate_load_string,
-    translate_load_type, translate_make_enum, translate_no_params, translate_read_memory,
-    translate_ref_data, translate_ref_offset, translate_static_closure, translate_store,
-    translate_store_enum_field, translate_store_global, translate_switch, translate_trap,
+    translate_field_load, translate_field_store, translate_instance_closure, translate_intrinsic,
+    translate_intrinsic_invoke, translate_load, translate_load_bool, translate_load_bytes,
+    translate_load_enum_field, translate_load_float, translate_load_global, translate_load_int,
+    translate_load_string, translate_load_type, translate_make_enum, translate_no_params,
+    translate_read_memory, translate_ref_data, translate_ref_offset, translate_static_closure,
+    translate_store, translate_store_enum_field, translate_store_global, translate_switch,
     translate_unconditional_branch, translate_unop, translate_value_index,
     translate_virtual_closure, translate_write_memory,
 };
@@ -184,8 +184,10 @@ pub fn test_translation_coverage() {
             | hashlink::OpCode::OpToVirtual(_) => translate_cast(&op, vi, vi).unwrap(),
 
             hashlink::OpCode::OpSwitch(_) => translate_switch(&op, vi, Vec::new(), bb).unwrap(),
-            hashlink::OpCode::OpTrap(_) => translate_trap(&op, bb).unwrap(),
-            hashlink::OpCode::OpEndTrap(_) => translate_end_trap(&op, false).unwrap(),
+
+            hashlink::OpCode::OpTrap(_) | hashlink::OpCode::OpEndTrap(_) => {
+                translate_intrinsic_invoke(&op, vi, Vec::new(), bb, bb).unwrap()
+            }
 
             hashlink::OpCode::OpGetI8(_)
             | hashlink::OpCode::OpGetI16(_)
@@ -199,11 +201,15 @@ pub fn test_translation_coverage() {
 
             hashlink::OpCode::OpType(_) => translate_load_type(&op, vi, ti).unwrap(),
 
-            hashlink::OpCode::OpRet(_)
-            | hashlink::OpCode::OpThrow(_)
+            hashlink::OpCode::OpRet(_) | hashlink::OpCode::OpNew(_) => {
+                translate_value_index(&op, vi).unwrap()
+            }
+
+            hashlink::OpCode::OpThrow(_)
             | hashlink::OpCode::OpRethrow(_)
-            | hashlink::OpCode::OpNullCheck(_)
-            | hashlink::OpCode::OpNew(_) => translate_value_index(&op, vi).unwrap(),
+            | hashlink::OpCode::OpNullCheck(_) => {
+                translate_intrinsic(&op, vi, [].iter().cloned()).unwrap()
+            }
 
             hashlink::OpCode::OpArraySize(_)
             | hashlink::OpCode::OpGetType(_)

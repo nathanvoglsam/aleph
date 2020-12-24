@@ -31,12 +31,13 @@ use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
+use eon_bytecode::intrinsic::Intrinsic;
 use eon_bytecode::opcode::{
-    AllocEnum, Binop, Call, CallClosure, CallMethod, Cast, Comparison, ComparisonFn, CondBranch,
-    FieldLoad, FieldStore, InstanceClosure, Load, LoadBool, LoadBytes, LoadEnumField, LoadFloat,
-    LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum, OpCode, ReadMemory, RefData, RefOffset,
-    StaticClosure, Store, StoreEnumField, StoreGlobal, Switch, Trap, Unop, VirtualClosure,
-    WriteMemory,
+    AllocEnum, Binop, Call, CallClosure, CallIntrinsic, CallMethod, Cast, Comparison, ComparisonFn,
+    CondBranch, FieldLoad, FieldStore, InstanceClosure, InvokeIntrinsic, Load, LoadBool, LoadBytes,
+    LoadEnumField, LoadFloat, LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum, OpCode,
+    ReadMemory, RefData, RefOffset, StaticClosure, Store, StoreEnumField, StoreGlobal, Switch,
+    Unop, VirtualClosure, WriteMemory,
 };
 
 /// Translate a load type HashLink opcode into the corresponding form in Eon, built from the
@@ -676,8 +677,22 @@ pub fn translate_cast(
         hashlink::OpCode::OpToSFloat(_) => Some(OpCode::OpToSFloat(inner)),
         hashlink::OpCode::OpToUFloat(_) => Some(OpCode::OpToUFloat(inner)),
         hashlink::OpCode::OpToInt(_) => Some(OpCode::OpToInt(inner)),
-        hashlink::OpCode::OpSafeCast(_) => Some(OpCode::OpSafeCast(inner)),
-        hashlink::OpCode::OpUnsafeCast(_) => Some(OpCode::OpUnsafeCast(inner)),
+        hashlink::OpCode::OpSafeCast(_) => {
+            let inner = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::SafeCast,
+                fn_params: vec![source],
+            };
+            Some(OpCode::OpCallIntrinsic(inner))
+        }
+        hashlink::OpCode::OpUnsafeCast(_) => {
+            let inner = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::UnsafeCast,
+                fn_params: vec![source],
+            };
+            Some(OpCode::OpCallIntrinsic(inner))
+        }
         hashlink::OpCode::OpToVirtual(_) => Some(OpCode::OpToVirtual(inner)),
         _ => None,
     }
@@ -799,10 +814,42 @@ pub fn translate_value_index(op: &hashlink::OpCode, value: ValueIndex) -> Option
     match op {
         hashlink::OpCode::OpNull(_) => Some(OpCode::OpNull(value)),
         hashlink::OpCode::OpRet(_) => Some(OpCode::OpRet(value)),
-        hashlink::OpCode::OpThrow(_) => Some(OpCode::OpThrow(value)),
-        hashlink::OpCode::OpRethrow(_) => Some(OpCode::OpRethrow(value)),
-        hashlink::OpCode::OpNullCheck(_) => Some(OpCode::OpNullCheck(value)),
         hashlink::OpCode::OpNew(_) => Some(OpCode::OpNew(value)),
+        _ => None,
+    }
+}
+
+pub fn translate_intrinsic(
+    op: &hashlink::OpCode,
+    assigns: ValueIndex,
+    args: impl IntoIterator<Item = ValueIndex>,
+) -> Option<OpCode> {
+    let args = args.into_iter();
+    match op {
+        hashlink::OpCode::OpThrow(_) => {
+            let inner = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::Throw,
+                fn_params: args.collect(),
+            };
+            Some(OpCode::OpCallIntrinsic(inner))
+        }
+        hashlink::OpCode::OpRethrow(_) => {
+            let inner = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::Rethrow,
+                fn_params: args.collect(),
+            };
+            Some(OpCode::OpCallIntrinsic(inner))
+        }
+        hashlink::OpCode::OpNullCheck(_) => {
+            let inner = CallIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::NullCheck,
+                fn_params: args.collect(),
+            };
+            Some(OpCode::OpCallIntrinsic(inner))
+        }
         _ => None,
     }
 }
@@ -815,25 +862,35 @@ pub fn translate_value_index(op: &hashlink::OpCode, value: ValueIndex) -> Option
 /// Will return `None` if the source HashLink opcode is not the correct type of instruction for this
 /// function
 ///
-pub fn translate_trap(op: &hashlink::OpCode, destination: BasicBlockIndex) -> Option<OpCode> {
-    let inner = Trap { destination };
+pub fn translate_intrinsic_invoke(
+    op: &hashlink::OpCode,
+    assigns: ValueIndex,
+    args: impl IntoIterator<Item = ValueIndex>,
+    continuation: BasicBlockIndex,
+    exception_target: BasicBlockIndex,
+) -> Option<OpCode> {
+    let args = args.into_iter();
     match op {
-        hashlink::OpCode::OpTrap(_) => Some(OpCode::OpTrap(inner)),
-        _ => None,
-    }
-}
-
-/// Translate an end trap type HashLink opcode into the corresponding form in Eon, built from
-/// the provided values
-///
-/// # Errors
-///
-/// Will return `None` if the source HashLink opcode is not the correct type of instruction for this
-/// function
-///
-pub fn translate_end_trap(op: &hashlink::OpCode, inner: bool) -> Option<OpCode> {
-    match op {
-        hashlink::OpCode::OpEndTrap(_) => Some(OpCode::OpEndTrap(inner)),
+        hashlink::OpCode::OpTrap(_) => {
+            let inner = InvokeIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::BeginTrap,
+                fn_params: args.collect(),
+                continuation,
+                exception_target,
+            };
+            Some(OpCode::OpInvokeIntrinsic(inner))
+        }
+        hashlink::OpCode::OpEndTrap(_) => {
+            let inner = InvokeIntrinsic {
+                assigns,
+                intrinsic: Intrinsic::EndTrap,
+                fn_params: args.collect(),
+                continuation,
+                exception_target,
+            };
+            Some(OpCode::OpInvokeIntrinsic(inner))
+        }
         _ => None,
     }
 }
