@@ -156,8 +156,6 @@ pub fn build_bb(
         }
     };
 
-    // INFO: f_index: 119
-
     // This will check the type signature of the function against the registers the definition says
     // the arguments should be
     type_check_signature(&mut ctx)?;

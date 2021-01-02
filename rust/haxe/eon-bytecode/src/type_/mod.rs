@@ -150,6 +150,27 @@ impl Type {
         }
     }
 
+    /// Returns whether the type is nullable.
+    pub fn is_nullable(&self) -> bool {
+        match self {
+            Type::Bytes => true,
+            Type::Dynamic => true,
+            Type::Array(_) => false,
+            Type::Type => false, // TODO: Double check if this is valid
+            Type::DynObject => true,
+            Type::Function(_) => true,
+            Type::Method(_) => true,
+            Type::Ref(_) => true,
+            Type::Null(_) => true,
+            Type::Obj(_) => true,
+            Type::Struct(_) => true,
+            Type::Virtual(_) => true,
+            Type::Abstract(_) => true,
+            Type::Enum(_) => false, // TODO: Double check if this is valid
+            _ => false,
+        }
+    }
+
     pub fn get_type_function(&self) -> Option<&TypeFunction> {
         match self {
             Type::Function(v) => Some(v),
