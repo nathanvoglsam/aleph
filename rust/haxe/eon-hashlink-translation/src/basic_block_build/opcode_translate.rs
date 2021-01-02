@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::basic_block_build::utils::handle_ssa_write_virtual_register;
 use crate::basic_block_build::{handle_ssa_write, handle_ssa_write_no_register, RegisterData};
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::indexes::InstructionIndex;
@@ -38,7 +39,6 @@ use eon_bytecode::indexes::{
     GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
-use std::collections::HashSet;
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///
@@ -65,7 +65,6 @@ use std::collections::HashSet;
 pub fn translate_opcode(
     new_fn: &mut Function,
     reg_meta: &mut RegisterData,
-    non_reg_values: &mut HashSet<ValueIndex>,
     old_fn: &hashlink::Function,
     spans: &BasicBlockSpans,
     bool_type_index: TypeIndex,
@@ -594,7 +593,12 @@ pub fn translate_opcode(
             // These opcodes get translated to two eon instructions, a OpCmp and OpJTrue/OpJFalse.
             // The OpCmp assigns an SSA value which has no corresponding register in the source code
             // so we need to avoid emitting register information for this value
-            let assigns = handle_ssa_write_no_register(new_fn, bool_type_index);
+            let (assigns_vreg, assigns) = handle_ssa_write_virtual_register(
+                new_fn,
+                &mut reg_meta.virtual_registers,
+                old_fn,
+                bool_type_index,
+            );
 
             // Get the values to read for the comparison. Stores a *register index*
             // for remapping later
@@ -614,15 +618,11 @@ pub fn translate_opcode(
             let comparison = translate_comp_branch(old_op, assigns, lhs, rhs).unwrap();
 
             let inner = CondBranch {
-                check: assigns,
+                check: assigns_vreg.0.into(),
                 success,
                 failure,
             };
             let branch = OpCode::OpJTrue(inner);
-
-            // We've created a special value here that doesn't correspond to an actual register in
-            // the source HashLink bytecode. We need to hold on to this information for later
-            non_reg_values.insert(assigns);
 
             // Add our instructions
             new_fn.basic_blocks[bb_index].ops.push(comparison);

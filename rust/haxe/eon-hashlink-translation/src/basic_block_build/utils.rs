@@ -34,6 +34,7 @@ use crate::utils::is_begin_trap;
 use eon_bytecode::function::{Function, SSAValue};
 use eon_bytecode::indexes::{RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::type_::Type;
+use std::collections::HashMap;
 
 /// Simple function that handles creating and adding SSA values for instructions
 pub fn handle_ssa_phi_import(
@@ -107,6 +108,33 @@ pub fn handle_ssa_write_no_register(new_fn: &mut Function, type_: TypeIndex) -> 
     let value = ValueIndex(new_fn.ssa_values.len());
     new_fn.ssa_values.push(SSAValue { type_ });
     value
+}
+
+/// Simple function that handles creating and adding SSA values for instructions. This is a special
+/// case where some instruction translations emit multiple eon instructions. These translations can
+/// emit SSA values that don't have any mapping to registers and in those cases we should use this
+/// function for creating SSA values with no register mapping
+pub fn handle_ssa_write_virtual_register(
+    new_fn: &mut Function,
+    virtual_registers: &mut HashMap<RegisterIndex, ValueIndex>,
+    old_fn: &hashlink::Function,
+    type_: TypeIndex,
+) -> (RegisterIndex, ValueIndex) {
+    // First we create a virtual register index
+    let virtual_register = old_fn.registers.len() + virtual_registers.len();
+
+    // Now we create a new value index which the register should correspond to
+    let value = new_fn.ssa_values.len();
+
+    // Push the new value in with the provided type
+    new_fn.ssa_values.push(SSAValue { type_ });
+
+    // Insert the new virtual register, asserting that is a newly inserted value
+    debug_assert!(virtual_registers
+        .insert(virtual_register.into(), value.into())
+        .is_none());
+
+    (virtual_register.into(), value.into())
 }
 
 /// A struct that represents the set of information computed from the `get_basic_block_info`

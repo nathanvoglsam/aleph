@@ -54,6 +54,11 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct RegisterData {
+    /// Maps a register index (one that likely doesn't exist in the source HashLink) to the value
+    /// index that represents it. A virtual register by definition only has a single assignment as
+    /// they are generated during the instruction translation and map directly to SSA values
+    pub virtual_registers: HashMap<RegisterIndex, ValueIndex>,
+
     /// Maps an SSA value to a register in the register list
     pub register_map: HashMap<ValueIndex, RegisterIndex>,
 
@@ -73,11 +78,13 @@ pub struct RegisterData {
 
 impl RegisterData {
     pub fn new(block_count: usize) -> Self {
+        let virtual_registers = HashMap::new();
         let register_map = HashMap::new();
         let block_writes = vec![Default::default(); block_count];
         let block_imports = vec![Default::default(); block_count];
         let block_live_set = vec![Default::default(); block_count];
         RegisterData {
+            virtual_registers,
             register_map,
             block_writes,
             block_imports,
@@ -95,7 +102,6 @@ pub struct BuildContext<'a> {
     pub fn_ty: &'a TypeFunction,
     pub bool_type_index: TypeIndex,
     pub void_type_index: TypeIndex,
-    pub non_reg_values: RefCell<HashSet<ValueIndex>>,
     pub reg_meta: RefCell<RegisterData>,
     pub block_reachability: RefCell<Vec<bool>>,
     pub bb_infos: RefCell<Vec<BBInfo>>,
@@ -149,7 +155,6 @@ pub fn build_bb(
             fn_ty,
             bool_type_index,
             void_type_index,
-            non_reg_values: RefCell::new(HashSet::new()),
             reg_meta: RefCell::new(reg_meta),
             block_reachability: RefCell::new(block_reachability),
             bb_infos: RefCell::new(bb_infos),
@@ -456,7 +461,6 @@ pub fn resolve_live_sets(ctx: &mut BuildContext) {
 pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let mut new_fn = ctx.new_fn.borrow_mut();
     let mut reg_meta = ctx.reg_meta.borrow_mut();
-    let mut non_reg_values = ctx.non_reg_values.borrow_mut();
     let spans = ctx.spans.borrow();
     let predecessors = &spans.predecessors;
     let block_reachability = ctx.block_reachability.borrow();
@@ -549,7 +553,6 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
             translate_opcode(
                 &mut new_fn,
                 &mut reg_meta,
-                &mut non_reg_values,
                 old_fn,
                 &spans,
                 bool_type_index,
@@ -629,7 +632,6 @@ pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
     let mut new_fn = ctx.new_fn.borrow_mut();
     let spans = ctx.spans.borrow();
     let reg_meta = ctx.reg_meta.borrow();
-    let non_reg_values = ctx.non_reg_values.borrow();
     let predecessors = &spans.predecessors;
 
     // We allocate reuse this between iterations to save allocating every iteration
@@ -657,7 +659,7 @@ pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {
         // Iterate over every opcode, remapping reads and updating the rolling "latest state" for
         // each register
         for op in bb.ops.iter_mut() {
-            remap_reads(op, &reg_meta, &non_reg_values, &latest_states);
+            remap_reads(op, &reg_meta, &latest_states);
 
             if let Some(write) = op.get_assigned_value() {
                 if let Some(register) = reg_meta.register_map.get(&write) {
