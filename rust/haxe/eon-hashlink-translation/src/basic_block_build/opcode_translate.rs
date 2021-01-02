@@ -784,7 +784,9 @@ pub fn translate_opcode(
 
             let reg_type = old_fn.registers[params.param_1 as usize] as usize;
             let new_op = if reg_type == void_type_index.0 {
-                OpCode::OpRetVoid
+                let (register, _) = handle_ssa_write_virtual_register(new_fn, &mut reg_meta.virtual_registers, old_fn, void_type_index);
+                let value = ValueIndex(register.0);
+                translate_value_index(old_op, value).unwrap()
             } else {
                 let value = ValueIndex(params.param_1 as usize);
                 translate_value_index(old_op, value).unwrap()

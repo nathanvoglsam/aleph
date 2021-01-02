@@ -112,7 +112,6 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             OpCode::OpCmp(op) => self.check_op_cmp(op)?,
             OpCode::OpJAlways(_) => {}
             OpCode::OpRet(_) => {}
-            OpCode::OpRetVoid => {}
             OpCode::OpSwitch(_) => {}
             OpCode::OpPhi(_) => {}
             OpCode::OpToDyn(_) => {}

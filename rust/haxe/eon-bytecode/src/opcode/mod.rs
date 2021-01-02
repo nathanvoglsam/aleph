@@ -1020,7 +1020,6 @@ pub enum OpCode {
 
     OpJAlways(BasicBlockIndex),
     OpRet(ValueIndex),
-    OpRetVoid,
     OpSwitch(Switch),
     OpPhi(Phi),
 
@@ -1159,7 +1158,6 @@ impl OpCode {
             OpCode::OpRefData(v) => Some(v.assigns),
             OpCode::OpRefOffset(v) => Some(v.assigns),
             OpCode::OpNop => None,
-            OpCode::OpRetVoid => None,
             OpCode::OpCallIntrinsic(v) => Some(v.assigns),
             OpCode::OpInvokeIntrinsic(v) => Some(v.assigns),
             OpCode::OpUnreachable => None,
@@ -1258,7 +1256,6 @@ impl OpCode {
             OpCode::OpRefData(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpRefOffset(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpNop => self.get_mnemonic().to_string(),
-            OpCode::OpRetVoid => self.get_mnemonic().to_string(),
             OpCode::OpCallIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpInvokeIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpUnreachable => self.get_mnemonic().to_string(),
@@ -1350,7 +1347,6 @@ impl OpCode {
             OpCode::OpRefData(_) => "ref_data",
             OpCode::OpRefOffset(_) => "ref_offset",
             OpCode::OpNop => "nop",
-            OpCode::OpRetVoid => "ret_void",
             OpCode::OpInvoke(_) => "invoke",
             OpCode::OpInvokeMethod(_) => "invoke_method",
             OpCode::OpInvokeClosure(_) => "invoke_closure",

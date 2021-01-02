@@ -188,7 +188,6 @@ pub fn remap_reads(
         | OpCode::OpStaticClosure(_)
         | OpCode::OpGetGlobal(_)
         | OpCode::OpJAlways(_)
-        | OpCode::OpRetVoid
         | OpCode::OpNew(_)
         | OpCode::OpType(_)
         | OpCode::OpEnumAlloc(_)
