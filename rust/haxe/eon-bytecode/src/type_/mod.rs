@@ -142,6 +142,14 @@ impl Type {
         }
     }
 
+    /// Returns whether the type is a numeric floating point type. (i.e f32, f64)
+    pub fn is_floating_point(&self) -> bool {
+        match self {
+            Type::F32 | Type::F64 => true,
+            _ => false,
+        }
+    }
+
     pub fn get_type_function(&self) -> Option<&TypeFunction> {
         match self {
             Type::Function(v) => Some(v),
