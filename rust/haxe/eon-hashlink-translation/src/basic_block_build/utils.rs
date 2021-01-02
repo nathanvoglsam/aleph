@@ -54,7 +54,9 @@ pub fn handle_ssa_phi_import(
 
     // While this isn't a real write, the basic block should already have this marked as live from
     // an earlier part of the algorithm. If it doesn't then it is likely a bug
-    reg_meta.block_live_set[bb_index].insert(reg, value).unwrap();
+    reg_meta.block_live_set[bb_index]
+        .insert(reg, value)
+        .unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     reg_meta.register_map.insert(value, reg);
@@ -85,7 +87,9 @@ pub fn handle_ssa_write(
     // any more at this stage is an error.
     //
     // Once again, an error here is a bug and so should be surfaced as a panic
-    reg_meta.block_live_set[bb_index].insert(reg, value).unwrap();
+    reg_meta.block_live_set[bb_index]
+        .insert(reg, value)
+        .unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     //
