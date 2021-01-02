@@ -29,9 +29,13 @@
 
 extern crate eon_bytecode as eon;
 
+mod checkers;
 mod error;
 
 #[cfg(test)]
 mod tests;
 
-pub fn check_module(module: &eon::module::Module) -> error::TypeCheckResult<()> {}
+pub use checkers::BasicBlockChecker;
+pub use checkers::FunctionChecker;
+pub use checkers::ModuleChecker;
+pub use checkers::OpChecker;

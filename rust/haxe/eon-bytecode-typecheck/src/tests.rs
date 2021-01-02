@@ -27,17 +27,33 @@
 // SOFTWARE.
 //
 
-use eon::indexes::*;
+use crate::checkers::ModuleChecker;
+use eon_hashlink_translation::translate_hashlink_module;
+use hashlink_bytecode::Code;
+use std::io::BufReader;
+use std::path::PathBuf;
 
-/// Set of all errors that can occur when type checking an eon module
-#[derive(Clone, Debug)]
-pub enum TypeCheckError {
-    InstructionTypeError {
-        function: FunctionIndex,
-        basic_block: BasicBlockIndex,
-        op: OpIndex,
-        reason: String,
-    },
+#[test]
+pub fn test_type_checking() {
+    let crate_root = std::env::var("CARGO_MANIFEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir().unwrap());
+
+    let path = crate_root.join("build.hl");
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(false)
+        .create(false)
+        .open(path)
+        .unwrap();
+
+    let mut file = BufReader::new(file);
+
+    let code = Code::read(&mut file).unwrap();
+
+    let module = translate_hashlink_module(code).unwrap();
+
+    let checker = ModuleChecker::new(&module);
+
+    checker.check().unwrap();
 }
-
-pub type TypeCheckResult<T> = Result<T, TypeCheckError>;

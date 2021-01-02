@@ -27,17 +27,12 @@
 // SOFTWARE.
 //
 
-use eon::indexes::*;
+mod basic_block;
+mod function;
+mod module;
+mod op;
 
-/// Set of all errors that can occur when type checking an eon module
-#[derive(Clone, Debug)]
-pub enum TypeCheckError {
-    InstructionTypeError {
-        function: FunctionIndex,
-        basic_block: BasicBlockIndex,
-        op: OpIndex,
-        reason: String,
-    },
-}
-
-pub type TypeCheckResult<T> = Result<T, TypeCheckError>;
+pub use basic_block::BasicBlockChecker;
+pub use function::FunctionChecker;
+pub use module::ModuleChecker;
+pub use op::OpChecker;

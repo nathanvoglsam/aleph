@@ -46,3 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 eon-bytecode = { path = "../eon-bytecode", version = "0.1.0" }
+
+[dev-dependencies]
+eon-hashlink-translation = { path = "../eon-hashlink-translation", version = "0.1.0" }
+hashlink-bytecode = { path = "../hashlink-bytecode", version = "0.1.0" }

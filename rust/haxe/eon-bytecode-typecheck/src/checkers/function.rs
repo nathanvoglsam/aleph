@@ -27,17 +27,39 @@
 // SOFTWARE.
 //
 
-use eon::indexes::*;
+use crate::checkers::{BasicBlockChecker, ModuleChecker};
+use crate::error::TypeCheckResult;
+use eon::function::Function;
+use eon::indexes::FunctionIndex;
+use eon::module::Module;
 
-/// Set of all errors that can occur when type checking an eon module
-#[derive(Clone, Debug)]
-pub enum TypeCheckError {
-    InstructionTypeError {
-        function: FunctionIndex,
-        basic_block: BasicBlockIndex,
-        op: OpIndex,
-        reason: String,
-    },
+pub struct FunctionChecker<'module, 'module_checker> {
+    pub module_checker: &'module_checker ModuleChecker<'module>,
+    pub function: &'module Function,
+    pub function_index: FunctionIndex,
 }
 
-pub type TypeCheckResult<T> = Result<T, TypeCheckError>;
+impl<'module, 'module_checker> FunctionChecker<'module, 'module_checker> {
+    pub fn new(
+        module_checker: &'module_checker ModuleChecker<'module>,
+        function: &'module eon::function::Function,
+        function_index: FunctionIndex,
+    ) -> Self {
+        Self {
+            module_checker,
+            function,
+            function_index,
+        }
+    }
+
+    pub fn check(&self) -> TypeCheckResult<()> {
+        for (i, basic_block) in self.function.basic_blocks.iter().enumerate() {
+            BasicBlockChecker::new(self, basic_block, i.into()).check()?;
+        }
+        Ok(())
+    }
+
+    pub fn module(&self) -> &'module Module {
+        self.module_checker.module
+    }
+}

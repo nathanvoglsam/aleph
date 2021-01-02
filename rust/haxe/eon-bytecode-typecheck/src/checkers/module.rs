@@ -26,3 +26,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+use crate::checkers::FunctionChecker;
+use crate::error::TypeCheckResult;
+
+pub struct ModuleChecker<'a> {
+    pub module: &'a eon::module::Module,
+}
+
+impl<'a> ModuleChecker<'a> {
+    pub fn new(module: &'a eon::module::Module) -> Self {
+        Self { module }
+    }
+
+    pub fn check(&self) -> TypeCheckResult<()> {
+        for (i, function) in self.module.functions.iter().enumerate() {
+            FunctionChecker::new(self, function, i.into()).check()?;
+        }
+        Ok(())
+    }
+}

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::indexes::{BasicBlockIndex, TypeIndex, ValueIndex, OpIndex};
+use crate::indexes::{BasicBlockIndex, OpIndex, TypeIndex, ValueIndex};
 use crate::opcode::OpCode;
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
