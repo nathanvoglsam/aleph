@@ -27,20 +27,19 @@
 // SOFTWARE.
 //
 
-extern crate hashlink_bytecode as hashlink;
+/// New-type for representing an index into the list of instructions within a hashlink function
+#[repr(transparent)]
+#[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct InstructionIndex(pub usize);
 
-mod basic_block_build;
-mod basic_block_compute;
-mod drivers;
-mod indexes;
-mod utils;
+impl From<usize> for InstructionIndex {
+    fn from(v: usize) -> Self {
+        Self(v)
+    }
+}
 
-pub mod error;
-pub mod opcode_translators;
-pub mod translators;
-
-#[cfg(test)]
-mod tests;
-
-pub use drivers::translate_hashlink_module;
-pub use drivers::transpile_hashlink_function;
+impl Into<usize> for InstructionIndex {
+    fn into(self) -> usize {
+        self.0
+    }
+}

@@ -29,12 +29,13 @@
 
 use crate::basic_block_build::{handle_ssa_write, handle_ssa_write_no_register, RegisterData};
 use crate::basic_block_compute::BasicBlockSpans;
+use crate::indexes::InstructionIndex;
 use crate::opcode_translators::*;
 use crate::utils::offset_from;
 use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
     BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
-    GlobalIndex, InstructionIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
+    GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
 use std::collections::HashSet;

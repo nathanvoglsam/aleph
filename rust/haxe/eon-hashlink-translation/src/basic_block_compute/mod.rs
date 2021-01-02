@@ -31,8 +31,9 @@ mod opcode_branch_target_iter;
 
 use crate::basic_block_compute::opcode_branch_target_iter::OpCodeBranchTargetIter;
 use crate::error::TranspileResult;
+use crate::indexes::InstructionIndex;
 use crate::utils::{is_begin_trap, is_block_terminator};
-use eon_bytecode::indexes::{BasicBlockIndex, InstructionIndex};
+use eon_bytecode::indexes::BasicBlockIndex;
 use std::collections::{HashMap, HashSet};
 
 /// Represents a range of instructions in a function. This span is inclusive, where the range should

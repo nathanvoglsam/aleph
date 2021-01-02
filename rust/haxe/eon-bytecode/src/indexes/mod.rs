@@ -157,20 +157,20 @@ impl Into<usize> for BasicBlockIndex {
     }
 }
 
-/// New-type for representing an index into the list of instructions within a function
+/// New-type for representing an index into the list of opcodes within a function
 #[repr(transparent)]
 #[derive(
     Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
 )]
-pub struct InstructionIndex(pub usize);
+pub struct OpIndex(pub usize);
 
-impl From<usize> for InstructionIndex {
+impl From<usize> for OpIndex {
     fn from(v: usize) -> Self {
         Self(v)
     }
 }
 
-impl Into<usize> for InstructionIndex {
+impl Into<usize> for OpIndex {
     fn into(self) -> usize {
         self.0
     }

@@ -28,8 +28,8 @@
 //
 
 use crate::error::TranspileResult;
+use crate::indexes::InstructionIndex;
 use crate::utils::offset_to_index;
-use eon_bytecode::indexes::InstructionIndex;
 use std::cmp::Ordering;
 
 pub struct OpCodeBranchTargetIter<'a> {
