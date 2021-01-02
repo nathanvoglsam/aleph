@@ -171,7 +171,7 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let assigns_type = &function[op.assigns];
         let assigns_type = &module[assigns_type.type_];
 
-        if assigns_type != &Type::I32 {
+        if !assigns_type.is_integer() {
             return Err(self.instruction_type_error("The target of an OpInt must be an I32 type"));
         }
 
@@ -185,8 +185,10 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let assigns_type = &function[op.assigns];
         let assigns_type = &module[assigns_type.type_];
 
-        if assigns_type != &Type::F64 {
-            return Err(self.instruction_type_error("The target of an OpFloat must be an F64 type"));
+        if !assigns_type.is_floating_point() {
+            return Err(
+                self.instruction_type_error("The target of an OpFloat must be an F64 or F32 type")
+            );
         }
 
         Ok(())

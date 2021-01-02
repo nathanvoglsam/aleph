@@ -150,12 +150,20 @@ impl Type {
         }
     }
 
+    /// Returns whether the type is a numeric integer type. (i.e i32, u16)
+    pub fn is_integer(&self) -> bool {
+        match self {
+            Type::I32 | Type::I64 | Type::U16 | Type::U8 => true,
+            _ => false,
+        }
+    }
+
     /// Returns whether the type is nullable.
     pub fn is_nullable(&self) -> bool {
         match self {
             Type::Bytes => true,
             Type::Dynamic => true,
-            Type::Array(_) => false,
+            Type::Array(_) => true,
             Type::Type => false, // TODO: Double check if this is valid
             Type::DynObject => true,
             Type::Function(_) => true,
