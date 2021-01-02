@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::indexes::{BasicBlockIndex, TypeIndex, ValueIndex};
+use crate::indexes::{BasicBlockIndex, TypeIndex, ValueIndex, OpIndex};
 use crate::opcode::OpCode;
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
@@ -42,6 +42,20 @@ pub struct SSAValue {
 pub struct BasicBlock {
     /// This is just a flat, sequential list of opcodes
     pub ops: Vec<OpCode>,
+}
+
+impl Index<OpIndex> for BasicBlock {
+    type Output = OpCode;
+
+    fn index(&self, index: OpIndex) -> &Self::Output {
+        self.ops.index(index.0)
+    }
+}
+
+impl IndexMut<OpIndex> for BasicBlock {
+    fn index_mut(&mut self, index: OpIndex) -> &mut Self::Output {
+        self.ops.index_mut(index.0)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

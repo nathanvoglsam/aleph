@@ -29,10 +29,13 @@
 
 use crate::constant::Constant;
 use crate::function::Function;
-use crate::indexes::{FunctionIndex, TypeIndex};
+use crate::indexes::{
+    FloatIndex, FunctionIndex, GlobalIndex, IntegerIndex, StringIndex, TypeIndex,
+};
 use crate::native::Native;
 use crate::type_::Type;
 use serde::{Deserialize, Serialize};
+use std::ops::{Index, IndexMut};
 
 pub mod dump;
 
@@ -81,4 +84,88 @@ pub struct Module {
 
     /// Index into the functions table for specifying which function is the entrypoint
     pub entrypoint: FunctionIndex,
+}
+
+impl Index<IntegerIndex> for Module {
+    type Output = i32;
+
+    fn index(&self, index: IntegerIndex) -> &Self::Output {
+        self.ints.index(index.0)
+    }
+}
+
+impl Index<FloatIndex> for Module {
+    type Output = f64;
+
+    fn index(&self, index: FloatIndex) -> &Self::Output {
+        self.floats.index(index.0)
+    }
+}
+
+impl Index<StringIndex> for Module {
+    type Output = String;
+
+    fn index(&self, index: StringIndex) -> &Self::Output {
+        self.strings.index(index.0)
+    }
+}
+
+impl Index<TypeIndex> for Module {
+    type Output = Type;
+
+    fn index(&self, index: TypeIndex) -> &Self::Output {
+        self.types.index(index.0)
+    }
+}
+
+impl Index<GlobalIndex> for Module {
+    type Output = TypeIndex;
+
+    fn index(&self, index: GlobalIndex) -> &Self::Output {
+        self.globals.index(index.0)
+    }
+}
+
+impl Index<FunctionIndex> for Module {
+    type Output = Function;
+
+    fn index(&self, index: FunctionIndex) -> &Self::Output {
+        self.functions.index(index.0)
+    }
+}
+
+impl IndexMut<IntegerIndex> for Module {
+    fn index_mut(&mut self, index: IntegerIndex) -> &mut Self::Output {
+        self.ints.index_mut(index.0)
+    }
+}
+
+impl IndexMut<FloatIndex> for Module {
+    fn index_mut(&mut self, index: FloatIndex) -> &mut Self::Output {
+        self.floats.index_mut(index.0)
+    }
+}
+
+impl IndexMut<StringIndex> for Module {
+    fn index_mut(&mut self, index: StringIndex) -> &mut Self::Output {
+        self.strings.index_mut(index.0)
+    }
+}
+
+impl IndexMut<TypeIndex> for Module {
+    fn index_mut(&mut self, index: TypeIndex) -> &mut Self::Output {
+        self.types.index_mut(index.0)
+    }
+}
+
+impl IndexMut<GlobalIndex> for Module {
+    fn index_mut(&mut self, index: GlobalIndex) -> &mut Self::Output {
+        self.globals.index_mut(index.0)
+    }
+}
+
+impl IndexMut<FunctionIndex> for Module {
+    fn index_mut(&mut self, index: FunctionIndex) -> &mut Self::Output {
+        self.functions.index_mut(index.0)
+    }
 }
