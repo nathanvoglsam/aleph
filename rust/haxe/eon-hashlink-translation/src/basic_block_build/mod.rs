@@ -43,7 +43,7 @@ pub use utils::BBInfo;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::intersect_hash_sets;
-use eon_bytecode::function::{Function, Register, SSAValue};
+use eon_bytecode::function::{Function, SSAValue};
 use eon_bytecode::indexes::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
 use eon_bytecode::intrinsic::Intrinsic;
 use eon_bytecode::module::Module;
@@ -54,13 +54,6 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct RegisterData {
-    /// List of registers for the function's bytecode. This maps almost directly to the register
-    /// system in hashlink bytecode but with some additional information.
-    ///
-    /// We hold on to this so we can simplify tracking what actual values the SSA items refer to so
-    /// analyzing the bytecode for optimization opportunities is easier.
-    pub registers: Vec<Register>,
-
     /// Maps an SSA value to a register in the register list
     pub register_map: HashMap<ValueIndex, RegisterIndex>,
 
@@ -79,14 +72,12 @@ pub struct RegisterData {
 }
 
 impl RegisterData {
-    pub fn new(register_count: usize, block_count: usize) -> Self {
-        let registers = vec![Register::default(); register_count];
+    pub fn new(block_count: usize) -> Self {
         let register_map = HashMap::new();
         let block_writes = vec![Default::default(); block_count];
         let block_imports = vec![Default::default(); block_count];
         let block_live_set = vec![Default::default(); block_count];
         RegisterData {
-            registers,
             register_map,
             block_writes,
             block_imports,
@@ -136,7 +127,7 @@ pub fn build_bb(
         let void_type_index = find_type_index_for(&module.types, &Type::Void).unwrap();
 
         // As we go we'll be generating various bits of metadata about the transcoded instructions
-        let reg_meta = RegisterData::new(old_fn.registers.len(), spans.spans.len());
+        let reg_meta = RegisterData::new(spans.spans.len());
 
         // Pre allocate the list of empty basic blocks
         new_fn

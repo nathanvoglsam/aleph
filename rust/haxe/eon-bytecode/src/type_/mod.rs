@@ -134,6 +134,14 @@ pub enum Type {
 }
 
 impl Type {
+    /// Returns whether the type is a numeric type. (i.e, u8, f32, etc)
+    pub fn is_numeric(&self) -> bool {
+        match self {
+            Type::U8 | Type::U16 | Type::I32 | Type::I64 | Type::F32 | Type::F64 => true,
+            _ => false,
+        }
+    }
+
     pub fn get_type_function(&self) -> Option<&TypeFunction> {
         match self {
             Type::Function(v) => Some(v),

@@ -27,30 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::indexes::TypeIndex;
+use crate::indexes::{BasicBlockIndex, TypeIndex, ValueIndex};
 use crate::opcode::OpCode;
 use serde::{Deserialize, Serialize};
-
-/// This struct maps very directly to a "register" in terms of the raw HashLink bytecode. We hold
-/// on to the information the "registers" provide because it makes some analysis passes easier as we
-/// don't need to reconstruct this information from the SSA graph every time we need it
-#[derive(Clone, Debug, Hash, Default, Serialize, Deserialize)]
-pub struct Register {
-    /// Does the allocated value outlive the function. Used for optimizing allocations.
-    ///
-    /// This only really has meaning for allocated types. Value types like plain integers and floats
-    /// will never outlive a function as they don't have the concept of a lifetime. Value types are
-    /// always copied when they assign to something else so they will only ever live as long as the
-    /// scope they are defined in.
-    ///
-    /// An allocated type (something created with `new`) can have the lifetime extended beyond the
-    /// scope it was created in by passing the pointer around. The pointer itself is a value type
-    /// but what it points to will always be alive as long as a pointer to it exists.
-    ///
-    /// We can do some analysis to decide if the allocated object will outlive the function it was
-    /// created in so we leave a spot here to fill the information in later.
-    pub outlives_function: Option<bool>,
-}
+use std::ops::{Index, IndexMut};
 
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub struct SSAValue {
@@ -77,4 +57,32 @@ pub struct Function {
 
     /// The list of basic blocks within the function
     pub basic_blocks: Vec<BasicBlock>,
+}
+
+impl Index<ValueIndex> for Function {
+    type Output = SSAValue;
+
+    fn index(&self, index: ValueIndex) -> &Self::Output {
+        self.ssa_values.index(index.0)
+    }
+}
+
+impl Index<BasicBlockIndex> for Function {
+    type Output = BasicBlock;
+
+    fn index(&self, index: BasicBlockIndex) -> &Self::Output {
+        self.basic_blocks.index(index.0)
+    }
+}
+
+impl IndexMut<ValueIndex> for Function {
+    fn index_mut(&mut self, index: ValueIndex) -> &mut Self::Output {
+        self.ssa_values.index_mut(index.0)
+    }
+}
+
+impl IndexMut<BasicBlockIndex> for Function {
+    fn index_mut(&mut self, index: BasicBlockIndex) -> &mut Self::Output {
+        self.basic_blocks.index_mut(index.0)
+    }
 }
