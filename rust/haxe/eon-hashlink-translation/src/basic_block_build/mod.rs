@@ -40,7 +40,6 @@ pub use utils::handle_ssa_write;
 pub use utils::handle_ssa_write_no_register;
 pub use utils::BBInfo;
 
-use crate::basic_block_build::utils::take_from_slice;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::intersect_hash_sets;
@@ -194,6 +193,8 @@ pub fn build_bb(
 
     // Now begins the fun part where we start translating the HashLink bytecode
     translate_basic_blocks(&mut ctx)?;
+
+    propagate_latest_states(&mut ctx);
 
     // The next phase requires a second pass over the now partially translated instructions.
     // Currently all OpCodes are now in Eon form but the OpCodes are not all encoded in a valid
@@ -359,7 +360,7 @@ pub fn build_block_write_sets(ctx: &mut BuildContext) {
             // Build the set of writes
 
             // We have to ignore OpTrap specifically as although it does perform a write of sorts
-            // under the semantics of HashLink, it is considered a write for the purposes of our
+            // under the semantics of HashLink, it is not considered a write for the purposes of our
             // translation.
             //
             // As such we special case it out
@@ -489,7 +490,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
         // If we have multiple predecessors we need to emit phi instructions that import the
         // state of each register from the predecessors
         if bb_info.has_multiple_predecessors {
-            let block_imports = take_from_slice(&mut reg_meta.block_imports, bb_index);
+            let block_imports = std::mem::take(&mut reg_meta.block_imports[bb_index]);
 
             for reg in block_imports.iter().cloned() {
                 // We allocate a new SSA value for the result of our phi instruction
@@ -580,6 +581,59 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
         .push(OpCode::OpUnreachable);
 
     Ok(())
+}
+
+pub fn propagate_latest_states(ctx: &mut BuildContext) {
+    let mut reg_meta = ctx.reg_meta.borrow_mut();
+    let spans = ctx.spans.borrow();
+    let immediate_predecessors = &spans.predecessors;
+    let immediate_successors = &spans.successors;
+
+    // This stack holds the queue of instruction indices to be handled. This is the core part of
+    // our recursive tree walk of the source instruction stream
+    let mut next_stack = Vec::new();
+
+    // We hold a set of all basic blocks that have been handled at least once
+    let mut handled_once_blocks = HashSet::new();
+
+    next_stack.push(BasicBlockIndex(0));
+
+    // Continuously loop until the queue is empty
+    while let Some(current) = next_stack.pop() {
+        let mut current_live_set = std::mem::take(&mut reg_meta.block_live_set[current.0]);
+        let current_writes = &reg_meta.block_writes[current.0];
+        let current_imports = &reg_meta.block_imports[current.0];
+
+        // We only need fix blocks with singular predecessors as multi predecessor blocks will have
+        // the latest states handled when emitting phi instructions
+        let predecessors = &immediate_predecessors[current.0];
+        if predecessors.len() == 1 {
+            // Unpack the predecessor and get the predecessor's live set
+            let predecessor = predecessors.iter().cloned().next().unwrap();
+            let predecessor_live_set = &reg_meta.block_live_set[predecessor.0];
+
+            // We need to update the latest state for only the registers that were imported but not
+            // written to within the current block
+            for import in current_imports.difference(current_writes).cloned() {
+                // Get the state from the predecessor
+                let state = predecessor_live_set.get(&import).cloned().unwrap();
+
+                // Update the live set, panic if we're inserting a new value
+                current_live_set.insert(import, state).unwrap();
+            }
+        }
+
+        let unhandled_successors = immediate_successors[current.0]
+            .iter()
+            .cloned()
+            .filter(|v| !handled_once_blocks.contains(v));
+        next_stack.extend(unhandled_successors);
+
+        // Mark as handled
+        handled_once_blocks.insert(current);
+
+        reg_meta.block_live_set[current.0] = current_live_set;
+    }
 }
 
 pub fn remap_register_indices(ctx: &mut BuildContext) -> TranspileResult<()> {

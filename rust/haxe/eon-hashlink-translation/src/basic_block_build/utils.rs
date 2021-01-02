@@ -41,10 +41,10 @@ pub fn handle_ssa_phi_import(
     old_fn: &hashlink::Function,
     reg_meta: &mut RegisterData,
     bb_index: usize,
-    v: RegisterIndex,
+    reg: RegisterIndex,
 ) -> ValueIndex {
     // Lookup the type from the source HashLink (we use the same indices)
-    let type_ = old_fn.registers[v.0] as usize;
+    let type_ = old_fn.registers[reg.0] as usize;
 
     // Add the new SSA value to the function, yielding an index to it
     let value = ValueIndex(new_fn.ssa_values.len());
@@ -54,10 +54,10 @@ pub fn handle_ssa_phi_import(
 
     // While this isn't a real write, the basic block should already have this marked as live from
     // an earlier part of the algorithm. If it doesn't then it is likely a bug
-    reg_meta.block_live_set[bb_index].insert(v, value).unwrap();
+    reg_meta.block_live_set[bb_index].insert(reg, value).unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
-    reg_meta.register_map.insert(value, v);
+    reg_meta.register_map.insert(value, reg);
 
     value
 }
@@ -68,10 +68,10 @@ pub fn handle_ssa_write(
     old_fn: &hashlink::Function,
     reg_meta: &mut RegisterData,
     bb_index: usize,
-    v: RegisterIndex,
+    reg: RegisterIndex,
 ) -> ValueIndex {
     // Lookup the type from the source HashLink (we use the same indices)
-    let type_ = old_fn.registers[v.0] as usize;
+    let type_ = old_fn.registers[reg.0] as usize;
 
     // Add the new SSA value to the function, yielding an index to it
     let value = ValueIndex(new_fn.ssa_values.len());
@@ -85,12 +85,12 @@ pub fn handle_ssa_write(
     // any more at this stage is an error.
     //
     // Once again, an error here is a bug and so should be surfaced as a panic
-    reg_meta.block_live_set[bb_index].insert(v, value).unwrap();
+    reg_meta.block_live_set[bb_index].insert(reg, value).unwrap();
 
     // Add to the register map so we can map the ValueIndex back to the register it represents
     //
     // This should never overwrite another value so we panic if it does
-    assert!(reg_meta.register_map.insert(value, v).is_none());
+    assert!(reg_meta.register_map.insert(value, reg).is_none());
 
     value
 }
@@ -185,14 +185,6 @@ pub fn build_basic_block_infos(
         out[span_index].has_no_predecessor = has_no_predecessor;
     }
     Ok(out)
-}
-
-/// A wrapper/utility for taking ownership of a value from a slice, and replacing it with a default
-/// initialized item using the `Default` trait.
-pub fn take_from_slice<T: Default>(slice: &mut [T], i: usize) -> T {
-    let mut out = T::default();
-    std::mem::swap(&mut out, &mut slice[i]);
-    out
 }
 
 /// Simple function that wraps an iterator to find the matching type definition in the type list and
