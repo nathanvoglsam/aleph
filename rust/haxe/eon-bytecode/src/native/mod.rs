@@ -40,7 +40,4 @@ pub struct Native {
 
     /// Index into the type table for the type
     pub type_: TypeIndex,
-
-    /// ?
-    pub f_index: usize,
 }

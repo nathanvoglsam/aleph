@@ -35,6 +35,11 @@ pub enum Intrinsic {
     /// Checks if the given pointer is null, throwing an exception if it does
     NullCheck,
 
+    /// Perform a cast from one type to another, where the validity of the cast has to be statically
+    /// verifiable. The validity of the cast is verified when compiling the bytecode, and not at
+    /// runtime.
+    StaticCast,
+
     /// Attempts to cast one value to another type, throwing an exception if it is not possible
     /// to do so
     SafeCast,
@@ -67,6 +72,7 @@ impl Intrinsic {
     pub fn mnemonic(&self) -> &'static str {
         match self {
             Intrinsic::NullCheck => "@eon.null_check",
+            Intrinsic::StaticCast => "@eon.static_cast",
             Intrinsic::SafeCast => "@eon.safe_cast",
             Intrinsic::UnsafeCast => "@eon.unsafe_cast",
             Intrinsic::BeginTrap => "@eon.begin_trap",

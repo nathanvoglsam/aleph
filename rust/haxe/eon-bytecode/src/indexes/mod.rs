@@ -28,7 +28,9 @@
 //
 
 use crate::module::Module;
+use serde::export::Formatter;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 
 /// New-type for representing an index into the static "strings" table
 #[repr(transparent)]
@@ -176,6 +178,25 @@ impl Into<usize> for OpIndex {
     }
 }
 
+/// New-type for representing a native index
+#[repr(transparent)]
+#[derive(
+    Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
+)]
+pub struct NativeIndex(pub usize);
+
+impl From<usize> for NativeIndex {
+    fn from(v: usize) -> Self {
+        Self(v)
+    }
+}
+
+impl Into<usize> for NativeIndex {
+    fn into(self) -> usize {
+        self.0
+    }
+}
+
 /// New-type for representing a function index
 #[repr(transparent)]
 #[derive(
@@ -192,6 +213,24 @@ impl From<usize> for FunctionIndex {
 impl Into<usize> for FunctionIndex {
     fn into(self) -> usize {
         self.0
+    }
+}
+
+/// New-type for representing a callable index (part of the `f_index`
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+pub enum CallableIndex {
+    Native(NativeIndex),
+    Function(FunctionIndex),
+}
+
+impl Display for CallableIndex {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let (variant_name, variant_index) = match self {
+            CallableIndex::Native(i) => ("Native", i.0),
+            CallableIndex::Function(i) => ("Function", i.0),
+        };
+        write!(f, "{}[{}]", variant_name, variant_index)?;
+        Ok(())
     }
 }
 

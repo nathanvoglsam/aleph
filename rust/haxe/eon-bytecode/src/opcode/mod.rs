@@ -28,7 +28,7 @@
 //
 
 use crate::indexes::{
-    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use crate::intrinsic::Intrinsic;
@@ -281,7 +281,7 @@ pub struct Call {
     pub assigns: ValueIndex,
 
     /// The ID of the function to call
-    pub function: FunctionIndex,
+    pub function: CallableIndex,
 
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
@@ -294,8 +294,8 @@ impl Call {
             write!(&mut args, "%{}, ", p.0).unwrap();
         }
         format!(
-            "{} %{} fn[{}]({})",
-            mnemonic, self.assigns.0, self.function.0, args
+            "{} %{} {}({})",
+            mnemonic, self.assigns.0, self.function, args
         )
     }
 }
@@ -391,7 +391,7 @@ pub struct Invoke {
     pub assigns: ValueIndex,
 
     /// The ID of the function to call
-    pub function: FunctionIndex,
+    pub function: CallableIndex,
 
     /// The list of function arguments
     pub fn_params: Vec<ValueIndex>,
@@ -410,10 +410,10 @@ impl Invoke {
             write!(&mut args, "%{}, ", p.0).unwrap();
         }
         format!(
-            "{} %{} fn[{}]({}) cont ${} unwind ${}",
+            "{} %{} {}({}) cont ${} unwind ${}",
             mnemonic,
             self.assigns.0,
-            self.function.0,
+            self.function,
             args,
             self.continuation.0,
             self.exception_target.0
@@ -728,12 +728,12 @@ pub struct StaticClosure {
     pub assigns: ValueIndex,
 
     /// The index of the function to produce a static closure for
-    pub function: FunctionIndex,
+    pub function: CallableIndex,
 }
 
 impl StaticClosure {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
-        format!("{} %{} fn[{}]", mnemonic, self.assigns.0, self.function.0)
+        format!("{} %{} {}", mnemonic, self.assigns.0, self.function)
     }
 }
 
@@ -745,7 +745,7 @@ pub struct InstanceClosure {
     pub assigns: ValueIndex,
 
     /// The index of the function to produce a closure for
-    pub function: FunctionIndex,
+    pub function: CallableIndex,
 
     /// The object to store alongside the function pointer that should be applied as the first arg
     /// when the closure is called
@@ -755,8 +755,8 @@ pub struct InstanceClosure {
 impl InstanceClosure {
     pub fn opcode_dump(&self, _: &Module, mnemonic: &str) -> String {
         format!(
-            "{} %{} fn[{}] %{}",
-            mnemonic, self.assigns.0, self.function.0, self.object.0
+            "{} %{} {} %{}",
+            mnemonic, self.assigns.0, self.function, self.object.0
         )
     }
 }

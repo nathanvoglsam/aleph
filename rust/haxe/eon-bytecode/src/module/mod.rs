@@ -30,7 +30,7 @@
 use crate::constant::Constant;
 use crate::function::Function;
 use crate::indexes::{
-    FloatIndex, FunctionIndex, GlobalIndex, IntegerIndex, StringIndex, TypeIndex,
+    FloatIndex, FunctionIndex, GlobalIndex, IntegerIndex, NativeIndex, StringIndex, TypeIndex,
 };
 use crate::native::Native;
 use crate::type_::Type;
@@ -134,6 +134,14 @@ impl Index<FunctionIndex> for Module {
     }
 }
 
+impl Index<NativeIndex> for Module {
+    type Output = Native;
+
+    fn index(&self, index: NativeIndex) -> &Self::Output {
+        self.natives.index(index.0)
+    }
+}
+
 impl IndexMut<IntegerIndex> for Module {
     fn index_mut(&mut self, index: IntegerIndex) -> &mut Self::Output {
         self.ints.index_mut(index.0)
@@ -167,5 +175,11 @@ impl IndexMut<GlobalIndex> for Module {
 impl IndexMut<FunctionIndex> for Module {
     fn index_mut(&mut self, index: FunctionIndex) -> &mut Self::Output {
         self.functions.index_mut(index.0)
+    }
+}
+
+impl IndexMut<NativeIndex> for Module {
+    fn index_mut(&mut self, index: NativeIndex) -> &mut Self::Output {
+        self.natives.index_mut(index.0)
     }
 }

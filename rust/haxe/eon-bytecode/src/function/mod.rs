@@ -63,9 +63,6 @@ pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: TypeIndex,
 
-    /// ?
-    pub f_index: i32,
-
     /// This is the list of SSA values that get referred to by the
     pub ssa_values: Vec<SSAValue>,
 

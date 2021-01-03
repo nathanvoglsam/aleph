@@ -146,7 +146,7 @@ fn dump_natives(
     for (i, v) in natives.iter().enumerate() {
         writeln!(
             string,
-            "{space:indent$}#{index:<align$} {lib}::{name} = ({ty}) {func}",
+            "{space:indent$}#{index:<align$} {lib}::{name} = ({ty})",
             space = " ",
             indent = indent,
             index = i,
@@ -154,7 +154,6 @@ fn dump_natives(
             lib = module.strings[v.lib.0],
             name = module.strings[v.name.0],
             ty = v.type_.0,
-            func = v.f_index,
         )?;
     }
     writeln!(string)?;
@@ -227,10 +226,9 @@ fn dump_functions(
     for (i, v) in functions.iter().enumerate() {
         writeln!(
             string,
-            "#{index:<align$} = fn[{fidx}] {ty}",
+            "#{index:<align$} = {ty}",
             index = i,
             align = len,
-            fidx = v.f_index,
             ty = get_type_name(module, &module.types[v.type_.0]).unwrap()
         )?;
 
