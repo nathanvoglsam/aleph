@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::translation::misc_translators::{translate_string_index, translate_type_index};
 use eon::constant::Constant;
 use eon::indexes::{GlobalIndex, StringIndex, TypeIndex, ValueIndex};
 use eon::native::Native;
@@ -34,22 +35,6 @@ use eon::type_::{
     EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeObject,
     TypeParam, TypeVirtual,
 };
-
-pub fn translate_global_index(v: i32) -> GlobalIndex {
-    GlobalIndex(v as usize)
-}
-
-pub fn translate_string_index(v: i32) -> StringIndex {
-    StringIndex(v as usize)
-}
-
-pub fn translate_type_index(v: i32) -> TypeIndex {
-    TypeIndex(v as usize)
-}
-
-pub fn translate_value_index(v: i32) -> ValueIndex {
-    ValueIndex(v as usize)
-}
 
 /// This translates a HashLink type into the matching Eon type definition. The return value may be
 /// a potentially invalid type that needs further processing into the correct underlying type.
@@ -103,21 +88,6 @@ pub fn translate_type(v: hashlink::Type) -> Type {
         hashlink::Type::Virtual(v) => Type::Virtual(translate_type_virtual(v)),
         hashlink::Type::Abstract(v) => Type::Abstract(translate_type_abstract(v)),
         hashlink::Type::Enum(v) => Type::Enum(translate_type_enum(v)),
-    }
-}
-
-pub fn translate_native(v: hashlink::Native) -> Native {
-    Native {
-        lib: translate_string_index(v.lib),
-        name: translate_string_index(v.name),
-        type_: translate_type_index(v.type_),
-    }
-}
-
-pub fn translate_constant(v: hashlink::Constant) -> Constant {
-    Constant {
-        global: translate_global_index(v.global),
-        fields: v.fields.into_iter().map(|v| v as usize).collect(),
     }
 }
 
@@ -193,16 +163,4 @@ pub fn translate_type_abstract(v: hashlink::TypeAbstract) -> TypeAbstract {
 
 pub fn translate_types(input: Vec<hashlink::Type>) -> Vec<Type> {
     input.into_iter().map(translate_type).collect()
-}
-
-pub fn translate_natives(input: Vec<hashlink::Native>) -> Vec<Native> {
-    input.into_iter().map(translate_native).collect()
-}
-
-pub fn translate_globals(input: Vec<i32>) -> Vec<TypeIndex> {
-    input.into_iter().map(translate_type_index).collect()
-}
-
-pub fn translate_constants(input: Vec<hashlink::Constant>) -> Vec<Constant> {
-    input.into_iter().map(translate_constant).collect()
 }

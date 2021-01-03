@@ -37,7 +37,7 @@ mod utils;
 
 pub mod error;
 pub mod opcode_translators;
-pub mod translators;
+pub mod translation;
 
 #[cfg(test)]
 mod tests;
@@ -155,4 +155,81 @@ pub fn transpile_hashlink_function(
     let spans = compute_bb(&old_fn)?;
 
     Ok(build_bb(spans, &old_fn, module, callable_table)?)
+}
+
+/// Attempt 2 at translation with a far more robust algorithm
+pub fn translate_hashlink_module_2(code: hashlink::Code) -> TranspileResult<Module> {
+    let callable_table = code.make_callable_table();
+
+    // First we translate all the direct stuff
+    //
+    // The only thing we massively change is the actual function instructions as we move that
+    // into SSA form.
+    let mut module = Module {
+        ints: code.ints,
+        floats: code.floats,
+        strings: code.strings,
+        bytes: code.bytes,
+        byte_offsets: code.byte_offsets,
+        debug_files: code.debug_files,
+        types: translate_types(code.types),
+        natives: translate_natives(code.natives),
+        globals: translate_globals(code.globals),
+        functions: Vec::new(),
+        constants: translate_constants(code.constants),
+        entrypoint: FunctionIndex(code.entrypoint as usize),
+    };
+
+    // Now we do the fun part, we transpile the hashlink bytecode to our own bytecode form.
+    //
+    // We don't do any optimizations yet, we save that for later
+    let mut functions = Vec::new();
+    for old_fn in code.functions.into_iter() {
+        let new_fn = transpile_hashlink_function_2(&module, old_fn, &callable_table)?;
+        functions.push(new_fn);
+    }
+
+    module.functions = functions;
+
+    // Finally output our finished module
+    Ok(module)
+}
+
+/// Attempt 2 with a more robust algorithm
+pub fn transpile_hashlink_function_2(
+    module: &Module,
+    mut old_fn: hashlink::Function,
+    callable_table: &[hashlink::Callable],
+) -> TranspileResult<Function> {
+    // This is a very, very, very, very hacky thing we inject into the instruction stream of every
+    // function we translate.
+    //
+    // An unconditional jump with an offset of 0 is a no-op as the execution semantics are exactly
+    // equal to OpNop. This little hack serves one purpose, it guarantees that every function begins
+    // with a basic block with no predecessors and ends with an unconditional jump.
+    //
+    // The purpose of this hack is to simplify our "mem2reg" implementation when dealing with
+    // function arguments. HashLink implicitly uses the 0..n registers for 0..n function arguments.
+    // There is no sane way to represent this kind of assignment semantics in the SSA graph we
+    // calculate in the next step without forcing the entire algorithm to work around this one edge
+    // case.
+    //
+    // The problem stems from the fact that it is invalid, in Eon, for the *entry* basic block to be
+    // the target of a branch, as we can't encode phi instructions that import the values from the
+    // function arguments without introducing more painful edge cases to the instruction encoding.
+    // HashLink bytecode makes no guarantee, and actively has code generated, that violates this
+    // guarantee of Eon bytecode (if we translated directly without this hack anyway).
+    //
+    // The solution, just add a no-op branch at the start of the function. This, essentially, just
+    // explicitly encodes the edge of the execution graph that was otherwise only implicitly
+    // represented. There is an implicit execution graph edge from the caller into the callee, which
+    // is the execution edge that the function argument's SSA values are imported from. This empty
+    // basic block will encode that edge explicitly so we don't need to handle any edge cases when
+    // emitting phi instructions for branch target blocks (there's no sane way to handle having the
+    // first instruction be a branch target otherwise).
+    let noop_jump = hashlink::OpOneParam { param_1: 0 };
+    let noop_jump = hashlink::OpCode::OpJAlways(noop_jump);
+    old_fn.ops.insert(0, noop_jump);
+
+    Ok(Function::default())
 }

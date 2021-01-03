@@ -58,7 +58,7 @@ impl IndexMut<OpIndex> for BasicBlock {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Function {
     /// Index into the type table for the type signature of this function
     pub type_: TypeIndex,

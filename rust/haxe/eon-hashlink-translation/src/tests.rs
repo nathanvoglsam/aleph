@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::translate_hashlink_module;
 use crate::opcode_translators::{
     translate_alloc_enum, translate_binop, translate_call, translate_call_closure,
     translate_call_field, translate_cast, translate_comp_branch, translate_cond_branch,
@@ -40,6 +39,7 @@ use crate::opcode_translators::{
     translate_unconditional_branch, translate_unop, translate_value_index,
     translate_virtual_closure, translate_write_memory,
 };
+use crate::translate_hashlink_module;
 use eon::indexes::{
     BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
