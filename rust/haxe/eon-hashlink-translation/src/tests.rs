@@ -41,7 +41,7 @@ use crate::opcode_translators::{
     translate_virtual_closure, translate_write_memory,
 };
 use eon_bytecode::indexes::{
-    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use hashlink::utils::TestOpCodeIter;
@@ -90,7 +90,7 @@ pub fn test_translation_coverage() {
     let ti = TypeIndex(0);
     let ci = ConstructorIndex(0);
     let ff = FieldIndex(0);
-    let fu = FunctionIndex(0);
+    let fu = CallableIndex::Native(0.into());
     let bb = BasicBlockIndex(0);
 
     for op in TestOpCodeIter::new() {
