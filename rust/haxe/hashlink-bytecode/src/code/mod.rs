@@ -31,10 +31,10 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Read;
 
 use crate::{
-    CodeReadError, Constant, EnumConstruct, Field, Function, Native, ObjectProto, OpCallNParam,
-    OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam, OpSixParam,
-    OpSwitchParam, OpThreeParam, OpTwoParam, Result, Type, TypeAbstract, TypeEnum, TypeFunction,
-    TypeKind, TypeObject, TypeParam, TypeVariant, TypeVirtual, Version,
+    Callable, CodeReadError, Constant, EnumConstruct, Field, Function, Native, ObjectProto,
+    OpCallNParam, OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam,
+    OpSixParam, OpSwitchParam, OpThreeParam, OpTwoParam, Result, Type, TypeAbstract, TypeEnum,
+    TypeFunction, TypeKind, TypeObject, TypeParam, TypeVariant, TypeVirtual, Version,
 };
 use serde::{Deserialize, Serialize};
 
@@ -232,6 +232,21 @@ impl Code {
             entrypoint,
         };
         Ok(out)
+    }
+
+    pub fn make_callable_table(&self) -> Vec<Callable> {
+        let callables_len = self.natives.len() + self.functions.len();
+        let mut out = vec![Callable::Native(0); callables_len];
+
+        for (i, native) in self.natives.iter().enumerate() {
+            out[native.f_index as usize] = Callable::Native(i);
+        }
+
+        for (i, func) in self.functions.iter().enumerate() {
+            out[func.f_index as usize] = Callable::Function(i);
+        }
+
+        out
     }
 }
 

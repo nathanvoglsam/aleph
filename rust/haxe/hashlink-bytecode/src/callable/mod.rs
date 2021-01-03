@@ -27,33 +27,11 @@
 // SOFTWARE.
 //
 
-#[cfg(test)]
-mod tests;
-
-mod callable;
-mod code;
-mod constant;
-mod function;
-mod native;
-mod opcode;
-mod result;
-mod type_;
-mod version;
-
-pub mod utils;
-
-pub use callable::Callable;
-pub use code::Code;
-pub use constant::Constant;
-pub use function::Function;
-pub use native::Native;
-pub use opcode::{
-    OpCallNParam, OpCode, OpCodeNumber, OpCodeType, OpFiveParam, OpFourParam, OpOneParam,
-    OpSixParam, OpSwitchParam, OpThreeParam, OpTwoParam,
-};
-pub use result::{CodeReadError, Result};
-pub use type_::{
-    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeKind,
-    TypeObject, TypeParam, TypeVariant, TypeVirtual,
-};
-pub use version::Version;
+/// Represents a "callable" index. Returned as part of the "callable" table and is implicitly
+/// encoded in the module directly through the `f_index` field on the `Native` and `Function`
+/// entries
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub enum Callable {
+    Native(usize),
+    Function(usize),
+}
