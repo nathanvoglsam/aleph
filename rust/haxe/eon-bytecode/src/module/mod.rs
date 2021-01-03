@@ -34,6 +34,7 @@ use crate::indexes::{
 };
 use crate::native::Native;
 use crate::type_::Type;
+use crate::CallableIndex;
 use serde::{Deserialize, Serialize};
 use std::ops::{Index, IndexMut};
 
@@ -83,7 +84,7 @@ pub struct Module {
     pub constants: Vec<Constant>,
 
     /// Index into the functions table for specifying which function is the entrypoint
-    pub entrypoint: FunctionIndex,
+    pub entrypoint: CallableIndex,
 }
 
 impl Index<IntegerIndex> for Module {
