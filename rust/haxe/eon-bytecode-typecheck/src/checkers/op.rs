@@ -31,7 +31,7 @@ use crate::checkers::BasicBlockChecker;
 use crate::error::{TypeCheckError, TypeCheckResult};
 use eon::function::BasicBlock;
 use eon::function::Function;
-use eon::indexes::OpIndex;
+use eon::indexes::*;
 use eon::module::Module;
 use eon::opcode::*;
 use eon::type_::*;
@@ -68,9 +68,9 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             OpCode::OpInt(op) => self.check_op_int(op)?,
             OpCode::OpFloat(op) => self.check_op_float(op)?,
             OpCode::OpBool(op) => self.check_op_bool(op)?,
-            OpCode::OpBytes(_) => {}
-            OpCode::OpString(_) => {}
-            OpCode::OpNull(_) => {}
+            OpCode::OpBytes(op) => self.check_op_bytes(op)?,
+            OpCode::OpString(op) => self.check_op_string(op)?,
+            OpCode::OpNull(op) => self.check_op_null(op)?,
             OpCode::OpAdd(op) => self.check_op_arith_binop(op, true)?,
             OpCode::OpSub(op) => self.check_op_arith_binop(op, true)?,
             OpCode::OpMul(op) => self.check_op_arith_binop(op, true)?,
@@ -88,7 +88,7 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             OpCode::OpNot(op) => self.check_op_bitwise_unop(op)?,
             OpCode::OpIncr(op) => self.check_op_arith_unop(op, false)?,
             OpCode::OpDecr(op) => self.check_op_arith_unop(op, false)?,
-            OpCode::OpCall(_) => {}
+            OpCode::OpCall(op) => self.check_op_call(op)?,
             OpCode::OpCallMethod(_) => {}
             OpCode::OpCallClosure(_) => {}
             OpCode::OpCallIntrinsic(_) => {}
@@ -113,7 +113,7 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             OpCode::OpJAlways(_) => {}
             OpCode::OpRet(_) => {}
             OpCode::OpSwitch(_) => {}
-            OpCode::OpPhi(_) => {}
+            OpCode::OpPhi(op) => self.check_op_phi(op)?,
             OpCode::OpToDyn(_) => {}
             OpCode::OpToSFloat(_) => {}
             OpCode::OpToUFloat(_) => {}
@@ -202,7 +202,55 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let assigns_type = &module[assigns_type.type_];
 
         if assigns_type != &Type::Bool {
-            return Err(self.instruction_type_error("The target of an OpBool must be an Bool type"));
+            return Err(self.instruction_type_error("The target of an OpBool must be a Bool type"));
+        }
+
+        Ok(())
+    }
+
+    fn check_op_bytes(&self, op: &LoadBytes) -> TypeCheckResult<()> {
+        let module = self.module();
+        let function = self.function();
+
+        let assigns_type = &function[op.assigns];
+        let assigns_type = &module[assigns_type.type_];
+
+        if assigns_type != &Type::Bytes {
+            return Err(
+                self.instruction_type_error("The target of an OpBytes must be a Bytes type")
+            );
+        }
+
+        Ok(())
+    }
+
+    fn check_op_string(&self, op: &LoadString) -> TypeCheckResult<()> {
+        let module = self.module();
+        let function = self.function();
+
+        let assigns_type = &function[op.assigns];
+        let assigns_type = &module[assigns_type.type_];
+
+        if assigns_type != &Type::Bytes {
+            return Err(
+                self.instruction_type_error("The target of an OpString must be a Bytes type")
+            );
+        }
+
+        Ok(())
+    }
+
+    fn check_op_null(&self, op: &ValueIndex) -> TypeCheckResult<()> {
+        let module = self.module();
+        let function = self.function();
+
+        let assigns_type = &function[*op];
+        let assigns_type = &module[assigns_type.type_];
+
+        if !assigns_type.is_nullable() {
+            return Err(
+                self.instruction_type_error("The target of an OpNull must be a nullable type")
+            );
         }
 
         Ok(())
@@ -212,14 +260,14 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let module = self.module();
         let function = self.function();
 
-        let assigns_type = &function[op.assigns];
-        let assigns_type = &module[assigns_type.type_];
+        let assigns_val = &function[op.assigns];
+        let assigns_type = &module[assigns_val.type_];
 
-        let lhs_type = &function[op.lhs];
-        let lhs_type = &module[lhs_type.type_];
+        let lhs_val = &function[op.lhs];
+        let lhs_type = &module[lhs_val.type_];
 
-        let rhs_type = &function[op.rhs];
-        let rhs_type = &module[rhs_type.type_];
+        let rhs_val = &function[op.rhs];
+        let rhs_type = &module[rhs_val.type_];
 
         if !allow_float {
             if lhs_type.is_floating_point()
@@ -238,7 +286,10 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             ));
         }
 
-        if lhs_type != rhs_type || lhs_type != assigns_type || rhs_type != assigns_type {
+        if lhs_val.type_ != rhs_val.type_
+            || lhs_val.type_ != assigns_val.type_
+            || rhs_val.type_ != assigns_val.type_
+        {
             return Err(self.instruction_type_error(
                 "All operands for an arithmetic operation must be the same type",
             ));
@@ -251,11 +302,11 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let module = self.module();
         let function = self.function();
 
-        let assigns_type = &function[op.assigns];
-        let assigns_type = &module[assigns_type.type_];
+        let assigns_val = &function[op.assigns];
+        let assigns_type = &module[assigns_val.type_];
 
-        let operand_type = &function[op.operand];
-        let operand_type = &module[operand_type.type_];
+        let operand_val = &function[op.operand];
+        let operand_type = &module[operand_val.type_];
 
         if !allow_float {
             if operand_type.is_floating_point() || assigns_type.is_floating_point() {
@@ -271,7 +322,7 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             ));
         }
 
-        if operand_type != assigns_type {
+        if operand_val.type_ != assigns_val.type_ {
             return Err(self.instruction_type_error(
                 "All operands for an arithmetic operation must be the same type",
             ));
@@ -284,14 +335,14 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let module = self.module();
         let function = self.function();
 
-        let assigns_type = &function[op.assigns];
-        let assigns_type = &module[assigns_type.type_];
+        let assigns_val = &function[op.assigns];
+        let assigns_type = &module[assigns_val.type_];
 
-        let lhs_type = &function[op.lhs];
-        let lhs_type = &module[lhs_type.type_];
+        let lhs_val = &function[op.lhs];
+        let lhs_type = &module[lhs_val.type_];
 
-        let rhs_type = &function[op.rhs];
-        let rhs_type = &module[rhs_type.type_];
+        let rhs_val = &function[op.rhs];
+        let rhs_type = &module[rhs_val.type_];
 
         if lhs_type.is_floating_point()
             || rhs_type.is_floating_point()
@@ -307,7 +358,10 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             );
         }
 
-        if lhs_type != rhs_type || lhs_type != assigns_type || rhs_type != assigns_type {
+        if lhs_val.type_ != rhs_val.type_
+            || lhs_val.type_ != assigns_val.type_
+            || rhs_val.type_ != assigns_val.type_
+        {
             return Err(self.instruction_type_error(
                 "All operands for a bitwise operation must be the same type",
             ));
@@ -320,11 +374,11 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let module = self.module();
         let function = self.function();
 
-        let assigns_type = &function[op.assigns];
-        let assigns_type = &module[assigns_type.type_];
+        let assigns_val = &function[op.assigns];
+        let assigns_type = &module[assigns_val.type_];
 
-        let operand_type = &function[op.operand];
-        let operand_type = &module[operand_type.type_];
+        let operand_val = &function[op.operand];
+        let operand_type = &module[operand_val.type_];
 
         if operand_type.is_floating_point() || assigns_type.is_floating_point() {
             return Err(self
@@ -337,10 +391,65 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             );
         }
 
-        if operand_type != assigns_type {
+        if operand_val.type_ != assigns_val.type_ {
             return Err(self.instruction_type_error(
                 "All operands for a bitwise operation must be the same type",
             ));
+        }
+
+        Ok(())
+    }
+
+    fn check_op_call(&self, op: &Call) -> TypeCheckResult<()> {
+        let module = self.module();
+
+        let callee_sig = match op.function {
+            CallableIndex::Native(i) => &module[module[i].type_],
+            CallableIndex::Function(i) => &module[module[i].type_],
+        };
+
+        let callee_sig = if let Some(callee_sig) = callee_sig.get_type_function() {
+            callee_sig
+        } else {
+            return Err(self.instruction_type_error("OpCall's function has a non function type"));
+        };
+
+        self.check_call_like(
+            op.assigns,
+            callee_sig.returns,
+            &op.fn_params,
+            &callee_sig.args,
+        )?;
+
+        Ok(())
+    }
+
+    fn check_call_like(
+        &self,
+        op_assigns: ValueIndex,
+        sig_returns: TypeIndex,
+        op_params: &[ValueIndex],
+        sig_params: &[TypeIndex],
+    ) -> TypeCheckResult<()> {
+        let function = self.function();
+
+        let op_assigns = &function[op_assigns];
+
+        if op_assigns.type_ != sig_returns {
+            return Err(
+                self.instruction_type_error("OpCall return type does not match function signature")
+            );
+        }
+
+        let param_types = op_params.iter().cloned().map(|v| function[v].type_);
+
+        let callee_types = sig_params.iter().cloned();
+
+        for (param_type, sig_type) in param_types.zip(callee_types) {
+            if param_type != sig_type {
+                return Err(self
+                    .instruction_type_error("OpCall parameters do not match function signature"));
+            }
         }
 
         Ok(())
@@ -383,24 +492,39 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
         let function = self.function();
 
         let lhs_type = &function[op.lhs];
-        let lhs_type = &module[lhs_type.type_];
-
         let rhs_type = &function[op.rhs];
-        let rhs_type = &module[rhs_type.type_];
 
-        let assigns_type = &function[op.rhs];
+        let assigns_type = &function[op.assigns];
         let assigns_type = &module[assigns_type.type_];
 
-        if lhs_type != rhs_type {
+        if lhs_type.type_ != rhs_type.type_ {
             return Err(self.instruction_type_error(
                 "The two comparison operands of an OpCmp must be the same type",
             ));
         }
 
-        if assigns_type == &Type::Bool {
+        if assigns_type != &Type::Bool {
             return Err(
                 self.instruction_type_error("The assigned value from an OpCmp must be a Bool type")
             );
+        }
+
+        Ok(())
+    }
+
+    fn check_op_phi(&self, op: &Phi) -> TypeCheckResult<()> {
+        let function = self.function();
+
+        let assigns_val = &function[op.assigns];
+
+        for (v, _) in op.block_values.iter().cloned() {
+            let v_val = &function[v];
+
+            if assigns_val.type_ != v_val.type_ {
+                return Err(
+                    self.instruction_type_error("All operands of an OpPhi must be the same type")
+                );
+            }
         }
 
         Ok(())

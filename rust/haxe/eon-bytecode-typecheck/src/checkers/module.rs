@@ -29,13 +29,14 @@
 
 use crate::checkers::FunctionChecker;
 use crate::error::TypeCheckResult;
+use eon::module::Module;
 
 pub struct ModuleChecker<'a> {
-    pub module: &'a eon::module::Module,
+    pub module: &'a Module,
 }
 
 impl<'a> ModuleChecker<'a> {
-    pub fn new(module: &'a eon::module::Module) -> Self {
+    pub fn new(module: &'a Module) -> Self {
         Self { module }
     }
 
