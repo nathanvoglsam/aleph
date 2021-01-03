@@ -168,7 +168,7 @@ pub fn translate_type_object(v: hashlink::TypeObject) -> TypeObject {
         fields: v.fields.into_iter().map(translate_field).collect(),
         protos: v.protos.into_iter().map(translate_object_proto).collect(),
         bindings: v.bindings.into_iter().map(|v| v as usize).collect(),
-        super_: v.super_.map(|v| v as usize),
+        super_: v.super_.map(|v| TypeIndex(v as usize)),
         global: v.global as usize,
     }
 }

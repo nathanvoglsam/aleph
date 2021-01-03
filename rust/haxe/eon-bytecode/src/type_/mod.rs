@@ -323,8 +323,8 @@ pub struct TypeObject {
     /// ?
     pub bindings: Vec<usize>,
 
-    /// ?
-    pub super_: Option<usize>,
+    /// The type index of the classes parent class, if one exists.
+    pub super_: Option<TypeIndex>,
 
     /// ?
     pub global: usize,
