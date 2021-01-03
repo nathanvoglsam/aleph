@@ -30,6 +30,7 @@
 use crate::error::TranspileResult;
 use eon_bytecode::{Function, Module};
 
+/// This is an internal struct that implements the function translation
 pub struct FunctionTranslator<'module, 'callable_table> {
     pub module: &'module Module,
     pub callable_table: &'callable_table [hashlink::Callable],

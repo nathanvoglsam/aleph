@@ -27,7 +27,10 @@
 // SOFTWARE.
 //
 
-use eon_bytecode::{Constant, GlobalIndex, Native, StringIndex, TypeIndex, ValueIndex};
+use eon_bytecode::{
+    CallableIndex, Constant, FunctionIndex, GlobalIndex, Native, NativeIndex, StringIndex,
+    TypeIndex, ValueIndex,
+};
 
 pub fn translate_native(v: hashlink::Native) -> Native {
     Native {
@@ -58,6 +61,13 @@ pub fn translate_type_index(v: i32) -> TypeIndex {
 
 pub fn translate_value_index(v: i32) -> ValueIndex {
     ValueIndex(v as usize)
+}
+
+pub fn translate_callable(v: hashlink::Callable) -> CallableIndex {
+    match v {
+        hashlink::Callable::Native(i) => CallableIndex::Native(NativeIndex(i as usize)),
+        hashlink::Callable::Function(i) => CallableIndex::Function(FunctionIndex(i as usize)),
+    }
 }
 
 pub fn translate_natives(input: Vec<hashlink::Native>) -> Vec<Native> {

@@ -46,10 +46,10 @@ use crate::basic_block_compute::compute_bb;
 use crate::error::TranspileResult;
 use crate::translation::function::FunctionTranslator;
 use crate::translation::misc_translators::{
-    translate_constants, translate_globals, translate_natives,
+    translate_callable, translate_constants, translate_globals, translate_natives,
 };
 use crate::translation::type_translators::translate_types;
-use eon_bytecode::{Function, FunctionIndex, Module};
+use eon_bytecode::{Function, Module};
 
 ///
 /// Takes ownership of the given HashLink module and translate/transpile it into a new Eon module.
@@ -98,7 +98,7 @@ pub fn translate_hashlink_module(code: hashlink::Code) -> TranspileResult<Module
         globals: translate_globals(code.globals),
         functions: Vec::new(),
         constants: translate_constants(code.constants),
-        entrypoint: FunctionIndex(code.entrypoint as usize),
+        entrypoint: translate_callable(callable_table[code.entrypoint as usize]),
     };
 
     // Now we do the fun part, we transpile the hashlink bytecode to our own bytecode form.
@@ -201,7 +201,7 @@ pub fn translate_hashlink_module_2(code: hashlink::Code) -> TranspileResult<Modu
         globals: translate_globals(code.globals),
         functions: Vec::new(),
         constants: translate_constants(code.constants),
-        entrypoint: FunctionIndex(code.entrypoint as usize),
+        entrypoint: translate_callable(callable_table[code.entrypoint as usize]),
     };
 
     // Now we do the fun part, we transpile the hashlink bytecode to our own bytecode form.
