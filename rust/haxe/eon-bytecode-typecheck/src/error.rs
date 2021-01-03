@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use eon::indexes::*;
+use eon_bytecode::{BasicBlockIndex, FunctionIndex, OpIndex};
 
 /// Set of all errors that can occur when type checking an eon module
 #[derive(Clone, Debug)]

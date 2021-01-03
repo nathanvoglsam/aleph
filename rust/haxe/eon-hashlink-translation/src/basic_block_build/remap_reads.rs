@@ -28,8 +28,7 @@
 //
 
 use crate::basic_block_build::RegisterData;
-use eon::OpCode;
-use eon::{RegisterIndex, ValueIndex};
+use eon_bytecode::{OpCode, RegisterIndex, ValueIndex};
 use std::collections::HashMap;
 
 pub fn remap_reads(

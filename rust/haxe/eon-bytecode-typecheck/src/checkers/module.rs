@@ -29,7 +29,7 @@
 
 use crate::checkers::FunctionChecker;
 use crate::error::TypeCheckResult;
-use eon::module::Module;
+use eon_bytecode::Module;
 
 pub struct ModuleChecker<'a> {
     pub module: &'a Module,

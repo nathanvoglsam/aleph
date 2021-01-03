@@ -29,13 +29,11 @@
 
 use crate::checkers::{FunctionChecker, OpChecker};
 use crate::error::TypeCheckResult;
-use eon::function::Function;
-use eon::indexes::BasicBlockIndex;
-use eon::module::Module;
+use eon_bytecode::{BasicBlock, BasicBlockIndex, Function, Module};
 
 pub struct BasicBlockChecker<'module, 'module_checker, 'function_checker> {
     pub function_checker: &'function_checker FunctionChecker<'module, 'module_checker>,
-    pub basic_block: &'module eon::function::BasicBlock,
+    pub basic_block: &'module BasicBlock,
     pub basic_block_index: BasicBlockIndex,
 }
 
@@ -44,7 +42,7 @@ impl<'module, 'module_checker, 'function_checker>
 {
     pub fn new(
         function_checker: &'module_checker FunctionChecker<'module, 'module_checker>,
-        basic_block: &'module eon::function::BasicBlock,
+        basic_block: &'module BasicBlock,
         basic_block_index: BasicBlockIndex,
     ) -> Self {
         Self {

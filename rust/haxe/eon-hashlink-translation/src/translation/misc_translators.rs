@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use eon::{Constant, GlobalIndex, Native, StringIndex, TypeIndex, ValueIndex};
+use eon_bytecode::{Constant, GlobalIndex, Native, StringIndex, TypeIndex, ValueIndex};
 
 pub fn translate_native(v: hashlink::Native) -> Native {
     Native {

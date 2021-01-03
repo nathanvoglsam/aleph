@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-extern crate eon_bytecode as eon;
+extern crate eon_bytecode;
 extern crate hashlink_bytecode as hashlink;
 
 mod basic_block_build;
@@ -48,9 +48,7 @@ use crate::translation::misc_translators::{
     translate_constants, translate_globals, translate_natives,
 };
 use crate::translation::type_translators::translate_types;
-use eon::Function;
-use eon::FunctionIndex;
-use eon::Module;
+use eon_bytecode::{Function, FunctionIndex, Module};
 
 ///
 /// Takes ownership of the given HashLink module and translate/transpile it into a new Eon module.

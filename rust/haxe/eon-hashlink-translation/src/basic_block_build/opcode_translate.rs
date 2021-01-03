@@ -33,12 +33,11 @@ use crate::basic_block_compute::BasicBlockSpans;
 use crate::indexes::InstructionIndex;
 use crate::translation::opcode_translators::*;
 use crate::utils::offset_from;
-use eon::Function;
-use eon::{
-    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
-    GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
+use eon_bytecode::{
+    BasicBlockIndex, BytesIndex, CallableIndex, CondBranch, ConstructorIndex, FieldIndex,
+    FloatIndex, Function, GlobalIndex, IntegerIndex, OpCode, RegisterIndex, StringIndex, TypeIndex,
+    ValueIndex,
 };
-use eon::{CondBranch, OpCode};
 
 /// This is one of the core function that performs the first stage of opcode translation.
 ///

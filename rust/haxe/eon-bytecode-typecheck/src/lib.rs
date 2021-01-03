@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-extern crate eon_bytecode as eon;
+//extern crate eon_bytecode as eon;
 
 mod checkers;
 mod error;

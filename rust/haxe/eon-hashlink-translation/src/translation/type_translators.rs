@@ -28,10 +28,9 @@
 //
 
 use crate::translation::misc_translators::{translate_string_index, translate_type_index};
-use eon::TypeIndex;
-use eon::{
-    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeObject,
-    TypeParam, TypeVirtual,
+use eon_bytecode::{
+    EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeIndex,
+    TypeObject, TypeParam, TypeVirtual,
 };
 
 /// This translates a HashLink type into the matching Eon type definition. The return value may be

@@ -40,7 +40,7 @@ use crate::translation::opcode_translators::{
     translate_unconditional_branch, translate_unop, translate_value_index,
     translate_virtual_closure, translate_write_memory,
 };
-use eon::{
+use eon_bytecode::{
     BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
@@ -69,7 +69,7 @@ pub fn test_translation_1() {
 
     let module = translate_hashlink_module(code).unwrap();
 
-    let _string = eon::dump_module_to_string(&module).unwrap();
+    let _string = eon_bytecode::dump_module_to_string(&module).unwrap();
     let _json = serde_json::to_string_pretty(&module).unwrap();
     let _bytes = rmp_serde::to_vec(&module).unwrap();
 

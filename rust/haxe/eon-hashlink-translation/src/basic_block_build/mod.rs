@@ -43,12 +43,10 @@ pub use utils::BBInfo;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::intersect_hash_sets;
-use eon::Intrinsic;
-use eon::Module;
-use eon::{BasicBlockIndex, RegisterIndex, TypeIndex, ValueIndex};
-use eon::{CallIntrinsic, OpCode, Phi};
-use eon::{Function, SSAValue};
-use eon::{Type, TypeFunction};
+use eon_bytecode::{
+    BasicBlockIndex, CallIntrinsic, Function, Intrinsic, Module, OpCode, Phi, RegisterIndex,
+    SSAValue, Type, TypeFunction, TypeIndex, ValueIndex,
+};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 

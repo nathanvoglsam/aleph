@@ -28,15 +28,16 @@
 //
 
 use crate::error::TranspileResult;
+use eon_bytecode::{Function, Module};
 
 pub struct FunctionTranslator<'module, 'callable_table> {
-    pub module: &'module eon::Module,
+    pub module: &'module Module,
     pub callable_table: &'callable_table [hashlink::Callable],
 }
 
 impl<'module, 'callable_table> FunctionTranslator<'module, 'callable_table> {
     pub fn new(
-        module: &'module eon::Module,
+        module: &'module Module,
         callable_table: &'callable_table [hashlink::Callable],
     ) -> Self {
         Self {
@@ -45,10 +46,7 @@ impl<'module, 'callable_table> FunctionTranslator<'module, 'callable_table> {
         }
     }
 
-    pub fn translate_function(
-        &self,
-        mut source: hashlink::Function,
-    ) -> TranspileResult<eon::Function> {
+    pub fn translate_function(&self, mut source: hashlink::Function) -> TranspileResult<Function> {
         // This is a very, very, very, very hacky thing we inject into the instruction stream of every
         // function we translate.
         //
@@ -79,6 +77,6 @@ impl<'module, 'callable_table> FunctionTranslator<'module, 'callable_table> {
         let noop_jump = hashlink::OpCode::OpJAlways(noop_jump);
         source.ops.insert(0, noop_jump);
 
-        Ok(eon::Function::default())
+        Ok(Function::default())
     }
 }

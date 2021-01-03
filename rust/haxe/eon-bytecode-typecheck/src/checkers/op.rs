@@ -29,13 +29,12 @@
 
 use crate::checkers::BasicBlockChecker;
 use crate::error::{TypeCheckError, TypeCheckResult};
-use eon::function::BasicBlock;
-use eon::function::Function;
-use eon::indexes::*;
-use eon::module::dump::get_type_name;
-use eon::module::Module;
-use eon::opcode::*;
-use eon::type_::*;
+use eon_bytecode::{
+    get_type_name, BasicBlock, Binop, Call, CallClosure, CallIntrinsic, CallMethod, CallableIndex,
+    Comparison, CondBranch, Function, Invoke, InvokeClosure, InvokeIntrinsic, InvokeMethod, Load,
+    LoadBool, LoadBytes, LoadFloat, LoadInt, LoadString, Module, OpCode, OpIndex, Phi, Type,
+    TypeIndex, Unop, ValueIndex,
+};
 
 pub struct OpChecker<'module, 'module_checker, 'function_checker, 'basic_block_checker> {
     pub basic_block_checker:
@@ -53,7 +52,7 @@ impl<'module, 'module_checker, 'function_checker, 'basic_block_checker>
             'module_checker,
             'function_checker,
         >,
-        op: &'module eon::opcode::OpCode,
+        op: &'module OpCode,
         op_index: OpIndex,
     ) -> Self {
         Self {

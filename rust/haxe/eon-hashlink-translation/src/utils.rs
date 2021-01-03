@@ -29,7 +29,7 @@
 
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::indexes::InstructionIndex;
-use eon::RegisterIndex;
+use eon_bytecode::RegisterIndex;
 use std::collections::HashSet;
 use std::hash::Hash;
 
