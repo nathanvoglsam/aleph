@@ -30,7 +30,6 @@
 use eon::constant::Constant;
 use eon::indexes::*;
 use eon::native::Native;
-use eon::type_::{Field, ObjectProto};
 
 pub fn translate_native(v: hashlink::Native) -> Native {
     Native {

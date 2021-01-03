@@ -31,7 +31,7 @@ use crate::basic_block_build::utils::handle_ssa_write_virtual_register;
 use crate::basic_block_build::{handle_ssa_write, handle_ssa_write_no_register, RegisterData};
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::indexes::InstructionIndex;
-use crate::opcode_translators::*;
+use crate::translation::opcode_translators::*;
 use crate::utils::offset_from;
 use eon::function::Function;
 use eon::indexes::{
