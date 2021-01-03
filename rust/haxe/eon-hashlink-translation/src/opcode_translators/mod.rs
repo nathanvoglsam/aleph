@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use eon_bytecode::indexes::{
+use eon::indexes::{
     BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
-use eon_bytecode::intrinsic::Intrinsic;
-use eon_bytecode::opcode::{
+use eon::intrinsic::Intrinsic;
+use eon::opcode::{
     AllocEnum, Binop, Call, CallClosure, CallIntrinsic, CallMethod, Cast, Comparison, ComparisonFn,
     CondBranch, FieldLoad, FieldStore, InstanceClosure, Invoke, InvokeIntrinsic, Load, LoadBool,
     LoadBytes, LoadEnumField, LoadFloat, LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum,

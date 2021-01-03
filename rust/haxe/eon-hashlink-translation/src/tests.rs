@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::drivers::translate_hashlink_module;
+use crate::translate_hashlink_module;
 use crate::opcode_translators::{
     translate_alloc_enum, translate_binop, translate_call, translate_call_closure,
     translate_call_field, translate_cast, translate_comp_branch, translate_cond_branch,
@@ -40,7 +40,7 @@ use crate::opcode_translators::{
     translate_unconditional_branch, translate_unop, translate_value_index,
     translate_virtual_closure, translate_write_memory,
 };
-use eon_bytecode::indexes::{
+use eon::indexes::{
     BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
@@ -69,7 +69,7 @@ pub fn test_translation_1() {
 
     let module = translate_hashlink_module(code).unwrap();
 
-    let _string = eon_bytecode::module::dump::dump_to_string(&module).unwrap();
+    let _string = eon::module::dump::dump_to_string(&module).unwrap();
     let _json = serde_json::to_string_pretty(&module).unwrap();
     let _bytes = rmp_serde::to_vec(&module).unwrap();
 

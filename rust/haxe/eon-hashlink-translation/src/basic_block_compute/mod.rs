@@ -33,7 +33,7 @@ use crate::basic_block_compute::opcode_branch_target_iter::OpCodeBranchTargetIte
 use crate::error::TranspileResult;
 use crate::indexes::InstructionIndex;
 use crate::utils::{is_begin_trap, is_block_terminator};
-use eon_bytecode::indexes::BasicBlockIndex;
+use eon::indexes::BasicBlockIndex;
 use std::collections::{HashMap, HashSet};
 
 /// Represents a range of instructions in a function. This span is inclusive, where the range should

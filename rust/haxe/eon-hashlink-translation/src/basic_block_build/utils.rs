@@ -31,9 +31,9 @@ use crate::basic_block_build::RegisterData;
 use crate::basic_block_compute::BasicBlockSpans;
 use crate::error::{InvalidFunctionReason, TranspileError, TranspileResult};
 use crate::utils::is_begin_trap;
-use eon_bytecode::function::{Function, SSAValue};
-use eon_bytecode::indexes::{RegisterIndex, TypeIndex, ValueIndex};
-use eon_bytecode::type_::Type;
+use eon::function::{Function, SSAValue};
+use eon::indexes::{RegisterIndex, TypeIndex, ValueIndex};
+use eon::type_::Type;
 use std::collections::HashMap;
 
 /// Simple function that handles creating and adding SSA values for instructions
