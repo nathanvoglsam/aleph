@@ -61,12 +61,12 @@ impl<'module, 'callable_table> FunctionTranslator<'module, 'callable_table> {
         // graph we calculate in the next step without forcing the entire algorithm to work around
         // this one edge case.
         //
-        // The problem stems from the fact that it is invalid, in Eon, for the *entry* basic block
-        // to be the target of a branch, as we can't encode phi instructions that import the values
-        // from the function arguments without introducing more painful edge cases to the
-        // instruction encoding. HashLink bytecode makes no guarantee, and actively has code
-        // generated, that violates this guarantee of Eon bytecode (if we translated directly
-        // without this hack anyway).
+        // The problem stems from the fact that it is invalid, under our translation, for the
+        // *entry* basic block to be the target of a branch, as we can't encode phi instructions
+        // that import the values from the function arguments without introducing more painful edge
+        // cases to the instruction encoding. HashLink bytecode makes no guarantee, and actively has
+        // code generated, that violates this requirement of our translation (if we translated
+        // directly without this hack anyway).
         //
         // The solution, just add a no-op branch at the start of the function. This, essentially,
         // just explicitly encodes the edge of the execution graph that was otherwise only
