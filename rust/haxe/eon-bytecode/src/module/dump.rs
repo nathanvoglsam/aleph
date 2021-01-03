@@ -283,7 +283,7 @@ fn dump_functions(
     Ok(())
 }
 
-fn get_type_name(module: &Module, t: &Type) -> Option<String> {
+pub fn get_type_name(module: &Module, t: &Type) -> Option<String> {
     match t {
         Type::Void => Some("void".to_string()),
         Type::U8 => Some("u8".to_string()),
