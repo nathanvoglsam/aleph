@@ -34,7 +34,7 @@ use crate::native::Native;
 use crate::type_::Type;
 use std::fmt::Write;
 
-pub fn dump_to_string(module: &Module) -> Result<String, std::fmt::Error> {
+pub fn dump_module_to_string(module: &Module) -> Result<String, std::fmt::Error> {
     let mut string = String::new();
 
     dump_int_table(&mut string, 4, &module.ints)?;

@@ -27,14 +27,27 @@
 // SOFTWARE.
 //
 
-pub mod constant;
-pub mod function;
-pub mod indexes;
-pub mod intrinsic;
-pub mod module;
-pub mod native;
-pub mod opcode;
-pub mod type_;
+mod constant;
+mod function;
+mod indexes;
+mod intrinsic;
+mod module;
+mod native;
+mod opcode;
+mod type_;
+
+pub use constant::Constant;
+pub use function::BasicBlock;
+pub use function::Function;
+pub use function::SSAValue;
+pub use indexes::*;
+pub use intrinsic::Intrinsic;
+pub use module::dump::dump_module_to_string;
+pub use module::dump::get_type_name;
+pub use module::Module;
+pub use native::Native;
+pub use opcode::*;
+pub use type_::*;
 
 #[cfg(test)]
 mod tests;

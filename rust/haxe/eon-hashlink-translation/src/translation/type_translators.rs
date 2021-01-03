@@ -28,8 +28,8 @@
 //
 
 use crate::translation::misc_translators::{translate_string_index, translate_type_index};
-use eon::indexes::TypeIndex;
-use eon::type_::{
+use eon::TypeIndex;
+use eon::{
     EnumConstruct, Field, ObjectProto, Type, TypeAbstract, TypeEnum, TypeFunction, TypeObject,
     TypeParam, TypeVirtual,
 };

@@ -27,17 +27,17 @@
 // SOFTWARE.
 //
 
-use eon::indexes::{
-    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
-    GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
-};
-use eon::intrinsic::Intrinsic;
-use eon::opcode::{
+use eon::Intrinsic;
+use eon::{
     AllocEnum, Binop, Call, CallClosure, CallIntrinsic, CallMethod, Cast, Comparison, ComparisonFn,
     CondBranch, FieldLoad, FieldStore, InstanceClosure, Invoke, InvokeIntrinsic, Load, LoadBool,
     LoadBytes, LoadEnumField, LoadFloat, LoadGlobal, LoadInt, LoadString, LoadType, MakeEnum,
     OpCode, ReadMemory, RefData, RefOffset, StaticClosure, Store, StoreEnumField, StoreGlobal,
     Switch, Unop, VirtualClosure, WriteMemory,
+};
+use eon::{
+    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
+    GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
 
 /// Translate a load type HashLink opcode into the corresponding form in Eon, built from the

@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+pub mod function;
 pub mod misc_translators;
 pub mod opcode_translators;
 pub mod type_translators;
