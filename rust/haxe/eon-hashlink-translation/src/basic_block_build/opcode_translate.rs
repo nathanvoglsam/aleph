@@ -35,7 +35,7 @@ use crate::opcode_translators::*;
 use crate::utils::offset_from;
 use eon_bytecode::function::Function;
 use eon_bytecode::indexes::{
-    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, RegisterIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::opcode::{CondBranch, OpCode};
@@ -67,6 +67,7 @@ pub fn translate_opcode(
     reg_meta: &mut RegisterData,
     old_fn: &hashlink::Function,
     spans: &BasicBlockSpans,
+    callable_table: &[hashlink::Callable],
     bool_type_index: TypeIndex,
     void_type_index: TypeIndex,
     bb_index: usize,
@@ -269,7 +270,11 @@ pub fn translate_opcode(
                 handle_ssa_write(new_fn, old_fn, reg_meta, bb_index, RegisterIndex(assigns));
 
             // Unpack the function index
-            let function = FunctionIndex(old_op.get_param_2().unwrap() as usize);
+            let function = old_op.get_param_2().unwrap() as usize;
+            let function = match callable_table[function] {
+                hashlink::Callable::Native(i) => CallableIndex::Native(i.into()),
+                hashlink::Callable::Function(i) => CallableIndex::Function(i.into()),
+            };
 
             // Convert the parameter list. It will produce a list of *register indexes*
             // disguised as value indexes which we need to remap in a later pass over the
@@ -404,7 +409,11 @@ pub fn translate_opcode(
             );
 
             // Get the function index to call
-            let function = FunctionIndex(params.param_2 as usize);
+            let function = params.param_2 as usize;
+            let function = match callable_table[function] {
+                hashlink::Callable::Native(i) => CallableIndex::Native(i.into()),
+                hashlink::Callable::Function(i) => CallableIndex::Function(i.into()),
+            };
 
             let new_op = translate_static_closure(old_op, assigns, function).unwrap();
             new_fn.basic_blocks[bb_index].ops.push(new_op);
@@ -420,7 +429,11 @@ pub fn translate_opcode(
             );
 
             // Get the function index to call
-            let function = FunctionIndex(params.param_2 as usize);
+            let function = params.param_2 as usize;
+            let function = match callable_table[function] {
+                hashlink::Callable::Native(i) => CallableIndex::Native(i.into()),
+                hashlink::Callable::Function(i) => CallableIndex::Function(i.into()),
+            };
 
             // Register index for remapping later
             let object = ValueIndex(params.param_3 as usize);
@@ -784,7 +797,12 @@ pub fn translate_opcode(
 
             let reg_type = old_fn.registers[params.param_1 as usize] as usize;
             let new_op = if reg_type == void_type_index.0 {
-                let (register, _) = handle_ssa_write_virtual_register(new_fn, &mut reg_meta.virtual_registers, old_fn, void_type_index);
+                let (register, _) = handle_ssa_write_virtual_register(
+                    new_fn,
+                    &mut reg_meta.virtual_registers,
+                    old_fn,
+                    void_type_index,
+                );
                 let value = ValueIndex(register.0);
                 translate_value_index(old_op, value).unwrap()
             } else {

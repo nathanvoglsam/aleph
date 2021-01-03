@@ -71,6 +71,8 @@ use eon_bytecode::module::Module;
 /// so we'll almost certainly do this faster and more reliably than LLVM could've.
 ///
 pub fn translate_hashlink_module(code: hashlink::Code) -> TranspileResult<Module> {
+    let callable_table = code.make_callable_table();
+
     // First we translate all the direct stuff
     //
     // The only thing we massively change is the actual function instructions as we move that
@@ -95,7 +97,7 @@ pub fn translate_hashlink_module(code: hashlink::Code) -> TranspileResult<Module
     // We don't do any optimizations yet, we save that for later
     let mut functions = Vec::new();
     for old_fn in code.functions.into_iter() {
-        let new_fn = transpile_hashlink_function(&module, old_fn)?;
+        let new_fn = transpile_hashlink_function(&module, old_fn, &callable_table)?;
         functions.push(new_fn);
     }
 
@@ -108,6 +110,7 @@ pub fn translate_hashlink_module(code: hashlink::Code) -> TranspileResult<Module
 pub fn transpile_hashlink_function(
     module: &Module,
     mut old_fn: hashlink::Function,
+    callable_table: &[hashlink::Callable],
 ) -> TranspileResult<Function> {
     // This is a very, very, very, very hacky thing we inject into the instruction stream of every
     // function we translate.
@@ -141,5 +144,5 @@ pub fn transpile_hashlink_function(
 
     let spans = compute_bb(&old_fn)?;
 
-    Ok(build_bb(spans, &old_fn, module)?)
+    Ok(build_bb(spans, &old_fn, module, callable_table)?)
 }

@@ -28,7 +28,7 @@
 //
 
 use eon_bytecode::indexes::{
-    BasicBlockIndex, BytesIndex, ConstructorIndex, FieldIndex, FloatIndex, FunctionIndex,
+    BasicBlockIndex, BytesIndex, CallableIndex, ConstructorIndex, FieldIndex, FloatIndex,
     GlobalIndex, IntegerIndex, StringIndex, TypeIndex, ValueIndex,
 };
 use eon_bytecode::intrinsic::Intrinsic;
@@ -365,7 +365,7 @@ pub fn translate_unop(
 pub fn translate_call(
     op: &hashlink::OpCode,
     assigns: ValueIndex,
-    function: FunctionIndex,
+    function: CallableIndex,
     fn_params: Vec<ValueIndex>,
 ) -> Option<OpCode> {
     let inner = Call {
@@ -395,7 +395,7 @@ pub fn translate_call(
 pub fn translate_invoke(
     op: &hashlink::OpCode,
     assigns: ValueIndex,
-    function: FunctionIndex,
+    function: CallableIndex,
     fn_params: Vec<ValueIndex>,
     continuation: BasicBlockIndex,
     exception_target: BasicBlockIndex,
@@ -633,7 +633,7 @@ pub fn translate_comp_branch(
 pub fn translate_static_closure(
     op: &hashlink::OpCode,
     assigns: ValueIndex,
-    function: FunctionIndex,
+    function: CallableIndex,
 ) -> Option<OpCode> {
     let inner = StaticClosure { assigns, function };
     match op {
@@ -653,7 +653,7 @@ pub fn translate_static_closure(
 pub fn translate_instance_closure(
     op: &hashlink::OpCode,
     assigns: ValueIndex,
-    function: FunctionIndex,
+    function: CallableIndex,
     object: ValueIndex,
 ) -> Option<OpCode> {
     let inner = InstanceClosure {

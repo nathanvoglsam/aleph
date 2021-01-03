@@ -105,17 +105,18 @@ pub struct BuildContext<'a> {
     pub reg_meta: RefCell<RegisterData>,
     pub block_reachability: RefCell<Vec<bool>>,
     pub bb_infos: RefCell<Vec<BBInfo>>,
+    pub callable_table: &'a [hashlink::Callable],
 }
 
 pub fn build_bb(
     spans: BasicBlockSpans,
     old_fn: &hashlink::Function,
     module: &Module,
+    callable_table: &[hashlink::Callable],
 ) -> TranspileResult<Function> {
     let mut ctx = {
         let mut new_fn = Function {
             type_: TypeIndex(old_fn.type_ as usize),
-            f_index: old_fn.f_index,
             ssa_values: vec![],
             basic_blocks: vec![],
         };
@@ -158,6 +159,7 @@ pub fn build_bb(
             reg_meta: RefCell::new(reg_meta),
             block_reachability: RefCell::new(block_reachability),
             bb_infos: RefCell::new(bb_infos),
+            callable_table,
         }
     };
 
@@ -468,6 +470,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
     let old_fn = ctx.old_fn;
     let bool_type_index = ctx.bool_type_index;
     let void_type_index = ctx.void_type_index;
+    let callable_table = ctx.callable_table;
 
     for (bb_index, span) in spans.real_block_iter().enumerate() {
         let lower_bound = &span.begin;
@@ -555,6 +558,7 @@ pub fn translate_basic_blocks(ctx: &mut BuildContext) -> TranspileResult<()> {
                 &mut reg_meta,
                 old_fn,
                 &spans,
+                callable_table,
                 bool_type_index,
                 void_type_index,
                 bb_index,

@@ -111,7 +111,6 @@ pub fn translate_native(v: hashlink::Native) -> Native {
         lib: translate_string_index(v.lib),
         name: translate_string_index(v.name),
         type_: translate_type_index(v.type_),
-        f_index: v.f_index as usize,
     }
 }
 
