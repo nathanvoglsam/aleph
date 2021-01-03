@@ -35,15 +35,16 @@ mod basic_block_compute;
 mod indexes;
 mod utils;
 
-pub mod error;
-pub mod translation;
-
 #[cfg(test)]
 mod tests;
+
+pub mod error;
+pub mod translation;
 
 use crate::basic_block_build::build_bb;
 use crate::basic_block_compute::compute_bb;
 use crate::error::TranspileResult;
+use crate::translation::function::FunctionTranslator;
 use crate::translation::misc_translators::{
     translate_constants, translate_globals, translate_natives,
 };
@@ -155,7 +156,32 @@ fn transpile_hashlink_function(
     Ok(build_bb(spans, &old_fn, module, callable_table)?)
 }
 
-/// Attempt 2 at translation with a far more robust algorithm
+/// Attempt <large number> at translation with a far more robust algorithm
+///
+/// Takes ownership of the given HashLink module and translate it into a new Eon module.
+///
+/// This is the primary point of contact for this library and, for the most part, should be the only
+/// function you actually need to call. Everything else implements some aspect of the translation
+/// algorithm that will be driven by this function.
+///
+/// # Information
+///
+/// The translation is pretty straight forward as Eon was designed to be very similar to the
+/// HashLink VM's bytecode. Everything except the functions are pretty much translated verbatim,
+/// only casting various values into more appropriate integer types (mostly just making indexes all
+/// use `usize` instead of `i32`)
+///
+/// The "meat and potatoes" of the translation is in the algorithm for transpiling the function
+/// opcodes from one format to the other. HashLink is a statically typed, register based VM. It maps
+/// pretty close to plain C code, where each register corresponds to a local variable in the
+/// function.
+///
+/// This is *very* different to Eon. Eon uses an SSA form representation of the function's values as
+/// it was originally intended to be a intermediate representation of the HashLink bytecode while
+/// compiling it to LLVM-IR. To translate the function we need to perform similar analysis to the
+/// `mem2reg` optimization layer of LLVM to raise the lower level mutable register form into a valid
+/// SSA graph.
+///
 pub fn translate_hashlink_module_2(code: hashlink::Code) -> TranspileResult<Module> {
     let callable_table = code.make_callable_table();
 
@@ -182,10 +208,12 @@ pub fn translate_hashlink_module_2(code: hashlink::Code) -> TranspileResult<Modu
     //
     // We don't do any optimizations yet, we save that for later
     let mut functions = Vec::new();
-    //for old_fn in code.functions.into_iter() {
-    //    let new_fn = transpile_hashlink_function_2(&module, old_fn, &callable_table)?;
-    //    functions.push(new_fn);
-    //}
+
+    let function_translator = FunctionTranslator::new(&module, &callable_table);
+    for source in code.functions.into_iter() {
+        let translated = function_translator.translate_function(source)?;
+        functions.push(translated);
+    }
 
     module.functions = functions;
 
