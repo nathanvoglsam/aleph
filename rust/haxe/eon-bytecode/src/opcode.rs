@@ -953,6 +953,21 @@ impl StoreEnumField {
     }
 }
 
+/// Layout for `OpAlloca`
+#[derive(Clone, Debug, Hash, Serialize, Deserialize)]
+pub struct Alloca {
+    pub assigns: ValueIndex,
+
+    pub type_: TypeIndex,
+}
+
+impl Alloca {
+    pub fn opcode_dump(&self, module: &Module, mnemonic: &str) -> String {
+        let type_name = crate::module::dump::get_type_name(module, &module[self.type_]).unwrap();
+        format!("{} %{} {}", mnemonic, self.assigns.0, type_name)
+    }
+}
+
 #[derive(Clone, Debug, Hash, Serialize, Deserialize)]
 pub enum OpCode {
     // Type and value initialization op codes
@@ -1043,6 +1058,9 @@ pub enum OpCode {
     OpSetArray(WriteMemory),
 
     OpNew(ValueIndex),
+
+    OpAlloca(Alloca),
+
     OpArraySize(Load),
     OpType(LoadType),
     OpGetType(Load),
@@ -1161,6 +1179,7 @@ impl OpCode {
             OpCode::OpCallIntrinsic(v) => Some(v.assigns),
             OpCode::OpInvokeIntrinsic(v) => Some(v.assigns),
             OpCode::OpUnreachable => None,
+            OpCode::OpAlloca(v) => Some(v.assigns),
         }
     }
 
@@ -1259,6 +1278,7 @@ impl OpCode {
             OpCode::OpCallIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpInvokeIntrinsic(v) => v.opcode_dump(module, self.get_mnemonic()),
             OpCode::OpUnreachable => self.get_mnemonic().to_string(),
+            OpCode::OpAlloca(v) => v.opcode_dump(module, self.get_mnemonic()),
         }
     }
 
@@ -1353,6 +1373,7 @@ impl OpCode {
             OpCode::OpCallIntrinsic(_) => "call_intrinsic",
             OpCode::OpInvokeIntrinsic(_) => "invoke_intrinsic",
             OpCode::OpUnreachable => "unreachable",
+            OpCode::OpAlloca(_) => "alloca",
         }
     }
 }
