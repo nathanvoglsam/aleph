@@ -467,6 +467,7 @@ fn handle_terminator(
     Ok(())
 }
 
+#[deprecated]
 fn mark_handled(
     handled_targets: &mut HashMap<InstructionIndex, BasicBlockIndex>,
     current: &NextItem,
@@ -476,6 +477,7 @@ fn mark_handled(
     debug_assert!(previous.is_none());
 }
 
+#[deprecated]
 fn check_is_handled(
     out: &mut BasicBlockSpans,
     handled_targets: &HashMap<InstructionIndex, BasicBlockIndex>,
