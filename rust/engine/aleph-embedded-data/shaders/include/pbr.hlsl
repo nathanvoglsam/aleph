@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 #include "common.hlsl"
-
-
 
 // float3 energyCompensation = 1.0 + f0 * (1.0 / dfg.y - 1.0);
 // // Scale the specular lobe to account for multiscattering

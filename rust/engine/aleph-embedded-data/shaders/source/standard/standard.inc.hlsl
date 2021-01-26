@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 /*
  * Standard fragment payload for passing interpolated params to fragment shader for static mesh
  */

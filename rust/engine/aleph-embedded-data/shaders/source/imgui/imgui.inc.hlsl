@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 /*
  * Standard ImGui fragment payload for passing interpolated colour and UV to frag shader
  */

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 /*
  * The standard vertex input layout that a fullscreen quad pass uses
  */

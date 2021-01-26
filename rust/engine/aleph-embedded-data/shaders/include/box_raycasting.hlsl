@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 #include "common.hlsl"
 
 /*

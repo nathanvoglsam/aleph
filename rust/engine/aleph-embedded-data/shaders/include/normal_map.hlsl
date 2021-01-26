@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#pragma once
+
 /*
  * Calculate a world space normal vector from a normal map and the vertex normal + vertex tangent.
  *
