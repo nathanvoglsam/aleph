@@ -46,3 +46,7 @@ edition = "2018"
 version = "1.0"
 default-features = false
 features = ["derive", "parsing", "printing", "clone-impls", "full", "extra-traits"]
+
+[dependencies.proc-macro2]
+version = "1.0"
+default-features = false

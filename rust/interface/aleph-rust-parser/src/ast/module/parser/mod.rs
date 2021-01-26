@@ -34,7 +34,7 @@ use crate::interner::{Interner, StrId};
 use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
 use std::cell::RefCell;
 use std::collections::HashMap;
-use syn::export::Span;
+use proc_macro2::Span;
 
 // Functions for constructing a module
 impl Module {
