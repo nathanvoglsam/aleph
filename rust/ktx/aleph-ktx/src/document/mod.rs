@@ -40,8 +40,8 @@ use crate::format::{is_format_prohibited, is_format_unsupported};
 use crate::{format_bytes_for_image, format_type_size, ColorPrimaries, DFDError, DFDFlags};
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::cell::Cell;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream

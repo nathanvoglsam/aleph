@@ -89,7 +89,9 @@ fn test_invalid_files() {
     //    panic!("Loading failed for the wrong reason");
     //}
 
-    let error = KTXDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING).err().unwrap();
+    let error = KTXDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING)
+        .err()
+        .unwrap();
     if !matches!(error, KTXReadError::InvalidFaceCount(4)) {
         panic!("Loading failed for the wrong reason");
     }
