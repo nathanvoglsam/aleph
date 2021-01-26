@@ -1,59 +1,70 @@
-# HashLink VM
+# Project Back Under Control
 
-The immediate list of things needed are:
+- Need to audit that state of all the current crates and decide what needs to be done with each one.
+  There's a lot of old code that hasn't been touched in over 6 months left in some state of
+  completion or another. Need to figure out what is finished, what isn't, what is worth finishing
+  and what should just be removed.
+  
+- Need a plan moving forward to get to something that actually works.
 
-- Need to analyze the best architecture for analyzing and transforming the hash-link bytecode to
-  SSA form
-- Need to decide on a solution for this that also allows for some simple lifetime annotation
-- Need to be able to easily add optimization passes over the top of the bytecode when such
-  opportunities arise.
-    - An example would be determining when objects do not out live the function they are allocated
-      in so we can use plain stack allocation rather than a full GC alloc.
-        - Do not use the "C" stack to prevent stack overflows, make this stack an explicit part of
-          the GC to allow for dynamic allocation as long as the value doesn't outlive the stack
-          frame.
+# Crate Statuses
 
-## Garbage Collector
-- Investigate a tracing, precise, moving, generational, stop the world garbage collector
-    - Ideally find an off the shelf algorithm and implement it
-    - Needs to match the expected workload of games, so a high churn of resources that wont live
-      longer than a single frame
-    - Generational will very likely be the ideal solution
-    - Need to be very, very reliable and consistent with runtime overhead and should never ever ever
-      spike in runtime
-        - Take inspiration from game lisp where GC overhead is directly tied to the amount of resources
-          allocated since the last GC cycle
-        - The GC should run for a short amount of time every frame
-        - Almost all resources will not live longer than the span of a single frame so optimize for
-          being able to free entire blocks of memory quickly
-        - Most long living resources will be external to the VM and accessed through handles that
-          wont need to be traced by the GC. The less GC memory we allocate the less time we'll spend
-          collecting.
-    - Stop the world for simplicity, keep an atomic value around so we can know when there is any
-      haxe code executing inside the VM
-        - JIT special trampolines for calling into the VM from outside which automatically handle
-          incrementing and decrementing the execution counter for tracking when the VM is currently
-          executing
+## Done and stable, doesn't need to be touched
 
-## JIT Compiler
-- Using LLVM
-- BUG: Current algorithm for propagating the live register set can't handled basic block graphs with
-  cycles
-- Need to figure out how to implement exceptions
-- Optimization Passes
-    - Look at lifetimes of allocated objects and conservatively deduce when stack allocation is
-      applicable to avoid allocation overhead and reduce GC pressure
+- `aleph-compile`
+    - Very straight forward interface, won't need to change until porting to more platforms
+- `aleph-target`
+    - Same as above
+- `aleph-target-build`
+    - Same as above
+- `aleph-macros`
+    - Just an artifact of code deduplication where general purpose code will be re-used in multiple
+      places, but isn't enough to justify their own crates
+- `aleph-log`
+    - Wrapper for `log` to ensure everything is on the same version
+- `aleph-logger`
+    - Platform abstraction for swapping between different logger implementations in different
+      platforms. Will be very stable, not much needs to change
+- `aleph-platform`
+    - This is some of the better designed code. A thread safe, easy to use wrapper over the
+      underlying SDL2 platform layer. This should be the only point that touches SDL2 directly as I
+      want the flexibility to replace it in the future
+- `aleph-cpu-info`
+    - Wrapper for another rust crate that simplifies the API
 
-## LLVM Issues
-- May need to temporarily switch to a nightly compiler due to linkage problems on windows gnu target
-- No feature flags needed but the needed behaviour of static linking is only available on nightly
+## Unfinished, but should be completed
 
-# Interface Generation
+- `aleph-rust-codegen`
+    - Keep on back burner until a strong need for it exists
+- `aleph-rust-parser`
+    - Same as above
+- `aleph-ktx`
+    - Need to verify it matches the latest version of the spec
+    - Need to complete file validation
+- `aleph-vk-format`
+    - Need to make sure this contains all vulkan formats
 
-## Exposing to HashLink
+## Unfinished and should abandon
 
-- Idea: using a procedural macro to auto generate the bindings directly in the crate without having
-  to actually write code out to files
-    - This could be very good for simplifying the build system
-    - Not writing out to a file means the crate can just be consumed as a library and can operate
-      over the dependent crate directly
+- `aleph-platform-imgui`
+    - Going to dump imgui for egui
+
+## Needs redesign
+
+- `aleph-app-info`
+    - Poorly thought out interface, may merge with `aleph-settings` into a registry like object
+- `aleph-settings`
+    - Poorly thought out interface
+- `aleph-embedded-data`
+    - Should dump this and move to 100% data driven, nothing built in
+    
+## Needs Evaluation
+
+- `aleph-engine`
+    - The core driver for the engine. Haven't looked at this in ages, should re-evaluate
+- `aleph-render`
+- `aleph-render-graph`
+- `aleph-vulkan`
+- `aleph-vulkan-alloc`
+- `aleph-vulkan-alloc-sys`
+- `aleph-vulkan-core`
