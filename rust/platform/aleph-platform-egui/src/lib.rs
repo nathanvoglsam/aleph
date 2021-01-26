@@ -44,22 +44,29 @@ pub fn get_egui_input() -> RawInput {
     let mouse_pos = mouse_state.pos();
     let mouse_pos = Some(Pos2::new(mouse_pos.0 as f32, mouse_pos.1 as f32));
 
+    let scroll_delta = get_egui_scroll_delta();
+
     let screen_rect = Pos2::new(window_size.0 as f32, window_size.1 as f32);
     let screen_rect = Some(Rect::from_min_max(Default::default(), screen_rect));
 
+    // TODO: Integrate with SDL2 hdpi stuff
+    let pixels_per_point = Some(1.0);
+
+    let time = Some(FrameTimer::elapsed_time());
+
     let modifiers = get_egui_modifiers();
 
-    let time = FrameTimer::elapsed_time();
+    let events = get_egui_events();
 
     RawInput {
         mouse_down,
         mouse_pos,
-        scroll_delta: get_egui_scroll_delta(),
+        scroll_delta,
         screen_rect,
-        pixels_per_point: None,
-        time: Some(time),
+        pixels_per_point,
+        time,
         modifiers,
-        events: get_egui_events(),
+        events,
         ..Default::default()
     }
 }
