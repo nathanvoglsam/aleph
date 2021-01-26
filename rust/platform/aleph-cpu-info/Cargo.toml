@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-cpu-info"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Crate for getting information about the host CPU"
 license = "MIT"
