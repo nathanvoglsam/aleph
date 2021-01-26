@@ -28,6 +28,7 @@
 //
 
 pub mod clipboard;
+pub mod events;
 pub mod frame_timer;
 pub mod keyboard;
 pub mod mouse;

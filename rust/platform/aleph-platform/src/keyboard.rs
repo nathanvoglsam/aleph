@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::events::Event;
 use once_cell::sync::Lazy;
 use parking_lot::RwLock;
 use std::ops::Deref;
@@ -57,6 +58,7 @@ pub type Scancode = sdl2::keyboard::Scancode;
 ///
 pub type Mod = sdl2::keyboard::Mod;
 
+#[derive(Clone)]
 pub struct KeyDownEvent {
     pub keycode: Keycode,
     pub scancode: Scancode,
@@ -64,6 +66,7 @@ pub struct KeyDownEvent {
     pub repeat: bool,
 }
 
+#[derive(Clone)]
 pub struct KeyUpEvent {
     pub keycode: Keycode,
     pub scancode: Scancode,
@@ -71,6 +74,7 @@ pub struct KeyUpEvent {
     pub repeat: bool,
 }
 
+#[derive(Clone)]
 pub struct TextInputEvent {
     pub text: String,
 }
@@ -78,6 +82,7 @@ pub struct TextInputEvent {
 ///
 /// A mouse event
 ///
+#[derive(Clone)]
 pub enum KeyboardEvent {
     KeyDown(KeyDownEvent),
     KeyUp(KeyUpEvent),
@@ -180,6 +185,7 @@ impl Keyboard {
     pub(crate) fn process_keyboard_event(
         keyboard_events: &mut Vec<KeyboardEvent>,
         keyboard_state: &mut KeyboardState,
+        all_events: &mut Vec<Event>,
         event: sdl2::event::Event,
     ) {
         match event {
@@ -197,7 +203,9 @@ impl Keyboard {
                     repeat,
                 };
                 keyboard_state.set_keycode(event.scancode, true);
-                keyboard_events.push(KeyboardEvent::KeyDown(event));
+                let event = KeyboardEvent::KeyDown(event);
+                keyboard_events.push(event.clone());
+                all_events.push(Event::KeyboardEvent(event.clone()));
             }
             sdl2::event::Event::KeyUp {
                 keycode,
@@ -213,11 +221,15 @@ impl Keyboard {
                     repeat,
                 };
                 keyboard_state.set_keycode(event.scancode, false);
-                keyboard_events.push(KeyboardEvent::KeyUp(event));
+                let event = KeyboardEvent::KeyUp(event);
+                keyboard_events.push(event.clone());
+                all_events.push(Event::KeyboardEvent(event.clone()));
             }
             sdl2::event::Event::TextInput { text, .. } => {
                 let event = TextInputEvent { text };
-                keyboard_events.push(KeyboardEvent::TextInput(event));
+                let event = KeyboardEvent::TextInput(event);
+                keyboard_events.push(event.clone());
+                all_events.push(Event::KeyboardEvent(event.clone()));
             }
             _ => {}
         }

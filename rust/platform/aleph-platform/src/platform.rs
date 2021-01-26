@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::events::{Events, ALL_EVENTS};
 use crate::frame_timer::FrameTimer;
 use crate::keyboard::{Keyboard, KEYBOARD_EVENTS, KEYBOARD_STATE};
 use crate::mouse::{Cursor, Mouse, MOUSE_EVENTS};
@@ -157,6 +158,7 @@ impl PlatformBuilder {
             aleph_log::trace!("Initializing Window");
             let window = Window::init_window(&video, &self.app_info.name, &self.settings.window);
 
+            Events::init();
             Keyboard::init();
             Mouse::init();
 
@@ -302,6 +304,9 @@ impl Platform {
             let mut mouse_events_lock = MOUSE_EVENTS.write();
             let mouse_events = mouse_events_lock.as_mut().unwrap();
 
+            let mut all_events_lock = ALL_EVENTS.write();
+            let all_events = all_events_lock.as_mut().unwrap();
+
             // Clear the events buffers of last frames events
             window_events.clear();
             mouse_events.clear();
@@ -315,28 +320,48 @@ impl Platform {
                         quit_fn();
                     }
                     Event::Window { win_event, .. } => {
-                        Window::process_window_event(window_state, window_events, win_event);
+                        Window::process_window_event(
+                            window_state,
+                            window_events,
+                            all_events,
+                            win_event,
+                        );
                     }
                     event @ Event::MouseButtonDown { .. } => {
-                        Mouse::process_mouse_event(mouse_events, event);
+                        Mouse::process_mouse_event(mouse_events, all_events, event);
                     }
                     event @ Event::MouseButtonUp { .. } => {
-                        Mouse::process_mouse_event(mouse_events, event);
+                        Mouse::process_mouse_event(mouse_events, all_events, event);
                     }
                     event @ Event::MouseMotion { .. } => {
-                        Mouse::process_mouse_event(mouse_events, event);
+                        Mouse::process_mouse_event(mouse_events, all_events, event);
                     }
                     event @ Event::MouseWheel { .. } => {
-                        Mouse::process_mouse_event(mouse_events, event);
+                        Mouse::process_mouse_event(mouse_events, all_events, event);
                     }
                     event @ Event::KeyDown { .. } => {
-                        Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
+                        Keyboard::process_keyboard_event(
+                            keyboard_events,
+                            keyboard_state,
+                            all_events,
+                            event,
+                        );
                     }
                     event @ Event::KeyUp { .. } => {
-                        Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
+                        Keyboard::process_keyboard_event(
+                            keyboard_events,
+                            keyboard_state,
+                            all_events,
+                            event,
+                        );
                     }
                     event @ Event::TextInput { .. } => {
-                        Keyboard::process_keyboard_event(keyboard_events, keyboard_state, event);
+                        Keyboard::process_keyboard_event(
+                            keyboard_events,
+                            keyboard_state,
+                            all_events,
+                            event,
+                        );
                     }
                     _ => {}
                 }

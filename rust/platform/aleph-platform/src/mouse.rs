@@ -29,7 +29,8 @@
 
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
-use sdl2::event::Event;
+
+use crate::events::Event;
 use sdl2::mouse::SystemCursor;
 use std::collections::HashMap;
 use std::convert::TryFrom;
@@ -170,6 +171,7 @@ pub enum MouseWheelDirection {
 ///
 /// A mouse motion event
 ///
+#[derive(Clone)]
 pub struct MouseMotionEvent {
     pub mousestate: MouseState,
     pub x: i32,
@@ -181,6 +183,7 @@ pub struct MouseMotionEvent {
 ///
 /// A mouse button down event
 ///
+#[derive(Clone)]
 pub struct MouseButtonDownEvent {
     pub button: MouseButton,
     pub clicks: u8,
@@ -191,6 +194,7 @@ pub struct MouseButtonDownEvent {
 ///
 /// A mouse button up event
 ///
+#[derive(Clone)]
 pub struct MouseButtonUpEvent {
     pub button: MouseButton,
     pub clicks: u8,
@@ -201,6 +205,7 @@ pub struct MouseButtonUpEvent {
 ///
 /// A mouse wheel event
 ///
+#[derive(Clone)]
 pub struct MouseWheelEvent {
     pub x: i32,
     pub y: i32,
@@ -210,6 +215,7 @@ pub struct MouseWheelEvent {
 ///
 /// A mouse event
 ///
+#[derive(Clone)]
 pub enum MouseEvent {
     MouseMotion(MouseMotionEvent),
     MouseButtonDown(MouseButtonDownEvent),
@@ -220,6 +226,7 @@ pub enum MouseEvent {
 ///
 /// Represents the state of the mouse this frame
 ///
+#[derive(Clone)]
 pub struct MouseState {
     pos: (i32, i32),
     buttons: u32,
@@ -357,10 +364,11 @@ impl Mouse {
     ///
     pub(crate) fn process_mouse_event(
         mouse_events: &mut Vec<MouseEvent>,
+        all_events: &mut Vec<Event>,
         event: sdl2::event::Event,
     ) {
         match event {
-            Event::MouseMotion {
+            sdl2::event::Event::MouseMotion {
                 mousestate,
                 x,
                 y,
@@ -379,9 +387,11 @@ impl Mouse {
                     xrel,
                     yrel,
                 };
-                mouse_events.push(MouseEvent::MouseMotion(event))
+                let event = MouseEvent::MouseMotion(event);
+                mouse_events.push(event.clone());
+                all_events.push(Event::MouseEvent(event.clone()));
             }
-            Event::MouseButtonDown {
+            sdl2::event::Event::MouseButtonDown {
                 mouse_btn,
                 clicks,
                 x,
@@ -402,9 +412,11 @@ impl Mouse {
                     x,
                     y,
                 };
-                mouse_events.push(MouseEvent::MouseButtonDown(event))
+                let event = MouseEvent::MouseButtonDown(event);
+                mouse_events.push(event.clone());
+                all_events.push(Event::MouseEvent(event.clone()));
             }
-            Event::MouseButtonUp {
+            sdl2::event::Event::MouseButtonUp {
                 mouse_btn,
                 clicks,
                 x,
@@ -425,9 +437,11 @@ impl Mouse {
                     x,
                     y,
                 };
-                mouse_events.push(MouseEvent::MouseButtonUp(event))
+                let event = MouseEvent::MouseButtonUp(event);
+                mouse_events.push(event.clone());
+                all_events.push(Event::MouseEvent(event.clone()));
             }
-            Event::MouseWheel {
+            sdl2::event::Event::MouseWheel {
                 x, y, direction, ..
             } => {
                 let direction = match direction {
@@ -436,7 +450,9 @@ impl Mouse {
                     sdl2::mouse::MouseWheelDirection::Unknown(_) => return,
                 };
                 let event = MouseWheelEvent { x, y, direction };
-                mouse_events.push(MouseEvent::MouseWheel(event))
+                let event = MouseEvent::MouseWheel(event);
+                mouse_events.push(event.clone());
+                all_events.push(Event::MouseEvent(event.clone()));
             }
             _ => {}
         }

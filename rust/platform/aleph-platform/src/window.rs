@@ -27,12 +27,57 @@
 // SOFTWARE.
 //
 
+use crate::events::Event;
 use aleph_settings::WindowSettings;
 use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
-use sdl2::event::WindowEvent;
 use sdl2::video::FullscreenType;
 use std::ops::Deref;
+
+/// An enum of window events.
+#[derive(Clone)]
+pub enum WindowEvent {
+    Shown,
+    Hidden,
+    Exposed,
+    Moved(i32, i32),
+    Resized(i32, i32),
+    SizeChanged(i32, i32),
+    Minimized,
+    Maximized,
+    Restored,
+    Enter,
+    Leave,
+    FocusGained,
+    FocusLost,
+    Close,
+    TakeFocus,
+    HitTest,
+}
+
+impl From<sdl2::event::WindowEvent> for WindowEvent {
+    fn from(v: sdl2::event::WindowEvent) -> Self {
+        match v {
+            sdl2::event::WindowEvent::Shown => WindowEvent::Shown,
+            sdl2::event::WindowEvent::Hidden => WindowEvent::Hidden,
+            sdl2::event::WindowEvent::Exposed => WindowEvent::Exposed,
+            sdl2::event::WindowEvent::Moved(x, y) => WindowEvent::Moved(x, y),
+            sdl2::event::WindowEvent::Resized(x, y) => WindowEvent::Resized(x, y),
+            sdl2::event::WindowEvent::SizeChanged(x, y) => WindowEvent::SizeChanged(x, y),
+            sdl2::event::WindowEvent::Minimized => WindowEvent::Minimized,
+            sdl2::event::WindowEvent::Maximized => WindowEvent::Maximized,
+            sdl2::event::WindowEvent::Restored => WindowEvent::Restored,
+            sdl2::event::WindowEvent::Enter => WindowEvent::Enter,
+            sdl2::event::WindowEvent::Leave => WindowEvent::Leave,
+            sdl2::event::WindowEvent::FocusGained => WindowEvent::FocusGained,
+            sdl2::event::WindowEvent::FocusLost => WindowEvent::FocusLost,
+            sdl2::event::WindowEvent::Close => WindowEvent::Close,
+            sdl2::event::WindowEvent::TakeFocus => WindowEvent::TakeFocus,
+            sdl2::event::WindowEvent::HitTest => WindowEvent::HitTest,
+            sdl2::event::WindowEvent::None => panic!("Unsupported event"),
+        }
+    }
+}
 
 ///
 /// Does what it sends on the tin, holds the most recently collected state of the window. For more
@@ -195,37 +240,39 @@ impl Window {
     pub(crate) fn process_window_event(
         window_state: &mut WindowState,
         window_events: &mut Vec<WindowEvent>,
-        event: WindowEvent,
+        all_events: &mut Vec<Event>,
+        event: sdl2::event::WindowEvent,
     ) {
         match &event {
-            WindowEvent::Resized(width, height) => {
+            sdl2::event::WindowEvent::Resized(width, height) => {
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
                 aleph_log::trace!("Window resized by OS");
                 aleph_log::trace!("Window Size: {}x{}", width, height);
             }
-            WindowEvent::FocusGained => {
+            sdl2::event::WindowEvent::FocusGained => {
                 window_state.focused = true;
             }
-            WindowEvent::FocusLost => {
+            sdl2::event::WindowEvent::FocusLost => {
                 window_state.focused = false;
             }
-            WindowEvent::SizeChanged(_, _)
-            | WindowEvent::Moved(_, _)
-            | WindowEvent::Minimized
-            | WindowEvent::Maximized
-            | WindowEvent::Restored
-            | WindowEvent::Close
-            | WindowEvent::Enter
-            | WindowEvent::Leave
-            | WindowEvent::TakeFocus
-            | WindowEvent::HitTest
-            | WindowEvent::None
-            | WindowEvent::Shown
-            | WindowEvent::Hidden
-            | WindowEvent::Exposed => {}
+            sdl2::event::WindowEvent::SizeChanged(_, _)
+            | sdl2::event::WindowEvent::Moved(_, _)
+            | sdl2::event::WindowEvent::Minimized
+            | sdl2::event::WindowEvent::Maximized
+            | sdl2::event::WindowEvent::Restored
+            | sdl2::event::WindowEvent::Close
+            | sdl2::event::WindowEvent::Enter
+            | sdl2::event::WindowEvent::Leave
+            | sdl2::event::WindowEvent::TakeFocus
+            | sdl2::event::WindowEvent::HitTest
+            | sdl2::event::WindowEvent::None
+            | sdl2::event::WindowEvent::Shown
+            | sdl2::event::WindowEvent::Hidden
+            | sdl2::event::WindowEvent::Exposed => {}
         }
-        window_events.push(event);
+        window_events.push(event.into());
+        all_events.push(Event::WindowEvent(event.into()));
     }
 
     ///
