@@ -41,6 +41,7 @@ use crate::{format_bytes_for_image, format_type_size, ColorPrimaries, DFDError, 
 use aleph_vk_format::VkFormat;
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::cell::Cell;
 
 ///
 /// Represents the set of errors that could occur when trying to pass/read a ktx file from a stream
@@ -103,13 +104,26 @@ pub enum KTXReadError {
     /// An error when reading the data format descriptor
     DFDError(DFDError),
 
+    /// An error occurred when trying to read a key's name from the file which lead to the read
+    /// over-running the declared size of the pair. Likely a missing null terminator
+    InvalidKeyMissingNullTerminator,
+
     /// An error occurred while reading the data itself
     IOError(std::io::Error),
+
+    /// An error occured with something to do with unicode
+    FromUtf8Error(std::string::FromUtf8Error),
 }
 
 impl From<std::io::Error> for KTXReadError {
     fn from(err: std::io::Error) -> Self {
         KTXReadError::IOError(err)
+    }
+}
+
+impl From<std::string::FromUtf8Error> for KTXReadError {
+    fn from(err: std::string::FromUtf8Error) -> Self {
+        KTXReadError::FromUtf8Error(err)
     }
 }
 
@@ -150,7 +164,7 @@ pub enum DocumentType {
 }
 
 pub struct KTXDocument<R: Read + Seek> {
-    reader: Option<R>,
+    reader: Cell<Option<R>>,
     format: VkFormat,
     type_size: u32,
     width: u32,
@@ -332,7 +346,7 @@ impl<R: Read + Seek> KTXDocument<R> {
     /// read from (a reader is a stateful object).
     ///
     pub fn read_image(
-        &mut self,
+        &self,
         layer: usize,
         face: usize,
         level: usize,
@@ -390,7 +404,7 @@ impl<R: Read + Seek> KTXDocument<R> {
         std::io::copy(&mut reader, writer)?;
 
         // Return the reader to the document
-        self.reader = Some(reader.into_inner());
+        self.reader.set(Some(reader.into_inner()));
 
         Ok(())
     }
@@ -415,6 +429,91 @@ impl<R: Read + Seek> KTXDocument<R> {
             let bytes = format_bytes_for_image(self.format, width, height, depth).unwrap();
             Some(bytes)
         }
+    }
+
+    pub fn lookup_key(&self, key: &str) -> Result<Option<Vec<u8>>, KTXReadError> {
+        // Get reader from cell
+        let mut reader = self.reader.take().unwrap();
+
+        // Go to start of key value section
+        reader.seek(SeekFrom::Start(self.file_index.kvd_offset as u64))?;
+
+        // We need to know when the key value section ends so we can stop reading once we reach it
+        let end_of_section = self.file_index.kvd_offset + self.file_index.kvd_size;
+        let end_of_section = end_of_section as u64;
+
+        loop {
+            // If we've reached the end of the key value section we stop and return None
+            if reader.seek(SeekFrom::Current(0))? >= end_of_section {
+                break;
+            }
+
+            // First we read off the length of the current section
+            let key_and_val_length = reader.read_u32::<LittleEndian>()?;
+
+            // Then we read off the key for this key value pair so we can see if it is the one we're
+            // looking for
+            let key_to_check = {
+                // Keep reading until we hit a null byte or we hit the end of the declared length
+                let mut vec = Vec::new();
+                loop {
+                    // If we've run past the total possible length for the key value pair emit an
+                    // error
+                    if vec.len() >= key_and_val_length as usize {
+                        return Err(KTXReadError::InvalidKeyMissingNullTerminator);
+                    }
+
+                    // Read the next byte
+                    let byte = reader.read_u8()?;
+
+                    if byte != 0 {
+                        vec.push(byte);
+                    } else {
+                        break;
+                    }
+                }
+                String::from_utf8(vec)?
+            };
+
+            // Get the number of bytes for the value
+            //
+            // Subtract length of string bytes and -1 for the null terminator
+            let value_len = key_and_val_length as usize - key_to_check.len() - 1;
+
+            // If we've found the key we're looking for
+            if key_to_check == key {
+                // Read the value into a buffer
+                let mut out = vec![0u8; value_len];
+                reader.read_exact(&mut out)?;
+
+                // Return the reader to the document and return the value
+                self.reader.set(Some(reader));
+                return Ok(Some(out));
+            } else {
+                // Seek past the value
+                reader.seek(SeekFrom::Current(value_len as i64))?;
+
+                // Get the current offset in the file so we can align forward over the padding
+                // bytes
+                let current_pos = reader.seek(SeekFrom::Current(0))?;
+
+                // Align forward, only if we're not already aligned
+                let distance_from_alignment = current_pos % 4;
+                let aligned_pos = if distance_from_alignment != 0 {
+                    let aligned_down = current_pos & (!3);
+                    let aligned_up = aligned_down + 4;
+                    aligned_up
+                } else {
+                    current_pos
+                };
+
+                reader.seek(SeekFrom::Start(aligned_pos))?;
+            }
+        }
+
+        // If we've gotten here we've failed to find the key, return None to reflect this
+        self.reader.set(Some(reader));
+        Ok(None)
     }
 }
 
@@ -494,7 +593,7 @@ impl<R: Read + Seek> KTXDocument<R> {
 
         let dfd = DataFormatDescriptor::from_reader(&mut reader, &file_index, &mut format)?;
 
-        let reader = Some(reader);
+        let reader = Cell::new(Some(reader));
 
         let out = Self {
             reader,

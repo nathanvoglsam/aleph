@@ -28,6 +28,7 @@
 //
 
 use crate::KTXDocument;
+use crate::KTXReadError;
 use std::io::Cursor;
 
 static CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB: &'static [u8] =
@@ -50,6 +51,11 @@ static TEXTUREARRAY_BC3_UNORM: &'static [u8] =
     include_bytes!("../test_images/texturearray_bc3_unorm.ktx2");
 static TEXTUREARRAY_ETC2_UNORM: &'static [u8] =
     include_bytes!("../test_images/texturearray_etc2_unorm.ktx2");
+
+//static INCORRECT_MIP_LAYOUT_AND_PADDING: &'static [u8] =
+//    include_bytes!("../test_images/incorrect_mip_layout_and_padding.ktx2");
+static INVALID_FACE_COUNT_AND_PADDING: &'static [u8] =
+    include_bytes!("../test_images/invalid_face_count_and_padding.ktx2");
 
 #[test]
 fn test_validates_files() {
@@ -77,8 +83,30 @@ fn test_validates_files() {
 }
 
 #[test]
+fn test_invalid_files() {
+    //let error = KTXDocument::from_slice(INCORRECT_MIP_LAYOUT_AND_PADDING).err().unwrap();
+    //if !matches!(error, KTXReadError::InvalidFaceCount(4)) {
+    //    panic!("Loading failed for the wrong reason");
+    //}
+
+    let error = KTXDocument::from_slice(INVALID_FACE_COUNT_AND_PADDING).err().unwrap();
+    if !matches!(error, KTXReadError::InvalidFaceCount(4)) {
+        panic!("Loading failed for the wrong reason");
+    }
+}
+
+#[test]
+fn test_lookup_key() {
+    let doc = KTXDocument::from_slice(CUBEMAP_YOKOHAMA_ASTC_8X8_SRGB).unwrap();
+    let _value = doc.lookup_key("KTXorientation").unwrap().unwrap();
+    let _value = doc.lookup_key("KTXwriter").unwrap().unwrap();
+
+    assert!(doc.lookup_key("AKeyThatDoesntExist").unwrap().is_none());
+}
+
+#[test]
 fn test_read_image_data() {
-    let mut ktx = KTXDocument::from_slice(RGB_MIPMAP_REFERENCE_U).unwrap();
+    let ktx = KTXDocument::from_slice(RGB_MIPMAP_REFERENCE_U).unwrap();
 
     let level_vals: [[u8; 3]; 7] = [
         [255, 0, 0],
