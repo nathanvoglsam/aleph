@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use syn::export::{Span, ToTokens};
-
 use crate::FunctionSignatureBuilder;
 use crate::Statement;
+use proc_macro2::Span;
+use quote::ToTokens;
 use syn::{Expr, ExprLit, Local, Pat, PatIdent};
 
 #[test]

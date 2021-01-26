@@ -32,9 +32,9 @@ use crate::ast::module::{ModuleObjectMut, ModuleObjectType};
 use crate::ast::{Class, Function, GeneratorError, Import, Interface, Module, Path, Result, Type};
 use crate::interner::{Interner, StrId};
 use crate::utils::{clone_namespace_stack, relative_to_absolute_path};
+use proc_macro2::Span;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use proc_macro2::Span;
 
 // Functions for constructing a module
 impl Module {

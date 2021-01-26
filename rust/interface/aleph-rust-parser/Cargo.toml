@@ -50,3 +50,7 @@ features = ["derive", "parsing", "printing", "clone-impls", "full", "extra-trait
 [dependencies.proc-macro2]
 version = "1.0"
 default-features = false
+
+[dependencies.quote]
+version = "1.0"
+default-features = false

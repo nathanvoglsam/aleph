@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use proc_macro2::Span;
 use syn::{
     Attribute, Block, ForeignItemFn, ItemFn, Signature, Stmt, VisCrate, VisPublic, Visibility,
 };
@@ -77,7 +78,7 @@ impl FunctionSignatureBuilder {
     ///
     pub fn new(name: &str) -> Self {
         // Convert name to `Ident` token
-        let ident = syn::Ident::new(name, syn::export::Span::call_site());
+        let ident = syn::Ident::new(name, Span::call_site());
 
         // Default to a function with no attributes
         let attrs = Vec::new();
@@ -225,7 +226,7 @@ impl FunctionSignatureBuilder {
     pub fn external(&mut self, abi: Option<&str>) -> &mut Self {
         // Convert the abi string into an identifier
         let name = if let Some(abi) = abi {
-            Some(syn::LitStr::new(abi, syn::export::Span::call_site()))
+            Some(syn::LitStr::new(abi, Span::call_site()))
         } else {
             None
         };

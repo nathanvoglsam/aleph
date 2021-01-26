@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use syn::export::{ToTokens, TokenStream2};
+use proc_macro2::TokenStream;
+use quote::ToTokens;
 use syn::{AttrStyle, Attribute, AttributeArgs, Path};
 
 ///
@@ -80,7 +81,7 @@ impl AttributeBuilder {
     ///
     /// Add a raw stream of tokens to the
     ///
-    pub fn raw_tokens(&mut self, tokens: TokenStream2) -> &mut Self {
+    pub fn raw_tokens(&mut self, tokens: TokenStream) -> &mut Self {
         self.inner.tokens = tokens;
         self
     }
@@ -90,7 +91,7 @@ impl AttributeBuilder {
     /// token stream.
     ///
     pub fn arguments(&mut self, mut args: AttributeArgs) -> &mut Self {
-        let mut stream = TokenStream2::new();
+        let mut stream = TokenStream::new();
         args.drain(..).for_each(|token| {
             token.to_tokens(&mut stream);
         });
