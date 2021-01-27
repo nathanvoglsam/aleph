@@ -267,6 +267,8 @@ impl Platform {
             Mouse::process_mouse_requests(&window, &mouse_utils, &self.cursors);
             Window::process_window_requests(&mut window, window_state);
 
+            Window::update_state(&mut window, window_state);
+
             self.mouse_util.set(Some(mouse_utils));
             self.window.set(Some(window));
         }

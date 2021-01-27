@@ -34,37 +34,39 @@ use aleph_platform::window::Window;
 
 use aleph_platform::clipboard::Clipboard;
 use aleph_platform::events::Events;
-use egui::{CursorIcon, Event, Modifiers, Pos2, RawInput, Rect};
 
-pub fn get_egui_input() -> RawInput {
+pub fn get_egui_input() -> egui::RawInput {
     let mouse_state = Mouse::get_state();
     let window_size = Window::size();
 
     let mouse_down = mouse_state.left();
     let mouse_pos = mouse_state.pos();
-    let mouse_pos = Some(Pos2::new(mouse_pos.0 as f32, mouse_pos.1 as f32));
+    let mouse_pos = Some(egui::Pos2::new(mouse_pos.0 as f32, mouse_pos.1 as f32));
 
     let scroll_delta = get_egui_scroll_delta();
 
-    let screen_rect = Pos2::new(window_size.0 as f32, window_size.1 as f32);
-    let screen_rect = Some(Rect::from_min_max(Default::default(), screen_rect));
+    let screen_rect = egui::Pos2::new(window_size.0 as f32, window_size.1 as f32);
+    let screen_rect = Some(egui::Rect::from_min_max(Default::default(), screen_rect));
 
     // TODO: Integrate with SDL2 hdpi stuff
     let pixels_per_point = Some(1.0);
 
     let time = Some(FrameTimer::elapsed_time());
 
+    let predicted_dt = 1.0 / Window::refresh_rate() as f32;
+
     let modifiers = get_egui_modifiers();
 
     let events = get_egui_events();
 
-    RawInput {
+    egui::RawInput {
         mouse_down,
         mouse_pos,
         scroll_delta,
         screen_rect,
         pixels_per_point,
         time,
+        predicted_dt,
         modifiers,
         events,
         ..Default::default()
@@ -77,15 +79,15 @@ pub fn process_egui_output(output: egui::Output) {
     }
 
     match output.cursor_icon {
-        CursorIcon::Default => Mouse::set_cursor(Cursor::Arrow),
-        CursorIcon::PointingHand => Mouse::set_cursor(Cursor::Hand),
-        CursorIcon::ResizeHorizontal => Mouse::set_cursor(Cursor::SizeWE),
-        CursorIcon::ResizeNeSw => Mouse::set_cursor(Cursor::SizeNESW),
-        CursorIcon::ResizeNwSe => Mouse::set_cursor(Cursor::SizeNWSE),
-        CursorIcon::ResizeVertical => Mouse::set_cursor(Cursor::SizeNS),
-        CursorIcon::Text => Mouse::set_cursor(Cursor::IBeam),
-        CursorIcon::Grab => Mouse::set_cursor(Cursor::Arrow),
-        CursorIcon::Grabbing => Mouse::set_cursor(Cursor::Arrow),
+        egui::CursorIcon::Default => Mouse::set_cursor(Cursor::Arrow),
+        egui::CursorIcon::PointingHand => Mouse::set_cursor(Cursor::Hand),
+        egui::CursorIcon::ResizeHorizontal => Mouse::set_cursor(Cursor::SizeWE),
+        egui::CursorIcon::ResizeNeSw => Mouse::set_cursor(Cursor::SizeNESW),
+        egui::CursorIcon::ResizeNwSe => Mouse::set_cursor(Cursor::SizeNWSE),
+        egui::CursorIcon::ResizeVertical => Mouse::set_cursor(Cursor::SizeNS),
+        egui::CursorIcon::Text => Mouse::set_cursor(Cursor::IBeam),
+        egui::CursorIcon::Grab => Mouse::set_cursor(Cursor::Arrow),
+        egui::CursorIcon::Grabbing => Mouse::set_cursor(Cursor::Arrow),
     }
 }
 
@@ -114,7 +116,7 @@ fn get_egui_scroll_delta() -> egui::Vec2 {
     delta
 }
 
-fn get_egui_events() -> Vec<Event> {
+fn get_egui_events() -> Vec<egui::Event> {
     let events = Events::get();
 
     let mut out = Vec::new();
@@ -125,10 +127,10 @@ fn get_egui_events() -> Vec<Event> {
                     // Add an event for copy paste
                     if e.keymod.contains(Mod::LCTRLMOD) || e.keymod.contains(Mod::RCTRLMOD) {
                         if e.keycode == Keycode::C {
-                            out.push(Event::Copy);
+                            out.push(egui::Event::Copy);
                         }
                         if e.keycode == Keycode::X {
-                            out.push(Event::Cut);
+                            out.push(egui::Event::Cut);
                         }
                     }
 
@@ -163,7 +165,7 @@ fn get_egui_events() -> Vec<Event> {
     out
 }
 
-fn get_egui_modifiers() -> Modifiers {
+fn get_egui_modifiers() -> egui::Modifiers {
     let keyboard_state = Keyboard::get_state();
     let alt =
         keyboard_state.keycode_down(Keycode::LAlt) || keyboard_state.keycode_down(Keycode::RAlt);
@@ -172,7 +174,7 @@ fn get_egui_modifiers() -> Modifiers {
     let shift = keyboard_state.keycode_down(Keycode::LShift)
         || keyboard_state.keycode_down(Keycode::RShift);
 
-    Modifiers {
+    egui::Modifiers {
         alt,
         ctrl,
         shift,
@@ -181,8 +183,8 @@ fn get_egui_modifiers() -> Modifiers {
     }
 }
 
-fn translate_modifiers(m: Mod) -> Modifiers {
-    Modifiers {
+fn translate_modifiers(m: Mod) -> egui::Modifiers {
+    egui::Modifiers {
         alt: m.contains(Mod::LALTMOD) || m.contains(Mod::RALTMOD),
         ctrl: m.contains(Mod::LCTRLMOD) || m.contains(Mod::RCTRLMOD),
         shift: m.contains(Mod::LSHIFTMOD) || m.contains(Mod::RSHIFTMOD),

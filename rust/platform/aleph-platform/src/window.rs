@@ -105,6 +105,8 @@ pub(crate) struct WindowState {
     /// The height of the window when not fullscreen
     pub(crate) windowed_height: u32,
 
+    pub(crate) refresh_rate: u32,
+
     /// Whether the window is currently fullscreen
     pub(crate) fullscreen: bool,
 
@@ -212,6 +214,9 @@ impl Window {
             .expect("Failed to create window");
 
         let drawable_size = window.vulkan_drawable_size();
+
+        let display_mode = window.display_mode().unwrap();
+
         let window_state = WindowState {
             title: "".to_string(),
             current_width: window_settings.width,
@@ -220,6 +225,7 @@ impl Window {
             drawable_height: drawable_size.1,
             windowed_width: window_settings.width,
             windowed_height: window_settings.height,
+            refresh_rate: display_mode.refresh_rate as _,
             fullscreen: false,
             focused: false,
         };
@@ -359,11 +365,13 @@ impl Window {
         window_state.fullscreen = true;
         window_state.current_width = display_mode.w as _;
         window_state.current_height = display_mode.h as _;
+        window_state.refresh_rate = display_mode.refresh_rate as _;
         aleph_log::trace!("Successfully went fullscreen");
         aleph_log::trace!(
-            "Window Size: {}x{}",
+            "Window Size: {}x{} at {}hz",
             window_state.current_width,
-            window_state.current_height
+            window_state.current_height,
+            window_state.refresh_rate
         );
     }
 
@@ -379,12 +387,25 @@ impl Window {
         window
             .set_size(window_state.windowed_width, window_state.windowed_height)
             .expect("Failed to reset window size after leaving fullscreen");
+
+        let display_mode = window.display_mode().unwrap();
+        window_state.refresh_rate = display_mode.refresh_rate as _;
+
         aleph_log::trace!("Successfully went windowed");
         aleph_log::trace!(
-            "Window Size: {}x{}",
+            "Window Size: {}x{} at {}hz",
             window_state.current_width,
-            window_state.current_height
+            window_state.current_height,
+            window_state.refresh_rate
         );
+    }
+
+    ///
+    /// Internal function for getting new mouse state from SDL2
+    ///
+    pub(crate) fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
+        let display_mode = window.display_mode().unwrap();
+        window_state.refresh_rate = display_mode.refresh_rate as _;
     }
 
     ///
@@ -561,6 +582,19 @@ impl Window {
         let window_state_lock = WINDOW_STATE.read();
         let window_state = window_state_lock.as_ref().expect("Window not initialized");
         (window_state.drawable_width, window_state.drawable_height)
+    }
+
+    ///
+    /// Returns the current refresh rate of the window
+    ///
+    /// # Panic
+    ///
+    /// Panics if there is no window, such as if the engine is run headless
+    ///
+    pub fn refresh_rate() -> u32 {
+        let window_state_lock = WINDOW_STATE.read();
+        let window_state = window_state_lock.as_ref().expect("Window not initialized");
+        window_state.refresh_rate
     }
 
     ///
