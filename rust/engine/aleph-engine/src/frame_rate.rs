@@ -71,12 +71,9 @@ impl FrameRate {
     /// Gets the average frame time
     ///
     pub fn frame_time(&self) -> f32 {
-        let mut frame_time = 0.0;
         let window_len = self.frame_times.len() / 4;
         let window = self.frame_times.len() - window_len;
-        self.frame_times[window..]
-            .iter()
-            .for_each(|v| frame_time += *v);
+        let frame_time: f32 = self.frame_times[window..].iter().sum();
         frame_time / window_len as f32
     }
 
