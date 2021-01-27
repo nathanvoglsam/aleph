@@ -58,7 +58,6 @@ members = [
     "rust/platform/aleph-cpu-info",
     "rust/platform/aleph-platform",
     "rust/platform/aleph-platform-egui",
-    "rust/platform/aleph-platform-imgui",
     "rust/utils/aleph-macros",
     "game/aleph-test",
 ]

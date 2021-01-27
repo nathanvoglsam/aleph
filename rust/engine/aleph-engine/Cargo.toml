@@ -50,14 +50,14 @@ aleph-cpu-info = { path = "../../platform/aleph-cpu-info", version = "1.0.0" }
 aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
 aleph-logger = { path = "../../logging/aleph-logger", version = "0.1.0" }
 aleph-platform = { path = "../../platform/aleph-platform", version = "0.1.0" }
-aleph-platform-imgui = { path = "../../platform/aleph-platform-imgui", version = "0.1.0" }
+aleph-platform-egui = { path = "../../platform/aleph-platform-egui", version = "0.1.0" }
 aleph-settings = { path = "../../config/aleph-settings", version = "0.1.0" }
 aleph-render = { path = "../../graphics/aleph-render", version = "0.1.0" }
 aleph-target = { path = "../../build/aleph-target", version = "2.0.0" }
 aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1.0" }
 aleph-vulkan-core = { path = "../../graphics/aleph-vulkan-core", version = "0.1.0" }
 aleph-vulkan-alloc = { path = "../../graphics/aleph-vulkan-alloc", version = "0.1.0" }
-imgui = "0.4.0"
+egui = "0.8"
 clap = "2.33"
 rayon = "1.3"
 once_cell = "1.4"

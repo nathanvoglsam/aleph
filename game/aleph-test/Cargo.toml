@@ -36,4 +36,3 @@ edition = "2018"
 
 [dependencies]
 aleph-engine = { path = "../../rust/engine/aleph-engine", version = "0.1.0" }
-imgui = "0.4.0"

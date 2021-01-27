@@ -45,7 +45,7 @@ pub trait AppLogic: Send {
     /// This method will be called once per frame. Prior to rendering and before any other `Logic`
     /// instances.
     ///
-    fn on_update(&mut self, ui: &imgui::Ui);
+    fn on_update(&mut self, egui_ctx: &egui::CtxRef);
 
     ///
     /// This method will be called once on application exit. This would usually be used for closing

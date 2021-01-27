@@ -115,11 +115,11 @@ impl Engine {
             .expect("Failed to build platform layer");
 
         // -----------------------------------------------------------------------------------------
-        // ImGui Initialization
+        // Egui Initialization
         // -----------------------------------------------------------------------------------------
 
-        // Initialize imgui
-        let mut imgui_ctx = aleph_platform_imgui::Imgui::new();
+        // Initialize egui
+        let mut egui_ctx = egui::CtxRef::default();
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
@@ -149,14 +149,8 @@ impl Engine {
             .vsync()
             .build(&device, Window::drawable_size());
 
-        let mut renderer = unsafe {
-            render::Renderer::new(
-                device.clone(),
-                allocator.clone(),
-                &swapchain,
-                imgui_ctx.context_mut(),
-            )
-        };
+        let mut renderer =
+            unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -174,20 +168,11 @@ impl Engine {
             // Mark a new frame for the platform
             platform.frame();
 
-            // ImGui pre-event update (this can emit requests so we need to handle them before we
-            // call process_requests)
-            imgui_ctx.update_mouse_pos_early();
-
             // Process requests and events
             platform.process_requests();
             platform.process_events(|| {
                 Engine::exit();
             });
-
-            // ImGui post-event update (this processes this frame's set of events so it must happen
-            // after process_events an process_requests)
-            imgui_ctx.update_mouse_pos_late();
-            imgui_ctx.update_keyboard_input();
 
             // Check if the engine should shutdown. This will be updated by process_events so we
             // need to check after calling process_events
@@ -195,12 +180,20 @@ impl Engine {
                 break 'game_loop;
             }
 
-            let ui = imgui_ctx.frame();
+            // Collect input and begin new Egui frame
+            let new_input = aleph_platform_egui::get_egui_input();
+            egui_ctx.begin_frame(new_input);
 
             {
                 optick::event!("aleph_engine::AppLogic::on_update");
-                app.on_update(&ui);
+                app.on_update(&egui_ctx);
             }
+
+            // End the egui frame
+            let (output, _shapes) = egui_ctx.end_frame();
+
+            // Process output (clipboard, cursors, etc)
+            aleph_platform_egui::process_egui_output(output);
 
             unsafe {
                 let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
@@ -208,7 +201,7 @@ impl Engine {
                     continue;
                 }
                 let i = i.unwrap();
-                renderer.render_frame(&mut swapchain, i, ui);
+                renderer.render_frame(&mut swapchain, i);
             }
         }
 

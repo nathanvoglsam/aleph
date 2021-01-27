@@ -31,17 +31,16 @@ extern crate aleph_engine as aleph;
 
 use aleph::app_info::AppInfo;
 use aleph::{Engine, FrameRate};
-use imgui::{im_str, Condition, Ui};
 
 struct AlephAppLogic {
-    frame_timer: bool,
+    _frame_timer: bool,
     frame_times: FrameRate,
 }
 
 impl AlephAppLogic {
     pub fn new() -> Self {
         Self {
-            frame_timer: true,
+            _frame_timer: true,
             frame_times: FrameRate::new(),
         }
     }
@@ -50,55 +49,12 @@ impl AlephAppLogic {
 impl aleph::AppLogic for AlephAppLogic {
     fn on_init(&mut self) {}
 
-    fn on_update(&mut self, ui: &Ui) {
+    fn on_update(&mut self, egui_ctx: &aleph::egui::CtxRef) {
         self.frame_times.update();
 
-        //aleph::imgui::Window::new(im_str!("MainWindow"))
-        //    .size(
-        //        [Window::width() as f32, Window::height() as f32],
-        //        Condition::Always,
-        //    )
-        //    .position([0.0, 0.0], Condition::Always)
-        //    .resizable(false)
-        //    .title_bar(false)
-        //    .menu_bar(true)
-        //    .bring_to_front_on_focus(false)
-        //    .build(ui, || {
-        //        ui.menu_bar(|| self.menu_bar(ui));
-        //        let token = ui.push_font(ui.fonts().fonts()[3]);
-        //        ui.text(im_str!("AlephEngine test"));
-        //        token.pop(ui);
-        //        ui.separator();
-        //    });
-
-        let mut frame_timer_open = self.frame_timer;
-        if frame_timer_open {
-            imgui::Window::new(im_str!("Frame Time Graph"))
-                .opened(&mut frame_timer_open)
-                .size([430.0, 250.0], Condition::Always)
-                .collapsible(false)
-                .resizable(false)
-                .build(ui, || {
-                    let token = ui.push_font(ui.fonts().fonts()[1]);
-                    ui.text(im_str!("Frame Times"));
-                    token.pop(ui);
-                    ui.plot_lines(im_str!(""), self.frame_times.frame_time_history())
-                        .scale_min(0.0)
-                        .scale_max(1.0 / 30.0)
-                        .graph_size([ui.window_size()[0], 100.0])
-                        .build();
-                    ui.separator();
-
-                    ui.text("Frame Time (ms): ");
-                    ui.same_line(0.0);
-                    ui.text(format!("{}", self.frame_times.frame_time()));
-
-                    ui.text("Frame Rate (ms): ");
-                    ui.same_line(0.0);
-                    ui.text(format!("{}", self.frame_times.frame_rate()));
-                });
-        }
-        self.frame_timer = frame_timer_open;
+        aleph::egui::Window::new("Settings UI").show(egui_ctx, |ui| {
+            egui_ctx.settings_ui(ui);
+        });
     }
 
     fn on_exit(&mut self) {}

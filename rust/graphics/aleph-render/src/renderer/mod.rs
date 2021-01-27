@@ -615,7 +615,6 @@ pub struct Renderer {
     tone_pipe: TonePipeline,
     tone_sets: ToneSets,
     uniform_buffers: UniformBuffers,
-    imgui_renderer: ImguiRenderer,
     command_pool: CommandPool,
     command_buffer: CommandBuffer,
     acquire_semaphore: Semaphore,
@@ -632,7 +631,6 @@ impl Renderer {
         device: Arc<Device>,
         allocator: Arc<Allocator>,
         swapchain: &Swapchain,
-        imgui_ctx: &mut ::imgui::Context,
     ) -> Renderer {
         Self::init_global_meshes(&device, &allocator);
 
@@ -749,13 +747,6 @@ impl Renderer {
         let geom_sets = GeometrySets::new(&device, &geom_pipe_layout, &uniform_buffers);
         let tone_sets = ToneSets::new(&device, &tone_pipe_layout, &gbuffer);
 
-        let imgui_renderer = ImguiRenderer::new(
-            imgui_ctx.fonts(),
-            device.clone(),
-            allocator.clone(),
-            swapchain,
-        );
-
         let create_info =
             CommandPoolCreateInfoBuilder::new().queue_family_index(device.general_family().index);
         let command_pool = device
@@ -799,7 +790,6 @@ impl Renderer {
             tone_pipe,
             tone_sets,
             uniform_buffers,
-            imgui_renderer,
             command_pool,
             command_buffer,
             acquire_semaphore,
@@ -836,12 +826,7 @@ impl Renderer {
         }
     }
 
-    pub unsafe fn render_frame(
-        &mut self,
-        swapchain: &mut Swapchain,
-        index: usize,
-        frame: ::imgui::Ui,
-    ) {
+    pub unsafe fn render_frame(&mut self, swapchain: &mut Swapchain, index: usize) {
         optick::event!();
 
         self.device
@@ -860,9 +845,6 @@ impl Renderer {
             .expect("Failed to begin command buffer");
 
         self.record_frame(self.command_buffer, index);
-
-        self.imgui_renderer
-            .render_frame(frame, self.command_buffer, index);
 
         self.device
             .loader()
