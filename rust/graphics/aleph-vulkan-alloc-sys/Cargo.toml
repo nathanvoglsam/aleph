@@ -51,6 +51,9 @@ corruption_detection = [ ]
 
 [build-dependencies]
 cmake = "0.1"
-bindgen = { version = "0.53", optional = true }
-aleph-compile = { path = "../../build/aleph-compile", version = "1.0.0" }
-aleph-target-build = { path = "../../build/aleph-target-build", version = "2.0.0" }
+aleph-compile = { path = "../../build/aleph-compile", version = "1" }
+aleph-target-build = { path = "../../build/aleph-target-build", version = "2" }
+
+[build-dependencies.bindgen]
+version = "0.56"
+optional = true

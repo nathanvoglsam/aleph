@@ -42,8 +42,8 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
-aleph-platform = { path = "../aleph-platform", version = "0.1.0" }
+aleph-log = { path = "../../logging/aleph-log", version = "1" }
+aleph-platform = { path = "../aleph-platform", version = "0.1" }
 egui = "0.8.0"
 optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }
 

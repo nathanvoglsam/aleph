@@ -44,7 +44,13 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
-gltf = { version = "0.15", features = ["utils", "names"] }
-once_cell = "1.4"
+[dependencies.aleph-macros]
+version = "1"
+path = "../../utils/aleph-macros"
+
+[dependencies.gltf]
+version = "0.15"
+features = ["utils", "names"]
+
+[dependencies.once_cell]
+version = "1"

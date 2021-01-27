@@ -45,10 +45,10 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1.0" }
-aleph-log = { path = "../../logging/aleph-log", version = "1.0.0" }
-aleph-macros = { path = "../../utils/aleph-macros", version = "1.0.0" }
-erupt = "0.13"
-crossbeam = "0.7"
-console = "0.11"
+aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1" }
+aleph-log = { path = "../../logging/aleph-log", version = "1" }
+aleph-macros = { path = "../../utils/aleph-macros", version = "1" }
+erupt = "0.16"
+crossbeam = "0.8.0"
+console = "0.14"
 raw-window-handle = "0.3"

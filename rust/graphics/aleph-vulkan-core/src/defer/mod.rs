@@ -65,7 +65,7 @@ impl<T: ?Sized> DeferList<T> {
     /// Consume all deferred items by iterating over the list and calling the functor for each item.
     ///
     pub fn consume(&self, mut func: impl FnMut(DeferBox<T>)) {
-        while let Ok(item) = self.list.pop() {
+        while let Some(item) = self.list.pop() {
             func(item);
         }
     }
