@@ -42,6 +42,20 @@ pub fn imgui_vert_shader() -> (&'static [u8], &'static [u32]) {
 }
 
 ///
+/// Gets the raw spirv bytes for the egui fragment shader
+///
+pub fn egui_frag_shader() -> (&'static [u8], &'static [u32]) {
+    aleph_macros::include_spirv_bytes!("../shaders/compiled/egui/egui.frag.spv")
+}
+
+///
+/// Gets the raw spirv bytes for the egui vertex shader
+///
+pub fn egui_vert_shader() -> (&'static [u8], &'static [u32]) {
+    aleph_macros::include_spirv_bytes!("../shaders/compiled/egui/egui.vert.spv")
+}
+
+///
 /// Gets the raw spirv bytes for the standard fragment shader
 ///
 pub fn standard_frag_shader() -> (&'static [u8], &'static [u32]) {
