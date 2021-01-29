@@ -81,3 +81,22 @@ inline float SaturateFP16(float val) {
 inline float SaturateFP32(float val) {
     return clamp(val, 0.045, 1.0);
 }
+
+// 0-1 linear  from  0-255 sRGB
+inline float3 LinearFromSRGB(float3 srgb) {
+    const float3 vec_10_31475 = float3(10.31475, 10.31475, 10.31475);
+    const float3 vec_3294_6 = float3(3294.6, 3294.6, 3294.6);
+    const float3 vec_14_025 = float3(14.025, 14.025, 14.025);
+    const float3 vec_269_025 = float3(269.025, 269.025, 269.025);
+    const float3 vec_2_4 = float3(2.4, 2.4, 2.4);
+
+    const bool3 cutoff = srgb < vec_10_31475;
+    const float3 lower = srgb / vec_3294_6;
+    const float3 higher = pow((srgb + vec_14_025) / vec_269_025, vec_2_4);
+    return lerp(higher, lower, cutoff);
+}
+inline float4 LinearFromSRGBA(float4 srgba) {
+    const float alpha = srgba.a / 255.0;
+    const float3 colour = LinearFromSRGB(srgba.rgb);
+    return float4(colour, alpha);
+}
