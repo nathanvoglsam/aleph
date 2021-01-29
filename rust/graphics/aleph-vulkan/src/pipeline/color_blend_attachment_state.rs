@@ -62,6 +62,24 @@ impl ColorBlendAttachmentState {
             .color_write_mask(Self::write_all())
     }
 
+    ///
+    /// Standard pre multiplied alpha blending
+    ///
+    /// OUT_COLOR = (SRC_C * 1) + (DST_C * (1 - SRC_A))
+    /// OUT_ALPHA = (SRC_A * (1 - DST_A)) + (DST_A * 1)
+    ///
+    pub fn pre_multiplied_alpha_blending() -> PipelineColorBlendAttachmentStateBuilder<'static> {
+        PipelineColorBlendAttachmentStateBuilder::new()
+            .blend_enable(true)
+            .src_color_blend_factor(BlendFactor::ONE)
+            .dst_color_blend_factor(BlendFactor::ONE_MINUS_SRC_ALPHA)
+            .color_blend_op(BlendOp::ADD)
+            .src_alpha_blend_factor(BlendFactor::ONE_MINUS_DST_ALPHA)
+            .dst_alpha_blend_factor(BlendFactor::ONE)
+            .alpha_blend_op(BlendOp::ADD)
+            .color_write_mask(Self::write_all())
+    }
+
     fn write_all() -> ColorComponentFlags {
         ColorComponentFlags::R
             | ColorComponentFlags::G

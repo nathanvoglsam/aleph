@@ -175,7 +175,7 @@ impl VertexInputState {
     // Tell the inspector to ignore checking match statements are exhaustive in the match statement
     // in the function below. There is a variant of the enum behind a feature gate which be marked
     // as missing, even if the feature isn't enabled
-    //noinspection RsMatchCheck
+    //noinspection RsNonExhaustiveMatch
     ///
     /// A standard function provided for remapping attribute locations to match what is expected
     /// for a static mesh
