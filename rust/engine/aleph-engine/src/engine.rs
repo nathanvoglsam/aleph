@@ -28,6 +28,7 @@
 //
 
 use app_info::AppInfo;
+use egui::PaintJobs;
 use platform::window::Window;
 use platform::Platform;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -190,7 +191,9 @@ impl Engine {
             }
 
             // End the egui frame
-            let (output, _shapes) = egui_ctx.end_frame();
+            let (output, shapes) = egui_ctx.end_frame();
+
+            let jobs: PaintJobs = egui_ctx.tessellate(shapes);
 
             // Process output (clipboard, cursors, etc)
             aleph_platform_egui::process_egui_output(output);
@@ -200,8 +203,8 @@ impl Engine {
                 if i.is_none() {
                     continue;
                 }
-                let i = i.unwrap();
-                renderer.render_frame(&mut swapchain, i);
+                let index = i.unwrap();
+                renderer.render_frame(index, &mut swapchain, jobs);
             }
         }
 
