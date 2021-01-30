@@ -30,5 +30,4 @@
 mod renderer;
 mod renderer2;
 
-pub use renderer::ImguiRenderer;
 pub use renderer::Renderer;
