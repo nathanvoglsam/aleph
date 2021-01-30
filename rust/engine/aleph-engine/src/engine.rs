@@ -31,6 +31,8 @@ use app_info::AppInfo;
 use egui::PaintJobs;
 use platform::window::Window;
 use platform::Platform;
+use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use vulkan::pipeline_cache::PipelineCache;
 use vulkan_core::GPUInfo;
@@ -121,6 +123,7 @@ impl Engine {
 
         // Initialize egui
         let mut egui_ctx = egui::CtxRef::default();
+        egui_ctx.set_fonts(egui_font_definitions());
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
@@ -380,5 +383,72 @@ impl Engine {
             "Short Running thread pool initialized with {} threads",
             short_threads
         );
+    }
+}
+
+fn egui_font_definitions() -> egui::FontDefinitions {
+    use aleph_embedded_data as data;
+
+    let mut font_data = BTreeMap::new();
+    let mut fonts_for_family = BTreeMap::new();
+
+    let cascadia_code_name = "CascadiaCode";
+    let cascadia_code = data::fonts::cascadia_code();
+    let noto_sans_name = "NotoSans-Regular";
+    let noto_sans = data::fonts::noto_sans_regular();
+    let noto_emoji_name = "NotoEmoji-Regular";
+    let noto_emoji = data::fonts::noto_emoji_regular();
+    let emoji_icons_name = "emoji-icon-font";
+    let emoji_icons = data::fonts::noto_emoji_regular();
+
+    font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
+    font_data.insert(noto_sans_name.to_owned(), Cow::Borrowed(noto_sans));
+    font_data.insert(noto_emoji_name.to_owned(), Cow::Borrowed(noto_emoji));
+    font_data.insert(emoji_icons_name.to_owned(), Cow::Borrowed(emoji_icons));
+
+    fonts_for_family.insert(
+        egui::FontFamily::Monospace,
+        vec![
+            cascadia_code_name.to_owned(),
+            noto_sans_name.to_owned(),
+            noto_emoji_name.to_owned(),
+            emoji_icons_name.to_owned(),
+        ],
+    );
+    fonts_for_family.insert(
+        egui::FontFamily::Proportional,
+        vec![
+            noto_sans_name.to_owned(),
+            noto_emoji_name.to_owned(),
+            emoji_icons_name.to_owned(),
+        ],
+    );
+
+    let mut family_and_size = BTreeMap::new();
+    family_and_size.insert(
+        egui::TextStyle::Small,
+        (egui::FontFamily::Proportional, 14.0),
+    );
+    family_and_size.insert(
+        egui::TextStyle::Body,
+        (egui::FontFamily::Proportional, 17.0),
+    );
+    family_and_size.insert(
+        egui::TextStyle::Button,
+        (egui::FontFamily::Proportional, 18.0),
+    );
+    family_and_size.insert(
+        egui::TextStyle::Heading,
+        (egui::FontFamily::Proportional, 22.0),
+    );
+    family_and_size.insert(
+        egui::TextStyle::Monospace,
+        (egui::FontFamily::Monospace, 14.0),
+    );
+
+    egui::FontDefinitions {
+        font_data,
+        fonts_for_family,
+        family_and_size,
     }
 }

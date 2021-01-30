@@ -35,8 +35,29 @@ pub fn cascadia_code() -> &'static [u8] {
 }
 
 ///
+/// Embedded bytes of emoji-icon-font.ttf
+///
+pub fn emoji_icon_font() -> &'static [u8] {
+    include_bytes!("../fonts/emoji-icon-font.ttf")
+}
+
+///
 /// Embedded bytes of JetBrainsMono-Regular.ttf
 ///
 pub fn jetbrains_mono_regular() -> &'static [u8] {
     include_bytes!("../fonts/JetBrainsMono-Regular.ttf")
+}
+
+///
+/// Embedded bytes of NotoEmoji-Regular.ttf
+///
+pub fn noto_emoji_regular() -> &'static [u8] {
+    include_bytes!("../fonts/NotoEmoji-Regular.ttf")
+}
+
+///
+/// Embedded bytes of NotoSans-Regular.ttf
+///
+pub fn noto_sans_regular() -> &'static [u8] {
+    include_bytes!("../fonts/NotoSans-Regular.ttf")
 }
