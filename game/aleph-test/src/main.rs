@@ -37,6 +37,7 @@ struct AlephAppLogic {
     _frame_timer: bool,
     frame_times: FrameRate,
     demo_window: egui_demo_lib::DemoWindows,
+    colour_test: egui_demo_lib::ColorTest,
 }
 
 impl AlephAppLogic {
@@ -45,6 +46,7 @@ impl AlephAppLogic {
             _frame_timer: true,
             frame_times: FrameRate::new(),
             demo_window: Default::default(),
+            colour_test: Default::default()
         }
     }
 }
@@ -56,6 +58,15 @@ impl aleph::AppLogic for AlephAppLogic {
         self.frame_times.update();
 
         self.demo_window.ui(egui_ctx);
+
+        aleph::egui::Window::new("colour")
+            .collapsible(false)
+            .scroll(true)
+            .show(egui_ctx, |ui| {
+                let mut tex_allocator = None;
+                self.colour_test.ui(ui, &mut tex_allocator);
+            });
+
     }
 
     fn on_exit(&mut self) {}
