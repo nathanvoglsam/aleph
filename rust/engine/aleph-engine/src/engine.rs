@@ -401,7 +401,7 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     let noto_emoji_name = "NotoEmoji-Regular";
     let noto_emoji = data::fonts::noto_emoji_regular();
     let emoji_icons_name = "emoji-icon-font";
-    let emoji_icons = data::fonts::noto_emoji_regular();
+    let emoji_icons = data::fonts::emoji_icon_font();
 
     let monospace_name = if jetbrains {
         font_data.insert(jetbrains_mono_name.to_owned(), Cow::Borrowed(jetbrains_mono));
