@@ -86,7 +86,7 @@ fn score_present_mode_vsync(mode: PresentModeKHR) -> u32 {
 ///
 fn select_surface_format(formats: &[SurfaceFormatKHR]) -> SurfaceFormatKHR {
     for format in formats.iter() {
-        if format.format == Format::B8G8R8A8_UNORM
+        if format.format == Format::B8G8R8A8_SRGB
             && format.color_space == ColorSpaceKHR::SRGB_NONLINEAR_KHR
         {
             return *format;

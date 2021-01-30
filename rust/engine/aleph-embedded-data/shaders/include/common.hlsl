@@ -81,3 +81,19 @@ inline float SaturateFP16(float val) {
 inline float SaturateFP32(float val) {
     return clamp(val, 0.045, 1.0);
 }
+
+inline float3 ApproxLinearFromSRGB(float3 srgb) {
+    return pow(srgb, 2.2);
+}
+
+inline float3 ApproxLinearToSRGB(float3 colour) {
+    return pow(colour, 1 / 2.2);
+}
+
+inline float4 ApproxLinearFromSRGBA(float4 srgba) {
+    return float4(ApproxLinearFromSRGB(srgba.xyz), srgba.w);
+}
+
+inline float4 ApproxLinearToSRGBA(float4 colour) {
+    return float4(ApproxLinearToSRGB(colour.xyz), colour.w);
+}
