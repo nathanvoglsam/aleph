@@ -369,7 +369,7 @@ impl PerFrameFontObjects {
 }
 
 ///
-/// This represents the resources needed for rendering a single imgui frame in parallel. This
+/// This represents the resources needed for rendering a single egui frame in parallel. This
 /// separation allows for multiple frames in flight
 ///
 pub struct PerFrameObjects {

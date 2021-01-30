@@ -46,9 +46,6 @@
 
 ## Unfinished and should abandon
 
-- `aleph-platform-imgui`
-    - Going to dump imgui for egui
-
 ## Needs redesign
 
 - `aleph-app-info`

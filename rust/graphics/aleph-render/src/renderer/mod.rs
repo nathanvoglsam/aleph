@@ -28,10 +28,7 @@
 //
 
 mod egui;
-mod imgui;
 mod pipelines;
-
-pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
 use ::egui::PaintJobs;
