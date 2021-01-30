@@ -123,7 +123,7 @@ impl Engine {
 
         // Initialize egui
         let mut egui_ctx = egui::CtxRef::default();
-        egui_ctx.set_fonts(egui_font_definitions());
+        egui_ctx.set_fonts(egui_font_definitions(true));
 
         // -----------------------------------------------------------------------------------------
         // Graphics Initialization
@@ -386,12 +386,14 @@ impl Engine {
     }
 }
 
-fn egui_font_definitions() -> egui::FontDefinitions {
+fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     use aleph_embedded_data as data;
 
     let mut font_data = BTreeMap::new();
     let mut fonts_for_family = BTreeMap::new();
 
+    let jetbrains_mono_name = "CascadiaCode";
+    let jetbrains_mono = data::fonts::jetbrains_mono_regular();
     let cascadia_code_name = "CascadiaCode";
     let cascadia_code = data::fonts::cascadia_code();
     let noto_sans_name = "NotoSans-Regular";
@@ -401,7 +403,13 @@ fn egui_font_definitions() -> egui::FontDefinitions {
     let emoji_icons_name = "emoji-icon-font";
     let emoji_icons = data::fonts::noto_emoji_regular();
 
-    font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
+    let monospace_name = if jetbrains {
+        font_data.insert(jetbrains_mono_name.to_owned(), Cow::Borrowed(jetbrains_mono));
+        jetbrains_mono_name
+    } else {
+        font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
+        cascadia_code_name
+    };
     font_data.insert(noto_sans_name.to_owned(), Cow::Borrowed(noto_sans));
     font_data.insert(noto_emoji_name.to_owned(), Cow::Borrowed(noto_emoji));
     font_data.insert(emoji_icons_name.to_owned(), Cow::Borrowed(emoji_icons));
@@ -409,7 +417,7 @@ fn egui_font_definitions() -> egui::FontDefinitions {
     fonts_for_family.insert(
         egui::FontFamily::Monospace,
         vec![
-            cascadia_code_name.to_owned(),
+            monospace_name.to_owned(),
             noto_sans_name.to_owned(),
             noto_emoji_name.to_owned(),
             emoji_icons_name.to_owned(),
