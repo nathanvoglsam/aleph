@@ -36,5 +36,5 @@ Texture2D Tex;
 SamplerState Sampler;
 
 float4 main(in EguiPixelInput input) : SV_Target0 {
-    return input.Color * Tex.Sample(Sampler, input.UV);
+    return input.Color * Tex.Sample(Sampler, input.UV).r;
 }

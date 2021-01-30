@@ -192,10 +192,7 @@ impl Engine {
 
             // End the egui frame
             let (output, shapes) = egui_ctx.end_frame();
-
             let jobs: PaintJobs = egui_ctx.tessellate(shapes);
-
-            // Process output (clipboard, cursors, etc)
             aleph_platform_egui::process_egui_output(output);
 
             unsafe {
@@ -204,7 +201,7 @@ impl Engine {
                     continue;
                 }
                 let index = i.unwrap();
-                renderer.render_frame(index, &mut swapchain, jobs);
+                renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
             }
         }
 

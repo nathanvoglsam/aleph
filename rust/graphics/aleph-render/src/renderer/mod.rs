@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
+mod egui;
 mod imgui;
 mod pipelines;
 
 pub use self::imgui::ImguiRenderer;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
+use ::egui::PaintJobs;
 use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
 use aleph_vulkan::embedded::data::SphereMesh;
 use aleph_vulkan::image::{ColourImage, DepthImage};
@@ -619,6 +621,7 @@ pub struct Renderer {
     command_buffer: CommandBuffer,
     acquire_semaphore: Semaphore,
     signal_semaphore: Semaphore,
+    egui_renderer: egui::Renderer,
     device: Arc<Device>,
     allocator: Arc<Allocator>,
 }
@@ -775,6 +778,8 @@ impl Renderer {
             .expect("Failed to create barrier semaphore");
         device.defer_destruction(signal_semaphore);
 
+        let egui_renderer = egui::Renderer::new(device.clone(), allocator.clone(), swapchain);
+
         Self {
             gbuffer,
             gbuffer_pass,
@@ -794,6 +799,7 @@ impl Renderer {
             command_buffer,
             acquire_semaphore,
             signal_semaphore,
+            egui_renderer,
             device,
             allocator,
         }
@@ -826,8 +832,17 @@ impl Renderer {
         }
     }
 
-    pub unsafe fn render_frame(&mut self, swapchain: &mut Swapchain, index: usize) {
+    pub unsafe fn render_frame(
+        &mut self,
+        index: usize,
+        swapchain: &mut Swapchain,
+        egui_ctx: &::egui::CtxRef,
+        jobs: PaintJobs,
+    ) {
         optick::event!();
+
+        self.egui_renderer
+            .update_screen_info(egui_ctx.pixels_per_point());
 
         self.device
             .loader()
@@ -844,7 +859,10 @@ impl Renderer {
             .begin_command_buffer(self.command_buffer, &begin_info)
             .expect("Failed to begin command buffer");
 
-        self.record_frame(self.command_buffer, index);
+        self.record_frame(index, self.command_buffer);
+
+        self.egui_renderer
+            .render_frame(index, self.command_buffer, egui_ctx, jobs);
 
         self.device
             .loader()
@@ -872,7 +890,7 @@ impl Renderer {
         }
     }
 
-    pub unsafe fn record_frame(&self, command_buffer: CommandBuffer, index: usize) {
+    pub unsafe fn record_frame(&self, index: usize, command_buffer: CommandBuffer) {
         optick::event!();
 
         // Build render area over entire image

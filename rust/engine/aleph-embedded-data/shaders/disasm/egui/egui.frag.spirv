@@ -1,7 +1,7 @@
 ; SPIR-V
 ; Version: 1.0
 ; Generator: Google spiregg; 0
-; Bound: 28
+; Bound: 29
 ; Schema: 0
                OpCapability Shader
                OpMemoryModel Logical GLSL450
@@ -50,7 +50,8 @@
          %24 = OpLoad %type_sampler %Sampler
          %25 = OpSampledImage %type_sampled_image %23 %24
          %26 = OpImageSampleImplicitLod %v4float %25 %22 None
-         %27 = OpFMul %v4float %21 %26
-               OpStore %out_var_SV_Target0 %27
+         %27 = OpCompositeExtract %float %26 0
+         %28 = OpVectorTimesScalar %v4float %21 %27
+               OpStore %out_var_SV_Target0 %28
                OpReturn
                OpFunctionEnd
