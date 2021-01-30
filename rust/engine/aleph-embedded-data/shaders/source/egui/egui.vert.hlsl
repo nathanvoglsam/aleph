@@ -28,7 +28,7 @@
 //
 
 #include "egui.inc.hlsl"
-#include <common.hlsl>
+#include <srgb.hlsl>
 
 struct PushConstantLayout {
     float2 ScreenSize;
@@ -48,7 +48,7 @@ EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     Pos = float4(x, y, z, w);
 
     // Package up fragment payload
-    output.Color = ApproxLinearFromSRGBA(input.Color);
+    output.Color = LinearFromSRGBA(input.Color);
     output.UV = input.UV;
 
     return output;
