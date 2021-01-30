@@ -392,7 +392,7 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     let mut font_data = BTreeMap::new();
     let mut fonts_for_family = BTreeMap::new();
 
-    let jetbrains_mono_name = "CascadiaCode";
+    let jetbrains_mono_name = "JetbrainsMono";
     let jetbrains_mono = data::fonts::jetbrains_mono_regular();
     let cascadia_code_name = "CascadiaCode";
     let cascadia_code = data::fonts::cascadia_code();

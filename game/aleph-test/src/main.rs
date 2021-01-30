@@ -28,6 +28,7 @@
 //
 
 extern crate aleph_engine as aleph;
+extern crate egui_demo_lib;
 
 use aleph::app_info::AppInfo;
 use aleph::{Engine, FrameRate};
@@ -35,6 +36,7 @@ use aleph::{Engine, FrameRate};
 struct AlephAppLogic {
     _frame_timer: bool,
     frame_times: FrameRate,
+    demo_window: egui_demo_lib::DemoWindows,
 }
 
 impl AlephAppLogic {
@@ -42,6 +44,7 @@ impl AlephAppLogic {
         Self {
             _frame_timer: true,
             frame_times: FrameRate::new(),
+            demo_window: Default::default(),
         }
     }
 }
@@ -52,9 +55,7 @@ impl aleph::AppLogic for AlephAppLogic {
     fn on_update(&mut self, egui_ctx: &aleph::egui::CtxRef) {
         self.frame_times.update();
 
-        aleph::egui::Window::new("Settings UI").show(egui_ctx, |ui| {
-            egui_ctx.settings_ui(ui);
-        });
+        self.demo_window.ui(egui_ctx);
     }
 
     fn on_exit(&mut self) {}

@@ -131,6 +131,11 @@ impl Renderer {
         for job in jobs {
             let triangles = &job.1;
 
+            // Skip doing anything for the job if there's nothing to render
+            if triangles.vertices.is_empty() || triangles.indices.is_empty() {
+                continue;
+            }
+
             // Get the slice to copy from and various byte counts
             let v_slice = &triangles.vertices;
             let v_size = core::mem::size_of_val(&v_slice[0]);

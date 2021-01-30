@@ -30,7 +30,7 @@
 ///
 /// A user's main interface with Aleph. This represents the life cycle of the entire application.
 ///
-pub trait AppLogic: Send {
+pub trait AppLogic {
     ///
     /// This method will be called once on application start up. Anything that needs to be called
     /// once for the entire life cycle of the application goes here.
