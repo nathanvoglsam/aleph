@@ -313,6 +313,7 @@ impl Platform {
             window_events.clear();
             mouse_events.clear();
             keyboard_events.clear();
+            all_events.clear();
 
             // Clear the event pump and delegate the events to their event handlers
             for event in event_pump.poll_iter() {
