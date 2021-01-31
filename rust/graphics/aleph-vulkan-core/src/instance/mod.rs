@@ -131,16 +131,18 @@ impl InstanceBuilder {
         debug: bool,
         validation: bool,
     ) -> erupt::InstanceLoader {
+        use erupt::vk1_0::make_version;
+
         // Fill out ApplicationInfo for creating a vulkan instance
-        let app_name_cstr = CString::new(app_info.name.as_str()).unwrap();
-        let app_version =
-            erupt::vk1_0::make_version(app_info.major, app_info.minor, app_info.patch);
+        let app_name_cstr = app_info.name.as_str();
+        let app_name_cstr = CString::new(app_name_cstr).unwrap();
+        let app_version = make_version(app_info.major, app_info.minor, app_info.patch);
         let engine_version = erupt::vk1_0::make_version(
             engine_version_major(),
             engine_version_minor(),
             engine_version_patch(),
         );
-        let api_version = erupt::vk1_0::make_version(1, 0, 0);
+        let api_version = Self::assert_version_supported(entry_loader, 1, 2);
         let app_info = erupt::vk1_0::ApplicationInfoBuilder::new()
             .application_name(&app_name_cstr)
             .application_version(app_version)
@@ -169,6 +171,40 @@ impl InstanceBuilder {
         aleph_log::trace!("Creating Vulkan instance");
         erupt::InstanceLoader::new(entry_loader, &create_info, None)
             .expect("Failed to initialize Vulkan instance loader")
+    }
+
+    fn assert_version_supported<T>(
+        entry_loader: &erupt::EntryLoader<T>,
+        major_version: u32,
+        minor_version: u32,
+    ) -> u32 {
+        // Get the latest supported API version
+        let max_version = unsafe {
+            entry_loader
+                .enumerate_instance_version(None)
+                .expect("Failed to get the latest supported instance version")
+        };
+        let max_version_major = erupt::vk1_0::version_major(max_version);
+        let max_version_minor = erupt::vk1_0::version_minor(max_version);
+
+        // Check if the major version is supported
+        if max_version_major < major_version {
+            panic!(
+                "Current driver or GPU doesn't support Vulkan {}.x",
+                major_version
+            );
+        }
+
+        // Check if the minor version is supported
+        if max_version_minor < minor_version {
+            panic!(
+                "Current driver or GPU doesn't support Vulkan {}.{}",
+                major_version, minor_version
+            );
+        }
+
+        // Return the packed version
+        erupt::vk1_0::make_version(major_version, minor_version, 0)
     }
 
     ///

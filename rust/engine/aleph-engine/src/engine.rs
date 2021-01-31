@@ -404,7 +404,10 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     let emoji_icons = data::fonts::emoji_icon_font();
 
     let monospace_name = if jetbrains {
-        font_data.insert(jetbrains_mono_name.to_owned(), Cow::Borrowed(jetbrains_mono));
+        font_data.insert(
+            jetbrains_mono_name.to_owned(),
+            Cow::Borrowed(jetbrains_mono),
+        );
         jetbrains_mono_name
     } else {
         font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
