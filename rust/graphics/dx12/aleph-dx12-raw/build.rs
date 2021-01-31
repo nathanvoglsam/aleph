@@ -29,7 +29,10 @@
 
 #[cfg(target_os = "windows")]
 fn main() {
-    windows::build!(windows::win32::direct3d12::*);
+    windows::build!(
+        windows::win32::direct3d12::*
+        windows::win32::dxgi::*
+    );
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let src_file = "windows.rs";
