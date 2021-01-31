@@ -1,0 +1,211 @@
+//
+//
+// This file is a part of Aleph
+//
+// https://github.com/nathanvoglsam/aleph
+//
+// MIT License
+//
+// Copyright (c) 2020 Aleph Engine
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+use aleph_vulkan_alloc::Allocator;
+use aleph_vulkan_core::erupt::vk1_0::{Buffer, CommandBuffer};
+use once_cell::sync::OnceCell;
+
+mod utils;
+
+static CUBE_MESH_BUFFERS: OnceCell<self::utils::StaticMeshBuffers> = OnceCell::new();
+
+///
+/// Namespace structs for the global, always usable cube mesh vertex buffers
+///
+pub struct CubeMeshBuffers {}
+
+impl CubeMeshBuffers {
+    ///
+    /// Allocates the buffers and prepares everything for staging the data to the GPU. Records the
+    /// staging commands into the given command buffer, including a pipeline barrier, which can then
+    /// be queued to the GPU to stage the vertex buffers.
+    ///
+    pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
+        let buffers = self::utils::StaticMeshBuffers::new(
+            allocator,
+            concat!(module_path!(), "::CubeMesh"),
+            super::data::CubeMesh::positions(),
+            super::data::CubeMesh::normals(),
+            super::data::CubeMesh::tangents(),
+            super::data::CubeMesh::uv(),
+            super::data::CubeMesh::indices(),
+        );
+        buffers.record_buffer_staging(allocator.device(), command_buffer);
+
+        CUBE_MESH_BUFFERS
+            .set(buffers)
+            .ok()
+            .expect("Mesh buffers already initialized");
+    }
+
+    ///
+    /// Get the raw vertex position data
+    ///
+    pub fn positions() -> Buffer {
+        CUBE_MESH_BUFFERS.get().unwrap().positions()
+    }
+
+    ///
+    /// Get the raw vertex normal data
+    ///
+    pub fn normals() -> Buffer {
+        CUBE_MESH_BUFFERS.get().unwrap().normals()
+    }
+
+    ///
+    /// Get the raw vertex tangent data
+    ///
+    pub fn tangents() -> Buffer {
+        CUBE_MESH_BUFFERS.get().unwrap().tangents()
+    }
+
+    ///
+    /// Get the raw vertex texcoord data
+    ///
+    pub fn uvs() -> Buffer {
+        CUBE_MESH_BUFFERS.get().unwrap().uv()
+    }
+
+    ///
+    /// Get the raw index data
+    ///
+    pub fn indices() -> Buffer {
+        CUBE_MESH_BUFFERS.get().unwrap().indices()
+    }
+}
+
+static SPHERE_MESH_BUFFERS: OnceCell<self::utils::StaticMeshBuffers> = OnceCell::new();
+
+///
+/// Namespace structs for the global, always usable sphere mesh vertex buffers
+///
+pub struct SphereMeshBuffers {}
+
+impl SphereMeshBuffers {
+    ///
+    /// Allocates the buffers and prepares everything for staging the data to the GPU. Records the
+    /// staging commands into the given command buffer, including a pipeline barrier, which can then
+    /// be queued to the GPU to stage the vertex buffers.
+    ///
+    pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
+        let buffers = self::utils::StaticMeshBuffers::new(
+            allocator,
+            concat!(module_path!(), "::SphereMesh"),
+            super::data::SphereMesh::positions(),
+            super::data::SphereMesh::normals(),
+            super::data::SphereMesh::tangents(),
+            super::data::SphereMesh::uv(),
+            super::data::SphereMesh::indices(),
+        );
+        buffers.record_buffer_staging(allocator.device(), command_buffer);
+
+        SPHERE_MESH_BUFFERS
+            .set(buffers)
+            .ok()
+            .expect("Mesh buffers already initialized");
+    }
+
+    ///
+    /// Get the raw vertex position data
+    ///
+    pub fn positions() -> Buffer {
+        SPHERE_MESH_BUFFERS.get().unwrap().positions()
+    }
+
+    ///
+    /// Get the raw vertex normal data
+    ///
+    pub fn normals() -> Buffer {
+        SPHERE_MESH_BUFFERS.get().unwrap().normals()
+    }
+
+    ///
+    /// Get the raw vertex tangent data
+    ///
+    pub fn tangents() -> Buffer {
+        SPHERE_MESH_BUFFERS.get().unwrap().tangents()
+    }
+
+    ///
+    /// Get the raw vertex texcoord data
+    ///
+    pub fn uvs() -> Buffer {
+        SPHERE_MESH_BUFFERS.get().unwrap().uv()
+    }
+
+    ///
+    /// Get the raw index data
+    ///
+    pub fn indices() -> Buffer {
+        SPHERE_MESH_BUFFERS.get().unwrap().indices()
+    }
+}
+
+static FS_QUAD_BUFFER: OnceCell<self::utils::PosOnlyMeshBuffers> = OnceCell::new();
+
+///
+/// A namespace struct for a fullscreen quad
+///
+pub struct FullscreenQuadBuffers {}
+
+impl FullscreenQuadBuffers {
+    ///
+    /// Allocates the buffers and prepares everything for staging the data to the GPU. Records the
+    /// staging commands into the given command buffer, including a pipeline barrier, which can then
+    /// be queued to the GPU to stage the vertex buffers.
+    ///
+    pub fn init_buffers(allocator: &Allocator, command_buffer: CommandBuffer) {
+        let buffers = self::utils::PosOnlyMeshBuffers::new(
+            allocator,
+            concat!(module_path!(), "::FullscreenQuad"),
+            super::data::FullscreenQuad::positions(),
+            super::data::FullscreenQuad::indices(),
+        );
+        buffers.record_buffer_staging(allocator.device(), command_buffer);
+
+        FS_QUAD_BUFFER
+            .set(buffers)
+            .ok()
+            .expect("Mesh buffers already initialized");
+    }
+
+    ///
+    /// Get the raw vertex position data
+    ///
+    pub fn positions() -> Buffer {
+        FS_QUAD_BUFFER.get().unwrap().positions()
+    }
+
+    ///
+    /// Get the raw index data
+    ///
+    pub fn indices() -> Buffer {
+        FS_QUAD_BUFFER.get().unwrap().indices()
+    }
+}

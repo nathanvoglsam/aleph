@@ -1,0 +1,59 @@
+##
+##
+## This file is a part of NovaEngine
+## https://gitlab.com/MindSpunk/NovaEngine
+##
+##
+## MIT License
+##
+## Copyright (c) 2020 Nathan Voglsam
+##
+## Permission is hereby granted, free of charge, to any person obtaining a copy
+## of this software and associated documentation files (the "Software"), to deal
+## in the Software without restriction, including without limitation the rights
+## to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+## copies of the Software, and to permit persons to whom the Software is
+## furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included in all
+## copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+## IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+## FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+## AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+## LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+## OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+## SOFTWARE.
+##
+
+[package]
+name = "aleph-vulkan-alloc-sys"
+version = "1.0.0+vma.2.2.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-vma-sys/"
+readme = "README.md"
+keywords = ["engine", "graphics", "vulkan", "game"] # TODO: Keywords
+categories = ["game-engines"]                       # TODO: Categories
+edition = "2018"
+build = "build.rs"
+
+[lib]
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[features]
+default = [ ]
+generate_bindings = [ "bindgen" ]
+corruption_detection = [ ]
+
+[build-dependencies]
+cmake = "0.1"
+aleph-compile = { path = "../../build/aleph-compile", version = "1" }
+aleph-target-build = { path = "../../build/aleph-target-build", version = "2" }
+
+[build-dependencies.bindgen]
+version = "0.56"
+optional = true
