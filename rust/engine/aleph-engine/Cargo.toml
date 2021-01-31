@@ -55,9 +55,6 @@ aleph-platform-egui = { path = "../../platform/aleph-platform-egui", version = "
 aleph-settings = { path = "../../config/aleph-settings", version = "0.1" }
 aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
 aleph-target = { path = "../../build/aleph-target", version = "2" }
-aleph-vulkan = { path = "../../graphics/aleph-vulkan", version = "0.1" }
-aleph-vulkan-core = { path = "../../graphics/aleph-vulkan-core", version = "0.1" }
-aleph-vulkan-alloc = { path = "../../graphics/aleph-vulkan-alloc", version = "0.1" }
 egui = "0.8"
 clap = "2"
 rayon = "1"
