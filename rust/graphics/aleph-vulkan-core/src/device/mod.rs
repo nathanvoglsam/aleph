@@ -61,8 +61,14 @@ impl DeviceBuilder {
         let surface = instance.surface();
 
         let features = PhysicalDeviceFeatures::default();
-        let physical_device = Self::select_device(&instance_loader, &features, surface)
-            .expect("Failed to select a physical device");
+        let physical_device = Self::select_device(
+            &instance_loader,
+            &features,
+            instance.major_version(),
+            instance.minor_version(),
+            surface,
+        )
+        .expect("Failed to select a physical device");
 
         aleph_log::trace!("Checking swapchain support");
         let swapchain_support =
@@ -85,6 +91,7 @@ impl DeviceBuilder {
         //    instance_loader.enumerate_device_extension_properties(physical_device, None, None)
         //};
 
+        // Unpack the vulkan device info
         let vendor_id = VendorID::from_raw(device_props.vendor_id);
         let device_name = device_props.device_name.as_ptr();
         let device_name = unsafe { CStr::from_ptr(device_name) };
@@ -226,6 +233,8 @@ impl DeviceBuilder {
     fn select_device(
         instance: &InstanceLoader,
         features: &PhysicalDeviceFeatures,
+        major_version: u32,
+        minor_version: u32,
         surface: SurfaceKHR,
     ) -> Option<PhysicalDevice> {
         let devices = unsafe {
@@ -289,8 +298,15 @@ impl DeviceBuilder {
                 continue;
             }
 
-            // This should never happen but always good to be safe
-            if props.api_version < erupt::vk1_0::make_version(1, 0, 0) {
+            let device_major_version = erupt::vk1_0::version_major(props.api_version);
+            let device_minor_version = erupt::vk1_0::version_minor(props.api_version);
+
+            if device_major_version < major_version {
+                score.1 = -100_000;
+                continue;
+            }
+
+            if device_minor_version < minor_version {
                 score.1 = -100_000;
                 continue;
             }

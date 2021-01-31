@@ -91,7 +91,7 @@ impl InstanceBuilder {
         app_info: &AppInfo,
     ) -> Arc<Instance> {
         // Create the vulkan instance
-        let instance_loader = Self::create_instance(
+        let (instance_loader, version) = Self::create_instance(
             entry_loader.loader(),
             app_info,
             window_handle,
@@ -116,6 +116,7 @@ impl InstanceBuilder {
             _entry_loader: entry_loader.clone(),
             instance_loader: Arc::new(instance_loader),
             surface,
+            version,
             messenger,
         };
         Arc::new(instance)
@@ -130,7 +131,7 @@ impl InstanceBuilder {
         window_handle: &impl HasRawWindowHandle,
         debug: bool,
         validation: bool,
-    ) -> erupt::InstanceLoader {
+    ) -> (erupt::InstanceLoader, u32) {
         use erupt::vk1_0::make_version;
 
         // Fill out ApplicationInfo for creating a vulkan instance
@@ -169,8 +170,10 @@ impl InstanceBuilder {
 
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
-        erupt::InstanceLoader::new(entry_loader, &create_info, None)
-            .expect("Failed to initialize Vulkan instance loader")
+        let instance_loader = erupt::InstanceLoader::new(entry_loader, &create_info, None)
+            .expect("Failed to initialize Vulkan instance loader");
+
+        (instance_loader, api_version)
     }
 
     fn assert_version_supported<T>(
@@ -240,6 +243,7 @@ pub struct Instance {
     _entry_loader: Arc<Entry>,
     instance_loader: Arc<InstanceLoader>,
     surface: SurfaceKHR,
+    version: u32,
     messenger: Option<DebugUtilsMessengerEXT>,
 }
 
@@ -263,6 +267,21 @@ impl Instance {
     ///
     pub fn surface(&self) -> SurfaceKHR {
         self.surface
+    }
+
+    /// Returns the major version of the vulkan instance
+    pub fn major_version(&self) -> u32 {
+        erupt::vk1_0::version_major(self.version)
+    }
+
+    /// Returns the minor version of the vulkan instance
+    pub fn minor_version(&self) -> u32 {
+        erupt::vk1_0::version_minor(self.version)
+    }
+
+    /// Returns the patch version of the vulkan instance
+    pub fn patch_version(&self) -> u32 {
+        erupt::vk1_0::version_patch(self.version)
     }
 }
 
