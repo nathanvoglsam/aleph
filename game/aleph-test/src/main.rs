@@ -46,7 +46,7 @@ impl AlephAppLogic {
             _frame_timer: true,
             frame_times: FrameRate::new(),
             demo_window: Default::default(),
-            colour_test: Default::default()
+            colour_test: Default::default(),
         }
     }
 }
@@ -57,9 +57,9 @@ impl aleph::AppLogic for AlephAppLogic {
     fn on_update(&mut self, egui_ctx: &aleph::egui::CtxRef) {
         self.frame_times.update();
 
-        self.demo_window.ui(egui_ctx);
+        //self.demo_window.ui(egui_ctx);
 
-        aleph::egui::Window::new("colour")
+        aleph::egui::Window::new("Colour Test")
             .collapsible(false)
             .scroll(true)
             .show(egui_ctx, |ui| {
@@ -67,6 +67,12 @@ impl aleph::AppLogic for AlephAppLogic {
                 self.colour_test.ui(ui, &mut tex_allocator);
             });
 
+        aleph::egui::Window::new("Settings")
+            .collapsible(false)
+            .scroll(true)
+            .show(egui_ctx, |ui| {
+                egui_ctx.settings_ui(ui);
+            });
     }
 
     fn on_exit(&mut self) {}
