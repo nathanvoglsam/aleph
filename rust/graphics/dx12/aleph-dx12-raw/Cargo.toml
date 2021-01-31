@@ -46,7 +46,9 @@ build = "build.rs"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [target.'cfg(windows)'.dependencies]
-windows = "0.2"
+##windows = "0.2"
+windows = { path = "../../../../../windows-rs", version = "0.2" }
 
 [target.'cfg(windows)'.build-dependencies]
-windows = "0.2"
+##windows = "0.2"
+windows = { path = "../../../../../windows-rs", version = "0.2" }
