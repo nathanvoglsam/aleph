@@ -5,3 +5,4 @@ shader_cache.bin
 rust/platform/aleph-platform/thirdparty/sdl2/out
 rust/graphics/aleph-vulkan-alloc-sys/lib/out
 rust/engine/aleph-embedded-data/shaders/out
+rust/graphics/dx12/aleph-dx12-raw/src/windows.rs
