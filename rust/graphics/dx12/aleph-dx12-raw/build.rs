@@ -30,7 +30,7 @@
 #[cfg(target_os = "windows")]
 fn main() {
     windows::build!(
-        windows::win32::direct3d12::*
+        windows::win32::direct3d12::*,
         windows::win32::dxgi::*
     );
 

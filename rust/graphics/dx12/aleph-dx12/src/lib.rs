@@ -30,3 +30,8 @@
 pub extern crate aleph_dx12_raw as raw;
 
 mod device;
+
+pub use device::Device;
+pub use device::DeviceBuilder;
+pub use device::DeviceCreateError;
+pub use device::DeviceCreateResult;

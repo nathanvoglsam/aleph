@@ -169,3 +169,10 @@ pub struct Device {
     factory: IDXGIFactory2,
     device: ID3D12Device,
 }
+
+impl Device {
+    /// Returns a builder instance for creating a new `Device`
+    pub fn builder() -> DeviceBuilder {
+        DeviceBuilder::new()
+    }
+}
