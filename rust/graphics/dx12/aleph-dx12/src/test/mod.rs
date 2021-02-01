@@ -27,7 +27,28 @@
 // SOFTWARE.
 //
 
+use crate::raw::windows::win32::direct3d12::{
+    ID3D12CommandQueue, D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_QUEUE_DESC,
+    D3D12_COMMAND_QUEUE_FLAGS,
+};
+use raw::windows::{Abi, Interface};
+
 #[test]
 pub fn test() {
-    let device = crate::DeviceBuilder::new().build();
+    let device = crate::DeviceBuilder::new().build().unwrap();
+
+    unsafe {
+        let desc = D3D12_COMMAND_QUEUE_DESC {
+            r#type: D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+            priority: 0,
+            flags: D3D12_COMMAND_QUEUE_FLAGS::D3D12_COMMAND_QUEUE_FLAG_NONE,
+            node_mask: 0,
+        };
+        let mut queue: Option<ID3D12CommandQueue> = None;
+        let _queue = device
+            .device
+            .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
+            .and_some(queue)
+            .unwrap();
+    }
 }

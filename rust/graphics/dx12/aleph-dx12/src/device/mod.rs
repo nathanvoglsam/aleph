@@ -32,7 +32,7 @@ mod utils;
 use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Debug1, ID3D12Device};
 use crate::raw::windows::win32::direct3d12::{D3D12GetDebugInterface, ID3D12Debug};
-use crate::raw::windows::win32::dxgi::{CreateDXGIFactory1, IDXGIFactory1, IDXGIFactory2};
+use crate::raw::windows::win32::dxgi::{CreateDXGIFactory1, IDXGIFactory2};
 use crate::raw::windows::{Abi, Error, Interface};
 
 /// Represents the set of errors that can be encountered from device creation
@@ -134,12 +134,12 @@ impl DeviceBuilder {
                 }
             }
 
-            let mut factory: Option<IDXGIFactory2> = None;
-            let factory = CreateDXGIFactory1(&IDXGIFactory2::IID, factory.set_abi())
-                .and_some(factory)
+            let mut dxgi_factory: Option<IDXGIFactory2> = None;
+            let dxgi_factory = CreateDXGIFactory1(&IDXGIFactory2::IID, dxgi_factory.set_abi())
+                .and_some(dxgi_factory)
                 .map_err(|v| DeviceCreateError::DXGI(v))?;
 
-            let adapter = utils::select_adapter(&factory, self.minimum_feature_level)
+            let adapter = utils::select_adapter(&dxgi_factory, self.minimum_feature_level)
                 .ok_or(DeviceCreateError::FailedToFindCompatibleAdapter)?;
 
             let mut device: Option<ID3D12Device> = None;
@@ -154,7 +154,7 @@ impl DeviceBuilder {
 
             Ok(Device {
                 debug,
-                factory,
+                dxgi_factory,
                 device,
             })
         }
@@ -162,8 +162,8 @@ impl DeviceBuilder {
 }
 
 pub struct Device {
-    debug: Option<ID3D12Debug>,
-    factory: IDXGIFactory2,
+    pub debug: Option<ID3D12Debug>,
+    pub dxgi_factory: IDXGIFactory2,
     pub device: ID3D12Device,
 }
 
