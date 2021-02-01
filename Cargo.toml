@@ -48,7 +48,6 @@ members = [
     "rust/graphics/dx12/aleph-dx12",
     "rust/graphics/dx12/aleph-dx12-raw",
     "rust/graphics/aleph-render",
-    "rust/graphics/aleph-render-graph",
     "rust/ktx/aleph-ktx",
     "rust/ktx/aleph-vk-format",
     "rust/logging/aleph-log",
