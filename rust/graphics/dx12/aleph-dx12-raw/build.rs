@@ -54,7 +54,10 @@ fn main() {
     let file = std::fs::read_to_string(&src_file).unwrap();
     let file = syn::parse_file(&file).unwrap();
 
-    // Extract
+    // Delete the old bindings directory so that we don't end up with old files polluting the tree
+    delete_old_bindings();
+
+    // Extract information into a dummy module to kick off the generation process
     let attrs = file.attrs;
     let items = file.items;
     let module = ItemMod {
@@ -65,6 +68,8 @@ fn main() {
         content: Some((Default::default(), items)),
         semi: None
     };
+
+    // Recursively walk the module tree
     handle_module(&output_dir, Vec::new(), &module);
 }
 
@@ -151,6 +156,15 @@ fn bindings_file_path() -> String {
 fn transformation_output_dir_path() -> String {
     let output_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
     format!("{}\\src", output_dir)
+}
+
+#[cfg(target_os = "windows")]
+fn delete_old_bindings() {
+    let output_dir = transformation_output_dir_path();
+    let mut output_dir = PathBuf::from(output_dir);
+    output_dir.push("raw");
+
+    std::fs::remove_dir_all(output_dir).unwrap();
 }
 
 #[cfg(not(target_os = "windows"))]
