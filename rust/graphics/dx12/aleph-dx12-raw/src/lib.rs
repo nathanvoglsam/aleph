@@ -28,4 +28,6 @@
 //
 
 #[cfg(target_os = "windows")]
-mod thing {}
+mod raw;
+
+pub use raw::*;
