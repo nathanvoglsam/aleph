@@ -56,8 +56,6 @@ pub unsafe fn select_adapter(
         // a big error or enumerated all of them already
         if let Ok(adapter) = adapter {
             // Get the adapter description so we can decide if we want to use it or not
-            //
-            // TODO: DXGI_ADAPTER_DESC1 broken because of windows-rs, will trigger UB
             let mut desc = DXGI_ADAPTER_DESC1::default();
             adapter.GetDesc1(&mut desc).unwrap();
 
