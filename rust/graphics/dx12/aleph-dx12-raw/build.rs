@@ -31,11 +31,11 @@ extern crate proc_macro2;
 extern crate quote;
 extern crate syn;
 
-use syn::{Item, ItemMod, Visibility};
-use std::path::{Path, PathBuf};
 use quote::ToTokens;
-use std::process::Stdio;
 use std::io::Write;
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
+use syn::{Item, ItemMod, Visibility};
 
 #[cfg(target_os = "windows")]
 fn main() {
@@ -66,7 +66,7 @@ fn main() {
         mod_token: Default::default(),
         ident: syn::Ident::new("raw", proc_macro2::Span::call_site()),
         content: Some((Default::default(), items)),
-        semi: None
+        semi: None,
     };
 
     // Recursively walk the module tree
@@ -91,16 +91,17 @@ fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &ItemMod
     let mut out_module = module.clone();
     if let Some(content) = out_module.content.as_mut() {
         let items = std::mem::take(&mut content.1);
-        content.1 = items.into_iter().map(|v| {
-            match v {
+        content.1 = items
+            .into_iter()
+            .map(|v| match v {
                 Item::Mod(mut module) => {
                     handle_module(&output_dir, name_stack.clone(), &module);
                     module.content = None;
                     Item::Mod(module)
                 }
-                _ => v
-            }
-        }).collect();
+                _ => v,
+            })
+            .collect();
     }
 
     // Now we want to output to mod.rs
