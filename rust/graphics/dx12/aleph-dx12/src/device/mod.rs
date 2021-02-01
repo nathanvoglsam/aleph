@@ -139,11 +139,9 @@ impl DeviceBuilder {
                 .and_some(factory)
                 .map_err(|v| DeviceCreateError::DXGI(v))?;
 
-            let factory_1: IDXGIFactory1 =
-                factory.cast().map_err(|v| DeviceCreateError::DXGI(v))?;
-
-            let adapter = utils::select_adapter(&factory_1, self.minimum_feature_level)
-                .ok_or(DeviceCreateError::FailedToFindCompatibleAdapter)?;
+            let adapter =
+                utils::select_adapter(&factory.clone().into(), self.minimum_feature_level)
+                    .ok_or(DeviceCreateError::FailedToFindCompatibleAdapter)?;
 
             let mut device: Option<ID3D12Device> = None;
             let device = D3D12CreateDevice(
