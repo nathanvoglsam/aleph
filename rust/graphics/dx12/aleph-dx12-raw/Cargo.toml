@@ -52,3 +52,16 @@ windows = { path = "../../../../../windows-rs", version = "0.2" }
 [target.'cfg(windows)'.build-dependencies]
 ##windows = "0.2"
 windows = { path = "../../../../../windows-rs", version = "0.2" }
+
+[target.'cfg(windows)'.build-dependencies.syn]
+version = "1"
+default-features = false
+features = ["derive", "parsing", "printing", "clone-impls", "full", "extra-traits"]
+
+[target.'cfg(windows)'.build-dependencies.proc-macro2]
+version = "1"
+default-features = false
+
+[target.'cfg(windows)'.build-dependencies.quote]
+version = "1"
+default-features = false

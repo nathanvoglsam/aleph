@@ -28,4 +28,4 @@
 //
 
 #[cfg(target_os = "windows")]
-include!("windows.rs");
+mod thing {}
