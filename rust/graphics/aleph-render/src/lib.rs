@@ -28,6 +28,5 @@
 //
 
 mod renderer;
-mod renderer2;
 
 pub use renderer::Renderer;
