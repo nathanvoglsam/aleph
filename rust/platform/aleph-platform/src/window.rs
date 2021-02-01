@@ -208,7 +208,6 @@ impl Window {
     ) -> sdl2::video::Window {
         let mut window = video_ctx
             .window(title, window_settings.width, window_settings.height)
-            .vulkan()
             .resizable()
             .build()
             .expect("Failed to create window");
