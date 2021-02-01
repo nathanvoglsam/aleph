@@ -34,6 +34,8 @@ use crate::raw::windows::win32::dxgi::{
     DXGI_GPU_PREFERENCE,
 };
 use crate::raw::windows::{Abi, Interface};
+use std::char::{decode_utf16, DecodeUtf16};
+use std::ffi::OsString;
 
 pub unsafe fn select_adapter(
     factory: &IDXGIFactory1,
@@ -103,4 +105,15 @@ unsafe fn enum_edapter_old(factory: &IDXGIFactory1, i: u32) -> raw::windows::Res
     factory
         .EnumAdapters1(i, &mut pp_adapter)
         .and_some(pp_adapter)
+}
+
+pub fn extract_null_terminated(slice: &[u16]) -> &[u16] {
+    let mut i = 0;
+    for v in slice {
+        if *v == 0 {
+            break;
+        }
+        i += 1;
+    }
+    &slice[0..i]
 }
