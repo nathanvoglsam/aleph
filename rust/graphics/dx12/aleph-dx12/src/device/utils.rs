@@ -30,15 +30,15 @@
 use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device};
 use crate::raw::windows::win32::dxgi::{
-    IDXGIAdapter1, IDXGIFactory1, IDXGIFactory6, DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG,
-    DXGI_GPU_PREFERENCE,
+    IDXGIAdapter1, IDXGIFactory1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1,
+    DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE,
 };
 use crate::raw::windows::{Abi, Interface};
 use std::char::{decode_utf16, DecodeUtf16};
 use std::ffi::OsString;
 
 pub unsafe fn select_adapter(
-    factory: &IDXGIFactory1,
+    factory: &IDXGIFactory2,
     minimum_feature_level: D3D_FEATURE_LEVEL,
 ) -> Option<IDXGIAdapter1> {
     // If possible we can explicitly ask for a "high performance" device.
@@ -100,7 +100,7 @@ unsafe fn enum_edapter_new(factory: &IDXGIFactory6, i: u32) -> raw::windows::Res
         .and_some(ppv_adapter)
 }
 
-unsafe fn enum_edapter_old(factory: &IDXGIFactory1, i: u32) -> raw::windows::Result<IDXGIAdapter1> {
+unsafe fn enum_edapter_old(factory: &IDXGIFactory2, i: u32) -> raw::windows::Result<IDXGIAdapter1> {
     let mut pp_adapter: Option<IDXGIAdapter1> = None;
     factory
         .EnumAdapters1(i, &mut pp_adapter)
