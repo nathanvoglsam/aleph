@@ -148,7 +148,7 @@ impl Engine {
             };
             let mut queue: Option<ID3D12CommandQueue> = None;
             device
-                .device
+                .raw()
                 .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
                 .and_some(queue)
                 .unwrap()
@@ -158,7 +158,7 @@ impl Engine {
         let fence = unsafe {
             let mut fence: Option<ID3D12Fence> = None;
             device
-                .device
+                .raw()
                 .CreateFence(
                     0,
                     D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NONE,
@@ -226,7 +226,6 @@ impl Engine {
                 let (width, height) = Window::drawable_size();
                 unsafe {
                     swapchain.resize_buffers(width, height).unwrap();
-                    aleph_log::trace!("{:#?}", swapchain.get_description().unwrap());
                 }
             }
 
@@ -237,7 +236,7 @@ impl Engine {
                 p_scroll_offset: std::ptr::null_mut(),
             };
             swapchain
-                .swapchain
+                .raw()
                 .Present1(0, 0, &presentation_params)
                 .ok()
                 .unwrap();
