@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
+use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
 use crate::raw::windows::win32::dxgi::{
     IDXGISwapChain1, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_SAMPLE_DESC, DXGI_SCALING,
     DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT, DXGI_USAGE_BACK_BUFFER,
@@ -36,8 +36,10 @@ use crate::raw::windows::win32::dxgi::{
 use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::raw::windows::Error;
 use crate::Device;
+use raw::windows::{Abi, Interface};
 use raw_window_handle::windows::WindowsHandle;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use utf16_lit::utf16_null;
 
 /// Represents the set of errors that can be encountered from swapchain creation
 #[derive(Clone, Debug, PartialEq)]
@@ -130,10 +132,12 @@ impl SwapChainBuilder {
         // These are the valid usages we support
         let buffer_usage = DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT;
 
+        let buffer_count = self.buffer_count;
+
         // Accumulate flags based on configuration
-        let mut flags = 0;
+        let mut flags = 0u32;
         if self.allow_tearing {
-            flags |= DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0
+            flags |= DXGI_SWAP_CHAIN_FLAG::DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING.0 as u32
         }
 
         // Build the description
@@ -144,7 +148,7 @@ impl SwapChainBuilder {
             stereo,
             sample_desc,
             buffer_usage,
-            buffer_count: self.buffer_count,
+            buffer_count,
             scaling: DXGI_SCALING::DXGI_SCALING_NONE,
             swap_effect: DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD,
             alpha_mode: DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_IGNORE,
@@ -163,18 +167,74 @@ impl SwapChainBuilder {
             .dxgi_factory
             .CreateSwapChainForHwnd(queue, hwnd, &desc, std::ptr::null(), None, &mut swapchain)
             .and_some(swapchain)
-            .map(|v| SwapChain { swapchain: v })
+            .map(|v| {
+                let swapchain = v;
+                let views = get_buffers(&swapchain, buffer_count);
+                SwapChain {
+                    swapchain,
+                    views,
+                    flags,
+                }
+            })
             .map_err(|v| SwapChainCreateError::CreationFailed(v))
     }
 }
 
 #[derive(Clone)]
 pub struct SwapChain {
-    pub swapchain: IDXGISwapChain1,
+    swapchain: IDXGISwapChain1,
+    views: Vec<ID3D12Resource>,
+    flags: u32,
 }
 
 impl SwapChain {
     pub fn builder() -> SwapChainBuilder {
         SwapChainBuilder::new()
     }
+
+    pub unsafe fn resize_buffers(&mut self, width: u32, height: u32) -> raw::windows::Result<()> {
+        // Empty views as we're holding on to resources from the swapchain in that array
+        self.views.clear();
+
+        self.swapchain
+            .ResizeBuffers(
+                0,
+                width,
+                height,
+                DXGI_FORMAT::DXGI_FORMAT_UNKNOWN,
+                self.flags,
+            )
+            .ok()
+    }
+
+    pub fn get_description(&self) -> raw::windows::Result<DXGI_SWAP_CHAIN_DESC1> {
+        let mut desc = Default::default();
+        self.swapchain.GetDesc1(&mut desc).ok().map(|_| desc)
+    }
+
+    pub fn raw(&self) -> &IDXGISwapChain1 {
+        &self.swapchain
+    }
+
+    pub fn views(&self) -> &[ID3D12Resource] {
+        &self.views
+    }
+}
+
+fn get_buffers(swapchain: &IDXGISwapChain1, count: u32) -> Vec<ID3D12Resource> {
+    (0..count)
+        .into_iter()
+        .map(|buffer| unsafe {
+            let mut resource: Option<ID3D12Resource> = None;
+            let resource = swapchain
+                .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
+                .and_some(resource)
+                .unwrap();
+            resource
+                .SetName(utf16_null!("SwapChain Buffer").as_ptr())
+                .ok()
+                .unwrap();
+            resource
+        })
+        .collect()
 }
