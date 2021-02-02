@@ -182,9 +182,9 @@ impl SwapChainBuilder {
 
 #[derive(Clone)]
 pub struct SwapChain {
-    swapchain: IDXGISwapChain1,
-    views: Vec<ID3D12Resource>,
-    flags: u32,
+    pub(crate) swapchain: IDXGISwapChain1,
+    pub(crate) views: Vec<ID3D12Resource>,
+    pub(crate) flags: u32,
 }
 
 impl SwapChain {
