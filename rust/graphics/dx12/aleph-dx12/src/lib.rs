@@ -30,11 +30,13 @@
 pub extern crate aleph_dx12_raw as raw;
 
 mod device;
-
-#[cfg(test)]
-mod test;
+mod swapchain;
 
 pub use device::Device;
 pub use device::DeviceBuilder;
 pub use device::DeviceCreateError;
 pub use device::DeviceCreateResult;
+pub use swapchain::SwapChain;
+pub use swapchain::SwapChainBuilder;
+pub use swapchain::SwapChainCreateError;
+pub use swapchain::SwapChainCreateResult;

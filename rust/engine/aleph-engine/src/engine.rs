@@ -27,15 +27,18 @@
 // SOFTWARE.
 //
 
+use crate::dx12::raw::windows::win32::direct3d12::{
+    ID3D12CommandQueue, D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_QUEUE_DESC,
+    D3D12_COMMAND_QUEUE_FLAGS,
+};
 use app_info::AppInfo;
+use dx12::raw::windows::{Abi, Interface};
 use egui::PaintJobs;
 use platform::window::Window;
 use platform::Platform;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use vulkan::pipeline_cache::PipelineCache;
-use vulkan_core::GPUInfo;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -130,31 +133,39 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load the vulkan-1.dll library (or w/e name it is on the platform)
-        let entry = vulkan_core::Entry::new().expect("Failed to load the vulkan library");
+        let device = dx12::Device::builder()
+            .debug(args.is_present("GPU_DEBUG"))
+            .gpu_validation(args.is_present("GPU_VALIDATION"))
+            .build()
+            .expect("Failed to create D3D12 device");
 
-        // Load core vulkan functions for creating an instance
-        let instance = vulkan_core::InstanceBuilder::new()
-            .debug(args.is_present("GPU_DEBUG") || args.is_present("GPU_VALIDATION"))
-            .validation(args.is_present("GPU_VALIDATION"))
-            .build(&entry, &platform, &app_info);
+        let queue = unsafe {
+            let desc = D3D12_COMMAND_QUEUE_DESC {
+                r#type: D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+                priority: 0,
+                flags: D3D12_COMMAND_QUEUE_FLAGS::D3D12_COMMAND_QUEUE_FLAG_NONE,
+                node_mask: 0,
+            };
+            let mut queue: Option<ID3D12CommandQueue> = None;
+            device
+                .device
+                .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
+                .and_some(queue)
+                .unwrap()
+        };
 
-        let device = vulkan_core::DeviceBuilder::new().build(&instance);
-
-        Self::log_gpu_info(device.info());
-        aleph_log::info!("");
-
-        PipelineCache::init(&device);
-
-        let allocator = vulkan_alloc::Allocator::builder()
+        let drawable_size = Window::drawable_size();
+        let _swapchain = dx12::SwapChain::builder()
+            .width(drawable_size.0)
+            .height(drawable_size.1)
+            .buffer_count(3)
+            .queue(queue.clone())
+            .hwnd(&platform)
             .build(&device)
-            .expect("Failed to build vulkan allocator");
+            .expect("Failed to create swapchain");
 
-        let mut swapchain = vulkan_core::SwapchainBuilder::new()
-            .vsync()
-            .build(&device, Window::drawable_size());
-
-        let mut renderer =
-            unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
+        //let mut renderer =
+        //    unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
 
         // =========================================================================================
         // Engine Fully Initialized
@@ -195,28 +206,21 @@ impl Engine {
 
             // End the egui frame
             let (output, shapes) = egui_ctx.end_frame();
-            let jobs: PaintJobs = egui_ctx.tessellate(shapes);
+            let _jobs: PaintJobs = egui_ctx.tessellate(shapes);
             aleph_platform_egui::process_egui_output(output);
 
-            unsafe {
-                let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
-                if i.is_none() {
-                    continue;
-                }
-                let index = i.unwrap();
-                renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
-            }
+            //unsafe {
+            //    let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
+            //    if i.is_none() {
+            //        continue;
+            //    }
+            //    let index = i.unwrap();
+            //    renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
+            //}
         }
 
         aleph_log::trace!("Calling AppLogic::on_exit");
         app.on_exit();
-
-        unsafe {
-            device
-                .loader()
-                .device_wait_idle()
-                .expect("Failed to wait on device idle");
-        }
     }
 
     ///
@@ -307,17 +311,17 @@ impl Engine {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(info: &GPUInfo) {
-        let gpu_vendor = info.vendor_id.vendor_name();
-        let gpu_name = info.device_name.as_str();
-        let maj = info.api_version_major;
-        let min = info.api_version_minor;
-        let pat = info.api_version_patch;
-        aleph_log::info!("=== GPU INFO ===");
-        aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
-        aleph_log::info!("GPU Name      : {}", gpu_name);
-        aleph_log::info!("API Version   : {}.{}.{}", maj, min, pat)
-    }
+    //fn log_gpu_info(info: &GPUInfo) {
+    //    let gpu_vendor = info.vendor_id.vendor_name();
+    //    let gpu_name = info.device_name.as_str();
+    //    let maj = info.api_version_major;
+    //    let min = info.api_version_minor;
+    //    let pat = info.api_version_patch;
+    //    aleph_log::info!("=== GPU INFO ===");
+    //    aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
+    //    aleph_log::info!("GPU Name      : {}", gpu_name);
+    //    aleph_log::info!("API Version   : {}.{}.{}", maj, min, pat)
+    //}
 
     ///
     /// Internal function for initializing the global thread pools

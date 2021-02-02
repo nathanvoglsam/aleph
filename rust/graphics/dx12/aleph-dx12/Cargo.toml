@@ -51,3 +51,6 @@ version = "1"
 [dependencies.aleph-dx12-raw]
 path = "../aleph-dx12-raw"
 version = "0.1"
+
+[dependencies.raw-window-handle]
+version = "0.3"
