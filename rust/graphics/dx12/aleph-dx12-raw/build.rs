@@ -47,7 +47,11 @@ fn main() {
             CreateEventW,
             WaitForSingleObject,
             WaitForMultipleObjects,
+            ResetEvent,
             INFINITE,
+        },
+        windows::win32::windows_programming::{
+            CloseHandle,
         },
     );
 
