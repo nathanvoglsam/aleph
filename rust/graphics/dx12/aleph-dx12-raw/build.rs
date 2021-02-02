@@ -42,6 +42,13 @@ fn main() {
     windows::build!(
         windows::win32::direct3d12::*,
         windows::win32::dxgi::*,
+        windows::win32::system_services::{
+            CreateEventA,
+            CreateEventW,
+            WaitForSingleObject,
+            WaitForMultipleObjects,
+            INFINITE,
+        },
     );
 
     // Get a path to where windows-rs outputs the bindings
