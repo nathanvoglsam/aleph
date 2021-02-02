@@ -271,7 +271,7 @@ impl Window {
                 window_state.current_height = *height as u32;
                 aleph_log::trace!("Window size changed");
                 aleph_log::trace!("Window Size: {}x{}", width, height);
-            },
+            }
             sdl2::event::WindowEvent::Moved(_, _)
             | sdl2::event::WindowEvent::Minimized
             | sdl2::event::WindowEvent::Maximized

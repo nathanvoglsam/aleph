@@ -99,10 +99,7 @@ fn get_egui_scroll_delta() -> egui::Vec2 {
     for event in mouse_events.iter() {
         match event {
             MouseEvent::MouseWheel(e) => {
-                if matches!(
-                    e.direction,
-                    aleph_platform::MouseWheelDirection::Normal
-                ) {
+                if matches!(e.direction, aleph_platform::MouseWheelDirection::Normal) {
                     delta.x += e.x as f32;
                     delta.y += e.y as f32;
                 } else {
