@@ -28,16 +28,17 @@
 //
 
 use crate::dx12::raw::windows::win32::direct3d12::{
-    ID3D12CommandQueue, D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAGS,
+    ID3D12CommandQueue, ID3D12Fence, D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_QUEUE_DESC,
+    D3D12_COMMAND_QUEUE_FLAGS, D3D12_FENCE_FLAGS,
 };
+use crate::dx12::raw::windows::win32::dxgi::DXGI_PRESENT_PARAMETERS;
+use crate::platform::{Platform, Window};
 use app_info::AppInfo;
 use dx12::raw::windows::{Abi, Interface};
 use egui::PaintJobs;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use crate::platform::{Window, Platform};
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -153,8 +154,23 @@ impl Engine {
                 .unwrap()
         };
 
+        let event = aleph_dx12::Event::builder().build().unwrap();
+        let fence = unsafe {
+            let mut fence: Option<ID3D12Fence> = None;
+            device
+                .device
+                .CreateFence(
+                    0,
+                    D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NONE,
+                    &ID3D12Fence::IID,
+                    fence.set_abi(),
+                )
+                .and_some(fence)
+                .unwrap()
+        };
+
         let drawable_size = Window::drawable_size();
-        let _swapchain = dx12::SwapChain::builder()
+        let mut swapchain = dx12::SwapChain::builder()
             .width(drawable_size.0)
             .height(drawable_size.1)
             .buffer_count(3)
@@ -202,6 +218,32 @@ impl Engine {
                 optick::event!("aleph_engine::AppLogic::on_update");
                 app.on_update(&egui_ctx);
             }
+
+            fence.Signal(0);
+            fence.SetEventOnCompletion(1, event.raw());
+
+            if Window::resized() {
+                let (width, height) = Window::drawable_size();
+                unsafe {
+                    swapchain.resize_buffers(width, height).unwrap();
+                    aleph_log::trace!("{:#?}", swapchain.get_description().unwrap());
+                }
+            }
+
+            let presentation_params = DXGI_PRESENT_PARAMETERS {
+                dirty_rects_count: 0,
+                p_dirty_rects: std::ptr::null_mut(),
+                p_scroll_rect: std::ptr::null_mut(),
+                p_scroll_offset: std::ptr::null_mut(),
+            };
+            swapchain
+                .swapchain
+                .Present1(0, 0, &presentation_params)
+                .ok()
+                .unwrap();
+
+            queue.Signal(fence.clone(), 1);
+            event.wait(None);
 
             // End the egui frame
             let (output, shapes) = egui_ctx.end_frame();
