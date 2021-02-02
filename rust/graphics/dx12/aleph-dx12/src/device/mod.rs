@@ -176,14 +176,18 @@ impl DeviceBuilder {
 
 #[derive(Clone)]
 pub struct Device {
-    pub debug: Option<ID3D12Debug>,
-    pub dxgi_factory: IDXGIFactory2,
-    pub device: ID3D12Device,
+    pub(crate) debug: Option<ID3D12Debug>,
+    pub(crate) dxgi_factory: IDXGIFactory2,
+    pub(crate) device: ID3D12Device,
 }
 
 impl Device {
     /// Returns a builder instance for creating a new `Device`
     pub fn builder() -> DeviceBuilder {
         DeviceBuilder::new()
+    }
+
+    pub fn raw(&self) -> &ID3D12Device {
+        &self.device
     }
 }
