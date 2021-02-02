@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use platform::frame_timer::FrameTimer;
+use platform::FrameTimer;
 
 ///
 /// A struct that holds a short history window of frame times to produce a frame rate counter that

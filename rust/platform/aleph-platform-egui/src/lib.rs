@@ -27,13 +27,10 @@
 // SOFTWARE.
 //
 
-use aleph_platform::frame_timer::FrameTimer;
-use aleph_platform::keyboard::{Keyboard, KeyboardEvent, Keycode, Mod};
-use aleph_platform::mouse::{Cursor, Mouse, MouseEvent};
-use aleph_platform::window::Window;
-
-use aleph_platform::clipboard::Clipboard;
-use aleph_platform::events::Events;
+use aleph_platform::{
+    Clipboard, Cursor, Events, FrameTimer, Keyboard, KeyboardEvent, Keycode, Mod, Mouse,
+    MouseEvent, Window,
+};
 
 pub fn get_egui_input() -> egui::RawInput {
     optick::event!();
@@ -104,7 +101,7 @@ fn get_egui_scroll_delta() -> egui::Vec2 {
             MouseEvent::MouseWheel(e) => {
                 if matches!(
                     e.direction,
-                    aleph_platform::mouse::MouseWheelDirection::Normal
+                    aleph_platform::MouseWheelDirection::Normal
                 ) {
                     delta.x += e.x as f32;
                     delta.y += e.y as f32;
@@ -126,7 +123,7 @@ fn get_egui_events() -> Vec<egui::Event> {
     let mut out = Vec::new();
     for event in events.iter() {
         match event {
-            aleph_platform::events::Event::KeyboardEvent(event) => match event {
+            aleph_platform::Event::KeyboardEvent(event) => match event {
                 KeyboardEvent::KeyDown(e) => {
                     // Add an event for copy paste
                     if e.keymod.contains(Mod::LCTRLMOD) || e.keymod.contains(Mod::RCTRLMOD) {

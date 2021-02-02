@@ -37,7 +37,7 @@ use std::ops::Deref;
 ///
 /// The events list
 ///
-pub static ALL_EVENTS: Lazy<RwLock<Option<Vec<Event>>>> = Lazy::new(|| RwLock::new(None));
+pub(crate) static ALL_EVENTS: Lazy<RwLock<Option<Vec<Event>>>> = Lazy::new(|| RwLock::new(None));
 
 /// This represents the set of all types of events
 #[derive(Clone)]

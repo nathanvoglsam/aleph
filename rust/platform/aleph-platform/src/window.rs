@@ -33,6 +33,7 @@ use once_cell::sync::Lazy;
 use parking_lot::{Mutex, RwLock};
 use sdl2::video::FullscreenType;
 use std::ops::Deref;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 /// An enum of window events.
 #[derive(Clone)]
@@ -134,6 +135,8 @@ pub(crate) static WINDOW_REQUEST_QUEUE: Lazy<Mutex<Option<Vec<WindowRequest>>>> 
 
 pub(crate) static WINDOW_EVENTS: Lazy<RwLock<Option<Vec<WindowEvent>>>> =
     Lazy::new(|| RwLock::new(None));
+
+pub(crate) static WINDOW_RESIZED: AtomicBool = AtomicBool::new(false);
 
 ///
 /// A wrapper around a read guard on the underlying RwLock used to make the global window events
@@ -250,6 +253,7 @@ impl Window {
     ) {
         match &event {
             sdl2::event::WindowEvent::Resized(width, height) => {
+                WINDOW_RESIZED.store(true, Ordering::Relaxed);
                 window_state.current_width = *width as u32;
                 window_state.current_height = *height as u32;
                 aleph_log::trace!("Window resized by OS");
@@ -261,8 +265,14 @@ impl Window {
             sdl2::event::WindowEvent::FocusLost => {
                 window_state.focused = false;
             }
-            sdl2::event::WindowEvent::SizeChanged(_, _)
-            | sdl2::event::WindowEvent::Moved(_, _)
+            sdl2::event::WindowEvent::SizeChanged(width, height) => {
+                WINDOW_RESIZED.store(true, Ordering::Relaxed);
+                window_state.current_width = *width as u32;
+                window_state.current_height = *height as u32;
+                aleph_log::trace!("Window size changed");
+                aleph_log::trace!("Window Size: {}x{}", width, height);
+            },
+            sdl2::event::WindowEvent::Moved(_, _)
             | sdl2::event::WindowEvent::Minimized
             | sdl2::event::WindowEvent::Maximized
             | sdl2::event::WindowEvent::Restored
@@ -405,6 +415,34 @@ impl Window {
     pub(crate) fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
         let display_mode = window.display_mode().unwrap();
         window_state.refresh_rate = display_mode.refresh_rate as _;
+    }
+
+    ///
+    /// Returns whether the window has been resized since the last time this function was called.
+    ///
+    /// # Info
+    ///
+    /// This interface was created to provide a very simple, one shot function that can be called
+    /// once per frame to check if the window has been resized since last time it was checked.
+    ///
+    /// If the window has been resized then this will return true once, and only once, until the
+    /// window is resized against. Calling this function resets the WINDOW_RESIZED flag
+    ///
+    /// This function is a very thin wrapper around a global `AtomicBool` that gets flagged by the
+    /// event processing phase if it finds a window resizing event.
+    ///
+    /// # Warning
+    ///
+    /// This API will probably be useless to anyone other than the core engine implementers as the
+    /// function will only yield the true result once per frame. The intended use for this API is
+    /// for triggering a swap chain rebuild and this consumption based model makes the most sense
+    /// for that use case.
+    ///
+    /// If you're using the engine, and not implementing it, then you should look at the
+    /// `WindowEvents` API.
+    ///
+    pub fn resized() -> bool {
+        WINDOW_RESIZED.swap(false, Ordering::Relaxed)
     }
 
     ///

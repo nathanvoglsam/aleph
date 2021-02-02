@@ -30,14 +30,14 @@
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-pub struct FrameTimerState {
+pub(crate) struct FrameTimerState {
     first: AtomicU64,
     current: AtomicU64,
     last: AtomicU64,
     freq: AtomicU64,
 }
 
-pub static FRAME_TIMER_STATE: Lazy<FrameTimerState> = Lazy::new(|| FrameTimerState {
+pub(crate) static FRAME_TIMER_STATE: Lazy<FrameTimerState> = Lazy::new(|| FrameTimerState {
     first: AtomicU64::new(0),
     current: AtomicU64::new(0),
     last: AtomicU64::new(0),

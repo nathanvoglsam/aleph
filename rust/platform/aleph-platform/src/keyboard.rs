@@ -35,12 +35,13 @@ use std::ops::Deref;
 ///
 /// The global mouse state
 ///
-pub static KEYBOARD_STATE: Lazy<RwLock<Option<KeyboardState>>> = Lazy::new(|| RwLock::new(None));
+pub(crate) static KEYBOARD_STATE: Lazy<RwLock<Option<KeyboardState>>> =
+    Lazy::new(|| RwLock::new(None));
 
 ///
 /// The global mouse events
 ///
-pub static KEYBOARD_EVENTS: Lazy<RwLock<Option<Vec<KeyboardEvent>>>> =
+pub(crate) static KEYBOARD_EVENTS: Lazy<RwLock<Option<Vec<KeyboardEvent>>>> =
     Lazy::new(|| RwLock::new(None));
 
 ///
@@ -90,7 +91,7 @@ pub enum KeyboardEvent {
 }
 
 ///
-/// Represents the state of the mouse this frame
+/// Represents the state of the keyboard this frame
 ///
 pub struct KeyboardState {
     keys: [bool; 1024],

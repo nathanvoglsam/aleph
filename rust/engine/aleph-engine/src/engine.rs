@@ -34,11 +34,10 @@ use crate::dx12::raw::windows::win32::direct3d12::{
 use app_info::AppInfo;
 use dx12::raw::windows::{Abi, Interface};
 use egui::PaintJobs;
-use platform::window::Window;
-use platform::Platform;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
+use crate::platform::{Window, Platform};
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 

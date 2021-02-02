@@ -27,15 +27,44 @@
 // SOFTWARE.
 //
 
-pub mod clipboard;
-pub mod events;
-pub mod frame_timer;
-pub mod keyboard;
-pub mod mouse;
-pub mod window;
+mod clipboard;
+mod events;
+mod frame_timer;
+mod keyboard;
+mod mouse;
+mod window;
 
 mod platform;
 
+pub use clipboard::Clipboard;
+pub use events::Event;
+pub use events::Events;
+pub use frame_timer::FrameTimer;
+pub use keyboard::KeyDownEvent;
+pub use keyboard::KeyUpEvent;
+pub use keyboard::Keyboard;
+pub use keyboard::KeyboardEvent;
+pub use keyboard::KeyboardEvents;
+pub use keyboard::KeyboardState;
+pub use keyboard::KeyboardStateLock;
+pub use keyboard::Keycode;
+pub use keyboard::Mod;
+pub use keyboard::Scancode;
+pub use keyboard::TextInputEvent;
+pub use mouse::Cursor;
+pub use mouse::Mouse;
+pub use mouse::MouseButton;
+pub use mouse::MouseButtonDownEvent;
+pub use mouse::MouseButtonUpEvent;
+pub use mouse::MouseEvent;
+pub use mouse::MouseEvents;
+pub use mouse::MouseMotionEvent;
+pub use mouse::MouseState;
+pub use mouse::MouseWheelDirection;
+pub use mouse::MouseWheelEvent;
 pub use platform::Platform;
 pub use platform::PlatformBuildError;
 pub use platform::PlatformBuilder;
+pub use window::Window;
+pub use window::WindowEvent;
+pub use window::WindowEvents;
