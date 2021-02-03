@@ -28,7 +28,7 @@
 //
 
 use crate::raw::windows::win32::system_services::{
-    CreateEventA, WaitForMultipleObjects, WaitForSingleObject, HANDLE, INFINITE,
+    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, HANDLE, INFINITE,
 };
 use crate::raw::windows::win32::windows_programming::CloseHandle;
 
@@ -57,7 +57,7 @@ impl EventBuilder {
 
     pub fn build(self) -> Option<Event> {
         let event = unsafe {
-            CreateEventA(
+            CreateEventW(
                 std::ptr::null_mut(),
                 self.manual_reset.into(),
                 self.start_signalled.into(),
