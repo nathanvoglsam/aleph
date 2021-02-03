@@ -33,7 +33,9 @@ use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 use crate::raw::windows::win32::direct3d12::{
     D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Debug1, ID3D12Device,
 };
-use crate::raw::windows::win32::dxgi::{CreateDXGIFactory1, IDXGIFactory2};
+use crate::raw::windows::win32::dxgi::{
+    CreateDXGIFactory1, IDXGIAdapter1, IDXGIFactory2, DXGI_ADAPTER_DESC1,
+};
 use crate::raw::windows::{Abi, Error, Interface};
 
 /// Represents the set of errors that can be encountered from device creation
@@ -168,6 +170,7 @@ impl DeviceBuilder {
             Ok(Device {
                 debug,
                 dxgi_factory,
+                adapter,
                 device,
             })
         }
@@ -178,6 +181,7 @@ impl DeviceBuilder {
 pub struct Device {
     pub(crate) debug: Option<ID3D12Debug>,
     pub(crate) dxgi_factory: IDXGIFactory2,
+    pub(crate) adapter: IDXGIAdapter1,
     pub(crate) device: ID3D12Device,
 }
 
@@ -189,5 +193,10 @@ impl Device {
 
     pub fn raw(&self) -> &ID3D12Device {
         &self.device
+    }
+
+    pub fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
+        let mut desc = DXGI_ADAPTER_DESC1::default();
+        self.adapter.GetDesc1(&mut desc).ok().map(|_| desc)
     }
 }

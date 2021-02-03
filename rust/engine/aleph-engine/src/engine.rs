@@ -139,6 +139,8 @@ impl Engine {
             .build()
             .expect("Failed to create D3D12 device");
 
+        Self::log_gpu_info(&device);
+
         let queue = unsafe {
             let desc = D3D12_COMMAND_QUEUE_DESC {
                 r#type: D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -351,17 +353,28 @@ impl Engine {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    //fn log_gpu_info(info: &GPUInfo) {
-    //    let gpu_vendor = info.vendor_id.vendor_name();
-    //    let gpu_name = info.device_name.as_str();
-    //    let maj = info.api_version_major;
-    //    let min = info.api_version_minor;
-    //    let pat = info.api_version_patch;
-    //    aleph_log::info!("=== GPU INFO ===");
-    //    aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
-    //    aleph_log::info!("GPU Name      : {}", gpu_name);
-    //    aleph_log::info!("API Version   : {}.{}.{}", maj, min, pat)
-    //}
+    fn log_gpu_info(device: &dx12::Device) {
+        let info = device.get_adapter_desc().unwrap();
+
+        let gpu_vendor = if info.vendor_id == 0x10DE {
+            "NVIDIA"
+        } else if info.vendor_id == 0x1002 {
+            "AMD"
+        } else if info.vendor_id == 0x8086 {
+            "INTEL"
+        } else {
+            "Unknown"
+        };
+        let gpu_name = String::from_utf16(&info.description).unwrap();
+        let dvmem = info.dedicated_video_memory / 1_000_000;
+        let dsmem = info.dedicated_system_memory / 1_000_000;
+        let ssmem = info.shared_system_memory / 1_000_000;
+
+        aleph_log::info!("=== GPU INFO ===");
+        aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
+        aleph_log::info!("GPU Name      : {}", gpu_name);
+        aleph_log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem)
+    }
 
     ///
     /// Internal function for initializing the global thread pools

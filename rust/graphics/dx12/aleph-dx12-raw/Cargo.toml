@@ -47,10 +47,12 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [target.'cfg(windows)'.dependencies]
 ##windows = "0.2"
+##windows = { path = "../../../../../windows-rs", version = "0.2" }
 windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "struct_member_array_generation" }
 
 [target.'cfg(windows)'.build-dependencies]
 ##windows = "0.2"
+##windows = { path = "../../../../../windows-rs", version = "0.2" }
 windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "struct_member_array_generation" }
 
 [target.'cfg(windows)'.build-dependencies.syn]
