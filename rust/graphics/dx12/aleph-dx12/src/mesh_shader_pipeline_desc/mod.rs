@@ -37,10 +37,11 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 use crate::ToPipelineStateStream;
 use std::ffi::c_void;
+use std::mem::transmute;
 
 #[derive(Clone, Debug, Default)]
 pub struct MeshShaderPipelineStateDesc {
-    pub root_signature: *mut c_void,
+    pub root_signature: Option<ID3D12RootSignature>,
     pub amplification_shader: D3D12_SHADER_BYTECODE,
     pub mesh_shader: D3D12_SHADER_BYTECODE,
     pub pixel_shader: D3D12_SHADER_BYTECODE,
@@ -67,7 +68,7 @@ impl ToPipelineStateStream for MeshShaderPipelineStateDesc {
         let packed = Packed {
             root_signature: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
-                self.root_signature,
+                unsafe { transmute(self.root_signature) },
             ),
             amplification_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS,
@@ -130,7 +131,7 @@ impl ToPipelineStateStream for MeshShaderPipelineStateDesc {
             ),
         };
 
-        unsafe { std::mem::transmute(packed) }
+        unsafe { transmute(packed) }
     }
 }
 
