@@ -31,7 +31,7 @@ mod utils;
 
 use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 use crate::raw::windows::win32::direct3d12::{
-    D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Debug1, ID3D12Device,
+    D3D12CreateDevice, D3D12GetDebugInterface, ID3D12Debug, ID3D12Debug1, ID3D12Device4,
 };
 use crate::raw::windows::win32::dxgi::{
     CreateDXGIFactory1, IDXGIAdapter1, IDXGIFactory2, DXGI_ADAPTER_DESC1,
@@ -108,72 +108,70 @@ impl DeviceBuilder {
         self
     }
 
-    pub fn build(self) -> DeviceCreateResult<Device> {
+    pub unsafe fn build(self) -> DeviceCreateResult<Device> {
         aleph_log::trace!("Initializing D3D12 device");
-        unsafe {
-            // If debug layers have been requested, we should enable them
-            let debug = if self.debug {
-                aleph_log::trace!("Initializing D3D12 debug layer");
-                // Try to get the debug interface
-                let mut debug: Option<ID3D12Debug> = None;
-                let debug = D3D12GetDebugInterface(&ID3D12Debug::IID, debug.set_abi())
-                    .and_some(debug)
-                    .ok();
+        // If debug layers have been requested, we should enable them
+        let debug = if self.debug {
+            aleph_log::trace!("Initializing D3D12 debug layer");
+            // Try to get the debug interface
+            let mut debug: Option<ID3D12Debug> = None;
+            let debug = D3D12GetDebugInterface(&ID3D12Debug::IID, debug.set_abi())
+                .and_some(debug)
+                .ok();
 
-                // Failing to get the debug is a soft fail, so we
-                if let Some(debug) = debug.as_ref() {
-                    debug.EnableDebugLayer();
-                } else {
-                    aleph_log::warn!("Failed to enable D3D12 debug layer");
-                }
-
-                debug
+            // Failing to get the debug is a soft fail, so we
+            if let Some(debug) = debug.as_ref() {
+                debug.EnableDebugLayer();
             } else {
-                None
-            };
-
-            // If gpu validation has been asked for, and is available, we will enable it
-            if self.gpu_validation {
-                aleph_log::trace!("Initializing D3D12 gpu validation");
-                if let Some(debug) = debug.as_ref() {
-                    if let Ok(debug) = debug.cast::<ID3D12Debug1>() {
-                        debug.SetEnableGPUBasedValidation(true.into());
-                    } else {
-                        aleph_log::warn!("Failed to enable D3D12 gpu validation: not supported");
-                    }
-                } else {
-                    aleph_log::warn!("Failed to enable D3D12 gpu validation: debug not enabled");
-                }
+                aleph_log::warn!("Failed to enable D3D12 debug layer");
             }
 
-            aleph_log::trace!("Initializing IDXGIFactory");
-            let mut dxgi_factory: Option<IDXGIFactory2> = None;
-            let dxgi_factory = CreateDXGIFactory1(&IDXGIFactory2::IID, dxgi_factory.set_abi())
-                .and_some(dxgi_factory)
-                .map_err(|v| DeviceCreateError::DXGI(v))?;
+            debug
+        } else {
+            None
+        };
 
-            aleph_log::trace!("Selecting IDXGIAdapter");
-            let adapter = utils::select_adapter(&dxgi_factory, self.minimum_feature_level)
-                .ok_or(DeviceCreateError::FailedToFindCompatibleAdapter)?;
-
-            aleph_log::trace!("Initializing ID3D12Device");
-            let mut device: Option<ID3D12Device> = None;
-            let device = D3D12CreateDevice(
-                Some(adapter.cast().unwrap()),
-                self.minimum_feature_level,
-                &ID3D12Device::IID,
-                device.set_abi(),
-            )
-            .and_some(device)
-            .map_err(|v| DeviceCreateError::FailedToCreateDevice(v))?;
-
-            Ok(Device {
-                debug,
-                dxgi_factory,
-                adapter,
-                device,
-            })
+        // If gpu validation has been asked for, and is available, we will enable it
+        if self.gpu_validation {
+            aleph_log::trace!("Initializing D3D12 gpu validation");
+            if let Some(debug) = debug.as_ref() {
+                if let Ok(debug) = debug.cast::<ID3D12Debug1>() {
+                    debug.SetEnableGPUBasedValidation(true.into());
+                } else {
+                    aleph_log::warn!("Failed to enable D3D12 gpu validation: not supported");
+                }
+            } else {
+                aleph_log::warn!("Failed to enable D3D12 gpu validation: debug not enabled");
+            }
         }
+
+        aleph_log::trace!("Initializing IDXGIFactory");
+        let mut dxgi_factory: Option<IDXGIFactory2> = None;
+        let dxgi_factory = CreateDXGIFactory1(&IDXGIFactory2::IID, dxgi_factory.set_abi())
+            .and_some(dxgi_factory)
+            .map_err(|v| DeviceCreateError::DXGI(v))?;
+
+        aleph_log::trace!("Selecting IDXGIAdapter");
+        let adapter = utils::select_adapter(&dxgi_factory, self.minimum_feature_level)
+            .ok_or(DeviceCreateError::FailedToFindCompatibleAdapter)?;
+
+        aleph_log::trace!("Initializing ID3D12Device");
+        let mut device: Option<ID3D12Device4> = None;
+        let device = D3D12CreateDevice(
+            Some(adapter.cast().unwrap()),
+            self.minimum_feature_level,
+            &ID3D12Device4::IID,
+            device.set_abi(),
+        )
+        .and_some(device)
+        .map_err(|v| DeviceCreateError::FailedToCreateDevice(v))?;
+
+        Ok(Device {
+            debug,
+            dxgi_factory,
+            adapter,
+            device,
+        })
     }
 }
 
@@ -182,7 +180,7 @@ pub struct Device {
     pub(crate) debug: Option<ID3D12Debug>,
     pub(crate) dxgi_factory: IDXGIFactory2,
     pub(crate) adapter: IDXGIAdapter1,
-    pub(crate) device: ID3D12Device,
+    pub(crate) device: ID3D12Device4,
 }
 
 impl Device {
@@ -191,7 +189,7 @@ impl Device {
         DeviceBuilder::new()
     }
 
-    pub fn raw(&self) -> &ID3D12Device {
+    pub fn raw(&self) -> &ID3D12Device4 {
         &self.device
     }
 

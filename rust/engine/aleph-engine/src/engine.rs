@@ -27,14 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::dx12::raw::windows::win32::direct3d12::{
-    ID3D12CommandQueue, ID3D12Fence, D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAGS, D3D12_FENCE_FLAGS,
-};
 use crate::dx12::raw::windows::win32::dxgi::DXGI_PRESENT_PARAMETERS;
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
-use dx12::raw::windows::{Abi, Interface};
 use egui::PaintJobs;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -133,53 +128,38 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         // Load the vulkan-1.dll library (or w/e name it is on the platform)
-        let device = dx12::Device::builder()
-            .debug(args.is_present("GPU_DEBUG"))
-            .gpu_validation(args.is_present("GPU_VALIDATION"))
-            .build()
-            .expect("Failed to create D3D12 device");
+        let device = unsafe {
+            dx12::Device::builder()
+                .debug(args.is_present("GPU_DEBUG"))
+                .gpu_validation(args.is_present("GPU_VALIDATION"))
+                .build()
+                .expect("Failed to create D3D12 device")
+        };
 
         Self::log_gpu_info(&device);
 
         let queue = unsafe {
-            let desc = D3D12_COMMAND_QUEUE_DESC {
-                r#type: D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-                priority: 0,
-                flags: D3D12_COMMAND_QUEUE_FLAGS::D3D12_COMMAND_QUEUE_FLAG_NONE,
-                node_mask: 0,
-            };
-            let mut queue: Option<ID3D12CommandQueue> = None;
-            device
-                .raw()
-                .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
-                .and_some(queue)
+            dx12::CommandQueue::builder()
+                .queue_type(dx12::CommandListType::Direct)
+                .priority(0)
+                .build(&device)
                 .unwrap()
         };
 
-        let event = aleph_dx12::Event::builder().build().unwrap();
-        let fence = unsafe {
-            let mut fence: Option<ID3D12Fence> = None;
-            device
-                .raw()
-                .CreateFence(
-                    0,
-                    D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NONE,
-                    &ID3D12Fence::IID,
-                    fence.set_abi(),
-                )
-                .and_some(fence)
-                .unwrap()
-        };
+        let event = dx12::Event::builder().build().unwrap();
+        let fence = unsafe { dx12::Fence::builder().build(&device).unwrap() };
 
         let drawable_size = Window::drawable_size();
-        let mut swapchain = dx12::SwapChain::builder()
-            .width(drawable_size.0)
-            .height(drawable_size.1)
-            .buffer_count(3)
-            .queue(queue.clone())
-            .hwnd(&platform)
-            .build(&device)
-            .expect("Failed to create swapchain");
+        let mut swapchain = unsafe {
+            dx12::SwapChain::builder()
+                .width(drawable_size.0)
+                .height(drawable_size.1)
+                .buffer_count(3)
+                .queue(&queue)
+                .hwnd(&platform)
+                .build(&device)
+                .expect("Failed to create swapchain")
+        };
 
         //let mut renderer =
         //    unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
@@ -221,8 +201,8 @@ impl Engine {
                 app.on_update(&egui_ctx);
             }
 
-            fence.Signal(0);
-            fence.SetEventOnCompletion(1, event.raw());
+            fence.raw().Signal(0);
+            fence.raw().SetEventOnCompletion(1, event.raw());
 
             if Window::resized() {
                 let (width, height) = Window::drawable_size();
@@ -243,7 +223,7 @@ impl Engine {
                 .ok()
                 .unwrap();
 
-            queue.Signal(fence.clone(), 1);
+            queue.raw().Signal(fence.raw().clone(), 1);
             event.wait(None);
 
             // End the egui frame

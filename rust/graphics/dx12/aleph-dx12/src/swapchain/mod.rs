@@ -35,11 +35,10 @@ use crate::raw::windows::win32::dxgi::{
 };
 use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::raw::windows::Error;
-use crate::Device;
+use crate::{CommandQueue, Device};
 use raw::windows::{Abi, Interface};
 use raw_window_handle::windows::WindowsHandle;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use utf16_lit::utf16_null;
 
 /// Represents the set of errors that can be encountered from swapchain creation
 #[derive(Clone, Debug, PartialEq)]
@@ -94,8 +93,8 @@ impl SwapChainBuilder {
         self
     }
 
-    pub fn queue(mut self, queue: ID3D12CommandQueue) -> Self {
-        self.queue = Some(queue);
+    pub fn queue(mut self, queue: &CommandQueue) -> Self {
+        self.queue = Some(queue.raw().clone());
         self
     }
 
@@ -108,7 +107,8 @@ impl SwapChainBuilder {
         }
     }
 
-    pub fn build(self, device: &Device) -> SwapChainCreateResult<SwapChain> {
+    #[allow(unused_unsafe)]
+    pub unsafe fn build(self, device: &Device) -> SwapChainCreateResult<SwapChain> {
         aleph_log::trace!("Initializing swapchain");
 
         // Assert the back buffer count is valid
@@ -226,14 +226,13 @@ fn get_buffers(swapchain: &IDXGISwapChain1, count: u32) -> Vec<ID3D12Resource> {
         .into_iter()
         .map(|buffer| unsafe {
             let mut resource: Option<ID3D12Resource> = None;
+            let name = format!("SwapChain Buffer {}", buffer);
+            let name: Vec<u16> = name.encode_utf16().collect();
             let resource = swapchain
                 .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
                 .and_some(resource)
                 .unwrap();
-            resource
-                .SetName(utf16_null!("SwapChain Buffer").as_ptr())
-                .ok()
-                .unwrap();
+            resource.SetName(name.as_ptr()).ok().unwrap();
             resource
         })
         .collect()

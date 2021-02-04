@@ -28,7 +28,7 @@
 //
 
 use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
-use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device};
+use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
 use crate::raw::windows::win32::dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG,
     DXGI_GPU_PREFERENCE,
@@ -68,7 +68,7 @@ pub unsafe fn select_adapter(
             let result = D3D12CreateDevice(
                 Some(adapter.cast().unwrap()),
                 minimum_feature_level,
-                &ID3D12Device::IID,
+                &ID3D12Device4::IID,
                 std::ptr::null_mut(),
             );
 

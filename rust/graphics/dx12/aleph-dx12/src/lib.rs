@@ -29,16 +29,24 @@
 
 pub extern crate aleph_dx12_raw as raw;
 
+mod command_list_type;
+mod command_queue;
 mod device;
 mod event;
+mod fence;
 mod swapchain;
 
+pub use command_list_type::CommandListType;
+pub use command_queue::CommandQueue;
+pub use command_queue::CommandQueueBuilder;
 pub use device::Device;
 pub use device::DeviceBuilder;
 pub use device::DeviceCreateError;
 pub use device::DeviceCreateResult;
 pub use event::Event;
 pub use event::EventBuilder;
+pub use fence::Fence;
+pub use fence::FenceBuilder;
 pub use swapchain::SwapChain;
 pub use swapchain::SwapChainBuilder;
 pub use swapchain::SwapChainCreateError;
