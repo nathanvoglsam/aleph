@@ -29,9 +29,9 @@
 
 use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
 use crate::raw::windows::win32::dxgi::{
-    IDXGISwapChain1, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_SAMPLE_DESC, DXGI_SCALING,
-    DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT, DXGI_USAGE_BACK_BUFFER,
-    DXGI_USAGE_RENDER_TARGET_OUTPUT,
+    IDXGISwapChain1, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS, DXGI_SAMPLE_DESC,
+    DXGI_SCALING, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT,
+    DXGI_USAGE_BACK_BUFFER, DXGI_USAGE_RENDER_TARGET_OUTPUT,
 };
 use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::raw::windows::Error;
@@ -207,9 +207,25 @@ impl SwapChain {
             .ok()
     }
 
+    pub unsafe fn present(
+        &self,
+        sync_interval: u32,
+        present_flags: u32,
+    ) -> crate::raw::windows::Result<()> {
+        let presentation_params = DXGI_PRESENT_PARAMETERS {
+            dirty_rects_count: 0,
+            p_dirty_rects: std::ptr::null_mut(),
+            p_scroll_rect: std::ptr::null_mut(),
+            p_scroll_offset: std::ptr::null_mut(),
+        };
+        self.swapchain
+            .Present1(sync_interval, present_flags, &presentation_params)
+            .ok()
+    }
+
     pub fn get_description(&self) -> raw::windows::Result<DXGI_SWAP_CHAIN_DESC1> {
         let mut desc = Default::default();
-        self.swapchain.GetDesc1(&mut desc).ok().map(|_| desc)
+        unsafe { self.swapchain.GetDesc1(&mut desc).ok().map(|_| desc) }
     }
 
     pub fn raw(&self) -> &IDXGISwapChain1 {

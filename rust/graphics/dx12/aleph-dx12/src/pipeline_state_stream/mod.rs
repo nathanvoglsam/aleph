@@ -27,31 +27,46 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_dx12_raw as raw;
+use crate::raw::windows::win32::direct3d12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
+use std::ffi::c_void;
+use std::mem::ManuallyDrop;
 
-mod command_list_type;
-mod command_queue;
-mod device;
-mod event;
-mod fence;
-mod mesh_shader_pipeline_desc;
-mod pipeline_state_stream;
-mod swapchain;
+/// This trait allows for marking types that can be converted into a valid pipeline state stream
+pub trait ToPipelineStateStream {
+    type Buffer;
 
-pub use command_list_type::CommandListType;
-pub use command_queue::CommandQueue;
-pub use command_queue::CommandQueueBuilder;
-pub use device::Device;
-pub use device::DeviceBuilder;
-pub use device::DeviceCreateError;
-pub use device::DeviceCreateResult;
-pub use event::Event;
-pub use event::EventBuilder;
-pub use fence::Fence;
-pub use fence::FenceBuilder;
-pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
-pub use pipeline_state_stream::ToPipelineStateStream;
-pub use swapchain::SwapChain;
-pub use swapchain::SwapChainBuilder;
-pub use swapchain::SwapChainCreateError;
-pub use swapchain::SwapChainCreateResult;
+    fn into_pipeline_state_stream(self) -> Self::Buffer;
+}
+
+#[repr(transparent)]
+pub(crate) struct PackedPipelineStateStreamObject<T>(AlignmentWrapper<Packed<T>>);
+
+impl<T> PackedPipelineStateStreamObject<T> {
+    pub fn new(object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, object: T) -> Self {
+        let out = AlignmentWrapper {
+            wrapped: ManuallyDrop::new(Packed {
+                object_type,
+                object,
+            }),
+        };
+        Self(out)
+    }
+}
+
+#[repr(C)]
+struct Packed<T> {
+    pub object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE,
+    pub object: T,
+}
+
+#[repr(C)]
+union AlignmentWrapper<T> {
+    wrapped: ManuallyDrop<T>,
+    alignment: *const c_void,
+}
+
+impl<T> Drop for AlignmentWrapper<T> {
+    fn drop(&mut self) {
+        let _drop = unsafe { ManuallyDrop::take(&mut self.wrapped) };
+    }
+}

@@ -195,6 +195,6 @@ impl Device {
 
     pub fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
         let mut desc = DXGI_ADAPTER_DESC1::default();
-        self.adapter.GetDesc1(&mut desc).ok().map(|_| desc)
+        unsafe { self.adapter.GetDesc1(&mut desc).ok().map(|_| desc) }
     }
 }

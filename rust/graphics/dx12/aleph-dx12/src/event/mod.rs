@@ -83,21 +83,24 @@ impl Event {
 
     pub fn wait(&self, timeout: Option<u32>) -> u32 {
         if let Some(timeout) = timeout {
-            unsafe { WaitForSingleObject(self.0, timeout) }
+            unsafe { WaitForSingleObject(self.0.clone(), timeout) }
         } else {
-            unsafe { WaitForSingleObject(self.0, INFINITE) }
+            unsafe { WaitForSingleObject(self.0.clone(), INFINITE) }
         }
     }
 
     pub fn raw(&self) -> HANDLE {
-        self.0
+        self.0.clone()
     }
 }
 
 impl Drop for Event {
     fn drop(&mut self) {
         unsafe {
-            assert_ne!(CloseHandle(self.0), false.into());
+            assert_ne!(
+                CloseHandle(self.0.clone()),
+                crate::raw::windows::BOOL::from(false)
+            );
         }
     }
 }

@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::dx12::raw::windows::win32::dxgi::DXGI_PRESENT_PARAMETERS;
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
 use egui::PaintJobs;
@@ -201,8 +200,10 @@ impl Engine {
                 app.on_update(&egui_ctx);
             }
 
-            fence.raw().Signal(0);
-            fence.raw().SetEventOnCompletion(1, event.raw());
+            unsafe {
+                fence.raw().Signal(0).unwrap();
+                fence.raw().SetEventOnCompletion(1, event.raw()).unwrap();
+            }
 
             if Window::resized() {
                 let (width, height) = Window::drawable_size();
@@ -211,20 +212,14 @@ impl Engine {
                 }
             }
 
-            let presentation_params = DXGI_PRESENT_PARAMETERS {
-                dirty_rects_count: 0,
-                p_dirty_rects: std::ptr::null_mut(),
-                p_scroll_rect: std::ptr::null_mut(),
-                p_scroll_offset: std::ptr::null_mut(),
-            };
-            swapchain
-                .raw()
-                .Present1(0, 0, &presentation_params)
-                .ok()
-                .unwrap();
+            unsafe {
+                swapchain.present(0, 0).unwrap();
+            }
 
-            queue.raw().Signal(fence.raw().clone(), 1);
-            event.wait(None);
+            unsafe {
+                queue.raw().Signal(fence.raw().clone(), 1).unwrap();
+                event.wait(None);
+            }
 
             // End the egui frame
             let (output, shapes) = egui_ctx.end_frame();
