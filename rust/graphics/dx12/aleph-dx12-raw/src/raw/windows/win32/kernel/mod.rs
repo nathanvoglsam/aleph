@@ -1,17 +1,18 @@
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct LUID {
     pub low_part: u32,
     pub high_part: i32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct LUID_abi(u32, i32);
 impl LUID {}
 unsafe impl ::windows::Abi for LUID {
     type Abi = LUID_abi;
 }
-impl ::std::default::Default for LUID {
+impl ::core::default::Default for LUID {
     fn default() -> Self {
         Self {
             low_part: 0,
@@ -19,7 +20,7 @@ impl ::std::default::Default for LUID {
         }
     }
 }
-impl ::std::fmt::Debug for LUID {
+impl ::core::fmt::Debug for LUID {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("LUID")
             .field("low_part", &format_args!("{:?}", self.low_part))
@@ -27,7 +28,7 @@ impl ::std::fmt::Debug for LUID {
             .finish()
     }
 }
-impl ::std::clone::Clone for LUID {
+impl ::core::clone::Clone for LUID {
     fn clone(&self) -> Self {
         Self {
             low_part: self.low_part,
@@ -35,10 +36,4 @@ impl ::std::clone::Clone for LUID {
         }
     }
 }
-impl ::std::cmp::PartialEq for LUID {
-    fn eq(&self, other: &Self) -> bool {
-        self.low_part == other.low_part && self.high_part == other.high_part
-    }
-}
-impl ::std::cmp::Eq for LUID {}
 impl ::std::marker::Copy for LUID {}

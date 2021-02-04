@@ -1,38 +1,33 @@
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct HANDLE(pub isize);
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct HANDLE_abi(isize);
 impl HANDLE {}
 unsafe impl ::windows::Abi for HANDLE {
     type Abi = HANDLE_abi;
 }
-impl ::std::default::Default for HANDLE {
+impl ::core::default::Default for HANDLE {
     fn default() -> Self {
         Self(0)
     }
 }
-impl ::std::fmt::Debug for HANDLE {
+impl ::core::fmt::Debug for HANDLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("HANDLE")
             .field("value", &format_args!("{:?}", self.0))
             .finish()
     }
 }
-impl ::std::clone::Clone for HANDLE {
+impl ::core::clone::Clone for HANDLE {
     fn clone(&self) -> Self {
         Self(self.0)
     }
 }
-impl ::std::cmp::PartialEq for HANDLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::std::cmp::Eq for HANDLE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct SECURITY_ATTRIBUTES {
     pub n_length: u32,
     pub lp_security_descriptor: *mut ::std::ffi::c_void,
@@ -40,12 +35,13 @@ pub struct SECURITY_ATTRIBUTES {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct SECURITY_ATTRIBUTES_abi(u32, *mut ::std::ffi::c_void, ::windows::BOOL);
 impl SECURITY_ATTRIBUTES {}
 unsafe impl ::windows::Abi for SECURITY_ATTRIBUTES {
     type Abi = SECURITY_ATTRIBUTES_abi;
 }
-impl ::std::default::Default for SECURITY_ATTRIBUTES {
+impl ::core::default::Default for SECURITY_ATTRIBUTES {
     fn default() -> Self {
         Self {
             n_length: 0,
@@ -54,7 +50,7 @@ impl ::std::default::Default for SECURITY_ATTRIBUTES {
         }
     }
 }
-impl ::std::fmt::Debug for SECURITY_ATTRIBUTES {
+impl ::core::fmt::Debug for SECURITY_ATTRIBUTES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("SECURITY_ATTRIBUTES")
             .field("n_length", &format_args!("{:?}", self.n_length))
@@ -69,7 +65,7 @@ impl ::std::fmt::Debug for SECURITY_ATTRIBUTES {
             .finish()
     }
 }
-impl ::std::clone::Clone for SECURITY_ATTRIBUTES {
+impl ::core::clone::Clone for SECURITY_ATTRIBUTES {
     fn clone(&self) -> Self {
         Self {
             n_length: self.n_length,
@@ -80,14 +76,6 @@ impl ::std::clone::Clone for SECURITY_ATTRIBUTES {
         }
     }
 }
-impl ::std::cmp::PartialEq for SECURITY_ATTRIBUTES {
-    fn eq(&self, other: &Self) -> bool {
-        self.n_length == other.n_length
-            && self.lp_security_descriptor == other.lp_security_descriptor
-            && self.b_inherit_handle == other.b_inherit_handle
-    }
-}
-impl ::std::cmp::Eq for SECURITY_ATTRIBUTES {}
 #[link(name = "KERNEL32")]
 extern "system" {
     pub fn CreateEventA(

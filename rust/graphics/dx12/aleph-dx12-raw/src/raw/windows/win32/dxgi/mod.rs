@@ -169,19 +169,20 @@ impl ::std::ops::BitAnd for DXGI_FORMAT {
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SAMPLE_DESC {
     pub count: u32,
     pub quality: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SAMPLE_DESC_abi(u32, u32);
 impl DXGI_SAMPLE_DESC {}
 unsafe impl ::windows::Abi for DXGI_SAMPLE_DESC {
     type Abi = DXGI_SAMPLE_DESC_abi;
 }
-impl ::std::default::Default for DXGI_SAMPLE_DESC {
+impl ::core::default::Default for DXGI_SAMPLE_DESC {
     fn default() -> Self {
         Self {
             count: 0,
@@ -189,7 +190,7 @@ impl ::std::default::Default for DXGI_SAMPLE_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SAMPLE_DESC {
+impl ::core::fmt::Debug for DXGI_SAMPLE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SAMPLE_DESC")
             .field("count", &format_args!("{:?}", self.count))
@@ -197,7 +198,7 @@ impl ::std::fmt::Debug for DXGI_SAMPLE_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SAMPLE_DESC {
+impl ::core::clone::Clone for DXGI_SAMPLE_DESC {
     fn clone(&self) -> Self {
         Self {
             count: self.count,
@@ -205,12 +206,6 @@ impl ::std::clone::Clone for DXGI_SAMPLE_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SAMPLE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.count == other.count && self.quality == other.quality
-    }
-}
-impl ::std::cmp::Eq for DXGI_SAMPLE_DESC {}
 impl ::std::marker::Copy for DXGI_SAMPLE_DESC {}
 pub struct Apis {}
 impl Apis {}
@@ -252,7 +247,7 @@ extern "system" {
     ) -> ::windows::ErrorCode;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -266,6 +261,7 @@ pub struct DXGI_ADAPTER_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC_abi(
     [u16; 128usize],
     u32,
@@ -281,7 +277,7 @@ impl DXGI_ADAPTER_DESC {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC {
     type Abi = DXGI_ADAPTER_DESC_abi;
 }
-impl ::std::default::Default for DXGI_ADAPTER_DESC {
+impl ::core::default::Default for DXGI_ADAPTER_DESC {
     fn default() -> Self {
         Self {
             description: [
@@ -302,7 +298,7 @@ impl ::std::default::Default for DXGI_ADAPTER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_ADAPTER_DESC {
+impl ::core::fmt::Debug for DXGI_ADAPTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC")
             .field("description", &format_args!("{:?}", self.description))
@@ -326,7 +322,7 @@ impl ::std::fmt::Debug for DXGI_ADAPTER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_ADAPTER_DESC {
+impl ::core::clone::Clone for DXGI_ADAPTER_DESC {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -341,22 +337,8 @@ impl ::std::clone::Clone for DXGI_ADAPTER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-    }
-}
-impl ::std::cmp::Eq for DXGI_ADAPTER_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC1 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -371,6 +353,7 @@ pub struct DXGI_ADAPTER_DESC1 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC1_abi(
     [u16; 128usize],
     u32,
@@ -387,7 +370,7 @@ impl DXGI_ADAPTER_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC1 {
     type Abi = DXGI_ADAPTER_DESC1_abi;
 }
-impl ::std::default::Default for DXGI_ADAPTER_DESC1 {
+impl ::core::default::Default for DXGI_ADAPTER_DESC1 {
     fn default() -> Self {
         Self {
             description: [
@@ -409,7 +392,7 @@ impl ::std::default::Default for DXGI_ADAPTER_DESC1 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_ADAPTER_DESC1 {
+impl ::core::fmt::Debug for DXGI_ADAPTER_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC1")
             .field("description", &format_args!("{:?}", self.description))
@@ -434,7 +417,7 @@ impl ::std::fmt::Debug for DXGI_ADAPTER_DESC1 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_ADAPTER_DESC1 {
+impl ::core::clone::Clone for DXGI_ADAPTER_DESC1 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -450,21 +433,6 @@ impl ::std::clone::Clone for DXGI_ADAPTER_DESC1 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for DXGI_ADAPTER_DESC1 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_GRAPHICS_PREEMPTION_GRANULARITY(pub i32);
@@ -548,7 +516,7 @@ unsafe impl ::windows::Abi for DXGI_COMPUTE_PREEMPTION_GRANULARITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC2 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -565,6 +533,7 @@ pub struct DXGI_ADAPTER_DESC2 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC2_abi(
     [u16; 128usize],
     u32,
@@ -583,7 +552,7 @@ impl DXGI_ADAPTER_DESC2 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC2 {
     type Abi = DXGI_ADAPTER_DESC2_abi;
 }
-impl ::std::default::Default for DXGI_ADAPTER_DESC2 {
+impl ::core::default::Default for DXGI_ADAPTER_DESC2 {
     fn default() -> Self {
         Self {
             description: [
@@ -607,7 +576,7 @@ impl ::std::default::Default for DXGI_ADAPTER_DESC2 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_ADAPTER_DESC2 {
+impl ::core::fmt::Debug for DXGI_ADAPTER_DESC2 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC2")
             .field("description", &format_args!("{:?}", self.description))
@@ -640,7 +609,7 @@ impl ::std::fmt::Debug for DXGI_ADAPTER_DESC2 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_ADAPTER_DESC2 {
+impl ::core::clone::Clone for DXGI_ADAPTER_DESC2 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -658,23 +627,6 @@ impl ::std::clone::Clone for DXGI_ADAPTER_DESC2 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC2 {
-    fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
-            && self.graphics_preemption_granularity == other.graphics_preemption_granularity
-            && self.compute_preemption_granularity == other.compute_preemption_granularity
-    }
-}
-impl ::std::cmp::Eq for DXGI_ADAPTER_DESC2 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_ADAPTER_FLAG3(pub u32);
@@ -732,7 +684,7 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG3 {
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC3 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -749,6 +701,7 @@ pub struct DXGI_ADAPTER_DESC3 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_ADAPTER_DESC3_abi(
     [u16; 128usize],
     u32,
@@ -767,7 +720,7 @@ impl DXGI_ADAPTER_DESC3 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC3 {
     type Abi = DXGI_ADAPTER_DESC3_abi;
 }
-impl ::std::default::Default for DXGI_ADAPTER_DESC3 {
+impl ::core::default::Default for DXGI_ADAPTER_DESC3 {
     fn default() -> Self {
         Self {
             description: [
@@ -791,7 +744,7 @@ impl ::std::default::Default for DXGI_ADAPTER_DESC3 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_ADAPTER_DESC3 {
+impl ::core::fmt::Debug for DXGI_ADAPTER_DESC3 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC3")
             .field("description", &format_args!("{:?}", self.description))
@@ -824,7 +777,7 @@ impl ::std::fmt::Debug for DXGI_ADAPTER_DESC3 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_ADAPTER_DESC3 {
+impl ::core::clone::Clone for DXGI_ADAPTER_DESC3 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -842,23 +795,6 @@ impl ::std::clone::Clone for DXGI_ADAPTER_DESC3 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC3 {
-    fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
-            && self.graphics_preemption_granularity == other.graphics_preemption_granularity
-            && self.compute_preemption_granularity == other.compute_preemption_granularity
-    }
-}
-impl ::std::cmp::Eq for DXGI_ADAPTER_DESC3 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_ADAPTER_FLAG(pub u32);
@@ -1066,55 +1002,51 @@ unsafe impl ::windows::Abi for DXGI_DEBUG_RLO_FLAGS {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC {
     pub flags: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC_abi(u32);
 impl DXGI_DECODE_SWAP_CHAIN_DESC {}
 unsafe impl ::windows::Abi for DXGI_DECODE_SWAP_CHAIN_DESC {
     type Abi = DXGI_DECODE_SWAP_CHAIN_DESC_abi;
 }
-impl ::std::default::Default for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::core::default::Default for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn default() -> Self {
         Self { flags: 0 }
     }
 }
-impl ::std::fmt::Debug for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::core::fmt::Debug for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DECODE_SWAP_CHAIN_DESC")
             .field("flags", &format_args!("{:?}", self.flags))
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::core::clone::Clone for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn clone(&self) -> Self {
         Self { flags: self.flags }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_DECODE_SWAP_CHAIN_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for DXGI_DECODE_SWAP_CHAIN_DESC {}
 impl ::std::marker::Copy for DXGI_DECODE_SWAP_CHAIN_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_DISPLAY_COLOR_SPACE {
     pub primary_coordinates: [f32; 16usize],
     pub white_points: [f32; 32usize],
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_DISPLAY_COLOR_SPACE_abi([f32; 16usize], [f32; 32usize]);
 impl DXGI_DISPLAY_COLOR_SPACE {}
 unsafe impl ::windows::Abi for DXGI_DISPLAY_COLOR_SPACE {
     type Abi = DXGI_DISPLAY_COLOR_SPACE_abi;
 }
-impl ::std::default::Default for DXGI_DISPLAY_COLOR_SPACE {
+impl ::core::default::Default for DXGI_DISPLAY_COLOR_SPACE {
     fn default() -> Self {
         Self {
             primary_coordinates: [
@@ -1127,7 +1059,7 @@ impl ::std::default::Default for DXGI_DISPLAY_COLOR_SPACE {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
+impl ::core::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DISPLAY_COLOR_SPACE")
             .field(
@@ -1138,7 +1070,7 @@ impl ::std::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_DISPLAY_COLOR_SPACE {
+impl ::core::clone::Clone for DXGI_DISPLAY_COLOR_SPACE {
     fn clone(&self) -> Self {
         Self {
             primary_coordinates: <[f32; 16usize] as std::clone::Clone>::clone(
@@ -1148,13 +1080,6 @@ impl ::std::clone::Clone for DXGI_DISPLAY_COLOR_SPACE {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_DISPLAY_COLOR_SPACE {
-    fn eq(&self, other: &Self) -> bool {
-        self.primary_coordinates == other.primary_coordinates
-            && self.white_points == other.white_points
-    }
-}
-impl ::std::cmp::Eq for DXGI_DISPLAY_COLOR_SPACE {}
 pub const DXGI_ENUM_MODES_INTERLACED: u32 = 1u32;
 pub const DXGI_ENUM_MODES_SCALING: u32 = 2u32;
 #[allow(non_camel_case_types)]
@@ -1235,7 +1160,7 @@ unsafe impl ::windows::Abi for DXGI_FRAME_PRESENTATION_MODE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_FRAME_STATISTICS {
     pub present_count: u32,
     pub present_refresh_count: u32,
@@ -1245,12 +1170,13 @@ pub struct DXGI_FRAME_STATISTICS {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_FRAME_STATISTICS_abi(u32, u32, u32, i64, i64);
 impl DXGI_FRAME_STATISTICS {}
 unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS {
     type Abi = DXGI_FRAME_STATISTICS_abi;
 }
-impl ::std::default::Default for DXGI_FRAME_STATISTICS {
+impl ::core::default::Default for DXGI_FRAME_STATISTICS {
     fn default() -> Self {
         Self {
             present_count: 0,
@@ -1261,7 +1187,7 @@ impl ::std::default::Default for DXGI_FRAME_STATISTICS {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS {
+impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS")
             .field("present_count", &format_args!("{:?}", self.present_count))
@@ -1278,7 +1204,7 @@ impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_FRAME_STATISTICS {
+impl ::core::clone::Clone for DXGI_FRAME_STATISTICS {
     fn clone(&self) -> Self {
         Self {
             present_count: self.present_count,
@@ -1289,19 +1215,9 @@ impl ::std::clone::Clone for DXGI_FRAME_STATISTICS {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_FRAME_STATISTICS {
-    fn eq(&self, other: &Self) -> bool {
-        self.present_count == other.present_count
-            && self.present_refresh_count == other.present_refresh_count
-            && self.sync_refresh_count == other.sync_refresh_count
-            && self.sync_qpc_time == other.sync_qpc_time
-            && self.sync_gpu_time == other.sync_gpu_time
-    }
-}
-impl ::std::cmp::Eq for DXGI_FRAME_STATISTICS {}
 impl ::std::marker::Copy for DXGI_FRAME_STATISTICS {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_FRAME_STATISTICS_MEDIA {
     pub present_count: u32,
     pub present_refresh_count: u32,
@@ -1313,6 +1229,7 @@ pub struct DXGI_FRAME_STATISTICS_MEDIA {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_FRAME_STATISTICS_MEDIA_abi(
     u32,
     u32,
@@ -1326,7 +1243,7 @@ impl DXGI_FRAME_STATISTICS_MEDIA {}
 unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS_MEDIA {
     type Abi = DXGI_FRAME_STATISTICS_MEDIA_abi;
 }
-impl ::std::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::core::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
     fn default() -> Self {
         Self {
             present_count: 0,
@@ -1339,7 +1256,7 @@ impl ::std::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS_MEDIA")
             .field("present_count", &format_args!("{:?}", self.present_count))
@@ -1364,7 +1281,7 @@ impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::core::clone::Clone for DXGI_FRAME_STATISTICS_MEDIA {
     fn clone(&self) -> Self {
         Self {
             present_count: self.present_count,
@@ -1377,20 +1294,8 @@ impl ::std::clone::Clone for DXGI_FRAME_STATISTICS_MEDIA {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_FRAME_STATISTICS_MEDIA {
-    fn eq(&self, other: &Self) -> bool {
-        self.present_count == other.present_count
-            && self.present_refresh_count == other.present_refresh_count
-            && self.sync_refresh_count == other.sync_refresh_count
-            && self.sync_qpc_time == other.sync_qpc_time
-            && self.sync_gpu_time == other.sync_gpu_time
-            && self.composition_mode == other.composition_mode
-            && self.approved_present_duration == other.approved_present_duration
-    }
-}
-impl ::std::cmp::Eq for DXGI_FRAME_STATISTICS_MEDIA {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RGB {
     pub red: f32,
     pub green: f32,
@@ -1398,12 +1303,13 @@ pub struct DXGI_RGB {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RGB_abi(f32, f32, f32);
 impl DXGI_RGB {}
 unsafe impl ::windows::Abi for DXGI_RGB {
     type Abi = DXGI_RGB_abi;
 }
-impl ::std::default::Default for DXGI_RGB {
+impl ::core::default::Default for DXGI_RGB {
     fn default() -> Self {
         Self {
             red: 0.0,
@@ -1412,7 +1318,7 @@ impl ::std::default::Default for DXGI_RGB {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_RGB {
+impl ::core::fmt::Debug for DXGI_RGB {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RGB")
             .field("red", &format_args!("{:?}", self.red))
@@ -1421,7 +1327,7 @@ impl ::std::fmt::Debug for DXGI_RGB {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_RGB {
+impl ::core::clone::Clone for DXGI_RGB {
     fn clone(&self) -> Self {
         Self {
             red: self.red,
@@ -1430,15 +1336,9 @@ impl ::std::clone::Clone for DXGI_RGB {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_RGB {
-    fn eq(&self, other: &Self) -> bool {
-        self.red == other.red && self.green == other.green && self.blue == other.blue
-    }
-}
-impl ::std::cmp::Eq for DXGI_RGB {}
 impl ::std::marker::Copy for DXGI_RGB {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_GAMMA_CONTROL {
     pub scale: DXGI_RGB,
     pub offset: DXGI_RGB,
@@ -1446,12 +1346,13 @@ pub struct DXGI_GAMMA_CONTROL {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_GAMMA_CONTROL_abi(DXGI_RGB_abi, DXGI_RGB_abi, [DXGI_RGB_abi; 1025usize]);
 impl DXGI_GAMMA_CONTROL {}
 unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL {
     type Abi = DXGI_GAMMA_CONTROL_abi;
 }
-impl ::std::default::Default for DXGI_GAMMA_CONTROL {
+impl ::core::default::Default for DXGI_GAMMA_CONTROL {
     fn default() -> Self {
         Self {
             scale: ::std::default::Default::default(),
@@ -2486,7 +2387,7 @@ impl ::std::default::Default for DXGI_GAMMA_CONTROL {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL {
+impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL")
             .field("scale", &format_args!("{:?}", self.scale))
@@ -2495,7 +2396,7 @@ impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_GAMMA_CONTROL {
+impl ::core::clone::Clone for DXGI_GAMMA_CONTROL {
     fn clone(&self) -> Self {
         Self {
             scale: <DXGI_RGB as std::clone::Clone>::clone(&self.scale),
@@ -2504,16 +2405,8 @@ impl ::std::clone::Clone for DXGI_GAMMA_CONTROL {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_GAMMA_CONTROL {
-    fn eq(&self, other: &Self) -> bool {
-        self.scale == other.scale
-            && self.offset == other.offset
-            && self.gamma_curve == other.gamma_curve
-    }
-}
-impl ::std::cmp::Eq for DXGI_GAMMA_CONTROL {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
     pub scale_and_offset_supported: ::windows::BOOL,
     pub max_converted_value: f32,
@@ -2523,12 +2416,13 @@ pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_GAMMA_CONTROL_CAPABILITIES_abi(::windows::BOOL, f32, f32, u32, [f32; 1025usize]);
 impl DXGI_GAMMA_CONTROL_CAPABILITIES {}
 unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL_CAPABILITIES {
     type Abi = DXGI_GAMMA_CONTROL_CAPABILITIES_abi;
 }
-impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::core::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn default() -> Self {
         Self {
             scale_and_offset_supported: ::std::default::Default::default(),
@@ -2605,7 +2499,7 @@ impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL_CAPABILITIES")
             .field(
@@ -2631,7 +2525,7 @@ impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::core::clone::Clone for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn clone(&self) -> Self {
         Self {
             scale_and_offset_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -2646,16 +2540,6 @@ impl ::std::clone::Clone for DXGI_GAMMA_CONTROL_CAPABILITIES {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_GAMMA_CONTROL_CAPABILITIES {
-    fn eq(&self, other: &Self) -> bool {
-        self.scale_and_offset_supported == other.scale_and_offset_supported
-            && self.max_converted_value == other.max_converted_value
-            && self.min_converted_value == other.min_converted_value
-            && self.num_gamma_control_points == other.num_gamma_control_points
-            && self.control_point_positions == other.control_point_positions
-    }
-}
-impl ::std::cmp::Eq for DXGI_GAMMA_CONTROL_CAPABILITIES {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_GPU_PREFERENCE(pub i32);
@@ -2735,7 +2619,7 @@ unsafe impl ::windows::Abi for DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_HDR_METADATA_HDR10 {
     pub red_primary: [u16; 2usize],
     pub green_primary: [u16; 2usize],
@@ -2748,6 +2632,7 @@ pub struct DXGI_HDR_METADATA_HDR10 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_HDR_METADATA_HDR10_abi(
     [u16; 2usize],
     [u16; 2usize],
@@ -2762,7 +2647,7 @@ impl DXGI_HDR_METADATA_HDR10 {}
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10 {
     type Abi = DXGI_HDR_METADATA_HDR10_abi;
 }
-impl ::std::default::Default for DXGI_HDR_METADATA_HDR10 {
+impl ::core::default::Default for DXGI_HDR_METADATA_HDR10 {
     fn default() -> Self {
         Self {
             red_primary: [0, 0],
@@ -2776,7 +2661,7 @@ impl ::std::default::Default for DXGI_HDR_METADATA_HDR10 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
+impl ::core::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10")
             .field("red_primary", &format_args!("{:?}", self.red_primary))
@@ -2802,7 +2687,7 @@ impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_HDR_METADATA_HDR10 {
+impl ::core::clone::Clone for DXGI_HDR_METADATA_HDR10 {
     fn clone(&self) -> Self {
         Self {
             red_primary: <[u16; 2usize] as std::clone::Clone>::clone(&self.red_primary),
@@ -2816,32 +2701,20 @@ impl ::std::clone::Clone for DXGI_HDR_METADATA_HDR10 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_HDR_METADATA_HDR10 {
-    fn eq(&self, other: &Self) -> bool {
-        self.red_primary == other.red_primary
-            && self.green_primary == other.green_primary
-            && self.blue_primary == other.blue_primary
-            && self.white_point == other.white_point
-            && self.max_mastering_luminance == other.max_mastering_luminance
-            && self.min_mastering_luminance == other.min_mastering_luminance
-            && self.max_content_light_level == other.max_content_light_level
-            && self.max_frame_average_light_level == other.max_frame_average_light_level
-    }
-}
-impl ::std::cmp::Eq for DXGI_HDR_METADATA_HDR10 {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS {
     pub data: [u8; 72usize],
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS_abi([u8; 72usize]);
 impl DXGI_HDR_METADATA_HDR10PLUS {}
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10PLUS {
     type Abi = DXGI_HDR_METADATA_HDR10PLUS_abi;
 }
-impl ::std::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::core::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
     fn default() -> Self {
         Self {
             data: [
@@ -2852,26 +2725,20 @@ impl ::std::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::core::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10PLUS")
             .field("data", &format_args!("{:?}", self.data))
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::core::clone::Clone for DXGI_HDR_METADATA_HDR10PLUS {
     fn clone(&self) -> Self {
         Self {
             data: <[u8; 72usize] as std::clone::Clone>::clone(&self.data),
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_HDR_METADATA_HDR10PLUS {
-    fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
-    }
-}
-impl ::std::cmp::Eq for DXGI_HDR_METADATA_HDR10PLUS {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_HDR_METADATA_TYPE(pub i32);
@@ -3000,7 +2867,7 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE_SEVERITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_FILTER_DESC {
     pub num_categories: u32,
     pub p_category_list: *mut DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -3011,6 +2878,7 @@ pub struct DXGI_INFO_QUEUE_FILTER_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_FILTER_DESC_abi(
     u32,
     *mut DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -3023,7 +2891,7 @@ impl DXGI_INFO_QUEUE_FILTER_DESC {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER_DESC {
     type Abi = DXGI_INFO_QUEUE_FILTER_DESC_abi;
 }
-impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
     fn default() -> Self {
         Self {
             num_categories: 0,
@@ -3035,7 +2903,7 @@ impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER_DESC")
             .field("num_categories", &format_args!("{:?}", self.num_categories))
@@ -3053,7 +2921,7 @@ impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::core::clone::Clone for DXGI_INFO_QUEUE_FILTER_DESC {
     fn clone(&self) -> Self {
         Self {
             num_categories: self.num_categories,
@@ -3065,25 +2933,15 @@ impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_FILTER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_categories == other.num_categories
-            && self.p_category_list == other.p_category_list
-            && self.num_severities == other.num_severities
-            && self.p_severity_list == other.p_severity_list
-            && self.num_ids == other.num_ids
-            && self.p_id_list == other.p_id_list
-    }
-}
-impl ::std::cmp::Eq for DXGI_INFO_QUEUE_FILTER_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_FILTER {
     pub allow_list: DXGI_INFO_QUEUE_FILTER_DESC,
     pub deny_list: DXGI_INFO_QUEUE_FILTER_DESC,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_FILTER_abi(
     DXGI_INFO_QUEUE_FILTER_DESC_abi,
     DXGI_INFO_QUEUE_FILTER_DESC_abi,
@@ -3092,7 +2950,7 @@ impl DXGI_INFO_QUEUE_FILTER {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER {
     type Abi = DXGI_INFO_QUEUE_FILTER_abi;
 }
-impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER {
+impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER {
     fn default() -> Self {
         Self {
             allow_list: ::std::default::Default::default(),
@@ -3100,7 +2958,7 @@ impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
+impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER")
             .field("allow_list", &format_args!("{:?}", self.allow_list))
@@ -3108,7 +2966,7 @@ impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER {
+impl ::core::clone::Clone for DXGI_INFO_QUEUE_FILTER {
     fn clone(&self) -> Self {
         Self {
             allow_list: <DXGI_INFO_QUEUE_FILTER_DESC as std::clone::Clone>::clone(&self.allow_list),
@@ -3116,14 +2974,8 @@ impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_FILTER {
-    fn eq(&self, other: &Self) -> bool {
-        self.allow_list == other.allow_list && self.deny_list == other.deny_list
-    }
-}
-impl ::std::cmp::Eq for DXGI_INFO_QUEUE_FILTER {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_MESSAGE {
     pub producer: ::windows::Guid,
     pub category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -3134,6 +2986,7 @@ pub struct DXGI_INFO_QUEUE_MESSAGE {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_INFO_QUEUE_MESSAGE_abi(
     ::windows::Guid,
     DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -3146,7 +2999,7 @@ impl DXGI_INFO_QUEUE_MESSAGE {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE {
     type Abi = DXGI_INFO_QUEUE_MESSAGE_abi;
 }
-impl ::std::default::Default for DXGI_INFO_QUEUE_MESSAGE {
+impl ::core::default::Default for DXGI_INFO_QUEUE_MESSAGE {
     fn default() -> Self {
         Self {
             producer: ::windows::Guid::zeroed(),
@@ -3158,7 +3011,7 @@ impl ::std::default::Default for DXGI_INFO_QUEUE_MESSAGE {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
+impl ::core::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_MESSAGE")
             .field("producer", &format_args!("{:?}", self.producer))
@@ -3173,7 +3026,7 @@ impl ::std::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_INFO_QUEUE_MESSAGE {
+impl ::core::clone::Clone for DXGI_INFO_QUEUE_MESSAGE {
     fn clone(&self) -> Self {
         Self {
             producer: <::windows::Guid as std::clone::Clone>::clone(&self.producer),
@@ -3185,31 +3038,21 @@ impl ::std::clone::Clone for DXGI_INFO_QUEUE_MESSAGE {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_MESSAGE {
-    fn eq(&self, other: &Self) -> bool {
-        self.producer == other.producer
-            && self.category == other.category
-            && self.severity == other.severity
-            && self.id == other.id
-            && self.p_description == other.p_description
-            && self.description_byte_length == other.description_byte_length
-    }
-}
-impl ::std::cmp::Eq for DXGI_INFO_QUEUE_MESSAGE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE {
     pub code_counts: [u8; 16usize],
     pub code_values: [u8; 162usize],
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE_abi([u8; 16usize], [u8; 162usize]);
 impl DXGI_JPEG_AC_HUFFMAN_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_AC_HUFFMAN_TABLE {
     type Abi = DXGI_JPEG_AC_HUFFMAN_TABLE_abi;
 }
-impl ::std::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::core::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
             code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -3224,7 +3067,7 @@ impl ::std::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::core::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_AC_HUFFMAN_TABLE")
             .field("code_counts", &format_args!("{:?}", self.code_counts))
@@ -3232,7 +3075,7 @@ impl ::std::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::core::clone::Clone for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn clone(&self) -> Self {
         Self {
             code_counts: <[u8; 16usize] as std::clone::Clone>::clone(&self.code_counts),
@@ -3240,26 +3083,21 @@ impl ::std::clone::Clone for DXGI_JPEG_AC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_JPEG_AC_HUFFMAN_TABLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.code_counts == other.code_counts && self.code_values == other.code_values
-    }
-}
-impl ::std::cmp::Eq for DXGI_JPEG_AC_HUFFMAN_TABLE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE {
     pub code_counts: [u8; 12usize],
     pub code_values: [u8; 12usize],
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE_abi([u8; 12usize], [u8; 12usize]);
 impl DXGI_JPEG_DC_HUFFMAN_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_DC_HUFFMAN_TABLE {
     type Abi = DXGI_JPEG_DC_HUFFMAN_TABLE_abi;
 }
-impl ::std::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::core::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
             code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -3267,7 +3105,7 @@ impl ::std::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::core::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_DC_HUFFMAN_TABLE")
             .field("code_counts", &format_args!("{:?}", self.code_counts))
@@ -3275,7 +3113,7 @@ impl ::std::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::core::clone::Clone for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn clone(&self) -> Self {
         Self {
             code_counts: <[u8; 12usize] as std::clone::Clone>::clone(&self.code_counts),
@@ -3283,25 +3121,20 @@ impl ::std::clone::Clone for DXGI_JPEG_DC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_JPEG_DC_HUFFMAN_TABLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.code_counts == other.code_counts && self.code_values == other.code_values
-    }
-}
-impl ::std::cmp::Eq for DXGI_JPEG_DC_HUFFMAN_TABLE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE {
     pub elements: [u8; 64usize],
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE_abi([u8; 64usize]);
 impl DXGI_JPEG_QUANTIZATION_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_QUANTIZATION_TABLE {
     type Abi = DXGI_JPEG_QUANTIZATION_TABLE_abi;
 }
-impl ::std::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::core::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
     fn default() -> Self {
         Self {
             elements: [
@@ -3312,40 +3145,35 @@ impl ::std::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::core::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_QUANTIZATION_TABLE")
             .field("elements", &format_args!("{:?}", self.elements))
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::core::clone::Clone for DXGI_JPEG_QUANTIZATION_TABLE {
     fn clone(&self) -> Self {
         Self {
             elements: <[u8; 64usize] as std::clone::Clone>::clone(&self.elements),
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_JPEG_QUANTIZATION_TABLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.elements == other.elements
-    }
-}
-impl ::std::cmp::Eq for DXGI_JPEG_QUANTIZATION_TABLE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MAPPED_RECT {
     pub pitch: i32,
     pub p_bits: *mut u8,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MAPPED_RECT_abi(i32, *mut u8);
 impl DXGI_MAPPED_RECT {}
 unsafe impl ::windows::Abi for DXGI_MAPPED_RECT {
     type Abi = DXGI_MAPPED_RECT_abi;
 }
-impl ::std::default::Default for DXGI_MAPPED_RECT {
+impl ::core::default::Default for DXGI_MAPPED_RECT {
     fn default() -> Self {
         Self {
             pitch: 0,
@@ -3353,7 +3181,7 @@ impl ::std::default::Default for DXGI_MAPPED_RECT {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_MAPPED_RECT {
+impl ::core::fmt::Debug for DXGI_MAPPED_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MAPPED_RECT")
             .field("pitch", &format_args!("{:?}", self.pitch))
@@ -3361,7 +3189,7 @@ impl ::std::fmt::Debug for DXGI_MAPPED_RECT {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_MAPPED_RECT {
+impl ::core::clone::Clone for DXGI_MAPPED_RECT {
     fn clone(&self) -> Self {
         Self {
             pitch: self.pitch,
@@ -3369,18 +3197,12 @@ impl ::std::clone::Clone for DXGI_MAPPED_RECT {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_MAPPED_RECT {
-    fn eq(&self, other: &Self) -> bool {
-        self.pitch == other.pitch && self.p_bits == other.p_bits
-    }
-}
-impl ::std::cmp::Eq for DXGI_MAPPED_RECT {}
 impl ::std::marker::Copy for DXGI_MAPPED_RECT {}
 pub const DXGI_MAP_DISCARD: u32 = 4u32;
 pub const DXGI_MAP_READ: u32 = 1u32;
 pub const DXGI_MAP_WRITE: u32 = 2u32;
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MATRIX_3X2_F {
     pub _11: f32,
     pub _12: f32,
@@ -3391,12 +3213,13 @@ pub struct DXGI_MATRIX_3X2_F {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MATRIX_3X2_F_abi(f32, f32, f32, f32, f32, f32);
 impl DXGI_MATRIX_3X2_F {}
 unsafe impl ::windows::Abi for DXGI_MATRIX_3X2_F {
     type Abi = DXGI_MATRIX_3X2_F_abi;
 }
-impl ::std::default::Default for DXGI_MATRIX_3X2_F {
+impl ::core::default::Default for DXGI_MATRIX_3X2_F {
     fn default() -> Self {
         Self {
             _11: 0.0,
@@ -3408,7 +3231,7 @@ impl ::std::default::Default for DXGI_MATRIX_3X2_F {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_MATRIX_3X2_F {
+impl ::core::fmt::Debug for DXGI_MATRIX_3X2_F {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MATRIX_3X2_F")
             .field("_11", &format_args!("{:?}", self._11))
@@ -3420,7 +3243,7 @@ impl ::std::fmt::Debug for DXGI_MATRIX_3X2_F {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_MATRIX_3X2_F {
+impl ::core::clone::Clone for DXGI_MATRIX_3X2_F {
     fn clone(&self) -> Self {
         Self {
             _11: self._11,
@@ -3432,17 +3255,6 @@ impl ::std::clone::Clone for DXGI_MATRIX_3X2_F {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_MATRIX_3X2_F {
-    fn eq(&self, other: &Self) -> bool {
-        self._11 == other._11
-            && self._12 == other._12
-            && self._21 == other._21
-            && self._22 == other._22
-            && self._31 == other._31
-            && self._32 == other._32
-    }
-}
-impl ::std::cmp::Eq for DXGI_MATRIX_3X2_F {}
 impl ::std::marker::Copy for DXGI_MATRIX_3X2_F {}
 pub const DXGI_MAX_SWAP_CHAIN_BUFFERS: u32 = 16u32;
 #[allow(non_camel_case_types)]
@@ -3484,19 +3296,20 @@ unsafe impl ::windows::Abi for DXGI_MEMORY_SEGMENT_GROUP {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RATIONAL {
     pub numerator: u32,
     pub denominator: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RATIONAL_abi(u32, u32);
 impl DXGI_RATIONAL {}
 unsafe impl ::windows::Abi for DXGI_RATIONAL {
     type Abi = DXGI_RATIONAL_abi;
 }
-impl ::std::default::Default for DXGI_RATIONAL {
+impl ::core::default::Default for DXGI_RATIONAL {
     fn default() -> Self {
         Self {
             numerator: 0,
@@ -3504,7 +3317,7 @@ impl ::std::default::Default for DXGI_RATIONAL {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_RATIONAL {
+impl ::core::fmt::Debug for DXGI_RATIONAL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RATIONAL")
             .field("numerator", &format_args!("{:?}", self.numerator))
@@ -3512,7 +3325,7 @@ impl ::std::fmt::Debug for DXGI_RATIONAL {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_RATIONAL {
+impl ::core::clone::Clone for DXGI_RATIONAL {
     fn clone(&self) -> Self {
         Self {
             numerator: self.numerator,
@@ -3520,12 +3333,6 @@ impl ::std::clone::Clone for DXGI_RATIONAL {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_RATIONAL {
-    fn eq(&self, other: &Self) -> bool {
-        self.numerator == other.numerator && self.denominator == other.denominator
-    }
-}
-impl ::std::cmp::Eq for DXGI_RATIONAL {}
 impl ::std::marker::Copy for DXGI_RATIONAL {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
@@ -3607,7 +3414,7 @@ unsafe impl ::windows::Abi for DXGI_MODE_SCALING {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MODE_DESC {
     pub width: u32,
     pub height: u32,
@@ -3618,6 +3425,7 @@ pub struct DXGI_MODE_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MODE_DESC_abi(
     u32,
     u32,
@@ -3630,7 +3438,7 @@ impl DXGI_MODE_DESC {}
 unsafe impl ::windows::Abi for DXGI_MODE_DESC {
     type Abi = DXGI_MODE_DESC_abi;
 }
-impl ::std::default::Default for DXGI_MODE_DESC {
+impl ::core::default::Default for DXGI_MODE_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -3642,7 +3450,7 @@ impl ::std::default::Default for DXGI_MODE_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_MODE_DESC {
+impl ::core::fmt::Debug for DXGI_MODE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -3657,7 +3465,7 @@ impl ::std::fmt::Debug for DXGI_MODE_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_MODE_DESC {
+impl ::core::clone::Clone for DXGI_MODE_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -3669,19 +3477,8 @@ impl ::std::clone::Clone for DXGI_MODE_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_MODE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.refresh_rate == other.refresh_rate
-            && self.format == other.format
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
-    }
-}
-impl ::std::cmp::Eq for DXGI_MODE_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MODE_DESC1 {
     pub width: u32,
     pub height: u32,
@@ -3693,6 +3490,7 @@ pub struct DXGI_MODE_DESC1 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_MODE_DESC1_abi(
     u32,
     u32,
@@ -3706,7 +3504,7 @@ impl DXGI_MODE_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_MODE_DESC1 {
     type Abi = DXGI_MODE_DESC1_abi;
 }
-impl ::std::default::Default for DXGI_MODE_DESC1 {
+impl ::core::default::Default for DXGI_MODE_DESC1 {
     fn default() -> Self {
         Self {
             width: 0,
@@ -3719,7 +3517,7 @@ impl ::std::default::Default for DXGI_MODE_DESC1 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_MODE_DESC1 {
+impl ::core::fmt::Debug for DXGI_MODE_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC1")
             .field("width", &format_args!("{:?}", self.width))
@@ -3735,7 +3533,7 @@ impl ::std::fmt::Debug for DXGI_MODE_DESC1 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_MODE_DESC1 {
+impl ::core::clone::Clone for DXGI_MODE_DESC1 {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -3748,18 +3546,6 @@ impl ::std::clone::Clone for DXGI_MODE_DESC1 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_MODE_DESC1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.refresh_rate == other.refresh_rate
-            && self.format == other.format
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
-            && self.stereo == other.stereo
-    }
-}
-impl ::std::cmp::Eq for DXGI_MODE_DESC1 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_MODE_ROTATION(pub i32);
@@ -3921,7 +3707,7 @@ unsafe impl ::windows::Abi for DXGI_OFFER_RESOURCE_PRIORITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_DESC {
     pub mode_desc: DXGI_MODE_DESC,
     pub rotation: DXGI_MODE_ROTATION,
@@ -3929,12 +3715,13 @@ pub struct DXGI_OUTDUPL_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_DESC_abi(DXGI_MODE_DESC_abi, DXGI_MODE_ROTATION, ::windows::BOOL);
 impl DXGI_OUTDUPL_DESC {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_DESC {
     type Abi = DXGI_OUTDUPL_DESC_abi;
 }
-impl ::std::default::Default for DXGI_OUTDUPL_DESC {
+impl ::core::default::Default for DXGI_OUTDUPL_DESC {
     fn default() -> Self {
         Self {
             mode_desc: ::std::default::Default::default(),
@@ -3943,7 +3730,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTDUPL_DESC {
+impl ::core::fmt::Debug for DXGI_OUTDUPL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_DESC")
             .field("mode_desc", &format_args!("{:?}", self.mode_desc))
@@ -3955,7 +3742,7 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTDUPL_DESC {
+impl ::core::clone::Clone for DXGI_OUTDUPL_DESC {
     fn clone(&self) -> Self {
         Self {
             mode_desc: <DXGI_MODE_DESC as std::clone::Clone>::clone(&self.mode_desc),
@@ -3966,14 +3753,6 @@ impl ::std::clone::Clone for DXGI_OUTDUPL_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTDUPL_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.mode_desc == other.mode_desc
-            && self.rotation == other.rotation
-            && self.desktop_image_in_system_memory == other.desktop_image_in_system_memory
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTDUPL_DESC {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_OUTDUPL_FLAG(pub i32);
@@ -4012,19 +3791,20 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_FLAG {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_POINTER_POSITION {
     pub position: super::display_devices::POINT,
     pub visible: ::windows::BOOL,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_POINTER_POSITION_abi(super::display_devices::POINT_abi, ::windows::BOOL);
 impl DXGI_OUTDUPL_POINTER_POSITION {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_POSITION {
     type Abi = DXGI_OUTDUPL_POINTER_POSITION_abi;
 }
-impl ::std::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::core::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
     fn default() -> Self {
         Self {
             position: ::std::default::Default::default(),
@@ -4032,7 +3812,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_POSITION")
             .field("position", &format_args!("{:?}", self.position))
@@ -4040,7 +3820,7 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::core::clone::Clone for DXGI_OUTDUPL_POINTER_POSITION {
     fn clone(&self) -> Self {
         Self {
             position: <super::display_devices::POINT as std::clone::Clone>::clone(&self.position),
@@ -4048,14 +3828,8 @@ impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_POSITION {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTDUPL_POINTER_POSITION {
-    fn eq(&self, other: &Self) -> bool {
-        self.position == other.position && self.visible == other.visible
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTDUPL_POINTER_POSITION {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_FRAME_INFO {
     pub last_present_time: i64,
     pub last_mouse_update_time: i64,
@@ -4068,6 +3842,7 @@ pub struct DXGI_OUTDUPL_FRAME_INFO {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_FRAME_INFO_abi(
     i64,
     i64,
@@ -4082,7 +3857,7 @@ impl DXGI_OUTDUPL_FRAME_INFO {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_FRAME_INFO {
     type Abi = DXGI_OUTDUPL_FRAME_INFO_abi;
 }
-impl ::std::default::Default for DXGI_OUTDUPL_FRAME_INFO {
+impl ::core::default::Default for DXGI_OUTDUPL_FRAME_INFO {
     fn default() -> Self {
         Self {
             last_present_time: 0,
@@ -4096,7 +3871,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_FRAME_INFO {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
+impl ::core::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_FRAME_INFO")
             .field(
@@ -4134,7 +3909,7 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTDUPL_FRAME_INFO {
+impl ::core::clone::Clone for DXGI_OUTDUPL_FRAME_INFO {
     fn clone(&self) -> Self {
         Self {
             last_present_time: self.last_present_time,
@@ -4152,27 +3927,15 @@ impl ::std::clone::Clone for DXGI_OUTDUPL_FRAME_INFO {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTDUPL_FRAME_INFO {
-    fn eq(&self, other: &Self) -> bool {
-        self.last_present_time == other.last_present_time
-            && self.last_mouse_update_time == other.last_mouse_update_time
-            && self.accumulated_frames == other.accumulated_frames
-            && self.rects_coalesced == other.rects_coalesced
-            && self.protected_content_masked_out == other.protected_content_masked_out
-            && self.pointer_position == other.pointer_position
-            && self.total_metadata_buffer_size == other.total_metadata_buffer_size
-            && self.pointer_shape_buffer_size == other.pointer_shape_buffer_size
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTDUPL_FRAME_INFO {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_MOVE_RECT {
     pub source_point: super::display_devices::POINT,
     pub destination_rect: super::display_devices::RECT,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_MOVE_RECT_abi(
     super::display_devices::POINT_abi,
     super::display_devices::RECT_abi,
@@ -4181,7 +3944,7 @@ impl DXGI_OUTDUPL_MOVE_RECT {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_MOVE_RECT {
     type Abi = DXGI_OUTDUPL_MOVE_RECT_abi;
 }
-impl ::std::default::Default for DXGI_OUTDUPL_MOVE_RECT {
+impl ::core::default::Default for DXGI_OUTDUPL_MOVE_RECT {
     fn default() -> Self {
         Self {
             source_point: ::std::default::Default::default(),
@@ -4189,7 +3952,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_MOVE_RECT {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
+impl ::core::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_MOVE_RECT")
             .field("source_point", &format_args!("{:?}", self.source_point))
@@ -4200,7 +3963,7 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTDUPL_MOVE_RECT {
+impl ::core::clone::Clone for DXGI_OUTDUPL_MOVE_RECT {
     fn clone(&self) -> Self {
         Self {
             source_point: <super::display_devices::POINT as std::clone::Clone>::clone(
@@ -4212,14 +3975,8 @@ impl ::std::clone::Clone for DXGI_OUTDUPL_MOVE_RECT {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTDUPL_MOVE_RECT {
-    fn eq(&self, other: &Self) -> bool {
-        self.source_point == other.source_point && self.destination_rect == other.destination_rect
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTDUPL_MOVE_RECT {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     pub r#type: u32,
     pub width: u32,
@@ -4229,6 +3986,7 @@ pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO_abi(
     u32,
     u32,
@@ -4240,7 +3998,7 @@ impl DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     type Abi = DXGI_OUTDUPL_POINTER_SHAPE_INFO_abi;
 }
-impl ::std::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::core::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn default() -> Self {
         Self {
             r#type: 0,
@@ -4251,7 +4009,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_SHAPE_INFO")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -4262,7 +4020,7 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::core::clone::Clone for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -4273,16 +4031,6 @@ impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.width == other.width
-            && self.height == other.height
-            && self.pitch == other.pitch
-            && self.hot_spot == other.hot_spot
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_TYPE(pub i32);
@@ -4323,7 +4071,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_TYPE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTPUT_DESC {
     pub device_name: [u16; 32usize],
     pub desktop_coordinates: super::display_devices::RECT,
@@ -4333,6 +4081,7 @@ pub struct DXGI_OUTPUT_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTPUT_DESC_abi(
     [u16; 32usize],
     super::display_devices::RECT_abi,
@@ -4344,7 +4093,7 @@ impl DXGI_OUTPUT_DESC {}
 unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC {
     type Abi = DXGI_OUTPUT_DESC_abi;
 }
-impl ::std::default::Default for DXGI_OUTPUT_DESC {
+impl ::core::default::Default for DXGI_OUTPUT_DESC {
     fn default() -> Self {
         Self {
             device_name: [
@@ -4358,7 +4107,7 @@ impl ::std::default::Default for DXGI_OUTPUT_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTPUT_DESC {
+impl ::core::fmt::Debug for DXGI_OUTPUT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC")
             .field("device_name", &format_args!("{:?}", self.device_name))
@@ -4375,7 +4124,7 @@ impl ::std::fmt::Debug for DXGI_OUTPUT_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTPUT_DESC {
+impl ::core::clone::Clone for DXGI_OUTPUT_DESC {
     fn clone(&self) -> Self {
         Self {
             device_name: <[u16; 32usize] as std::clone::Clone>::clone(&self.device_name),
@@ -4390,18 +4139,8 @@ impl ::std::clone::Clone for DXGI_OUTPUT_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTPUT_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.device_name == other.device_name
-            && self.desktop_coordinates == other.desktop_coordinates
-            && self.attached_to_desktop == other.attached_to_desktop
-            && self.rotation == other.rotation
-            && self.monitor == other.monitor
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTPUT_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTPUT_DESC1 {
     pub device_name: [u16; 32usize],
     pub desktop_coordinates: super::display_devices::RECT,
@@ -4420,6 +4159,7 @@ pub struct DXGI_OUTPUT_DESC1 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_OUTPUT_DESC1_abi(
     [u16; 32usize],
     super::display_devices::RECT_abi,
@@ -4440,7 +4180,7 @@ impl DXGI_OUTPUT_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC1 {
     type Abi = DXGI_OUTPUT_DESC1_abi;
 }
-impl ::std::default::Default for DXGI_OUTPUT_DESC1 {
+impl ::core::default::Default for DXGI_OUTPUT_DESC1 {
     fn default() -> Self {
         Self {
             device_name: [
@@ -4463,7 +4203,7 @@ impl ::std::default::Default for DXGI_OUTPUT_DESC1 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_OUTPUT_DESC1 {
+impl ::core::fmt::Debug for DXGI_OUTPUT_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC1")
             .field("device_name", &format_args!("{:?}", self.device_name))
@@ -4492,7 +4232,7 @@ impl ::std::fmt::Debug for DXGI_OUTPUT_DESC1 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_OUTPUT_DESC1 {
+impl ::core::clone::Clone for DXGI_OUTPUT_DESC1 {
     fn clone(&self) -> Self {
         Self {
             device_name: <[u16; 32usize] as std::clone::Clone>::clone(&self.device_name),
@@ -4516,25 +4256,6 @@ impl ::std::clone::Clone for DXGI_OUTPUT_DESC1 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_OUTPUT_DESC1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.device_name == other.device_name
-            && self.desktop_coordinates == other.desktop_coordinates
-            && self.attached_to_desktop == other.attached_to_desktop
-            && self.rotation == other.rotation
-            && self.monitor == other.monitor
-            && self.bits_per_color == other.bits_per_color
-            && self.color_space == other.color_space
-            && self.red_primary == other.red_primary
-            && self.green_primary == other.green_primary
-            && self.blue_primary == other.blue_primary
-            && self.white_point == other.white_point
-            && self.min_luminance == other.min_luminance
-            && self.max_luminance == other.max_luminance
-            && self.max_full_frame_luminance == other.max_full_frame_luminance
-    }
-}
-impl ::std::cmp::Eq for DXGI_OUTPUT_DESC1 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG(pub i32);
@@ -4614,7 +4335,7 @@ pub const DXGI_PRESENT_ALLOW_TEARING: u32 = 512u32;
 pub const DXGI_PRESENT_DO_NOT_SEQUENCE: u32 = 2u32;
 pub const DXGI_PRESENT_DO_NOT_WAIT: u32 = 8u32;
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_PRESENT_PARAMETERS {
     pub dirty_rects_count: u32,
     pub p_dirty_rects: *mut super::display_devices::RECT,
@@ -4623,6 +4344,7 @@ pub struct DXGI_PRESENT_PARAMETERS {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_PRESENT_PARAMETERS_abi(
     u32,
     *mut super::display_devices::RECT_abi,
@@ -4633,7 +4355,7 @@ impl DXGI_PRESENT_PARAMETERS {}
 unsafe impl ::windows::Abi for DXGI_PRESENT_PARAMETERS {
     type Abi = DXGI_PRESENT_PARAMETERS_abi;
 }
-impl ::std::default::Default for DXGI_PRESENT_PARAMETERS {
+impl ::core::default::Default for DXGI_PRESENT_PARAMETERS {
     fn default() -> Self {
         Self {
             dirty_rects_count: 0,
@@ -4643,7 +4365,7 @@ impl ::std::default::Default for DXGI_PRESENT_PARAMETERS {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_PRESENT_PARAMETERS {
+impl ::core::fmt::Debug for DXGI_PRESENT_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_PRESENT_PARAMETERS")
             .field(
@@ -4659,7 +4381,7 @@ impl ::std::fmt::Debug for DXGI_PRESENT_PARAMETERS {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_PRESENT_PARAMETERS {
+impl ::core::clone::Clone for DXGI_PRESENT_PARAMETERS {
     fn clone(&self) -> Self {
         Self {
             dirty_rects_count: self.dirty_rects_count,
@@ -4675,15 +4397,6 @@ impl ::std::clone::Clone for DXGI_PRESENT_PARAMETERS {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_PRESENT_PARAMETERS {
-    fn eq(&self, other: &Self) -> bool {
-        self.dirty_rects_count == other.dirty_rects_count
-            && self.p_dirty_rects == other.p_dirty_rects
-            && self.p_scroll_rect == other.p_scroll_rect
-            && self.p_scroll_offset == other.p_scroll_offset
-    }
-}
-impl ::std::cmp::Eq for DXGI_PRESENT_PARAMETERS {}
 pub const DXGI_PRESENT_RESTART: u32 = 4u32;
 pub const DXGI_PRESENT_RESTRICT_TO_OUTPUT: u32 = 64u32;
 pub const DXGI_PRESENT_STEREO_PREFER_RIGHT: u32 = 16u32;
@@ -4691,7 +4404,7 @@ pub const DXGI_PRESENT_STEREO_TEMPORARY_MONO: u32 = 32u32;
 pub const DXGI_PRESENT_TEST: u32 = 1u32;
 pub const DXGI_PRESENT_USE_DURATION: u32 = 256u32;
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_QUERY_VIDEO_MEMORY_INFO {
     pub budget: u64,
     pub current_usage: u64,
@@ -4700,12 +4413,13 @@ pub struct DXGI_QUERY_VIDEO_MEMORY_INFO {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_QUERY_VIDEO_MEMORY_INFO_abi(u64, u64, u64, u64);
 impl DXGI_QUERY_VIDEO_MEMORY_INFO {}
 unsafe impl ::windows::Abi for DXGI_QUERY_VIDEO_MEMORY_INFO {
     type Abi = DXGI_QUERY_VIDEO_MEMORY_INFO_abi;
 }
-impl ::std::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::core::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn default() -> Self {
         Self {
             budget: 0,
@@ -4715,7 +4429,7 @@ impl ::std::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::core::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_QUERY_VIDEO_MEMORY_INFO")
             .field("budget", &format_args!("{:?}", self.budget))
@@ -4731,7 +4445,7 @@ impl ::std::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::core::clone::Clone for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn clone(&self) -> Self {
         Self {
             budget: self.budget,
@@ -4741,15 +4455,6 @@ impl ::std::clone::Clone for DXGI_QUERY_VIDEO_MEMORY_INFO {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_QUERY_VIDEO_MEMORY_INFO {
-    fn eq(&self, other: &Self) -> bool {
-        self.budget == other.budget
-            && self.current_usage == other.current_usage
-            && self.available_for_reservation == other.available_for_reservation
-            && self.current_reservation == other.current_reservation
-    }
-}
-impl ::std::cmp::Eq for DXGI_QUERY_VIDEO_MEMORY_INFO {}
 impl ::std::marker::Copy for DXGI_QUERY_VIDEO_MEMORY_INFO {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
@@ -4835,7 +4540,7 @@ pub const DXGI_RESOURCE_PRIORITY_MAXIMUM: u32 = 3355443200u32;
 pub const DXGI_RESOURCE_PRIORITY_MINIMUM: u32 = 671088640u32;
 pub const DXGI_RESOURCE_PRIORITY_NORMAL: u32 = 2013265920u32;
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RGBA {
     pub r: f32,
     pub g: f32,
@@ -4844,12 +4549,13 @@ pub struct DXGI_RGBA {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_RGBA_abi(f32, f32, f32, f32);
 impl DXGI_RGBA {}
 unsafe impl ::windows::Abi for DXGI_RGBA {
     type Abi = DXGI_RGBA_abi;
 }
-impl ::std::default::Default for DXGI_RGBA {
+impl ::core::default::Default for DXGI_RGBA {
     fn default() -> Self {
         Self {
             r: 0.0,
@@ -4859,7 +4565,7 @@ impl ::std::default::Default for DXGI_RGBA {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_RGBA {
+impl ::core::fmt::Debug for DXGI_RGBA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RGBA")
             .field("r", &format_args!("{:?}", self.r))
@@ -4869,7 +4575,7 @@ impl ::std::fmt::Debug for DXGI_RGBA {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_RGBA {
+impl ::core::clone::Clone for DXGI_RGBA {
     fn clone(&self) -> Self {
         Self {
             r: self.r,
@@ -4879,12 +4585,6 @@ impl ::std::clone::Clone for DXGI_RGBA {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_RGBA {
-    fn eq(&self, other: &Self) -> bool {
-        self.r == other.r && self.g == other.g && self.b == other.b && self.a == other.a
-    }
-}
-impl ::std::cmp::Eq for DXGI_RGBA {}
 impl ::std::marker::Copy for DXGI_RGBA {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
@@ -4926,46 +4626,41 @@ unsafe impl ::windows::Abi for DXGI_SCALING {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SHARED_RESOURCE {
     pub handle: super::system_services::HANDLE,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SHARED_RESOURCE_abi(super::system_services::HANDLE_abi);
 impl DXGI_SHARED_RESOURCE {}
 unsafe impl ::windows::Abi for DXGI_SHARED_RESOURCE {
     type Abi = DXGI_SHARED_RESOURCE_abi;
 }
-impl ::std::default::Default for DXGI_SHARED_RESOURCE {
+impl ::core::default::Default for DXGI_SHARED_RESOURCE {
     fn default() -> Self {
         Self {
             handle: ::std::default::Default::default(),
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SHARED_RESOURCE {
+impl ::core::fmt::Debug for DXGI_SHARED_RESOURCE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SHARED_RESOURCE")
             .field("handle", &format_args!("{:?}", self.handle))
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SHARED_RESOURCE {
+impl ::core::clone::Clone for DXGI_SHARED_RESOURCE {
     fn clone(&self) -> Self {
         Self {
             handle: <super::system_services::HANDLE as std::clone::Clone>::clone(&self.handle),
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SHARED_RESOURCE {
-    fn eq(&self, other: &Self) -> bool {
-        self.handle == other.handle
-    }
-}
-impl ::std::cmp::Eq for DXGI_SHARED_RESOURCE {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SURFACE_DESC {
     pub width: u32,
     pub height: u32,
@@ -4974,12 +4669,13 @@ pub struct DXGI_SURFACE_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SURFACE_DESC_abi(u32, u32, DXGI_FORMAT, DXGI_SAMPLE_DESC_abi);
 impl DXGI_SURFACE_DESC {}
 unsafe impl ::windows::Abi for DXGI_SURFACE_DESC {
     type Abi = DXGI_SURFACE_DESC_abi;
 }
-impl ::std::default::Default for DXGI_SURFACE_DESC {
+impl ::core::default::Default for DXGI_SURFACE_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -4989,7 +4685,7 @@ impl ::std::default::Default for DXGI_SURFACE_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SURFACE_DESC {
+impl ::core::fmt::Debug for DXGI_SURFACE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SURFACE_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -4999,7 +4695,7 @@ impl ::std::fmt::Debug for DXGI_SURFACE_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SURFACE_DESC {
+impl ::core::clone::Clone for DXGI_SURFACE_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -5009,15 +4705,6 @@ impl ::std::clone::Clone for DXGI_SURFACE_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SURFACE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.format == other.format
-            && self.sample_desc == other.sample_desc
-    }
-}
-impl ::std::cmp::Eq for DXGI_SURFACE_DESC {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG(pub i32);
@@ -5097,7 +4784,7 @@ unsafe impl ::windows::Abi for DXGI_SWAP_EFFECT {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_DESC {
     pub buffer_desc: DXGI_MODE_DESC,
     pub sample_desc: DXGI_SAMPLE_DESC,
@@ -5110,6 +4797,7 @@ pub struct DXGI_SWAP_CHAIN_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_DESC_abi(
     DXGI_MODE_DESC_abi,
     DXGI_SAMPLE_DESC_abi,
@@ -5124,7 +4812,7 @@ impl DXGI_SWAP_CHAIN_DESC {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC {
     type Abi = DXGI_SWAP_CHAIN_DESC_abi;
 }
-impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC {
+impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC {
     fn default() -> Self {
         Self {
             buffer_desc: ::std::default::Default::default(),
@@ -5138,7 +4826,7 @@ impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
+impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC")
             .field("buffer_desc", &format_args!("{:?}", self.buffer_desc))
@@ -5152,7 +4840,7 @@ impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC {
+impl ::core::clone::Clone for DXGI_SWAP_CHAIN_DESC {
     fn clone(&self) -> Self {
         Self {
             buffer_desc: <DXGI_MODE_DESC as std::clone::Clone>::clone(&self.buffer_desc),
@@ -5168,21 +4856,8 @@ impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer_desc == other.buffer_desc
-            && self.sample_desc == other.sample_desc
-            && self.buffer_usage == other.buffer_usage
-            && self.buffer_count == other.buffer_count
-            && self.output_window == other.output_window
-            && self.windowed == other.windowed
-            && self.swap_effect == other.swap_effect
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_DESC1 {
     pub width: u32,
     pub height: u32,
@@ -5198,6 +4873,7 @@ pub struct DXGI_SWAP_CHAIN_DESC1 {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_DESC1_abi(
     u32,
     u32,
@@ -5215,7 +4891,7 @@ impl DXGI_SWAP_CHAIN_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC1 {
     type Abi = DXGI_SWAP_CHAIN_DESC1_abi;
 }
-impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC1 {
+impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC1 {
     fn default() -> Self {
         Self {
             width: 0,
@@ -5232,7 +4908,7 @@ impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC1 {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
+impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC1")
             .field("width", &format_args!("{:?}", self.width))
@@ -5249,7 +4925,7 @@ impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC1 {
+impl ::core::clone::Clone for DXGI_SWAP_CHAIN_DESC1 {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -5266,22 +4942,6 @@ impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC1 {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_DESC1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.format == other.format
-            && self.stereo == other.stereo
-            && self.sample_desc == other.sample_desc
-            && self.buffer_usage == other.buffer_usage
-            && self.buffer_count == other.buffer_count
-            && self.scaling == other.scaling
-            && self.swap_effect == other.swap_effect
-            && self.alpha_mode == other.alpha_mode
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_DESC1 {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct DXGI_SWAP_CHAIN_FLAG(pub i32);
@@ -5332,7 +4992,7 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_FLAG {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     pub refresh_rate: DXGI_RATIONAL,
     pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
@@ -5341,6 +5001,7 @@ pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC_abi(
     DXGI_RATIONAL_abi,
     DXGI_MODE_SCANLINE_ORDER,
@@ -5351,7 +5012,7 @@ impl DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     type Abi = DXGI_SWAP_CHAIN_FULLSCREEN_DESC_abi;
 }
-impl ::std::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::core::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn default() -> Self {
         Self {
             refresh_rate: ::std::default::Default::default(),
@@ -5361,7 +5022,7 @@ impl ::std::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_FULLSCREEN_DESC")
             .field("refresh_rate", &format_args!("{:?}", self.refresh_rate))
@@ -5374,7 +5035,7 @@ impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::core::clone::Clone for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn clone(&self) -> Self {
         Self {
             refresh_rate: <DXGI_RATIONAL as std::clone::Clone>::clone(&self.refresh_rate),
@@ -5384,15 +5045,6 @@ impl ::std::clone::Clone for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.refresh_rate == other.refresh_rate
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
-            && self.windowed == other.windowed
-    }
-}
-impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
 pub const DXGI_USAGE_BACK_BUFFER: u32 = 64u32;
 pub const DXGI_USAGE_DISCARD_ON_PRESENT: u32 = 512u32;
 pub const DXGI_USAGE_READ_ONLY: u32 = 256u32;

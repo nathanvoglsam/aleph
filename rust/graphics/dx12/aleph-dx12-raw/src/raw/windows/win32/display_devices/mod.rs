@@ -1,5 +1,5 @@
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct RECT {
     pub left: i32,
     pub top: i32,
@@ -8,12 +8,13 @@ pub struct RECT {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct RECT_abi(i32, i32, i32, i32);
 impl RECT {}
 unsafe impl ::windows::Abi for RECT {
     type Abi = RECT_abi;
 }
-impl ::std::default::Default for RECT {
+impl ::core::default::Default for RECT {
     fn default() -> Self {
         Self {
             left: 0,
@@ -23,7 +24,7 @@ impl ::std::default::Default for RECT {
         }
     }
 }
-impl ::std::fmt::Debug for RECT {
+impl ::core::fmt::Debug for RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("RECT")
             .field("left", &format_args!("{:?}", self.left))
@@ -33,7 +34,7 @@ impl ::std::fmt::Debug for RECT {
             .finish()
     }
 }
-impl ::std::clone::Clone for RECT {
+impl ::core::clone::Clone for RECT {
     fn clone(&self) -> Self {
         Self {
             left: self.left,
@@ -43,35 +44,27 @@ impl ::std::clone::Clone for RECT {
         }
     }
 }
-impl ::std::cmp::PartialEq for RECT {
-    fn eq(&self, other: &Self) -> bool {
-        self.left == other.left
-            && self.top == other.top
-            && self.right == other.right
-            && self.bottom == other.bottom
-    }
-}
-impl ::std::cmp::Eq for RECT {}
 impl ::std::marker::Copy for RECT {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct POINT {
     pub x: i32,
     pub y: i32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct POINT_abi(i32, i32);
 impl POINT {}
 unsafe impl ::windows::Abi for POINT {
     type Abi = POINT_abi;
 }
-impl ::std::default::Default for POINT {
+impl ::core::default::Default for POINT {
     fn default() -> Self {
         Self { x: 0, y: 0 }
     }
 }
-impl ::std::fmt::Debug for POINT {
+impl ::core::fmt::Debug for POINT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("POINT")
             .field("x", &format_args!("{:?}", self.x))
@@ -79,7 +72,7 @@ impl ::std::fmt::Debug for POINT {
             .finish()
     }
 }
-impl ::std::clone::Clone for POINT {
+impl ::core::clone::Clone for POINT {
     fn clone(&self) -> Self {
         Self {
             x: self.x,
@@ -87,10 +80,4 @@ impl ::std::clone::Clone for POINT {
         }
     }
 }
-impl ::std::cmp::PartialEq for POINT {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x && self.y == other.y
-    }
-}
-impl ::std::cmp::Eq for POINT {}
 impl ::std::marker::Copy for POINT {}

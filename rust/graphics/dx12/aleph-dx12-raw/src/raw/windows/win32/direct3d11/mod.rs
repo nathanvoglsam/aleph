@@ -85,7 +85,7 @@ unsafe impl ::windows::Abi for D3D11_USAGE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_DESC {
     pub byte_width: u32,
     pub usage: D3D11_USAGE,
@@ -96,12 +96,13 @@ pub struct D3D11_BUFFER_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_DESC_abi(u32, D3D11_USAGE, u32, u32, u32, u32);
 impl D3D11_BUFFER_DESC {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_DESC {
     type Abi = D3D11_BUFFER_DESC_abi;
 }
-impl ::std::default::Default for D3D11_BUFFER_DESC {
+impl ::core::default::Default for D3D11_BUFFER_DESC {
     fn default() -> Self {
         Self {
             byte_width: 0,
@@ -113,7 +114,7 @@ impl ::std::default::Default for D3D11_BUFFER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_BUFFER_DESC {
+impl ::core::fmt::Debug for D3D11_BUFFER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_DESC")
             .field("byte_width", &format_args!("{:?}", self.byte_width))
@@ -131,7 +132,7 @@ impl ::std::fmt::Debug for D3D11_BUFFER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_BUFFER_DESC {
+impl ::core::clone::Clone for D3D11_BUFFER_DESC {
     fn clone(&self) -> Self {
         Self {
             byte_width: self.byte_width,
@@ -143,19 +144,8 @@ impl ::std::clone::Clone for D3D11_BUFFER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_BUFFER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.byte_width == other.byte_width
-            && self.usage == other.usage
-            && self.bind_flags == other.bind_flags
-            && self.cpu_access_flags == other.cpu_access_flags
-            && self.misc_flags == other.misc_flags
-            && self.structure_byte_stride == other.structure_byte_stride
-    }
-}
-impl ::std::cmp::Eq for D3D11_BUFFER_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SUBRESOURCE_DATA {
     pub p_sys_mem: *mut ::std::ffi::c_void,
     pub sys_mem_pitch: u32,
@@ -163,12 +153,13 @@ pub struct D3D11_SUBRESOURCE_DATA {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SUBRESOURCE_DATA_abi(*mut ::std::ffi::c_void, u32, u32);
 impl D3D11_SUBRESOURCE_DATA {}
 unsafe impl ::windows::Abi for D3D11_SUBRESOURCE_DATA {
     type Abi = D3D11_SUBRESOURCE_DATA_abi;
 }
-impl ::std::default::Default for D3D11_SUBRESOURCE_DATA {
+impl ::core::default::Default for D3D11_SUBRESOURCE_DATA {
     fn default() -> Self {
         Self {
             p_sys_mem: ::std::ptr::null_mut(),
@@ -177,7 +168,7 @@ impl ::std::default::Default for D3D11_SUBRESOURCE_DATA {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_SUBRESOURCE_DATA {
+impl ::core::fmt::Debug for D3D11_SUBRESOURCE_DATA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SUBRESOURCE_DATA")
             .field("p_sys_mem", &format_args!("{:?}", self.p_sys_mem))
@@ -189,7 +180,7 @@ impl ::std::fmt::Debug for D3D11_SUBRESOURCE_DATA {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_SUBRESOURCE_DATA {
+impl ::core::clone::Clone for D3D11_SUBRESOURCE_DATA {
     fn clone(&self) -> Self {
         Self {
             p_sys_mem: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_sys_mem),
@@ -198,14 +189,6 @@ impl ::std::clone::Clone for D3D11_SUBRESOURCE_DATA {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_SUBRESOURCE_DATA {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_sys_mem == other.p_sys_mem
-            && self.sys_mem_pitch == other.sys_mem_pitch
-            && self.sys_mem_slice_pitch == other.sys_mem_slice_pitch
-    }
-}
-impl ::std::cmp::Eq for D3D11_SUBRESOURCE_DATA {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct D3D11_RESOURCE_DIMENSION(pub i32);
@@ -683,7 +666,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>> for &'a I
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE1D_DESC {
     pub width: u32,
     pub mip_levels: u32,
@@ -696,6 +679,7 @@ pub struct D3D11_TEXTURE1D_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE1D_DESC_abi(
     u32,
     u32,
@@ -710,7 +694,7 @@ impl D3D11_TEXTURE1D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE1D_DESC {
     type Abi = D3D11_TEXTURE1D_DESC_abi;
 }
-impl ::std::default::Default for D3D11_TEXTURE1D_DESC {
+impl ::core::default::Default for D3D11_TEXTURE1D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -724,7 +708,7 @@ impl ::std::default::Default for D3D11_TEXTURE1D_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEXTURE1D_DESC {
+impl ::core::fmt::Debug for D3D11_TEXTURE1D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE1D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -741,7 +725,7 @@ impl ::std::fmt::Debug for D3D11_TEXTURE1D_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEXTURE1D_DESC {
+impl ::core::clone::Clone for D3D11_TEXTURE1D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -755,19 +739,6 @@ impl ::std::clone::Clone for D3D11_TEXTURE1D_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEXTURE1D_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.mip_levels == other.mip_levels
-            && self.array_size == other.array_size
-            && self.format == other.format
-            && self.usage == other.usage
-            && self.bind_flags == other.bind_flags
-            && self.cpu_access_flags == other.cpu_access_flags
-            && self.misc_flags == other.misc_flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEXTURE1D_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11Texture1D(::windows::IUnknown);
@@ -945,7 +916,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>> for &'a I
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE2D_DESC {
     pub width: u32,
     pub height: u32,
@@ -960,6 +931,7 @@ pub struct D3D11_TEXTURE2D_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE2D_DESC_abi(
     u32,
     u32,
@@ -976,7 +948,7 @@ impl D3D11_TEXTURE2D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE2D_DESC {
     type Abi = D3D11_TEXTURE2D_DESC_abi;
 }
-impl ::std::default::Default for D3D11_TEXTURE2D_DESC {
+impl ::core::default::Default for D3D11_TEXTURE2D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -992,7 +964,7 @@ impl ::std::default::Default for D3D11_TEXTURE2D_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEXTURE2D_DESC {
+impl ::core::fmt::Debug for D3D11_TEXTURE2D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE2D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -1011,7 +983,7 @@ impl ::std::fmt::Debug for D3D11_TEXTURE2D_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEXTURE2D_DESC {
+impl ::core::clone::Clone for D3D11_TEXTURE2D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -1029,21 +1001,6 @@ impl ::std::clone::Clone for D3D11_TEXTURE2D_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEXTURE2D_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.mip_levels == other.mip_levels
-            && self.array_size == other.array_size
-            && self.format == other.format
-            && self.sample_desc == other.sample_desc
-            && self.usage == other.usage
-            && self.bind_flags == other.bind_flags
-            && self.cpu_access_flags == other.cpu_access_flags
-            && self.misc_flags == other.misc_flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEXTURE2D_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11Texture2D(::windows::IUnknown);
@@ -1221,7 +1178,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>> for &'a I
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE3D_DESC {
     pub width: u32,
     pub height: u32,
@@ -1235,6 +1192,7 @@ pub struct D3D11_TEXTURE3D_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXTURE3D_DESC_abi(
     u32,
     u32,
@@ -1250,7 +1208,7 @@ impl D3D11_TEXTURE3D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE3D_DESC {
     type Abi = D3D11_TEXTURE3D_DESC_abi;
 }
-impl ::std::default::Default for D3D11_TEXTURE3D_DESC {
+impl ::core::default::Default for D3D11_TEXTURE3D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -1265,7 +1223,7 @@ impl ::std::default::Default for D3D11_TEXTURE3D_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEXTURE3D_DESC {
+impl ::core::fmt::Debug for D3D11_TEXTURE3D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE3D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -1283,7 +1241,7 @@ impl ::std::fmt::Debug for D3D11_TEXTURE3D_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEXTURE3D_DESC {
+impl ::core::clone::Clone for D3D11_TEXTURE3D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -1298,20 +1256,6 @@ impl ::std::clone::Clone for D3D11_TEXTURE3D_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEXTURE3D_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.depth == other.depth
-            && self.mip_levels == other.mip_levels
-            && self.format == other.format
-            && self.usage == other.usage
-            && self.bind_flags == other.bind_flags
-            && self.cpu_access_flags == other.cpu_access_flags
-            && self.misc_flags == other.misc_flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEXTURE3D_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11Texture3D(::windows::IUnknown);
@@ -1570,32 +1514,94 @@ unsafe impl ::windows::Abi for D3D_SRV_DIMENSION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_SRV {
     pub anonymous1: D3D11_BUFFER_SRV_1,
     pub anonymous2: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
-impl D3D11_BUFFER_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
-pub union D3D11_BUFFER_SRV_1 {
-    pub first_element: u32,
-    pub element_offset: u32,
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_BUFFER_SRV_abi(D3D11_BUFFER_SRV_1_abi, ::windows::NOT_YET_SUPPORTED_TYPE);
+impl D3D11_BUFFER_SRV {}
+unsafe impl ::windows::Abi for D3D11_BUFFER_SRV {
+    type Abi = D3D11_BUFFER_SRV_abi;
+}
+impl ::core::fmt::Debug for D3D11_BUFFER_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_BUFFER_SRV")
+            .field("anonymous1", &format_args!("{:?}", self.anonymous1))
+            .field("anonymous2", &format_args!("{:?}", self.anonymous2))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_BUFFER_SRV {
+    fn default() -> Self {
+        Self {
+            anonymous1: ::std::default::Default::default(),
+            anonymous2: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_BUFFER_SRV {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+pub union D3D11_BUFFER_SRV_1 {
+    pub first_element: ::core::mem::ManuallyDrop<u32>,
+    pub element_offset: ::core::mem::ManuallyDrop<u32>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_BUFFER_SRV_1_abi(u32, u32);
+impl D3D11_BUFFER_SRV_1 {}
+unsafe impl ::windows::Abi for D3D11_BUFFER_SRV_1 {
+    type Abi = D3D11_BUFFER_SRV_1_abi;
+}
+impl ::core::fmt::Debug for D3D11_BUFFER_SRV_1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_BUFFER_SRV_1").finish()
+    }
+}
+impl ::core::default::Default for D3D11_BUFFER_SRV_1 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_BUFFER_SRV_1 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_SRV_abi(u32, u32);
 impl D3D11_TEX1D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_SRV {
     type Abi = D3D11_TEX1D_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_SRV {
+impl ::core::default::Default for D3D11_TEX1D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1603,7 +1609,7 @@ impl ::std::default::Default for D3D11_TEX1D_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_SRV {
+impl ::core::fmt::Debug for D3D11_TEX1D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_SRV")
             .field(
@@ -1614,7 +1620,7 @@ impl ::std::fmt::Debug for D3D11_TEX1D_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_SRV {
+impl ::core::clone::Clone for D3D11_TEX1D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1622,15 +1628,9 @@ impl ::std::clone::Clone for D3D11_TEX1D_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip && self.mip_levels == other.mip_levels
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_SRV {}
 impl ::std::marker::Copy for D3D11_TEX1D_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
@@ -1639,12 +1639,13 @@ pub struct D3D11_TEX1D_ARRAY_SRV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_SRV_abi(u32, u32, u32, u32);
 impl D3D11_TEX1D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_SRV {
     type Abi = D3D11_TEX1D_ARRAY_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_ARRAY_SRV {
+impl ::core::default::Default for D3D11_TEX1D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1654,7 +1655,7 @@ impl ::std::default::Default for D3D11_TEX1D_ARRAY_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
+impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_SRV")
             .field(
@@ -1670,7 +1671,7 @@ impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_SRV {
+impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1680,30 +1681,22 @@ impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_ARRAY_SRV {}
 impl ::std::marker::Copy for D3D11_TEX1D_ARRAY_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_SRV_abi(u32, u32);
 impl D3D11_TEX2D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_SRV {
     type Abi = D3D11_TEX2D_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_SRV {
+impl ::core::default::Default for D3D11_TEX2D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1711,7 +1704,7 @@ impl ::std::default::Default for D3D11_TEX2D_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_SRV {
+impl ::core::fmt::Debug for D3D11_TEX2D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_SRV")
             .field(
@@ -1722,7 +1715,7 @@ impl ::std::fmt::Debug for D3D11_TEX2D_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_SRV {
+impl ::core::clone::Clone for D3D11_TEX2D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1730,15 +1723,9 @@ impl ::std::clone::Clone for D3D11_TEX2D_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip && self.mip_levels == other.mip_levels
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_SRV {}
 impl ::std::marker::Copy for D3D11_TEX2D_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
@@ -1747,12 +1734,13 @@ pub struct D3D11_TEX2D_ARRAY_SRV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_SRV_abi(u32, u32, u32, u32);
 impl D3D11_TEX2D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_SRV {
     type Abi = D3D11_TEX2D_ARRAY_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_ARRAY_SRV {
+impl ::core::default::Default for D3D11_TEX2D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1762,7 +1750,7 @@ impl ::std::default::Default for D3D11_TEX2D_ARRAY_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
+impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_SRV")
             .field(
@@ -1778,7 +1766,7 @@ impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_SRV {
+impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1788,36 +1776,28 @@ impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_ARRAY_SRV {}
 impl ::std::marker::Copy for D3D11_TEX2D_ARRAY_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_SRV {
     pub unused_field_nothing_to_define: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_SRV_abi(u32);
 impl D3D11_TEX2DMS_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_SRV {
     type Abi = D3D11_TEX2DMS_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_SRV {
+impl ::core::default::Default for D3D11_TEX2DMS_SRV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_SRV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_SRV")
             .field(
@@ -1827,34 +1807,29 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_SRV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_SRV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_SRV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_SRV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_SRV_abi(u32, u32);
 impl D3D11_TEX2DMS_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_SRV {
     type Abi = D3D11_TEX2DMS_ARRAY_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -1862,7 +1837,7 @@ impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_SRV")
             .field(
@@ -1873,7 +1848,7 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -1881,27 +1856,22 @@ impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_ARRAY_SRV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_ARRAY_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_SRV_abi(u32, u32);
 impl D3D11_TEX3D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_SRV {
     type Abi = D3D11_TEX3D_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEX3D_SRV {
+impl ::core::default::Default for D3D11_TEX3D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1909,7 +1879,7 @@ impl ::std::default::Default for D3D11_TEX3D_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX3D_SRV {
+impl ::core::fmt::Debug for D3D11_TEX3D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_SRV")
             .field(
@@ -1920,7 +1890,7 @@ impl ::std::fmt::Debug for D3D11_TEX3D_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX3D_SRV {
+impl ::core::clone::Clone for D3D11_TEX3D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1928,27 +1898,22 @@ impl ::std::clone::Clone for D3D11_TEX3D_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX3D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip && self.mip_levels == other.mip_levels
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX3D_SRV {}
 impl ::std::marker::Copy for D3D11_TEX3D_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXCUBE_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXCUBE_SRV_abi(u32, u32);
 impl D3D11_TEXCUBE_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEXCUBE_SRV {
     type Abi = D3D11_TEXCUBE_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEXCUBE_SRV {
+impl ::core::default::Default for D3D11_TEXCUBE_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1956,7 +1921,7 @@ impl ::std::default::Default for D3D11_TEXCUBE_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEXCUBE_SRV {
+impl ::core::fmt::Debug for D3D11_TEXCUBE_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXCUBE_SRV")
             .field(
@@ -1967,7 +1932,7 @@ impl ::std::fmt::Debug for D3D11_TEXCUBE_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEXCUBE_SRV {
+impl ::core::clone::Clone for D3D11_TEXCUBE_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1975,15 +1940,9 @@ impl ::std::clone::Clone for D3D11_TEXCUBE_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEXCUBE_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip && self.mip_levels == other.mip_levels
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEXCUBE_SRV {}
 impl ::std::marker::Copy for D3D11_TEXCUBE_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXCUBE_ARRAY_SRV {
     pub most_detailed_mip: u32,
     pub mip_levels: u32,
@@ -1992,12 +1951,13 @@ pub struct D3D11_TEXCUBE_ARRAY_SRV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEXCUBE_ARRAY_SRV_abi(u32, u32, u32, u32);
 impl D3D11_TEXCUBE_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEXCUBE_ARRAY_SRV {
     type Abi = D3D11_TEXCUBE_ARRAY_SRV_abi;
 }
-impl ::std::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::core::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -2007,7 +1967,7 @@ impl ::std::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::core::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXCUBE_ARRAY_SRV")
             .field(
@@ -2023,7 +1983,7 @@ impl ::std::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::core::clone::Clone for D3D11_TEXCUBE_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -2033,18 +1993,9 @@ impl ::std::clone::Clone for D3D11_TEXCUBE_ARRAY_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEXCUBE_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first2d_array_face == other.first2d_array_face
-            && self.num_cubes == other.num_cubes
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEXCUBE_ARRAY_SRV {}
 impl ::std::marker::Copy for D3D11_TEXCUBE_ARRAY_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFEREX_SRV {
     pub first_element: u32,
     pub num_elements: u32,
@@ -2052,12 +2003,13 @@ pub struct D3D11_BUFFEREX_SRV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFEREX_SRV_abi(u32, u32, u32);
 impl D3D11_BUFFEREX_SRV {}
 unsafe impl ::windows::Abi for D3D11_BUFFEREX_SRV {
     type Abi = D3D11_BUFFEREX_SRV_abi;
 }
-impl ::std::default::Default for D3D11_BUFFEREX_SRV {
+impl ::core::default::Default for D3D11_BUFFEREX_SRV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -2066,7 +2018,7 @@ impl ::std::default::Default for D3D11_BUFFEREX_SRV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_BUFFEREX_SRV {
+impl ::core::fmt::Debug for D3D11_BUFFEREX_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFEREX_SRV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -2075,7 +2027,7 @@ impl ::std::fmt::Debug for D3D11_BUFFEREX_SRV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_BUFFEREX_SRV {
+impl ::core::clone::Clone for D3D11_BUFFEREX_SRV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -2084,37 +2036,109 @@ impl ::std::clone::Clone for D3D11_BUFFEREX_SRV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_BUFFEREX_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_element == other.first_element
-            && self.num_elements == other.num_elements
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_BUFFEREX_SRV {}
 impl ::std::marker::Copy for D3D11_BUFFEREX_SRV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SHADER_RESOURCE_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D_SRV_DIMENSION,
     pub anonymous: D3D11_SHADER_RESOURCE_VIEW_DESC_0,
 }
-impl D3D11_SHADER_RESOURCE_VIEW_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_SHADER_RESOURCE_VIEW_DESC_abi(
+    super::dxgi::DXGI_FORMAT,
+    D3D_SRV_DIMENSION,
+    D3D11_SHADER_RESOURCE_VIEW_DESC_0_abi,
+);
+impl D3D11_SHADER_RESOURCE_VIEW_DESC {}
+unsafe impl ::windows::Abi for D3D11_SHADER_RESOURCE_VIEW_DESC {
+    type Abi = D3D11_SHADER_RESOURCE_VIEW_DESC_abi;
+}
+impl ::core::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_SHADER_RESOURCE_VIEW_DESC")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
+            .field("anonymous", &format_args!("{:?}", self.anonymous))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC {
+    fn default() -> Self {
+        Self {
+            format: ::std::default::Default::default(),
+            view_dimension: ::std::default::Default::default(),
+            anonymous: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub union D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
-    pub buffer: D3D11_BUFFER_SRV,
-    pub texture1d: D3D11_TEX1D_SRV,
-    pub texture1d_array: D3D11_TEX1D_ARRAY_SRV,
-    pub texture2d: D3D11_TEX2D_SRV,
-    pub texture2d_array: D3D11_TEX2D_ARRAY_SRV,
-    pub texture2dms: D3D11_TEX2DMS_SRV,
-    pub texture2dms_array: D3D11_TEX2DMS_ARRAY_SRV,
-    pub texture3d: D3D11_TEX3D_SRV,
-    pub texture_cube: D3D11_TEXCUBE_SRV,
-    pub texture_cube_array: D3D11_TEXCUBE_ARRAY_SRV,
-    pub buffer_ex: D3D11_BUFFEREX_SRV,
+    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_SRV>,
+    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_SRV>,
+    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_SRV>,
+    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_SRV>,
+    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_SRV>,
+    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_SRV>,
+    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_SRV>,
+    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_SRV>,
+    pub texture_cube: ::core::mem::ManuallyDrop<D3D11_TEXCUBE_SRV>,
+    pub texture_cube_array: ::core::mem::ManuallyDrop<D3D11_TEXCUBE_ARRAY_SRV>,
+    pub buffer_ex: ::core::mem::ManuallyDrop<D3D11_BUFFEREX_SRV>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_SHADER_RESOURCE_VIEW_DESC_0_abi(
+    D3D11_BUFFER_SRV_abi,
+    D3D11_TEX1D_SRV_abi,
+    D3D11_TEX1D_ARRAY_SRV_abi,
+    D3D11_TEX2D_SRV_abi,
+    D3D11_TEX2D_ARRAY_SRV_abi,
+    D3D11_TEX2DMS_SRV_abi,
+    D3D11_TEX2DMS_ARRAY_SRV_abi,
+    D3D11_TEX3D_SRV_abi,
+    D3D11_TEXCUBE_SRV_abi,
+    D3D11_TEXCUBE_ARRAY_SRV_abi,
+    D3D11_BUFFEREX_SRV_abi,
+);
+impl D3D11_SHADER_RESOURCE_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+    type Abi = D3D11_SHADER_RESOURCE_VIEW_DESC_0_abi;
+}
+impl ::core::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_SHADER_RESOURCE_VIEW_DESC_0")
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -2481,7 +2505,7 @@ unsafe impl ::windows::Abi for D3D11_UAV_DIMENSION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_UAV {
     pub first_element: u32,
     pub num_elements: u32,
@@ -2489,12 +2513,13 @@ pub struct D3D11_BUFFER_UAV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_UAV_abi(u32, u32, u32);
 impl D3D11_BUFFER_UAV {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_UAV {
     type Abi = D3D11_BUFFER_UAV_abi;
 }
-impl ::std::default::Default for D3D11_BUFFER_UAV {
+impl ::core::default::Default for D3D11_BUFFER_UAV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -2503,7 +2528,7 @@ impl ::std::default::Default for D3D11_BUFFER_UAV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_BUFFER_UAV {
+impl ::core::fmt::Debug for D3D11_BUFFER_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_UAV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -2512,7 +2537,7 @@ impl ::std::fmt::Debug for D3D11_BUFFER_UAV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_BUFFER_UAV {
+impl ::core::clone::Clone for D3D11_BUFFER_UAV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -2521,55 +2546,42 @@ impl ::std::clone::Clone for D3D11_BUFFER_UAV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_BUFFER_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_element == other.first_element
-            && self.num_elements == other.num_elements
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_BUFFER_UAV {}
 impl ::std::marker::Copy for D3D11_BUFFER_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_UAV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_UAV_abi(u32);
 impl D3D11_TEX1D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_UAV {
     type Abi = D3D11_TEX1D_UAV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_UAV {
+impl ::core::default::Default for D3D11_TEX1D_UAV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_UAV {
+impl ::core::fmt::Debug for D3D11_TEX1D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_UAV {
+impl ::core::clone::Clone for D3D11_TEX1D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_UAV {}
 impl ::std::marker::Copy for D3D11_TEX1D_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_UAV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -2577,12 +2589,13 @@ pub struct D3D11_TEX1D_ARRAY_UAV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_UAV_abi(u32, u32, u32);
 impl D3D11_TEX1D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_UAV {
     type Abi = D3D11_TEX1D_ARRAY_UAV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_ARRAY_UAV {
+impl ::core::default::Default for D3D11_TEX1D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2591,7 +2604,7 @@ impl ::std::default::Default for D3D11_TEX1D_ARRAY_UAV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
+impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2603,7 +2616,7 @@ impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_UAV {
+impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2612,55 +2625,42 @@ impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_UAV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_ARRAY_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_ARRAY_UAV {}
 impl ::std::marker::Copy for D3D11_TEX1D_ARRAY_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_UAV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_UAV_abi(u32);
 impl D3D11_TEX2D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_UAV {
     type Abi = D3D11_TEX2D_UAV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_UAV {
+impl ::core::default::Default for D3D11_TEX2D_UAV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_UAV {
+impl ::core::fmt::Debug for D3D11_TEX2D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_UAV {
+impl ::core::clone::Clone for D3D11_TEX2D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_UAV {}
 impl ::std::marker::Copy for D3D11_TEX2D_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_UAV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -2668,12 +2668,13 @@ pub struct D3D11_TEX2D_ARRAY_UAV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_UAV_abi(u32, u32, u32);
 impl D3D11_TEX2D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_UAV {
     type Abi = D3D11_TEX2D_ARRAY_UAV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_ARRAY_UAV {
+impl ::core::default::Default for D3D11_TEX2D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2682,7 +2683,7 @@ impl ::std::default::Default for D3D11_TEX2D_ARRAY_UAV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
+impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2694,7 +2695,7 @@ impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_UAV {
+impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2703,17 +2704,9 @@ impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_UAV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_ARRAY_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_ARRAY_UAV {}
 impl ::std::marker::Copy for D3D11_TEX2D_ARRAY_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_UAV {
     pub mip_slice: u32,
     pub first_wslice: u32,
@@ -2721,12 +2714,13 @@ pub struct D3D11_TEX3D_UAV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_UAV_abi(u32, u32, u32);
 impl D3D11_TEX3D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_UAV {
     type Abi = D3D11_TEX3D_UAV_abi;
 }
-impl ::std::default::Default for D3D11_TEX3D_UAV {
+impl ::core::default::Default for D3D11_TEX3D_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2735,7 +2729,7 @@ impl ::std::default::Default for D3D11_TEX3D_UAV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX3D_UAV {
+impl ::core::fmt::Debug for D3D11_TEX3D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2744,7 +2738,7 @@ impl ::std::fmt::Debug for D3D11_TEX3D_UAV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX3D_UAV {
+impl ::core::clone::Clone for D3D11_TEX3D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2753,32 +2747,99 @@ impl ::std::clone::Clone for D3D11_TEX3D_UAV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX3D_UAV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_wslice == other.first_wslice
-            && self.wsize == other.wsize
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX3D_UAV {}
 impl ::std::marker::Copy for D3D11_TEX3D_UAV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_UNORDERED_ACCESS_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D11_UAV_DIMENSION,
     pub anonymous: D3D11_UNORDERED_ACCESS_VIEW_DESC_0,
 }
-impl D3D11_UNORDERED_ACCESS_VIEW_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_UNORDERED_ACCESS_VIEW_DESC_abi(
+    super::dxgi::DXGI_FORMAT,
+    D3D11_UAV_DIMENSION,
+    D3D11_UNORDERED_ACCESS_VIEW_DESC_0_abi,
+);
+impl D3D11_UNORDERED_ACCESS_VIEW_DESC {}
+unsafe impl ::windows::Abi for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+    type Abi = D3D11_UNORDERED_ACCESS_VIEW_DESC_abi;
+}
+impl ::core::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_UNORDERED_ACCESS_VIEW_DESC")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
+            .field("anonymous", &format_args!("{:?}", self.anonymous))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+    fn default() -> Self {
+        Self {
+            format: ::std::default::Default::default(),
+            view_dimension: ::std::default::Default::default(),
+            anonymous: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub union D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
-    pub buffer: D3D11_BUFFER_UAV,
-    pub texture1d: D3D11_TEX1D_UAV,
-    pub texture1d_array: D3D11_TEX1D_ARRAY_UAV,
-    pub texture2d: D3D11_TEX2D_UAV,
-    pub texture2d_array: D3D11_TEX2D_ARRAY_UAV,
-    pub texture3d: D3D11_TEX3D_UAV,
+    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_UAV>,
+    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_UAV>,
+    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_UAV>,
+    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_UAV>,
+    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_UAV>,
+    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_UAV>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_UNORDERED_ACCESS_VIEW_DESC_0_abi(
+    D3D11_BUFFER_UAV_abi,
+    D3D11_TEX1D_UAV_abi,
+    D3D11_TEX1D_ARRAY_UAV_abi,
+    D3D11_TEX2D_UAV_abi,
+    D3D11_TEX2D_ARRAY_UAV_abi,
+    D3D11_TEX3D_UAV_abi,
+);
+impl D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+    type Abi = D3D11_UNORDERED_ACCESS_VIEW_DESC_0_abi;
+}
+impl ::core::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_UNORDERED_ACCESS_VIEW_DESC_0")
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -3001,58 +3062,114 @@ unsafe impl ::windows::Abi for D3D11_RTV_DIMENSION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BUFFER_RTV {
     pub anonymous1: D3D11_BUFFER_RTV_1,
     pub anonymous2: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
-impl D3D11_BUFFER_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
-pub union D3D11_BUFFER_RTV_1 {
-    pub first_element: u32,
-    pub element_offset: u32,
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_BUFFER_RTV_abi(D3D11_BUFFER_RTV_1_abi, ::windows::NOT_YET_SUPPORTED_TYPE);
+impl D3D11_BUFFER_RTV {}
+unsafe impl ::windows::Abi for D3D11_BUFFER_RTV {
+    type Abi = D3D11_BUFFER_RTV_abi;
+}
+impl ::core::fmt::Debug for D3D11_BUFFER_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_BUFFER_RTV")
+            .field("anonymous1", &format_args!("{:?}", self.anonymous1))
+            .field("anonymous2", &format_args!("{:?}", self.anonymous2))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_BUFFER_RTV {
+    fn default() -> Self {
+        Self {
+            anonymous1: ::std::default::Default::default(),
+            anonymous2: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_BUFFER_RTV {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+pub union D3D11_BUFFER_RTV_1 {
+    pub first_element: ::core::mem::ManuallyDrop<u32>,
+    pub element_offset: ::core::mem::ManuallyDrop<u32>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_BUFFER_RTV_1_abi(u32, u32);
+impl D3D11_BUFFER_RTV_1 {}
+unsafe impl ::windows::Abi for D3D11_BUFFER_RTV_1 {
+    type Abi = D3D11_BUFFER_RTV_1_abi;
+}
+impl ::core::fmt::Debug for D3D11_BUFFER_RTV_1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_BUFFER_RTV_1").finish()
+    }
+}
+impl ::core::default::Default for D3D11_BUFFER_RTV_1 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_BUFFER_RTV_1 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_RTV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_RTV_abi(u32);
 impl D3D11_TEX1D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_RTV {
     type Abi = D3D11_TEX1D_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_RTV {
+impl ::core::default::Default for D3D11_TEX1D_RTV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_RTV {
+impl ::core::fmt::Debug for D3D11_TEX1D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_RTV {
+impl ::core::clone::Clone for D3D11_TEX1D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_RTV {}
 impl ::std::marker::Copy for D3D11_TEX1D_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_RTV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -3060,12 +3177,13 @@ pub struct D3D11_TEX1D_ARRAY_RTV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_RTV_abi(u32, u32, u32);
 impl D3D11_TEX1D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_RTV {
     type Abi = D3D11_TEX1D_ARRAY_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_ARRAY_RTV {
+impl ::core::default::Default for D3D11_TEX1D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3074,7 +3192,7 @@ impl ::std::default::Default for D3D11_TEX1D_ARRAY_RTV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
+impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3086,7 +3204,7 @@ impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_RTV {
+impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3095,55 +3213,42 @@ impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_RTV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_ARRAY_RTV {}
 impl ::std::marker::Copy for D3D11_TEX1D_ARRAY_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_RTV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_RTV_abi(u32);
 impl D3D11_TEX2D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_RTV {
     type Abi = D3D11_TEX2D_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_RTV {
+impl ::core::default::Default for D3D11_TEX2D_RTV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_RTV {
+impl ::core::fmt::Debug for D3D11_TEX2D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_RTV {
+impl ::core::clone::Clone for D3D11_TEX2D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_RTV {}
 impl ::std::marker::Copy for D3D11_TEX2D_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_RTV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -3151,12 +3256,13 @@ pub struct D3D11_TEX2D_ARRAY_RTV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_RTV_abi(u32, u32, u32);
 impl D3D11_TEX2D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_RTV {
     type Abi = D3D11_TEX2D_ARRAY_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_ARRAY_RTV {
+impl ::core::default::Default for D3D11_TEX2D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3165,7 +3271,7 @@ impl ::std::default::Default for D3D11_TEX2D_ARRAY_RTV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
+impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3177,7 +3283,7 @@ impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_RTV {
+impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3186,35 +3292,28 @@ impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_RTV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_ARRAY_RTV {}
 impl ::std::marker::Copy for D3D11_TEX2D_ARRAY_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_RTV {
     pub unused_field_nothing_to_define: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_RTV_abi(u32);
 impl D3D11_TEX2DMS_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_RTV {
     type Abi = D3D11_TEX2DMS_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_RTV {
+impl ::core::default::Default for D3D11_TEX2DMS_RTV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_RTV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_RTV")
             .field(
@@ -3224,34 +3323,29 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_RTV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_RTV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_RTV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_RTV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_RTV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_RTV_abi(u32, u32);
 impl D3D11_TEX2DMS_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_RTV {
     type Abi = D3D11_TEX2DMS_ARRAY_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -3259,7 +3353,7 @@ impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_RTV")
             .field(
@@ -3270,7 +3364,7 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -3278,15 +3372,9 @@ impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_RTV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_ARRAY_RTV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_ARRAY_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_RTV {
     pub mip_slice: u32,
     pub first_wslice: u32,
@@ -3294,12 +3382,13 @@ pub struct D3D11_TEX3D_RTV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX3D_RTV_abi(u32, u32, u32);
 impl D3D11_TEX3D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_RTV {
     type Abi = D3D11_TEX3D_RTV_abi;
 }
-impl ::std::default::Default for D3D11_TEX3D_RTV {
+impl ::core::default::Default for D3D11_TEX3D_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3308,7 +3397,7 @@ impl ::std::default::Default for D3D11_TEX3D_RTV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX3D_RTV {
+impl ::core::fmt::Debug for D3D11_TEX3D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3317,7 +3406,7 @@ impl ::std::fmt::Debug for D3D11_TEX3D_RTV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX3D_RTV {
+impl ::core::clone::Clone for D3D11_TEX3D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3326,34 +3415,102 @@ impl ::std::clone::Clone for D3D11_TEX3D_RTV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX3D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_wslice == other.first_wslice
-            && self.wsize == other.wsize
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX3D_RTV {}
 impl ::std::marker::Copy for D3D11_TEX3D_RTV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_RENDER_TARGET_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D11_RTV_DIMENSION,
     pub anonymous: D3D11_RENDER_TARGET_VIEW_DESC_0,
 }
-impl D3D11_RENDER_TARGET_VIEW_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_RENDER_TARGET_VIEW_DESC_abi(
+    super::dxgi::DXGI_FORMAT,
+    D3D11_RTV_DIMENSION,
+    D3D11_RENDER_TARGET_VIEW_DESC_0_abi,
+);
+impl D3D11_RENDER_TARGET_VIEW_DESC {}
+unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_VIEW_DESC {
+    type Abi = D3D11_RENDER_TARGET_VIEW_DESC_abi;
+}
+impl ::core::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_RENDER_TARGET_VIEW_DESC")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
+            .field("anonymous", &format_args!("{:?}", self.anonymous))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_RENDER_TARGET_VIEW_DESC {
+    fn default() -> Self {
+        Self {
+            format: ::std::default::Default::default(),
+            view_dimension: ::std::default::Default::default(),
+            anonymous: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub union D3D11_RENDER_TARGET_VIEW_DESC_0 {
-    pub buffer: D3D11_BUFFER_RTV,
-    pub texture1d: D3D11_TEX1D_RTV,
-    pub texture1d_array: D3D11_TEX1D_ARRAY_RTV,
-    pub texture2d: D3D11_TEX2D_RTV,
-    pub texture2d_array: D3D11_TEX2D_ARRAY_RTV,
-    pub texture2dms: D3D11_TEX2DMS_RTV,
-    pub texture2dms_array: D3D11_TEX2DMS_ARRAY_RTV,
-    pub texture3d: D3D11_TEX3D_RTV,
+    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_RTV>,
+    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_RTV>,
+    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_RTV>,
+    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_RTV>,
+    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_RTV>,
+    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_RTV>,
+    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_RTV>,
+    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_RTV>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_RENDER_TARGET_VIEW_DESC_0_abi(
+    D3D11_BUFFER_RTV_abi,
+    D3D11_TEX1D_RTV_abi,
+    D3D11_TEX1D_ARRAY_RTV_abi,
+    D3D11_TEX2D_RTV_abi,
+    D3D11_TEX2D_ARRAY_RTV_abi,
+    D3D11_TEX2DMS_RTV_abi,
+    D3D11_TEX2DMS_ARRAY_RTV_abi,
+    D3D11_TEX3D_RTV_abi,
+);
+impl D3D11_RENDER_TARGET_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+    type Abi = D3D11_RENDER_TARGET_VIEW_DESC_0_abi;
+}
+impl ::core::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_RENDER_TARGET_VIEW_DESC_0").finish()
+    }
+}
+impl ::core::default::Default for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -3576,45 +3733,40 @@ unsafe impl ::windows::Abi for D3D11_DSV_DIMENSION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_DSV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_DSV_abi(u32);
 impl D3D11_TEX1D_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_DSV {
     type Abi = D3D11_TEX1D_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_DSV {
+impl ::core::default::Default for D3D11_TEX1D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_DSV {
+impl ::core::fmt::Debug for D3D11_TEX1D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_DSV {
+impl ::core::clone::Clone for D3D11_TEX1D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_DSV {}
 impl ::std::marker::Copy for D3D11_TEX1D_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_DSV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -3622,12 +3774,13 @@ pub struct D3D11_TEX1D_ARRAY_DSV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX1D_ARRAY_DSV_abi(u32, u32, u32);
 impl D3D11_TEX1D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_DSV {
     type Abi = D3D11_TEX1D_ARRAY_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX1D_ARRAY_DSV {
+impl ::core::default::Default for D3D11_TEX1D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3636,7 +3789,7 @@ impl ::std::default::Default for D3D11_TEX1D_ARRAY_DSV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
+impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3648,7 +3801,7 @@ impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_DSV {
+impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3657,55 +3810,42 @@ impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_DSV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX1D_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX1D_ARRAY_DSV {}
 impl ::std::marker::Copy for D3D11_TEX1D_ARRAY_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_DSV {
     pub mip_slice: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_DSV_abi(u32);
 impl D3D11_TEX2D_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_DSV {
     type Abi = D3D11_TEX2D_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_DSV {
+impl ::core::default::Default for D3D11_TEX2D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_DSV {
+impl ::core::fmt::Debug for D3D11_TEX2D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_DSV {
+impl ::core::clone::Clone for D3D11_TEX2D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_DSV {}
 impl ::std::marker::Copy for D3D11_TEX2D_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_DSV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -3713,12 +3853,13 @@ pub struct D3D11_TEX2D_ARRAY_DSV {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2D_ARRAY_DSV_abi(u32, u32, u32);
 impl D3D11_TEX2D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_DSV {
     type Abi = D3D11_TEX2D_ARRAY_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2D_ARRAY_DSV {
+impl ::core::default::Default for D3D11_TEX2D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3727,7 +3868,7 @@ impl ::std::default::Default for D3D11_TEX2D_ARRAY_DSV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
+impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3739,7 +3880,7 @@ impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_DSV {
+impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3748,35 +3889,28 @@ impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_DSV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2D_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2D_ARRAY_DSV {}
 impl ::std::marker::Copy for D3D11_TEX2D_ARRAY_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_DSV {
     pub unused_field_nothing_to_define: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_DSV_abi(u32);
 impl D3D11_TEX2DMS_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_DSV {
     type Abi = D3D11_TEX2DMS_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_DSV {
+impl ::core::default::Default for D3D11_TEX2DMS_DSV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_DSV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_DSV")
             .field(
@@ -3786,34 +3920,29 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_DSV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_DSV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_DSV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_DSV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_DSV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_TEX2DMS_ARRAY_DSV_abi(u32, u32);
 impl D3D11_TEX2DMS_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_DSV {
     type Abi = D3D11_TEX2DMS_ARRAY_DSV_abi;
 }
-impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -3821,7 +3950,7 @@ impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_DSV")
             .field(
@@ -3832,7 +3961,7 @@ impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -3840,31 +3969,102 @@ impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_DSV {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_TEX2DMS_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D11_TEX2DMS_ARRAY_DSV {}
 impl ::std::marker::Copy for D3D11_TEX2DMS_ARRAY_DSV {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_DEPTH_STENCIL_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D11_DSV_DIMENSION,
     pub flags: u32,
     pub anonymous: D3D11_DEPTH_STENCIL_VIEW_DESC_0,
 }
-impl D3D11_DEPTH_STENCIL_VIEW_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_DEPTH_STENCIL_VIEW_DESC_abi(
+    super::dxgi::DXGI_FORMAT,
+    D3D11_DSV_DIMENSION,
+    u32,
+    D3D11_DEPTH_STENCIL_VIEW_DESC_0_abi,
+);
+impl D3D11_DEPTH_STENCIL_VIEW_DESC {}
+unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_VIEW_DESC {
+    type Abi = D3D11_DEPTH_STENCIL_VIEW_DESC_abi;
+}
+impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_DEPTH_STENCIL_VIEW_DESC")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .field("anonymous", &format_args!("{:?}", self.anonymous))
+            .finish()
+    }
+}
+impl ::core::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC {
+    fn default() -> Self {
+        Self {
+            format: ::std::default::Default::default(),
+            view_dimension: ::std::default::Default::default(),
+            flags: 0,
+            anonymous: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
+}
+#[repr(C)]
+#[allow(non_camel_case_types)]
 pub union D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
-    pub texture1d: D3D11_TEX1D_DSV,
-    pub texture1d_array: D3D11_TEX1D_ARRAY_DSV,
-    pub texture2d: D3D11_TEX2D_DSV,
-    pub texture2d_array: D3D11_TEX2D_ARRAY_DSV,
-    pub texture2dms: D3D11_TEX2DMS_DSV,
-    pub texture2dms_array: D3D11_TEX2DMS_ARRAY_DSV,
+    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_DSV>,
+    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_DSV>,
+    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_DSV>,
+    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_DSV>,
+    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_DSV>,
+    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_DSV>,
+}
+#[repr(C)]
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub struct D3D11_DEPTH_STENCIL_VIEW_DESC_0_abi(
+    D3D11_TEX1D_DSV_abi,
+    D3D11_TEX1D_ARRAY_DSV_abi,
+    D3D11_TEX2D_DSV_abi,
+    D3D11_TEX2D_ARRAY_DSV_abi,
+    D3D11_TEX2DMS_DSV_abi,
+    D3D11_TEX2DMS_ARRAY_DSV_abi,
+);
+impl D3D11_DEPTH_STENCIL_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+    type Abi = D3D11_DEPTH_STENCIL_VIEW_DESC_0_abi;
+}
+impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_DEPTH_STENCIL_VIEW_DESC_0").finish()
+    }
+}
+impl ::core::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+    fn clone(&self) -> Self {
+        let mut out = Self::default();
+        out.clone_from(self);
+        out
+    }
+    fn clone_from(&mut self, source: &Self) {
+        unsafe { std::ptr::copy(source, self, std::mem::size_of::<Self>()) }
+    }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -4082,7 +4282,7 @@ unsafe impl ::windows::Abi for D3D11_INPUT_CLASSIFICATION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_INPUT_ELEMENT_DESC {
     pub semantic_name: *mut i8,
     pub semantic_index: u32,
@@ -4094,6 +4294,7 @@ pub struct D3D11_INPUT_ELEMENT_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_INPUT_ELEMENT_DESC_abi(
     *mut i8,
     u32,
@@ -4107,7 +4308,7 @@ impl D3D11_INPUT_ELEMENT_DESC {}
 unsafe impl ::windows::Abi for D3D11_INPUT_ELEMENT_DESC {
     type Abi = D3D11_INPUT_ELEMENT_DESC_abi;
 }
-impl ::std::default::Default for D3D11_INPUT_ELEMENT_DESC {
+impl ::core::default::Default for D3D11_INPUT_ELEMENT_DESC {
     fn default() -> Self {
         Self {
             semantic_name: ::std::ptr::null_mut(),
@@ -4120,7 +4321,7 @@ impl ::std::default::Default for D3D11_INPUT_ELEMENT_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
+impl ::core::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_INPUT_ELEMENT_DESC")
             .field("semantic_name", &format_args!("{:?}", self.semantic_name))
@@ -4142,7 +4343,7 @@ impl ::std::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_INPUT_ELEMENT_DESC {
+impl ::core::clone::Clone for D3D11_INPUT_ELEMENT_DESC {
     fn clone(&self) -> Self {
         Self {
             semantic_name: self.semantic_name,
@@ -4155,18 +4356,6 @@ impl ::std::clone::Clone for D3D11_INPUT_ELEMENT_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_INPUT_ELEMENT_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.semantic_name == other.semantic_name
-            && self.semantic_index == other.semantic_index
-            && self.format == other.format
-            && self.input_slot == other.input_slot
-            && self.aligned_byte_offset == other.aligned_byte_offset
-            && self.input_slot_class == other.input_slot_class
-            && self.instance_data_step_rate == other.instance_data_step_rate
-    }
-}
-impl ::std::cmp::Eq for D3D11_INPUT_ELEMENT_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11InputLayout(::windows::IUnknown);
@@ -4299,7 +4488,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>> for &'a I
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_CLASS_INSTANCE_DESC {
     pub instance_id: u32,
     pub instance_index: u32,
@@ -4312,12 +4501,13 @@ pub struct D3D11_CLASS_INSTANCE_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_CLASS_INSTANCE_DESC_abi(u32, u32, u32, u32, u32, u32, u32, ::windows::BOOL);
 impl D3D11_CLASS_INSTANCE_DESC {}
 unsafe impl ::windows::Abi for D3D11_CLASS_INSTANCE_DESC {
     type Abi = D3D11_CLASS_INSTANCE_DESC_abi;
 }
-impl ::std::default::Default for D3D11_CLASS_INSTANCE_DESC {
+impl ::core::default::Default for D3D11_CLASS_INSTANCE_DESC {
     fn default() -> Self {
         Self {
             instance_id: 0,
@@ -4331,7 +4521,7 @@ impl ::std::default::Default for D3D11_CLASS_INSTANCE_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
+impl ::core::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_CLASS_INSTANCE_DESC")
             .field("instance_id", &format_args!("{:?}", self.instance_id))
@@ -4351,7 +4541,7 @@ impl ::std::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_CLASS_INSTANCE_DESC {
+impl ::core::clone::Clone for D3D11_CLASS_INSTANCE_DESC {
     fn clone(&self) -> Self {
         Self {
             instance_id: self.instance_id,
@@ -4365,19 +4555,6 @@ impl ::std::clone::Clone for D3D11_CLASS_INSTANCE_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_CLASS_INSTANCE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.instance_id == other.instance_id
-            && self.instance_index == other.instance_index
-            && self.type_id == other.type_id
-            && self.constant_buffer == other.constant_buffer
-            && self.base_constant_buffer_offset == other.base_constant_buffer_offset
-            && self.base_texture == other.base_texture
-            && self.base_sampler == other.base_sampler
-            && self.created == other.created
-    }
-}
-impl ::std::cmp::Eq for D3D11_CLASS_INSTANCE_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11ClassInstance(::windows::IUnknown);
@@ -5010,7 +5187,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>>
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SO_DECLARATION_ENTRY {
     pub stream: u32,
     pub semantic_name: *mut i8,
@@ -5021,12 +5198,13 @@ pub struct D3D11_SO_DECLARATION_ENTRY {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SO_DECLARATION_ENTRY_abi(u32, *mut i8, u32, u8, u8, u8);
 impl D3D11_SO_DECLARATION_ENTRY {}
 unsafe impl ::windows::Abi for D3D11_SO_DECLARATION_ENTRY {
     type Abi = D3D11_SO_DECLARATION_ENTRY_abi;
 }
-impl ::std::default::Default for D3D11_SO_DECLARATION_ENTRY {
+impl ::core::default::Default for D3D11_SO_DECLARATION_ENTRY {
     fn default() -> Self {
         Self {
             stream: 0,
@@ -5038,7 +5216,7 @@ impl ::std::default::Default for D3D11_SO_DECLARATION_ENTRY {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
+impl ::core::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SO_DECLARATION_ENTRY")
             .field("stream", &format_args!("{:?}", self.stream))
@@ -5056,7 +5234,7 @@ impl ::std::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_SO_DECLARATION_ENTRY {
+impl ::core::clone::Clone for D3D11_SO_DECLARATION_ENTRY {
     fn clone(&self) -> Self {
         Self {
             stream: self.stream,
@@ -5068,17 +5246,6 @@ impl ::std::clone::Clone for D3D11_SO_DECLARATION_ENTRY {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_SO_DECLARATION_ENTRY {
-    fn eq(&self, other: &Self) -> bool {
-        self.stream == other.stream
-            && self.semantic_name == other.semantic_name
-            && self.semantic_index == other.semantic_index
-            && self.start_component == other.start_component
-            && self.component_count == other.component_count
-            && self.output_slot == other.output_slot
-    }
-}
-impl ::std::cmp::Eq for D3D11_SO_DECLARATION_ENTRY {}
 impl ::std::marker::Copy for D3D11_SO_DECLARATION_ENTRY {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -5719,7 +5886,7 @@ unsafe impl ::windows::Abi for D3D11_BLEND_OP {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_RENDER_TARGET_BLEND_DESC {
     pub blend_enable: ::windows::BOOL,
     pub src_blend: D3D11_BLEND,
@@ -5732,6 +5899,7 @@ pub struct D3D11_RENDER_TARGET_BLEND_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_RENDER_TARGET_BLEND_DESC_abi(
     ::windows::BOOL,
     D3D11_BLEND,
@@ -5746,7 +5914,7 @@ impl D3D11_RENDER_TARGET_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_BLEND_DESC {
     type Abi = D3D11_RENDER_TARGET_BLEND_DESC_abi;
 }
-impl ::std::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::core::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
     fn default() -> Self {
         Self {
             blend_enable: ::std::default::Default::default(),
@@ -5760,7 +5928,7 @@ impl ::std::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::core::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RENDER_TARGET_BLEND_DESC")
             .field("blend_enable", &format_args!("{:?}", self.blend_enable))
@@ -5783,7 +5951,7 @@ impl ::std::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::core::clone::Clone for D3D11_RENDER_TARGET_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             blend_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.blend_enable),
@@ -5797,21 +5965,8 @@ impl ::std::clone::Clone for D3D11_RENDER_TARGET_BLEND_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_RENDER_TARGET_BLEND_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.blend_enable == other.blend_enable
-            && self.src_blend == other.src_blend
-            && self.dest_blend == other.dest_blend
-            && self.blend_op == other.blend_op
-            && self.src_blend_alpha == other.src_blend_alpha
-            && self.dest_blend_alpha == other.dest_blend_alpha
-            && self.blend_op_alpha == other.blend_op_alpha
-            && self.render_target_write_mask == other.render_target_write_mask
-    }
-}
-impl ::std::cmp::Eq for D3D11_RENDER_TARGET_BLEND_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BLEND_DESC {
     pub alpha_to_coverage_enable: ::windows::BOOL,
     pub independent_blend_enable: ::windows::BOOL,
@@ -5819,6 +5974,7 @@ pub struct D3D11_BLEND_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BLEND_DESC_abi(
     ::windows::BOOL,
     ::windows::BOOL,
@@ -5828,7 +5984,7 @@ impl D3D11_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D11_BLEND_DESC {
     type Abi = D3D11_BLEND_DESC_abi;
 }
-impl ::std::default::Default for D3D11_BLEND_DESC {
+impl ::core::default::Default for D3D11_BLEND_DESC {
     fn default() -> Self {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
@@ -5846,7 +6002,7 @@ impl ::std::default::Default for D3D11_BLEND_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_BLEND_DESC {
+impl ::core::fmt::Debug for D3D11_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BLEND_DESC")
             .field(
@@ -5861,7 +6017,7 @@ impl ::std::fmt::Debug for D3D11_BLEND_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_BLEND_DESC {
+impl ::core::clone::Clone for D3D11_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             alpha_to_coverage_enable: <::windows::BOOL as std::clone::Clone>::clone(
@@ -5876,14 +6032,6 @@ impl ::std::clone::Clone for D3D11_BLEND_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_BLEND_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.alpha_to_coverage_enable == other.alpha_to_coverage_enable
-            && self.independent_blend_enable == other.independent_blend_enable
-            && self.render_target == other.render_target
-    }
-}
-impl ::std::cmp::Eq for D3D11_BLEND_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11BlendState(::windows::IUnknown);
@@ -6150,7 +6298,7 @@ unsafe impl ::windows::Abi for D3D11_STENCIL_OP {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_DEPTH_STENCILOP_DESC {
     pub stencil_fail_op: D3D11_STENCIL_OP,
     pub stencil_depth_fail_op: D3D11_STENCIL_OP,
@@ -6159,6 +6307,7 @@ pub struct D3D11_DEPTH_STENCILOP_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_DEPTH_STENCILOP_DESC_abi(
     D3D11_STENCIL_OP,
     D3D11_STENCIL_OP,
@@ -6169,7 +6318,7 @@ impl D3D11_DEPTH_STENCILOP_DESC {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCILOP_DESC {
     type Abi = D3D11_DEPTH_STENCILOP_DESC_abi;
 }
-impl ::std::default::Default for D3D11_DEPTH_STENCILOP_DESC {
+impl ::core::default::Default for D3D11_DEPTH_STENCILOP_DESC {
     fn default() -> Self {
         Self {
             stencil_fail_op: ::std::default::Default::default(),
@@ -6179,7 +6328,7 @@ impl ::std::default::Default for D3D11_DEPTH_STENCILOP_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
+impl ::core::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCILOP_DESC")
             .field(
@@ -6198,7 +6347,7 @@ impl ::std::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_DEPTH_STENCILOP_DESC {
+impl ::core::clone::Clone for D3D11_DEPTH_STENCILOP_DESC {
     fn clone(&self) -> Self {
         Self {
             stencil_fail_op: self.stencil_fail_op,
@@ -6208,17 +6357,8 @@ impl ::std::clone::Clone for D3D11_DEPTH_STENCILOP_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_DEPTH_STENCILOP_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.stencil_fail_op == other.stencil_fail_op
-            && self.stencil_depth_fail_op == other.stencil_depth_fail_op
-            && self.stencil_pass_op == other.stencil_pass_op
-            && self.stencil_func == other.stencil_func
-    }
-}
-impl ::std::cmp::Eq for D3D11_DEPTH_STENCILOP_DESC {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_DEPTH_STENCIL_DESC {
     pub depth_enable: ::windows::BOOL,
     pub depth_write_mask: D3D11_DEPTH_WRITE_MASK,
@@ -6231,6 +6371,7 @@ pub struct D3D11_DEPTH_STENCIL_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_DEPTH_STENCIL_DESC_abi(
     ::windows::BOOL,
     D3D11_DEPTH_WRITE_MASK,
@@ -6245,7 +6386,7 @@ impl D3D11_DEPTH_STENCIL_DESC {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_DESC {
     type Abi = D3D11_DEPTH_STENCIL_DESC_abi;
 }
-impl ::std::default::Default for D3D11_DEPTH_STENCIL_DESC {
+impl ::core::default::Default for D3D11_DEPTH_STENCIL_DESC {
     fn default() -> Self {
         Self {
             depth_enable: ::std::default::Default::default(),
@@ -6259,7 +6400,7 @@ impl ::std::default::Default for D3D11_DEPTH_STENCIL_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
+impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCIL_DESC")
             .field("depth_enable", &format_args!("{:?}", self.depth_enable))
@@ -6282,7 +6423,7 @@ impl ::std::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_DEPTH_STENCIL_DESC {
+impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_DESC {
     fn clone(&self) -> Self {
         Self {
             depth_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.depth_enable),
@@ -6296,19 +6437,6 @@ impl ::std::clone::Clone for D3D11_DEPTH_STENCIL_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_DEPTH_STENCIL_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.depth_enable == other.depth_enable
-            && self.depth_write_mask == other.depth_write_mask
-            && self.depth_func == other.depth_func
-            && self.stencil_enable == other.stencil_enable
-            && self.stencil_read_mask == other.stencil_read_mask
-            && self.stencil_write_mask == other.stencil_write_mask
-            && self.front_face == other.front_face
-            && self.back_face == other.back_face
-    }
-}
-impl ::std::cmp::Eq for D3D11_DEPTH_STENCIL_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11DepthStencilState(::windows::IUnknown);
@@ -6532,7 +6660,7 @@ unsafe impl ::windows::Abi for D3D11_CULL_MODE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_RASTERIZER_DESC {
     pub fill_mode: D3D11_FILL_MODE,
     pub cull_mode: D3D11_CULL_MODE,
@@ -6547,6 +6675,7 @@ pub struct D3D11_RASTERIZER_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_RASTERIZER_DESC_abi(
     D3D11_FILL_MODE,
     D3D11_CULL_MODE,
@@ -6563,7 +6692,7 @@ impl D3D11_RASTERIZER_DESC {}
 unsafe impl ::windows::Abi for D3D11_RASTERIZER_DESC {
     type Abi = D3D11_RASTERIZER_DESC_abi;
 }
-impl ::std::default::Default for D3D11_RASTERIZER_DESC {
+impl ::core::default::Default for D3D11_RASTERIZER_DESC {
     fn default() -> Self {
         Self {
             fill_mode: ::std::default::Default::default(),
@@ -6579,7 +6708,7 @@ impl ::std::default::Default for D3D11_RASTERIZER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_RASTERIZER_DESC {
+impl ::core::fmt::Debug for D3D11_RASTERIZER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RASTERIZER_DESC")
             .field("fill_mode", &format_args!("{:?}", self.fill_mode))
@@ -6613,7 +6742,7 @@ impl ::std::fmt::Debug for D3D11_RASTERIZER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_RASTERIZER_DESC {
+impl ::core::clone::Clone for D3D11_RASTERIZER_DESC {
     fn clone(&self) -> Self {
         Self {
             fill_mode: self.fill_mode,
@@ -6637,21 +6766,6 @@ impl ::std::clone::Clone for D3D11_RASTERIZER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_RASTERIZER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.fill_mode == other.fill_mode
-            && self.cull_mode == other.cull_mode
-            && self.front_counter_clockwise == other.front_counter_clockwise
-            && self.depth_bias == other.depth_bias
-            && self.depth_bias_clamp == other.depth_bias_clamp
-            && self.slope_scaled_depth_bias == other.slope_scaled_depth_bias
-            && self.depth_clip_enable == other.depth_clip_enable
-            && self.scissor_enable == other.scissor_enable
-            && self.multisample_enable == other.multisample_enable
-            && self.antialiased_line_enable == other.antialiased_line_enable
-    }
-}
-impl ::std::cmp::Eq for D3D11_RASTERIZER_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11RasterizerState(::windows::IUnknown);
@@ -6905,7 +7019,7 @@ unsafe impl ::windows::Abi for D3D11_TEXTURE_ADDRESS_MODE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SAMPLER_DESC {
     pub filter: D3D11_FILTER,
     pub addressu: D3D11_TEXTURE_ADDRESS_MODE,
@@ -6920,6 +7034,7 @@ pub struct D3D11_SAMPLER_DESC {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_SAMPLER_DESC_abi(
     D3D11_FILTER,
     D3D11_TEXTURE_ADDRESS_MODE,
@@ -6936,7 +7051,7 @@ impl D3D11_SAMPLER_DESC {}
 unsafe impl ::windows::Abi for D3D11_SAMPLER_DESC {
     type Abi = D3D11_SAMPLER_DESC_abi;
 }
-impl ::std::default::Default for D3D11_SAMPLER_DESC {
+impl ::core::default::Default for D3D11_SAMPLER_DESC {
     fn default() -> Self {
         Self {
             filter: ::std::default::Default::default(),
@@ -6952,7 +7067,7 @@ impl ::std::default::Default for D3D11_SAMPLER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_SAMPLER_DESC {
+impl ::core::fmt::Debug for D3D11_SAMPLER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SAMPLER_DESC")
             .field("filter", &format_args!("{:?}", self.filter))
@@ -6971,7 +7086,7 @@ impl ::std::fmt::Debug for D3D11_SAMPLER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_SAMPLER_DESC {
+impl ::core::clone::Clone for D3D11_SAMPLER_DESC {
     fn clone(&self) -> Self {
         Self {
             filter: self.filter,
@@ -6987,21 +7102,6 @@ impl ::std::clone::Clone for D3D11_SAMPLER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_SAMPLER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.filter == other.filter
-            && self.addressu == other.addressu
-            && self.addressv == other.addressv
-            && self.addressw == other.addressw
-            && self.mip_lod_bias == other.mip_lod_bias
-            && self.max_anisotropy == other.max_anisotropy
-            && self.comparison_func == other.comparison_func
-            && self.border_color == other.border_color
-            && self.min_lod == other.min_lod
-            && self.max_lod == other.max_lod
-    }
-}
-impl ::std::cmp::Eq for D3D11_SAMPLER_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11SamplerState(::windows::IUnknown);
@@ -7196,19 +7296,20 @@ unsafe impl ::windows::Abi for D3D11_QUERY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_QUERY_DESC {
     pub query: D3D11_QUERY,
     pub misc_flags: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_QUERY_DESC_abi(D3D11_QUERY, u32);
 impl D3D11_QUERY_DESC {}
 unsafe impl ::windows::Abi for D3D11_QUERY_DESC {
     type Abi = D3D11_QUERY_DESC_abi;
 }
-impl ::std::default::Default for D3D11_QUERY_DESC {
+impl ::core::default::Default for D3D11_QUERY_DESC {
     fn default() -> Self {
         Self {
             query: ::std::default::Default::default(),
@@ -7216,7 +7317,7 @@ impl ::std::default::Default for D3D11_QUERY_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_QUERY_DESC {
+impl ::core::fmt::Debug for D3D11_QUERY_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_QUERY_DESC")
             .field("query", &format_args!("{:?}", self.query))
@@ -7224,7 +7325,7 @@ impl ::std::fmt::Debug for D3D11_QUERY_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_QUERY_DESC {
+impl ::core::clone::Clone for D3D11_QUERY_DESC {
     fn clone(&self) -> Self {
         Self {
             query: self.query,
@@ -7232,12 +7333,6 @@ impl ::std::clone::Clone for D3D11_QUERY_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_QUERY_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.query == other.query && self.misc_flags == other.misc_flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_QUERY_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11Asynchronous(::windows::IUnknown);
@@ -7765,19 +7860,20 @@ unsafe impl ::windows::Abi for D3D11_COUNTER {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_COUNTER_DESC {
     pub counter: D3D11_COUNTER,
     pub misc_flags: u32,
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_COUNTER_DESC_abi(D3D11_COUNTER, u32);
 impl D3D11_COUNTER_DESC {}
 unsafe impl ::windows::Abi for D3D11_COUNTER_DESC {
     type Abi = D3D11_COUNTER_DESC_abi;
 }
-impl ::std::default::Default for D3D11_COUNTER_DESC {
+impl ::core::default::Default for D3D11_COUNTER_DESC {
     fn default() -> Self {
         Self {
             counter: ::std::default::Default::default(),
@@ -7785,7 +7881,7 @@ impl ::std::default::Default for D3D11_COUNTER_DESC {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_COUNTER_DESC {
+impl ::core::fmt::Debug for D3D11_COUNTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_COUNTER_DESC")
             .field("counter", &format_args!("{:?}", self.counter))
@@ -7793,7 +7889,7 @@ impl ::std::fmt::Debug for D3D11_COUNTER_DESC {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_COUNTER_DESC {
+impl ::core::clone::Clone for D3D11_COUNTER_DESC {
     fn clone(&self) -> Self {
         Self {
             counter: self.counter,
@@ -7801,12 +7897,6 @@ impl ::std::clone::Clone for D3D11_COUNTER_DESC {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_COUNTER_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.counter == other.counter && self.misc_flags == other.misc_flags
-    }
-}
-impl ::std::cmp::Eq for D3D11_COUNTER_DESC {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 pub struct ID3D11Counter(::windows::IUnknown);
@@ -8010,7 +8100,7 @@ unsafe impl ::windows::Abi for D3D11_MAP {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_MAPPED_SUBRESOURCE {
     pub p_data: *mut ::std::ffi::c_void,
     pub row_pitch: u32,
@@ -8018,12 +8108,13 @@ pub struct D3D11_MAPPED_SUBRESOURCE {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_MAPPED_SUBRESOURCE_abi(*mut ::std::ffi::c_void, u32, u32);
 impl D3D11_MAPPED_SUBRESOURCE {}
 unsafe impl ::windows::Abi for D3D11_MAPPED_SUBRESOURCE {
     type Abi = D3D11_MAPPED_SUBRESOURCE_abi;
 }
-impl ::std::default::Default for D3D11_MAPPED_SUBRESOURCE {
+impl ::core::default::Default for D3D11_MAPPED_SUBRESOURCE {
     fn default() -> Self {
         Self {
             p_data: ::std::ptr::null_mut(),
@@ -8032,7 +8123,7 @@ impl ::std::default::Default for D3D11_MAPPED_SUBRESOURCE {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
+impl ::core::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_MAPPED_SUBRESOURCE")
             .field("p_data", &format_args!("{:?}", self.p_data))
@@ -8041,7 +8132,7 @@ impl ::std::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_MAPPED_SUBRESOURCE {
+impl ::core::clone::Clone for D3D11_MAPPED_SUBRESOURCE {
     fn clone(&self) -> Self {
         Self {
             p_data: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_data),
@@ -8050,14 +8141,6 @@ impl ::std::clone::Clone for D3D11_MAPPED_SUBRESOURCE {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_MAPPED_SUBRESOURCE {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_data == other.p_data
-            && self.row_pitch == other.row_pitch
-            && self.depth_pitch == other.depth_pitch
-    }
-}
-impl ::std::cmp::Eq for D3D11_MAPPED_SUBRESOURCE {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct D3D_PRIMITIVE_TOPOLOGY(pub i32);
@@ -8189,7 +8272,7 @@ unsafe impl ::windows::Abi for D3D_PRIMITIVE_TOPOLOGY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_VIEWPORT {
     pub top_leftx: f32,
     pub top_lefty: f32,
@@ -8200,12 +8283,13 @@ pub struct D3D11_VIEWPORT {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_VIEWPORT_abi(f32, f32, f32, f32, f32, f32);
 impl D3D11_VIEWPORT {}
 unsafe impl ::windows::Abi for D3D11_VIEWPORT {
     type Abi = D3D11_VIEWPORT_abi;
 }
-impl ::std::default::Default for D3D11_VIEWPORT {
+impl ::core::default::Default for D3D11_VIEWPORT {
     fn default() -> Self {
         Self {
             top_leftx: 0.0,
@@ -8217,7 +8301,7 @@ impl ::std::default::Default for D3D11_VIEWPORT {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_VIEWPORT {
+impl ::core::fmt::Debug for D3D11_VIEWPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_VIEWPORT")
             .field("top_leftx", &format_args!("{:?}", self.top_leftx))
@@ -8229,7 +8313,7 @@ impl ::std::fmt::Debug for D3D11_VIEWPORT {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_VIEWPORT {
+impl ::core::clone::Clone for D3D11_VIEWPORT {
     fn clone(&self) -> Self {
         Self {
             top_leftx: self.top_leftx,
@@ -8241,20 +8325,9 @@ impl ::std::clone::Clone for D3D11_VIEWPORT {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_VIEWPORT {
-    fn eq(&self, other: &Self) -> bool {
-        self.top_leftx == other.top_leftx
-            && self.top_lefty == other.top_lefty
-            && self.width == other.width
-            && self.height == other.height
-            && self.min_depth == other.min_depth
-            && self.max_depth == other.max_depth
-    }
-}
-impl ::std::cmp::Eq for D3D11_VIEWPORT {}
 impl ::std::marker::Copy for D3D11_VIEWPORT {}
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BOX {
     pub left: u32,
     pub top: u32,
@@ -8265,12 +8338,13 @@ pub struct D3D11_BOX {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_BOX_abi(u32, u32, u32, u32, u32, u32);
 impl D3D11_BOX {}
 unsafe impl ::windows::Abi for D3D11_BOX {
     type Abi = D3D11_BOX_abi;
 }
-impl ::std::default::Default for D3D11_BOX {
+impl ::core::default::Default for D3D11_BOX {
     fn default() -> Self {
         Self {
             left: 0,
@@ -8282,7 +8356,7 @@ impl ::std::default::Default for D3D11_BOX {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_BOX {
+impl ::core::fmt::Debug for D3D11_BOX {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BOX")
             .field("left", &format_args!("{:?}", self.left))
@@ -8294,7 +8368,7 @@ impl ::std::fmt::Debug for D3D11_BOX {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_BOX {
+impl ::core::clone::Clone for D3D11_BOX {
     fn clone(&self) -> Self {
         Self {
             left: self.left,
@@ -8306,17 +8380,6 @@ impl ::std::clone::Clone for D3D11_BOX {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_BOX {
-    fn eq(&self, other: &Self) -> bool {
-        self.left == other.left
-            && self.top == other.top
-            && self.front == other.front
-            && self.right == other.right
-            && self.bottom == other.bottom
-            && self.back == other.back
-    }
-}
-impl ::std::cmp::Eq for D3D11_BOX {}
 impl ::std::marker::Copy for D3D11_BOX {}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -10682,7 +10745,7 @@ impl<'a> ::std::convert::Into<::windows::Param<'a, ID3D11DeviceChild>> for &'a I
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_COUNTER_INFO {
     pub last_device_dependent_counter: D3D11_COUNTER,
     pub num_simultaneous_counters: u32,
@@ -10690,12 +10753,13 @@ pub struct D3D11_COUNTER_INFO {
 }
 #[repr(C)]
 #[doc(hidden)]
+#[allow(non_camel_case_types)]
 pub struct D3D11_COUNTER_INFO_abi(D3D11_COUNTER, u32, u8);
 impl D3D11_COUNTER_INFO {}
 unsafe impl ::windows::Abi for D3D11_COUNTER_INFO {
     type Abi = D3D11_COUNTER_INFO_abi;
 }
-impl ::std::default::Default for D3D11_COUNTER_INFO {
+impl ::core::default::Default for D3D11_COUNTER_INFO {
     fn default() -> Self {
         Self {
             last_device_dependent_counter: ::std::default::Default::default(),
@@ -10704,7 +10768,7 @@ impl ::std::default::Default for D3D11_COUNTER_INFO {
         }
     }
 }
-impl ::std::fmt::Debug for D3D11_COUNTER_INFO {
+impl ::core::fmt::Debug for D3D11_COUNTER_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_COUNTER_INFO")
             .field(
@@ -10722,7 +10786,7 @@ impl ::std::fmt::Debug for D3D11_COUNTER_INFO {
             .finish()
     }
 }
-impl ::std::clone::Clone for D3D11_COUNTER_INFO {
+impl ::core::clone::Clone for D3D11_COUNTER_INFO {
     fn clone(&self) -> Self {
         Self {
             last_device_dependent_counter: self.last_device_dependent_counter,
@@ -10731,14 +10795,6 @@ impl ::std::clone::Clone for D3D11_COUNTER_INFO {
         }
     }
 }
-impl ::std::cmp::PartialEq for D3D11_COUNTER_INFO {
-    fn eq(&self, other: &Self) -> bool {
-        self.last_device_dependent_counter == other.last_device_dependent_counter
-            && self.num_simultaneous_counters == other.num_simultaneous_counters
-            && self.num_detectable_parallel_units == other.num_detectable_parallel_units
-    }
-}
-impl ::std::cmp::Eq for D3D11_COUNTER_INFO {}
 #[allow(non_camel_case_types)]
 #[repr(transparent)]
 pub struct D3D11_COUNTER_TYPE(pub i32);
