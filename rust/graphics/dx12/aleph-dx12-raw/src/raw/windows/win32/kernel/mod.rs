@@ -1,14 +1,12 @@
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct LUID {
     pub low_part: u32,
     pub high_part: i32,
 }
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct LUID_abi(u32, i32);
-impl LUID {}
 unsafe impl ::windows::Abi for LUID {
     type Abi = LUID_abi;
 }
@@ -36,4 +34,9 @@ impl ::std::clone::Clone for LUID {
         }
     }
 }
-impl ::std::marker::Copy for LUID {}
+impl ::std::cmp::PartialEq for LUID {
+    fn eq(&self, other: &Self) -> bool {
+        self.low_part == other.low_part && self.high_part == other.high_part
+    }
+}
+impl ::std::cmp::Eq for LUID {}

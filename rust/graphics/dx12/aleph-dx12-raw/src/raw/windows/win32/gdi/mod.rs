@@ -1,11 +1,9 @@
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct HDC(pub isize);
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct HDC_abi(isize);
-impl HDC {}
 unsafe impl ::windows::Abi for HDC {
     type Abi = HDC_abi;
 }
@@ -26,3 +24,10 @@ impl ::std::clone::Clone for HDC {
         Self(self.0)
     }
 }
+impl ::std::cmp::PartialEq for HDC {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::std::cmp::Eq for HDC {}
+impl ::std::marker::Copy for HDC {}

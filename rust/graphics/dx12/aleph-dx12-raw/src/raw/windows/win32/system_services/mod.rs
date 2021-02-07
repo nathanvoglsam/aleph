@@ -1,11 +1,9 @@
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct HANDLE(pub isize);
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct HANDLE_abi(isize);
-impl HANDLE {}
 unsafe impl ::windows::Abi for HANDLE {
     type Abi = HANDLE_abi;
 }
@@ -26,8 +24,15 @@ impl ::std::clone::Clone for HANDLE {
         Self(self.0)
     }
 }
+impl ::std::cmp::PartialEq for HANDLE {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::std::cmp::Eq for HANDLE {}
+impl ::std::marker::Copy for HANDLE {}
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct SECURITY_ATTRIBUTES {
     pub n_length: u32,
     pub lp_security_descriptor: *mut ::std::ffi::c_void,
@@ -35,9 +40,7 @@ pub struct SECURITY_ATTRIBUTES {
 }
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct SECURITY_ATTRIBUTES_abi(u32, *mut ::std::ffi::c_void, ::windows::BOOL);
-impl SECURITY_ATTRIBUTES {}
 unsafe impl ::windows::Abi for SECURITY_ATTRIBUTES {
     type Abi = SECURITY_ATTRIBUTES_abi;
 }
@@ -76,6 +79,14 @@ impl ::std::clone::Clone for SECURITY_ATTRIBUTES {
         }
     }
 }
+impl ::std::cmp::PartialEq for SECURITY_ATTRIBUTES {
+    fn eq(&self, other: &Self) -> bool {
+        self.n_length == other.n_length
+            && self.lp_security_descriptor == other.lp_security_descriptor
+            && self.b_inherit_handle == other.b_inherit_handle
+    }
+}
+impl ::std::cmp::Eq for SECURITY_ATTRIBUTES {}
 #[link(name = "KERNEL32")]
 extern "system" {
     pub fn CreateEventA(

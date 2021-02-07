@@ -1,4 +1,5 @@
 #[allow(non_camel_case_types)]
+#[derive(PartialEq, Eq)]
 #[repr(transparent)]
 pub struct TrustLevel(pub i32);
 impl ::std::convert::From<i32> for TrustLevel {
@@ -21,12 +22,6 @@ impl ::std::fmt::Debug for TrustLevel {
         write!(f, "{:?}", self.0)
     }
 }
-impl ::std::cmp::PartialEq for TrustLevel {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::std::cmp::Eq for TrustLevel {}
 impl ::std::marker::Copy for TrustLevel {}
 impl TrustLevel {
     #![allow(non_upper_case_globals)]

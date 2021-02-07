@@ -1,5 +1,5 @@
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct RECT {
     pub left: i32,
     pub top: i32,
@@ -8,9 +8,7 @@ pub struct RECT {
 }
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct RECT_abi(i32, i32, i32, i32);
-impl RECT {}
 unsafe impl ::windows::Abi for RECT {
     type Abi = RECT_abi;
 }
@@ -44,18 +42,24 @@ impl ::std::clone::Clone for RECT {
         }
     }
 }
-impl ::std::marker::Copy for RECT {}
+impl ::std::cmp::PartialEq for RECT {
+    fn eq(&self, other: &Self) -> bool {
+        self.left == other.left
+            && self.top == other.top
+            && self.right == other.right
+            && self.bottom == other.bottom
+    }
+}
+impl ::std::cmp::Eq for RECT {}
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct POINT {
     pub x: i32,
     pub y: i32,
 }
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct POINT_abi(i32, i32);
-impl POINT {}
 unsafe impl ::windows::Abi for POINT {
     type Abi = POINT_abi;
 }
@@ -80,4 +84,9 @@ impl ::std::clone::Clone for POINT {
         }
     }
 }
-impl ::std::marker::Copy for POINT {}
+impl ::std::cmp::PartialEq for POINT {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+impl ::std::cmp::Eq for POINT {}

@@ -1,11 +1,9 @@
 #[repr(C)]
-#[allow(non_camel_case_types)]
+#[allow(non_snake_case)]
 pub struct HWND(pub isize);
 #[repr(C)]
 #[doc(hidden)]
-#[allow(non_camel_case_types)]
 pub struct HWND_abi(isize);
-impl HWND {}
 unsafe impl ::windows::Abi for HWND {
     type Abi = HWND_abi;
 }
@@ -26,3 +24,10 @@ impl ::std::clone::Clone for HWND {
         Self(self.0)
     }
 }
+impl ::std::cmp::PartialEq for HWND {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl ::std::cmp::Eq for HWND {}
+impl ::std::marker::Copy for HWND {}
