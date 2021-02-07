@@ -45,6 +45,9 @@ mod root_signature_desc;
 mod swapchain;
 mod versioned_root_signature_desc;
 
+#[cfg(test)]
+mod tests;
+
 pub use command_list_type::CommandListType;
 pub use command_queue::CommandQueue;
 pub use command_queue::CommandQueueBuilder;
