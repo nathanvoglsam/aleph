@@ -52,19 +52,25 @@ pub union D3D12_ROOT_PARAMETER_TYPES {
 
 impl From<D3D12_ROOT_DESCRIPTOR_TABLE> for D3D12_ROOT_PARAMETER_TYPES {
     fn from(descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE) -> Self {
-        Self { descriptor_table: ManuallyDrop::new(descriptor_table) }
+        Self {
+            descriptor_table: ManuallyDrop::new(descriptor_table),
+        }
     }
 }
 
 impl From<D3D12_ROOT_CONSTANTS> for D3D12_ROOT_PARAMETER_TYPES {
     fn from(constants: D3D12_ROOT_CONSTANTS) -> Self {
-        Self { constants: ManuallyDrop::new(constants) }
+        Self {
+            constants: ManuallyDrop::new(constants),
+        }
     }
 }
 
 impl From<D3D12_ROOT_DESCRIPTOR> for D3D12_ROOT_PARAMETER_TYPES {
     fn from(descriptor: D3D12_ROOT_DESCRIPTOR) -> Self {
-        Self { descriptor: ManuallyDrop::new(descriptor) }
+        Self {
+            descriptor: ManuallyDrop::new(descriptor),
+        }
     }
 }
 
@@ -86,18 +92,24 @@ pub union D3D12_ROOT_PARAMETER1_TYPES {
 
 impl From<D3D12_ROOT_DESCRIPTOR_TABLE1> for D3D12_ROOT_PARAMETER1_TYPES {
     fn from(descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1) -> Self {
-        Self { descriptor_table: ManuallyDrop::new(descriptor_table) }
+        Self {
+            descriptor_table: ManuallyDrop::new(descriptor_table),
+        }
     }
 }
 
 impl From<D3D12_ROOT_CONSTANTS> for D3D12_ROOT_PARAMETER1_TYPES {
     fn from(constants: D3D12_ROOT_CONSTANTS) -> Self {
-        Self { constants: ManuallyDrop::new(constants) }
+        Self {
+            constants: ManuallyDrop::new(constants),
+        }
     }
 }
 
 impl From<D3D12_ROOT_DESCRIPTOR1> for D3D12_ROOT_PARAMETER1_TYPES {
     fn from(descriptor: D3D12_ROOT_DESCRIPTOR1) -> Self {
-        Self { descriptor: ManuallyDrop::new(descriptor) }
+        Self {
+            descriptor: ManuallyDrop::new(descriptor),
+        }
     }
 }
