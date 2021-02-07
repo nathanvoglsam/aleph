@@ -242,13 +242,10 @@ fn get_buffers(swapchain: &IDXGISwapChain1, count: u32) -> Vec<ID3D12Resource> {
         .into_iter()
         .map(|buffer| unsafe {
             let mut resource: Option<ID3D12Resource> = None;
-            let name = format!("SwapChain Buffer {}", buffer);
-            let name: Vec<u16> = name.encode_utf16().collect();
             let resource = swapchain
                 .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
                 .and_some(resource)
                 .unwrap();
-            resource.SetName(name.as_ptr()).ok().unwrap();
             resource
         })
         .collect()

@@ -32,6 +32,7 @@ use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandQueue, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
+use crate::D3D12Object;
 use crate::Device;
 
 pub struct CommandQueueBuilder {
@@ -91,5 +92,11 @@ impl CommandQueue {
 
     pub fn raw(&self) -> &ID3D12CommandQueue {
         &self.queue
+    }
+}
+
+impl D3D12Object for CommandQueue {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.queue.SetName(name.as_ptr()).ok()
     }
 }

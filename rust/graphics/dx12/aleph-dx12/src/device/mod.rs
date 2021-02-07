@@ -37,6 +37,7 @@ use crate::raw::windows::win32::dxgi::{
     CreateDXGIFactory1, IDXGIAdapter1, IDXGIFactory2, DXGI_ADAPTER_DESC1,
 };
 use crate::raw::windows::{Abi, Error, Interface};
+use crate::D3D12Object;
 
 /// Represents the set of errors that can be encountered from device creation
 #[derive(Clone, Debug, PartialEq)]
@@ -196,5 +197,11 @@ impl Device {
     pub fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
         let mut desc = DXGI_ADAPTER_DESC1::default();
         unsafe { self.adapter.GetDesc1(&mut desc).ok().map(|_| desc) }
+    }
+}
+
+impl D3D12Object for Device {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.device.SetName(name.as_ptr()).ok()
     }
 }

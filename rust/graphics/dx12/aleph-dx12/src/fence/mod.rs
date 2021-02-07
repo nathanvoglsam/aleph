@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
 use crate::raw::windows::{Abi, Interface};
-use crate::Device;
+use crate::{D3D12Object, Device};
 
 pub struct FenceBuilder {
     initial_value: u64,
@@ -90,5 +90,11 @@ impl Fence {
 
     pub fn raw(&self) -> &ID3D12Fence {
         &self.fence
+    }
+}
+
+impl D3D12Object for Fence {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.fence.SetName(name.as_ptr()).ok()
     }
 }

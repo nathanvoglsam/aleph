@@ -61,7 +61,7 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_DESCRIPTOR_HEAP_TYPE,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::Device;
+use crate::{D3D12Object, Device};
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
@@ -129,17 +129,17 @@ impl DescriptorHeapBuilder {
             flags: self.flags,
             node_mask: 0,
         };
-        let mut queue: Option<ID3D12DescriptorHeap> = None;
+        let mut heap: Option<ID3D12DescriptorHeap> = None;
         device
             .raw()
-            .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, queue.set_abi())
-            .and_some(queue)
-            .map(|v| DescriptorHeap { queue: v })
+            .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, heap.set_abi())
+            .and_some(heap)
+            .map(|v| DescriptorHeap { heap: v })
     }
 }
 
 pub struct DescriptorHeap {
-    queue: ID3D12DescriptorHeap,
+    heap: ID3D12DescriptorHeap,
 }
 
 impl DescriptorHeap {
@@ -148,6 +148,12 @@ impl DescriptorHeap {
     }
 
     pub fn raw(&self) -> &ID3D12DescriptorHeap {
-        &self.queue
+        &self.heap
+    }
+}
+
+impl D3D12Object for DescriptorHeap {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.heap.SetName(name.as_ptr()).ok()
     }
 }
