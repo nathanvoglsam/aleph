@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
 use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12Object, DXGIAdapter, FeatureLevel};
+use crate::{CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -42,13 +42,22 @@ impl Device {
     ) -> raw::windows::Result<Device> {
         let mut device: Option<ID3D12Device4> = None;
         D3D12CreateDevice(
-            adapter.map(|v| v.raw().clone().into()),
+            adapter.map(|v| v.raw().into()),
             minimum_feature_level.into(),
             &ID3D12Device4::IID,
             device.set_abi(),
         )
         .and_some(device)
         .map(|v| Self(v))
+    }
+
+    pub fn command_queue_builder<'a>(&'a self) -> CommandQueueBuilder<'a> {
+        CommandQueueBuilder::<'a> {
+            device: self,
+            priority: 0,
+            queue_type: None,
+            flags: Default::default(),
+        }
     }
 
     pub fn raw(&self) -> &ID3D12Device4 {

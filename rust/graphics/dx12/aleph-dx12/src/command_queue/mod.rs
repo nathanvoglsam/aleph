@@ -28,26 +28,19 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandQueue, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
+    ID3D12CommandQueue, ID3D12Device4, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandListType, D3D12Object, Device};
+use crate::{CommandListType, D3D12DeviceChild, D3D12Object, Device};
 
-pub struct CommandQueueBuilder {
-    priority: i32,
-    queue_type: Option<CommandListType>,
-    flags: D3D12_COMMAND_QUEUE_FLAGS,
+pub struct CommandQueueBuilder<'a> {
+    pub(crate) device: &'a Device,
+    pub(crate) priority: i32,
+    pub(crate) queue_type: Option<CommandListType>,
+    pub(crate) flags: D3D12_COMMAND_QUEUE_FLAGS,
 }
 
-impl CommandQueueBuilder {
-    pub fn new() -> Self {
-        Self {
-            priority: 0,
-            queue_type: None,
-            flags: Default::default(),
-        }
-    }
-
+impl<'a> CommandQueueBuilder<'a> {
     pub fn queue_type(mut self, queue_type: CommandListType) -> Self {
         self.queue_type = Some(queue_type);
         self
@@ -63,7 +56,7 @@ impl CommandQueueBuilder {
         self
     }
 
-    pub unsafe fn build(self, device: &Device) -> raw::windows::Result<CommandQueue> {
+    pub unsafe fn build(self) -> raw::windows::Result<CommandQueue> {
         let desc = D3D12_COMMAND_QUEUE_DESC {
             r#type: self.queue_type.unwrap().into(),
             priority: self.priority,
@@ -71,8 +64,8 @@ impl CommandQueueBuilder {
             node_mask: 0,
         };
         let mut queue: Option<ID3D12CommandQueue> = None;
-        device
-            .raw()
+        self.device
+            .0
             .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
             .and_some(queue)
             .map(|v| CommandQueue(v))
@@ -84,10 +77,6 @@ impl CommandQueueBuilder {
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
-    pub fn builder() -> CommandQueueBuilder {
-        CommandQueueBuilder::new()
-    }
-
     pub fn raw(&self) -> &ID3D12CommandQueue {
         &self.0
     }
