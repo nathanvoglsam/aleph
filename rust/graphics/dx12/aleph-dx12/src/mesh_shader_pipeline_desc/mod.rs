@@ -150,6 +150,7 @@ type SampleDesc = PackedPipelineStateStreamObject<DXGI_SAMPLE_DESC>;
 type NodeMask = PackedPipelineStateStreamObject<u32>;
 type CachedPso = PackedPipelineStateStreamObject<D3D12_CACHED_PIPELINE_STATE>;
 type Flags = PackedPipelineStateStreamObject<D3D12_PIPELINE_STATE_FLAGS>;
+#[repr(C)]
 struct Packed {
     pub root_signature: RootSignature,
     pub amplification_shader: AmplificationShader,
