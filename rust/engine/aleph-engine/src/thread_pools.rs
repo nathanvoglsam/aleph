@@ -35,7 +35,13 @@ pub fn init_long_thread_pool(num_threads: usize) {
     let long_running_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .thread_name(|id| format!("Long Running Task Thread {}", id))
-        .start_handler(|id| optick::register_thread(&format!("LR Thread {}", id)))
+        .start_handler(|id| {
+            // Initialize COM with MTA
+            #[cfg(target_os = "windows")]
+            dx12::raw::windows::initialize_mta().unwrap();
+
+            optick::register_thread(&format!("LR Thread {}", id));
+        })
         .build()
         .expect("Failed to create long running thread pool");
     LONG_RUNNING_THREAD_POOL
@@ -49,7 +55,13 @@ pub fn init_short_thread_pool(num_threads: usize) {
     let short_running_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .thread_name(|id| format!("Short Running Task Thread {}", id))
-        .start_handler(|id| optick::register_thread(&format!("SR Thread {}", id)))
+        .start_handler(|id| {
+            // Initialize COM with MTA
+            #[cfg(target_os = "windows")]
+            dx12::raw::windows::initialize_mta().unwrap();
+
+            optick::register_thread(&format!("SR Thread {}", id))
+        })
         .build()
         .expect("Failed to create short running thread pool");
     SHORT_RUNNING_THREAD_POOL
