@@ -36,16 +36,11 @@ use crate::{CommandListType, D3D12DeviceChild, D3D12Object, Device};
 pub struct CommandQueueBuilder<'a> {
     pub(crate) device: &'a Device,
     pub(crate) priority: i32,
-    pub(crate) queue_type: Option<CommandListType>,
+    pub(crate) queue_type: CommandListType,
     pub(crate) flags: D3D12_COMMAND_QUEUE_FLAGS,
 }
 
 impl<'a> CommandQueueBuilder<'a> {
-    pub fn queue_type(mut self, queue_type: CommandListType) -> Self {
-        self.queue_type = Some(queue_type);
-        self
-    }
-
     pub fn priority(mut self, priority: i32) -> Self {
         self.priority = priority;
         self
@@ -58,7 +53,7 @@ impl<'a> CommandQueueBuilder<'a> {
 
     pub unsafe fn build(self) -> raw::windows::Result<CommandQueue> {
         let desc = D3D12_COMMAND_QUEUE_DESC {
-            r#type: self.queue_type.unwrap().into(),
+            r#type: self.queue_type.into(),
             priority: self.priority,
             flags: self.flags,
             node_mask: 0,

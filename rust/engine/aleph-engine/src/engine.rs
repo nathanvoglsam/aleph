@@ -176,8 +176,7 @@ impl Engine {
 
         let queue = unsafe {
             device
-                .command_queue_builder()
-                .queue_type(dx12::CommandListType::Direct)
+                .command_queue_builder(dx12::CommandListType::Direct)
                 .priority(0)
                 .build()
                 .unwrap()

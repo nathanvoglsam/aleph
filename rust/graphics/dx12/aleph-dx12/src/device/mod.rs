@@ -29,7 +29,9 @@
 
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder};
+use crate::{
+    CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder,
+};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -51,11 +53,14 @@ impl Device {
         .map(|v| Self(v))
     }
 
-    pub fn command_queue_builder<'a>(&'a self) -> CommandQueueBuilder<'a> {
+    pub fn command_queue_builder<'a>(
+        &'a self,
+        queue_type: CommandListType,
+    ) -> CommandQueueBuilder<'a> {
         CommandQueueBuilder::<'a> {
             device: self,
             priority: 0,
-            queue_type: None,
+            queue_type,
             flags: Default::default(),
         }
     }
