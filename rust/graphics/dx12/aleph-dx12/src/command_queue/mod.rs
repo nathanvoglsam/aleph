@@ -27,13 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::command_list_type::CommandListType;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandQueue, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::D3D12Object;
-use crate::Device;
+use crate::{CommandListType, D3D12Object, Device};
 
 pub struct CommandQueueBuilder {
     priority: i32,
