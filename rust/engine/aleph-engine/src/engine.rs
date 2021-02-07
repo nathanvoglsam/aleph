@@ -238,8 +238,8 @@ impl Engine {
             }
 
             unsafe {
-                fence.raw().Signal(0).unwrap();
-                fence.raw().SetEventOnCompletion(1, event.raw()).unwrap();
+                fence.signal(0).unwrap();
+                fence.set_event_on_completion(1, &event).unwrap();
             }
 
             if Window::resized() {
@@ -254,7 +254,7 @@ impl Engine {
             }
 
             unsafe {
-                queue.raw().Signal(fence.raw().clone(), 1).unwrap();
+                queue.signal(&fence, 1).unwrap();
                 event.wait(None);
             }
 

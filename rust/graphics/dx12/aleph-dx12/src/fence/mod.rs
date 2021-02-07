@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
 use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12Object, Device};
+use crate::{D3D12Object, Device, Event};
 
 pub struct FenceBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -78,6 +78,18 @@ impl<'a> FenceBuilder<'a> {
 pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
+    pub unsafe fn signal(&self, value: u64) -> raw::windows::Result<()> {
+        self.0.Signal(value).ok()
+    }
+
+    pub unsafe fn set_event_on_completion(
+        &self,
+        value: u64,
+        event: &Event,
+    ) -> raw::windows::Result<()> {
+        self.0.SetEventOnCompletion(value, event.0).ok()
+    }
+
     pub fn raw(&self) -> &ID3D12Fence {
         &self.0
     }

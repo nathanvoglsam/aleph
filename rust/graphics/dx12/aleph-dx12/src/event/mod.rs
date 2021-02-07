@@ -74,7 +74,7 @@ impl EventBuilder {
 }
 
 #[repr(transparent)]
-pub struct Event(HANDLE);
+pub struct Event(pub(crate) HANDLE);
 
 impl Event {
     pub fn builder() -> EventBuilder {

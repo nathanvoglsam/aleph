@@ -31,7 +31,7 @@ use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandQueue, ID3D12Device4, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandListType, D3D12DeviceChild, D3D12Object, Device};
+use crate::{CommandListType, D3D12DeviceChild, D3D12Object, Device, Fence};
 
 pub struct CommandQueueBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -72,6 +72,10 @@ impl<'a> CommandQueueBuilder<'a> {
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
+    pub unsafe fn signal(&self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
+        self.0.Signal(&fence.0, value).ok()
+    }
+
     pub fn raw(&self) -> &ID3D12CommandQueue {
         &self.0
     }
