@@ -87,25 +87,29 @@ impl Engine {
 
         // First thing we do is initialize the log backend so everything can log from now on
         aleph_logger::init();
-        aleph_log::info!("Aleph Engine Starting");
         aleph_log::info!("");
+        aleph_log::info!("Aleph Engine Starting");
 
         // Init the profiler and mark the first frame
         optick::next_frame();
 
         // Print info about the specific app to the log so we know what game and version we're on
+        aleph_log::info!("");
         Engine::log_app_info(&app_info);
         aleph_log::info!("");
 
         // Print engine info to the log so we know what engine version we're running on
+        aleph_log::info!("");
         Engine::log_engine_info();
         aleph_log::info!("");
 
         // Print some system info to the log so we know what we were running on
+        aleph_log::info!("");
         Engine::log_cpu_info();
         aleph_log::info!("");
 
         // Initialize the thread pools
+        aleph_log::info!("");
         Engine::init_thread_pools();
         aleph_log::info!("");
 
@@ -172,7 +176,9 @@ impl Engine {
                 .expect("Failed to create D3D12 device")
         };
 
+        aleph_log::info!("");
         Self::log_gpu_info(&dxgi_adapter);
+        aleph_log::info!("");
 
         let queue = unsafe {
             device
