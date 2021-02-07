@@ -82,6 +82,8 @@ fn main() {
 
     // Recursively walk the module tree
     handle_module(&output_dir, Vec::new(), &module);
+
+    println!("cargo:rerun-if-changed=build.rs");
 }
 
 #[cfg(target_os = "windows")]
