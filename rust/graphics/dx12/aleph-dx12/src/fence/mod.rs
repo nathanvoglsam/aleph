@@ -31,19 +31,13 @@ use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
 use crate::raw::windows::{Abi, Interface};
 use crate::{D3D12Object, Device};
 
-pub struct FenceBuilder {
-    initial_value: u64,
-    flags: D3D12_FENCE_FLAGS,
+pub struct FenceBuilder<'a> {
+    pub(crate) device: &'a Device,
+    pub(crate) initial_value: u64,
+    pub(crate) flags: D3D12_FENCE_FLAGS,
 }
 
-impl FenceBuilder {
-    pub fn new() -> Self {
-        Self {
-            initial_value: 0,
-            flags: D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NONE,
-        }
-    }
-
+impl<'a> FenceBuilder<'a> {
     pub fn shared(mut self) -> Self {
         self.flags.0 |= D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_SHARED.0;
         self
@@ -64,13 +58,13 @@ impl FenceBuilder {
         self
     }
 
-    pub unsafe fn build(self, device: &Device) -> raw::windows::Result<Fence> {
+    pub unsafe fn build(self) -> raw::windows::Result<Fence> {
         let mut fence: Option<ID3D12Fence> = None;
-        device
-            .raw()
+        self.device
+            .0
             .CreateFence(
                 self.initial_value,
-                D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NONE,
+                self.flags,
                 &ID3D12Fence::IID,
                 fence.set_abi(),
             )
@@ -84,10 +78,6 @@ impl FenceBuilder {
 pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
-    pub fn builder() -> FenceBuilder {
-        FenceBuilder::new()
-    }
-
     pub fn raw(&self) -> &ID3D12Fence {
         &self.0
     }

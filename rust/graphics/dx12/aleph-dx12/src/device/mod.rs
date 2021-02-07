@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel};
+use crate::{CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -56,6 +56,14 @@ impl Device {
             device: self,
             priority: 0,
             queue_type: None,
+            flags: Default::default(),
+        }
+    }
+
+    pub fn fence_builder<'a>(&'a self) -> FenceBuilder<'a> {
+        FenceBuilder::<'a> {
+            device: self,
+            initial_value: 0,
             flags: Default::default(),
         }
     }

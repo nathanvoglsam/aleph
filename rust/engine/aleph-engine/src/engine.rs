@@ -184,7 +184,7 @@ impl Engine {
         };
 
         let event = dx12::Event::builder().build().unwrap();
-        let fence = unsafe { dx12::Fence::builder().build(&device).unwrap() };
+        let fence = unsafe { device.fence_builder().build().unwrap() };
 
         let drawable_size = Window::drawable_size();
         let mut swapchain = unsafe {
