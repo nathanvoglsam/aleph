@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
+use crate::raw::windows::win32::direct3d12::{ID3D12Device4, ID3D12Fence, D3D12_FENCE_FLAGS};
 use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12Object, Device, Event};
+use crate::{D3D12DeviceChild, D3D12Object, Device, Event};
 
 pub struct FenceBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -98,5 +98,15 @@ impl Fence {
 impl D3D12Object for Fence {
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
         self.0.SetName(name.as_ptr()).ok()
+    }
+}
+
+impl D3D12DeviceChild for Fence {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let mut device: Option<ID3D12Device4> = None;
+        self.0
+            .GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
     }
 }
