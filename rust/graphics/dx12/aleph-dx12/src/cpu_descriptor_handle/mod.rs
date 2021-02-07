@@ -50,3 +50,9 @@ impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
         }
     }
 }
+
+impl From<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
+    fn from(v: D3D12_CPU_DESCRIPTOR_HANDLE) -> Self {
+        Self(v.ptr)
+    }
+}
