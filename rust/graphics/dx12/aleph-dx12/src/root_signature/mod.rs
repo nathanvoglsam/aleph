@@ -29,9 +29,10 @@
 
 use crate::raw::windows::win32::direct3d11::ID3DBlob;
 use crate::raw::windows::win32::direct3d12::{
-    D3D12SerializeVersionedRootSignature, ID3D12RootSignature,
+    D3D12SerializeVersionedRootSignature, ID3D12Device4, ID3D12RootSignature,
 };
-use crate::VersionedRootSignatureDesc;
+use crate::raw::windows::{Abi, Interface};
+use crate::{D3D12DeviceChild, D3D12Object, Device, VersionedRootSignatureDesc};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -83,5 +84,21 @@ impl RootSignature {
 
     pub fn raw(&self) -> &ID3D12RootSignature {
         &self.0
+    }
+}
+
+impl D3D12Object for RootSignature {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.0.SetName(name.as_ptr()).ok()
+    }
+}
+
+impl D3D12DeviceChild for RootSignature {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let mut device: Option<ID3D12Device4> = None;
+        self.0
+            .GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
     }
 }

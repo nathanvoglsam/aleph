@@ -40,3 +40,8 @@ pub trait D3D12Object {
     /// UTF16 string
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()>;
 }
+
+/// Represents the `ID3D12DeviceChild` interface mapped to a rust trait
+pub trait D3D12DeviceChild {
+    unsafe fn get_device(&self) -> raw::windows::Result<crate::Device>;
+}

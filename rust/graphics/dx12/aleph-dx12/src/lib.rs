@@ -70,6 +70,7 @@ pub use feature_level::FeatureLevel;
 pub use fence::Fence;
 pub use fence::FenceBuilder;
 pub use gpu_descriptor_handle::GPUDescriptorHandle;
+pub use interfaces::D3D12DeviceChild;
 pub use interfaces::D3D12Object;
 pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
 pub use pipeline_state_stream::ToPipelineStateStream;

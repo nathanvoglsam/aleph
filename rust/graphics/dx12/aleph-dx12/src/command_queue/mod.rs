@@ -98,3 +98,13 @@ impl D3D12Object for CommandQueue {
         self.0.SetName(name.as_ptr()).ok()
     }
 }
+
+impl D3D12DeviceChild for CommandQueue {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let mut device: Option<ID3D12Device4> = None;
+        self.0
+            .GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
+    }
+}
