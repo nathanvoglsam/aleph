@@ -148,26 +148,10 @@ impl Engine {
 
         // Enable debug layers if requested
         let _debug = unsafe {
-            if args.is_present("GPU_DEBUG") {
-                log::trace!("D3D12 debug layers requested");
-                if let Ok(debug) = dx12::Debug::new() {
-                    debug.enable_debug_layer();
-                    log::trace!("D3D12 debug layers enabled");
-                    if args.is_present("GPU_VALIDATION") {
-                        log::trace!("D3D12 gpu validation requested");
-                        if debug.set_enable_gpu_validation(true).is_ok() {
-                            log::trace!("D3D12 gpu validation enabled");
-                        } else {
-                            log::trace!("D3D12 gpu validation not enabled");
-                        }
-                    }
-                    Some(debug)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
+            setup_debug_layer(
+                args.is_present("GPU_DEBUG"),
+                args.is_present("GPU_VALIDATION"),
+            );
         };
 
         log::trace!("Creating D3D12Device");
@@ -458,6 +442,29 @@ impl Engine {
             "Short Running thread pool initialized with {} threads",
             short_threads
         );
+    }
+}
+
+unsafe fn setup_debug_layer(gpu_debug: bool, gpu_validation: bool) -> Option<dx12::Debug> {
+    if gpu_debug {
+        log::trace!("D3D12 debug layers requested");
+        if let Ok(debug) = dx12::Debug::new() {
+            debug.enable_debug_layer();
+            log::trace!("D3D12 debug layers enabled");
+            if gpu_validation {
+                log::trace!("D3D12 gpu validation requested");
+                if debug.set_enable_gpu_validation(true).is_ok() {
+                    log::trace!("D3D12 gpu validation enabled");
+                } else {
+                    log::trace!("D3D12 gpu validation not enabled");
+                }
+            }
+            Some(debug)
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }
 
