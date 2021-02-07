@@ -102,7 +102,7 @@ impl D3D11_BUFFER_DESC {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_DESC {
     type Abi = D3D11_BUFFER_DESC_abi;
 }
-impl ::core::default::Default for D3D11_BUFFER_DESC {
+impl ::std::default::Default for D3D11_BUFFER_DESC {
     fn default() -> Self {
         Self {
             byte_width: 0,
@@ -114,7 +114,7 @@ impl ::core::default::Default for D3D11_BUFFER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_DESC {
+impl ::std::fmt::Debug for D3D11_BUFFER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_DESC")
             .field("byte_width", &format_args!("{:?}", self.byte_width))
@@ -132,7 +132,7 @@ impl ::core::fmt::Debug for D3D11_BUFFER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_DESC {
+impl ::std::clone::Clone for D3D11_BUFFER_DESC {
     fn clone(&self) -> Self {
         Self {
             byte_width: self.byte_width,
@@ -159,7 +159,7 @@ impl D3D11_SUBRESOURCE_DATA {}
 unsafe impl ::windows::Abi for D3D11_SUBRESOURCE_DATA {
     type Abi = D3D11_SUBRESOURCE_DATA_abi;
 }
-impl ::core::default::Default for D3D11_SUBRESOURCE_DATA {
+impl ::std::default::Default for D3D11_SUBRESOURCE_DATA {
     fn default() -> Self {
         Self {
             p_sys_mem: ::std::ptr::null_mut(),
@@ -168,7 +168,7 @@ impl ::core::default::Default for D3D11_SUBRESOURCE_DATA {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_SUBRESOURCE_DATA {
+impl ::std::fmt::Debug for D3D11_SUBRESOURCE_DATA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SUBRESOURCE_DATA")
             .field("p_sys_mem", &format_args!("{:?}", self.p_sys_mem))
@@ -180,7 +180,7 @@ impl ::core::fmt::Debug for D3D11_SUBRESOURCE_DATA {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_SUBRESOURCE_DATA {
+impl ::std::clone::Clone for D3D11_SUBRESOURCE_DATA {
     fn clone(&self) -> Self {
         Self {
             p_sys_mem: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_sys_mem),
@@ -694,7 +694,7 @@ impl D3D11_TEXTURE1D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE1D_DESC {
     type Abi = D3D11_TEXTURE1D_DESC_abi;
 }
-impl ::core::default::Default for D3D11_TEXTURE1D_DESC {
+impl ::std::default::Default for D3D11_TEXTURE1D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -708,7 +708,7 @@ impl ::core::default::Default for D3D11_TEXTURE1D_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEXTURE1D_DESC {
+impl ::std::fmt::Debug for D3D11_TEXTURE1D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE1D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -725,7 +725,7 @@ impl ::core::fmt::Debug for D3D11_TEXTURE1D_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEXTURE1D_DESC {
+impl ::std::clone::Clone for D3D11_TEXTURE1D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -948,7 +948,7 @@ impl D3D11_TEXTURE2D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE2D_DESC {
     type Abi = D3D11_TEXTURE2D_DESC_abi;
 }
-impl ::core::default::Default for D3D11_TEXTURE2D_DESC {
+impl ::std::default::Default for D3D11_TEXTURE2D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -964,7 +964,7 @@ impl ::core::default::Default for D3D11_TEXTURE2D_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEXTURE2D_DESC {
+impl ::std::fmt::Debug for D3D11_TEXTURE2D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE2D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -983,7 +983,7 @@ impl ::core::fmt::Debug for D3D11_TEXTURE2D_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEXTURE2D_DESC {
+impl ::std::clone::Clone for D3D11_TEXTURE2D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -1208,7 +1208,7 @@ impl D3D11_TEXTURE3D_DESC {}
 unsafe impl ::windows::Abi for D3D11_TEXTURE3D_DESC {
     type Abi = D3D11_TEXTURE3D_DESC_abi;
 }
-impl ::core::default::Default for D3D11_TEXTURE3D_DESC {
+impl ::std::default::Default for D3D11_TEXTURE3D_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -1223,7 +1223,7 @@ impl ::core::default::Default for D3D11_TEXTURE3D_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEXTURE3D_DESC {
+impl ::std::fmt::Debug for D3D11_TEXTURE3D_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXTURE3D_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -1241,7 +1241,7 @@ impl ::core::fmt::Debug for D3D11_TEXTURE3D_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEXTURE3D_DESC {
+impl ::std::clone::Clone for D3D11_TEXTURE3D_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -1527,7 +1527,7 @@ impl D3D11_BUFFER_SRV {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_SRV {
     type Abi = D3D11_BUFFER_SRV_abi;
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_SRV {
+impl ::std::fmt::Debug for D3D11_BUFFER_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_SRV")
             .field("anonymous1", &format_args!("{:?}", self.anonymous1))
@@ -1535,7 +1535,7 @@ impl ::core::fmt::Debug for D3D11_BUFFER_SRV {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_BUFFER_SRV {
+impl ::std::default::Default for D3D11_BUFFER_SRV {
     fn default() -> Self {
         Self {
             anonymous1: ::std::default::Default::default(),
@@ -1543,7 +1543,7 @@ impl ::core::default::Default for D3D11_BUFFER_SRV {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_SRV {
+impl ::std::clone::Clone for D3D11_BUFFER_SRV {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -1556,8 +1556,8 @@ impl ::core::clone::Clone for D3D11_BUFFER_SRV {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_BUFFER_SRV_1 {
-    pub first_element: ::core::mem::ManuallyDrop<u32>,
-    pub element_offset: ::core::mem::ManuallyDrop<u32>,
+    pub first_element: ::std::mem::ManuallyDrop<u32>,
+    pub element_offset: ::std::mem::ManuallyDrop<u32>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -1567,17 +1567,17 @@ impl D3D11_BUFFER_SRV_1 {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_SRV_1 {
     type Abi = D3D11_BUFFER_SRV_1_abi;
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_SRV_1 {
+impl ::std::fmt::Debug for D3D11_BUFFER_SRV_1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_SRV_1").finish()
     }
 }
-impl ::core::default::Default for D3D11_BUFFER_SRV_1 {
+impl ::std::default::Default for D3D11_BUFFER_SRV_1 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_SRV_1 {
+impl ::std::clone::Clone for D3D11_BUFFER_SRV_1 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -1601,7 +1601,7 @@ impl D3D11_TEX1D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_SRV {
     type Abi = D3D11_TEX1D_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_SRV {
+impl ::std::default::Default for D3D11_TEX1D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1609,7 +1609,7 @@ impl ::core::default::Default for D3D11_TEX1D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_SRV {
+impl ::std::fmt::Debug for D3D11_TEX1D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_SRV")
             .field(
@@ -1620,7 +1620,7 @@ impl ::core::fmt::Debug for D3D11_TEX1D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_SRV {
+impl ::std::clone::Clone for D3D11_TEX1D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1645,7 +1645,7 @@ impl D3D11_TEX1D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_SRV {
     type Abi = D3D11_TEX1D_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_ARRAY_SRV {
+impl ::std::default::Default for D3D11_TEX1D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1655,7 +1655,7 @@ impl ::core::default::Default for D3D11_TEX1D_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_SRV")
             .field(
@@ -1671,7 +1671,7 @@ impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_SRV {
+impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1696,7 +1696,7 @@ impl D3D11_TEX2D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_SRV {
     type Abi = D3D11_TEX2D_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_SRV {
+impl ::std::default::Default for D3D11_TEX2D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1704,7 +1704,7 @@ impl ::core::default::Default for D3D11_TEX2D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_SRV {
+impl ::std::fmt::Debug for D3D11_TEX2D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_SRV")
             .field(
@@ -1715,7 +1715,7 @@ impl ::core::fmt::Debug for D3D11_TEX2D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_SRV {
+impl ::std::clone::Clone for D3D11_TEX2D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1740,7 +1740,7 @@ impl D3D11_TEX2D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_SRV {
     type Abi = D3D11_TEX2D_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_ARRAY_SRV {
+impl ::std::default::Default for D3D11_TEX2D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1750,7 +1750,7 @@ impl ::core::default::Default for D3D11_TEX2D_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_SRV")
             .field(
@@ -1766,7 +1766,7 @@ impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_SRV {
+impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1790,14 +1790,14 @@ impl D3D11_TEX2DMS_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_SRV {
     type Abi = D3D11_TEX2DMS_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_SRV {
+impl ::std::default::Default for D3D11_TEX2DMS_SRV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_SRV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_SRV")
             .field(
@@ -1807,7 +1807,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_SRV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_SRV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -1829,7 +1829,7 @@ impl D3D11_TEX2DMS_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_SRV {
     type Abi = D3D11_TEX2DMS_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -1837,7 +1837,7 @@ impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_SRV")
             .field(
@@ -1848,7 +1848,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_SRV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -1871,7 +1871,7 @@ impl D3D11_TEX3D_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_SRV {
     type Abi = D3D11_TEX3D_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEX3D_SRV {
+impl ::std::default::Default for D3D11_TEX3D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1879,7 +1879,7 @@ impl ::core::default::Default for D3D11_TEX3D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX3D_SRV {
+impl ::std::fmt::Debug for D3D11_TEX3D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_SRV")
             .field(
@@ -1890,7 +1890,7 @@ impl ::core::fmt::Debug for D3D11_TEX3D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX3D_SRV {
+impl ::std::clone::Clone for D3D11_TEX3D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1913,7 +1913,7 @@ impl D3D11_TEXCUBE_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEXCUBE_SRV {
     type Abi = D3D11_TEXCUBE_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEXCUBE_SRV {
+impl ::std::default::Default for D3D11_TEXCUBE_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1921,7 +1921,7 @@ impl ::core::default::Default for D3D11_TEXCUBE_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEXCUBE_SRV {
+impl ::std::fmt::Debug for D3D11_TEXCUBE_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXCUBE_SRV")
             .field(
@@ -1932,7 +1932,7 @@ impl ::core::fmt::Debug for D3D11_TEXCUBE_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEXCUBE_SRV {
+impl ::std::clone::Clone for D3D11_TEXCUBE_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -1957,7 +1957,7 @@ impl D3D11_TEXCUBE_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D11_TEXCUBE_ARRAY_SRV {
     type Abi = D3D11_TEXCUBE_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::std::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -1967,7 +1967,7 @@ impl ::core::default::Default for D3D11_TEXCUBE_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEXCUBE_ARRAY_SRV")
             .field(
@@ -1983,7 +1983,7 @@ impl ::core::fmt::Debug for D3D11_TEXCUBE_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEXCUBE_ARRAY_SRV {
+impl ::std::clone::Clone for D3D11_TEXCUBE_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -2009,7 +2009,7 @@ impl D3D11_BUFFEREX_SRV {}
 unsafe impl ::windows::Abi for D3D11_BUFFEREX_SRV {
     type Abi = D3D11_BUFFEREX_SRV_abi;
 }
-impl ::core::default::Default for D3D11_BUFFEREX_SRV {
+impl ::std::default::Default for D3D11_BUFFEREX_SRV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -2018,7 +2018,7 @@ impl ::core::default::Default for D3D11_BUFFEREX_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_BUFFEREX_SRV {
+impl ::std::fmt::Debug for D3D11_BUFFEREX_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFEREX_SRV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -2027,7 +2027,7 @@ impl ::core::fmt::Debug for D3D11_BUFFEREX_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFEREX_SRV {
+impl ::std::clone::Clone for D3D11_BUFFEREX_SRV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -2056,7 +2056,7 @@ impl D3D11_SHADER_RESOURCE_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D11_SHADER_RESOURCE_VIEW_DESC {
     type Abi = D3D11_SHADER_RESOURCE_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SHADER_RESOURCE_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -2065,7 +2065,7 @@ impl ::core::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -2074,7 +2074,7 @@ impl ::core::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -2087,17 +2087,17 @@ impl ::core::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_SRV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_SRV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_SRV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_SRV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_SRV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_SRV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_SRV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_SRV>,
-    pub texture_cube: ::core::mem::ManuallyDrop<D3D11_TEXCUBE_SRV>,
-    pub texture_cube_array: ::core::mem::ManuallyDrop<D3D11_TEXCUBE_ARRAY_SRV>,
-    pub buffer_ex: ::core::mem::ManuallyDrop<D3D11_BUFFEREX_SRV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D11_BUFFER_SRV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D11_TEX1D_SRV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_SRV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D11_TEX2D_SRV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_SRV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_SRV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_SRV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D11_TEX3D_SRV>,
+    pub texture_cube: ::std::mem::ManuallyDrop<D3D11_TEXCUBE_SRV>,
+    pub texture_cube_array: ::std::mem::ManuallyDrop<D3D11_TEXCUBE_ARRAY_SRV>,
+    pub buffer_ex: ::std::mem::ManuallyDrop<D3D11_BUFFEREX_SRV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -2119,18 +2119,18 @@ impl D3D11_SHADER_RESOURCE_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
     type Abi = D3D11_SHADER_RESOURCE_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SHADER_RESOURCE_VIEW_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::default::Default for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D11_SHADER_RESOURCE_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -2519,7 +2519,7 @@ impl D3D11_BUFFER_UAV {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_UAV {
     type Abi = D3D11_BUFFER_UAV_abi;
 }
-impl ::core::default::Default for D3D11_BUFFER_UAV {
+impl ::std::default::Default for D3D11_BUFFER_UAV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -2528,7 +2528,7 @@ impl ::core::default::Default for D3D11_BUFFER_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_UAV {
+impl ::std::fmt::Debug for D3D11_BUFFER_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_UAV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -2537,7 +2537,7 @@ impl ::core::fmt::Debug for D3D11_BUFFER_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_UAV {
+impl ::std::clone::Clone for D3D11_BUFFER_UAV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -2560,19 +2560,19 @@ impl D3D11_TEX1D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_UAV {
     type Abi = D3D11_TEX1D_UAV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_UAV {
+impl ::std::default::Default for D3D11_TEX1D_UAV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_UAV {
+impl ::std::fmt::Debug for D3D11_TEX1D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_UAV {
+impl ::std::clone::Clone for D3D11_TEX1D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2595,7 +2595,7 @@ impl D3D11_TEX1D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_UAV {
     type Abi = D3D11_TEX1D_ARRAY_UAV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_ARRAY_UAV {
+impl ::std::default::Default for D3D11_TEX1D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2604,7 +2604,7 @@ impl ::core::default::Default for D3D11_TEX1D_ARRAY_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
+impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2616,7 +2616,7 @@ impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_UAV {
+impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2639,19 +2639,19 @@ impl D3D11_TEX2D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_UAV {
     type Abi = D3D11_TEX2D_UAV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_UAV {
+impl ::std::default::Default for D3D11_TEX2D_UAV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_UAV {
+impl ::std::fmt::Debug for D3D11_TEX2D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_UAV {
+impl ::std::clone::Clone for D3D11_TEX2D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2674,7 +2674,7 @@ impl D3D11_TEX2D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_UAV {
     type Abi = D3D11_TEX2D_ARRAY_UAV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_ARRAY_UAV {
+impl ::std::default::Default for D3D11_TEX2D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2683,7 +2683,7 @@ impl ::core::default::Default for D3D11_TEX2D_ARRAY_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
+impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2695,7 +2695,7 @@ impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_UAV {
+impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2720,7 +2720,7 @@ impl D3D11_TEX3D_UAV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_UAV {
     type Abi = D3D11_TEX3D_UAV_abi;
 }
-impl ::core::default::Default for D3D11_TEX3D_UAV {
+impl ::std::default::Default for D3D11_TEX3D_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -2729,7 +2729,7 @@ impl ::core::default::Default for D3D11_TEX3D_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX3D_UAV {
+impl ::std::fmt::Debug for D3D11_TEX3D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -2738,7 +2738,7 @@ impl ::core::fmt::Debug for D3D11_TEX3D_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX3D_UAV {
+impl ::std::clone::Clone for D3D11_TEX3D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -2767,7 +2767,7 @@ impl D3D11_UNORDERED_ACCESS_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D11_UNORDERED_ACCESS_VIEW_DESC {
     type Abi = D3D11_UNORDERED_ACCESS_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_UNORDERED_ACCESS_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -2776,7 +2776,7 @@ impl ::core::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -2785,7 +2785,7 @@ impl ::core::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -2798,12 +2798,12 @@ impl ::core::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_UAV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_UAV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_UAV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_UAV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_UAV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_UAV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D11_BUFFER_UAV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D11_TEX1D_UAV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_UAV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D11_TEX2D_UAV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_UAV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D11_TEX3D_UAV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -2820,18 +2820,18 @@ impl D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
     type Abi = D3D11_UNORDERED_ACCESS_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_UNORDERED_ACCESS_VIEW_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::default::Default for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D11_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3075,7 +3075,7 @@ impl D3D11_BUFFER_RTV {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_RTV {
     type Abi = D3D11_BUFFER_RTV_abi;
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_RTV {
+impl ::std::fmt::Debug for D3D11_BUFFER_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_RTV")
             .field("anonymous1", &format_args!("{:?}", self.anonymous1))
@@ -3083,7 +3083,7 @@ impl ::core::fmt::Debug for D3D11_BUFFER_RTV {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_BUFFER_RTV {
+impl ::std::default::Default for D3D11_BUFFER_RTV {
     fn default() -> Self {
         Self {
             anonymous1: ::std::default::Default::default(),
@@ -3091,7 +3091,7 @@ impl ::core::default::Default for D3D11_BUFFER_RTV {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_RTV {
+impl ::std::clone::Clone for D3D11_BUFFER_RTV {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3104,8 +3104,8 @@ impl ::core::clone::Clone for D3D11_BUFFER_RTV {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_BUFFER_RTV_1 {
-    pub first_element: ::core::mem::ManuallyDrop<u32>,
-    pub element_offset: ::core::mem::ManuallyDrop<u32>,
+    pub first_element: ::std::mem::ManuallyDrop<u32>,
+    pub element_offset: ::std::mem::ManuallyDrop<u32>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -3115,17 +3115,17 @@ impl D3D11_BUFFER_RTV_1 {}
 unsafe impl ::windows::Abi for D3D11_BUFFER_RTV_1 {
     type Abi = D3D11_BUFFER_RTV_1_abi;
 }
-impl ::core::fmt::Debug for D3D11_BUFFER_RTV_1 {
+impl ::std::fmt::Debug for D3D11_BUFFER_RTV_1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BUFFER_RTV_1").finish()
     }
 }
-impl ::core::default::Default for D3D11_BUFFER_RTV_1 {
+impl ::std::default::Default for D3D11_BUFFER_RTV_1 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_BUFFER_RTV_1 {
+impl ::std::clone::Clone for D3D11_BUFFER_RTV_1 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3148,19 +3148,19 @@ impl D3D11_TEX1D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_RTV {
     type Abi = D3D11_TEX1D_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_RTV {
+impl ::std::default::Default for D3D11_TEX1D_RTV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_RTV {
+impl ::std::fmt::Debug for D3D11_TEX1D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_RTV {
+impl ::std::clone::Clone for D3D11_TEX1D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3183,7 +3183,7 @@ impl D3D11_TEX1D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_RTV {
     type Abi = D3D11_TEX1D_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_ARRAY_RTV {
+impl ::std::default::Default for D3D11_TEX1D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3192,7 +3192,7 @@ impl ::core::default::Default for D3D11_TEX1D_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3204,7 +3204,7 @@ impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_RTV {
+impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3227,19 +3227,19 @@ impl D3D11_TEX2D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_RTV {
     type Abi = D3D11_TEX2D_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_RTV {
+impl ::std::default::Default for D3D11_TEX2D_RTV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_RTV {
+impl ::std::fmt::Debug for D3D11_TEX2D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_RTV {
+impl ::std::clone::Clone for D3D11_TEX2D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3262,7 +3262,7 @@ impl D3D11_TEX2D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_RTV {
     type Abi = D3D11_TEX2D_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_ARRAY_RTV {
+impl ::std::default::Default for D3D11_TEX2D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3271,7 +3271,7 @@ impl ::core::default::Default for D3D11_TEX2D_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3283,7 +3283,7 @@ impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_RTV {
+impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3306,14 +3306,14 @@ impl D3D11_TEX2DMS_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_RTV {
     type Abi = D3D11_TEX2DMS_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_RTV {
+impl ::std::default::Default for D3D11_TEX2DMS_RTV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_RTV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_RTV")
             .field(
@@ -3323,7 +3323,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_RTV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_RTV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -3345,7 +3345,7 @@ impl D3D11_TEX2DMS_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_RTV {
     type Abi = D3D11_TEX2DMS_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -3353,7 +3353,7 @@ impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_RTV")
             .field(
@@ -3364,7 +3364,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_RTV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -3388,7 +3388,7 @@ impl D3D11_TEX3D_RTV {}
 unsafe impl ::windows::Abi for D3D11_TEX3D_RTV {
     type Abi = D3D11_TEX3D_RTV_abi;
 }
-impl ::core::default::Default for D3D11_TEX3D_RTV {
+impl ::std::default::Default for D3D11_TEX3D_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3397,7 +3397,7 @@ impl ::core::default::Default for D3D11_TEX3D_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX3D_RTV {
+impl ::std::fmt::Debug for D3D11_TEX3D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX3D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3406,7 +3406,7 @@ impl ::core::fmt::Debug for D3D11_TEX3D_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX3D_RTV {
+impl ::std::clone::Clone for D3D11_TEX3D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3435,7 +3435,7 @@ impl D3D11_RENDER_TARGET_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_VIEW_DESC {
     type Abi = D3D11_RENDER_TARGET_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC {
+impl ::std::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RENDER_TARGET_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -3444,7 +3444,7 @@ impl ::core::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_RENDER_TARGET_VIEW_DESC {
+impl ::std::default::Default for D3D11_RENDER_TARGET_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -3453,7 +3453,7 @@ impl ::core::default::Default for D3D11_RENDER_TARGET_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC {
+impl ::std::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3466,14 +3466,14 @@ impl ::core::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_RENDER_TARGET_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D11_BUFFER_RTV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_RTV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_RTV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_RTV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_RTV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_RTV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_RTV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D11_TEX3D_RTV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D11_BUFFER_RTV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D11_TEX1D_RTV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_RTV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D11_TEX2D_RTV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_RTV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_RTV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_RTV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D11_TEX3D_RTV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -3492,17 +3492,17 @@ impl D3D11_RENDER_TARGET_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_VIEW_DESC_0 {
     type Abi = D3D11_RENDER_TARGET_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D11_RENDER_TARGET_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RENDER_TARGET_VIEW_DESC_0").finish()
     }
 }
-impl ::core::default::Default for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::default::Default for D3D11_RENDER_TARGET_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D11_RENDER_TARGET_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3745,19 +3745,19 @@ impl D3D11_TEX1D_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_DSV {
     type Abi = D3D11_TEX1D_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_DSV {
+impl ::std::default::Default for D3D11_TEX1D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_DSV {
+impl ::std::fmt::Debug for D3D11_TEX1D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_DSV {
+impl ::std::clone::Clone for D3D11_TEX1D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3780,7 +3780,7 @@ impl D3D11_TEX1D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX1D_ARRAY_DSV {
     type Abi = D3D11_TEX1D_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX1D_ARRAY_DSV {
+impl ::std::default::Default for D3D11_TEX1D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3789,7 +3789,7 @@ impl ::core::default::Default for D3D11_TEX1D_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX1D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3801,7 +3801,7 @@ impl ::core::fmt::Debug for D3D11_TEX1D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX1D_ARRAY_DSV {
+impl ::std::clone::Clone for D3D11_TEX1D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3824,19 +3824,19 @@ impl D3D11_TEX2D_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_DSV {
     type Abi = D3D11_TEX2D_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_DSV {
+impl ::std::default::Default for D3D11_TEX2D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_DSV {
+impl ::std::fmt::Debug for D3D11_TEX2D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_DSV {
+impl ::std::clone::Clone for D3D11_TEX2D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3859,7 +3859,7 @@ impl D3D11_TEX2D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2D_ARRAY_DSV {
     type Abi = D3D11_TEX2D_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2D_ARRAY_DSV {
+impl ::std::default::Default for D3D11_TEX2D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -3868,7 +3868,7 @@ impl ::core::default::Default for D3D11_TEX2D_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -3880,7 +3880,7 @@ impl ::core::fmt::Debug for D3D11_TEX2D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2D_ARRAY_DSV {
+impl ::std::clone::Clone for D3D11_TEX2D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -3903,14 +3903,14 @@ impl D3D11_TEX2DMS_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_DSV {
     type Abi = D3D11_TEX2DMS_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_DSV {
+impl ::std::default::Default for D3D11_TEX2DMS_DSV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_DSV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_DSV")
             .field(
@@ -3920,7 +3920,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_DSV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_DSV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -3942,7 +3942,7 @@ impl D3D11_TEX2DMS_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D11_TEX2DMS_ARRAY_DSV {
     type Abi = D3D11_TEX2DMS_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::std::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -3950,7 +3950,7 @@ impl ::core::default::Default for D3D11_TEX2DMS_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_TEX2DMS_ARRAY_DSV")
             .field(
@@ -3961,7 +3961,7 @@ impl ::core::fmt::Debug for D3D11_TEX2DMS_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_TEX2DMS_ARRAY_DSV {
+impl ::std::clone::Clone for D3D11_TEX2DMS_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -3991,7 +3991,7 @@ impl D3D11_DEPTH_STENCIL_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_VIEW_DESC {
     type Abi = D3D11_DEPTH_STENCIL_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCIL_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -4001,7 +4001,7 @@ impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -4011,7 +4011,7 @@ impl ::core::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -4024,12 +4024,12 @@ impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
-    pub texture1d: ::core::mem::ManuallyDrop<D3D11_TEX1D_DSV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_DSV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D11_TEX2D_DSV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_DSV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_DSV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_DSV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D11_TEX1D_DSV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D11_TEX1D_ARRAY_DSV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D11_TEX2D_DSV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D11_TEX2D_ARRAY_DSV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_DSV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D11_TEX2DMS_ARRAY_DSV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -4046,17 +4046,17 @@ impl D3D11_DEPTH_STENCIL_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
     type Abi = D3D11_DEPTH_STENCIL_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCIL_VIEW_DESC_0").finish()
     }
 }
-impl ::core::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::default::Default for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -4308,7 +4308,7 @@ impl D3D11_INPUT_ELEMENT_DESC {}
 unsafe impl ::windows::Abi for D3D11_INPUT_ELEMENT_DESC {
     type Abi = D3D11_INPUT_ELEMENT_DESC_abi;
 }
-impl ::core::default::Default for D3D11_INPUT_ELEMENT_DESC {
+impl ::std::default::Default for D3D11_INPUT_ELEMENT_DESC {
     fn default() -> Self {
         Self {
             semantic_name: ::std::ptr::null_mut(),
@@ -4321,7 +4321,7 @@ impl ::core::default::Default for D3D11_INPUT_ELEMENT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
+impl ::std::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_INPUT_ELEMENT_DESC")
             .field("semantic_name", &format_args!("{:?}", self.semantic_name))
@@ -4343,7 +4343,7 @@ impl ::core::fmt::Debug for D3D11_INPUT_ELEMENT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_INPUT_ELEMENT_DESC {
+impl ::std::clone::Clone for D3D11_INPUT_ELEMENT_DESC {
     fn clone(&self) -> Self {
         Self {
             semantic_name: self.semantic_name,
@@ -4507,7 +4507,7 @@ impl D3D11_CLASS_INSTANCE_DESC {}
 unsafe impl ::windows::Abi for D3D11_CLASS_INSTANCE_DESC {
     type Abi = D3D11_CLASS_INSTANCE_DESC_abi;
 }
-impl ::core::default::Default for D3D11_CLASS_INSTANCE_DESC {
+impl ::std::default::Default for D3D11_CLASS_INSTANCE_DESC {
     fn default() -> Self {
         Self {
             instance_id: 0,
@@ -4521,7 +4521,7 @@ impl ::core::default::Default for D3D11_CLASS_INSTANCE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
+impl ::std::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_CLASS_INSTANCE_DESC")
             .field("instance_id", &format_args!("{:?}", self.instance_id))
@@ -4541,7 +4541,7 @@ impl ::core::fmt::Debug for D3D11_CLASS_INSTANCE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_CLASS_INSTANCE_DESC {
+impl ::std::clone::Clone for D3D11_CLASS_INSTANCE_DESC {
     fn clone(&self) -> Self {
         Self {
             instance_id: self.instance_id,
@@ -5204,7 +5204,7 @@ impl D3D11_SO_DECLARATION_ENTRY {}
 unsafe impl ::windows::Abi for D3D11_SO_DECLARATION_ENTRY {
     type Abi = D3D11_SO_DECLARATION_ENTRY_abi;
 }
-impl ::core::default::Default for D3D11_SO_DECLARATION_ENTRY {
+impl ::std::default::Default for D3D11_SO_DECLARATION_ENTRY {
     fn default() -> Self {
         Self {
             stream: 0,
@@ -5216,7 +5216,7 @@ impl ::core::default::Default for D3D11_SO_DECLARATION_ENTRY {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
+impl ::std::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SO_DECLARATION_ENTRY")
             .field("stream", &format_args!("{:?}", self.stream))
@@ -5234,7 +5234,7 @@ impl ::core::fmt::Debug for D3D11_SO_DECLARATION_ENTRY {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_SO_DECLARATION_ENTRY {
+impl ::std::clone::Clone for D3D11_SO_DECLARATION_ENTRY {
     fn clone(&self) -> Self {
         Self {
             stream: self.stream,
@@ -5914,7 +5914,7 @@ impl D3D11_RENDER_TARGET_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_BLEND_DESC {
     type Abi = D3D11_RENDER_TARGET_BLEND_DESC_abi;
 }
-impl ::core::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::std::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
     fn default() -> Self {
         Self {
             blend_enable: ::std::default::Default::default(),
@@ -5928,7 +5928,7 @@ impl ::core::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::std::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RENDER_TARGET_BLEND_DESC")
             .field("blend_enable", &format_args!("{:?}", self.blend_enable))
@@ -5951,7 +5951,7 @@ impl ::core::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_RENDER_TARGET_BLEND_DESC {
+impl ::std::clone::Clone for D3D11_RENDER_TARGET_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             blend_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.blend_enable),
@@ -5984,7 +5984,7 @@ impl D3D11_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D11_BLEND_DESC {
     type Abi = D3D11_BLEND_DESC_abi;
 }
-impl ::core::default::Default for D3D11_BLEND_DESC {
+impl ::std::default::Default for D3D11_BLEND_DESC {
     fn default() -> Self {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
@@ -6002,7 +6002,7 @@ impl ::core::default::Default for D3D11_BLEND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_BLEND_DESC {
+impl ::std::fmt::Debug for D3D11_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BLEND_DESC")
             .field(
@@ -6017,7 +6017,7 @@ impl ::core::fmt::Debug for D3D11_BLEND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_BLEND_DESC {
+impl ::std::clone::Clone for D3D11_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             alpha_to_coverage_enable: <::windows::BOOL as std::clone::Clone>::clone(
@@ -6318,7 +6318,7 @@ impl D3D11_DEPTH_STENCILOP_DESC {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCILOP_DESC {
     type Abi = D3D11_DEPTH_STENCILOP_DESC_abi;
 }
-impl ::core::default::Default for D3D11_DEPTH_STENCILOP_DESC {
+impl ::std::default::Default for D3D11_DEPTH_STENCILOP_DESC {
     fn default() -> Self {
         Self {
             stencil_fail_op: ::std::default::Default::default(),
@@ -6328,7 +6328,7 @@ impl ::core::default::Default for D3D11_DEPTH_STENCILOP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
+impl ::std::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCILOP_DESC")
             .field(
@@ -6347,7 +6347,7 @@ impl ::core::fmt::Debug for D3D11_DEPTH_STENCILOP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_DEPTH_STENCILOP_DESC {
+impl ::std::clone::Clone for D3D11_DEPTH_STENCILOP_DESC {
     fn clone(&self) -> Self {
         Self {
             stencil_fail_op: self.stencil_fail_op,
@@ -6386,7 +6386,7 @@ impl D3D11_DEPTH_STENCIL_DESC {}
 unsafe impl ::windows::Abi for D3D11_DEPTH_STENCIL_DESC {
     type Abi = D3D11_DEPTH_STENCIL_DESC_abi;
 }
-impl ::core::default::Default for D3D11_DEPTH_STENCIL_DESC {
+impl ::std::default::Default for D3D11_DEPTH_STENCIL_DESC {
     fn default() -> Self {
         Self {
             depth_enable: ::std::default::Default::default(),
@@ -6400,7 +6400,7 @@ impl ::core::default::Default for D3D11_DEPTH_STENCIL_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
+impl ::std::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_DEPTH_STENCIL_DESC")
             .field("depth_enable", &format_args!("{:?}", self.depth_enable))
@@ -6423,7 +6423,7 @@ impl ::core::fmt::Debug for D3D11_DEPTH_STENCIL_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_DEPTH_STENCIL_DESC {
+impl ::std::clone::Clone for D3D11_DEPTH_STENCIL_DESC {
     fn clone(&self) -> Self {
         Self {
             depth_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.depth_enable),
@@ -6692,7 +6692,7 @@ impl D3D11_RASTERIZER_DESC {}
 unsafe impl ::windows::Abi for D3D11_RASTERIZER_DESC {
     type Abi = D3D11_RASTERIZER_DESC_abi;
 }
-impl ::core::default::Default for D3D11_RASTERIZER_DESC {
+impl ::std::default::Default for D3D11_RASTERIZER_DESC {
     fn default() -> Self {
         Self {
             fill_mode: ::std::default::Default::default(),
@@ -6708,7 +6708,7 @@ impl ::core::default::Default for D3D11_RASTERIZER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_RASTERIZER_DESC {
+impl ::std::fmt::Debug for D3D11_RASTERIZER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RASTERIZER_DESC")
             .field("fill_mode", &format_args!("{:?}", self.fill_mode))
@@ -6742,7 +6742,7 @@ impl ::core::fmt::Debug for D3D11_RASTERIZER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_RASTERIZER_DESC {
+impl ::std::clone::Clone for D3D11_RASTERIZER_DESC {
     fn clone(&self) -> Self {
         Self {
             fill_mode: self.fill_mode,
@@ -7051,7 +7051,7 @@ impl D3D11_SAMPLER_DESC {}
 unsafe impl ::windows::Abi for D3D11_SAMPLER_DESC {
     type Abi = D3D11_SAMPLER_DESC_abi;
 }
-impl ::core::default::Default for D3D11_SAMPLER_DESC {
+impl ::std::default::Default for D3D11_SAMPLER_DESC {
     fn default() -> Self {
         Self {
             filter: ::std::default::Default::default(),
@@ -7067,7 +7067,7 @@ impl ::core::default::Default for D3D11_SAMPLER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_SAMPLER_DESC {
+impl ::std::fmt::Debug for D3D11_SAMPLER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_SAMPLER_DESC")
             .field("filter", &format_args!("{:?}", self.filter))
@@ -7086,7 +7086,7 @@ impl ::core::fmt::Debug for D3D11_SAMPLER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_SAMPLER_DESC {
+impl ::std::clone::Clone for D3D11_SAMPLER_DESC {
     fn clone(&self) -> Self {
         Self {
             filter: self.filter,
@@ -7309,7 +7309,7 @@ impl D3D11_QUERY_DESC {}
 unsafe impl ::windows::Abi for D3D11_QUERY_DESC {
     type Abi = D3D11_QUERY_DESC_abi;
 }
-impl ::core::default::Default for D3D11_QUERY_DESC {
+impl ::std::default::Default for D3D11_QUERY_DESC {
     fn default() -> Self {
         Self {
             query: ::std::default::Default::default(),
@@ -7317,7 +7317,7 @@ impl ::core::default::Default for D3D11_QUERY_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_QUERY_DESC {
+impl ::std::fmt::Debug for D3D11_QUERY_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_QUERY_DESC")
             .field("query", &format_args!("{:?}", self.query))
@@ -7325,7 +7325,7 @@ impl ::core::fmt::Debug for D3D11_QUERY_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_QUERY_DESC {
+impl ::std::clone::Clone for D3D11_QUERY_DESC {
     fn clone(&self) -> Self {
         Self {
             query: self.query,
@@ -7873,7 +7873,7 @@ impl D3D11_COUNTER_DESC {}
 unsafe impl ::windows::Abi for D3D11_COUNTER_DESC {
     type Abi = D3D11_COUNTER_DESC_abi;
 }
-impl ::core::default::Default for D3D11_COUNTER_DESC {
+impl ::std::default::Default for D3D11_COUNTER_DESC {
     fn default() -> Self {
         Self {
             counter: ::std::default::Default::default(),
@@ -7881,7 +7881,7 @@ impl ::core::default::Default for D3D11_COUNTER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_COUNTER_DESC {
+impl ::std::fmt::Debug for D3D11_COUNTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_COUNTER_DESC")
             .field("counter", &format_args!("{:?}", self.counter))
@@ -7889,7 +7889,7 @@ impl ::core::fmt::Debug for D3D11_COUNTER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_COUNTER_DESC {
+impl ::std::clone::Clone for D3D11_COUNTER_DESC {
     fn clone(&self) -> Self {
         Self {
             counter: self.counter,
@@ -8114,7 +8114,7 @@ impl D3D11_MAPPED_SUBRESOURCE {}
 unsafe impl ::windows::Abi for D3D11_MAPPED_SUBRESOURCE {
     type Abi = D3D11_MAPPED_SUBRESOURCE_abi;
 }
-impl ::core::default::Default for D3D11_MAPPED_SUBRESOURCE {
+impl ::std::default::Default for D3D11_MAPPED_SUBRESOURCE {
     fn default() -> Self {
         Self {
             p_data: ::std::ptr::null_mut(),
@@ -8123,7 +8123,7 @@ impl ::core::default::Default for D3D11_MAPPED_SUBRESOURCE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
+impl ::std::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_MAPPED_SUBRESOURCE")
             .field("p_data", &format_args!("{:?}", self.p_data))
@@ -8132,7 +8132,7 @@ impl ::core::fmt::Debug for D3D11_MAPPED_SUBRESOURCE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_MAPPED_SUBRESOURCE {
+impl ::std::clone::Clone for D3D11_MAPPED_SUBRESOURCE {
     fn clone(&self) -> Self {
         Self {
             p_data: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_data),
@@ -8289,7 +8289,7 @@ impl D3D11_VIEWPORT {}
 unsafe impl ::windows::Abi for D3D11_VIEWPORT {
     type Abi = D3D11_VIEWPORT_abi;
 }
-impl ::core::default::Default for D3D11_VIEWPORT {
+impl ::std::default::Default for D3D11_VIEWPORT {
     fn default() -> Self {
         Self {
             top_leftx: 0.0,
@@ -8301,7 +8301,7 @@ impl ::core::default::Default for D3D11_VIEWPORT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_VIEWPORT {
+impl ::std::fmt::Debug for D3D11_VIEWPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_VIEWPORT")
             .field("top_leftx", &format_args!("{:?}", self.top_leftx))
@@ -8313,7 +8313,7 @@ impl ::core::fmt::Debug for D3D11_VIEWPORT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_VIEWPORT {
+impl ::std::clone::Clone for D3D11_VIEWPORT {
     fn clone(&self) -> Self {
         Self {
             top_leftx: self.top_leftx,
@@ -8344,7 +8344,7 @@ impl D3D11_BOX {}
 unsafe impl ::windows::Abi for D3D11_BOX {
     type Abi = D3D11_BOX_abi;
 }
-impl ::core::default::Default for D3D11_BOX {
+impl ::std::default::Default for D3D11_BOX {
     fn default() -> Self {
         Self {
             left: 0,
@@ -8356,7 +8356,7 @@ impl ::core::default::Default for D3D11_BOX {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_BOX {
+impl ::std::fmt::Debug for D3D11_BOX {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_BOX")
             .field("left", &format_args!("{:?}", self.left))
@@ -8368,7 +8368,7 @@ impl ::core::fmt::Debug for D3D11_BOX {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_BOX {
+impl ::std::clone::Clone for D3D11_BOX {
     fn clone(&self) -> Self {
         Self {
             left: self.left,
@@ -10759,7 +10759,7 @@ impl D3D11_COUNTER_INFO {}
 unsafe impl ::windows::Abi for D3D11_COUNTER_INFO {
     type Abi = D3D11_COUNTER_INFO_abi;
 }
-impl ::core::default::Default for D3D11_COUNTER_INFO {
+impl ::std::default::Default for D3D11_COUNTER_INFO {
     fn default() -> Self {
         Self {
             last_device_dependent_counter: ::std::default::Default::default(),
@@ -10768,7 +10768,7 @@ impl ::core::default::Default for D3D11_COUNTER_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_COUNTER_INFO {
+impl ::std::fmt::Debug for D3D11_COUNTER_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_COUNTER_INFO")
             .field(
@@ -10786,7 +10786,7 @@ impl ::core::fmt::Debug for D3D11_COUNTER_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_COUNTER_INFO {
+impl ::std::clone::Clone for D3D11_COUNTER_INFO {
     fn clone(&self) -> Self {
         Self {
             last_device_dependent_counter: self.last_device_dependent_counter,

@@ -182,7 +182,7 @@ impl DXGI_SAMPLE_DESC {}
 unsafe impl ::windows::Abi for DXGI_SAMPLE_DESC {
     type Abi = DXGI_SAMPLE_DESC_abi;
 }
-impl ::core::default::Default for DXGI_SAMPLE_DESC {
+impl ::std::default::Default for DXGI_SAMPLE_DESC {
     fn default() -> Self {
         Self {
             count: 0,
@@ -190,7 +190,7 @@ impl ::core::default::Default for DXGI_SAMPLE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SAMPLE_DESC {
+impl ::std::fmt::Debug for DXGI_SAMPLE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SAMPLE_DESC")
             .field("count", &format_args!("{:?}", self.count))
@@ -198,7 +198,7 @@ impl ::core::fmt::Debug for DXGI_SAMPLE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SAMPLE_DESC {
+impl ::std::clone::Clone for DXGI_SAMPLE_DESC {
     fn clone(&self) -> Self {
         Self {
             count: self.count,
@@ -277,7 +277,7 @@ impl DXGI_ADAPTER_DESC {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC {
     type Abi = DXGI_ADAPTER_DESC_abi;
 }
-impl ::core::default::Default for DXGI_ADAPTER_DESC {
+impl ::std::default::Default for DXGI_ADAPTER_DESC {
     fn default() -> Self {
         Self {
             description: [
@@ -298,7 +298,7 @@ impl ::core::default::Default for DXGI_ADAPTER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_ADAPTER_DESC {
+impl ::std::fmt::Debug for DXGI_ADAPTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC")
             .field("description", &format_args!("{:?}", self.description))
@@ -322,7 +322,7 @@ impl ::core::fmt::Debug for DXGI_ADAPTER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_ADAPTER_DESC {
+impl ::std::clone::Clone for DXGI_ADAPTER_DESC {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -370,7 +370,7 @@ impl DXGI_ADAPTER_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC1 {
     type Abi = DXGI_ADAPTER_DESC1_abi;
 }
-impl ::core::default::Default for DXGI_ADAPTER_DESC1 {
+impl ::std::default::Default for DXGI_ADAPTER_DESC1 {
     fn default() -> Self {
         Self {
             description: [
@@ -392,7 +392,7 @@ impl ::core::default::Default for DXGI_ADAPTER_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_ADAPTER_DESC1 {
+impl ::std::fmt::Debug for DXGI_ADAPTER_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC1")
             .field("description", &format_args!("{:?}", self.description))
@@ -417,7 +417,7 @@ impl ::core::fmt::Debug for DXGI_ADAPTER_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_ADAPTER_DESC1 {
+impl ::std::clone::Clone for DXGI_ADAPTER_DESC1 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -552,7 +552,7 @@ impl DXGI_ADAPTER_DESC2 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC2 {
     type Abi = DXGI_ADAPTER_DESC2_abi;
 }
-impl ::core::default::Default for DXGI_ADAPTER_DESC2 {
+impl ::std::default::Default for DXGI_ADAPTER_DESC2 {
     fn default() -> Self {
         Self {
             description: [
@@ -576,7 +576,7 @@ impl ::core::default::Default for DXGI_ADAPTER_DESC2 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_ADAPTER_DESC2 {
+impl ::std::fmt::Debug for DXGI_ADAPTER_DESC2 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC2")
             .field("description", &format_args!("{:?}", self.description))
@@ -609,7 +609,7 @@ impl ::core::fmt::Debug for DXGI_ADAPTER_DESC2 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_ADAPTER_DESC2 {
+impl ::std::clone::Clone for DXGI_ADAPTER_DESC2 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -720,7 +720,7 @@ impl DXGI_ADAPTER_DESC3 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC3 {
     type Abi = DXGI_ADAPTER_DESC3_abi;
 }
-impl ::core::default::Default for DXGI_ADAPTER_DESC3 {
+impl ::std::default::Default for DXGI_ADAPTER_DESC3 {
     fn default() -> Self {
         Self {
             description: [
@@ -744,7 +744,7 @@ impl ::core::default::Default for DXGI_ADAPTER_DESC3 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_ADAPTER_DESC3 {
+impl ::std::fmt::Debug for DXGI_ADAPTER_DESC3 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC3")
             .field("description", &format_args!("{:?}", self.description))
@@ -777,7 +777,7 @@ impl ::core::fmt::Debug for DXGI_ADAPTER_DESC3 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_ADAPTER_DESC3 {
+impl ::std::clone::Clone for DXGI_ADAPTER_DESC3 {
     fn clone(&self) -> Self {
         Self {
             description: <[u16; 128usize] as std::clone::Clone>::clone(&self.description),
@@ -1014,19 +1014,19 @@ impl DXGI_DECODE_SWAP_CHAIN_DESC {}
 unsafe impl ::windows::Abi for DXGI_DECODE_SWAP_CHAIN_DESC {
     type Abi = DXGI_DECODE_SWAP_CHAIN_DESC_abi;
 }
-impl ::core::default::Default for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::std::default::Default for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn default() -> Self {
         Self { flags: 0 }
     }
 }
-impl ::core::fmt::Debug for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::std::fmt::Debug for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DECODE_SWAP_CHAIN_DESC")
             .field("flags", &format_args!("{:?}", self.flags))
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_DECODE_SWAP_CHAIN_DESC {
+impl ::std::clone::Clone for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn clone(&self) -> Self {
         Self { flags: self.flags }
     }
@@ -1046,7 +1046,7 @@ impl DXGI_DISPLAY_COLOR_SPACE {}
 unsafe impl ::windows::Abi for DXGI_DISPLAY_COLOR_SPACE {
     type Abi = DXGI_DISPLAY_COLOR_SPACE_abi;
 }
-impl ::core::default::Default for DXGI_DISPLAY_COLOR_SPACE {
+impl ::std::default::Default for DXGI_DISPLAY_COLOR_SPACE {
     fn default() -> Self {
         Self {
             primary_coordinates: [
@@ -1059,7 +1059,7 @@ impl ::core::default::Default for DXGI_DISPLAY_COLOR_SPACE {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
+impl ::std::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DISPLAY_COLOR_SPACE")
             .field(
@@ -1070,7 +1070,7 @@ impl ::core::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_DISPLAY_COLOR_SPACE {
+impl ::std::clone::Clone for DXGI_DISPLAY_COLOR_SPACE {
     fn clone(&self) -> Self {
         Self {
             primary_coordinates: <[f32; 16usize] as std::clone::Clone>::clone(
@@ -1176,7 +1176,7 @@ impl DXGI_FRAME_STATISTICS {}
 unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS {
     type Abi = DXGI_FRAME_STATISTICS_abi;
 }
-impl ::core::default::Default for DXGI_FRAME_STATISTICS {
+impl ::std::default::Default for DXGI_FRAME_STATISTICS {
     fn default() -> Self {
         Self {
             present_count: 0,
@@ -1187,7 +1187,7 @@ impl ::core::default::Default for DXGI_FRAME_STATISTICS {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS {
+impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS")
             .field("present_count", &format_args!("{:?}", self.present_count))
@@ -1204,7 +1204,7 @@ impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_FRAME_STATISTICS {
+impl ::std::clone::Clone for DXGI_FRAME_STATISTICS {
     fn clone(&self) -> Self {
         Self {
             present_count: self.present_count,
@@ -1243,7 +1243,7 @@ impl DXGI_FRAME_STATISTICS_MEDIA {}
 unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS_MEDIA {
     type Abi = DXGI_FRAME_STATISTICS_MEDIA_abi;
 }
-impl ::core::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::std::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
     fn default() -> Self {
         Self {
             present_count: 0,
@@ -1256,7 +1256,7 @@ impl ::core::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS_MEDIA")
             .field("present_count", &format_args!("{:?}", self.present_count))
@@ -1281,7 +1281,7 @@ impl ::core::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_FRAME_STATISTICS_MEDIA {
+impl ::std::clone::Clone for DXGI_FRAME_STATISTICS_MEDIA {
     fn clone(&self) -> Self {
         Self {
             present_count: self.present_count,
@@ -1309,7 +1309,7 @@ impl DXGI_RGB {}
 unsafe impl ::windows::Abi for DXGI_RGB {
     type Abi = DXGI_RGB_abi;
 }
-impl ::core::default::Default for DXGI_RGB {
+impl ::std::default::Default for DXGI_RGB {
     fn default() -> Self {
         Self {
             red: 0.0,
@@ -1318,7 +1318,7 @@ impl ::core::default::Default for DXGI_RGB {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_RGB {
+impl ::std::fmt::Debug for DXGI_RGB {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RGB")
             .field("red", &format_args!("{:?}", self.red))
@@ -1327,7 +1327,7 @@ impl ::core::fmt::Debug for DXGI_RGB {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_RGB {
+impl ::std::clone::Clone for DXGI_RGB {
     fn clone(&self) -> Self {
         Self {
             red: self.red,
@@ -1352,7 +1352,7 @@ impl DXGI_GAMMA_CONTROL {}
 unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL {
     type Abi = DXGI_GAMMA_CONTROL_abi;
 }
-impl ::core::default::Default for DXGI_GAMMA_CONTROL {
+impl ::std::default::Default for DXGI_GAMMA_CONTROL {
     fn default() -> Self {
         Self {
             scale: ::std::default::Default::default(),
@@ -2387,7 +2387,7 @@ impl ::core::default::Default for DXGI_GAMMA_CONTROL {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL {
+impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL")
             .field("scale", &format_args!("{:?}", self.scale))
@@ -2396,7 +2396,7 @@ impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_GAMMA_CONTROL {
+impl ::std::clone::Clone for DXGI_GAMMA_CONTROL {
     fn clone(&self) -> Self {
         Self {
             scale: <DXGI_RGB as std::clone::Clone>::clone(&self.scale),
@@ -2422,7 +2422,7 @@ impl DXGI_GAMMA_CONTROL_CAPABILITIES {}
 unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL_CAPABILITIES {
     type Abi = DXGI_GAMMA_CONTROL_CAPABILITIES_abi;
 }
-impl ::core::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn default() -> Self {
         Self {
             scale_and_offset_supported: ::std::default::Default::default(),
@@ -2499,7 +2499,7 @@ impl ::core::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL_CAPABILITIES")
             .field(
@@ -2525,7 +2525,7 @@ impl ::core::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_GAMMA_CONTROL_CAPABILITIES {
+impl ::std::clone::Clone for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn clone(&self) -> Self {
         Self {
             scale_and_offset_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -2647,7 +2647,7 @@ impl DXGI_HDR_METADATA_HDR10 {}
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10 {
     type Abi = DXGI_HDR_METADATA_HDR10_abi;
 }
-impl ::core::default::Default for DXGI_HDR_METADATA_HDR10 {
+impl ::std::default::Default for DXGI_HDR_METADATA_HDR10 {
     fn default() -> Self {
         Self {
             red_primary: [0, 0],
@@ -2661,7 +2661,7 @@ impl ::core::default::Default for DXGI_HDR_METADATA_HDR10 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
+impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10")
             .field("red_primary", &format_args!("{:?}", self.red_primary))
@@ -2687,7 +2687,7 @@ impl ::core::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_HDR_METADATA_HDR10 {
+impl ::std::clone::Clone for DXGI_HDR_METADATA_HDR10 {
     fn clone(&self) -> Self {
         Self {
             red_primary: <[u16; 2usize] as std::clone::Clone>::clone(&self.red_primary),
@@ -2714,7 +2714,7 @@ impl DXGI_HDR_METADATA_HDR10PLUS {}
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10PLUS {
     type Abi = DXGI_HDR_METADATA_HDR10PLUS_abi;
 }
-impl ::core::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::std::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
     fn default() -> Self {
         Self {
             data: [
@@ -2725,14 +2725,14 @@ impl ::core::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10PLUS")
             .field("data", &format_args!("{:?}", self.data))
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_HDR_METADATA_HDR10PLUS {
+impl ::std::clone::Clone for DXGI_HDR_METADATA_HDR10PLUS {
     fn clone(&self) -> Self {
         Self {
             data: <[u8; 72usize] as std::clone::Clone>::clone(&self.data),
@@ -2891,7 +2891,7 @@ impl DXGI_INFO_QUEUE_FILTER_DESC {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER_DESC {
     type Abi = DXGI_INFO_QUEUE_FILTER_DESC_abi;
 }
-impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
     fn default() -> Self {
         Self {
             num_categories: 0,
@@ -2903,7 +2903,7 @@ impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER_DESC")
             .field("num_categories", &format_args!("{:?}", self.num_categories))
@@ -2921,7 +2921,7 @@ impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_INFO_QUEUE_FILTER_DESC {
+impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER_DESC {
     fn clone(&self) -> Self {
         Self {
             num_categories: self.num_categories,
@@ -2950,7 +2950,7 @@ impl DXGI_INFO_QUEUE_FILTER {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER {
     type Abi = DXGI_INFO_QUEUE_FILTER_abi;
 }
-impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER {
+impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER {
     fn default() -> Self {
         Self {
             allow_list: ::std::default::Default::default(),
@@ -2958,7 +2958,7 @@ impl ::core::default::Default for DXGI_INFO_QUEUE_FILTER {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
+impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER")
             .field("allow_list", &format_args!("{:?}", self.allow_list))
@@ -2966,7 +2966,7 @@ impl ::core::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_INFO_QUEUE_FILTER {
+impl ::std::clone::Clone for DXGI_INFO_QUEUE_FILTER {
     fn clone(&self) -> Self {
         Self {
             allow_list: <DXGI_INFO_QUEUE_FILTER_DESC as std::clone::Clone>::clone(&self.allow_list),
@@ -2999,7 +2999,7 @@ impl DXGI_INFO_QUEUE_MESSAGE {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE {
     type Abi = DXGI_INFO_QUEUE_MESSAGE_abi;
 }
-impl ::core::default::Default for DXGI_INFO_QUEUE_MESSAGE {
+impl ::std::default::Default for DXGI_INFO_QUEUE_MESSAGE {
     fn default() -> Self {
         Self {
             producer: ::windows::Guid::zeroed(),
@@ -3011,7 +3011,7 @@ impl ::core::default::Default for DXGI_INFO_QUEUE_MESSAGE {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
+impl ::std::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_MESSAGE")
             .field("producer", &format_args!("{:?}", self.producer))
@@ -3026,7 +3026,7 @@ impl ::core::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_INFO_QUEUE_MESSAGE {
+impl ::std::clone::Clone for DXGI_INFO_QUEUE_MESSAGE {
     fn clone(&self) -> Self {
         Self {
             producer: <::windows::Guid as std::clone::Clone>::clone(&self.producer),
@@ -3052,7 +3052,7 @@ impl DXGI_JPEG_AC_HUFFMAN_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_AC_HUFFMAN_TABLE {
     type Abi = DXGI_JPEG_AC_HUFFMAN_TABLE_abi;
 }
-impl ::core::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::std::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
             code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -3067,7 +3067,7 @@ impl ::core::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::std::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_AC_HUFFMAN_TABLE")
             .field("code_counts", &format_args!("{:?}", self.code_counts))
@@ -3075,7 +3075,7 @@ impl ::core::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_JPEG_AC_HUFFMAN_TABLE {
+impl ::std::clone::Clone for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn clone(&self) -> Self {
         Self {
             code_counts: <[u8; 16usize] as std::clone::Clone>::clone(&self.code_counts),
@@ -3097,7 +3097,7 @@ impl DXGI_JPEG_DC_HUFFMAN_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_DC_HUFFMAN_TABLE {
     type Abi = DXGI_JPEG_DC_HUFFMAN_TABLE_abi;
 }
-impl ::core::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::std::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
             code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -3105,7 +3105,7 @@ impl ::core::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::std::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_DC_HUFFMAN_TABLE")
             .field("code_counts", &format_args!("{:?}", self.code_counts))
@@ -3113,7 +3113,7 @@ impl ::core::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_JPEG_DC_HUFFMAN_TABLE {
+impl ::std::clone::Clone for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn clone(&self) -> Self {
         Self {
             code_counts: <[u8; 12usize] as std::clone::Clone>::clone(&self.code_counts),
@@ -3134,7 +3134,7 @@ impl DXGI_JPEG_QUANTIZATION_TABLE {}
 unsafe impl ::windows::Abi for DXGI_JPEG_QUANTIZATION_TABLE {
     type Abi = DXGI_JPEG_QUANTIZATION_TABLE_abi;
 }
-impl ::core::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::std::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
     fn default() -> Self {
         Self {
             elements: [
@@ -3145,14 +3145,14 @@ impl ::core::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::std::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_QUANTIZATION_TABLE")
             .field("elements", &format_args!("{:?}", self.elements))
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_JPEG_QUANTIZATION_TABLE {
+impl ::std::clone::Clone for DXGI_JPEG_QUANTIZATION_TABLE {
     fn clone(&self) -> Self {
         Self {
             elements: <[u8; 64usize] as std::clone::Clone>::clone(&self.elements),
@@ -3173,7 +3173,7 @@ impl DXGI_MAPPED_RECT {}
 unsafe impl ::windows::Abi for DXGI_MAPPED_RECT {
     type Abi = DXGI_MAPPED_RECT_abi;
 }
-impl ::core::default::Default for DXGI_MAPPED_RECT {
+impl ::std::default::Default for DXGI_MAPPED_RECT {
     fn default() -> Self {
         Self {
             pitch: 0,
@@ -3181,7 +3181,7 @@ impl ::core::default::Default for DXGI_MAPPED_RECT {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_MAPPED_RECT {
+impl ::std::fmt::Debug for DXGI_MAPPED_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MAPPED_RECT")
             .field("pitch", &format_args!("{:?}", self.pitch))
@@ -3189,7 +3189,7 @@ impl ::core::fmt::Debug for DXGI_MAPPED_RECT {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_MAPPED_RECT {
+impl ::std::clone::Clone for DXGI_MAPPED_RECT {
     fn clone(&self) -> Self {
         Self {
             pitch: self.pitch,
@@ -3219,7 +3219,7 @@ impl DXGI_MATRIX_3X2_F {}
 unsafe impl ::windows::Abi for DXGI_MATRIX_3X2_F {
     type Abi = DXGI_MATRIX_3X2_F_abi;
 }
-impl ::core::default::Default for DXGI_MATRIX_3X2_F {
+impl ::std::default::Default for DXGI_MATRIX_3X2_F {
     fn default() -> Self {
         Self {
             _11: 0.0,
@@ -3231,7 +3231,7 @@ impl ::core::default::Default for DXGI_MATRIX_3X2_F {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_MATRIX_3X2_F {
+impl ::std::fmt::Debug for DXGI_MATRIX_3X2_F {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MATRIX_3X2_F")
             .field("_11", &format_args!("{:?}", self._11))
@@ -3243,7 +3243,7 @@ impl ::core::fmt::Debug for DXGI_MATRIX_3X2_F {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_MATRIX_3X2_F {
+impl ::std::clone::Clone for DXGI_MATRIX_3X2_F {
     fn clone(&self) -> Self {
         Self {
             _11: self._11,
@@ -3309,7 +3309,7 @@ impl DXGI_RATIONAL {}
 unsafe impl ::windows::Abi for DXGI_RATIONAL {
     type Abi = DXGI_RATIONAL_abi;
 }
-impl ::core::default::Default for DXGI_RATIONAL {
+impl ::std::default::Default for DXGI_RATIONAL {
     fn default() -> Self {
         Self {
             numerator: 0,
@@ -3317,7 +3317,7 @@ impl ::core::default::Default for DXGI_RATIONAL {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_RATIONAL {
+impl ::std::fmt::Debug for DXGI_RATIONAL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RATIONAL")
             .field("numerator", &format_args!("{:?}", self.numerator))
@@ -3325,7 +3325,7 @@ impl ::core::fmt::Debug for DXGI_RATIONAL {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_RATIONAL {
+impl ::std::clone::Clone for DXGI_RATIONAL {
     fn clone(&self) -> Self {
         Self {
             numerator: self.numerator,
@@ -3438,7 +3438,7 @@ impl DXGI_MODE_DESC {}
 unsafe impl ::windows::Abi for DXGI_MODE_DESC {
     type Abi = DXGI_MODE_DESC_abi;
 }
-impl ::core::default::Default for DXGI_MODE_DESC {
+impl ::std::default::Default for DXGI_MODE_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -3450,7 +3450,7 @@ impl ::core::default::Default for DXGI_MODE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_MODE_DESC {
+impl ::std::fmt::Debug for DXGI_MODE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -3465,7 +3465,7 @@ impl ::core::fmt::Debug for DXGI_MODE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_MODE_DESC {
+impl ::std::clone::Clone for DXGI_MODE_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -3504,7 +3504,7 @@ impl DXGI_MODE_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_MODE_DESC1 {
     type Abi = DXGI_MODE_DESC1_abi;
 }
-impl ::core::default::Default for DXGI_MODE_DESC1 {
+impl ::std::default::Default for DXGI_MODE_DESC1 {
     fn default() -> Self {
         Self {
             width: 0,
@@ -3517,7 +3517,7 @@ impl ::core::default::Default for DXGI_MODE_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_MODE_DESC1 {
+impl ::std::fmt::Debug for DXGI_MODE_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC1")
             .field("width", &format_args!("{:?}", self.width))
@@ -3533,7 +3533,7 @@ impl ::core::fmt::Debug for DXGI_MODE_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_MODE_DESC1 {
+impl ::std::clone::Clone for DXGI_MODE_DESC1 {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -3721,7 +3721,7 @@ impl DXGI_OUTDUPL_DESC {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_DESC {
     type Abi = DXGI_OUTDUPL_DESC_abi;
 }
-impl ::core::default::Default for DXGI_OUTDUPL_DESC {
+impl ::std::default::Default for DXGI_OUTDUPL_DESC {
     fn default() -> Self {
         Self {
             mode_desc: ::std::default::Default::default(),
@@ -3730,7 +3730,7 @@ impl ::core::default::Default for DXGI_OUTDUPL_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTDUPL_DESC {
+impl ::std::fmt::Debug for DXGI_OUTDUPL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_DESC")
             .field("mode_desc", &format_args!("{:?}", self.mode_desc))
@@ -3742,7 +3742,7 @@ impl ::core::fmt::Debug for DXGI_OUTDUPL_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTDUPL_DESC {
+impl ::std::clone::Clone for DXGI_OUTDUPL_DESC {
     fn clone(&self) -> Self {
         Self {
             mode_desc: <DXGI_MODE_DESC as std::clone::Clone>::clone(&self.mode_desc),
@@ -3804,7 +3804,7 @@ impl DXGI_OUTDUPL_POINTER_POSITION {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_POSITION {
     type Abi = DXGI_OUTDUPL_POINTER_POSITION_abi;
 }
-impl ::core::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::std::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
     fn default() -> Self {
         Self {
             position: ::std::default::Default::default(),
@@ -3812,7 +3812,7 @@ impl ::core::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_POSITION")
             .field("position", &format_args!("{:?}", self.position))
@@ -3820,7 +3820,7 @@ impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTDUPL_POINTER_POSITION {
+impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_POSITION {
     fn clone(&self) -> Self {
         Self {
             position: <super::display_devices::POINT as std::clone::Clone>::clone(&self.position),
@@ -3857,7 +3857,7 @@ impl DXGI_OUTDUPL_FRAME_INFO {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_FRAME_INFO {
     type Abi = DXGI_OUTDUPL_FRAME_INFO_abi;
 }
-impl ::core::default::Default for DXGI_OUTDUPL_FRAME_INFO {
+impl ::std::default::Default for DXGI_OUTDUPL_FRAME_INFO {
     fn default() -> Self {
         Self {
             last_present_time: 0,
@@ -3871,7 +3871,7 @@ impl ::core::default::Default for DXGI_OUTDUPL_FRAME_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
+impl ::std::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_FRAME_INFO")
             .field(
@@ -3909,7 +3909,7 @@ impl ::core::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTDUPL_FRAME_INFO {
+impl ::std::clone::Clone for DXGI_OUTDUPL_FRAME_INFO {
     fn clone(&self) -> Self {
         Self {
             last_present_time: self.last_present_time,
@@ -3944,7 +3944,7 @@ impl DXGI_OUTDUPL_MOVE_RECT {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_MOVE_RECT {
     type Abi = DXGI_OUTDUPL_MOVE_RECT_abi;
 }
-impl ::core::default::Default for DXGI_OUTDUPL_MOVE_RECT {
+impl ::std::default::Default for DXGI_OUTDUPL_MOVE_RECT {
     fn default() -> Self {
         Self {
             source_point: ::std::default::Default::default(),
@@ -3952,7 +3952,7 @@ impl ::core::default::Default for DXGI_OUTDUPL_MOVE_RECT {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
+impl ::std::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_MOVE_RECT")
             .field("source_point", &format_args!("{:?}", self.source_point))
@@ -3963,7 +3963,7 @@ impl ::core::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTDUPL_MOVE_RECT {
+impl ::std::clone::Clone for DXGI_OUTDUPL_MOVE_RECT {
     fn clone(&self) -> Self {
         Self {
             source_point: <super::display_devices::POINT as std::clone::Clone>::clone(
@@ -3998,7 +3998,7 @@ impl DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     type Abi = DXGI_OUTDUPL_POINTER_SHAPE_INFO_abi;
 }
-impl ::core::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::std::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn default() -> Self {
         Self {
             r#type: 0,
@@ -4009,7 +4009,7 @@ impl ::core::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_SHAPE_INFO")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -4020,7 +4020,7 @@ impl ::core::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
+impl ::std::clone::Clone for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -4093,7 +4093,7 @@ impl DXGI_OUTPUT_DESC {}
 unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC {
     type Abi = DXGI_OUTPUT_DESC_abi;
 }
-impl ::core::default::Default for DXGI_OUTPUT_DESC {
+impl ::std::default::Default for DXGI_OUTPUT_DESC {
     fn default() -> Self {
         Self {
             device_name: [
@@ -4107,7 +4107,7 @@ impl ::core::default::Default for DXGI_OUTPUT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTPUT_DESC {
+impl ::std::fmt::Debug for DXGI_OUTPUT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC")
             .field("device_name", &format_args!("{:?}", self.device_name))
@@ -4124,7 +4124,7 @@ impl ::core::fmt::Debug for DXGI_OUTPUT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTPUT_DESC {
+impl ::std::clone::Clone for DXGI_OUTPUT_DESC {
     fn clone(&self) -> Self {
         Self {
             device_name: <[u16; 32usize] as std::clone::Clone>::clone(&self.device_name),
@@ -4180,7 +4180,7 @@ impl DXGI_OUTPUT_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC1 {
     type Abi = DXGI_OUTPUT_DESC1_abi;
 }
-impl ::core::default::Default for DXGI_OUTPUT_DESC1 {
+impl ::std::default::Default for DXGI_OUTPUT_DESC1 {
     fn default() -> Self {
         Self {
             device_name: [
@@ -4203,7 +4203,7 @@ impl ::core::default::Default for DXGI_OUTPUT_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_OUTPUT_DESC1 {
+impl ::std::fmt::Debug for DXGI_OUTPUT_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC1")
             .field("device_name", &format_args!("{:?}", self.device_name))
@@ -4232,7 +4232,7 @@ impl ::core::fmt::Debug for DXGI_OUTPUT_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_OUTPUT_DESC1 {
+impl ::std::clone::Clone for DXGI_OUTPUT_DESC1 {
     fn clone(&self) -> Self {
         Self {
             device_name: <[u16; 32usize] as std::clone::Clone>::clone(&self.device_name),
@@ -4355,7 +4355,7 @@ impl DXGI_PRESENT_PARAMETERS {}
 unsafe impl ::windows::Abi for DXGI_PRESENT_PARAMETERS {
     type Abi = DXGI_PRESENT_PARAMETERS_abi;
 }
-impl ::core::default::Default for DXGI_PRESENT_PARAMETERS {
+impl ::std::default::Default for DXGI_PRESENT_PARAMETERS {
     fn default() -> Self {
         Self {
             dirty_rects_count: 0,
@@ -4365,7 +4365,7 @@ impl ::core::default::Default for DXGI_PRESENT_PARAMETERS {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_PRESENT_PARAMETERS {
+impl ::std::fmt::Debug for DXGI_PRESENT_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_PRESENT_PARAMETERS")
             .field(
@@ -4381,7 +4381,7 @@ impl ::core::fmt::Debug for DXGI_PRESENT_PARAMETERS {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_PRESENT_PARAMETERS {
+impl ::std::clone::Clone for DXGI_PRESENT_PARAMETERS {
     fn clone(&self) -> Self {
         Self {
             dirty_rects_count: self.dirty_rects_count,
@@ -4419,7 +4419,7 @@ impl DXGI_QUERY_VIDEO_MEMORY_INFO {}
 unsafe impl ::windows::Abi for DXGI_QUERY_VIDEO_MEMORY_INFO {
     type Abi = DXGI_QUERY_VIDEO_MEMORY_INFO_abi;
 }
-impl ::core::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::std::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn default() -> Self {
         Self {
             budget: 0,
@@ -4429,7 +4429,7 @@ impl ::core::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::std::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_QUERY_VIDEO_MEMORY_INFO")
             .field("budget", &format_args!("{:?}", self.budget))
@@ -4445,7 +4445,7 @@ impl ::core::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_QUERY_VIDEO_MEMORY_INFO {
+impl ::std::clone::Clone for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn clone(&self) -> Self {
         Self {
             budget: self.budget,
@@ -4555,7 +4555,7 @@ impl DXGI_RGBA {}
 unsafe impl ::windows::Abi for DXGI_RGBA {
     type Abi = DXGI_RGBA_abi;
 }
-impl ::core::default::Default for DXGI_RGBA {
+impl ::std::default::Default for DXGI_RGBA {
     fn default() -> Self {
         Self {
             r: 0.0,
@@ -4565,7 +4565,7 @@ impl ::core::default::Default for DXGI_RGBA {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_RGBA {
+impl ::std::fmt::Debug for DXGI_RGBA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RGBA")
             .field("r", &format_args!("{:?}", self.r))
@@ -4575,7 +4575,7 @@ impl ::core::fmt::Debug for DXGI_RGBA {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_RGBA {
+impl ::std::clone::Clone for DXGI_RGBA {
     fn clone(&self) -> Self {
         Self {
             r: self.r,
@@ -4638,21 +4638,21 @@ impl DXGI_SHARED_RESOURCE {}
 unsafe impl ::windows::Abi for DXGI_SHARED_RESOURCE {
     type Abi = DXGI_SHARED_RESOURCE_abi;
 }
-impl ::core::default::Default for DXGI_SHARED_RESOURCE {
+impl ::std::default::Default for DXGI_SHARED_RESOURCE {
     fn default() -> Self {
         Self {
             handle: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SHARED_RESOURCE {
+impl ::std::fmt::Debug for DXGI_SHARED_RESOURCE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SHARED_RESOURCE")
             .field("handle", &format_args!("{:?}", self.handle))
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SHARED_RESOURCE {
+impl ::std::clone::Clone for DXGI_SHARED_RESOURCE {
     fn clone(&self) -> Self {
         Self {
             handle: <super::system_services::HANDLE as std::clone::Clone>::clone(&self.handle),
@@ -4675,7 +4675,7 @@ impl DXGI_SURFACE_DESC {}
 unsafe impl ::windows::Abi for DXGI_SURFACE_DESC {
     type Abi = DXGI_SURFACE_DESC_abi;
 }
-impl ::core::default::Default for DXGI_SURFACE_DESC {
+impl ::std::default::Default for DXGI_SURFACE_DESC {
     fn default() -> Self {
         Self {
             width: 0,
@@ -4685,7 +4685,7 @@ impl ::core::default::Default for DXGI_SURFACE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SURFACE_DESC {
+impl ::std::fmt::Debug for DXGI_SURFACE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SURFACE_DESC")
             .field("width", &format_args!("{:?}", self.width))
@@ -4695,7 +4695,7 @@ impl ::core::fmt::Debug for DXGI_SURFACE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SURFACE_DESC {
+impl ::std::clone::Clone for DXGI_SURFACE_DESC {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -4812,7 +4812,7 @@ impl DXGI_SWAP_CHAIN_DESC {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC {
     type Abi = DXGI_SWAP_CHAIN_DESC_abi;
 }
-impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC {
+impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC {
     fn default() -> Self {
         Self {
             buffer_desc: ::std::default::Default::default(),
@@ -4826,7 +4826,7 @@ impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
+impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC")
             .field("buffer_desc", &format_args!("{:?}", self.buffer_desc))
@@ -4840,7 +4840,7 @@ impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SWAP_CHAIN_DESC {
+impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC {
     fn clone(&self) -> Self {
         Self {
             buffer_desc: <DXGI_MODE_DESC as std::clone::Clone>::clone(&self.buffer_desc),
@@ -4891,7 +4891,7 @@ impl DXGI_SWAP_CHAIN_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC1 {
     type Abi = DXGI_SWAP_CHAIN_DESC1_abi;
 }
-impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC1 {
+impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC1 {
     fn default() -> Self {
         Self {
             width: 0,
@@ -4908,7 +4908,7 @@ impl ::core::default::Default for DXGI_SWAP_CHAIN_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
+impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC1")
             .field("width", &format_args!("{:?}", self.width))
@@ -4925,7 +4925,7 @@ impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SWAP_CHAIN_DESC1 {
+impl ::std::clone::Clone for DXGI_SWAP_CHAIN_DESC1 {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -5012,7 +5012,7 @@ impl DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     type Abi = DXGI_SWAP_CHAIN_FULLSCREEN_DESC_abi;
 }
-impl ::core::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::std::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn default() -> Self {
         Self {
             refresh_rate: ::std::default::Default::default(),
@@ -5022,7 +5022,7 @@ impl ::core::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_FULLSCREEN_DESC")
             .field("refresh_rate", &format_args!("{:?}", self.refresh_rate))
@@ -5035,7 +5035,7 @@ impl ::core::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
+impl ::std::clone::Clone for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn clone(&self) -> Self {
         Self {
             refresh_rate: <DXGI_RATIONAL as std::clone::Clone>::clone(&self.refresh_rate),

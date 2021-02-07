@@ -34,7 +34,7 @@ impl D3D11_RESOURCE_FLAGS {}
 unsafe impl ::windows::Abi for D3D11_RESOURCE_FLAGS {
     type Abi = D3D11_RESOURCE_FLAGS_abi;
 }
-impl ::core::default::Default for D3D11_RESOURCE_FLAGS {
+impl ::std::default::Default for D3D11_RESOURCE_FLAGS {
     fn default() -> Self {
         Self {
             bind_flags: 0,
@@ -44,7 +44,7 @@ impl ::core::default::Default for D3D11_RESOURCE_FLAGS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D11_RESOURCE_FLAGS {
+impl ::std::fmt::Debug for D3D11_RESOURCE_FLAGS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D11_RESOURCE_FLAGS")
             .field("bind_flags", &format_args!("{:?}", self.bind_flags))
@@ -60,7 +60,7 @@ impl ::core::fmt::Debug for D3D11_RESOURCE_FLAGS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D11_RESOURCE_FLAGS {
+impl ::std::clone::Clone for D3D11_RESOURCE_FLAGS {
     fn clone(&self) -> Self {
         Self {
             bind_flags: self.bind_flags,
@@ -256,7 +256,7 @@ impl D3D12_DESCRIPTOR_RANGE {}
 unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE {
     type Abi = D3D12_DESCRIPTOR_RANGE_abi;
 }
-impl ::core::default::Default for D3D12_DESCRIPTOR_RANGE {
+impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE {
     fn default() -> Self {
         Self {
             range_type: ::std::default::Default::default(),
@@ -267,7 +267,7 @@ impl ::core::default::Default for D3D12_DESCRIPTOR_RANGE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DESCRIPTOR_RANGE {
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DESCRIPTOR_RANGE")
             .field("range_type", &format_args!("{:?}", self.range_type))
@@ -287,7 +287,7 @@ impl ::core::fmt::Debug for D3D12_DESCRIPTOR_RANGE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DESCRIPTOR_RANGE {
+impl ::std::clone::Clone for D3D12_DESCRIPTOR_RANGE {
     fn clone(&self) -> Self {
         Self {
             range_type: self.range_type,
@@ -312,7 +312,7 @@ impl D3D12_ROOT_DESCRIPTOR_TABLE {}
 unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE {
     type Abi = D3D12_ROOT_DESCRIPTOR_TABLE_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE {
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE {
     fn default() -> Self {
         Self {
             num_descriptor_ranges: 0,
@@ -320,7 +320,7 @@ impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE {
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE")
             .field(
@@ -334,7 +334,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_DESCRIPTOR_TABLE {
+impl ::std::clone::Clone for D3D12_ROOT_DESCRIPTOR_TABLE {
     fn clone(&self) -> Self {
         Self {
             num_descriptor_ranges: self.num_descriptor_ranges,
@@ -359,7 +359,7 @@ impl D3D12_ROOT_CONSTANTS {}
 unsafe impl ::windows::Abi for D3D12_ROOT_CONSTANTS {
     type Abi = D3D12_ROOT_CONSTANTS_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_CONSTANTS {
+impl ::std::default::Default for D3D12_ROOT_CONSTANTS {
     fn default() -> Self {
         Self {
             shader_register: 0,
@@ -368,7 +368,7 @@ impl ::core::default::Default for D3D12_ROOT_CONSTANTS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_CONSTANTS {
+impl ::std::fmt::Debug for D3D12_ROOT_CONSTANTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_CONSTANTS")
             .field(
@@ -383,7 +383,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_CONSTANTS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_CONSTANTS {
+impl ::std::clone::Clone for D3D12_ROOT_CONSTANTS {
     fn clone(&self) -> Self {
         Self {
             shader_register: self.shader_register,
@@ -407,7 +407,7 @@ impl D3D12_ROOT_DESCRIPTOR {}
 unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR {
     type Abi = D3D12_ROOT_DESCRIPTOR_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR {
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR {
     fn default() -> Self {
         Self {
             shader_register: 0,
@@ -415,7 +415,7 @@ impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR {
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_DESCRIPTOR")
             .field(
@@ -426,7 +426,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_DESCRIPTOR {
+impl ::std::clone::Clone for D3D12_ROOT_DESCRIPTOR {
     fn clone(&self) -> Self {
         Self {
             shader_register: self.shader_register,
@@ -454,7 +454,7 @@ impl D3D12_ROOT_PARAMETER {}
 unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER {
     type Abi = D3D12_ROOT_PARAMETER_abi;
 }
-impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER {
+impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_PARAMETER")
             .field("parameter_type", &format_args!("{:?}", self.parameter_type))
@@ -466,7 +466,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_ROOT_PARAMETER {
+impl ::std::default::Default for D3D12_ROOT_PARAMETER {
     fn default() -> Self {
         Self {
             parameter_type: ::std::default::Default::default(),
@@ -475,7 +475,7 @@ impl ::core::default::Default for D3D12_ROOT_PARAMETER {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_PARAMETER {
+impl ::std::clone::Clone for D3D12_ROOT_PARAMETER {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -488,9 +488,9 @@ impl ::core::clone::Clone for D3D12_ROOT_PARAMETER {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_ROOT_PARAMETER_0 {
-    pub descriptor_table: ::core::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE>,
-    pub constants: ::core::mem::ManuallyDrop<D3D12_ROOT_CONSTANTS>,
-    pub descriptor: ::core::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR>,
+    pub descriptor_table: ::std::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE>,
+    pub constants: ::std::mem::ManuallyDrop<D3D12_ROOT_CONSTANTS>,
+    pub descriptor: ::std::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -504,17 +504,17 @@ impl D3D12_ROOT_PARAMETER_0 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER_0 {
     type Abi = D3D12_ROOT_PARAMETER_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER_0 {
+impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_PARAMETER_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_ROOT_PARAMETER_0 {
+impl ::std::default::Default for D3D12_ROOT_PARAMETER_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_PARAMETER_0 {
+impl ::std::clone::Clone for D3D12_ROOT_PARAMETER_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -759,7 +759,7 @@ impl D3D12_STATIC_SAMPLER_DESC {}
 unsafe impl ::windows::Abi for D3D12_STATIC_SAMPLER_DESC {
     type Abi = D3D12_STATIC_SAMPLER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_STATIC_SAMPLER_DESC {
+impl ::std::default::Default for D3D12_STATIC_SAMPLER_DESC {
     fn default() -> Self {
         Self {
             filter: ::std::default::Default::default(),
@@ -778,7 +778,7 @@ impl ::core::default::Default for D3D12_STATIC_SAMPLER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STATIC_SAMPLER_DESC {
+impl ::std::fmt::Debug for D3D12_STATIC_SAMPLER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATIC_SAMPLER_DESC")
             .field("filter", &format_args!("{:?}", self.filter))
@@ -806,7 +806,7 @@ impl ::core::fmt::Debug for D3D12_STATIC_SAMPLER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STATIC_SAMPLER_DESC {
+impl ::std::clone::Clone for D3D12_STATIC_SAMPLER_DESC {
     fn clone(&self) -> Self {
         Self {
             filter: self.filter,
@@ -895,7 +895,7 @@ impl D3D12_ROOT_SIGNATURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_ROOT_SIGNATURE_DESC {
     type Abi = D3D12_ROOT_SIGNATURE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_SIGNATURE_DESC {
+impl ::std::default::Default for D3D12_ROOT_SIGNATURE_DESC {
     fn default() -> Self {
         Self {
             num_parameters: 0,
@@ -906,7 +906,7 @@ impl ::core::default::Default for D3D12_ROOT_SIGNATURE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC {
+impl ::std::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_SIGNATURE_DESC")
             .field("num_parameters", &format_args!("{:?}", self.num_parameters))
@@ -923,7 +923,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_SIGNATURE_DESC {
+impl ::std::clone::Clone for D3D12_ROOT_SIGNATURE_DESC {
     fn clone(&self) -> Self {
         Self {
             num_parameters: self.num_parameters,
@@ -1054,7 +1054,7 @@ impl D3D12_DESCRIPTOR_RANGE1 {}
 unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE1 {
     type Abi = D3D12_DESCRIPTOR_RANGE1_abi;
 }
-impl ::core::default::Default for D3D12_DESCRIPTOR_RANGE1 {
+impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE1 {
     fn default() -> Self {
         Self {
             range_type: ::std::default::Default::default(),
@@ -1066,7 +1066,7 @@ impl ::core::default::Default for D3D12_DESCRIPTOR_RANGE1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DESCRIPTOR_RANGE1 {
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DESCRIPTOR_RANGE1")
             .field("range_type", &format_args!("{:?}", self.range_type))
@@ -1087,7 +1087,7 @@ impl ::core::fmt::Debug for D3D12_DESCRIPTOR_RANGE1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DESCRIPTOR_RANGE1 {
+impl ::std::clone::Clone for D3D12_DESCRIPTOR_RANGE1 {
     fn clone(&self) -> Self {
         Self {
             range_type: self.range_type,
@@ -1113,7 +1113,7 @@ impl D3D12_ROOT_DESCRIPTOR_TABLE1 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE1 {
     type Abi = D3D12_ROOT_DESCRIPTOR_TABLE1_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE1 {
     fn default() -> Self {
         Self {
             num_descriptor_ranges: 0,
@@ -1121,7 +1121,7 @@ impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE1")
             .field(
@@ -1135,7 +1135,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+impl ::std::clone::Clone for D3D12_ROOT_DESCRIPTOR_TABLE1 {
     fn clone(&self) -> Self {
         Self {
             num_descriptor_ranges: self.num_descriptor_ranges,
@@ -1200,7 +1200,7 @@ impl D3D12_ROOT_DESCRIPTOR1 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR1 {
     type Abi = D3D12_ROOT_DESCRIPTOR1_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR1 {
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR1 {
     fn default() -> Self {
         Self {
             shader_register: 0,
@@ -1209,7 +1209,7 @@ impl ::core::default::Default for D3D12_ROOT_DESCRIPTOR1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR1 {
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_DESCRIPTOR1")
             .field(
@@ -1221,7 +1221,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_DESCRIPTOR1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_DESCRIPTOR1 {
+impl ::std::clone::Clone for D3D12_ROOT_DESCRIPTOR1 {
     fn clone(&self) -> Self {
         Self {
             shader_register: self.shader_register,
@@ -1249,7 +1249,7 @@ impl D3D12_ROOT_PARAMETER1 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER1 {
     type Abi = D3D12_ROOT_PARAMETER1_abi;
 }
-impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER1 {
+impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_PARAMETER1")
             .field("parameter_type", &format_args!("{:?}", self.parameter_type))
@@ -1261,7 +1261,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER1 {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_ROOT_PARAMETER1 {
+impl ::std::default::Default for D3D12_ROOT_PARAMETER1 {
     fn default() -> Self {
         Self {
             parameter_type: ::std::default::Default::default(),
@@ -1270,7 +1270,7 @@ impl ::core::default::Default for D3D12_ROOT_PARAMETER1 {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_PARAMETER1 {
+impl ::std::clone::Clone for D3D12_ROOT_PARAMETER1 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -1283,9 +1283,9 @@ impl ::core::clone::Clone for D3D12_ROOT_PARAMETER1 {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_ROOT_PARAMETER1_0 {
-    pub descriptor_table: ::core::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE1>,
-    pub constants: ::core::mem::ManuallyDrop<D3D12_ROOT_CONSTANTS>,
-    pub descriptor: ::core::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR1>,
+    pub descriptor_table: ::std::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE1>,
+    pub constants: ::std::mem::ManuallyDrop<D3D12_ROOT_CONSTANTS>,
+    pub descriptor: ::std::mem::ManuallyDrop<D3D12_ROOT_DESCRIPTOR1>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -1299,17 +1299,17 @@ impl D3D12_ROOT_PARAMETER1_0 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER1_0 {
     type Abi = D3D12_ROOT_PARAMETER1_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_ROOT_PARAMETER1_0 {
+impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER1_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_PARAMETER1_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_ROOT_PARAMETER1_0 {
+impl ::std::default::Default for D3D12_ROOT_PARAMETER1_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_PARAMETER1_0 {
+impl ::std::clone::Clone for D3D12_ROOT_PARAMETER1_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -1342,7 +1342,7 @@ impl D3D12_ROOT_SIGNATURE_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_ROOT_SIGNATURE_DESC1 {
     type Abi = D3D12_ROOT_SIGNATURE_DESC1_abi;
 }
-impl ::core::default::Default for D3D12_ROOT_SIGNATURE_DESC1 {
+impl ::std::default::Default for D3D12_ROOT_SIGNATURE_DESC1 {
     fn default() -> Self {
         Self {
             num_parameters: 0,
@@ -1353,7 +1353,7 @@ impl ::core::default::Default for D3D12_ROOT_SIGNATURE_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC1 {
+impl ::std::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_ROOT_SIGNATURE_DESC1")
             .field("num_parameters", &format_args!("{:?}", self.num_parameters))
@@ -1370,7 +1370,7 @@ impl ::core::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_ROOT_SIGNATURE_DESC1 {
+impl ::std::clone::Clone for D3D12_ROOT_SIGNATURE_DESC1 {
     fn clone(&self) -> Self {
         Self {
             num_parameters: self.num_parameters,
@@ -1402,7 +1402,7 @@ impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     type Abi = D3D12_VERSIONED_ROOT_SIGNATURE_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl ::std::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VERSIONED_ROOT_SIGNATURE_DESC")
             .field("version", &format_args!("{:?}", self.version))
@@ -1410,7 +1410,7 @@ impl ::core::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl ::std::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     fn default() -> Self {
         Self {
             version: ::std::default::Default::default(),
@@ -1418,7 +1418,7 @@ impl ::core::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl ::std::clone::Clone for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -1431,8 +1431,8 @@ impl ::core::clone::Clone for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
-    pub desc_1_0: ::core::mem::ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
-    pub desc_1_1: ::core::mem::ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
+    pub desc_1_0: ::std::mem::ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
+    pub desc_1_1: ::std::mem::ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -1445,18 +1445,18 @@ impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
     type Abi = D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+impl ::std::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+impl ::std::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+impl ::std::clone::Clone for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -2355,12 +2355,12 @@ impl D3D12_RANGE {}
 unsafe impl ::windows::Abi for D3D12_RANGE {
     type Abi = D3D12_RANGE_abi;
 }
-impl ::core::default::Default for D3D12_RANGE {
+impl ::std::default::Default for D3D12_RANGE {
     fn default() -> Self {
         Self { begin: 0, end: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_RANGE {
+impl ::std::fmt::Debug for D3D12_RANGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RANGE")
             .field("begin", &format_args!("{:?}", self.begin))
@@ -2368,7 +2368,7 @@ impl ::core::fmt::Debug for D3D12_RANGE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RANGE {
+impl ::std::clone::Clone for D3D12_RANGE {
     fn clone(&self) -> Self {
         Self {
             begin: self.begin,
@@ -2534,7 +2534,7 @@ impl D3D12_RESOURCE_DESC {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC {
     type Abi = D3D12_RESOURCE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_DESC {
+impl ::std::default::Default for D3D12_RESOURCE_DESC {
     fn default() -> Self {
         Self {
             dimension: ::std::default::Default::default(),
@@ -2550,7 +2550,7 @@ impl ::core::default::Default for D3D12_RESOURCE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_DESC {
+impl ::std::fmt::Debug for D3D12_RESOURCE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_DESC")
             .field("dimension", &format_args!("{:?}", self.dimension))
@@ -2569,7 +2569,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_DESC {
+impl ::std::clone::Clone for D3D12_RESOURCE_DESC {
     fn clone(&self) -> Self {
         Self {
             dimension: self.dimension,
@@ -2605,7 +2605,7 @@ impl D3D12_BOX {}
 unsafe impl ::windows::Abi for D3D12_BOX {
     type Abi = D3D12_BOX_abi;
 }
-impl ::core::default::Default for D3D12_BOX {
+impl ::std::default::Default for D3D12_BOX {
     fn default() -> Self {
         Self {
             left: 0,
@@ -2617,7 +2617,7 @@ impl ::core::default::Default for D3D12_BOX {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BOX {
+impl ::std::fmt::Debug for D3D12_BOX {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BOX")
             .field("left", &format_args!("{:?}", self.left))
@@ -2629,7 +2629,7 @@ impl ::core::fmt::Debug for D3D12_BOX {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BOX {
+impl ::std::clone::Clone for D3D12_BOX {
     fn clone(&self) -> Self {
         Self {
             left: self.left,
@@ -2784,7 +2784,7 @@ impl D3D12_HEAP_PROPERTIES {}
 unsafe impl ::windows::Abi for D3D12_HEAP_PROPERTIES {
     type Abi = D3D12_HEAP_PROPERTIES_abi;
 }
-impl ::core::default::Default for D3D12_HEAP_PROPERTIES {
+impl ::std::default::Default for D3D12_HEAP_PROPERTIES {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -2795,7 +2795,7 @@ impl ::core::default::Default for D3D12_HEAP_PROPERTIES {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_HEAP_PROPERTIES {
+impl ::std::fmt::Debug for D3D12_HEAP_PROPERTIES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_HEAP_PROPERTIES")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -2818,7 +2818,7 @@ impl ::core::fmt::Debug for D3D12_HEAP_PROPERTIES {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_HEAP_PROPERTIES {
+impl ::std::clone::Clone for D3D12_HEAP_PROPERTIES {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -3229,7 +3229,7 @@ impl D3D12_SUBRESOURCE_FOOTPRINT {}
 unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_FOOTPRINT {
     type Abi = D3D12_SUBRESOURCE_FOOTPRINT_abi;
 }
-impl ::core::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
+impl ::std::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -3240,7 +3240,7 @@ impl ::core::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBRESOURCE_FOOTPRINT")
             .field("format", &format_args!("{:?}", self.format))
@@ -3251,7 +3251,7 @@ impl ::core::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBRESOURCE_FOOTPRINT {
+impl ::std::clone::Clone for D3D12_SUBRESOURCE_FOOTPRINT {
     fn clone(&self) -> Self {
         Self {
             format: self.format,
@@ -3276,7 +3276,7 @@ impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
 unsafe impl ::windows::Abi for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
     type Abi = D3D12_PLACED_SUBRESOURCE_FOOTPRINT_abi;
 }
-impl ::core::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+impl ::std::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
     fn default() -> Self {
         Self {
             offset: 0,
@@ -3284,7 +3284,7 @@ impl ::core::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+impl ::std::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PLACED_SUBRESOURCE_FOOTPRINT")
             .field("offset", &format_args!("{:?}", self.offset))
@@ -3292,7 +3292,7 @@ impl ::core::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+impl ::std::clone::Clone for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
     fn clone(&self) -> Self {
         Self {
             offset: self.offset,
@@ -3319,7 +3319,7 @@ impl D3D12_TEXTURE_COPY_LOCATION {}
 unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION {
     type Abi = D3D12_TEXTURE_COPY_LOCATION_abi;
 }
-impl ::core::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION {
+impl ::std::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEXTURE_COPY_LOCATION")
             .field("p_resource", &format_args!("{:?}", self.p_resource))
@@ -3328,7 +3328,7 @@ impl ::core::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_TEXTURE_COPY_LOCATION {
+impl ::std::default::Default for D3D12_TEXTURE_COPY_LOCATION {
     fn default() -> Self {
         Self {
             p_resource: ::std::default::Default::default(),
@@ -3337,7 +3337,7 @@ impl ::core::default::Default for D3D12_TEXTURE_COPY_LOCATION {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_TEXTURE_COPY_LOCATION {
+impl ::std::clone::Clone for D3D12_TEXTURE_COPY_LOCATION {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3350,8 +3350,8 @@ impl ::core::clone::Clone for D3D12_TEXTURE_COPY_LOCATION {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_TEXTURE_COPY_LOCATION_0 {
-    pub placed_footprint: ::core::mem::ManuallyDrop<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>,
-    pub subresource_index: ::core::mem::ManuallyDrop<u32>,
+    pub placed_footprint: ::std::mem::ManuallyDrop<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>,
+    pub subresource_index: ::std::mem::ManuallyDrop<u32>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -3361,17 +3361,17 @@ impl D3D12_TEXTURE_COPY_LOCATION_0 {}
 unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION_0 {
     type Abi = D3D12_TEXTURE_COPY_LOCATION_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION_0 {
+impl ::std::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEXTURE_COPY_LOCATION_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_TEXTURE_COPY_LOCATION_0 {
+impl ::std::default::Default for D3D12_TEXTURE_COPY_LOCATION_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_TEXTURE_COPY_LOCATION_0 {
+impl ::std::clone::Clone for D3D12_TEXTURE_COPY_LOCATION_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3397,7 +3397,7 @@ impl D3D12_TILED_RESOURCE_COORDINATE {}
 unsafe impl ::windows::Abi for D3D12_TILED_RESOURCE_COORDINATE {
     type Abi = D3D12_TILED_RESOURCE_COORDINATE_abi;
 }
-impl ::core::default::Default for D3D12_TILED_RESOURCE_COORDINATE {
+impl ::std::default::Default for D3D12_TILED_RESOURCE_COORDINATE {
     fn default() -> Self {
         Self {
             x: 0,
@@ -3407,7 +3407,7 @@ impl ::core::default::Default for D3D12_TILED_RESOURCE_COORDINATE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TILED_RESOURCE_COORDINATE {
+impl ::std::fmt::Debug for D3D12_TILED_RESOURCE_COORDINATE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TILED_RESOURCE_COORDINATE")
             .field("x", &format_args!("{:?}", self.x))
@@ -3417,7 +3417,7 @@ impl ::core::fmt::Debug for D3D12_TILED_RESOURCE_COORDINATE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TILED_RESOURCE_COORDINATE {
+impl ::std::clone::Clone for D3D12_TILED_RESOURCE_COORDINATE {
     fn clone(&self) -> Self {
         Self {
             x: self.x,
@@ -3445,7 +3445,7 @@ impl D3D12_TILE_REGION_SIZE {}
 unsafe impl ::windows::Abi for D3D12_TILE_REGION_SIZE {
     type Abi = D3D12_TILE_REGION_SIZE_abi;
 }
-impl ::core::default::Default for D3D12_TILE_REGION_SIZE {
+impl ::std::default::Default for D3D12_TILE_REGION_SIZE {
     fn default() -> Self {
         Self {
             num_tiles: 0,
@@ -3456,7 +3456,7 @@ impl ::core::default::Default for D3D12_TILE_REGION_SIZE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TILE_REGION_SIZE {
+impl ::std::fmt::Debug for D3D12_TILE_REGION_SIZE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TILE_REGION_SIZE")
             .field("num_tiles", &format_args!("{:?}", self.num_tiles))
@@ -3467,7 +3467,7 @@ impl ::core::fmt::Debug for D3D12_TILE_REGION_SIZE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TILE_REGION_SIZE {
+impl ::std::clone::Clone for D3D12_TILE_REGION_SIZE {
     fn clone(&self) -> Self {
         Self {
             num_tiles: self.num_tiles,
@@ -3536,7 +3536,7 @@ impl D3D12_VIEWPORT {}
 unsafe impl ::windows::Abi for D3D12_VIEWPORT {
     type Abi = D3D12_VIEWPORT_abi;
 }
-impl ::core::default::Default for D3D12_VIEWPORT {
+impl ::std::default::Default for D3D12_VIEWPORT {
     fn default() -> Self {
         Self {
             top_leftx: 0.0,
@@ -3548,7 +3548,7 @@ impl ::core::default::Default for D3D12_VIEWPORT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_VIEWPORT {
+impl ::std::fmt::Debug for D3D12_VIEWPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VIEWPORT")
             .field("top_leftx", &format_args!("{:?}", self.top_leftx))
@@ -3560,7 +3560,7 @@ impl ::core::fmt::Debug for D3D12_VIEWPORT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_VIEWPORT {
+impl ::std::clone::Clone for D3D12_VIEWPORT {
     fn clone(&self) -> Self {
         Self {
             top_leftx: self.top_leftx,
@@ -3734,7 +3734,7 @@ impl D3D12_RESOURCE_TRANSITION_BARRIER {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_TRANSITION_BARRIER {
     type Abi = D3D12_RESOURCE_TRANSITION_BARRIER_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
+impl ::std::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn default() -> Self {
         Self {
             p_resource: ::std::default::Default::default(),
@@ -3744,7 +3744,7 @@ impl ::core::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
+impl ::std::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_TRANSITION_BARRIER")
             .field("p_resource", &format_args!("{:?}", self.p_resource))
@@ -3754,7 +3754,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_TRANSITION_BARRIER {
+impl ::std::clone::Clone for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn clone(&self) -> Self {
         Self {
             p_resource: <::std::option::Option<ID3D12Resource> as std::clone::Clone>::clone(
@@ -3780,7 +3780,7 @@ impl D3D12_RESOURCE_ALIASING_BARRIER {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_ALIASING_BARRIER {
     type Abi = D3D12_RESOURCE_ALIASING_BARRIER_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
+impl ::std::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
     fn default() -> Self {
         Self {
             p_resource_before: ::std::default::Default::default(),
@@ -3788,7 +3788,7 @@ impl ::core::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
+impl ::std::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_ALIASING_BARRIER")
             .field(
@@ -3802,7 +3802,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_ALIASING_BARRIER {
+impl ::std::clone::Clone for D3D12_RESOURCE_ALIASING_BARRIER {
     fn clone(&self) -> Self {
         Self {
             p_resource_before: <::std::option::Option<ID3D12Resource> as std::clone::Clone>::clone(
@@ -3827,21 +3827,21 @@ impl D3D12_RESOURCE_UAV_BARRIER {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_UAV_BARRIER {
     type Abi = D3D12_RESOURCE_UAV_BARRIER_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_UAV_BARRIER {
+impl ::std::default::Default for D3D12_RESOURCE_UAV_BARRIER {
     fn default() -> Self {
         Self {
             p_resource: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
+impl ::std::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_UAV_BARRIER")
             .field("p_resource", &format_args!("{:?}", self.p_resource))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_UAV_BARRIER {
+impl ::std::clone::Clone for D3D12_RESOURCE_UAV_BARRIER {
     fn clone(&self) -> Self {
         Self {
             p_resource: <::std::option::Option<ID3D12Resource> as std::clone::Clone>::clone(
@@ -3869,7 +3869,7 @@ impl D3D12_RESOURCE_BARRIER {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER {
     type Abi = D3D12_RESOURCE_BARRIER_abi;
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_BARRIER {
+impl ::std::fmt::Debug for D3D12_RESOURCE_BARRIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_BARRIER")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -3878,7 +3878,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_BARRIER {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RESOURCE_BARRIER {
+impl ::std::default::Default for D3D12_RESOURCE_BARRIER {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -3887,7 +3887,7 @@ impl ::core::default::Default for D3D12_RESOURCE_BARRIER {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_BARRIER {
+impl ::std::clone::Clone for D3D12_RESOURCE_BARRIER {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -3900,9 +3900,9 @@ impl ::core::clone::Clone for D3D12_RESOURCE_BARRIER {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RESOURCE_BARRIER_0 {
-    pub transition: ::core::mem::ManuallyDrop<D3D12_RESOURCE_TRANSITION_BARRIER>,
-    pub aliasing: ::core::mem::ManuallyDrop<D3D12_RESOURCE_ALIASING_BARRIER>,
-    pub uav: ::core::mem::ManuallyDrop<D3D12_RESOURCE_UAV_BARRIER>,
+    pub transition: ::std::mem::ManuallyDrop<D3D12_RESOURCE_TRANSITION_BARRIER>,
+    pub aliasing: ::std::mem::ManuallyDrop<D3D12_RESOURCE_ALIASING_BARRIER>,
+    pub uav: ::std::mem::ManuallyDrop<D3D12_RESOURCE_UAV_BARRIER>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -3916,17 +3916,17 @@ impl D3D12_RESOURCE_BARRIER_0 {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_0 {
     type Abi = D3D12_RESOURCE_BARRIER_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_BARRIER_0 {
+impl ::std::fmt::Debug for D3D12_RESOURCE_BARRIER_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_BARRIER_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_RESOURCE_BARRIER_0 {
+impl ::std::default::Default for D3D12_RESOURCE_BARRIER_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_BARRIER_0 {
+impl ::std::clone::Clone for D3D12_RESOURCE_BARRIER_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -4036,7 +4036,7 @@ impl D3D12_DESCRIPTOR_HEAP_DESC {}
 unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_DESC {
     type Abi = D3D12_DESCRIPTOR_HEAP_DESC_abi;
 }
-impl ::core::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
+impl ::std::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -4046,7 +4046,7 @@ impl ::core::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DESCRIPTOR_HEAP_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -4059,7 +4059,7 @@ impl ::core::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DESCRIPTOR_HEAP_DESC {
+impl ::std::clone::Clone for D3D12_DESCRIPTOR_HEAP_DESC {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -4082,19 +4082,19 @@ impl D3D12_CPU_DESCRIPTOR_HANDLE {}
 unsafe impl ::windows::Abi for D3D12_CPU_DESCRIPTOR_HANDLE {
     type Abi = D3D12_CPU_DESCRIPTOR_HANDLE_abi;
 }
-impl ::core::default::Default for D3D12_CPU_DESCRIPTOR_HANDLE {
+impl ::std::default::Default for D3D12_CPU_DESCRIPTOR_HANDLE {
     fn default() -> Self {
         Self { ptr: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_CPU_DESCRIPTOR_HANDLE {
+impl ::std::fmt::Debug for D3D12_CPU_DESCRIPTOR_HANDLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_CPU_DESCRIPTOR_HANDLE")
             .field("ptr", &format_args!("{:?}", self.ptr))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_CPU_DESCRIPTOR_HANDLE {
+impl ::std::clone::Clone for D3D12_CPU_DESCRIPTOR_HANDLE {
     fn clone(&self) -> Self {
         Self { ptr: self.ptr }
     }
@@ -4112,19 +4112,19 @@ impl D3D12_GPU_DESCRIPTOR_HANDLE {}
 unsafe impl ::windows::Abi for D3D12_GPU_DESCRIPTOR_HANDLE {
     type Abi = D3D12_GPU_DESCRIPTOR_HANDLE_abi;
 }
-impl ::core::default::Default for D3D12_GPU_DESCRIPTOR_HANDLE {
+impl ::std::default::Default for D3D12_GPU_DESCRIPTOR_HANDLE {
     fn default() -> Self {
         Self { ptr: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_GPU_DESCRIPTOR_HANDLE {
+impl ::std::fmt::Debug for D3D12_GPU_DESCRIPTOR_HANDLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GPU_DESCRIPTOR_HANDLE")
             .field("ptr", &format_args!("{:?}", self.ptr))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GPU_DESCRIPTOR_HANDLE {
+impl ::std::clone::Clone for D3D12_GPU_DESCRIPTOR_HANDLE {
     fn clone(&self) -> Self {
         Self { ptr: self.ptr }
     }
@@ -4532,7 +4532,7 @@ impl D3D12_INDEX_BUFFER_VIEW {}
 unsafe impl ::windows::Abi for D3D12_INDEX_BUFFER_VIEW {
     type Abi = D3D12_INDEX_BUFFER_VIEW_abi;
 }
-impl ::core::default::Default for D3D12_INDEX_BUFFER_VIEW {
+impl ::std::default::Default for D3D12_INDEX_BUFFER_VIEW {
     fn default() -> Self {
         Self {
             buffer_location: 0,
@@ -4541,7 +4541,7 @@ impl ::core::default::Default for D3D12_INDEX_BUFFER_VIEW {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_INDEX_BUFFER_VIEW {
+impl ::std::fmt::Debug for D3D12_INDEX_BUFFER_VIEW {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INDEX_BUFFER_VIEW")
             .field(
@@ -4553,7 +4553,7 @@ impl ::core::fmt::Debug for D3D12_INDEX_BUFFER_VIEW {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INDEX_BUFFER_VIEW {
+impl ::std::clone::Clone for D3D12_INDEX_BUFFER_VIEW {
     fn clone(&self) -> Self {
         Self {
             buffer_location: self.buffer_location,
@@ -4577,7 +4577,7 @@ impl D3D12_VERTEX_BUFFER_VIEW {}
 unsafe impl ::windows::Abi for D3D12_VERTEX_BUFFER_VIEW {
     type Abi = D3D12_VERTEX_BUFFER_VIEW_abi;
 }
-impl ::core::default::Default for D3D12_VERTEX_BUFFER_VIEW {
+impl ::std::default::Default for D3D12_VERTEX_BUFFER_VIEW {
     fn default() -> Self {
         Self {
             buffer_location: 0,
@@ -4586,7 +4586,7 @@ impl ::core::default::Default for D3D12_VERTEX_BUFFER_VIEW {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_VERTEX_BUFFER_VIEW {
+impl ::std::fmt::Debug for D3D12_VERTEX_BUFFER_VIEW {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VERTEX_BUFFER_VIEW")
             .field(
@@ -4601,7 +4601,7 @@ impl ::core::fmt::Debug for D3D12_VERTEX_BUFFER_VIEW {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_VERTEX_BUFFER_VIEW {
+impl ::std::clone::Clone for D3D12_VERTEX_BUFFER_VIEW {
     fn clone(&self) -> Self {
         Self {
             buffer_location: self.buffer_location,
@@ -4626,7 +4626,7 @@ impl D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
 unsafe impl ::windows::Abi for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     type Abi = D3D12_STREAM_OUTPUT_BUFFER_VIEW_abi;
 }
-impl ::core::default::Default for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+impl ::std::default::Default for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     fn default() -> Self {
         Self {
             buffer_location: 0,
@@ -4635,7 +4635,7 @@ impl ::core::default::Default for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+impl ::std::fmt::Debug for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STREAM_OUTPUT_BUFFER_VIEW")
             .field(
@@ -4650,7 +4650,7 @@ impl ::core::fmt::Debug for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+impl ::std::clone::Clone for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     fn clone(&self) -> Self {
         Self {
             buffer_location: self.buffer_location,
@@ -4714,7 +4714,7 @@ impl D3D12_DISCARD_REGION {}
 unsafe impl ::windows::Abi for D3D12_DISCARD_REGION {
     type Abi = D3D12_DISCARD_REGION_abi;
 }
-impl ::core::default::Default for D3D12_DISCARD_REGION {
+impl ::std::default::Default for D3D12_DISCARD_REGION {
     fn default() -> Self {
         Self {
             num_rects: 0,
@@ -4724,7 +4724,7 @@ impl ::core::default::Default for D3D12_DISCARD_REGION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DISCARD_REGION {
+impl ::std::fmt::Debug for D3D12_DISCARD_REGION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DISCARD_REGION")
             .field("num_rects", &format_args!("{:?}", self.num_rects))
@@ -4740,7 +4740,7 @@ impl ::core::fmt::Debug for D3D12_DISCARD_REGION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DISCARD_REGION {
+impl ::std::clone::Clone for D3D12_DISCARD_REGION {
     fn clone(&self) -> Self {
         Self {
             num_rects: self.num_rects,
@@ -6531,7 +6531,7 @@ impl D3D12_HEAP_DESC {}
 unsafe impl ::windows::Abi for D3D12_HEAP_DESC {
     type Abi = D3D12_HEAP_DESC_abi;
 }
-impl ::core::default::Default for D3D12_HEAP_DESC {
+impl ::std::default::Default for D3D12_HEAP_DESC {
     fn default() -> Self {
         Self {
             size_in_bytes: 0,
@@ -6541,7 +6541,7 @@ impl ::core::default::Default for D3D12_HEAP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_HEAP_DESC {
+impl ::std::fmt::Debug for D3D12_HEAP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_HEAP_DESC")
             .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
@@ -6551,7 +6551,7 @@ impl ::core::fmt::Debug for D3D12_HEAP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_HEAP_DESC {
+impl ::std::clone::Clone for D3D12_HEAP_DESC {
     fn clone(&self) -> Self {
         Self {
             size_in_bytes: self.size_in_bytes,
@@ -7098,7 +7098,7 @@ impl D3D12_COMMAND_QUEUE_DESC {}
 unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_DESC {
     type Abi = D3D12_COMMAND_QUEUE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_COMMAND_QUEUE_DESC {
+impl ::std::default::Default for D3D12_COMMAND_QUEUE_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -7108,7 +7108,7 @@ impl ::core::default::Default for D3D12_COMMAND_QUEUE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
+impl ::std::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_COMMAND_QUEUE_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -7118,7 +7118,7 @@ impl ::core::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_COMMAND_QUEUE_DESC {
+impl ::std::clone::Clone for D3D12_COMMAND_QUEUE_DESC {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -7607,7 +7607,7 @@ impl D3D12_AUTO_BREADCRUMB_NODE {}
 unsafe impl ::windows::Abi for D3D12_AUTO_BREADCRUMB_NODE {
     type Abi = D3D12_AUTO_BREADCRUMB_NODE_abi;
 }
-impl ::core::default::Default for D3D12_AUTO_BREADCRUMB_NODE {
+impl ::std::default::Default for D3D12_AUTO_BREADCRUMB_NODE {
     fn default() -> Self {
         Self {
             p_command_list_debug_namea: ::std::ptr::null_mut(),
@@ -7623,7 +7623,7 @@ impl ::core::default::Default for D3D12_AUTO_BREADCRUMB_NODE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE {
+impl ::std::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_AUTO_BREADCRUMB_NODE")
             .field(
@@ -7663,7 +7663,7 @@ impl ::core::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_AUTO_BREADCRUMB_NODE {
+impl ::std::clone::Clone for D3D12_AUTO_BREADCRUMB_NODE {
     fn clone(&self) -> Self {
         Self {
             p_command_list_debug_namea: self.p_command_list_debug_namea,
@@ -7699,7 +7699,7 @@ impl D3D12_DRED_BREADCRUMB_CONTEXT {}
 unsafe impl ::windows::Abi for D3D12_DRED_BREADCRUMB_CONTEXT {
     type Abi = D3D12_DRED_BREADCRUMB_CONTEXT_abi;
 }
-impl ::core::default::Default for D3D12_DRED_BREADCRUMB_CONTEXT {
+impl ::std::default::Default for D3D12_DRED_BREADCRUMB_CONTEXT {
     fn default() -> Self {
         Self {
             breadcrumb_index: 0,
@@ -7707,7 +7707,7 @@ impl ::core::default::Default for D3D12_DRED_BREADCRUMB_CONTEXT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_BREADCRUMB_CONTEXT {
+impl ::std::fmt::Debug for D3D12_DRED_BREADCRUMB_CONTEXT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_BREADCRUMB_CONTEXT")
             .field(
@@ -7721,7 +7721,7 @@ impl ::core::fmt::Debug for D3D12_DRED_BREADCRUMB_CONTEXT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_BREADCRUMB_CONTEXT {
+impl ::std::clone::Clone for D3D12_DRED_BREADCRUMB_CONTEXT {
     fn clone(&self) -> Self {
         Self {
             breadcrumb_index: self.breadcrumb_index,
@@ -7767,7 +7767,7 @@ impl D3D12_AUTO_BREADCRUMB_NODE1 {}
 unsafe impl ::windows::Abi for D3D12_AUTO_BREADCRUMB_NODE1 {
     type Abi = D3D12_AUTO_BREADCRUMB_NODE1_abi;
 }
-impl ::core::default::Default for D3D12_AUTO_BREADCRUMB_NODE1 {
+impl ::std::default::Default for D3D12_AUTO_BREADCRUMB_NODE1 {
     fn default() -> Self {
         Self {
             p_command_list_debug_namea: ::std::ptr::null_mut(),
@@ -7785,7 +7785,7 @@ impl ::core::default::Default for D3D12_AUTO_BREADCRUMB_NODE1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE1 {
+impl ::std::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_AUTO_BREADCRUMB_NODE1")
             .field(
@@ -7833,7 +7833,7 @@ impl ::core::fmt::Debug for D3D12_AUTO_BREADCRUMB_NODE1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_AUTO_BREADCRUMB_NODE1 {
+impl ::std::clone::Clone for D3D12_AUTO_BREADCRUMB_NODE1 {
     fn clone(&self) -> Self {
         Self {
             p_command_list_debug_namea: self.p_command_list_debug_namea,
@@ -8117,7 +8117,7 @@ impl D3D12_RENDER_TARGET_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_BLEND_DESC {
     type Abi = D3D12_RENDER_TARGET_BLEND_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_TARGET_BLEND_DESC {
+impl ::std::default::Default for D3D12_RENDER_TARGET_BLEND_DESC {
     fn default() -> Self {
         Self {
             blend_enable: ::std::default::Default::default(),
@@ -8133,7 +8133,7 @@ impl ::core::default::Default for D3D12_RENDER_TARGET_BLEND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_TARGET_BLEND_DESC {
+impl ::std::fmt::Debug for D3D12_RENDER_TARGET_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_TARGET_BLEND_DESC")
             .field("blend_enable", &format_args!("{:?}", self.blend_enable))
@@ -8161,7 +8161,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_TARGET_BLEND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_TARGET_BLEND_DESC {
+impl ::std::clone::Clone for D3D12_RENDER_TARGET_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             blend_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.blend_enable),
@@ -8196,7 +8196,7 @@ impl D3D12_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D12_BLEND_DESC {
     type Abi = D3D12_BLEND_DESC_abi;
 }
-impl ::core::default::Default for D3D12_BLEND_DESC {
+impl ::std::default::Default for D3D12_BLEND_DESC {
     fn default() -> Self {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
@@ -8214,7 +8214,7 @@ impl ::core::default::Default for D3D12_BLEND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BLEND_DESC {
+impl ::std::fmt::Debug for D3D12_BLEND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BLEND_DESC")
             .field(
@@ -8229,7 +8229,7 @@ impl ::core::fmt::Debug for D3D12_BLEND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BLEND_DESC {
+impl ::std::clone::Clone for D3D12_BLEND_DESC {
     fn clone(&self) -> Self {
         Self {
             alpha_to_coverage_enable: <::windows::BOOL as std::clone::Clone>::clone(
@@ -8258,7 +8258,7 @@ impl D3D12_BUFFER_RTV {}
 unsafe impl ::windows::Abi for D3D12_BUFFER_RTV {
     type Abi = D3D12_BUFFER_RTV_abi;
 }
-impl ::core::default::Default for D3D12_BUFFER_RTV {
+impl ::std::default::Default for D3D12_BUFFER_RTV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -8266,7 +8266,7 @@ impl ::core::default::Default for D3D12_BUFFER_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BUFFER_RTV {
+impl ::std::fmt::Debug for D3D12_BUFFER_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUFFER_RTV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -8274,7 +8274,7 @@ impl ::core::fmt::Debug for D3D12_BUFFER_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BUFFER_RTV {
+impl ::std::clone::Clone for D3D12_BUFFER_RTV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -8337,7 +8337,7 @@ impl D3D12_BUFFER_SRV {}
 unsafe impl ::windows::Abi for D3D12_BUFFER_SRV {
     type Abi = D3D12_BUFFER_SRV_abi;
 }
-impl ::core::default::Default for D3D12_BUFFER_SRV {
+impl ::std::default::Default for D3D12_BUFFER_SRV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -8347,7 +8347,7 @@ impl ::core::default::Default for D3D12_BUFFER_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BUFFER_SRV {
+impl ::std::fmt::Debug for D3D12_BUFFER_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUFFER_SRV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -8360,7 +8360,7 @@ impl ::core::fmt::Debug for D3D12_BUFFER_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BUFFER_SRV {
+impl ::std::clone::Clone for D3D12_BUFFER_SRV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -8425,7 +8425,7 @@ impl D3D12_BUFFER_UAV {}
 unsafe impl ::windows::Abi for D3D12_BUFFER_UAV {
     type Abi = D3D12_BUFFER_UAV_abi;
 }
-impl ::core::default::Default for D3D12_BUFFER_UAV {
+impl ::std::default::Default for D3D12_BUFFER_UAV {
     fn default() -> Self {
         Self {
             first_element: 0,
@@ -8436,7 +8436,7 @@ impl ::core::default::Default for D3D12_BUFFER_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BUFFER_UAV {
+impl ::std::fmt::Debug for D3D12_BUFFER_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUFFER_UAV")
             .field("first_element", &format_args!("{:?}", self.first_element))
@@ -8453,7 +8453,7 @@ impl ::core::fmt::Debug for D3D12_BUFFER_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BUFFER_UAV {
+impl ::std::clone::Clone for D3D12_BUFFER_UAV {
     fn clone(&self) -> Self {
         Self {
             first_element: self.first_element,
@@ -8678,7 +8678,7 @@ impl D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
 unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
     type Abi = D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE_abi;
 }
-impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+impl ::std::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
     fn default() -> Self {
         Self {
             start_address: 0,
@@ -8686,7 +8686,7 @@ impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+impl ::std::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE")
             .field("start_address", &format_args!("{:?}", self.start_address))
@@ -8697,7 +8697,7 @@ impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+impl ::std::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
     fn clone(&self) -> Self {
         Self {
             start_address: self.start_address,
@@ -8733,7 +8733,7 @@ impl D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
     type Abi = D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
     fn default() -> Self {
         Self {
             transform3x4: 0,
@@ -8746,7 +8746,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC")
             .field("transform3x4", &format_args!("{:?}", self.transform3x4))
@@ -8759,7 +8759,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+impl ::std::clone::Clone for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
     fn clone(&self) -> Self {
         Self {
             transform3x4: self.transform3x4,
@@ -8788,7 +8788,7 @@ impl D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
     type Abi = D3D12_RAYTRACING_GEOMETRY_AABBS_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
     fn default() -> Self {
         Self {
             aabb_count: 0,
@@ -8796,7 +8796,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_AABBS_DESC")
             .field("aabb_count", &format_args!("{:?}", self.aabb_count))
@@ -8804,7 +8804,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+impl ::std::clone::Clone for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
     fn clone(&self) -> Self {
         Self {
             aabb_count: self.aabb_count,
@@ -8833,7 +8833,7 @@ impl D3D12_RAYTRACING_GEOMETRY_DESC {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_DESC {
     type Abi = D3D12_RAYTRACING_GEOMETRY_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -8842,7 +8842,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC {
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -8851,7 +8851,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_GEOMETRY_DESC {
+impl ::std::clone::Clone for D3D12_RAYTRACING_GEOMETRY_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -8864,8 +8864,8 @@ impl ::core::clone::Clone for D3D12_RAYTRACING_GEOMETRY_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RAYTRACING_GEOMETRY_DESC_0 {
-    pub triangles: ::core::mem::ManuallyDrop<D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC>,
-    pub aab_bs: ::core::mem::ManuallyDrop<D3D12_RAYTRACING_GEOMETRY_AABBS_DESC>,
+    pub triangles: ::std::mem::ManuallyDrop<D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC>,
+    pub aab_bs: ::std::mem::ManuallyDrop<D3D12_RAYTRACING_GEOMETRY_AABBS_DESC>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -8878,18 +8878,18 @@ impl D3D12_RAYTRACING_GEOMETRY_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
     type Abi = D3D12_RAYTRACING_GEOMETRY_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
+impl ::std::clone::Clone for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -8922,7 +8922,7 @@ impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {}
 unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     type Abi = D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_abi;
 }
-impl ::core::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
+impl ::std::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -8933,7 +8933,7 @@ impl ::core::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
+impl ::std::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -8944,7 +8944,7 @@ impl ::core::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_
         }
     }
 }
-impl ::core::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
+impl ::std::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -8957,9 +8957,9 @@ impl ::core::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPU
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
-    pub instance_descs: ::core::mem::ManuallyDrop<u64>,
-    pub p_geometry_descs: ::core::mem::ManuallyDrop<*mut D3D12_RAYTRACING_GEOMETRY_DESC>,
-    pub pp_geometry_descs: ::core::mem::ManuallyDrop<*mut *mut D3D12_RAYTRACING_GEOMETRY_DESC>,
+    pub instance_descs: ::std::mem::ManuallyDrop<u64>,
+    pub p_geometry_descs: ::std::mem::ManuallyDrop<*mut D3D12_RAYTRACING_GEOMETRY_DESC>,
+    pub pp_geometry_descs: ::std::mem::ManuallyDrop<*mut *mut D3D12_RAYTRACING_GEOMETRY_DESC>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -8973,18 +8973,18 @@ impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {}
 unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
     type Abi = D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
+impl ::std::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
+impl ::std::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
+impl ::std::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -9015,7 +9015,7 @@ impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     type Abi = D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
+impl ::std::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     fn default() -> Self {
         Self {
             dest_acceleration_structure_data: 0,
@@ -9025,7 +9025,7 @@ impl ::core::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
+impl ::std::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC")
             .field(
@@ -9044,7 +9044,7 @@ impl ::core::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
+impl ::std::clone::Clone for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     fn clone(&self) -> Self {
         Self {
             dest_acceleration_structure_data: self.dest_acceleration_structure_data,
@@ -9076,7 +9076,7 @@ unsafe impl ::windows::Abi
 {
     type Abi = D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER_abi;
 }
-impl ::core::default::Default
+impl ::std::default::Default
     for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER
 {
     fn default() -> Self {
@@ -9086,7 +9086,7 @@ impl ::core::default::Default
         }
     }
 }
-impl ::core::fmt::Debug
+impl ::std::fmt::Debug
     for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -9096,7 +9096,7 @@ impl ::core::fmt::Debug
             .finish()
     }
 }
-impl ::core::clone::Clone
+impl ::std::clone::Clone
     for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER
 {
     fn clone(&self) -> Self {
@@ -9120,7 +9120,7 @@ impl D3D12_CACHED_PIPELINE_STATE {}
 unsafe impl ::windows::Abi for D3D12_CACHED_PIPELINE_STATE {
     type Abi = D3D12_CACHED_PIPELINE_STATE_abi;
 }
-impl ::core::default::Default for D3D12_CACHED_PIPELINE_STATE {
+impl ::std::default::Default for D3D12_CACHED_PIPELINE_STATE {
     fn default() -> Self {
         Self {
             p_cached_blob: ::std::ptr::null_mut(),
@@ -9128,7 +9128,7 @@ impl ::core::default::Default for D3D12_CACHED_PIPELINE_STATE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_CACHED_PIPELINE_STATE {
+impl ::std::fmt::Debug for D3D12_CACHED_PIPELINE_STATE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_CACHED_PIPELINE_STATE")
             .field("p_cached_blob", &format_args!("{:?}", self.p_cached_blob))
@@ -9139,7 +9139,7 @@ impl ::core::fmt::Debug for D3D12_CACHED_PIPELINE_STATE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_CACHED_PIPELINE_STATE {
+impl ::std::clone::Clone for D3D12_CACHED_PIPELINE_STATE {
     fn clone(&self) -> Self {
         Self {
             p_cached_blob: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(
@@ -9163,7 +9163,7 @@ impl D3D12_DEPTH_STENCIL_VALUE {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VALUE {
     type Abi = D3D12_DEPTH_STENCIL_VALUE_abi;
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCIL_VALUE {
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_VALUE {
     fn default() -> Self {
         Self {
             depth: 0.0,
@@ -9171,7 +9171,7 @@ impl ::core::default::Default for D3D12_DEPTH_STENCIL_VALUE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_VALUE {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VALUE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCIL_VALUE")
             .field("depth", &format_args!("{:?}", self.depth))
@@ -9179,7 +9179,7 @@ impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_VALUE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_VALUE {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCIL_VALUE {
     fn clone(&self) -> Self {
         Self {
             depth: self.depth,
@@ -9202,7 +9202,7 @@ impl D3D12_CLEAR_VALUE {}
 unsafe impl ::windows::Abi for D3D12_CLEAR_VALUE {
     type Abi = D3D12_CLEAR_VALUE_abi;
 }
-impl ::core::fmt::Debug for D3D12_CLEAR_VALUE {
+impl ::std::fmt::Debug for D3D12_CLEAR_VALUE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_CLEAR_VALUE")
             .field("format", &format_args!("{:?}", self.format))
@@ -9210,7 +9210,7 @@ impl ::core::fmt::Debug for D3D12_CLEAR_VALUE {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_CLEAR_VALUE {
+impl ::std::default::Default for D3D12_CLEAR_VALUE {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -9218,7 +9218,7 @@ impl ::core::default::Default for D3D12_CLEAR_VALUE {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_CLEAR_VALUE {
+impl ::std::clone::Clone for D3D12_CLEAR_VALUE {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -9231,8 +9231,8 @@ impl ::core::clone::Clone for D3D12_CLEAR_VALUE {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_CLEAR_VALUE_0 {
-    pub color: ::core::mem::ManuallyDrop<[f32; 4usize]>,
-    pub depth_stencil: ::core::mem::ManuallyDrop<D3D12_DEPTH_STENCIL_VALUE>,
+    pub color: ::std::mem::ManuallyDrop<[f32; 4usize]>,
+    pub depth_stencil: ::std::mem::ManuallyDrop<D3D12_DEPTH_STENCIL_VALUE>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -9242,17 +9242,17 @@ impl D3D12_CLEAR_VALUE_0 {}
 unsafe impl ::windows::Abi for D3D12_CLEAR_VALUE_0 {
     type Abi = D3D12_CLEAR_VALUE_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_CLEAR_VALUE_0 {
+impl ::std::fmt::Debug for D3D12_CLEAR_VALUE_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_CLEAR_VALUE_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_CLEAR_VALUE_0 {
+impl ::std::default::Default for D3D12_CLEAR_VALUE_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_CLEAR_VALUE_0 {
+impl ::std::clone::Clone for D3D12_CLEAR_VALUE_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -9563,7 +9563,7 @@ impl D3D12_INDIRECT_ARGUMENT_DESC {}
 unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC {
     type Abi = D3D12_INDIRECT_ARGUMENT_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC {
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INDIRECT_ARGUMENT_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -9571,7 +9571,7 @@ impl ::core::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_INDIRECT_ARGUMENT_DESC {
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -9579,7 +9579,7 @@ impl ::core::default::Default for D3D12_INDIRECT_ARGUMENT_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC {
+impl ::std::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -9592,11 +9592,11 @@ impl ::core::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_INDIRECT_ARGUMENT_DESC_0 {
-    pub vertex_buffer: ::core::mem::ManuallyDrop<D3D12_INDIRECT_ARGUMENT_DESC_0_1>,
-    pub constant: ::core::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
-    pub constant_buffer_view: ::core::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
-    pub shader_resource_view: ::core::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
-    pub unordered_access_view: ::core::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
+    pub vertex_buffer: ::std::mem::ManuallyDrop<D3D12_INDIRECT_ARGUMENT_DESC_0_1>,
+    pub constant: ::std::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
+    pub constant_buffer_view: ::std::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
+    pub shader_resource_view: ::std::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
+    pub unordered_access_view: ::std::mem::ManuallyDrop<::windows::NOT_YET_SUPPORTED_TYPE>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -9612,17 +9612,17 @@ impl D3D12_INDIRECT_ARGUMENT_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0 {
     type Abi = D3D12_INDIRECT_ARGUMENT_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0 {
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INDIRECT_ARGUMENT_DESC_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0 {
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC_0 {
+impl ::std::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -9645,19 +9645,19 @@ impl D3D12_INDIRECT_ARGUMENT_DESC_0_1 {}
 unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
     type Abi = D3D12_INDIRECT_ARGUMENT_DESC_0_1_abi;
 }
-impl ::core::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
     fn default() -> Self {
         Self { slot: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INDIRECT_ARGUMENT_DESC_0_1")
             .field("slot", &format_args!("{:?}", self.slot))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+impl ::std::clone::Clone for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
     fn clone(&self) -> Self {
         Self { slot: self.slot }
     }
@@ -9679,7 +9679,7 @@ impl D3D12_COMMAND_SIGNATURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_COMMAND_SIGNATURE_DESC {
     type Abi = D3D12_COMMAND_SIGNATURE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_COMMAND_SIGNATURE_DESC {
+impl ::std::default::Default for D3D12_COMMAND_SIGNATURE_DESC {
     fn default() -> Self {
         Self {
             byte_stride: 0,
@@ -9689,7 +9689,7 @@ impl ::core::default::Default for D3D12_COMMAND_SIGNATURE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_COMMAND_SIGNATURE_DESC {
+impl ::std::fmt::Debug for D3D12_COMMAND_SIGNATURE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_COMMAND_SIGNATURE_DESC")
             .field("byte_stride", &format_args!("{:?}", self.byte_stride))
@@ -9705,7 +9705,7 @@ impl ::core::fmt::Debug for D3D12_COMMAND_SIGNATURE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_COMMAND_SIGNATURE_DESC {
+impl ::std::clone::Clone for D3D12_COMMAND_SIGNATURE_DESC {
     fn clone(&self) -> Self {
         Self {
             byte_stride: self.byte_stride,
@@ -9766,7 +9766,7 @@ impl D3D12_SHADER_BYTECODE {}
 unsafe impl ::windows::Abi for D3D12_SHADER_BYTECODE {
     type Abi = D3D12_SHADER_BYTECODE_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_BYTECODE {
+impl ::std::default::Default for D3D12_SHADER_BYTECODE {
     fn default() -> Self {
         Self {
             p_shader_bytecode: ::std::ptr::null_mut(),
@@ -9774,7 +9774,7 @@ impl ::core::default::Default for D3D12_SHADER_BYTECODE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_BYTECODE {
+impl ::std::fmt::Debug for D3D12_SHADER_BYTECODE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_BYTECODE")
             .field(
@@ -9788,7 +9788,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_BYTECODE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_BYTECODE {
+impl ::std::clone::Clone for D3D12_SHADER_BYTECODE {
     fn clone(&self) -> Self {
         Self {
             p_shader_bytecode: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(
@@ -9859,7 +9859,7 @@ impl D3D12_COMPUTE_PIPELINE_STATE_DESC {}
 unsafe impl ::windows::Abi for D3D12_COMPUTE_PIPELINE_STATE_DESC {
     type Abi = D3D12_COMPUTE_PIPELINE_STATE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_COMPUTE_PIPELINE_STATE_DESC {
+impl ::std::default::Default for D3D12_COMPUTE_PIPELINE_STATE_DESC {
     fn default() -> Self {
         Self {
             p_root_signature: ::std::default::Default::default(),
@@ -9870,7 +9870,7 @@ impl ::core::default::Default for D3D12_COMPUTE_PIPELINE_STATE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_COMPUTE_PIPELINE_STATE_DESC {
+impl ::std::fmt::Debug for D3D12_COMPUTE_PIPELINE_STATE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_COMPUTE_PIPELINE_STATE_DESC")
             .field(
@@ -9884,7 +9884,7 @@ impl ::core::fmt::Debug for D3D12_COMPUTE_PIPELINE_STATE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_COMPUTE_PIPELINE_STATE_DESC {
+impl ::std::clone::Clone for D3D12_COMPUTE_PIPELINE_STATE_DESC {
     fn clone(&self) -> Self {
         Self {
             p_root_signature:
@@ -9991,7 +9991,7 @@ impl D3D12_CONSTANT_BUFFER_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_CONSTANT_BUFFER_VIEW_DESC {
     type Abi = D3D12_CONSTANT_BUFFER_VIEW_DESC_abi;
 }
-impl ::core::default::Default for D3D12_CONSTANT_BUFFER_VIEW_DESC {
+impl ::std::default::Default for D3D12_CONSTANT_BUFFER_VIEW_DESC {
     fn default() -> Self {
         Self {
             buffer_location: 0,
@@ -9999,7 +9999,7 @@ impl ::core::default::Default for D3D12_CONSTANT_BUFFER_VIEW_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_CONSTANT_BUFFER_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_CONSTANT_BUFFER_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_CONSTANT_BUFFER_VIEW_DESC")
             .field(
@@ -10010,7 +10010,7 @@ impl ::core::fmt::Debug for D3D12_CONSTANT_BUFFER_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_CONSTANT_BUFFER_VIEW_DESC {
+impl ::std::clone::Clone for D3D12_CONSTANT_BUFFER_VIEW_DESC {
     fn clone(&self) -> Self {
         Self {
             buffer_location: self.buffer_location,
@@ -10214,14 +10214,14 @@ impl D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {}
 unsafe impl ::windows::Abi for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     type Abi = D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS_abi;
 }
-impl ::core::default::Default for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::default::Default for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     fn default() -> Self {
         Self {
             shader_patch_mode: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::fmt::Debug for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS")
             .field(
@@ -10231,7 +10231,7 @@ impl ::core::fmt::Debug for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTIN
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::clone::Clone for D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     fn clone(&self) -> Self {
         Self {
             shader_patch_mode: self.shader_patch_mode,
@@ -10335,7 +10335,7 @@ impl D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {}
 unsafe impl ::windows::Abi for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     type Abi = D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS_abi;
 }
-impl ::core::default::Default for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::default::Default for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     fn default() -> Self {
         Self {
             max_messages_per_command_list: 0,
@@ -10344,7 +10344,7 @@ impl ::core::default::Default for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTIN
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS")
             .field(
@@ -10362,7 +10362,7 @@ impl ::core::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
+impl ::std::clone::Clone for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     fn clone(&self) -> Self {
         Self {
             max_messages_per_command_list: self.max_messages_per_command_list,
@@ -10384,14 +10384,14 @@ impl D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {}
 unsafe impl ::windows::Abi for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     type Abi = D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR_abi;
 }
-impl ::core::default::Default for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
+impl ::std::default::Default for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     fn default() -> Self {
         Self {
             slowdown_factor: 0.0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
+impl ::std::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR")
             .field(
@@ -10401,7 +10401,7 @@ impl ::core::fmt::Debug for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
+impl ::std::clone::Clone for D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     fn clone(&self) -> Self {
         Self {
             slowdown_factor: self.slowdown_factor,
@@ -10583,7 +10583,7 @@ impl D3D12_DEPTH_STENCILOP_DESC {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCILOP_DESC {
     type Abi = D3D12_DEPTH_STENCILOP_DESC_abi;
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCILOP_DESC {
+impl ::std::default::Default for D3D12_DEPTH_STENCILOP_DESC {
     fn default() -> Self {
         Self {
             stencil_fail_op: ::std::default::Default::default(),
@@ -10593,7 +10593,7 @@ impl ::core::default::Default for D3D12_DEPTH_STENCILOP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCILOP_DESC {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCILOP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCILOP_DESC")
             .field(
@@ -10612,7 +10612,7 @@ impl ::core::fmt::Debug for D3D12_DEPTH_STENCILOP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCILOP_DESC {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCILOP_DESC {
     fn clone(&self) -> Self {
         Self {
             stencil_fail_op: self.stencil_fail_op,
@@ -10689,7 +10689,7 @@ impl D3D12_DEPTH_STENCIL_DESC {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_DESC {
     type Abi = D3D12_DEPTH_STENCIL_DESC_abi;
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCIL_DESC {
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_DESC {
     fn default() -> Self {
         Self {
             depth_enable: ::std::default::Default::default(),
@@ -10703,7 +10703,7 @@ impl ::core::default::Default for D3D12_DEPTH_STENCIL_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_DESC {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCIL_DESC")
             .field("depth_enable", &format_args!("{:?}", self.depth_enable))
@@ -10726,7 +10726,7 @@ impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_DESC {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCIL_DESC {
     fn clone(&self) -> Self {
         Self {
             depth_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.depth_enable),
@@ -10771,7 +10771,7 @@ impl D3D12_DEPTH_STENCIL_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_DESC1 {
     type Abi = D3D12_DEPTH_STENCIL_DESC1_abi;
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCIL_DESC1 {
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_DESC1 {
     fn default() -> Self {
         Self {
             depth_enable: ::std::default::Default::default(),
@@ -10786,7 +10786,7 @@ impl ::core::default::Default for D3D12_DEPTH_STENCIL_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_DESC1 {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCIL_DESC1")
             .field("depth_enable", &format_args!("{:?}", self.depth_enable))
@@ -10813,7 +10813,7 @@ impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_DESC1 {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCIL_DESC1 {
     fn clone(&self) -> Self {
         Self {
             depth_enable: <::windows::BOOL as std::clone::Clone>::clone(&self.depth_enable),
@@ -10925,19 +10925,19 @@ impl D3D12_TEX1D_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_DSV {
     type Abi = D3D12_TEX1D_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_DSV {
+impl ::std::default::Default for D3D12_TEX1D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_DSV {
+impl ::std::fmt::Debug for D3D12_TEX1D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_DSV {
+impl ::std::clone::Clone for D3D12_TEX1D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -10960,7 +10960,7 @@ impl D3D12_TEX1D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_DSV {
     type Abi = D3D12_TEX1D_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_ARRAY_DSV {
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -10969,7 +10969,7 @@ impl ::core::default::Default for D3D12_TEX1D_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -10981,7 +10981,7 @@ impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_ARRAY_DSV {
+impl ::std::clone::Clone for D3D12_TEX1D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -11004,19 +11004,19 @@ impl D3D12_TEX2D_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_DSV {
     type Abi = D3D12_TEX2D_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_DSV {
+impl ::std::default::Default for D3D12_TEX2D_DSV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_DSV {
+impl ::std::fmt::Debug for D3D12_TEX2D_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_DSV {
+impl ::std::clone::Clone for D3D12_TEX2D_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -11039,7 +11039,7 @@ impl D3D12_TEX2D_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_DSV {
     type Abi = D3D12_TEX2D_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_ARRAY_DSV {
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_DSV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -11048,7 +11048,7 @@ impl ::core::default::Default for D3D12_TEX2D_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_ARRAY_DSV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -11060,7 +11060,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_ARRAY_DSV {
+impl ::std::clone::Clone for D3D12_TEX2D_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -11083,14 +11083,14 @@ impl D3D12_TEX2DMS_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_DSV {
     type Abi = D3D12_TEX2DMS_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_DSV {
+impl ::std::default::Default for D3D12_TEX2DMS_DSV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_DSV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_DSV")
             .field(
@@ -11100,7 +11100,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_DSV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_DSV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -11122,7 +11122,7 @@ impl D3D12_TEX2DMS_ARRAY_DSV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_DSV {
     type Abi = D3D12_TEX2DMS_ARRAY_DSV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_DSV {
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_DSV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -11130,7 +11130,7 @@ impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_DSV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_DSV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_DSV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_ARRAY_DSV")
             .field(
@@ -11141,7 +11141,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_DSV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_ARRAY_DSV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_ARRAY_DSV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -11171,7 +11171,7 @@ impl D3D12_DEPTH_STENCIL_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VIEW_DESC {
     type Abi = D3D12_DEPTH_STENCIL_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCIL_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -11181,7 +11181,7 @@ impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -11191,7 +11191,7 @@ impl ::core::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_VIEW_DESC {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCIL_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -11204,12 +11204,12 @@ impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
-    pub texture1d: ::core::mem::ManuallyDrop<D3D12_TEX1D_DSV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_DSV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D12_TEX2D_DSV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_DSV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_DSV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_DSV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D12_TEX1D_DSV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_DSV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D12_TEX2D_DSV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_DSV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_DSV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_DSV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -11226,17 +11226,17 @@ impl D3D12_DEPTH_STENCIL_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     type Abi = D3D12_DEPTH_STENCIL_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEPTH_STENCIL_VIEW_DESC_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -11303,7 +11303,7 @@ impl D3D12_DEVICE_REMOVED_EXTENDED_DATA {}
 unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     type Abi = D3D12_DEVICE_REMOVED_EXTENDED_DATA_abi;
 }
-impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     fn default() -> Self {
         Self {
             flags: ::std::default::Default::default(),
@@ -11311,7 +11311,7 @@ impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEVICE_REMOVED_EXTENDED_DATA")
             .field("flags", &format_args!("{:?}", self.flags))
@@ -11322,7 +11322,7 @@ impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     fn clone(&self) -> Self {
         Self {
             flags: self.flags,
@@ -11346,14 +11346,14 @@ impl D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {}
 unsafe impl ::windows::Abi for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     type Abi = D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT_abi;
 }
-impl ::core::default::Default for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
+impl ::std::default::Default for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     fn default() -> Self {
         Self {
             p_head_auto_breadcrumb_node: ::std::ptr::null_mut(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
+impl ::std::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT")
             .field(
@@ -11363,7 +11363,7 @@ impl ::core::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
+impl ::std::clone::Clone for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     fn clone(&self) -> Self {
         Self {
             p_head_auto_breadcrumb_node:
@@ -11457,7 +11457,7 @@ impl D3D12_DRED_ALLOCATION_NODE {}
 unsafe impl ::windows::Abi for D3D12_DRED_ALLOCATION_NODE {
     type Abi = D3D12_DRED_ALLOCATION_NODE_abi;
 }
-impl ::core::default::Default for D3D12_DRED_ALLOCATION_NODE {
+impl ::std::default::Default for D3D12_DRED_ALLOCATION_NODE {
     fn default() -> Self {
         Self {
             object_namea: ::std::ptr::null_mut(),
@@ -11467,7 +11467,7 @@ impl ::core::default::Default for D3D12_DRED_ALLOCATION_NODE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_ALLOCATION_NODE {
+impl ::std::fmt::Debug for D3D12_DRED_ALLOCATION_NODE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_ALLOCATION_NODE")
             .field("object_namea", &format_args!("{:?}", self.object_namea))
@@ -11480,7 +11480,7 @@ impl ::core::fmt::Debug for D3D12_DRED_ALLOCATION_NODE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_ALLOCATION_NODE {
+impl ::std::clone::Clone for D3D12_DRED_ALLOCATION_NODE {
     fn clone(&self) -> Self {
         Self {
             object_namea: self.object_namea,
@@ -11509,7 +11509,7 @@ impl D3D12_DRED_PAGE_FAULT_OUTPUT {}
 unsafe impl ::windows::Abi for D3D12_DRED_PAGE_FAULT_OUTPUT {
     type Abi = D3D12_DRED_PAGE_FAULT_OUTPUT_abi;
 }
-impl ::core::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT {
+impl ::std::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT {
     fn default() -> Self {
         Self {
             page_fault_va: 0,
@@ -11518,7 +11518,7 @@ impl ::core::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT {
+impl ::std::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_PAGE_FAULT_OUTPUT")
             .field("page_fault_va", &format_args!("{:?}", self.page_fault_va))
@@ -11533,7 +11533,7 @@ impl ::core::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_PAGE_FAULT_OUTPUT {
+impl ::std::clone::Clone for D3D12_DRED_PAGE_FAULT_OUTPUT {
     fn clone(&self) -> Self {
         Self {
             page_fault_va: self.page_fault_va,
@@ -11567,7 +11567,7 @@ impl D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {}
 unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     type Abi = D3D12_DEVICE_REMOVED_EXTENDED_DATA1_abi;
 }
-impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
+impl ::std::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     fn default() -> Self {
         Self {
             device_removed_reason: ::std::default::Default::default(),
@@ -11576,7 +11576,7 @@ impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
+impl ::std::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEVICE_REMOVED_EXTENDED_DATA1")
             .field(
@@ -11594,7 +11594,7 @@ impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
+impl ::std::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     fn clone(&self) -> Self {
         Self {
             device_removed_reason: <::windows::ErrorCode as std::clone::Clone>::clone(
@@ -11623,14 +11623,14 @@ impl D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {}
 unsafe impl ::windows::Abi for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     type Abi = D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1_abi;
 }
-impl ::core::default::Default for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
+impl ::std::default::Default for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     fn default() -> Self {
         Self {
             p_head_auto_breadcrumb_node: ::std::ptr::null_mut(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
+impl ::std::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1")
             .field(
@@ -11640,7 +11640,7 @@ impl ::core::fmt::Debug for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
+impl ::std::clone::Clone for D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     fn clone(&self) -> Self {
         Self {
             p_head_auto_breadcrumb_node:
@@ -11673,7 +11673,7 @@ impl D3D12_DRED_ALLOCATION_NODE1 {}
 unsafe impl ::windows::Abi for D3D12_DRED_ALLOCATION_NODE1 {
     type Abi = D3D12_DRED_ALLOCATION_NODE1_abi;
 }
-impl ::core::default::Default for D3D12_DRED_ALLOCATION_NODE1 {
+impl ::std::default::Default for D3D12_DRED_ALLOCATION_NODE1 {
     fn default() -> Self {
         Self {
             object_namea: ::std::ptr::null_mut(),
@@ -11684,7 +11684,7 @@ impl ::core::default::Default for D3D12_DRED_ALLOCATION_NODE1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_ALLOCATION_NODE1 {
+impl ::std::fmt::Debug for D3D12_DRED_ALLOCATION_NODE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_ALLOCATION_NODE1")
             .field("object_namea", &format_args!("{:?}", self.object_namea))
@@ -11698,7 +11698,7 @@ impl ::core::fmt::Debug for D3D12_DRED_ALLOCATION_NODE1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_ALLOCATION_NODE1 {
+impl ::std::clone::Clone for D3D12_DRED_ALLOCATION_NODE1 {
     fn clone(&self) -> Self {
         Self {
             object_namea: self.object_namea,
@@ -11730,7 +11730,7 @@ impl D3D12_DRED_PAGE_FAULT_OUTPUT1 {}
 unsafe impl ::windows::Abi for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     type Abi = D3D12_DRED_PAGE_FAULT_OUTPUT1_abi;
 }
-impl ::core::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
+impl ::std::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     fn default() -> Self {
         Self {
             page_fault_va: 0,
@@ -11739,7 +11739,7 @@ impl ::core::default::Default for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
+impl ::std::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRED_PAGE_FAULT_OUTPUT1")
             .field("page_fault_va", &format_args!("{:?}", self.page_fault_va))
@@ -11754,7 +11754,7 @@ impl ::core::fmt::Debug for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
+impl ::std::clone::Clone for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     fn clone(&self) -> Self {
         Self {
             page_fault_va: self.page_fault_va,
@@ -11788,7 +11788,7 @@ impl D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {}
 unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     type Abi = D3D12_DEVICE_REMOVED_EXTENDED_DATA2_abi;
 }
-impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
+impl ::std::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     fn default() -> Self {
         Self {
             device_removed_reason: ::std::default::Default::default(),
@@ -11797,7 +11797,7 @@ impl ::core::default::Default for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
+impl ::std::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DEVICE_REMOVED_EXTENDED_DATA2")
             .field(
@@ -11815,7 +11815,7 @@ impl ::core::fmt::Debug for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
+impl ::std::clone::Clone for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     fn clone(&self) -> Self {
         Self {
             device_removed_reason: <::windows::ErrorCode as std::clone::Clone>::clone(
@@ -11846,7 +11846,7 @@ impl D3D12_DISPATCH_ARGUMENTS {}
 unsafe impl ::windows::Abi for D3D12_DISPATCH_ARGUMENTS {
     type Abi = D3D12_DISPATCH_ARGUMENTS_abi;
 }
-impl ::core::default::Default for D3D12_DISPATCH_ARGUMENTS {
+impl ::std::default::Default for D3D12_DISPATCH_ARGUMENTS {
     fn default() -> Self {
         Self {
             thread_group_countx: 0,
@@ -11855,7 +11855,7 @@ impl ::core::default::Default for D3D12_DISPATCH_ARGUMENTS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DISPATCH_ARGUMENTS {
+impl ::std::fmt::Debug for D3D12_DISPATCH_ARGUMENTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DISPATCH_ARGUMENTS")
             .field(
@@ -11873,7 +11873,7 @@ impl ::core::fmt::Debug for D3D12_DISPATCH_ARGUMENTS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DISPATCH_ARGUMENTS {
+impl ::std::clone::Clone for D3D12_DISPATCH_ARGUMENTS {
     fn clone(&self) -> Self {
         Self {
             thread_group_countx: self.thread_group_countx,
@@ -11898,7 +11898,7 @@ impl D3D12_DISPATCH_MESH_ARGUMENTS {}
 unsafe impl ::windows::Abi for D3D12_DISPATCH_MESH_ARGUMENTS {
     type Abi = D3D12_DISPATCH_MESH_ARGUMENTS_abi;
 }
-impl ::core::default::Default for D3D12_DISPATCH_MESH_ARGUMENTS {
+impl ::std::default::Default for D3D12_DISPATCH_MESH_ARGUMENTS {
     fn default() -> Self {
         Self {
             thread_group_countx: 0,
@@ -11907,7 +11907,7 @@ impl ::core::default::Default for D3D12_DISPATCH_MESH_ARGUMENTS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DISPATCH_MESH_ARGUMENTS {
+impl ::std::fmt::Debug for D3D12_DISPATCH_MESH_ARGUMENTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DISPATCH_MESH_ARGUMENTS")
             .field(
@@ -11925,7 +11925,7 @@ impl ::core::fmt::Debug for D3D12_DISPATCH_MESH_ARGUMENTS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DISPATCH_MESH_ARGUMENTS {
+impl ::std::clone::Clone for D3D12_DISPATCH_MESH_ARGUMENTS {
     fn clone(&self) -> Self {
         Self {
             thread_group_countx: self.thread_group_countx,
@@ -11949,7 +11949,7 @@ impl D3D12_GPU_VIRTUAL_ADDRESS_RANGE {}
 unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     type Abi = D3D12_GPU_VIRTUAL_ADDRESS_RANGE_abi;
 }
-impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
+impl ::std::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     fn default() -> Self {
         Self {
             start_address: 0,
@@ -11957,7 +11957,7 @@ impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
+impl ::std::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GPU_VIRTUAL_ADDRESS_RANGE")
             .field("start_address", &format_args!("{:?}", self.start_address))
@@ -11965,7 +11965,7 @@ impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
+impl ::std::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     fn clone(&self) -> Self {
         Self {
             start_address: self.start_address,
@@ -11989,7 +11989,7 @@ impl D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {}
 unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     type Abi = D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE_abi;
 }
-impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
+impl ::std::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     fn default() -> Self {
         Self {
             start_address: 0,
@@ -11998,7 +11998,7 @@ impl ::core::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
+impl ::std::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE")
             .field("start_address", &format_args!("{:?}", self.start_address))
@@ -12010,7 +12010,7 @@ impl ::core::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
+impl ::std::clone::Clone for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     fn clone(&self) -> Self {
         Self {
             start_address: self.start_address,
@@ -12047,7 +12047,7 @@ impl D3D12_DISPATCH_RAYS_DESC {}
 unsafe impl ::windows::Abi for D3D12_DISPATCH_RAYS_DESC {
     type Abi = D3D12_DISPATCH_RAYS_DESC_abi;
 }
-impl ::core::default::Default for D3D12_DISPATCH_RAYS_DESC {
+impl ::std::default::Default for D3D12_DISPATCH_RAYS_DESC {
     fn default() -> Self {
         Self {
             ray_generation_shader_record: ::std::default::Default::default(),
@@ -12060,7 +12060,7 @@ impl ::core::default::Default for D3D12_DISPATCH_RAYS_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DISPATCH_RAYS_DESC {
+impl ::std::fmt::Debug for D3D12_DISPATCH_RAYS_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DISPATCH_RAYS_DESC")
             .field(
@@ -12085,7 +12085,7 @@ impl ::core::fmt::Debug for D3D12_DISPATCH_RAYS_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DISPATCH_RAYS_DESC {
+impl ::std::clone::Clone for D3D12_DISPATCH_RAYS_DESC {
     fn clone(&self) -> Self {
         Self {
             ray_generation_shader_record:
@@ -12126,7 +12126,7 @@ impl D3D12_DRAW_ARGUMENTS {}
 unsafe impl ::windows::Abi for D3D12_DRAW_ARGUMENTS {
     type Abi = D3D12_DRAW_ARGUMENTS_abi;
 }
-impl ::core::default::Default for D3D12_DRAW_ARGUMENTS {
+impl ::std::default::Default for D3D12_DRAW_ARGUMENTS {
     fn default() -> Self {
         Self {
             vertex_count_per_instance: 0,
@@ -12136,7 +12136,7 @@ impl ::core::default::Default for D3D12_DRAW_ARGUMENTS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRAW_ARGUMENTS {
+impl ::std::fmt::Debug for D3D12_DRAW_ARGUMENTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRAW_ARGUMENTS")
             .field(
@@ -12155,7 +12155,7 @@ impl ::core::fmt::Debug for D3D12_DRAW_ARGUMENTS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRAW_ARGUMENTS {
+impl ::std::clone::Clone for D3D12_DRAW_ARGUMENTS {
     fn clone(&self) -> Self {
         Self {
             vertex_count_per_instance: self.vertex_count_per_instance,
@@ -12183,7 +12183,7 @@ impl D3D12_DRAW_INDEXED_ARGUMENTS {}
 unsafe impl ::windows::Abi for D3D12_DRAW_INDEXED_ARGUMENTS {
     type Abi = D3D12_DRAW_INDEXED_ARGUMENTS_abi;
 }
-impl ::core::default::Default for D3D12_DRAW_INDEXED_ARGUMENTS {
+impl ::std::default::Default for D3D12_DRAW_INDEXED_ARGUMENTS {
     fn default() -> Self {
         Self {
             index_count_per_instance: 0,
@@ -12194,7 +12194,7 @@ impl ::core::default::Default for D3D12_DRAW_INDEXED_ARGUMENTS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DRAW_INDEXED_ARGUMENTS {
+impl ::std::fmt::Debug for D3D12_DRAW_INDEXED_ARGUMENTS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DRAW_INDEXED_ARGUMENTS")
             .field(
@@ -12217,7 +12217,7 @@ impl ::core::fmt::Debug for D3D12_DRAW_INDEXED_ARGUMENTS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DRAW_INDEXED_ARGUMENTS {
+impl ::std::clone::Clone for D3D12_DRAW_INDEXED_ARGUMENTS {
     fn clone(&self) -> Self {
         Self {
             index_count_per_instance: self.index_count_per_instance,
@@ -12426,7 +12426,7 @@ impl D3D12_EXPORT_DESC {}
 unsafe impl ::windows::Abi for D3D12_EXPORT_DESC {
     type Abi = D3D12_EXPORT_DESC_abi;
 }
-impl ::core::default::Default for D3D12_EXPORT_DESC {
+impl ::std::default::Default for D3D12_EXPORT_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -12435,7 +12435,7 @@ impl ::core::default::Default for D3D12_EXPORT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_EXPORT_DESC {
+impl ::std::fmt::Debug for D3D12_EXPORT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_EXPORT_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -12447,7 +12447,7 @@ impl ::core::fmt::Debug for D3D12_EXPORT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_EXPORT_DESC {
+impl ::std::clone::Clone for D3D12_EXPORT_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -12471,7 +12471,7 @@ impl D3D12_DXIL_LIBRARY_DESC {}
 unsafe impl ::windows::Abi for D3D12_DXIL_LIBRARY_DESC {
     type Abi = D3D12_DXIL_LIBRARY_DESC_abi;
 }
-impl ::core::default::Default for D3D12_DXIL_LIBRARY_DESC {
+impl ::std::default::Default for D3D12_DXIL_LIBRARY_DESC {
     fn default() -> Self {
         Self {
             dxil_library: ::std::default::Default::default(),
@@ -12480,7 +12480,7 @@ impl ::core::default::Default for D3D12_DXIL_LIBRARY_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DXIL_LIBRARY_DESC {
+impl ::std::fmt::Debug for D3D12_DXIL_LIBRARY_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DXIL_LIBRARY_DESC")
             .field("dxil_library", &format_args!("{:?}", self.dxil_library))
@@ -12489,7 +12489,7 @@ impl ::core::fmt::Debug for D3D12_DXIL_LIBRARY_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DXIL_LIBRARY_DESC {
+impl ::std::clone::Clone for D3D12_DXIL_LIBRARY_DESC {
     fn clone(&self) -> Self {
         Self {
             dxil_library: <D3D12_SHADER_BYTECODE as std::clone::Clone>::clone(&self.dxil_library),
@@ -12513,7 +12513,7 @@ impl D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {}
 unsafe impl ::windows::Abi for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     type Abi = D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION_abi;
 }
-impl ::core::default::Default for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::default::Default for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn default() -> Self {
         Self {
             subobject_to_associate: ::std::ptr::null_mut(),
@@ -12522,7 +12522,7 @@ impl ::core::default::Default for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::fmt::Debug for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION")
             .field(
@@ -12534,7 +12534,7 @@ impl ::core::fmt::Debug for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::clone::Clone for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn clone(&self) -> Self {
         Self {
             subobject_to_associate: self.subobject_to_associate,
@@ -12747,7 +12747,7 @@ impl D3D12_EXISTING_COLLECTION_DESC {}
 unsafe impl ::windows::Abi for D3D12_EXISTING_COLLECTION_DESC {
     type Abi = D3D12_EXISTING_COLLECTION_DESC_abi;
 }
-impl ::core::default::Default for D3D12_EXISTING_COLLECTION_DESC {
+impl ::std::default::Default for D3D12_EXISTING_COLLECTION_DESC {
     fn default() -> Self {
         Self {
             p_existing_collection: ::std::default::Default::default(),
@@ -12756,7 +12756,7 @@ impl ::core::default::Default for D3D12_EXISTING_COLLECTION_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_EXISTING_COLLECTION_DESC {
+impl ::std::fmt::Debug for D3D12_EXISTING_COLLECTION_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_EXISTING_COLLECTION_DESC")
             .field(
@@ -12768,7 +12768,7 @@ impl ::core::fmt::Debug for D3D12_EXISTING_COLLECTION_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_EXISTING_COLLECTION_DESC {
+impl ::std::clone::Clone for D3D12_EXISTING_COLLECTION_DESC {
     fn clone(&self) -> Self {
         Self {
             p_existing_collection:
@@ -12863,7 +12863,7 @@ impl D3D12_FEATURE_DATA_ARCHITECTURE {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_ARCHITECTURE {
     type Abi = D3D12_FEATURE_DATA_ARCHITECTURE_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE {
+impl ::std::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -12873,7 +12873,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_ARCHITECTURE")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -12889,7 +12889,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_ARCHITECTURE {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_ARCHITECTURE {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -12926,7 +12926,7 @@ impl D3D12_FEATURE_DATA_ARCHITECTURE1 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_ARCHITECTURE1 {
     type Abi = D3D12_FEATURE_DATA_ARCHITECTURE1_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE1 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE1 {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -12937,7 +12937,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_ARCHITECTURE1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE1 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_ARCHITECTURE1")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -12954,7 +12954,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ARCHITECTURE1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_ARCHITECTURE1 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_ARCHITECTURE1 {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -12988,7 +12988,7 @@ impl D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     type Abi = D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
+impl ::std::default::Default for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     fn default() -> Self {
         Self {
             command_list_type: ::std::default::Default::default(),
@@ -12997,7 +12997,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY")
             .field(
@@ -13012,7 +13012,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     fn clone(&self) -> Self {
         Self {
             command_list_type: self.command_list_type,
@@ -13037,7 +13037,7 @@ impl D3D12_FEATURE_DATA_CROSS_NODE {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_CROSS_NODE {
     type Abi = D3D12_FEATURE_DATA_CROSS_NODE_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_CROSS_NODE {
+impl ::std::default::Default for D3D12_FEATURE_DATA_CROSS_NODE {
     fn default() -> Self {
         Self {
             sharing_tier: ::std::default::Default::default(),
@@ -13045,7 +13045,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_CROSS_NODE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_CROSS_NODE {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_CROSS_NODE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_CROSS_NODE")
             .field("sharing_tier", &format_args!("{:?}", self.sharing_tier))
@@ -13056,7 +13056,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_CROSS_NODE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_CROSS_NODE {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_CROSS_NODE {
     fn clone(&self) -> Self {
         Self {
             sharing_tier: self.sharing_tier,
@@ -13267,17 +13267,17 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS {
     fn default() -> Self {
         Self { double_precision_float_shader_ops : :: std :: default :: Default :: default () , output_merger_logic_op : :: std :: default :: Default :: default () , min_precision_support : :: std :: default :: Default :: default () , tiled_resources_tier : :: std :: default :: Default :: default () , resource_binding_tier : :: std :: default :: Default :: default () , ps_specified_stencil_ref_supported : :: std :: default :: Default :: default () , typed_uav_load_additional_formats : :: std :: default :: Default :: default () , ro_vs_supported : :: std :: default :: Default :: default () , conservative_rasterization_tier : :: std :: default :: Default :: default () , max_gpu_virtual_address_bits_per_resource : 0 , standard_swizzle64kb_supported : :: std :: default :: Default :: default () , cross_node_sharing_tier : :: std :: default :: Default :: default () , cross_adapter_row_major_texture_supported : :: std :: default :: Default :: default () , vp_and_rt_array_index_from_any_shader_feeding_rasterizer_supported_without_gs_emulation : :: std :: default :: Default :: default () , resource_heap_tier : :: std :: default :: Default :: default () }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt . debug_struct ("D3D12_FEATURE_DATA_D3D12_OPTIONS") . field ("double_precision_float_shader_ops" , & format_args ! ("{:?}" , self . double_precision_float_shader_ops)) . field ("output_merger_logic_op" , & format_args ! ("{:?}" , self . output_merger_logic_op)) . field ("min_precision_support" , & format_args ! ("{:?}" , self . min_precision_support)) . field ("tiled_resources_tier" , & format_args ! ("{:?}" , self . tiled_resources_tier)) . field ("resource_binding_tier" , & format_args ! ("{:?}" , self . resource_binding_tier)) . field ("ps_specified_stencil_ref_supported" , & format_args ! ("{:?}" , self . ps_specified_stencil_ref_supported)) . field ("typed_uav_load_additional_formats" , & format_args ! ("{:?}" , self . typed_uav_load_additional_formats)) . field ("ro_vs_supported" , & format_args ! ("{:?}" , self . ro_vs_supported)) . field ("conservative_rasterization_tier" , & format_args ! ("{:?}" , self . conservative_rasterization_tier)) . field ("max_gpu_virtual_address_bits_per_resource" , & format_args ! ("{:?}" , self . max_gpu_virtual_address_bits_per_resource)) . field ("standard_swizzle64kb_supported" , & format_args ! ("{:?}" , self . standard_swizzle64kb_supported)) . field ("cross_node_sharing_tier" , & format_args ! ("{:?}" , self . cross_node_sharing_tier)) . field ("cross_adapter_row_major_texture_supported" , & format_args ! ("{:?}" , self . cross_adapter_row_major_texture_supported)) . field ("vp_and_rt_array_index_from_any_shader_feeding_rasterizer_supported_without_gs_emulation" , & format_args ! ("{:?}" , self . vp_and_rt_array_index_from_any_shader_feeding_rasterizer_supported_without_gs_emulation)) . field ("resource_heap_tier" , & format_args ! ("{:?}" , self . resource_heap_tier)) . finish ()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS {
     fn clone(&self) -> Self {
         Self { double_precision_float_shader_ops : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . double_precision_float_shader_ops) , output_merger_logic_op : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . output_merger_logic_op) , min_precision_support : self . min_precision_support , tiled_resources_tier : self . tiled_resources_tier , resource_binding_tier : self . resource_binding_tier , ps_specified_stencil_ref_supported : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . ps_specified_stencil_ref_supported) , typed_uav_load_additional_formats : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . typed_uav_load_additional_formats) , ro_vs_supported : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . ro_vs_supported) , conservative_rasterization_tier : self . conservative_rasterization_tier , max_gpu_virtual_address_bits_per_resource : self . max_gpu_virtual_address_bits_per_resource , standard_swizzle64kb_supported : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . standard_swizzle64kb_supported) , cross_node_sharing_tier : self . cross_node_sharing_tier , cross_adapter_row_major_texture_supported : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . cross_adapter_row_major_texture_supported) , vp_and_rt_array_index_from_any_shader_feeding_rasterizer_supported_without_gs_emulation : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . vp_and_rt_array_index_from_any_shader_feeding_rasterizer_supported_without_gs_emulation) , resource_heap_tier : self . resource_heap_tier }
     }
@@ -13307,7 +13307,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS1 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS1_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     fn default() -> Self {
         Self {
             wave_ops: ::std::default::Default::default(),
@@ -13319,7 +13319,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS1")
             .field("wave_ops", &format_args!("{:?}", self.wave_ops))
@@ -13346,7 +13346,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     fn clone(&self) -> Self {
         Self {
             wave_ops: <::windows::BOOL as std::clone::Clone>::clone(&self.wave_ops),
@@ -13416,7 +13416,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS2 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS2_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     fn default() -> Self {
         Self {
             depth_bounds_test_supported: ::std::default::Default::default(),
@@ -13424,7 +13424,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS2")
             .field(
@@ -13438,7 +13438,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     fn clone(&self) -> Self {
         Self {
             depth_bounds_test_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -13511,7 +13511,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS3 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS3_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     fn default() -> Self {
         Self {
             copy_queue_timestamp_queries_supported: ::std::default::Default::default(),
@@ -13522,7 +13522,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS3")
             .field(
@@ -13548,7 +13548,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     fn clone(&self) -> Self {
         Self {
             copy_queue_timestamp_queries_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -13623,7 +13623,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS4 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS4_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     fn default() -> Self {
         Self {
             msaa64kb_aligned_texture_supported: ::std::default::Default::default(),
@@ -13632,7 +13632,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS4")
             .field(
@@ -13650,7 +13650,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     fn clone(&self) -> Self {
         Self {
             msaa64kb_aligned_texture_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -13760,7 +13760,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS5 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS5_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     fn default() -> Self {
         Self {
             srv_only_tiled_resource_tier3: ::std::default::Default::default(),
@@ -13769,7 +13769,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS5")
             .field(
@@ -13787,7 +13787,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     fn clone(&self) -> Self {
         Self {
             srv_only_tiled_resource_tier3: <::windows::BOOL as std::clone::Clone>::clone(
@@ -13860,7 +13860,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS6 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS6_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     fn default() -> Self {
         Self {
             additional_shading_rates_supported: ::std::default::Default::default(),
@@ -13872,7 +13872,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS6")
             .field(
@@ -13901,7 +13901,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     fn clone(&self) -> Self {
         Self {
             additional_shading_rates_supported: <::windows::BOOL as std::clone::Clone>::clone(
@@ -14013,7 +14013,7 @@ impl D3D12_FEATURE_DATA_D3D12_OPTIONS7 {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     type Abi = D3D12_FEATURE_DATA_D3D12_OPTIONS7_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
+impl ::std::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     fn default() -> Self {
         Self {
             mesh_shader_tier: ::std::default::Default::default(),
@@ -14021,7 +14021,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_D3D12_OPTIONS7")
             .field(
@@ -14035,7 +14035,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     fn clone(&self) -> Self {
         Self {
             mesh_shader_tier: self.mesh_shader_tier,
@@ -14056,21 +14056,21 @@ impl D3D12_FEATURE_DATA_EXISTING_HEAPS {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_EXISTING_HEAPS {
     type Abi = D3D12_FEATURE_DATA_EXISTING_HEAPS_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_EXISTING_HEAPS {
+impl ::std::default::Default for D3D12_FEATURE_DATA_EXISTING_HEAPS {
     fn default() -> Self {
         Self {
             supported: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_EXISTING_HEAPS {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_EXISTING_HEAPS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_EXISTING_HEAPS")
             .field("supported", &format_args!("{:?}", self.supported))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_EXISTING_HEAPS {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_EXISTING_HEAPS {
     fn clone(&self) -> Self {
         Self {
             supported: <::windows::BOOL as std::clone::Clone>::clone(&self.supported),
@@ -14096,7 +14096,7 @@ impl D3D12_FEATURE_DATA_FEATURE_LEVELS {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_FEATURE_LEVELS {
     type Abi = D3D12_FEATURE_DATA_FEATURE_LEVELS_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_FEATURE_LEVELS {
+impl ::std::default::Default for D3D12_FEATURE_DATA_FEATURE_LEVELS {
     fn default() -> Self {
         Self {
             num_feature_levels: 0,
@@ -14105,7 +14105,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_FEATURE_LEVELS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FEATURE_LEVELS {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_FEATURE_LEVELS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_FEATURE_LEVELS")
             .field(
@@ -14123,7 +14123,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FEATURE_LEVELS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_FEATURE_LEVELS {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_FEATURE_LEVELS {
     fn clone(&self) -> Self {
         Self {
             num_feature_levels: self.num_feature_levels,
@@ -14146,7 +14146,7 @@ impl D3D12_FEATURE_DATA_FORMAT_INFO {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_FORMAT_INFO {
     type Abi = D3D12_FEATURE_DATA_FORMAT_INFO_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_FORMAT_INFO {
+impl ::std::default::Default for D3D12_FEATURE_DATA_FORMAT_INFO {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -14154,7 +14154,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_FORMAT_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_INFO {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_FORMAT_INFO")
             .field("format", &format_args!("{:?}", self.format))
@@ -14162,7 +14162,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_FORMAT_INFO {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_FORMAT_INFO {
     fn clone(&self) -> Self {
         Self {
             format: self.format,
@@ -14304,7 +14304,7 @@ impl D3D12_FEATURE_DATA_FORMAT_SUPPORT {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     type Abi = D3D12_FEATURE_DATA_FORMAT_SUPPORT_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+impl ::std::default::Default for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -14313,7 +14313,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_FORMAT_SUPPORT")
             .field("format", &format_args!("{:?}", self.format))
@@ -14322,7 +14322,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     fn clone(&self) -> Self {
         Self {
             format: self.format,
@@ -14345,7 +14345,7 @@ impl D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     type Abi = D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
+impl ::std::default::Default for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     fn default() -> Self {
         Self {
             max_gpu_virtual_address_bits_per_resource: 0,
@@ -14353,7 +14353,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT")
             .field(
@@ -14367,7 +14367,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     fn clone(&self) -> Self {
         Self {
             max_gpu_virtual_address_bits_per_resource: self
@@ -14436,7 +14436,7 @@ impl D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     type Abi = D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
+impl ::std::default::Default for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -14446,7 +14446,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS 
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS")
             .field("format", &format_args!("{:?}", self.format))
@@ -14459,7 +14459,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     fn clone(&self) -> Self {
         Self {
             format: self.format,
@@ -14524,7 +14524,7 @@ impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     type Abi = D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
+impl ::std::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -14532,7 +14532,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -14540,7 +14540,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPOR
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -14563,7 +14563,7 @@ impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     type Abi = D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
+impl ::std::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -14572,7 +14572,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -14581,7 +14581,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES 
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -14604,7 +14604,7 @@ impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     type Abi = D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
+impl ::std::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -14612,7 +14612,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -14620,7 +14620,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_C
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -14654,7 +14654,7 @@ impl D3D12_FEATURE_DATA_QUERY_META_COMMAND {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     type Abi = D3D12_FEATURE_DATA_QUERY_META_COMMAND_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
+impl ::std::default::Default for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     fn default() -> Self {
         Self {
             command_id: ::windows::Guid::zeroed(),
@@ -14666,7 +14666,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_QUERY_META_COMMAND")
             .field("command_id", &format_args!("{:?}", self.command_id))
@@ -14690,7 +14690,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     fn clone(&self) -> Self {
         Self {
             command_id: <::windows::Guid as std::clone::Clone>::clone(&self.command_id),
@@ -14719,14 +14719,14 @@ impl D3D12_FEATURE_DATA_ROOT_SIGNATURE {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     type Abi = D3D12_FEATURE_DATA_ROOT_SIGNATURE_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
+impl ::std::default::Default for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     fn default() -> Self {
         Self {
             highest_version: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_ROOT_SIGNATURE")
             .field(
@@ -14736,7 +14736,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     fn clone(&self) -> Self {
         Self {
             highest_version: self.highest_version,
@@ -14795,7 +14795,7 @@ impl D3D12_FEATURE_DATA_SERIALIZATION {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_SERIALIZATION {
     type Abi = D3D12_FEATURE_DATA_SERIALIZATION_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_SERIALIZATION {
+impl ::std::default::Default for D3D12_FEATURE_DATA_SERIALIZATION {
     fn default() -> Self {
         Self {
             node_index: 0,
@@ -14803,7 +14803,7 @@ impl ::core::default::Default for D3D12_FEATURE_DATA_SERIALIZATION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_SERIALIZATION {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_SERIALIZATION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_SERIALIZATION")
             .field("node_index", &format_args!("{:?}", self.node_index))
@@ -14814,7 +14814,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_SERIALIZATION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_SERIALIZATION {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_SERIALIZATION {
     fn clone(&self) -> Self {
         Self {
             node_index: self.node_index,
@@ -14876,21 +14876,21 @@ impl D3D12_FEATURE_DATA_SHADER_CACHE {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_SHADER_CACHE {
     type Abi = D3D12_FEATURE_DATA_SHADER_CACHE_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_SHADER_CACHE {
+impl ::std::default::Default for D3D12_FEATURE_DATA_SHADER_CACHE {
     fn default() -> Self {
         Self {
             support_flags: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_SHADER_CACHE {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_SHADER_CACHE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_SHADER_CACHE")
             .field("support_flags", &format_args!("{:?}", self.support_flags))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_SHADER_CACHE {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_SHADER_CACHE {
     fn clone(&self) -> Self {
         Self {
             support_flags: self.support_flags,
@@ -14954,14 +14954,14 @@ impl D3D12_FEATURE_DATA_SHADER_MODEL {}
 unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_SHADER_MODEL {
     type Abi = D3D12_FEATURE_DATA_SHADER_MODEL_abi;
 }
-impl ::core::default::Default for D3D12_FEATURE_DATA_SHADER_MODEL {
+impl ::std::default::Default for D3D12_FEATURE_DATA_SHADER_MODEL {
     fn default() -> Self {
         Self {
             highest_shader_model: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FEATURE_DATA_SHADER_MODEL {
+impl ::std::fmt::Debug for D3D12_FEATURE_DATA_SHADER_MODEL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FEATURE_DATA_SHADER_MODEL")
             .field(
@@ -14971,7 +14971,7 @@ impl ::core::fmt::Debug for D3D12_FEATURE_DATA_SHADER_MODEL {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FEATURE_DATA_SHADER_MODEL {
+impl ::std::clone::Clone for D3D12_FEATURE_DATA_SHADER_MODEL {
     fn clone(&self) -> Self {
         Self {
             highest_shader_model: self.highest_shader_model,
@@ -15229,7 +15229,7 @@ impl D3D12_FUNCTION_DESC {}
 unsafe impl ::windows::Abi for D3D12_FUNCTION_DESC {
     type Abi = D3D12_FUNCTION_DESC_abi;
 }
-impl ::core::default::Default for D3D12_FUNCTION_DESC {
+impl ::std::default::Default for D3D12_FUNCTION_DESC {
     fn default() -> Self {
         Self {
             version: 0,
@@ -15268,7 +15268,7 @@ impl ::core::default::Default for D3D12_FUNCTION_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_FUNCTION_DESC {
+impl ::std::fmt::Debug for D3D12_FUNCTION_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_FUNCTION_DESC")
             .field("version", &format_args!("{:?}", self.version))
@@ -15385,7 +15385,7 @@ impl ::core::fmt::Debug for D3D12_FUNCTION_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_FUNCTION_DESC {
+impl ::std::clone::Clone for D3D12_FUNCTION_DESC {
     fn clone(&self) -> Self {
         Self {
             version: self.version,
@@ -15441,14 +15441,14 @@ impl D3D12_GLOBAL_ROOT_SIGNATURE {}
 unsafe impl ::windows::Abi for D3D12_GLOBAL_ROOT_SIGNATURE {
     type Abi = D3D12_GLOBAL_ROOT_SIGNATURE_abi;
 }
-impl ::core::default::Default for D3D12_GLOBAL_ROOT_SIGNATURE {
+impl ::std::default::Default for D3D12_GLOBAL_ROOT_SIGNATURE {
     fn default() -> Self {
         Self {
             p_global_root_signature: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_GLOBAL_ROOT_SIGNATURE {
+impl ::std::fmt::Debug for D3D12_GLOBAL_ROOT_SIGNATURE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GLOBAL_ROOT_SIGNATURE")
             .field(
@@ -15458,7 +15458,7 @@ impl ::core::fmt::Debug for D3D12_GLOBAL_ROOT_SIGNATURE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GLOBAL_ROOT_SIGNATURE {
+impl ::std::clone::Clone for D3D12_GLOBAL_ROOT_SIGNATURE {
     fn clone(&self) -> Self {
         Self {
             p_global_root_signature:
@@ -15524,7 +15524,7 @@ impl D3D12_SO_DECLARATION_ENTRY {}
 unsafe impl ::windows::Abi for D3D12_SO_DECLARATION_ENTRY {
     type Abi = D3D12_SO_DECLARATION_ENTRY_abi;
 }
-impl ::core::default::Default for D3D12_SO_DECLARATION_ENTRY {
+impl ::std::default::Default for D3D12_SO_DECLARATION_ENTRY {
     fn default() -> Self {
         Self {
             stream: 0,
@@ -15536,7 +15536,7 @@ impl ::core::default::Default for D3D12_SO_DECLARATION_ENTRY {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SO_DECLARATION_ENTRY {
+impl ::std::fmt::Debug for D3D12_SO_DECLARATION_ENTRY {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SO_DECLARATION_ENTRY")
             .field("stream", &format_args!("{:?}", self.stream))
@@ -15554,7 +15554,7 @@ impl ::core::fmt::Debug for D3D12_SO_DECLARATION_ENTRY {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SO_DECLARATION_ENTRY {
+impl ::std::clone::Clone for D3D12_SO_DECLARATION_ENTRY {
     fn clone(&self) -> Self {
         Self {
             stream: self.stream,
@@ -15590,7 +15590,7 @@ impl D3D12_STREAM_OUTPUT_DESC {}
 unsafe impl ::windows::Abi for D3D12_STREAM_OUTPUT_DESC {
     type Abi = D3D12_STREAM_OUTPUT_DESC_abi;
 }
-impl ::core::default::Default for D3D12_STREAM_OUTPUT_DESC {
+impl ::std::default::Default for D3D12_STREAM_OUTPUT_DESC {
     fn default() -> Self {
         Self {
             p_so_declaration: ::std::ptr::null_mut(),
@@ -15601,7 +15601,7 @@ impl ::core::default::Default for D3D12_STREAM_OUTPUT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STREAM_OUTPUT_DESC {
+impl ::std::fmt::Debug for D3D12_STREAM_OUTPUT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STREAM_OUTPUT_DESC")
             .field(
@@ -15621,7 +15621,7 @@ impl ::core::fmt::Debug for D3D12_STREAM_OUTPUT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STREAM_OUTPUT_DESC {
+impl ::std::clone::Clone for D3D12_STREAM_OUTPUT_DESC {
     fn clone(&self) -> Self {
         Self {
             p_so_declaration: <*mut D3D12_SO_DECLARATION_ENTRY as std::clone::Clone>::clone(
@@ -15669,7 +15669,7 @@ impl D3D12_RASTERIZER_DESC {}
 unsafe impl ::windows::Abi for D3D12_RASTERIZER_DESC {
     type Abi = D3D12_RASTERIZER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RASTERIZER_DESC {
+impl ::std::default::Default for D3D12_RASTERIZER_DESC {
     fn default() -> Self {
         Self {
             fill_mode: ::std::default::Default::default(),
@@ -15686,7 +15686,7 @@ impl ::core::default::Default for D3D12_RASTERIZER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RASTERIZER_DESC {
+impl ::std::fmt::Debug for D3D12_RASTERIZER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RASTERIZER_DESC")
             .field("fill_mode", &format_args!("{:?}", self.fill_mode))
@@ -15727,7 +15727,7 @@ impl ::core::fmt::Debug for D3D12_RASTERIZER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RASTERIZER_DESC {
+impl ::std::clone::Clone for D3D12_RASTERIZER_DESC {
     fn clone(&self) -> Self {
         Self {
             fill_mode: self.fill_mode,
@@ -15817,7 +15817,7 @@ impl D3D12_INPUT_ELEMENT_DESC {}
 unsafe impl ::windows::Abi for D3D12_INPUT_ELEMENT_DESC {
     type Abi = D3D12_INPUT_ELEMENT_DESC_abi;
 }
-impl ::core::default::Default for D3D12_INPUT_ELEMENT_DESC {
+impl ::std::default::Default for D3D12_INPUT_ELEMENT_DESC {
     fn default() -> Self {
         Self {
             semantic_name: ::std::ptr::null_mut(),
@@ -15830,7 +15830,7 @@ impl ::core::default::Default for D3D12_INPUT_ELEMENT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_INPUT_ELEMENT_DESC {
+impl ::std::fmt::Debug for D3D12_INPUT_ELEMENT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INPUT_ELEMENT_DESC")
             .field("semantic_name", &format_args!("{:?}", self.semantic_name))
@@ -15852,7 +15852,7 @@ impl ::core::fmt::Debug for D3D12_INPUT_ELEMENT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INPUT_ELEMENT_DESC {
+impl ::std::clone::Clone for D3D12_INPUT_ELEMENT_DESC {
     fn clone(&self) -> Self {
         Self {
             semantic_name: self.semantic_name,
@@ -15879,7 +15879,7 @@ impl D3D12_INPUT_LAYOUT_DESC {}
 unsafe impl ::windows::Abi for D3D12_INPUT_LAYOUT_DESC {
     type Abi = D3D12_INPUT_LAYOUT_DESC_abi;
 }
-impl ::core::default::Default for D3D12_INPUT_LAYOUT_DESC {
+impl ::std::default::Default for D3D12_INPUT_LAYOUT_DESC {
     fn default() -> Self {
         Self {
             p_input_element_descs: ::std::ptr::null_mut(),
@@ -15887,7 +15887,7 @@ impl ::core::default::Default for D3D12_INPUT_LAYOUT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_INPUT_LAYOUT_DESC {
+impl ::std::fmt::Debug for D3D12_INPUT_LAYOUT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INPUT_LAYOUT_DESC")
             .field(
@@ -15898,7 +15898,7 @@ impl ::core::fmt::Debug for D3D12_INPUT_LAYOUT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INPUT_LAYOUT_DESC {
+impl ::std::clone::Clone for D3D12_INPUT_LAYOUT_DESC {
     fn clone(&self) -> Self {
         Self {
             p_input_element_descs: <*mut D3D12_INPUT_ELEMENT_DESC as std::clone::Clone>::clone(
@@ -16043,7 +16043,7 @@ impl D3D12_GRAPHICS_PIPELINE_STATE_DESC {}
 unsafe impl ::windows::Abi for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     type Abi = D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+impl ::std::default::Default for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     fn default() -> Self {
         Self {
             p_root_signature: ::std::default::Default::default(),
@@ -16079,7 +16079,7 @@ impl ::core::default::Default for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+impl ::std::fmt::Debug for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_GRAPHICS_PIPELINE_STATE_DESC")
             .field(
@@ -16124,7 +16124,7 @@ impl ::core::fmt::Debug for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
+impl ::std::clone::Clone for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     fn clone(&self) -> Self {
         Self {
             p_root_signature:
@@ -16295,7 +16295,7 @@ impl D3D12_HIT_GROUP_DESC {}
 unsafe impl ::windows::Abi for D3D12_HIT_GROUP_DESC {
     type Abi = D3D12_HIT_GROUP_DESC_abi;
 }
-impl ::core::default::Default for D3D12_HIT_GROUP_DESC {
+impl ::std::default::Default for D3D12_HIT_GROUP_DESC {
     fn default() -> Self {
         Self {
             hit_group_export: ::std::ptr::null_mut(),
@@ -16306,7 +16306,7 @@ impl ::core::default::Default for D3D12_HIT_GROUP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_HIT_GROUP_DESC {
+impl ::std::fmt::Debug for D3D12_HIT_GROUP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_HIT_GROUP_DESC")
             .field(
@@ -16329,7 +16329,7 @@ impl ::core::fmt::Debug for D3D12_HIT_GROUP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_HIT_GROUP_DESC {
+impl ::std::clone::Clone for D3D12_HIT_GROUP_DESC {
     fn clone(&self) -> Self {
         Self {
             hit_group_export: self.hit_group_export,
@@ -17579,7 +17579,7 @@ impl D3D12_INFO_QUEUE_FILTER_DESC {}
 unsafe impl ::windows::Abi for D3D12_INFO_QUEUE_FILTER_DESC {
     type Abi = D3D12_INFO_QUEUE_FILTER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_INFO_QUEUE_FILTER_DESC {
+impl ::std::default::Default for D3D12_INFO_QUEUE_FILTER_DESC {
     fn default() -> Self {
         Self {
             num_categories: 0,
@@ -17591,7 +17591,7 @@ impl ::core::default::Default for D3D12_INFO_QUEUE_FILTER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_INFO_QUEUE_FILTER_DESC {
+impl ::std::fmt::Debug for D3D12_INFO_QUEUE_FILTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INFO_QUEUE_FILTER_DESC")
             .field("num_categories", &format_args!("{:?}", self.num_categories))
@@ -17609,7 +17609,7 @@ impl ::core::fmt::Debug for D3D12_INFO_QUEUE_FILTER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INFO_QUEUE_FILTER_DESC {
+impl ::std::clone::Clone for D3D12_INFO_QUEUE_FILTER_DESC {
     fn clone(&self) -> Self {
         Self {
             num_categories: self.num_categories,
@@ -17638,7 +17638,7 @@ impl D3D12_INFO_QUEUE_FILTER {}
 unsafe impl ::windows::Abi for D3D12_INFO_QUEUE_FILTER {
     type Abi = D3D12_INFO_QUEUE_FILTER_abi;
 }
-impl ::core::default::Default for D3D12_INFO_QUEUE_FILTER {
+impl ::std::default::Default for D3D12_INFO_QUEUE_FILTER {
     fn default() -> Self {
         Self {
             allow_list: ::std::default::Default::default(),
@@ -17646,7 +17646,7 @@ impl ::core::default::Default for D3D12_INFO_QUEUE_FILTER {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_INFO_QUEUE_FILTER {
+impl ::std::fmt::Debug for D3D12_INFO_QUEUE_FILTER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_INFO_QUEUE_FILTER")
             .field("allow_list", &format_args!("{:?}", self.allow_list))
@@ -17654,7 +17654,7 @@ impl ::core::fmt::Debug for D3D12_INFO_QUEUE_FILTER {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_INFO_QUEUE_FILTER {
+impl ::std::clone::Clone for D3D12_INFO_QUEUE_FILTER {
     fn clone(&self) -> Self {
         Self {
             allow_list: <D3D12_INFO_QUEUE_FILTER_DESC as std::clone::Clone>::clone(
@@ -17683,7 +17683,7 @@ impl D3D12_LIBRARY_DESC {}
 unsafe impl ::windows::Abi for D3D12_LIBRARY_DESC {
     type Abi = D3D12_LIBRARY_DESC_abi;
 }
-impl ::core::default::Default for D3D12_LIBRARY_DESC {
+impl ::std::default::Default for D3D12_LIBRARY_DESC {
     fn default() -> Self {
         Self {
             creator: ::std::ptr::null_mut(),
@@ -17692,7 +17692,7 @@ impl ::core::default::Default for D3D12_LIBRARY_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_LIBRARY_DESC {
+impl ::std::fmt::Debug for D3D12_LIBRARY_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_LIBRARY_DESC")
             .field("creator", &format_args!("{:?}", self.creator))
@@ -17701,7 +17701,7 @@ impl ::core::fmt::Debug for D3D12_LIBRARY_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_LIBRARY_DESC {
+impl ::std::clone::Clone for D3D12_LIBRARY_DESC {
     fn clone(&self) -> Self {
         Self {
             creator: self.creator,
@@ -17763,14 +17763,14 @@ impl D3D12_LOCAL_ROOT_SIGNATURE {}
 unsafe impl ::windows::Abi for D3D12_LOCAL_ROOT_SIGNATURE {
     type Abi = D3D12_LOCAL_ROOT_SIGNATURE_abi;
 }
-impl ::core::default::Default for D3D12_LOCAL_ROOT_SIGNATURE {
+impl ::std::default::Default for D3D12_LOCAL_ROOT_SIGNATURE {
     fn default() -> Self {
         Self {
             p_local_root_signature: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_LOCAL_ROOT_SIGNATURE {
+impl ::std::fmt::Debug for D3D12_LOCAL_ROOT_SIGNATURE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_LOCAL_ROOT_SIGNATURE")
             .field(
@@ -17780,7 +17780,7 @@ impl ::core::fmt::Debug for D3D12_LOCAL_ROOT_SIGNATURE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_LOCAL_ROOT_SIGNATURE {
+impl ::std::clone::Clone for D3D12_LOCAL_ROOT_SIGNATURE {
     fn clone(&self) -> Self {
         Self {
             p_local_root_signature:
@@ -17859,7 +17859,7 @@ impl D3D12_MEMCPY_DEST {}
 unsafe impl ::windows::Abi for D3D12_MEMCPY_DEST {
     type Abi = D3D12_MEMCPY_DEST_abi;
 }
-impl ::core::default::Default for D3D12_MEMCPY_DEST {
+impl ::std::default::Default for D3D12_MEMCPY_DEST {
     fn default() -> Self {
         Self {
             p_data: ::std::ptr::null_mut(),
@@ -17868,7 +17868,7 @@ impl ::core::default::Default for D3D12_MEMCPY_DEST {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_MEMCPY_DEST {
+impl ::std::fmt::Debug for D3D12_MEMCPY_DEST {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_MEMCPY_DEST")
             .field("p_data", &format_args!("{:?}", self.p_data))
@@ -17877,7 +17877,7 @@ impl ::core::fmt::Debug for D3D12_MEMCPY_DEST {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_MEMCPY_DEST {
+impl ::std::clone::Clone for D3D12_MEMCPY_DEST {
     fn clone(&self) -> Self {
         Self {
             p_data: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_data),
@@ -17909,7 +17909,7 @@ impl D3D12_MESSAGE {}
 unsafe impl ::windows::Abi for D3D12_MESSAGE {
     type Abi = D3D12_MESSAGE_abi;
 }
-impl ::core::default::Default for D3D12_MESSAGE {
+impl ::std::default::Default for D3D12_MESSAGE {
     fn default() -> Self {
         Self {
             category: ::std::default::Default::default(),
@@ -17920,7 +17920,7 @@ impl ::core::default::Default for D3D12_MESSAGE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_MESSAGE {
+impl ::std::fmt::Debug for D3D12_MESSAGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_MESSAGE")
             .field("category", &format_args!("{:?}", self.category))
@@ -17934,7 +17934,7 @@ impl ::core::fmt::Debug for D3D12_MESSAGE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_MESSAGE {
+impl ::std::clone::Clone for D3D12_MESSAGE {
     fn clone(&self) -> Self {
         Self {
             category: self.category,
@@ -17966,7 +17966,7 @@ impl D3D12_META_COMMAND_DESC {}
 unsafe impl ::windows::Abi for D3D12_META_COMMAND_DESC {
     type Abi = D3D12_META_COMMAND_DESC_abi;
 }
-impl ::core::default::Default for D3D12_META_COMMAND_DESC {
+impl ::std::default::Default for D3D12_META_COMMAND_DESC {
     fn default() -> Self {
         Self {
             id: ::windows::Guid::zeroed(),
@@ -17976,7 +17976,7 @@ impl ::core::default::Default for D3D12_META_COMMAND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_META_COMMAND_DESC {
+impl ::std::fmt::Debug for D3D12_META_COMMAND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_META_COMMAND_DESC")
             .field("id", &format_args!("{:?}", self.id))
@@ -17992,7 +17992,7 @@ impl ::core::fmt::Debug for D3D12_META_COMMAND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_META_COMMAND_DESC {
+impl ::std::clone::Clone for D3D12_META_COMMAND_DESC {
     fn clone(&self) -> Self {
         Self {
             id: <::windows::Guid as std::clone::Clone>::clone(&self.id),
@@ -18106,7 +18106,7 @@ impl D3D12_META_COMMAND_PARAMETER_DESC {}
 unsafe impl ::windows::Abi for D3D12_META_COMMAND_PARAMETER_DESC {
     type Abi = D3D12_META_COMMAND_PARAMETER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_META_COMMAND_PARAMETER_DESC {
+impl ::std::default::Default for D3D12_META_COMMAND_PARAMETER_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -18117,7 +18117,7 @@ impl ::core::default::Default for D3D12_META_COMMAND_PARAMETER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_META_COMMAND_PARAMETER_DESC {
+impl ::std::fmt::Debug for D3D12_META_COMMAND_PARAMETER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_META_COMMAND_PARAMETER_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -18134,7 +18134,7 @@ impl ::core::fmt::Debug for D3D12_META_COMMAND_PARAMETER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_META_COMMAND_PARAMETER_DESC {
+impl ::std::clone::Clone for D3D12_META_COMMAND_PARAMETER_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -18209,7 +18209,7 @@ impl D3D12_MIP_REGION {}
 unsafe impl ::windows::Abi for D3D12_MIP_REGION {
     type Abi = D3D12_MIP_REGION_abi;
 }
-impl ::core::default::Default for D3D12_MIP_REGION {
+impl ::std::default::Default for D3D12_MIP_REGION {
     fn default() -> Self {
         Self {
             width: 0,
@@ -18218,7 +18218,7 @@ impl ::core::default::Default for D3D12_MIP_REGION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_MIP_REGION {
+impl ::std::fmt::Debug for D3D12_MIP_REGION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_MIP_REGION")
             .field("width", &format_args!("{:?}", self.width))
@@ -18227,7 +18227,7 @@ impl ::core::fmt::Debug for D3D12_MIP_REGION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_MIP_REGION {
+impl ::std::clone::Clone for D3D12_MIP_REGION {
     fn clone(&self) -> Self {
         Self {
             width: self.width,
@@ -18290,19 +18290,19 @@ impl D3D12_NODE_MASK {}
 unsafe impl ::windows::Abi for D3D12_NODE_MASK {
     type Abi = D3D12_NODE_MASK_abi;
 }
-impl ::core::default::Default for D3D12_NODE_MASK {
+impl ::std::default::Default for D3D12_NODE_MASK {
     fn default() -> Self {
         Self { node_mask: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_NODE_MASK {
+impl ::std::fmt::Debug for D3D12_NODE_MASK {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_NODE_MASK")
             .field("node_mask", &format_args!("{:?}", self.node_mask))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_NODE_MASK {
+impl ::std::clone::Clone for D3D12_NODE_MASK {
     fn clone(&self) -> Self {
         Self {
             node_mask: self.node_mask,
@@ -18329,7 +18329,7 @@ impl D3D12_PACKED_MIP_INFO {}
 unsafe impl ::windows::Abi for D3D12_PACKED_MIP_INFO {
     type Abi = D3D12_PACKED_MIP_INFO_abi;
 }
-impl ::core::default::Default for D3D12_PACKED_MIP_INFO {
+impl ::std::default::Default for D3D12_PACKED_MIP_INFO {
     fn default() -> Self {
         Self {
             num_standard_mips: 0,
@@ -18339,7 +18339,7 @@ impl ::core::default::Default for D3D12_PACKED_MIP_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PACKED_MIP_INFO {
+impl ::std::fmt::Debug for D3D12_PACKED_MIP_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PACKED_MIP_INFO")
             .field(
@@ -18361,7 +18361,7 @@ impl ::core::fmt::Debug for D3D12_PACKED_MIP_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PACKED_MIP_INFO {
+impl ::std::clone::Clone for D3D12_PACKED_MIP_INFO {
     fn clone(&self) -> Self {
         Self {
             num_standard_mips: self.num_standard_mips,
@@ -18410,7 +18410,7 @@ impl D3D12_PARAMETER_DESC {}
 unsafe impl ::windows::Abi for D3D12_PARAMETER_DESC {
     type Abi = D3D12_PARAMETER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_PARAMETER_DESC {
+impl ::std::default::Default for D3D12_PARAMETER_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -18428,7 +18428,7 @@ impl ::core::default::Default for D3D12_PARAMETER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PARAMETER_DESC {
+impl ::std::fmt::Debug for D3D12_PARAMETER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PARAMETER_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -18461,7 +18461,7 @@ impl ::core::fmt::Debug for D3D12_PARAMETER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PARAMETER_DESC {
+impl ::std::clone::Clone for D3D12_PARAMETER_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -18493,7 +18493,7 @@ impl D3D12_PIPELINE_STATE_STREAM_DESC {}
 unsafe impl ::windows::Abi for D3D12_PIPELINE_STATE_STREAM_DESC {
     type Abi = D3D12_PIPELINE_STATE_STREAM_DESC_abi;
 }
-impl ::core::default::Default for D3D12_PIPELINE_STATE_STREAM_DESC {
+impl ::std::default::Default for D3D12_PIPELINE_STATE_STREAM_DESC {
     fn default() -> Self {
         Self {
             size_in_bytes: 0,
@@ -18501,7 +18501,7 @@ impl ::core::default::Default for D3D12_PIPELINE_STATE_STREAM_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PIPELINE_STATE_STREAM_DESC {
+impl ::std::fmt::Debug for D3D12_PIPELINE_STATE_STREAM_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PIPELINE_STATE_STREAM_DESC")
             .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
@@ -18512,7 +18512,7 @@ impl ::core::fmt::Debug for D3D12_PIPELINE_STATE_STREAM_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PIPELINE_STATE_STREAM_DESC {
+impl ::std::clone::Clone for D3D12_PIPELINE_STATE_STREAM_DESC {
     fn clone(&self) -> Self {
         Self {
             size_in_bytes: self.size_in_bytes,
@@ -18638,7 +18638,7 @@ impl D3D12_PROTECTED_RESOURCE_SESSION_DESC {}
 unsafe impl ::windows::Abi for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     type Abi = D3D12_PROTECTED_RESOURCE_SESSION_DESC_abi;
 }
-impl ::core::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
+impl ::std::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     fn default() -> Self {
         Self {
             node_mask: 0,
@@ -18646,7 +18646,7 @@ impl ::core::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
+impl ::std::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PROTECTED_RESOURCE_SESSION_DESC")
             .field("node_mask", &format_args!("{:?}", self.node_mask))
@@ -18654,7 +18654,7 @@ impl ::core::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
+impl ::std::clone::Clone for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     fn clone(&self) -> Self {
         Self {
             node_mask: self.node_mask,
@@ -18681,7 +18681,7 @@ impl D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     type Abi = D3D12_PROTECTED_RESOURCE_SESSION_DESC1_abi;
 }
-impl ::core::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
+impl ::std::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     fn default() -> Self {
         Self {
             node_mask: 0,
@@ -18690,7 +18690,7 @@ impl ::core::default::Default for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
+impl ::std::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_PROTECTED_RESOURCE_SESSION_DESC1")
             .field("node_mask", &format_args!("{:?}", self.node_mask))
@@ -18702,7 +18702,7 @@ impl ::core::fmt::Debug for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
+impl ::std::clone::Clone for D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     fn clone(&self) -> Self {
         Self {
             node_mask: self.node_mask,
@@ -18807,7 +18807,7 @@ impl D3D12_QUERY_DATA_PIPELINE_STATISTICS {}
 unsafe impl ::windows::Abi for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     type Abi = D3D12_QUERY_DATA_PIPELINE_STATISTICS_abi;
 }
-impl ::core::default::Default for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
+impl ::std::default::Default for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     fn default() -> Self {
         Self {
             ia_vertices: 0,
@@ -18824,7 +18824,7 @@ impl ::core::default::Default for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
+impl ::std::fmt::Debug for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_QUERY_DATA_PIPELINE_STATISTICS")
             .field("ia_vertices", &format_args!("{:?}", self.ia_vertices))
@@ -18841,7 +18841,7 @@ impl ::core::fmt::Debug for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
+impl ::std::clone::Clone for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     fn clone(&self) -> Self {
         Self {
             ia_vertices: self.ia_vertices,
@@ -18873,7 +18873,7 @@ impl D3D12_QUERY_DATA_SO_STATISTICS {}
 unsafe impl ::windows::Abi for D3D12_QUERY_DATA_SO_STATISTICS {
     type Abi = D3D12_QUERY_DATA_SO_STATISTICS_abi;
 }
-impl ::core::default::Default for D3D12_QUERY_DATA_SO_STATISTICS {
+impl ::std::default::Default for D3D12_QUERY_DATA_SO_STATISTICS {
     fn default() -> Self {
         Self {
             num_primitives_written: 0,
@@ -18881,7 +18881,7 @@ impl ::core::default::Default for D3D12_QUERY_DATA_SO_STATISTICS {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_QUERY_DATA_SO_STATISTICS {
+impl ::std::fmt::Debug for D3D12_QUERY_DATA_SO_STATISTICS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_QUERY_DATA_SO_STATISTICS")
             .field(
@@ -18895,7 +18895,7 @@ impl ::core::fmt::Debug for D3D12_QUERY_DATA_SO_STATISTICS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_QUERY_DATA_SO_STATISTICS {
+impl ::std::clone::Clone for D3D12_QUERY_DATA_SO_STATISTICS {
     fn clone(&self) -> Self {
         Self {
             num_primitives_written: self.num_primitives_written,
@@ -18961,7 +18961,7 @@ impl D3D12_QUERY_HEAP_DESC {}
 unsafe impl ::windows::Abi for D3D12_QUERY_HEAP_DESC {
     type Abi = D3D12_QUERY_HEAP_DESC_abi;
 }
-impl ::core::default::Default for D3D12_QUERY_HEAP_DESC {
+impl ::std::default::Default for D3D12_QUERY_HEAP_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -18970,7 +18970,7 @@ impl ::core::default::Default for D3D12_QUERY_HEAP_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_QUERY_HEAP_DESC {
+impl ::std::fmt::Debug for D3D12_QUERY_HEAP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_QUERY_HEAP_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -18979,7 +18979,7 @@ impl ::core::fmt::Debug for D3D12_QUERY_HEAP_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_QUERY_HEAP_DESC {
+impl ::std::clone::Clone for D3D12_QUERY_HEAP_DESC {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -19002,12 +19002,12 @@ impl D3D12_RANGE_UINT64 {}
 unsafe impl ::windows::Abi for D3D12_RANGE_UINT64 {
     type Abi = D3D12_RANGE_UINT64_abi;
 }
-impl ::core::default::Default for D3D12_RANGE_UINT64 {
+impl ::std::default::Default for D3D12_RANGE_UINT64 {
     fn default() -> Self {
         Self { begin: 0, end: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_RANGE_UINT64 {
+impl ::std::fmt::Debug for D3D12_RANGE_UINT64 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RANGE_UINT64")
             .field("begin", &format_args!("{:?}", self.begin))
@@ -19015,7 +19015,7 @@ impl ::core::fmt::Debug for D3D12_RANGE_UINT64 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RANGE_UINT64 {
+impl ::std::clone::Clone for D3D12_RANGE_UINT64 {
     fn clone(&self) -> Self {
         Self {
             begin: self.begin,
@@ -19043,7 +19043,7 @@ impl D3D12_RAYTRACING_AABB {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_AABB {
     type Abi = D3D12_RAYTRACING_AABB_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_AABB {
+impl ::std::default::Default for D3D12_RAYTRACING_AABB {
     fn default() -> Self {
         Self {
             minx: 0.0,
@@ -19055,7 +19055,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_AABB {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_AABB {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_AABB {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_AABB")
             .field("minx", &format_args!("{:?}", self.minx))
@@ -19067,7 +19067,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_AABB {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_AABB {
+impl ::std::clone::Clone for D3D12_RAYTRACING_AABB {
     fn clone(&self) -> Self {
         Self {
             minx: self.minx,
@@ -19139,7 +19139,7 @@ unsafe impl ::windows::Abi
 {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC_abi;
 }
-impl ::core::default::Default
+impl ::std::default::Default
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC
 {
     fn default() -> Self {
@@ -19148,7 +19148,7 @@ impl ::core::default::Default
         }
     }
 }
-impl ::core::fmt::Debug
+impl ::std::fmt::Debug
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -19162,7 +19162,7 @@ impl ::core::fmt::Debug
         .finish()
     }
 }
-impl ::core::clone::Clone
+impl ::std::clone::Clone
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC
 {
     fn clone(&self) -> Self {
@@ -19190,7 +19190,7 @@ unsafe impl ::windows::Abi
 {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC_abi;
 }
-impl ::core::default::Default
+impl ::std::default::Default
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC
 {
     fn default() -> Self {
@@ -19199,7 +19199,7 @@ impl ::core::default::Default
         }
     }
 }
-impl ::core::fmt::Debug
+impl ::std::fmt::Debug
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -19211,7 +19211,7 @@ impl ::core::fmt::Debug
             .finish()
     }
 }
-impl ::core::clone::Clone
+impl ::std::clone::Clone
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC
 {
     fn clone(&self) -> Self {
@@ -19285,7 +19285,7 @@ impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
+impl ::std::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     fn default() -> Self {
         Self {
             dest_buffer: 0,
@@ -19293,7 +19293,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBU
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC")
             .field("dest_buffer", &format_args!("{:?}", self.dest_buffer))
@@ -19301,7 +19301,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_IN
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
+impl ::std::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     fn clone(&self) -> Self {
         Self {
             dest_buffer: self.dest_buffer,
@@ -19325,7 +19325,7 @@ unsafe impl ::windows::Abi
 {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC_abi;
 }
-impl ::core::default::Default
+impl ::std::default::Default
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC
 {
     fn default() -> Self {
@@ -19335,7 +19335,7 @@ impl ::core::default::Default
         }
     }
 }
-impl ::core::fmt::Debug
+impl ::std::fmt::Debug
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -19356,7 +19356,7 @@ impl ::core::fmt::Debug
         .finish()
     }
 }
-impl ::core::clone::Clone
+impl ::std::clone::Clone
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC
 {
     fn clone(&self) -> Self {
@@ -19386,7 +19386,7 @@ unsafe impl ::windows::Abi
 {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC_abi;
 }
-impl ::core::default::Default
+impl ::std::default::Default
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC
 {
     fn default() -> Self {
@@ -19395,7 +19395,7 @@ impl ::core::default::Default
         }
     }
 }
-impl ::core::fmt::Debug
+impl ::std::fmt::Debug
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
@@ -19409,7 +19409,7 @@ impl ::core::fmt::Debug
         .finish()
     }
 }
-impl ::core::clone::Clone
+impl ::std::clone::Clone
     for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC
 {
     fn clone(&self) -> Self {
@@ -19437,7 +19437,7 @@ impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
+impl ::std::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     fn default() -> Self {
         Self {
             result_data_max_size_in_bytes: 0,
@@ -19446,7 +19446,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUI
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO")
             .field(
@@ -19464,7 +19464,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INF
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
+impl ::std::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     fn clone(&self) -> Self {
         Self {
             result_data_max_size_in_bytes: self.result_data_max_size_in_bytes,
@@ -19487,19 +19487,19 @@ impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     type Abi = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
+impl ::std::default::Default for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     fn default() -> Self {
         Self { location: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV")
             .field("location", &format_args!("{:?}", self.location))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
+impl ::std::clone::Clone for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     fn clone(&self) -> Self {
         Self {
             location: self.location,
@@ -19523,7 +19523,7 @@ impl D3D12_RAYTRACING_INSTANCE_DESC {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_INSTANCE_DESC {
     type Abi = D3D12_RAYTRACING_INSTANCE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_INSTANCE_DESC {
+impl ::std::default::Default for D3D12_RAYTRACING_INSTANCE_DESC {
     fn default() -> Self {
         Self {
             transform: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
@@ -19533,7 +19533,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_INSTANCE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_INSTANCE_DESC {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_INSTANCE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_INSTANCE_DESC")
             .field("transform", &format_args!("{:?}", self.transform))
@@ -19546,7 +19546,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_INSTANCE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_INSTANCE_DESC {
+impl ::std::clone::Clone for D3D12_RAYTRACING_INSTANCE_DESC {
     fn clone(&self) -> Self {
         Self {
             transform: <[f32; 12usize] as std::clone::Clone>::clone(&self.transform),
@@ -19620,14 +19620,14 @@ impl D3D12_RAYTRACING_PIPELINE_CONFIG {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_PIPELINE_CONFIG {
     type Abi = D3D12_RAYTRACING_PIPELINE_CONFIG_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_PIPELINE_CONFIG {
+impl ::std::default::Default for D3D12_RAYTRACING_PIPELINE_CONFIG {
     fn default() -> Self {
         Self {
             max_trace_recursion_depth: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_PIPELINE_CONFIG")
             .field(
@@ -19637,7 +19637,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_PIPELINE_CONFIG {
+impl ::std::clone::Clone for D3D12_RAYTRACING_PIPELINE_CONFIG {
     fn clone(&self) -> Self {
         Self {
             max_trace_recursion_depth: self.max_trace_recursion_depth,
@@ -19698,7 +19698,7 @@ impl D3D12_RAYTRACING_PIPELINE_CONFIG1 {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     type Abi = D3D12_RAYTRACING_PIPELINE_CONFIG1_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
+impl ::std::default::Default for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     fn default() -> Self {
         Self {
             max_trace_recursion_depth: 0,
@@ -19706,7 +19706,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_PIPELINE_CONFIG1")
             .field(
@@ -19717,7 +19717,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
+impl ::std::clone::Clone for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     fn clone(&self) -> Self {
         Self {
             max_trace_recursion_depth: self.max_trace_recursion_depth,
@@ -19739,7 +19739,7 @@ impl D3D12_RAYTRACING_SHADER_CONFIG {}
 unsafe impl ::windows::Abi for D3D12_RAYTRACING_SHADER_CONFIG {
     type Abi = D3D12_RAYTRACING_SHADER_CONFIG_abi;
 }
-impl ::core::default::Default for D3D12_RAYTRACING_SHADER_CONFIG {
+impl ::std::default::Default for D3D12_RAYTRACING_SHADER_CONFIG {
     fn default() -> Self {
         Self {
             max_payload_size_in_bytes: 0,
@@ -19747,7 +19747,7 @@ impl ::core::default::Default for D3D12_RAYTRACING_SHADER_CONFIG {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RAYTRACING_SHADER_CONFIG {
+impl ::std::fmt::Debug for D3D12_RAYTRACING_SHADER_CONFIG {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RAYTRACING_SHADER_CONFIG")
             .field(
@@ -19761,7 +19761,7 @@ impl ::core::fmt::Debug for D3D12_RAYTRACING_SHADER_CONFIG {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RAYTRACING_SHADER_CONFIG {
+impl ::std::clone::Clone for D3D12_RAYTRACING_SHADER_CONFIG {
     fn clone(&self) -> Self {
         Self {
             max_payload_size_in_bytes: self.max_payload_size_in_bytes,
@@ -19873,21 +19873,21 @@ impl D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
     type Abi = D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+impl ::std::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
     fn default() -> Self {
         Self {
             clear_value: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS")
             .field("clear_value", &format_args!("{:?}", self.clear_value))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
     fn clone(&self) -> Self {
         Self {
             clear_value: <D3D12_CLEAR_VALUE as std::clone::Clone>::clone(&self.clear_value),
@@ -19911,7 +19911,7 @@ impl D3D12_RENDER_PASS_BEGINNING_ACCESS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS {
     type Abi = D3D12_RENDER_PASS_BEGINNING_ACCESS_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_BEGINNING_ACCESS")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -19919,7 +19919,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS {
+impl ::std::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -19927,7 +19927,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -19940,7 +19940,7 @@ impl ::core::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
-    pub clear: ::core::mem::ManuallyDrop<D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS>,
+    pub clear: ::std::mem::ManuallyDrop<D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -19952,18 +19952,18 @@ impl D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
     type Abi = D3D12_RENDER_PASS_BEGINNING_ACCESS_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_BEGINNING_ACCESS_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+impl ::std::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -20036,7 +20036,7 @@ impl D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
+impl ::std::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     fn default() -> Self {
         Self {
             src_subresource: 0,
@@ -20047,7 +20047,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRES
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS")
             .field(
@@ -20064,7 +20064,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     fn clone(&self) -> Self {
         Self {
             src_subresource: self.src_subresource,
@@ -20145,7 +20145,7 @@ impl D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
+impl ::std::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     fn default() -> Self {
         Self {
             p_src_resource: ::std::default::Default::default(),
@@ -20158,7 +20158,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAME
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS")
             .field("p_src_resource", &format_args!("{:?}", self.p_src_resource))
@@ -20180,7 +20180,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     fn clone(&self) -> Self {
         Self { p_src_resource : < :: std :: option :: Option < ID3D12Resource > as std :: clone :: Clone > :: clone (& self . p_src_resource) , p_dst_resource : < :: std :: option :: Option < ID3D12Resource > as std :: clone :: Clone > :: clone (& self . p_dst_resource) , subresource_count : self . subresource_count , p_subresource_parameters : < * mut D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS as std :: clone :: Clone > :: clone (& self . p_subresource_parameters) , format : self . format , resolve_mode : self . resolve_mode , preserve_resolve_source : < :: windows :: BOOL as std :: clone :: Clone > :: clone (& self . preserve_resolve_source) }
     }
@@ -20202,7 +20202,7 @@ impl D3D12_RENDER_PASS_ENDING_ACCESS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS {
     type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_ENDING_ACCESS")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -20210,7 +20210,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS {
+impl ::std::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -20218,7 +20218,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -20231,7 +20231,7 @@ impl ::core::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RENDER_PASS_ENDING_ACCESS_0 {
-    pub resolve: ::core::mem::ManuallyDrop<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS>,
+    pub resolve: ::std::mem::ManuallyDrop<D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -20243,18 +20243,18 @@ impl D3D12_RENDER_PASS_ENDING_ACCESS_0 {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
     type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_ENDING_ACCESS_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
+impl ::std::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -20287,7 +20287,7 @@ impl D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     type Abi = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+impl ::std::default::Default for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     fn default() -> Self {
         Self {
             cpu_descriptor: ::std::default::Default::default(),
@@ -20298,7 +20298,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_DEPTH_STENCIL_DESC")
             .field("cpu_descriptor", &format_args!("{:?}", self.cpu_descriptor))
@@ -20321,7 +20321,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     fn clone(&self) -> Self {
         Self {
             cpu_descriptor: <D3D12_CPU_DESCRIPTOR_HANDLE as std::clone::Clone>::clone(
@@ -20403,7 +20403,7 @@ impl D3D12_RENDER_PASS_RENDER_TARGET_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     type Abi = D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi;
 }
-impl ::core::default::Default for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+impl ::std::default::Default for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     fn default() -> Self {
         Self {
             cpu_descriptor: ::std::default::Default::default(),
@@ -20412,7 +20412,7 @@ impl ::core::default::Default for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+impl ::std::fmt::Debug for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_PASS_RENDER_TARGET_DESC")
             .field("cpu_descriptor", &format_args!("{:?}", self.cpu_descriptor))
@@ -20424,7 +20424,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+impl ::std::clone::Clone for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     fn clone(&self) -> Self {
         Self {
             cpu_descriptor: <D3D12_CPU_DESCRIPTOR_HANDLE as std::clone::Clone>::clone(
@@ -20497,19 +20497,19 @@ impl D3D12_TEX1D_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_RTV {
     type Abi = D3D12_TEX1D_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_RTV {
+impl ::std::default::Default for D3D12_TEX1D_RTV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_RTV {
+impl ::std::fmt::Debug for D3D12_TEX1D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_RTV {
+impl ::std::clone::Clone for D3D12_TEX1D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -20532,7 +20532,7 @@ impl D3D12_TEX1D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_RTV {
     type Abi = D3D12_TEX1D_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_ARRAY_RTV {
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -20541,7 +20541,7 @@ impl ::core::default::Default for D3D12_TEX1D_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -20553,7 +20553,7 @@ impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_ARRAY_RTV {
+impl ::std::clone::Clone for D3D12_TEX1D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -20577,7 +20577,7 @@ impl D3D12_TEX2D_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_RTV {
     type Abi = D3D12_TEX2D_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_RTV {
+impl ::std::default::Default for D3D12_TEX2D_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -20585,7 +20585,7 @@ impl ::core::default::Default for D3D12_TEX2D_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_RTV {
+impl ::std::fmt::Debug for D3D12_TEX2D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -20593,7 +20593,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_RTV {
+impl ::std::clone::Clone for D3D12_TEX2D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -20618,7 +20618,7 @@ impl D3D12_TEX2D_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_RTV {
     type Abi = D3D12_TEX2D_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_ARRAY_RTV {
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -20628,7 +20628,7 @@ impl ::core::default::Default for D3D12_TEX2D_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_ARRAY_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -20641,7 +20641,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_ARRAY_RTV {
+impl ::std::clone::Clone for D3D12_TEX2D_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -20665,14 +20665,14 @@ impl D3D12_TEX2DMS_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_RTV {
     type Abi = D3D12_TEX2DMS_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_RTV {
+impl ::std::default::Default for D3D12_TEX2DMS_RTV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_RTV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_RTV")
             .field(
@@ -20682,7 +20682,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_RTV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_RTV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -20704,7 +20704,7 @@ impl D3D12_TEX2DMS_ARRAY_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_RTV {
     type Abi = D3D12_TEX2DMS_ARRAY_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_RTV {
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_RTV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -20712,7 +20712,7 @@ impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_RTV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_ARRAY_RTV")
             .field(
@@ -20723,7 +20723,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_ARRAY_RTV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_ARRAY_RTV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -20747,7 +20747,7 @@ impl D3D12_TEX3D_RTV {}
 unsafe impl ::windows::Abi for D3D12_TEX3D_RTV {
     type Abi = D3D12_TEX3D_RTV_abi;
 }
-impl ::core::default::Default for D3D12_TEX3D_RTV {
+impl ::std::default::Default for D3D12_TEX3D_RTV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -20756,7 +20756,7 @@ impl ::core::default::Default for D3D12_TEX3D_RTV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX3D_RTV {
+impl ::std::fmt::Debug for D3D12_TEX3D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX3D_RTV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -20765,7 +20765,7 @@ impl ::core::fmt::Debug for D3D12_TEX3D_RTV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX3D_RTV {
+impl ::std::clone::Clone for D3D12_TEX3D_RTV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -20794,7 +20794,7 @@ impl D3D12_RENDER_TARGET_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_VIEW_DESC {
     type Abi = D3D12_RENDER_TARGET_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_TARGET_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -20803,7 +20803,7 @@ impl ::core::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_TARGET_VIEW_DESC {
+impl ::std::default::Default for D3D12_RENDER_TARGET_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -20812,7 +20812,7 @@ impl ::core::default::Default for D3D12_RENDER_TARGET_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_TARGET_VIEW_DESC {
+impl ::std::clone::Clone for D3D12_RENDER_TARGET_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -20825,14 +20825,14 @@ impl ::core::clone::Clone for D3D12_RENDER_TARGET_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RENDER_TARGET_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D12_BUFFER_RTV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D12_TEX1D_RTV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_RTV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D12_TEX2D_RTV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_RTV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_RTV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_RTV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D12_TEX3D_RTV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D12_BUFFER_RTV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D12_TEX1D_RTV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_RTV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D12_TEX2D_RTV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_RTV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_RTV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_RTV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D12_TEX3D_RTV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -20851,17 +20851,17 @@ impl D3D12_RENDER_TARGET_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_VIEW_DESC_0 {
     type Abi = D3D12_RENDER_TARGET_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RENDER_TARGET_VIEW_DESC_0").finish()
     }
 }
-impl ::core::default::Default for D3D12_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::default::Default for D3D12_RENDER_TARGET_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_RENDER_TARGET_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D12_RENDER_TARGET_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -20991,7 +20991,7 @@ impl D3D12_RESOURCE_ALLOCATION_INFO {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_ALLOCATION_INFO {
     type Abi = D3D12_RESOURCE_ALLOCATION_INFO_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_ALLOCATION_INFO {
+impl ::std::default::Default for D3D12_RESOURCE_ALLOCATION_INFO {
     fn default() -> Self {
         Self {
             size_in_bytes: 0,
@@ -20999,7 +20999,7 @@ impl ::core::default::Default for D3D12_RESOURCE_ALLOCATION_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO {
+impl ::std::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_ALLOCATION_INFO")
             .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
@@ -21007,7 +21007,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_ALLOCATION_INFO {
+impl ::std::clone::Clone for D3D12_RESOURCE_ALLOCATION_INFO {
     fn clone(&self) -> Self {
         Self {
             size_in_bytes: self.size_in_bytes,
@@ -21031,7 +21031,7 @@ impl D3D12_RESOURCE_ALLOCATION_INFO1 {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_ALLOCATION_INFO1 {
     type Abi = D3D12_RESOURCE_ALLOCATION_INFO1_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_ALLOCATION_INFO1 {
+impl ::std::default::Default for D3D12_RESOURCE_ALLOCATION_INFO1 {
     fn default() -> Self {
         Self {
             offset: 0,
@@ -21040,7 +21040,7 @@ impl ::core::default::Default for D3D12_RESOURCE_ALLOCATION_INFO1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO1 {
+impl ::std::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_ALLOCATION_INFO1")
             .field("offset", &format_args!("{:?}", self.offset))
@@ -21049,7 +21049,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_ALLOCATION_INFO1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_ALLOCATION_INFO1 {
+impl ::std::clone::Clone for D3D12_RESOURCE_ALLOCATION_INFO1 {
     fn clone(&self) -> Self {
         Self {
             offset: self.offset,
@@ -21095,7 +21095,7 @@ impl D3D12_RESOURCE_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC1 {
     type Abi = D3D12_RESOURCE_DESC1_abi;
 }
-impl ::core::default::Default for D3D12_RESOURCE_DESC1 {
+impl ::std::default::Default for D3D12_RESOURCE_DESC1 {
     fn default() -> Self {
         Self {
             dimension: ::std::default::Default::default(),
@@ -21112,7 +21112,7 @@ impl ::core::default::Default for D3D12_RESOURCE_DESC1 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RESOURCE_DESC1 {
+impl ::std::fmt::Debug for D3D12_RESOURCE_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RESOURCE_DESC1")
             .field("dimension", &format_args!("{:?}", self.dimension))
@@ -21135,7 +21135,7 @@ impl ::core::fmt::Debug for D3D12_RESOURCE_DESC1 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RESOURCE_DESC1 {
+impl ::std::clone::Clone for D3D12_RESOURCE_DESC1 {
     fn clone(&self) -> Self {
         Self {
             dimension: self.dimension,
@@ -21211,7 +21211,7 @@ impl D3D12_RT_FORMAT_ARRAY {}
 unsafe impl ::windows::Abi for D3D12_RT_FORMAT_ARRAY {
     type Abi = D3D12_RT_FORMAT_ARRAY_abi;
 }
-impl ::core::default::Default for D3D12_RT_FORMAT_ARRAY {
+impl ::std::default::Default for D3D12_RT_FORMAT_ARRAY {
     fn default() -> Self {
         Self {
             rt_formats: [
@@ -21228,7 +21228,7 @@ impl ::core::default::Default for D3D12_RT_FORMAT_ARRAY {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_RT_FORMAT_ARRAY {
+impl ::std::fmt::Debug for D3D12_RT_FORMAT_ARRAY {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_RT_FORMAT_ARRAY")
             .field("rt_formats", &format_args!("{:?}", self.rt_formats))
@@ -21239,7 +21239,7 @@ impl ::core::fmt::Debug for D3D12_RT_FORMAT_ARRAY {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_RT_FORMAT_ARRAY {
+impl ::std::clone::Clone for D3D12_RT_FORMAT_ARRAY {
     fn clone(&self) -> Self {
         Self {
             rt_formats: <[super::dxgi::DXGI_FORMAT; 8usize] as std::clone::Clone>::clone(
@@ -21282,7 +21282,7 @@ impl D3D12_SAMPLER_DESC {}
 unsafe impl ::windows::Abi for D3D12_SAMPLER_DESC {
     type Abi = D3D12_SAMPLER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SAMPLER_DESC {
+impl ::std::default::Default for D3D12_SAMPLER_DESC {
     fn default() -> Self {
         Self {
             filter: ::std::default::Default::default(),
@@ -21298,7 +21298,7 @@ impl ::core::default::Default for D3D12_SAMPLER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SAMPLER_DESC {
+impl ::std::fmt::Debug for D3D12_SAMPLER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SAMPLER_DESC")
             .field("filter", &format_args!("{:?}", self.filter))
@@ -21317,7 +21317,7 @@ impl ::core::fmt::Debug for D3D12_SAMPLER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SAMPLER_DESC {
+impl ::std::clone::Clone for D3D12_SAMPLER_DESC {
     fn clone(&self) -> Self {
         Self {
             filter: self.filter,
@@ -21347,12 +21347,12 @@ impl D3D12_SAMPLE_POSITION {}
 unsafe impl ::windows::Abi for D3D12_SAMPLE_POSITION {
     type Abi = D3D12_SAMPLE_POSITION_abi;
 }
-impl ::core::default::Default for D3D12_SAMPLE_POSITION {
+impl ::std::default::Default for D3D12_SAMPLE_POSITION {
     fn default() -> Self {
         Self { x: 0, y: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_SAMPLE_POSITION {
+impl ::std::fmt::Debug for D3D12_SAMPLE_POSITION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SAMPLE_POSITION")
             .field("x", &format_args!("{:?}", self.x))
@@ -21360,7 +21360,7 @@ impl ::core::fmt::Debug for D3D12_SAMPLE_POSITION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SAMPLE_POSITION {
+impl ::std::clone::Clone for D3D12_SAMPLE_POSITION {
     fn clone(&self) -> Self {
         Self {
             x: self.x,
@@ -21383,7 +21383,7 @@ impl D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {}
 unsafe impl ::windows::Abi for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     type Abi = D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER_abi;
 }
-impl ::core::default::Default for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
+impl ::std::default::Default for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     fn default() -> Self {
         Self {
             driver_opaque_guid: ::windows::Guid::zeroed(),
@@ -21391,7 +21391,7 @@ impl ::core::default::Default for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFI
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
+impl ::std::fmt::Debug for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER")
             .field(
@@ -21405,7 +21405,7 @@ impl ::core::fmt::Debug for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
+impl ::std::clone::Clone for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     fn clone(&self) -> Self {
         Self {
             driver_opaque_guid: <::windows::Guid as std::clone::Clone>::clone(
@@ -21475,7 +21475,7 @@ impl D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {}
 unsafe impl ::windows::Abi for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     type Abi = D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER_abi;
 }
-impl ::core::default::Default for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
+impl ::std::default::Default for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     fn default() -> Self {
         Self {
             driver_matching_identifier: ::std::default::Default::default(),
@@ -21485,7 +21485,7 @@ impl ::core::default::Default for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUC
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
+impl ::std::fmt::Debug for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER")
             .field(
@@ -21510,7 +21510,7 @@ impl ::core::fmt::Debug for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_H
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
+impl ::std::clone::Clone for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     fn clone(&self) -> Self {
         Self {
             driver_matching_identifier:
@@ -21548,7 +21548,7 @@ impl D3D12_SHADER_BUFFER_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_BUFFER_DESC {
     type Abi = D3D12_SHADER_BUFFER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_BUFFER_DESC {
+impl ::std::default::Default for D3D12_SHADER_BUFFER_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -21559,7 +21559,7 @@ impl ::core::default::Default for D3D12_SHADER_BUFFER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_BUFFER_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_BUFFER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_BUFFER_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -21570,7 +21570,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_BUFFER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_BUFFER_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_BUFFER_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -21715,7 +21715,7 @@ impl D3D12_SHADER_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_DESC {
     type Abi = D3D12_SHADER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_DESC {
+impl ::std::default::Default for D3D12_SHADER_DESC {
     fn default() -> Self {
         Self {
             version: 0,
@@ -21759,7 +21759,7 @@ impl ::core::default::Default for D3D12_SHADER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_DESC")
             .field("version", &format_args!("{:?}", self.version))
@@ -21902,7 +21902,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_DESC {
     fn clone(&self) -> Self {
         Self {
             version: self.version,
@@ -21980,7 +21980,7 @@ impl D3D12_SHADER_INPUT_BIND_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_INPUT_BIND_DESC {
     type Abi = D3D12_SHADER_INPUT_BIND_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_INPUT_BIND_DESC {
+impl ::std::default::Default for D3D12_SHADER_INPUT_BIND_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -21996,7 +21996,7 @@ impl ::core::default::Default for D3D12_SHADER_INPUT_BIND_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_INPUT_BIND_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_INPUT_BIND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_INPUT_BIND_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -22012,7 +22012,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_INPUT_BIND_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_INPUT_BIND_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_INPUT_BIND_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -22097,7 +22097,7 @@ impl D3D12_TEX1D_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_SRV {
     type Abi = D3D12_TEX1D_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_SRV {
+impl ::std::default::Default for D3D12_TEX1D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22106,7 +22106,7 @@ impl ::core::default::Default for D3D12_TEX1D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_SRV {
+impl ::std::fmt::Debug for D3D12_TEX1D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_SRV")
             .field(
@@ -22121,7 +22121,7 @@ impl ::core::fmt::Debug for D3D12_TEX1D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_SRV {
+impl ::std::clone::Clone for D3D12_TEX1D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22148,7 +22148,7 @@ impl D3D12_TEX1D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_SRV {
     type Abi = D3D12_TEX1D_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_ARRAY_SRV {
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22159,7 +22159,7 @@ impl ::core::default::Default for D3D12_TEX1D_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_ARRAY_SRV")
             .field(
@@ -22179,7 +22179,7 @@ impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_ARRAY_SRV {
+impl ::std::clone::Clone for D3D12_TEX1D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22207,7 +22207,7 @@ impl D3D12_TEX2D_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_SRV {
     type Abi = D3D12_TEX2D_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_SRV {
+impl ::std::default::Default for D3D12_TEX2D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22217,7 +22217,7 @@ impl ::core::default::Default for D3D12_TEX2D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_SRV {
+impl ::std::fmt::Debug for D3D12_TEX2D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_SRV")
             .field(
@@ -22233,7 +22233,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_SRV {
+impl ::std::clone::Clone for D3D12_TEX2D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22262,7 +22262,7 @@ impl D3D12_TEX2D_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_SRV {
     type Abi = D3D12_TEX2D_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_ARRAY_SRV {
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22274,7 +22274,7 @@ impl ::core::default::Default for D3D12_TEX2D_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_ARRAY_SRV")
             .field(
@@ -22295,7 +22295,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_ARRAY_SRV {
+impl ::std::clone::Clone for D3D12_TEX2D_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22321,14 +22321,14 @@ impl D3D12_TEX2DMS_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_SRV {
     type Abi = D3D12_TEX2DMS_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_SRV {
+impl ::std::default::Default for D3D12_TEX2DMS_SRV {
     fn default() -> Self {
         Self {
             unused_field_nothing_to_define: 0,
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_SRV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_SRV")
             .field(
@@ -22338,7 +22338,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_SRV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_SRV {
     fn clone(&self) -> Self {
         Self {
             unused_field_nothing_to_define: self.unused_field_nothing_to_define,
@@ -22360,7 +22360,7 @@ impl D3D12_TEX2DMS_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_SRV {
     type Abi = D3D12_TEX2DMS_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_SRV {
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_SRV {
     fn default() -> Self {
         Self {
             first_array_slice: 0,
@@ -22368,7 +22368,7 @@ impl ::core::default::Default for D3D12_TEX2DMS_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2DMS_ARRAY_SRV")
             .field(
@@ -22379,7 +22379,7 @@ impl ::core::fmt::Debug for D3D12_TEX2DMS_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2DMS_ARRAY_SRV {
+impl ::std::clone::Clone for D3D12_TEX2DMS_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             first_array_slice: self.first_array_slice,
@@ -22403,7 +22403,7 @@ impl D3D12_TEX3D_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEX3D_SRV {
     type Abi = D3D12_TEX3D_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEX3D_SRV {
+impl ::std::default::Default for D3D12_TEX3D_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22412,7 +22412,7 @@ impl ::core::default::Default for D3D12_TEX3D_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX3D_SRV {
+impl ::std::fmt::Debug for D3D12_TEX3D_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX3D_SRV")
             .field(
@@ -22427,7 +22427,7 @@ impl ::core::fmt::Debug for D3D12_TEX3D_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX3D_SRV {
+impl ::std::clone::Clone for D3D12_TEX3D_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22452,7 +22452,7 @@ impl D3D12_TEXCUBE_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEXCUBE_SRV {
     type Abi = D3D12_TEXCUBE_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEXCUBE_SRV {
+impl ::std::default::Default for D3D12_TEXCUBE_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22461,7 +22461,7 @@ impl ::core::default::Default for D3D12_TEXCUBE_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEXCUBE_SRV {
+impl ::std::fmt::Debug for D3D12_TEXCUBE_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEXCUBE_SRV")
             .field(
@@ -22476,7 +22476,7 @@ impl ::core::fmt::Debug for D3D12_TEXCUBE_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEXCUBE_SRV {
+impl ::std::clone::Clone for D3D12_TEXCUBE_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22503,7 +22503,7 @@ impl D3D12_TEXCUBE_ARRAY_SRV {}
 unsafe impl ::windows::Abi for D3D12_TEXCUBE_ARRAY_SRV {
     type Abi = D3D12_TEXCUBE_ARRAY_SRV_abi;
 }
-impl ::core::default::Default for D3D12_TEXCUBE_ARRAY_SRV {
+impl ::std::default::Default for D3D12_TEXCUBE_ARRAY_SRV {
     fn default() -> Self {
         Self {
             most_detailed_mip: 0,
@@ -22514,7 +22514,7 @@ impl ::core::default::Default for D3D12_TEXCUBE_ARRAY_SRV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEXCUBE_ARRAY_SRV {
+impl ::std::fmt::Debug for D3D12_TEXCUBE_ARRAY_SRV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEXCUBE_ARRAY_SRV")
             .field(
@@ -22534,7 +22534,7 @@ impl ::core::fmt::Debug for D3D12_TEXCUBE_ARRAY_SRV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEXCUBE_ARRAY_SRV {
+impl ::std::clone::Clone for D3D12_TEXCUBE_ARRAY_SRV {
     fn clone(&self) -> Self {
         Self {
             most_detailed_mip: self.most_detailed_mip,
@@ -22567,7 +22567,7 @@ impl D3D12_SHADER_RESOURCE_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_RESOURCE_VIEW_DESC {
     type Abi = D3D12_SHADER_RESOURCE_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_RESOURCE_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -22580,7 +22580,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -22590,7 +22590,7 @@ impl ::core::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_RESOURCE_VIEW_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_RESOURCE_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -22603,18 +22603,18 @@ impl ::core::clone::Clone for D3D12_SHADER_RESOURCE_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D12_BUFFER_SRV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D12_TEX1D_SRV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_SRV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D12_TEX2D_SRV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_SRV>,
-    pub texture2dms: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_SRV>,
-    pub texture2dms_array: ::core::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_SRV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D12_TEX3D_SRV>,
-    pub texture_cube: ::core::mem::ManuallyDrop<D3D12_TEXCUBE_SRV>,
-    pub texture_cube_array: ::core::mem::ManuallyDrop<D3D12_TEXCUBE_ARRAY_SRV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D12_BUFFER_SRV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D12_TEX1D_SRV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_SRV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D12_TEX2D_SRV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_SRV>,
+    pub texture2dms: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_SRV>,
+    pub texture2dms_array: ::std::mem::ManuallyDrop<D3D12_TEX2DMS_ARRAY_SRV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D12_TEX3D_SRV>,
+    pub texture_cube: ::std::mem::ManuallyDrop<D3D12_TEXCUBE_SRV>,
+    pub texture_cube_array: ::std::mem::ManuallyDrop<D3D12_TEXCUBE_ARRAY_SRV>,
     pub raytracing_acceleration_structure:
-        ::core::mem::ManuallyDrop<D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV>,
+        ::std::mem::ManuallyDrop<D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -22636,18 +22636,18 @@ impl D3D12_SHADER_RESOURCE_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
     type Abi = D3D12_SHADER_RESOURCE_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_RESOURCE_VIEW_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -22686,7 +22686,7 @@ impl D3D12_SHADER_TYPE_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_TYPE_DESC {
     type Abi = D3D12_SHADER_TYPE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_TYPE_DESC {
+impl ::std::default::Default for D3D12_SHADER_TYPE_DESC {
     fn default() -> Self {
         Self {
             class: ::std::default::Default::default(),
@@ -22700,7 +22700,7 @@ impl ::core::default::Default for D3D12_SHADER_TYPE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_TYPE_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_TYPE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_TYPE_DESC")
             .field("class", &format_args!("{:?}", self.class))
@@ -22714,7 +22714,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_TYPE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_TYPE_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_TYPE_DESC {
     fn clone(&self) -> Self {
         Self {
             class: self.class,
@@ -22759,7 +22759,7 @@ impl D3D12_SHADER_VARIABLE_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_VARIABLE_DESC {
     type Abi = D3D12_SHADER_VARIABLE_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SHADER_VARIABLE_DESC {
+impl ::std::default::Default for D3D12_SHADER_VARIABLE_DESC {
     fn default() -> Self {
         Self {
             name: ::std::ptr::null_mut(),
@@ -22774,7 +22774,7 @@ impl ::core::default::Default for D3D12_SHADER_VARIABLE_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SHADER_VARIABLE_DESC {
+impl ::std::fmt::Debug for D3D12_SHADER_VARIABLE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_VARIABLE_DESC")
             .field("name", &format_args!("{:?}", self.name))
@@ -22789,7 +22789,7 @@ impl ::core::fmt::Debug for D3D12_SHADER_VARIABLE_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SHADER_VARIABLE_DESC {
+impl ::std::clone::Clone for D3D12_SHADER_VARIABLE_DESC {
     fn clone(&self) -> Self {
         Self {
             name: self.name,
@@ -22968,7 +22968,7 @@ impl D3D12_SIGNATURE_PARAMETER_DESC {}
 unsafe impl ::windows::Abi for D3D12_SIGNATURE_PARAMETER_DESC {
     type Abi = D3D12_SIGNATURE_PARAMETER_DESC_abi;
 }
-impl ::core::default::Default for D3D12_SIGNATURE_PARAMETER_DESC {
+impl ::std::default::Default for D3D12_SIGNATURE_PARAMETER_DESC {
     fn default() -> Self {
         Self {
             semantic_name: ::std::ptr::null_mut(),
@@ -22983,7 +22983,7 @@ impl ::core::default::Default for D3D12_SIGNATURE_PARAMETER_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SIGNATURE_PARAMETER_DESC {
+impl ::std::fmt::Debug for D3D12_SIGNATURE_PARAMETER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SIGNATURE_PARAMETER_DESC")
             .field("semantic_name", &format_args!("{:?}", self.semantic_name))
@@ -23004,7 +23004,7 @@ impl ::core::fmt::Debug for D3D12_SIGNATURE_PARAMETER_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SIGNATURE_PARAMETER_DESC {
+impl ::std::clone::Clone for D3D12_SIGNATURE_PARAMETER_DESC {
     fn clone(&self) -> Self {
         Self {
             semantic_name: self.semantic_name,
@@ -23103,21 +23103,21 @@ impl D3D12_STATE_OBJECT_CONFIG {}
 unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_CONFIG {
     type Abi = D3D12_STATE_OBJECT_CONFIG_abi;
 }
-impl ::core::default::Default for D3D12_STATE_OBJECT_CONFIG {
+impl ::std::default::Default for D3D12_STATE_OBJECT_CONFIG {
     fn default() -> Self {
         Self {
             flags: ::std::default::Default::default(),
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STATE_OBJECT_CONFIG {
+impl ::std::fmt::Debug for D3D12_STATE_OBJECT_CONFIG {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATE_OBJECT_CONFIG")
             .field("flags", &format_args!("{:?}", self.flags))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STATE_OBJECT_CONFIG {
+impl ::std::clone::Clone for D3D12_STATE_OBJECT_CONFIG {
     fn clone(&self) -> Self {
         Self { flags: self.flags }
     }
@@ -23223,7 +23223,7 @@ impl D3D12_STATE_SUBOBJECT {}
 unsafe impl ::windows::Abi for D3D12_STATE_SUBOBJECT {
     type Abi = D3D12_STATE_SUBOBJECT_abi;
 }
-impl ::core::default::Default for D3D12_STATE_SUBOBJECT {
+impl ::std::default::Default for D3D12_STATE_SUBOBJECT {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -23231,7 +23231,7 @@ impl ::core::default::Default for D3D12_STATE_SUBOBJECT {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STATE_SUBOBJECT {
+impl ::std::fmt::Debug for D3D12_STATE_SUBOBJECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATE_SUBOBJECT")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -23239,7 +23239,7 @@ impl ::core::fmt::Debug for D3D12_STATE_SUBOBJECT {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STATE_SUBOBJECT {
+impl ::std::clone::Clone for D3D12_STATE_SUBOBJECT {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -23266,7 +23266,7 @@ impl D3D12_STATE_OBJECT_DESC {}
 unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_DESC {
     type Abi = D3D12_STATE_OBJECT_DESC_abi;
 }
-impl ::core::default::Default for D3D12_STATE_OBJECT_DESC {
+impl ::std::default::Default for D3D12_STATE_OBJECT_DESC {
     fn default() -> Self {
         Self {
             r#type: ::std::default::Default::default(),
@@ -23275,7 +23275,7 @@ impl ::core::default::Default for D3D12_STATE_OBJECT_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_STATE_OBJECT_DESC {
+impl ::std::fmt::Debug for D3D12_STATE_OBJECT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATE_OBJECT_DESC")
             .field("type", &format_args!("{:?}", self.r#type))
@@ -23284,7 +23284,7 @@ impl ::core::fmt::Debug for D3D12_STATE_OBJECT_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_STATE_OBJECT_DESC {
+impl ::std::clone::Clone for D3D12_STATE_OBJECT_DESC {
     fn clone(&self) -> Self {
         Self {
             r#type: self.r#type,
@@ -23314,7 +23314,7 @@ impl D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {}
 unsafe impl ::windows::Abi for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     type Abi = D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_abi;
 }
-impl ::core::default::Default for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::default::Default for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn default() -> Self {
         Self {
             p_subobject_to_associate: ::std::ptr::null_mut(),
@@ -23323,7 +23323,7 @@ impl ::core::default::Default for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::fmt::Debug for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION")
             .field(
@@ -23335,7 +23335,7 @@ impl ::core::fmt::Debug for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
+impl ::std::clone::Clone for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     fn clone(&self) -> Self {
         Self {
             p_subobject_to_associate: <*mut D3D12_STATE_SUBOBJECT as std::clone::Clone>::clone(
@@ -23362,7 +23362,7 @@ impl D3D12_SUBRESOURCE_DATA {}
 unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_DATA {
     type Abi = D3D12_SUBRESOURCE_DATA_abi;
 }
-impl ::core::default::Default for D3D12_SUBRESOURCE_DATA {
+impl ::std::default::Default for D3D12_SUBRESOURCE_DATA {
     fn default() -> Self {
         Self {
             p_data: ::std::ptr::null_mut(),
@@ -23371,7 +23371,7 @@ impl ::core::default::Default for D3D12_SUBRESOURCE_DATA {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBRESOURCE_DATA {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_DATA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBRESOURCE_DATA")
             .field("p_data", &format_args!("{:?}", self.p_data))
@@ -23380,7 +23380,7 @@ impl ::core::fmt::Debug for D3D12_SUBRESOURCE_DATA {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBRESOURCE_DATA {
+impl ::std::clone::Clone for D3D12_SUBRESOURCE_DATA {
     fn clone(&self) -> Self {
         Self {
             p_data: <*mut ::std::ffi::c_void as std::clone::Clone>::clone(&self.p_data),
@@ -23404,7 +23404,7 @@ impl D3D12_SUBRESOURCE_INFO {}
 unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_INFO {
     type Abi = D3D12_SUBRESOURCE_INFO_abi;
 }
-impl ::core::default::Default for D3D12_SUBRESOURCE_INFO {
+impl ::std::default::Default for D3D12_SUBRESOURCE_INFO {
     fn default() -> Self {
         Self {
             offset: 0,
@@ -23413,7 +23413,7 @@ impl ::core::default::Default for D3D12_SUBRESOURCE_INFO {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBRESOURCE_INFO {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBRESOURCE_INFO")
             .field("offset", &format_args!("{:?}", self.offset))
@@ -23422,7 +23422,7 @@ impl ::core::fmt::Debug for D3D12_SUBRESOURCE_INFO {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBRESOURCE_INFO {
+impl ::std::clone::Clone for D3D12_SUBRESOURCE_INFO {
     fn clone(&self) -> Self {
         Self {
             offset: self.offset,
@@ -23446,7 +23446,7 @@ impl D3D12_SUBRESOURCE_RANGE_UINT64 {}
 unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_RANGE_UINT64 {
     type Abi = D3D12_SUBRESOURCE_RANGE_UINT64_abi;
 }
-impl ::core::default::Default for D3D12_SUBRESOURCE_RANGE_UINT64 {
+impl ::std::default::Default for D3D12_SUBRESOURCE_RANGE_UINT64 {
     fn default() -> Self {
         Self {
             subresource: 0,
@@ -23454,7 +23454,7 @@ impl ::core::default::Default for D3D12_SUBRESOURCE_RANGE_UINT64 {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBRESOURCE_RANGE_UINT64 {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_RANGE_UINT64 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBRESOURCE_RANGE_UINT64")
             .field("subresource", &format_args!("{:?}", self.subresource))
@@ -23462,7 +23462,7 @@ impl ::core::fmt::Debug for D3D12_SUBRESOURCE_RANGE_UINT64 {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBRESOURCE_RANGE_UINT64 {
+impl ::std::clone::Clone for D3D12_SUBRESOURCE_RANGE_UINT64 {
     fn clone(&self) -> Self {
         Self {
             subresource: self.subresource,
@@ -23486,7 +23486,7 @@ impl D3D12_SUBRESOURCE_TILING {}
 unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_TILING {
     type Abi = D3D12_SUBRESOURCE_TILING_abi;
 }
-impl ::core::default::Default for D3D12_SUBRESOURCE_TILING {
+impl ::std::default::Default for D3D12_SUBRESOURCE_TILING {
     fn default() -> Self {
         Self {
             width_in_tiles: 0,
@@ -23496,7 +23496,7 @@ impl ::core::default::Default for D3D12_SUBRESOURCE_TILING {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_SUBRESOURCE_TILING {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_TILING {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SUBRESOURCE_TILING")
             .field("width_in_tiles", &format_args!("{:?}", self.width_in_tiles))
@@ -23512,7 +23512,7 @@ impl ::core::fmt::Debug for D3D12_SUBRESOURCE_TILING {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_SUBRESOURCE_TILING {
+impl ::std::clone::Clone for D3D12_SUBRESOURCE_TILING {
     fn clone(&self) -> Self {
         Self {
             width_in_tiles: self.width_in_tiles,
@@ -23548,7 +23548,7 @@ impl D3D12_TEX1D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_UAV {
     type Abi = D3D12_TEX1D_ARRAY_UAV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_ARRAY_UAV {
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -23557,7 +23557,7 @@ impl ::core::default::Default for D3D12_TEX1D_ARRAY_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_UAV {
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -23569,7 +23569,7 @@ impl ::core::fmt::Debug for D3D12_TEX1D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_ARRAY_UAV {
+impl ::std::clone::Clone for D3D12_TEX1D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -23592,19 +23592,19 @@ impl D3D12_TEX1D_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX1D_UAV {
     type Abi = D3D12_TEX1D_UAV_abi;
 }
-impl ::core::default::Default for D3D12_TEX1D_UAV {
+impl ::std::default::Default for D3D12_TEX1D_UAV {
     fn default() -> Self {
         Self { mip_slice: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX1D_UAV {
+impl ::std::fmt::Debug for D3D12_TEX1D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX1D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX1D_UAV {
+impl ::std::clone::Clone for D3D12_TEX1D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -23628,7 +23628,7 @@ impl D3D12_TEX2D_ARRAY_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_UAV {
     type Abi = D3D12_TEX2D_ARRAY_UAV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_ARRAY_UAV {
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -23638,7 +23638,7 @@ impl ::core::default::Default for D3D12_TEX2D_ARRAY_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_UAV {
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_ARRAY_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -23651,7 +23651,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_ARRAY_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_ARRAY_UAV {
+impl ::std::clone::Clone for D3D12_TEX2D_ARRAY_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -23676,7 +23676,7 @@ impl D3D12_TEX2D_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX2D_UAV {
     type Abi = D3D12_TEX2D_UAV_abi;
 }
-impl ::core::default::Default for D3D12_TEX2D_UAV {
+impl ::std::default::Default for D3D12_TEX2D_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -23684,7 +23684,7 @@ impl ::core::default::Default for D3D12_TEX2D_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX2D_UAV {
+impl ::std::fmt::Debug for D3D12_TEX2D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX2D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -23692,7 +23692,7 @@ impl ::core::fmt::Debug for D3D12_TEX2D_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX2D_UAV {
+impl ::std::clone::Clone for D3D12_TEX2D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -23716,7 +23716,7 @@ impl D3D12_TEX3D_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX3D_UAV {
     type Abi = D3D12_TEX3D_UAV_abi;
 }
-impl ::core::default::Default for D3D12_TEX3D_UAV {
+impl ::std::default::Default for D3D12_TEX3D_UAV {
     fn default() -> Self {
         Self {
             mip_slice: 0,
@@ -23725,7 +23725,7 @@ impl ::core::default::Default for D3D12_TEX3D_UAV {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TEX3D_UAV {
+impl ::std::fmt::Debug for D3D12_TEX3D_UAV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TEX3D_UAV")
             .field("mip_slice", &format_args!("{:?}", self.mip_slice))
@@ -23734,7 +23734,7 @@ impl ::core::fmt::Debug for D3D12_TEX3D_UAV {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TEX3D_UAV {
+impl ::std::clone::Clone for D3D12_TEX3D_UAV {
     fn clone(&self) -> Self {
         Self {
             mip_slice: self.mip_slice,
@@ -23763,7 +23763,7 @@ impl D3D12_TILE_SHAPE {}
 unsafe impl ::windows::Abi for D3D12_TILE_SHAPE {
     type Abi = D3D12_TILE_SHAPE_abi;
 }
-impl ::core::default::Default for D3D12_TILE_SHAPE {
+impl ::std::default::Default for D3D12_TILE_SHAPE {
     fn default() -> Self {
         Self {
             width_in_texels: 0,
@@ -23772,7 +23772,7 @@ impl ::core::default::Default for D3D12_TILE_SHAPE {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_TILE_SHAPE {
+impl ::std::fmt::Debug for D3D12_TILE_SHAPE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_TILE_SHAPE")
             .field(
@@ -23790,7 +23790,7 @@ impl ::core::fmt::Debug for D3D12_TILE_SHAPE {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_TILE_SHAPE {
+impl ::std::clone::Clone for D3D12_TILE_SHAPE {
     fn clone(&self) -> Self {
         Self {
             width_in_texels: self.width_in_texels,
@@ -23866,7 +23866,7 @@ impl D3D12_UNORDERED_ACCESS_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_UNORDERED_ACCESS_VIEW_DESC {
     type Abi = D3D12_UNORDERED_ACCESS_VIEW_DESC_abi;
 }
-impl ::core::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_UNORDERED_ACCESS_VIEW_DESC")
             .field("format", &format_args!("{:?}", self.format))
@@ -23875,7 +23875,7 @@ impl ::core::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC {
     fn default() -> Self {
         Self {
             format: ::std::default::Default::default(),
@@ -23884,7 +23884,7 @@ impl ::core::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_UNORDERED_ACCESS_VIEW_DESC {
+impl ::std::clone::Clone for D3D12_UNORDERED_ACCESS_VIEW_DESC {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -23897,12 +23897,12 @@ impl ::core::clone::Clone for D3D12_UNORDERED_ACCESS_VIEW_DESC {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
-    pub buffer: ::core::mem::ManuallyDrop<D3D12_BUFFER_UAV>,
-    pub texture1d: ::core::mem::ManuallyDrop<D3D12_TEX1D_UAV>,
-    pub texture1d_array: ::core::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_UAV>,
-    pub texture2d: ::core::mem::ManuallyDrop<D3D12_TEX2D_UAV>,
-    pub texture2d_array: ::core::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_UAV>,
-    pub texture3d: ::core::mem::ManuallyDrop<D3D12_TEX3D_UAV>,
+    pub buffer: ::std::mem::ManuallyDrop<D3D12_BUFFER_UAV>,
+    pub texture1d: ::std::mem::ManuallyDrop<D3D12_TEX1D_UAV>,
+    pub texture1d_array: ::std::mem::ManuallyDrop<D3D12_TEX1D_ARRAY_UAV>,
+    pub texture2d: ::std::mem::ManuallyDrop<D3D12_TEX2D_UAV>,
+    pub texture2d_array: ::std::mem::ManuallyDrop<D3D12_TEX2D_ARRAY_UAV>,
+    pub texture3d: ::std::mem::ManuallyDrop<D3D12_TEX3D_UAV>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -23919,18 +23919,18 @@ impl D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
     type Abi = D3D12_UNORDERED_ACCESS_VIEW_DESC_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_UNORDERED_ACCESS_VIEW_DESC_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+impl ::std::clone::Clone for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -23957,7 +23957,7 @@ impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     type Abi = D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_abi;
 }
-impl ::core::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA")
             .field("version", &format_args!("{:?}", self.version))
@@ -23965,7 +23965,7 @@ impl ::core::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     fn default() -> Self {
         Self {
             version: ::std::default::Default::default(),
@@ -23973,7 +23973,7 @@ impl ::core::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
         }
     }
 }
-impl ::core::clone::Clone for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
+impl ::std::clone::Clone for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -23986,9 +23986,9 @@ impl ::core::clone::Clone for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
-    pub dred_1_0: ::core::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA>,
-    pub dred_1_1: ::core::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA1>,
-    pub dred_1_2: ::core::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA2>,
+    pub dred_1_0: ::std::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA>,
+    pub dred_1_1: ::std::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA1>,
+    pub dred_1_2: ::std::mem::ManuallyDrop<D3D12_DEVICE_REMOVED_EXTENDED_DATA2>,
 }
 #[repr(C)]
 #[doc(hidden)]
@@ -24002,18 +24002,18 @@ impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     type Abi = D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0_abi;
 }
-impl ::core::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
+impl ::std::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0")
             .finish()
     }
 }
-impl ::core::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
+impl ::std::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     fn default() -> Self {
-        unsafe { ::core::mem::zeroed() }
+        unsafe { ::std::mem::zeroed() }
     }
 }
-impl ::core::clone::Clone for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
+impl ::std::clone::Clone for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     fn clone(&self) -> Self {
         let mut out = Self::default();
         out.clone_from(self);
@@ -24048,7 +24048,7 @@ impl D3D12_VIEW_INSTANCE_LOCATION {}
 unsafe impl ::windows::Abi for D3D12_VIEW_INSTANCE_LOCATION {
     type Abi = D3D12_VIEW_INSTANCE_LOCATION_abi;
 }
-impl ::core::default::Default for D3D12_VIEW_INSTANCE_LOCATION {
+impl ::std::default::Default for D3D12_VIEW_INSTANCE_LOCATION {
     fn default() -> Self {
         Self {
             viewport_array_index: 0,
@@ -24056,7 +24056,7 @@ impl ::core::default::Default for D3D12_VIEW_INSTANCE_LOCATION {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_VIEW_INSTANCE_LOCATION {
+impl ::std::fmt::Debug for D3D12_VIEW_INSTANCE_LOCATION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VIEW_INSTANCE_LOCATION")
             .field(
@@ -24070,7 +24070,7 @@ impl ::core::fmt::Debug for D3D12_VIEW_INSTANCE_LOCATION {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_VIEW_INSTANCE_LOCATION {
+impl ::std::clone::Clone for D3D12_VIEW_INSTANCE_LOCATION {
     fn clone(&self) -> Self {
         Self {
             viewport_array_index: self.viewport_array_index,
@@ -24136,7 +24136,7 @@ impl D3D12_VIEW_INSTANCING_DESC {}
 unsafe impl ::windows::Abi for D3D12_VIEW_INSTANCING_DESC {
     type Abi = D3D12_VIEW_INSTANCING_DESC_abi;
 }
-impl ::core::default::Default for D3D12_VIEW_INSTANCING_DESC {
+impl ::std::default::Default for D3D12_VIEW_INSTANCING_DESC {
     fn default() -> Self {
         Self {
             view_instance_count: 0,
@@ -24145,7 +24145,7 @@ impl ::core::default::Default for D3D12_VIEW_INSTANCING_DESC {
         }
     }
 }
-impl ::core::fmt::Debug for D3D12_VIEW_INSTANCING_DESC {
+impl ::std::fmt::Debug for D3D12_VIEW_INSTANCING_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_VIEW_INSTANCING_DESC")
             .field(
@@ -24160,7 +24160,7 @@ impl ::core::fmt::Debug for D3D12_VIEW_INSTANCING_DESC {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_VIEW_INSTANCING_DESC {
+impl ::std::clone::Clone for D3D12_VIEW_INSTANCING_DESC {
     fn clone(&self) -> Self {
         Self {
             view_instance_count: self.view_instance_count,
@@ -24236,12 +24236,12 @@ impl D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {}
 unsafe impl ::windows::Abi for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     type Abi = D3D12_WRITEBUFFERIMMEDIATE_PARAMETER_abi;
 }
-impl ::core::default::Default for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
+impl ::std::default::Default for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     fn default() -> Self {
         Self { dest: 0, value: 0 }
     }
 }
-impl ::core::fmt::Debug for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
+impl ::std::fmt::Debug for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_WRITEBUFFERIMMEDIATE_PARAMETER")
             .field("dest", &format_args!("{:?}", self.dest))
@@ -24249,7 +24249,7 @@ impl ::core::fmt::Debug for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
             .finish()
     }
 }
-impl ::core::clone::Clone for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
+impl ::std::clone::Clone for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     fn clone(&self) -> Self {
         Self {
             dest: self.dest,

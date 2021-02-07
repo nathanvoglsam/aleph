@@ -9,19 +9,19 @@ impl HDC {}
 unsafe impl ::windows::Abi for HDC {
     type Abi = HDC_abi;
 }
-impl ::core::default::Default for HDC {
+impl ::std::default::Default for HDC {
     fn default() -> Self {
         Self(0)
     }
 }
-impl ::core::fmt::Debug for HDC {
+impl ::std::fmt::Debug for HDC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("HDC")
             .field("value", &format_args!("{:?}", self.0))
             .finish()
     }
 }
-impl ::core::clone::Clone for HDC {
+impl ::std::clone::Clone for HDC {
     fn clone(&self) -> Self {
         Self(self.0)
     }

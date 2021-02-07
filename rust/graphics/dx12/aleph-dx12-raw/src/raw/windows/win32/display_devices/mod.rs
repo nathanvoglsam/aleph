@@ -14,7 +14,7 @@ impl RECT {}
 unsafe impl ::windows::Abi for RECT {
     type Abi = RECT_abi;
 }
-impl ::core::default::Default for RECT {
+impl ::std::default::Default for RECT {
     fn default() -> Self {
         Self {
             left: 0,
@@ -24,7 +24,7 @@ impl ::core::default::Default for RECT {
         }
     }
 }
-impl ::core::fmt::Debug for RECT {
+impl ::std::fmt::Debug for RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("RECT")
             .field("left", &format_args!("{:?}", self.left))
@@ -34,7 +34,7 @@ impl ::core::fmt::Debug for RECT {
             .finish()
     }
 }
-impl ::core::clone::Clone for RECT {
+impl ::std::clone::Clone for RECT {
     fn clone(&self) -> Self {
         Self {
             left: self.left,
@@ -59,12 +59,12 @@ impl POINT {}
 unsafe impl ::windows::Abi for POINT {
     type Abi = POINT_abi;
 }
-impl ::core::default::Default for POINT {
+impl ::std::default::Default for POINT {
     fn default() -> Self {
         Self { x: 0, y: 0 }
     }
 }
-impl ::core::fmt::Debug for POINT {
+impl ::std::fmt::Debug for POINT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("POINT")
             .field("x", &format_args!("{:?}", self.x))
@@ -72,7 +72,7 @@ impl ::core::fmt::Debug for POINT {
             .finish()
     }
 }
-impl ::core::clone::Clone for POINT {
+impl ::std::clone::Clone for POINT {
     fn clone(&self) -> Self {
         Self {
             x: self.x,

@@ -12,7 +12,7 @@ impl LUID {}
 unsafe impl ::windows::Abi for LUID {
     type Abi = LUID_abi;
 }
-impl ::core::default::Default for LUID {
+impl ::std::default::Default for LUID {
     fn default() -> Self {
         Self {
             low_part: 0,
@@ -20,7 +20,7 @@ impl ::core::default::Default for LUID {
         }
     }
 }
-impl ::core::fmt::Debug for LUID {
+impl ::std::fmt::Debug for LUID {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("LUID")
             .field("low_part", &format_args!("{:?}", self.low_part))
@@ -28,7 +28,7 @@ impl ::core::fmt::Debug for LUID {
             .finish()
     }
 }
-impl ::core::clone::Clone for LUID {
+impl ::std::clone::Clone for LUID {
     fn clone(&self) -> Self {
         Self {
             low_part: self.low_part,

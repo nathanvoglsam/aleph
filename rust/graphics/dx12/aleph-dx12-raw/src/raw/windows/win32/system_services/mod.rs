@@ -9,19 +9,19 @@ impl HANDLE {}
 unsafe impl ::windows::Abi for HANDLE {
     type Abi = HANDLE_abi;
 }
-impl ::core::default::Default for HANDLE {
+impl ::std::default::Default for HANDLE {
     fn default() -> Self {
         Self(0)
     }
 }
-impl ::core::fmt::Debug for HANDLE {
+impl ::std::fmt::Debug for HANDLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("HANDLE")
             .field("value", &format_args!("{:?}", self.0))
             .finish()
     }
 }
-impl ::core::clone::Clone for HANDLE {
+impl ::std::clone::Clone for HANDLE {
     fn clone(&self) -> Self {
         Self(self.0)
     }
@@ -41,7 +41,7 @@ impl SECURITY_ATTRIBUTES {}
 unsafe impl ::windows::Abi for SECURITY_ATTRIBUTES {
     type Abi = SECURITY_ATTRIBUTES_abi;
 }
-impl ::core::default::Default for SECURITY_ATTRIBUTES {
+impl ::std::default::Default for SECURITY_ATTRIBUTES {
     fn default() -> Self {
         Self {
             n_length: 0,
@@ -50,7 +50,7 @@ impl ::core::default::Default for SECURITY_ATTRIBUTES {
         }
     }
 }
-impl ::core::fmt::Debug for SECURITY_ATTRIBUTES {
+impl ::std::fmt::Debug for SECURITY_ATTRIBUTES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("SECURITY_ATTRIBUTES")
             .field("n_length", &format_args!("{:?}", self.n_length))
@@ -65,7 +65,7 @@ impl ::core::fmt::Debug for SECURITY_ATTRIBUTES {
             .finish()
     }
 }
-impl ::core::clone::Clone for SECURITY_ATTRIBUTES {
+impl ::std::clone::Clone for SECURITY_ATTRIBUTES {
     fn clone(&self) -> Self {
         Self {
             n_length: self.n_length,
