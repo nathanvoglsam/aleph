@@ -27,40 +27,32 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_dx12_raw as raw;
+use crate::raw::windows::win32::direct3d12::D3D12_GPU_DESCRIPTOR_HANDLE;
 
-mod command_list_type;
-mod command_queue;
-mod cpu_descriptor_handle;
-mod descriptor_heap;
-mod descriptor_heap_type;
-mod device;
-mod event;
-mod fence;
-mod gpu_descriptor_handle;
-mod mesh_shader_pipeline_desc;
-mod pipeline_state_stream;
-mod swapchain;
+#[repr(transparent)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+pub struct GPUDescriptorHandle(u64);
 
-pub use command_list_type::CommandListType;
-pub use command_queue::CommandQueue;
-pub use command_queue::CommandQueueBuilder;
-pub use cpu_descriptor_handle::CPUDescriptorHandle;
-pub use descriptor_heap::DescriptorHeap;
-pub use descriptor_heap::DescriptorHeapBuilder;
-pub use descriptor_heap_type::DescriptorHeapType;
-pub use device::Device;
-pub use device::DeviceBuilder;
-pub use device::DeviceCreateError;
-pub use device::DeviceCreateResult;
-pub use event::Event;
-pub use event::EventBuilder;
-pub use fence::Fence;
-pub use fence::FenceBuilder;
-pub use gpu_descriptor_handle::GPUDescriptorHandle;
-pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
-pub use pipeline_state_stream::ToPipelineStateStream;
-pub use swapchain::SwapChain;
-pub use swapchain::SwapChainBuilder;
-pub use swapchain::SwapChainCreateError;
-pub use swapchain::SwapChainCreateResult;
+impl GPUDescriptorHandle {
+    pub fn offset(self, offset: i64) -> Self {
+        let ptr = self.0 as i64;
+        let ptr = ptr + offset;
+        Self(ptr as u64)
+    }
+
+    pub fn add(self, offset: u64) -> Self {
+        Self(self.0 + offset)
+    }
+}
+
+impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
+    fn into(self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+        D3D12_GPU_DESCRIPTOR_HANDLE { ptr: self.0 }
+    }
+}
+
+impl From<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
+    fn from(v: D3D12_GPU_DESCRIPTOR_HANDLE) -> Self {
+        Self(v.ptr)
+    }
+}
