@@ -43,6 +43,16 @@ impl GPUDescriptorHandle {
     pub fn add(self, offset: u64) -> Self {
         Self(self.0 + offset)
     }
+
+    pub fn offset_increments(self, offset: i64, increment: u64) -> Self {
+        let ptr = self.0 as i64;
+        let ptr = ptr + (offset * increment as i64);
+        Self(ptr as u64)
+    }
+
+    pub fn add_increments(self, offset: u64, increment: u64) -> Self {
+        Self(self.0 + (offset * increment))
+    }
 }
 
 impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {

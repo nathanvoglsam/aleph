@@ -43,6 +43,16 @@ impl CPUDescriptorHandle {
     pub fn add(self, offset: usize) -> Self {
         Self(self.0 + offset)
     }
+
+    pub fn offset_increments(self, offset: isize, increment: usize) -> Self {
+        let ptr = self.0 as isize;
+        let ptr = ptr + (offset * increment as isize);
+        Self(ptr as usize)
+    }
+
+    pub fn add_increments(self, offset: usize, increment: usize) -> Self {
+        Self(self.0 + (offset * increment))
+    }
 }
 
 impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
