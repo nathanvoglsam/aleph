@@ -27,37 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
-use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12Object, DXGIAdapter, FeatureLevel};
+use crate::raw::windows::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Device(pub(crate) ID3D12Device4);
+pub struct DXGIAdapter(pub(crate) IDXGIAdapter1);
 
-impl Device {
-    pub unsafe fn new(
-        adapter: Option<&DXGIAdapter>,
-        minimum_feature_level: FeatureLevel,
-    ) -> raw::windows::Result<Device> {
-        let mut device: Option<ID3D12Device4> = None;
-        D3D12CreateDevice(
-            adapter.map(|v| v.raw().clone().into()),
-            minimum_feature_level.into(),
-            &ID3D12Device4::IID,
-            device.set_abi(),
-        )
-        .and_some(device)
-        .map(|v| Self(v))
+impl DXGIAdapter {
+    pub unsafe fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
+        let mut desc = DXGI_ADAPTER_DESC1::default();
+        self.0.GetDesc1(&mut desc).ok().map(|_| desc)
     }
 
-    pub fn raw(&self) -> &ID3D12Device4 {
+    pub fn raw(&self) -> &IDXGIAdapter1 {
         &self.0
-    }
-}
-
-impl D3D12Object for Device {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
     }
 }

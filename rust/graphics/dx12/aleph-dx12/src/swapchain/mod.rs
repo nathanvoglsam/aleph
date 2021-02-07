@@ -35,7 +35,7 @@ use crate::raw::windows::win32::dxgi::{
 };
 use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::raw::windows::Error;
-use crate::{CommandQueue, Device};
+use crate::{CommandQueue, DXGIFactory};
 use raw::windows::{Abi, Interface};
 use raw_window_handle::windows::WindowsHandle;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
@@ -108,12 +108,9 @@ impl SwapChainBuilder {
     }
 
     #[allow(unused_unsafe)]
-    pub unsafe fn build(self, device: &Device) -> SwapChainCreateResult<SwapChain> {
-        aleph_log::trace!("Initializing swapchain");
-
+    pub unsafe fn build(self, dxgi_factory: &DXGIFactory) -> SwapChainCreateResult<SwapChain> {
         // Assert the back buffer count is valid
         if self.buffer_count < 2 || self.buffer_count > 16 {
-            aleph_log::error!("Invalid back buffer count requested");
             return Err(SwapChainCreateError::InvalidBackBufferCount);
         }
 
@@ -161,10 +158,9 @@ impl SwapChainBuilder {
         let hwnd = HWND(hwnd);
 
         // Create the swapchain
-        aleph_log::trace!("Initializing IDXGISwapChain");
         let mut swapchain: Option<IDXGISwapChain1> = None;
-        device
-            .dxgi_factory
+        dxgi_factory
+            .0
             .CreateSwapChainForHwnd(queue, hwnd, &desc, std::ptr::null(), None, &mut swapchain)
             .and_some(swapchain)
             .map(|v| {

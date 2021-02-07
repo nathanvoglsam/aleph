@@ -75,13 +75,13 @@ impl FenceBuilder {
                 fence.set_abi(),
             )
             .and_some(fence)
-            .map(|v| Fence { fence: v })
+            .map(|v| Fence(v))
     }
 }
 
-pub struct Fence {
-    fence: ID3D12Fence,
-}
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
     pub fn builder() -> FenceBuilder {
@@ -89,12 +89,12 @@ impl Fence {
     }
 
     pub fn raw(&self) -> &ID3D12Fence {
-        &self.fence
+        &self.0
     }
 }
 
 impl D3D12Object for Fence {
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.fence.SetName(name.as_ptr()).ok()
+        self.0.SetName(name.as_ptr()).ok()
     }
 }

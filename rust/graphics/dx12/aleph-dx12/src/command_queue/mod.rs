@@ -75,13 +75,13 @@ impl CommandQueueBuilder {
             .raw()
             .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
             .and_some(queue)
-            .map(|v| CommandQueue { queue: v })
+            .map(|v| CommandQueue(v))
     }
 }
 
-pub struct CommandQueue {
-    queue: ID3D12CommandQueue,
-}
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
     pub fn builder() -> CommandQueueBuilder {
@@ -89,12 +89,12 @@ impl CommandQueue {
     }
 
     pub fn raw(&self) -> &ID3D12CommandQueue {
-        &self.queue
+        &self.0
     }
 }
 
 impl D3D12Object for CommandQueue {
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.queue.SetName(name.as_ptr()).ok()
+        self.0.SetName(name.as_ptr()).ok()
     }
 }

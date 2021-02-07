@@ -34,9 +34,8 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::VersionedRootSignatureDesc;
 
 #[derive(Clone)]
-pub struct RootSignatureBlob {
-    blob: ID3DBlob,
-}
+#[repr(transparent)]
+pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
 impl RootSignatureBlob {
     pub unsafe fn new(
@@ -55,7 +54,7 @@ impl RootSignatureBlob {
         let mut err: Option<ID3DBlob> = None;
         D3D12SerializeVersionedRootSignature(desc_ptr, &mut blob, &mut err)
             .and_some(blob)
-            .map(|v| RootSignatureBlob { blob: v })
+            .map(|v| RootSignatureBlob(v))
             .map_err(|v| {
                 if let Some(err) = err {
                     // TODO: See if this returns a string and wrap it into the error type
@@ -69,14 +68,13 @@ impl RootSignatureBlob {
     }
 
     pub fn raw(&self) -> &ID3DBlob {
-        &self.blob
+        &self.0
     }
 }
 
 #[derive(Clone)]
-pub struct RootSignature {
-    queue: ID3D12RootSignature,
-}
+#[repr(transparent)]
+pub struct RootSignature(pub(crate) ID3D12RootSignature);
 
 impl RootSignature {
     //pub fn builder() -> RootSignatureBuilder {
@@ -84,6 +82,6 @@ impl RootSignature {
     //}
 
     pub fn raw(&self) -> &ID3D12RootSignature {
-        &self.queue
+        &self.0
     }
 }

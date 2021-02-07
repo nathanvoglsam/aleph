@@ -27,37 +27,41 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
+use crate::raw::windows::win32::direct3d12::{D3D12GetDebugInterface, ID3D12Debug, ID3D12Debug1};
 use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12Object, DXGIAdapter, FeatureLevel};
 
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Device(pub(crate) ID3D12Device4);
+pub struct Debug(pub(crate) ID3D12Debug);
 
-impl Device {
-    pub unsafe fn new(
-        adapter: Option<&DXGIAdapter>,
-        minimum_feature_level: FeatureLevel,
-    ) -> raw::windows::Result<Device> {
-        let mut device: Option<ID3D12Device4> = None;
-        D3D12CreateDevice(
-            adapter.map(|v| v.raw().clone().into()),
-            minimum_feature_level.into(),
-            &ID3D12Device4::IID,
-            device.set_abi(),
-        )
-        .and_some(device)
-        .map(|v| Self(v))
+impl Debug {
+    pub unsafe fn new() -> raw::windows::Result<Self> {
+        let mut debug: Option<ID3D12Debug> = None;
+        D3D12GetDebugInterface(&ID3D12Debug::IID, debug.set_abi())
+            .and_some(debug)
+            .map(|v| Self(v))
     }
 
-    pub fn raw(&self) -> &ID3D12Device4 {
+    pub unsafe fn enable_debug_layer(&self) {
+        self.0.EnableDebugLayer()
+    }
+
+    pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> raw::windows::Result<()> {
+        let casted = self.0.cast::<ID3D12Debug1>()?;
+        casted.SetEnableGPUBasedValidation(enable.into());
+        Ok(())
+    }
+
+    pub unsafe fn set_enable_synchronized_command_queue_validation(
+        &self,
+        enable: bool,
+    ) -> raw::windows::Result<()> {
+        let casted = self.0.cast::<ID3D12Debug1>()?;
+        casted.SetEnableSynchronizedCommandQueueValidation(enable.into());
+        Ok(())
+    }
+
+    pub fn raw(&self) -> &ID3D12Debug {
         &self.0
-    }
-}
-
-impl D3D12Object for Device {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
     }
 }

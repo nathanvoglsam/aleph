@@ -44,10 +44,6 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies.aleph-log]
-path = "../../../logging/aleph-log"
-version = "1"
-
 [dependencies.aleph-dx12-raw]
 path = "../aleph-dx12-raw"
 version = "0.1"

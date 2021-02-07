@@ -134,13 +134,13 @@ impl DescriptorHeapBuilder {
             .raw()
             .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, heap.set_abi())
             .and_some(heap)
-            .map(|v| DescriptorHeap { heap: v })
+            .map(|v| DescriptorHeap(v))
     }
 }
 
-pub struct DescriptorHeap {
-    heap: ID3D12DescriptorHeap,
-}
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 
 impl DescriptorHeap {
     pub fn builder() -> DescriptorHeapBuilder {
@@ -148,12 +148,12 @@ impl DescriptorHeap {
     }
 
     pub fn raw(&self) -> &ID3D12DescriptorHeap {
-        &self.heap
+        &self.0
     }
 }
 
 impl D3D12Object for DescriptorHeap {
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.heap.SetName(name.as_ptr()).ok()
+        self.0.SetName(name.as_ptr()).ok()
     }
 }
