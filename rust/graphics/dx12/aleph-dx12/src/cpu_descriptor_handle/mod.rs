@@ -27,37 +27,26 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_dx12_raw as raw;
+use crate::raw::windows::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
 
-mod command_list_type;
-mod command_queue;
-mod cpu_descriptor_handle;
-mod descriptor_heap;
-mod descriptor_heap_type;
-mod device;
-mod event;
-mod fence;
-mod mesh_shader_pipeline_desc;
-mod pipeline_state_stream;
-mod swapchain;
+#[repr(transparent)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+pub struct CPUDescriptorHandle(usize);
 
-pub use command_list_type::CommandListType;
-pub use command_queue::CommandQueue;
-pub use command_queue::CommandQueueBuilder;
-pub use descriptor_heap::DescriptorHeap;
-pub use descriptor_heap::DescriptorHeapBuilder;
-pub use descriptor_heap_type::DescriptorHeapType;
-pub use device::Device;
-pub use device::DeviceBuilder;
-pub use device::DeviceCreateError;
-pub use device::DeviceCreateResult;
-pub use event::Event;
-pub use event::EventBuilder;
-pub use fence::Fence;
-pub use fence::FenceBuilder;
-pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
-pub use pipeline_state_stream::ToPipelineStateStream;
-pub use swapchain::SwapChain;
-pub use swapchain::SwapChainBuilder;
-pub use swapchain::SwapChainCreateError;
-pub use swapchain::SwapChainCreateResult;
+impl CPUDescriptorHandle {
+    pub fn offset(self, offset: usize) -> Self {
+        Self(self.0 + offset)
+    }
+
+    pub fn offset_steps(self, step_count: usize, step_size: usize) -> Self {
+        Self(self.0 + (step_count * step_size))
+    }
+}
+
+impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
+    fn into(self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+        D3D12_CPU_DESCRIPTOR_HANDLE {
+            ptr: self.0
+        }
+    }
+}
