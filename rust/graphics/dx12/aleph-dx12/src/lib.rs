@@ -44,6 +44,7 @@ mod swapchain;
 pub use command_list_type::CommandListType;
 pub use command_queue::CommandQueue;
 pub use command_queue::CommandQueueBuilder;
+pub use cpu_descriptor_handle::CPUDescriptorHandle;
 pub use descriptor_heap::DescriptorHeap;
 pub use descriptor_heap::DescriptorHeapBuilder;
 pub use descriptor_heap_type::DescriptorHeapType;

@@ -34,20 +34,20 @@ use crate::raw::windows::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
 pub struct CPUDescriptorHandle(usize);
 
 impl CPUDescriptorHandle {
-    pub fn offset(self, offset: usize) -> Self {
-        Self(self.0 + offset)
+    pub fn offset(self, offset: isize) -> Self {
+        let ptr = self.0 as isize;
+        let ptr = ptr + offset;
+        Self(ptr as usize)
     }
 
-    pub fn offset_steps(self, step_count: usize, step_size: usize) -> Self {
-        Self(self.0 + (step_count * step_size))
+    pub fn add(self, offset: usize) -> Self {
+        Self(self.0 + offset)
     }
 }
 
 impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
     fn into(self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
-        D3D12_CPU_DESCRIPTOR_HANDLE {
-            ptr: self.0
-        }
+        D3D12_CPU_DESCRIPTOR_HANDLE { ptr: self.0 }
     }
 }
 
