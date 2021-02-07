@@ -33,7 +33,6 @@ mod command_list_type;
 mod command_queue;
 mod cpu_descriptor_handle;
 mod descriptor_heap;
-mod descriptor_heap_type;
 mod device;
 mod event;
 mod fence;

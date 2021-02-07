@@ -92,7 +92,7 @@ impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
 }
 
 pub struct DescriptorHeapBuilder {
-    pub heap_type: DescriptorHeapType,
+    pub heap_type: Option<DescriptorHeapType>,
     pub num_descriptors: u32,
     pub flags: D3D12_DESCRIPTOR_HEAP_FLAGS,
 }
@@ -107,7 +107,7 @@ impl DescriptorHeapBuilder {
     }
 
     pub fn heap_type(mut self, heap_type: DescriptorHeapType) -> Self {
-        self.heap_type = heap_type;
+        self.heap_type = Some(heap_type);
         self
     }
 
@@ -122,8 +122,9 @@ impl DescriptorHeapBuilder {
     }
 
     pub unsafe fn build(self, device: &Device) -> raw::windows::Result<DescriptorHeap> {
+        let heap_type = self.heap_type.unwrap();
         let desc = D3D12_DESCRIPTOR_HEAP_DESC {
-            r#type: self.heap_type.into(),
+            r#type: heap_type.into(),
             num_descriptors: self.num_descriptors,
             flags: self.flags,
             node_mask: 0,
