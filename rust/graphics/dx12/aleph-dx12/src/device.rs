@@ -27,10 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
+use crate::raw::windows::win32::direct3d12::{
+    D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4,
+    ID3D12GraphicsCommandList,
+};
 use crate::raw::windows::{Abi, Interface};
 use crate::{
-    CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder,
+    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter,
+    FeatureLevel, FenceBuilder, GraphicsCommandList,
 };
 
 #[derive(Clone)]
@@ -71,6 +75,55 @@ impl Device {
             initial_value: 0,
             flags: Default::default(),
         }
+    }
+
+    pub unsafe fn create_command_allocator(
+        &self,
+        list_type: CommandListType,
+    ) -> raw::windows::Result<CommandAllocator> {
+        let mut out: Option<ID3D12CommandAllocator> = None;
+        self.0
+            .CreateCommandAllocator(
+                list_type.into(),
+                &ID3D12CommandAllocator::IID,
+                out.set_abi(),
+            )
+            .and_some(out)
+            .map(|v| CommandAllocator(v))
+    }
+
+    pub unsafe fn create_command_list(
+        &self,
+        list_type: CommandListType,
+    ) -> raw::windows::Result<CommandList> {
+        let mut out: Option<ID3D12CommandList> = None;
+        self.0
+            .CreateCommandList1(
+                0,
+                list_type.into(),
+                Default::default(),
+                &ID3D12CommandList::IID,
+                out.set_abi(),
+            )
+            .and_some(out)
+            .map(|v| CommandList(v))
+    }
+
+    pub unsafe fn create_graphics_command_list(
+        &self,
+        list_type: CommandListType,
+    ) -> raw::windows::Result<GraphicsCommandList> {
+        let mut out: Option<ID3D12GraphicsCommandList> = None;
+        self.0
+            .CreateCommandList1(
+                0,
+                list_type.into(),
+                Default::default(),
+                &ID3D12GraphicsCommandList::IID,
+                out.set_abi(),
+            )
+            .and_some(out)
+            .map(|v| GraphicsCommandList(v))
     }
 
     pub fn raw(&self) -> &ID3D12Device4 {

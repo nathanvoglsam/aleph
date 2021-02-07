@@ -29,6 +29,7 @@
 
 pub extern crate aleph_dx12_raw as raw;
 
+mod command_allocator;
 mod command_list;
 mod command_queue;
 mod cpu_descriptor_handle;
@@ -53,7 +54,10 @@ mod versioned_root_signature_desc;
 #[cfg(test)]
 mod tests;
 
+pub use command_allocator::CommandAllocator;
+pub use command_list::CommandList;
 pub use command_list::CommandListType;
+pub use command_list::GraphicsCommandList;
 pub use command_queue::CommandQueue;
 pub use command_queue::CommandQueueBuilder;
 pub use cpu_descriptor_handle::CPUDescriptorHandle;

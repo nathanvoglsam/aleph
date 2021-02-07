@@ -27,7 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_COMMAND_LIST_TYPE;
+use crate::raw::windows::win32::direct3d12::{
+    ID3D12CommandList, ID3D12Device4, ID3D12GraphicsCommandList, D3D12_COMMAND_LIST_TYPE,
+};
+use crate::raw::windows::{Abi, Interface};
+use crate::{D3D12DeviceChild, D3D12Object, Device};
+use std::convert::TryInto;
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
@@ -39,6 +44,33 @@ pub enum CommandListType {
     VideoDecode,
     VideoProcess,
     VideoEncode,
+}
+
+impl CommandListType {
+    fn from_raw(v: D3D12_COMMAND_LIST_TYPE) -> Option<CommandListType> {
+        match v {
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT => {
+                Some(CommandListType::Direct)
+            }
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_BUNDLE => {
+                Some(CommandListType::Bundle)
+            }
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE => {
+                Some(CommandListType::Compute)
+            }
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY => Some(CommandListType::Copy),
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE => {
+                Some(CommandListType::VideoDecode)
+            }
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS => {
+                Some(CommandListType::VideoProcess)
+            }
+            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE => {
+                Some(CommandListType::VideoEncode)
+            }
+            _ => None,
+        }
+    }
 }
 
 impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
@@ -58,5 +90,79 @@ impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
                 D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE
             }
         }
+    }
+}
+
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct CommandList(pub(crate) ID3D12CommandList);
+
+impl CommandList {
+    pub unsafe fn get_type(&self) -> CommandListType {
+        CommandListType::from_raw(self.0.GetType()).unwrap()
+    }
+
+    pub fn raw(&self) -> &ID3D12CommandList {
+        &self.0
+    }
+}
+
+impl TryInto<GraphicsCommandList> for CommandList {
+    type Error = raw::windows::Error;
+
+    fn try_into(self) -> Result<GraphicsCommandList, Self::Error> {
+        self.0.cast().map(|v| GraphicsCommandList(v))
+    }
+}
+
+impl D3D12Object for CommandList {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.0.SetName(name.as_ptr()).ok()
+    }
+}
+
+impl D3D12DeviceChild for CommandList {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let mut device: Option<ID3D12Device4> = None;
+        self.0
+            .GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
+    }
+}
+
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
+
+impl GraphicsCommandList {
+    pub unsafe fn get_type(&self) -> CommandListType {
+        CommandListType::from_raw(self.0.GetType()).unwrap()
+    }
+
+    pub fn raw(&self) -> &ID3D12GraphicsCommandList {
+        &self.0
+    }
+}
+
+impl Into<CommandList> for GraphicsCommandList {
+    fn into(self) -> CommandList {
+        CommandList(self.0.into())
+    }
+}
+
+impl D3D12Object for GraphicsCommandList {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        self.0.SetName(name.as_ptr()).ok()
+    }
+}
+
+impl D3D12DeviceChild for GraphicsCommandList {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let mut device: Option<ID3D12Device4> = None;
+        self.0
+            .GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
     }
 }
