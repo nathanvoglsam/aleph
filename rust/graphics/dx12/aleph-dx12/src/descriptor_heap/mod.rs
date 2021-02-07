@@ -61,7 +61,35 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_DESCRIPTOR_HEAP_TYPE,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{DescriptorHeapType, Device};
+use crate::Device;
+
+/// Wrapper for `D3D12_COMMAND_LIST_TYPE`
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+pub enum DescriptorHeapType {
+    CbvSrvUav,
+    Sampler,
+    RenderTargetView,
+    DepthStencilView,
+}
+
+impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
+    fn into(self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
+        match self {
+            DescriptorHeapType::CbvSrvUav => {
+                D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV
+            }
+            DescriptorHeapType::Sampler => {
+                D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER
+            }
+            DescriptorHeapType::RenderTargetView => {
+                D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_RTV
+            }
+            DescriptorHeapType::DepthStencilView => {
+                D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV
+            }
+        }
+    }
+}
 
 pub struct DescriptorHeapBuilder {
     pub heap_type: DescriptorHeapType,
