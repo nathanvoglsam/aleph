@@ -175,10 +175,11 @@ impl Engine {
         Self::log_gpu_info(&dxgi_adapter);
 
         let queue = unsafe {
-            dx12::CommandQueue::builder()
+            device
+                .command_queue_builder()
                 .queue_type(dx12::CommandListType::Direct)
                 .priority(0)
-                .build(&device)
+                .build()
                 .unwrap()
         };
 
