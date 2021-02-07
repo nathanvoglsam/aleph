@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::dx12::FeatureLevel;
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
 use egui::PaintJobs;
@@ -130,16 +131,48 @@ impl Engine {
         // Graphics Initialization
         // -----------------------------------------------------------------------------------------
 
-        // Load the vulkan-1.dll library (or w/e name it is on the platform)
+        log::trace!("Creating DXGIFactory");
+        let dxgi_factory =
+            unsafe { dx12::DXGIFactory::new().expect("Failed to create DXGI factory") };
+
+        log::trace!("Selecting DXGIAdatper");
+        let dxgi_adapter = unsafe {
+            dxgi_factory
+                .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
+                .expect("Failed to find capable GPU")
+        };
+
+        // Enable debug layers if requested
+        let _debug = unsafe {
+            if args.is_present("GPU_DEBUG") {
+                log::trace!("D3D12 debug layers requested");
+                if let Ok(debug) = dx12::Debug::new() {
+                    debug.enable_debug_layer();
+                    log::trace!("D3D12 debug layers enabled");
+                    if args.is_present("GPU_VALIDATION") {
+                        log::trace!("D3D12 gpu validation requested");
+                        if debug.set_enable_gpu_validation(true).is_ok() {
+                            log::trace!("D3D12 gpu validation enabled");
+                        } else {
+                            log::trace!("D3D12 gpu validation not enabled");
+                        }
+                    }
+                    Some(debug)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        log::trace!("Creating D3D12Device");
         let device = unsafe {
-            dx12::Device::builder()
-                .debug(args.is_present("GPU_DEBUG"))
-                .gpu_validation(args.is_present("GPU_VALIDATION"))
-                .build()
+            dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
                 .expect("Failed to create D3D12 device")
         };
 
-        Self::log_gpu_info(&device);
+        Self::log_gpu_info(&dxgi_adapter);
 
         let queue = unsafe {
             dx12::CommandQueue::builder()
@@ -160,7 +193,7 @@ impl Engine {
                 .buffer_count(3)
                 .queue(&queue)
                 .hwnd(&platform)
-                .build(&device)
+                .build(&dxgi_factory)
                 .expect("Failed to create swapchain")
         };
 
@@ -332,8 +365,8 @@ impl Engine {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(device: &dx12::Device) {
-        let info = device.get_adapter_desc().unwrap();
+    fn log_gpu_info(adapter: &dx12::DXGIAdapter) {
+        let info = unsafe { adapter.get_adapter_desc().unwrap() };
 
         let gpu_vendor = if info.vendor_id == 0x10DE {
             "NVIDIA"
