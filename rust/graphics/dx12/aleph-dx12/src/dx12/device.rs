@@ -28,14 +28,19 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    D3D12CreateDevice, ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4,
-    ID3D12GraphicsCommandList,
+    ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4, ID3D12GraphicsCommandList,
+    PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
+use crate::utils::DynamicLoadCell;
 use crate::{
     AllocatorBuilder, CommandAllocator, CommandList, CommandListType, CommandQueueBuilder,
     D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder, GraphicsCommandList,
 };
+use utf16_lit::utf16_null;
+
+pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
+    DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -46,8 +51,9 @@ impl Device {
         adapter: Option<&DXGIAdapter>,
         minimum_feature_level: FeatureLevel,
     ) -> raw::windows::Result<Device> {
+        let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut device: Option<ID3D12Device4> = None;
-        D3D12CreateDevice(
+        create_fn(
             adapter.map(|v| (&v.0).into()),
             minimum_feature_level.into(),
             &ID3D12Device4::IID,

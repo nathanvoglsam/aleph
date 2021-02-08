@@ -31,18 +31,26 @@ use once_cell::sync::OnceCell;
 use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
 
-pub struct DynamicLoadCell<T: Sized>(pub OnceCell<T>);
+pub struct DynamicLoadCell<T: Sized> {
+    cell: OnceCell<T>,
+    lib_name: &'static [u16],
+    fn_name: &'static str,
+}
 
 impl<T: Sized> DynamicLoadCell<T> {
-    pub const fn new() -> Self {
-        Self(OnceCell::new())
+    pub const fn new(lib_name: &'static [u16], fn_name: &'static str) -> Self {
+        Self {
+            cell: OnceCell::new(),
+            lib_name,
+            fn_name,
+        }
     }
 
-    pub unsafe fn get(&self, lib_name: &[u16], fn_name: &str) -> Option<&T> {
-        self.0
+    pub unsafe fn get(&self) -> Option<&T> {
+        self.cell
             .get_or_try_init(|| {
                 // Attempt to load the library
-                let h_module = LoadLibraryW(lib_name.as_ptr());
+                let h_module = LoadLibraryW(self.lib_name.as_ptr());
 
                 // If we fail to load the library emit an error
                 if h_module == 0 {
@@ -50,7 +58,7 @@ impl<T: Sized> DynamicLoadCell<T> {
                 }
 
                 // Attempt to find the function pointer we're after
-                GetProcAddress(h_module, fn_name.as_ptr() as *const _)
+                GetProcAddress(h_module, self.fn_name.as_ptr() as *const _)
                     .ok_or(())
                     .map(|v| std::mem::transmute_copy::<_, T>(&v))
             })

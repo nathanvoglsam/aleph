@@ -31,7 +31,8 @@ use crate::utils::DynamicLoadCell;
 use raw::windows::{Abi, Interface};
 use utf16_lit::utf16_null;
 
-static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> = DynamicLoadCell::new();
+static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
+    DynamicLoadCell::new(&utf16_null!("dxil.dll"), "DxcCreateInstance\0");
 
 #[derive(Clone, Debug)]
 pub enum DxcValidatorCreateError {
@@ -46,7 +47,7 @@ pub struct DxcValidator(pub(crate) dxc_raw::IDxcValidator);
 impl DxcValidator {
     pub unsafe fn new() -> Result<Self, DxcValidatorCreateError> {
         let create_fn = CREATE_FN
-            .get(&utf16_null!("dxil.dll"), "DxcCreateInstance\0")
+            .get()
             .ok_or(DxcValidatorCreateError::FailedToLoadLibrary)?;
         let clsid = raw::windows::Guid::from(dxc_raw::CLSID_DxcValidator);
         let riid = &dxc_raw::IDxcValidator::IID;

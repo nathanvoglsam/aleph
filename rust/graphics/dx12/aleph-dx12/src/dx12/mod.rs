@@ -27,26 +27,26 @@
 // SOFTWARE.
 //
 
-mod allocator;
-mod command_allocator;
-mod command_list;
-mod command_queue;
-mod cpu_descriptor_handle;
-mod debug;
-mod descriptor_heap;
-mod device;
-mod event;
-mod feature_level;
-mod fence;
-mod gpu_descriptor_handle;
-mod interfaces;
-mod mesh_shader_pipeline_desc;
-mod pipeline_state_stream;
-mod root_parameter;
-mod root_signature;
-mod root_signature_desc;
-mod swapchain;
-mod versioned_root_signature_desc;
+pub(crate) mod allocator;
+pub(crate) mod command_allocator;
+pub(crate) mod command_list;
+pub(crate) mod command_queue;
+pub(crate) mod cpu_descriptor_handle;
+pub(crate) mod debug;
+pub(crate) mod descriptor_heap;
+pub(crate) mod device;
+pub(crate) mod event;
+pub(crate) mod feature_level;
+pub(crate) mod fence;
+pub(crate) mod gpu_descriptor_handle;
+pub(crate) mod interfaces;
+pub(crate) mod mesh_shader_pipeline_desc;
+pub(crate) mod pipeline_state_stream;
+pub(crate) mod root_parameter;
+pub(crate) mod root_signature;
+pub(crate) mod root_signature_desc;
+pub(crate) mod swapchain;
+pub(crate) mod versioned_root_signature_desc;
 
 pub use allocator::Allocator;
 pub use allocator::AllocatorBuilder;

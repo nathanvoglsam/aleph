@@ -31,7 +31,8 @@ use crate::utils::DynamicLoadCell;
 use raw::windows::{Abi, Interface};
 use utf16_lit::utf16_null;
 
-static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> = DynamicLoadCell::new();
+static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
+    DynamicLoadCell::new(&utf16_null!("dxcompiler.dll"), "DxcCreateInstance\0");
 
 #[derive(Clone, Debug)]
 pub enum DxcCompilerCreateError {
@@ -46,7 +47,7 @@ pub struct DxcCompiler(pub(crate) dxc_raw::IDxcCompiler);
 impl DxcCompiler {
     pub unsafe fn new() -> Result<Self, DxcCompilerCreateError> {
         let create_fn = CREATE_FN
-            .get(&utf16_null!("dxcompiler.dll"), "DxcCreateInstance\0")
+            .get()
             .ok_or(DxcCompilerCreateError::FailedToLoadLibrary)?;
         let clsid = raw::windows::Guid::from(dxc_raw::CLSID_DxcCompiler);
         let riid = &dxc_raw::IDxcCompiler::IID;

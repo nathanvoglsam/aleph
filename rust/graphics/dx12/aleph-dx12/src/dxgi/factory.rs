@@ -27,13 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
+use crate::raw::windows::win32::direct3d12::ID3D12Device4;
 use crate::raw::windows::win32::dxgi::{
-    CreateDXGIFactory2, IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1,
-    DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE,
+    IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG,
+    DXGI_GPU_PREFERENCE,
 };
 use crate::raw::windows::{Abi, Interface};
+use crate::utils::DynamicLoadCell;
 use crate::{DXGIAdapter, FeatureLevel};
+use utf16_lit::utf16_null;
+
+type CreateFn = extern "system" fn(
+    u32,
+    *const raw::windows::Guid,
+    *mut *mut ::std::ffi::c_void,
+) -> raw::windows::ErrorCode;
+
+static CREATE_FN: DynamicLoadCell<CreateFn> =
+    DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -41,9 +52,10 @@ pub struct DXGIFactory(pub(crate) IDXGIFactory2);
 
 impl DXGIFactory {
     pub unsafe fn new(debug: bool) -> raw::windows::Result<DXGIFactory> {
+        let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
         let flags = if debug { 0x1 } else { 0x0 };
         let mut dxgi_factory: Option<IDXGIFactory2> = None;
-        CreateDXGIFactory2(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
+        create_fn(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
             .and_some(dxgi_factory)
             .map(|v| Self(v))
     }
@@ -82,7 +94,10 @@ impl DXGIFactory {
                 }
 
                 // Check if the device supports the feature level we want by trying to create a device
-                let result = D3D12CreateDevice(
+                let create_fn = *crate::dx12::device::CREATE_FN
+                    .get()
+                    .expect("Failed to load dxgi.dll");
+                let result = create_fn(
                     Some(adapter.cast().unwrap()),
                     minimum_feature_level.into(),
                     &ID3D12Device4::IID,

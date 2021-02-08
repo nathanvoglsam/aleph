@@ -29,10 +29,18 @@
 
 use crate::raw::windows::win32::direct3d11::ID3DBlob;
 use crate::raw::windows::win32::direct3d12::{
-    D3D12SerializeVersionedRootSignature, ID3D12Device4, ID3D12RootSignature,
+    ID3D12Device4, ID3D12RootSignature, PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE,
 };
 use crate::raw::windows::{Abi, Interface};
+use crate::utils::DynamicLoadCell;
 use crate::{D3D12DeviceChild, D3D12Object, Device, VersionedRootSignatureDesc};
+use utf16_lit::utf16_null;
+
+pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
+    DynamicLoadCell::new(
+        &utf16_null!("d3d12.dll"),
+        "D3D12SerializeVersionedRootSignature\0",
+    );
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -51,9 +59,10 @@ impl RootSignatureBlob {
         let desc: MyDesc = desc.into();
         let desc_ptr = &desc as *const MyDesc as *const FFIDesc;
 
+        let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut blob: Option<ID3DBlob> = None;
         let mut err: Option<ID3DBlob> = None;
-        D3D12SerializeVersionedRootSignature(desc_ptr, &mut blob, &mut err)
+        create_fn(desc_ptr, &mut blob, &mut err)
             .and_some(blob)
             .map(|v| RootSignatureBlob(v))
             .map_err(|v| {

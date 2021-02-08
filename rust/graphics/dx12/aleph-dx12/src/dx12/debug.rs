@@ -27,8 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12GetDebugInterface, ID3D12Debug, ID3D12Debug1};
+use crate::raw::windows::win32::direct3d12::{
+    ID3D12Debug, ID3D12Debug1, PFN_D3D12_GET_DEBUG_INTERFACE,
+};
 use crate::raw::windows::{Abi, Interface};
+use crate::utils::DynamicLoadCell;
+use utf16_lit::utf16_null;
+
+pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
+    DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12GetDebugInterface\0");
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -36,8 +43,9 @@ pub struct Debug(pub(crate) ID3D12Debug);
 
 impl Debug {
     pub unsafe fn new() -> raw::windows::Result<Self> {
+        let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut debug: Option<ID3D12Debug> = None;
-        D3D12GetDebugInterface(&ID3D12Debug::IID, debug.set_abi())
+        create_fn(&ID3D12Debug::IID, debug.set_abi())
             .and_some(debug)
             .map(|v| Self(v))
     }
