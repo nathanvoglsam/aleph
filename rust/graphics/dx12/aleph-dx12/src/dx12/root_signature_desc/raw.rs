@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
+use crate::dx12::root_parameter::raw::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
 use crate::raw::windows::win32::direct3d12::{
     D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
 };
-use crate::dx12::root_parameter::raw::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
