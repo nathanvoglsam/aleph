@@ -29,6 +29,7 @@
 
 extern crate aleph_dx12_alloc_raw as alloc_raw;
 extern crate aleph_dx12_raw as raw;
+extern crate aleph_dxc_raw as dxc_raw;
 
 mod allocator;
 mod command_allocator;
@@ -38,6 +39,8 @@ mod cpu_descriptor_handle;
 mod debug;
 mod descriptor_heap;
 mod device;
+mod dxc_compiler;
+mod dxc_validator;
 mod dxgi_adapter;
 mod dxgi_factory;
 mod event;
@@ -51,6 +54,7 @@ mod root_parameter;
 mod root_signature;
 mod root_signature_desc;
 mod swapchain;
+mod utils;
 mod versioned_root_signature_desc;
 
 #[cfg(test)]
@@ -70,6 +74,10 @@ pub use descriptor_heap::DescriptorHeap;
 pub use descriptor_heap::DescriptorHeapBuilder;
 pub use descriptor_heap::DescriptorHeapType;
 pub use device::Device;
+pub use dxc_compiler::DxcCompiler;
+pub use dxc_compiler::DxcCompilerCreateError;
+pub use dxc_validator::DxcValidator;
+pub use dxc_validator::DxcValidatorCreateError;
 pub use dxgi_adapter::DXGIAdapter;
 pub use dxgi_factory::DXGIFactory;
 pub use event::Event;

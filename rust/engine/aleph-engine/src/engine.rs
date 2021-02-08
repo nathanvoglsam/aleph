@@ -162,6 +162,9 @@ impl Engine {
                 .expect("Failed to create D3D12 device")
         };
 
+        let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
+        let _validator = unsafe { dx12::DxcValidator::new().unwrap() };
+
         aleph_log::info!("");
         Self::log_gpu_info(&dxgi_adapter);
         aleph_log::info!("");
