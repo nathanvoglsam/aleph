@@ -32,7 +32,8 @@ use crate::raw::windows::win32::direct3d12::{
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::{
-    CommandListType, D3D12DeviceChild, D3D12Object, DXGIFactory, Device, Fence, SwapChainBuilder,
+    CommandList, CommandListType, D3D12DeviceChild, D3D12Object, DXGIFactory, Device, Fence,
+    SwapChainBuilder,
 };
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
@@ -99,6 +100,11 @@ impl CommandQueue {
             buffer_count: 2,
             allow_tearing: false,
         }
+    }
+
+    pub unsafe fn execute_command_lists(&self, command_lists: &[CommandList]) {
+        self.0
+            .ExecuteCommandLists(command_lists.len() as _, &command_lists[0].0)
     }
 
     pub fn raw(&self) -> &ID3D12CommandQueue {
