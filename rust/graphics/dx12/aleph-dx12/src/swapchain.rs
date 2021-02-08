@@ -29,27 +29,14 @@
 
 use crate::raw::windows::win32::direct3d12::ID3D12Resource;
 use crate::raw::windows::win32::dxgi::{
-    IDXGISwapChain1, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS, DXGI_SAMPLE_DESC,
-    DXGI_SCALING, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT,
+    IDXGISwapChain1, IDXGISwapChain4, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS,
+    DXGI_SAMPLE_DESC, DXGI_SCALING, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT,
     DXGI_USAGE_BACK_BUFFER, DXGI_USAGE_RENDER_TARGET_OUTPUT,
 };
 use crate::raw::windows::win32::windows_and_messaging::HWND;
-use crate::raw::windows::Error;
 use crate::{CommandQueue, DXGIFactory};
 use raw::windows::{Abi, Interface};
 use raw_window_handle::windows::WindowsHandle;
-
-/// Represents the set of errors that can be encountered from swapchain creation
-#[derive(Clone, Debug, PartialEq)]
-pub enum SwapChainCreateError {
-    DidNotProvideQueue,
-    DidNotProvideHWND,
-    InvalidBackBufferCount,
-    CreationFailed(Error),
-}
-
-/// A `Result` wrapper type used for swapchain initialization
-pub type SwapChainCreateResult<T> = Result<T, SwapChainCreateError>;
 
 pub struct SwapChainBuilder<'a, 'b> {
     pub(crate) queue: &'a CommandQueue,
@@ -82,12 +69,7 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
         self
     }
 
-    pub unsafe fn build(self) -> SwapChainCreateResult<SwapChain> {
-        // Assert the back buffer count is valid
-        if self.buffer_count < 2 || self.buffer_count > 16 {
-            return Err(SwapChainCreateError::InvalidBackBufferCount);
-        }
-
+    pub unsafe fn build(self) -> raw::windows::Result<SwapChain> {
         // Just choose a standard RGBA32 back buffer format
         let format = DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM;
 
@@ -131,7 +113,8 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
 
         // Create the swapchain
         let mut swapchain: Option<IDXGISwapChain1> = None;
-        self.factory
+        let swapchain = self
+            .factory
             .0
             .CreateSwapChainForHwnd(
                 &self.queue.0,
@@ -141,41 +124,47 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
                 None,
                 &mut swapchain,
             )
-            .and_some(swapchain)
-            .map(|v| {
-                let swapchain = v;
-                let views = get_buffers(&swapchain, buffer_count);
-                SwapChain {
-                    swapchain,
-                    views,
-                    flags,
-                }
-            })
-            .map_err(|v| SwapChainCreateError::CreationFailed(v))
+            .and_some(swapchain)?;
+        let swapchain = swapchain.cast::<IDXGISwapChain4>()?;
+        Ok(SwapChain(swapchain))
     }
 }
 
 #[derive(Clone)]
-pub struct SwapChain {
-    pub(crate) swapchain: IDXGISwapChain1,
-    pub(crate) views: Vec<ID3D12Resource>,
-    pub(crate) flags: u32,
-}
+pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {
-    pub unsafe fn resize_buffers(&mut self, width: u32, height: u32) -> raw::windows::Result<()> {
-        // Empty views as we're holding on to resources from the swapchain in that array
-        self.views.clear();
-
-        self.swapchain
-            .ResizeBuffers(
-                0,
-                width,
-                height,
-                DXGI_FORMAT::DXGI_FORMAT_UNKNOWN,
-                self.flags,
-            )
+    pub unsafe fn resize_buffers(
+        &mut self,
+        width: u32,
+        height: u32,
+        flags: u32,
+    ) -> raw::windows::Result<()> {
+        self.0
+            .ResizeBuffers(0, width, height, DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, flags)
             .ok()
+    }
+
+    pub unsafe fn get_current_back_buffer_index(&self) -> u32 {
+        self.0.GetCurrentBackBufferIndex()
+    }
+
+    pub unsafe fn get_buffers(
+        &self,
+        buffer_count: u32,
+    ) -> raw::windows::Result<Vec<ID3D12Resource>> {
+        let mut out = Vec::with_capacity(buffer_count as usize);
+        for i in 0..buffer_count {
+            out.push(self.get_buffer(i)?);
+        }
+        Ok(out)
+    }
+
+    pub unsafe fn get_buffer(&self, buffer: u32) -> raw::windows::Result<ID3D12Resource> {
+        let mut resource: Option<ID3D12Resource> = None;
+        self.0
+            .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
+            .and_some(resource)
     }
 
     pub unsafe fn present(
@@ -189,35 +178,17 @@ impl SwapChain {
             p_scroll_rect: std::ptr::null_mut(),
             p_scroll_offset: std::ptr::null_mut(),
         };
-        self.swapchain
+        self.0
             .Present1(sync_interval, present_flags, &presentation_params)
             .ok()
     }
 
-    pub fn get_description(&self) -> raw::windows::Result<DXGI_SWAP_CHAIN_DESC1> {
+    pub unsafe fn get_description(&self) -> raw::windows::Result<DXGI_SWAP_CHAIN_DESC1> {
         let mut desc = Default::default();
-        unsafe { self.swapchain.GetDesc1(&mut desc).ok().map(|_| desc) }
+        self.0.GetDesc1(&mut desc).ok().map(|_| desc)
     }
 
-    pub fn raw(&self) -> &IDXGISwapChain1 {
-        &self.swapchain
+    pub fn raw(&self) -> &IDXGISwapChain4 {
+        &self.0
     }
-
-    pub fn views(&self) -> &[ID3D12Resource] {
-        &self.views
-    }
-}
-
-fn get_buffers(swapchain: &IDXGISwapChain1, count: u32) -> Vec<ID3D12Resource> {
-    (0..count)
-        .into_iter()
-        .map(|buffer| unsafe {
-            let mut resource: Option<ID3D12Resource> = None;
-            let resource = swapchain
-                .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
-                .and_some(resource)
-                .unwrap();
-            resource
-        })
-        .collect()
 }

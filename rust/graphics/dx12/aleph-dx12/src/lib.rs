@@ -92,6 +92,4 @@ pub use root_signature_desc::RootSignatureDesc;
 pub use root_signature_desc::RootSignatureDesc1;
 pub use swapchain::SwapChain;
 pub use swapchain::SwapChainBuilder;
-pub use swapchain::SwapChainCreateError;
-pub use swapchain::SwapChainCreateResult;
 pub use versioned_root_signature_desc::VersionedRootSignatureDesc;

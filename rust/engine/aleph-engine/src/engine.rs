@@ -164,7 +164,7 @@ impl Engine {
         Self::log_gpu_info(&dxgi_adapter);
         aleph_log::info!("");
 
-        let allocator = unsafe {
+        let _allocator = unsafe {
             device
                 .create_allocator_builder(&dxgi_adapter, 0)
                 .build()
@@ -241,7 +241,7 @@ impl Engine {
             if Window::resized() {
                 let (width, height) = Window::drawable_size();
                 unsafe {
-                    swapchain.resize_buffers(width, height).unwrap();
+                    swapchain.resize_buffers(width, height, 0).unwrap();
                 }
             }
 
