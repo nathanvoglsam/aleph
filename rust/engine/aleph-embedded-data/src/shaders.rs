@@ -28,45 +28,43 @@
 //
 
 ///
-/// Gets the raw spirv bytes for the egui fragment shader
+/// Gets the raw dxil bytes for the egui fragment shader
 ///
-pub fn egui_frag_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!("../shaders/compiled/egui/egui.frag.spv")
+pub fn egui_frag_shader() -> &'static [u8] {
+    include_bytes!("../shaders/compiled/egui/egui.frag.dxil")
 }
 
 ///
-/// Gets the raw spirv bytes for the egui vertex shader
+/// Gets the raw dxil bytes for the egui vertex shader
 ///
-pub fn egui_vert_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!("../shaders/compiled/egui/egui.vert.spv")
+pub fn egui_vert_shader() -> &'static [u8] {
+    include_bytes!("../shaders/compiled/egui/egui.vert.dxil")
 }
 
 ///
-/// Gets the raw spirv bytes for the standard fragment shader
+/// Gets the raw dxil bytes for the standard fragment shader
 ///
-pub fn standard_frag_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!("../shaders/compiled/standard/standard.frag.spv")
+pub fn standard_frag_shader() -> &'static [u8] {
+    include_bytes!("../shaders/compiled/standard/standard.frag.dxil")
 }
 
 ///
-/// Gets the raw spirv bytes for the standard vertex shader
+/// Gets the raw dxil bytes for the standard vertex shader
 ///
-pub fn standard_vert_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!("../shaders/compiled/standard/standard.vert.spv")
+pub fn standard_vert_shader() -> &'static [u8] {
+    include_bytes!("../shaders/compiled/standard/standard.vert.dxil")
 }
 
 ///
-/// Gets the raw spirv bytes for the standard vertex shader
+/// Gets the raw dxil bytes for the standard vertex shader
 ///
-pub fn tonemapping_frag_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!("../shaders/compiled/postprocess/tonemapping.frag.spv")
-}
+//pub fn tonemapping_frag_shader() -> (&'static [u8], &'static [u32]) {
+//    include_bytes!("../shaders/compiled/postprocess/tonemapping.frag.dxil")
+//}
 
 ///
-/// Gets the raw spirv bytes for the standard vertex shader
+/// Gets the raw dxil bytes for the standard vertex shader
 ///
-pub fn fullscreen_quad_vert_shader() -> (&'static [u8], &'static [u32]) {
-    aleph_macros::include_spirv_bytes!(
-        "../shaders/compiled/fullscreen_quad/fullscreen_quad.vert.spv"
-    )
+pub fn fullscreen_quad_vert_shader() -> &'static [u8] {
+    include_bytes!("../shaders/compiled/fullscreen_quad/fullscreen_quad.vert.dxil")
 }
