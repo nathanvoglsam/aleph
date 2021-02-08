@@ -357,6 +357,7 @@ impl Module {
     }
 
     /// Internal function used for debug printing the AST with full names and not StrId indexes
+    #[allow(unused)]
     pub(crate) fn debug_print(&self, interner: &Interner) -> Option<()> {
         let crate_ident = interner.contains("crate")?;
         let mut name_stack = vec![];
