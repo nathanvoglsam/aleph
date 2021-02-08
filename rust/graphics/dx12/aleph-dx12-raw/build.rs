@@ -49,6 +49,9 @@ fn main() {
             WaitForMultipleObjects,
             ResetEvent,
             INFINITE,
+            LoadLibraryW,
+            LoadLibraryA,
+            GetProcAddress,
         },
         windows::win32::structured_storage::{
             STATSTG,

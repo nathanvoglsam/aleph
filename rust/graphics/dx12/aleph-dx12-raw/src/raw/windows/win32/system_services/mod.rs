@@ -123,3 +123,20 @@ extern "system" {
     pub fn ResetEvent(h_event: HANDLE) -> ::windows::BOOL;
 }
 pub const INFINITE: u32 = 4294967295u32;
+#[link(name = "KERNEL32")]
+extern "system" {
+    pub fn LoadLibraryW(lp_lib_file_name: *const u16) -> isize;
+}
+#[link(name = "KERNEL32")]
+extern "system" {
+    pub fn LoadLibraryA(lp_lib_file_name: *const i8) -> isize;
+}
+#[allow(non_camel_case_types)]
+pub type FARPROC = extern "system" fn() -> i32;
+#[link(name = "KERNEL32")]
+extern "system" {
+    pub fn GetProcAddress(
+        h_module: isize,
+        lp_proc_name: *const i8,
+    ) -> ::std::option::Option<FARPROC>;
+}
