@@ -38,8 +38,4 @@ impl DXGIAdapter {
         let mut desc = DXGI_ADAPTER_DESC1::default();
         self.0.GetDesc1(&mut desc).ok().map(|_| desc)
     }
-
-    pub fn raw(&self) -> &IDXGIAdapter1 {
-        &self.0
-    }
 }

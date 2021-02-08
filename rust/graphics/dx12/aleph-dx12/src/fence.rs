@@ -89,10 +89,6 @@ impl Fence {
     ) -> raw::windows::Result<()> {
         self.0.SetEventOnCompletion(value, event.0).ok()
     }
-
-    pub fn raw(&self) -> &ID3D12Fence {
-        &self.0
-    }
 }
 
 impl D3D12Object for Fence {

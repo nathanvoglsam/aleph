@@ -35,11 +35,7 @@ use crate::{D3D12DeviceChild, D3D12Object, Device};
 #[repr(transparent)]
 pub struct CommandAllocator(pub(crate) ID3D12CommandAllocator);
 
-impl CommandAllocator {
-    pub fn raw(&self) -> &ID3D12CommandAllocator {
-        &self.0
-    }
-}
+impl CommandAllocator {}
 
 impl D3D12Object for CommandAllocator {
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {

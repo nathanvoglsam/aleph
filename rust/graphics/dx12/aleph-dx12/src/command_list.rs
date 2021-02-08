@@ -101,10 +101,6 @@ impl CommandList {
     pub unsafe fn get_type(&self) -> CommandListType {
         CommandListType::from_raw(self.0.GetType()).unwrap()
     }
-
-    pub fn raw(&self) -> &ID3D12CommandList {
-        &self.0
-    }
 }
 
 impl TryInto<GraphicsCommandList> for CommandList {
@@ -138,10 +134,6 @@ pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 impl GraphicsCommandList {
     pub unsafe fn get_type(&self) -> CommandListType {
         CommandListType::from_raw(self.0.GetType()).unwrap()
-    }
-
-    pub fn raw(&self) -> &ID3D12GraphicsCommandList {
-        &self.0
     }
 }
 

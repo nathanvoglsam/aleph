@@ -60,8 +60,4 @@ impl Debug {
         casted.SetEnableSynchronizedCommandQueueValidation(enable.into());
         Ok(())
     }
-
-    pub fn raw(&self) -> &ID3D12Debug {
-        &self.0
-    }
 }

@@ -67,10 +67,6 @@ impl RootSignatureBlob {
                 }
             })
     }
-
-    pub fn raw(&self) -> &ID3DBlob {
-        &self.0
-    }
 }
 
 #[derive(Clone)]
@@ -81,10 +77,6 @@ impl RootSignature {
     //pub fn builder() -> RootSignatureBuilder {
     //    RootSignatureBuilder::new()
     //}
-
-    pub fn raw(&self) -> &ID3D12RootSignature {
-        &self.0
-    }
 }
 
 impl D3D12Object for RootSignature {

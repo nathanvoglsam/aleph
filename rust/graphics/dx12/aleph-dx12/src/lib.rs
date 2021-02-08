@@ -28,7 +28,7 @@
 //
 
 extern crate aleph_dx12_alloc_raw as alloc_raw;
-pub extern crate aleph_dx12_raw as raw;
+extern crate aleph_dx12_raw as raw;
 
 mod allocator;
 mod command_allocator;
@@ -82,6 +82,10 @@ pub use interfaces::D3D12DeviceChild;
 pub use interfaces::D3D12Object;
 pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
 pub use pipeline_state_stream::ToPipelineStateStream;
+pub use raw::windows::initialize_mta;
+pub use raw::windows::initialize_sta;
+pub use raw::windows::ErrorCode;
+pub use raw::windows::Result;
 pub use root_parameter::RootParameter;
 pub use root_parameter::RootParameter1;
 pub use root_parameter::RootParameter1Type;

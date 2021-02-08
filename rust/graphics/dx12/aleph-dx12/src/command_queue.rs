@@ -106,10 +106,6 @@ impl CommandQueue {
         self.0
             .ExecuteCommandLists(command_lists.len() as _, &command_lists[0].0)
     }
-
-    pub fn raw(&self) -> &ID3D12CommandQueue {
-        &self.0
-    }
 }
 
 impl D3D12Object for CommandQueue {

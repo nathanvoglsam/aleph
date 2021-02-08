@@ -38,7 +38,7 @@ pub fn init_long_thread_pool(num_threads: usize) {
         .start_handler(|id| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
-            dx12::raw::windows::initialize_mta().unwrap();
+            dx12::initialize_mta().unwrap();
 
             optick::register_thread(&format!("LR Thread {}", id));
         })
@@ -58,7 +58,7 @@ pub fn init_short_thread_pool(num_threads: usize) {
         .start_handler(|id| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
-            dx12::raw::windows::initialize_mta().unwrap();
+            dx12::initialize_mta().unwrap();
 
             optick::register_thread(&format!("SR Thread {}", id))
         })

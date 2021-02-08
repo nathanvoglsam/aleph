@@ -187,8 +187,4 @@ impl SwapChain {
         let mut desc = Default::default();
         self.0.GetDesc1(&mut desc).ok().map(|_| desc)
     }
-
-    pub fn raw(&self) -> &IDXGISwapChain4 {
-        &self.0
-    }
 }

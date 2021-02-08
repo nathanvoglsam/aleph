@@ -131,7 +131,7 @@ impl DescriptorHeapBuilder {
         };
         let mut heap: Option<ID3D12DescriptorHeap> = None;
         device
-            .raw()
+            .0
             .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, heap.set_abi())
             .and_some(heap)
             .map(|v| DescriptorHeap(v))
@@ -145,10 +145,6 @@ pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 impl DescriptorHeap {
     pub fn builder() -> DescriptorHeapBuilder {
         DescriptorHeapBuilder::new()
-    }
-
-    pub fn raw(&self) -> &ID3D12DescriptorHeap {
-        &self.0
     }
 }
 

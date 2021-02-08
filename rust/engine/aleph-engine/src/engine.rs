@@ -55,7 +55,7 @@ impl Engine {
     pub fn start(app_info: AppInfo, mut app: impl crate::AppLogic) {
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
-        dx12::raw::windows::initialize_mta().unwrap();
+        dx12::initialize_mta().unwrap();
 
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches

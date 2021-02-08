@@ -88,10 +88,6 @@ impl Event {
             unsafe { WaitForSingleObject(self.0.clone(), INFINITE) }
         }
     }
-
-    pub fn raw(&self) -> HANDLE {
-        self.0.clone()
-    }
 }
 
 impl Drop for Event {

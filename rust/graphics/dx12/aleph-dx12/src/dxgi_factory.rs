@@ -101,10 +101,6 @@ impl DXGIFactory {
 
         None
     }
-
-    pub fn raw(&self) -> &IDXGIFactory2 {
-        &self.0
-    }
 }
 
 impl DXGIFactory {

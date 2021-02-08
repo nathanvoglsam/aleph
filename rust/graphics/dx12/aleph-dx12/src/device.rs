@@ -48,7 +48,7 @@ impl Device {
     ) -> raw::windows::Result<Device> {
         let mut device: Option<ID3D12Device4> = None;
         D3D12CreateDevice(
-            adapter.map(|v| v.raw().into()),
+            adapter.map(|v| (&v.0).into()),
             minimum_feature_level.into(),
             &ID3D12Device4::IID,
             device.set_abi(),
@@ -137,10 +137,6 @@ impl Device {
             flags: alloc_raw::AllocatorFlags::NONE,
             preferred_block_size,
         }
-    }
-
-    pub fn raw(&self) -> &ID3D12Device4 {
-        &self.0
     }
 }
 
