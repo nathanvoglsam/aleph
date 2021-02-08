@@ -184,13 +184,12 @@ impl Engine {
 
         let drawable_size = Window::drawable_size();
         let mut swapchain = unsafe {
-            dx12::SwapChain::builder()
+            queue
+                .create_swapchain_builder(&dxgi_factory, &platform)
                 .width(drawable_size.0)
                 .height(drawable_size.1)
                 .buffer_count(3)
-                .queue(&queue)
-                .hwnd(&platform)
-                .build(&dxgi_factory)
+                .build()
                 .expect("Failed to create swapchain")
         };
 

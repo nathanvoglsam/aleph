@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
+use crate::raw::windows::win32::direct3d12::ID3D12Resource;
 use crate::raw::windows::win32::dxgi::{
     IDXGISwapChain1, DXGI_ALPHA_MODE, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS, DXGI_SAMPLE_DESC,
     DXGI_SCALING, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_CHAIN_FLAG, DXGI_SWAP_EFFECT,
@@ -38,7 +38,6 @@ use crate::raw::windows::Error;
 use crate::{CommandQueue, DXGIFactory};
 use raw::windows::{Abi, Interface};
 use raw_window_handle::windows::WindowsHandle;
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
 /// Represents the set of errors that can be encountered from swapchain creation
 #[derive(Clone, Debug, PartialEq)]
@@ -52,27 +51,17 @@ pub enum SwapChainCreateError {
 /// A `Result` wrapper type used for swapchain initialization
 pub type SwapChainCreateResult<T> = Result<T, SwapChainCreateError>;
 
-pub struct SwapChainBuilder {
-    width: u32,
-    height: u32,
-    buffer_count: u32,
-    allow_tearing: bool,
-    queue: Option<ID3D12CommandQueue>,
-    hwnd: Option<WindowsHandle>,
+pub struct SwapChainBuilder<'a, 'b> {
+    pub(crate) queue: &'a CommandQueue,
+    pub(crate) factory: &'b DXGIFactory,
+    pub(crate) hwnd: WindowsHandle,
+    pub(crate) width: u32,
+    pub(crate) height: u32,
+    pub(crate) buffer_count: u32,
+    pub(crate) allow_tearing: bool,
 }
 
-impl SwapChainBuilder {
-    pub fn new() -> Self {
-        Self {
-            width: 0,
-            height: 0,
-            buffer_count: 2,
-            allow_tearing: false,
-            queue: None,
-            hwnd: None,
-        }
-    }
-
+impl<'a, 'b> SwapChainBuilder<'a, 'b> {
     pub fn width(mut self, width: u32) -> Self {
         self.width = width;
         self
@@ -93,22 +82,7 @@ impl SwapChainBuilder {
         self
     }
 
-    pub fn queue(mut self, queue: &CommandQueue) -> Self {
-        self.queue = Some(queue.raw().clone());
-        self
-    }
-
-    pub fn hwnd(mut self, hwnd: &impl HasRawWindowHandle) -> Self {
-        if let RawWindowHandle::Windows(hwnd) = hwnd.raw_window_handle() {
-            self.hwnd = Some(hwnd);
-            self
-        } else {
-            panic!();
-        }
-    }
-
-    #[allow(unused_unsafe)]
-    pub unsafe fn build(self, dxgi_factory: &DXGIFactory) -> SwapChainCreateResult<SwapChain> {
+    pub unsafe fn build(self) -> SwapChainCreateResult<SwapChain> {
         // Assert the back buffer count is valid
         if self.buffer_count < 2 || self.buffer_count > 16 {
             return Err(SwapChainCreateError::InvalidBackBufferCount);
@@ -152,16 +126,21 @@ impl SwapChainBuilder {
             flags: flags as _,
         };
 
-        let queue = self.queue.ok_or(SwapChainCreateError::DidNotProvideQueue)?;
-        let hwnd = self.hwnd.ok_or(SwapChainCreateError::DidNotProvideHWND)?;
-        let hwnd = hwnd.hwnd as isize;
+        let hwnd = self.hwnd.hwnd as isize;
         let hwnd = HWND(hwnd);
 
         // Create the swapchain
         let mut swapchain: Option<IDXGISwapChain1> = None;
-        dxgi_factory
+        self.factory
             .0
-            .CreateSwapChainForHwnd(queue, hwnd, &desc, std::ptr::null(), None, &mut swapchain)
+            .CreateSwapChainForHwnd(
+                &self.queue.0,
+                hwnd,
+                &desc,
+                std::ptr::null(),
+                None,
+                &mut swapchain,
+            )
             .and_some(swapchain)
             .map(|v| {
                 let swapchain = v;
@@ -184,10 +163,6 @@ pub struct SwapChain {
 }
 
 impl SwapChain {
-    pub fn builder() -> SwapChainBuilder {
-        SwapChainBuilder::new()
-    }
-
     pub unsafe fn resize_buffers(&mut self, width: u32, height: u32) -> raw::windows::Result<()> {
         // Empty views as we're holding on to resources from the swapchain in that array
         self.views.clear();

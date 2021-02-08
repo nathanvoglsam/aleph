@@ -31,7 +31,10 @@ use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandQueue, ID3D12Device4, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandListType, D3D12DeviceChild, D3D12Object, Device, Fence};
+use crate::{
+    CommandListType, D3D12DeviceChild, D3D12Object, DXGIFactory, Device, Fence, SwapChainBuilder,
+};
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 
 pub struct CommandQueueBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -74,6 +77,28 @@ pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 impl CommandQueue {
     pub unsafe fn signal(&self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
         self.0.Signal(&fence.0, value).ok()
+    }
+
+    pub fn create_swapchain_builder<'a, 'b>(
+        &'a self,
+        factory: &'b DXGIFactory,
+        hwnd: &impl HasRawWindowHandle,
+    ) -> SwapChainBuilder<'a, 'b> {
+        let hwnd = hwnd.raw_window_handle();
+        let hwnd = if let RawWindowHandle::Windows(hwnd) = hwnd {
+            hwnd
+        } else {
+            panic!();
+        };
+        SwapChainBuilder {
+            queue: self,
+            factory,
+            hwnd,
+            width: 0,
+            height: 0,
+            buffer_count: 2,
+            allow_tearing: false,
+        }
     }
 
     pub fn raw(&self) -> &ID3D12CommandQueue {

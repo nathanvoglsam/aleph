@@ -33,8 +33,8 @@ use crate::raw::windows::win32::direct3d12::{
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::{
-    Allocator, AllocatorBuilder, CommandAllocator, CommandList, CommandListType,
-    CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder, GraphicsCommandList,
+    AllocatorBuilder, CommandAllocator, CommandList, CommandListType, CommandQueueBuilder,
+    D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder, GraphicsCommandList,
 };
 
 #[derive(Clone)]

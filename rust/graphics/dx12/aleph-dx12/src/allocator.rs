@@ -28,9 +28,10 @@
 //
 
 use crate::{raw, DXGIAdapter, Device};
+use std::ffi::c_void;
 use std::sync::Arc;
 
-struct AllocatorInner(*mut ());
+struct AllocatorInner(*mut c_void);
 
 impl Drop for AllocatorInner {
     fn drop(&mut self) {
