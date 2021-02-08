@@ -52,6 +52,10 @@ version = "0.1"
 path = "../aleph-dx12-alloc-raw"
 version = "0.1"
 
+[dependencies.aleph-dxc-raw]
+path = "../aleph-dxc-raw"
+version = "0.1"
+
 [dependencies.raw-window-handle]
 version = "0.3"
 
