@@ -50,9 +50,16 @@ fn main() {
             ResetEvent,
             INFINITE,
         },
+        windows::win32::structured_storage::{
+            STATSTG,
+            ISequentialStream,
+            IStream
+        },
         windows::win32::windows_programming::{
             CloseHandle,
+            FILETIME,
         },
+        windows::win32::com::IMalloc,
     );
 
     // Get a path to where windows-rs outputs the bindings

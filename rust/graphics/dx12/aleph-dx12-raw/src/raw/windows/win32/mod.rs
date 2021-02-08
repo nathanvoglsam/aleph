@@ -1,5 +1,8 @@
 #[allow(unused_variables)]
 #[allow(non_upper_case_globals)]
+pub mod com;
+#[allow(unused_variables)]
+#[allow(non_upper_case_globals)]
 pub mod direct3d11;
 #[allow(unused_variables)]
 #[allow(non_upper_case_globals)]
@@ -16,6 +19,9 @@ pub mod gdi;
 #[allow(unused_variables)]
 #[allow(non_upper_case_globals)]
 pub mod kernel;
+#[allow(unused_variables)]
+#[allow(non_upper_case_globals)]
+pub mod structured_storage;
 #[allow(unused_variables)]
 #[allow(non_upper_case_globals)]
 pub mod system_services;
