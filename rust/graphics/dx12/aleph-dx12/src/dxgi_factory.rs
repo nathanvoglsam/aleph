@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{D3D12CreateDevice, ID3D12Device4};
 use crate::raw::windows::win32::dxgi::{
-    CreateDXGIFactory1, IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1,
+    CreateDXGIFactory2, IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1,
     DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE,
 };
 use crate::raw::windows::{Abi, Interface};
@@ -40,9 +40,10 @@ use crate::{DXGIAdapter, FeatureLevel};
 pub struct DXGIFactory(pub(crate) IDXGIFactory2);
 
 impl DXGIFactory {
-    pub unsafe fn new() -> raw::windows::Result<DXGIFactory> {
+    pub unsafe fn new(debug: bool) -> raw::windows::Result<DXGIFactory> {
+        let flags = if debug { 0x1 } else { 0x0 };
         let mut dxgi_factory: Option<IDXGIFactory2> = None;
-        CreateDXGIFactory1(&IDXGIFactory2::IID, dxgi_factory.set_abi())
+        CreateDXGIFactory2(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
             .and_some(dxgi_factory)
             .map(|v| Self(v))
     }

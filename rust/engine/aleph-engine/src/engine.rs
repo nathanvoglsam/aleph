@@ -136,8 +136,10 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
 
         log::trace!("Creating DXGIFactory");
-        let dxgi_factory =
-            unsafe { dx12::DXGIFactory::new().expect("Failed to create DXGI factory") };
+        let dxgi_factory = unsafe {
+            dx12::DXGIFactory::new(args.is_present("GPU_DEBUG"))
+                .expect("Failed to create DXGI factory")
+        };
 
         log::trace!("Selecting DXGIAdatper");
         let dxgi_adapter = unsafe {
