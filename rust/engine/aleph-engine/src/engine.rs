@@ -57,6 +57,9 @@ impl Engine {
         #[cfg(target_os = "windows")]
         dx12::initialize_mta().unwrap();
 
+        #[cfg(target_os = "windows")]
+        dx12::name_thread_as_main_thread();
+
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches
         // -----------------------------------------------------------------------------------------

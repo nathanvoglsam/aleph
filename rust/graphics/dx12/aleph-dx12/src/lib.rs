@@ -47,3 +47,4 @@ pub use raw::windows::initialize_mta;
 pub use raw::windows::initialize_sta;
 pub use raw::windows::ErrorCode;
 pub use raw::windows::Result;
+pub use utils::name_thread_as_main_thread;

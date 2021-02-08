@@ -140,3 +140,14 @@ extern "system" {
         lp_proc_name: *const i8,
     ) -> ::std::option::Option<FARPROC>;
 }
+#[link(name = "KERNEL32")]
+extern "system" {
+    pub fn GetCurrentThread() -> HANDLE;
+}
+#[link(name = "KERNEL32")]
+extern "system" {
+    pub fn SetThreadDescription(
+        h_thread: HANDLE,
+        lp_thread_description: *const u16,
+    ) -> ::windows::ErrorCode;
+}

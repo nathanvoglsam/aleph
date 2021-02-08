@@ -30,6 +30,7 @@
 use once_cell::sync::OnceCell;
 use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
+use utf16_lit::utf16_null;
 
 pub struct DynamicLoadCell<T: Sized> {
     cell: OnceCell<T>,
@@ -65,3 +66,21 @@ impl<T: Sized> DynamicLoadCell<T> {
             .ok()
     }
 }
+
+///
+/// Utility function that tries to set the main thread's name to "AlephMainThread", silently failing
+/// if it doesn't
+///
+#[cfg(target_os = "windows")]
+pub fn name_thread_as_main_thread() {
+    use raw::windows::win32::system_services::GetCurrentThread;
+    use raw::windows::win32::system_services::SetThreadDescription;
+
+    unsafe {
+        let handle = GetCurrentThread();
+        let _ = SetThreadDescription(handle, utf16_null!("AlephMainThread").as_ptr());
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn name_thread_as_main_thread() {}

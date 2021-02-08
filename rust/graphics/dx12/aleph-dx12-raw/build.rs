@@ -52,6 +52,8 @@ fn main() {
             LoadLibraryW,
             LoadLibraryA,
             GetProcAddress,
+            GetCurrentThread,
+            SetThreadDescription,
         },
         windows::win32::structured_storage::{
             STATSTG,
