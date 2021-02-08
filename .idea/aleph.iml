@@ -102,6 +102,8 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/platform/aleph-platform-egui/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/graphics/dx12/aleph-dx12-raw/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/graphics/dx12/aleph-dx12/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/dx12/aleph-dx12-alloc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/graphics/dx12/aleph-dx12-alloc-raw/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />

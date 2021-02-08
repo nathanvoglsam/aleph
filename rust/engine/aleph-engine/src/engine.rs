@@ -164,6 +164,13 @@ impl Engine {
         Self::log_gpu_info(&dxgi_adapter);
         aleph_log::info!("");
 
+        let allocator = unsafe {
+            device
+                .create_allocator_builder(&dxgi_adapter, 0)
+                .build()
+                .unwrap()
+        };
+
         let queue = unsafe {
             device
                 .command_queue_builder(dx12::CommandListType::Direct)

@@ -1,3 +1,6 @@
-[submodule "engine/aleph-platform/thirdparty/SDL-mirror"]
-	path = rust/platform/aleph-platform/thirdparty/SDL-mirror
+[submodule "rust/platform/aleph-platform/thirdparty"]
+	path = rust/platform/aleph-platform/thirdparty
 	url = https://github.com/spurious/SDL-mirror.git
+[submodule "rust/graphics/dx12/aleph-dx12-alloc-raw/thirdparty/D3D12MemoryAllocator"]
+	path = rust/graphics/dx12/aleph-dx12-alloc-raw/thirdparty/D3D12MemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git

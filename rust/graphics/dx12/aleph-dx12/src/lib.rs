@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+extern crate aleph_dx12_alloc_raw as alloc_raw;
 pub extern crate aleph_dx12_raw as raw;
 
+mod allocator;
 mod command_allocator;
 mod command_list;
 mod command_queue;
@@ -54,6 +56,8 @@ mod versioned_root_signature_desc;
 #[cfg(test)]
 mod tests;
 
+pub use allocator::Allocator;
+pub use allocator::AllocatorBuilder;
 pub use command_allocator::CommandAllocator;
 pub use command_list::CommandList;
 pub use command_list::CommandListType;

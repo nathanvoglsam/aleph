@@ -48,6 +48,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 path = "../aleph-dx12-raw"
 version = "0.1"
 
+[dependencies.aleph-dx12-alloc-raw]
+path = "../aleph-dx12-alloc-raw"
+version = "0.1"
+
 [dependencies.raw-window-handle]
 version = "0.3"
 

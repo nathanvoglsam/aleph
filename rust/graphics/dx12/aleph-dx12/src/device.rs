@@ -33,8 +33,8 @@ use crate::raw::windows::win32::direct3d12::{
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::{
-    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter,
-    FeatureLevel, FenceBuilder, GraphicsCommandList,
+    Allocator, AllocatorBuilder, CommandAllocator, CommandList, CommandListType,
+    CommandQueueBuilder, D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder, GraphicsCommandList,
 };
 
 #[derive(Clone)]
@@ -124,6 +124,19 @@ impl Device {
             )
             .and_some(out)
             .map(|v| GraphicsCommandList(v))
+    }
+
+    pub unsafe fn create_allocator_builder<'a, 'b>(
+        &'a self,
+        adapter: &'b DXGIAdapter,
+        preferred_block_size: u64,
+    ) -> AllocatorBuilder<'a, 'b> {
+        AllocatorBuilder {
+            device: &self,
+            adapter,
+            flags: alloc_raw::AllocatorFlags::NONE,
+            preferred_block_size,
+        }
     }
 
     pub fn raw(&self) -> &ID3D12Device4 {
