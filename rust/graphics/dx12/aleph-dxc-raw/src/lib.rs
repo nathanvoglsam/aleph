@@ -29,7 +29,7 @@
 
 #![allow(non_upper_case_globals)]
 
-pub extern crate aleph_dx12_raw as dx12_raw;
+extern crate aleph_dx12_raw as dx12_raw;
 use dx12_raw::windows;
 
 pub const CLSID_DxcAssembler: &'static str = "d728db68-f903-4f80-94cd-dccf76ec7151";

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_dx12_raw as dx12_raw;
+extern crate aleph_dx12_raw as dx12_raw;
 
 use dx12_raw::windows::win32::direct3d12::{
     ID3D12ProtectedResourceSession, D3D12_CLEAR_VALUE, D3D12_FEATURE_DATA_D3D12_OPTIONS,
