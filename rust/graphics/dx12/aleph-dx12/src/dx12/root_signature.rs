@@ -44,7 +44,7 @@ impl RootSignatureBlob {
     ) -> Result<Self, (raw::windows::Error, String)> {
         // Wrap the types to shorter names to keep the code readable
         type MyDesc =
-            crate::versioned_root_signature_desc::raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
+            crate::dx12::versioned_root_signature_desc::raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
         type FFIDesc = crate::raw::windows::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
 
         let desc = desc.clone();

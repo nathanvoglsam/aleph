@@ -27,20 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
-use crate::root_signature_desc::raw::{D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1};
-use std::mem::ManuallyDrop;
+mod adapter;
+mod factory;
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-    pub version: D3D_ROOT_SIGNATURE_VERSION,
-    pub desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
-    pub version_1_0: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
-    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
-}
+pub use adapter::DXGIAdapter;
+pub use factory::DXGIFactory;

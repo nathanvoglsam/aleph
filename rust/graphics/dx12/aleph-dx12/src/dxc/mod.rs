@@ -27,23 +27,10 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dx12_alloc_raw as alloc_raw;
-extern crate aleph_dx12_raw as raw;
-extern crate aleph_dxc_raw as dxc_raw;
+mod compiler;
+mod validator;
 
-mod dx12;
-mod dxc;
-mod dxgi;
-mod utils;
-
-#[cfg(test)]
-mod tests;
-
-pub use dx12::*;
-pub use dxc::*;
-pub use dxgi::*;
-
-pub use raw::windows::initialize_mta;
-pub use raw::windows::initialize_sta;
-pub use raw::windows::ErrorCode;
-pub use raw::windows::Result;
+pub use compiler::DxcCompiler;
+pub use compiler::DxcCompilerCreateError;
+pub use validator::DxcValidator;
+pub use validator::DxcValidatorCreateError;

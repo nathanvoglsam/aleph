@@ -27,27 +27,33 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
-};
-use crate::root_parameter::raw::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
+use crate::utils::DynamicLoadCell;
+use raw::windows::{Abi, Interface};
+use utf16_lit::utf16_null;
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> = DynamicLoadCell::new();
+
+#[derive(Clone, Debug)]
+pub enum DxcValidatorCreateError {
+    FailedToLoadLibrary,
+    CreateCallFailed(raw::windows::Error),
 }
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC1 {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct DxcValidator(pub(crate) dxc_raw::IDxcValidator);
+
+impl DxcValidator {
+    pub unsafe fn new() -> Result<Self, DxcValidatorCreateError> {
+        let create_fn = CREATE_FN
+            .get(&utf16_null!("dxil.dll"), "DxcCreateInstance\0")
+            .ok_or(DxcValidatorCreateError::FailedToLoadLibrary)?;
+        let clsid = raw::windows::Guid::from(dxc_raw::CLSID_DxcValidator);
+        let riid = &dxc_raw::IDxcValidator::IID;
+        let mut out: Option<dxc_raw::IDxcValidator> = None;
+        create_fn(&clsid, riid, out.set_abi())
+            .and_some(out)
+            .map(|v| Self(v))
+            .map_err(|v| DxcValidatorCreateError::CreateCallFailed(v))
+    }
 }

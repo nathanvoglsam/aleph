@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::pipeline_state_stream::PackedPipelineStateStreamObject;
+use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
     D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE,

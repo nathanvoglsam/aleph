@@ -30,7 +30,7 @@
 use crate::raw::windows::win32::direct3d12::{
     D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
 };
-use crate::versioned_root_signature_desc::raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS;
+use crate::dx12::versioned_root_signature_desc::raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS;
 use crate::{RootParameter, RootParameter1};
 use std::mem::ManuallyDrop;
 

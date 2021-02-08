@@ -27,23 +27,27 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dx12_alloc_raw as alloc_raw;
-extern crate aleph_dx12_raw as raw;
-extern crate aleph_dxc_raw as dxc_raw;
+use crate::raw::windows::win32::direct3d12::{
+    D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
+};
+use crate::dx12::root_parameter::raw::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
 
-mod dx12;
-mod dxc;
-mod dxgi;
-mod utils;
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct D3D12_ROOT_SIGNATURE_DESC {
+    pub num_parameters: u32,
+    pub p_parameters: *mut D3D12_ROOT_PARAMETER,
+    pub num_static_samplers: u32,
+    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
+    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+}
 
-#[cfg(test)]
-mod tests;
-
-pub use dx12::*;
-pub use dxc::*;
-pub use dxgi::*;
-
-pub use raw::windows::initialize_mta;
-pub use raw::windows::initialize_sta;
-pub use raw::windows::ErrorCode;
-pub use raw::windows::Result;
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct D3D12_ROOT_SIGNATURE_DESC1 {
+    pub num_parameters: u32,
+    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
+    pub num_static_samplers: u32,
+    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
+    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+}

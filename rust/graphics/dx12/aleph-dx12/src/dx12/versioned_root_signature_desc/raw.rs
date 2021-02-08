@@ -27,33 +27,20 @@
 // SOFTWARE.
 //
 
-use raw::windows::{Abi, Interface};
-use utf16_lit::utf16_null;
-use crate::utils::DynamicLoadCell;
+use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
+use crate::dx12::root_signature_desc::raw::{D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1};
+use std::mem::ManuallyDrop;
 
-static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> = DynamicLoadCell::new();
-
-#[derive(Clone, Debug)]
-pub enum DxcValidatorCreateError {
-    FailedToLoadLibrary,
-    CreateCallFailed(raw::windows::Error),
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+    pub version: D3D_ROOT_SIGNATURE_VERSION,
+    pub desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS,
 }
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct DxcValidator(pub(crate) dxc_raw::IDxcValidator);
-
-impl DxcValidator {
-    pub unsafe fn new() -> Result<Self, DxcValidatorCreateError> {
-        let create_fn = CREATE_FN
-            .get(&utf16_null!("dxil.dll"), "DxcCreateInstance\0")
-            .ok_or(DxcValidatorCreateError::FailedToLoadLibrary)?;
-        let clsid = raw::windows::Guid::from(dxc_raw::CLSID_DxcValidator);
-        let riid = &dxc_raw::IDxcValidator::IID;
-        let mut out: Option<dxc_raw::IDxcValidator> = None;
-        create_fn(&clsid, riid, out.set_abi())
-            .and_some(out)
-            .map(|v| Self(v))
-            .map_err(|v| DxcValidatorCreateError::CreateCallFailed(v))
-    }
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
+    pub version_1_0: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
+    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
 }
