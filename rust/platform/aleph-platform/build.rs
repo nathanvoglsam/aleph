@@ -38,7 +38,10 @@ use target::{Architecture, Platform};
 ///
 fn dll_name() -> &'static str {
     match target::build::target_platform() {
-        Platform::WindowsGNU | Platform::WindowsMSVC => "SDL2.dll",
+        Platform::WindowsGNU
+        | Platform::WindowsMSVC
+        | Platform::UniversalWindowsGNU
+        | Platform::UniversalWindowsMSVC => "SDL2.dll",
         Platform::Linux | Platform::Android => "libSDL2.so",
         Platform::Unknown => panic!("Unsupported Platform"),
     }
@@ -54,6 +57,8 @@ fn get_ndk_build_file() -> String {
             format!("{}\\ndk-bundle\\ndk-build.cmd", &ndk_build)
         }
         Platform::Linux => format!("{}/ndk-bundle/ndk-build", &ndk_build),
+        Platform::UniversalWindowsGNU => panic!("Unsupported host"),
+        Platform::UniversalWindowsMSVC => panic!("Unsupported host"),
         Platform::Android => panic!("Unsupported host"),
         Platform::Unknown => panic!("Unsupported host"),
     }
@@ -110,8 +115,9 @@ fn android_compile_sdl2(arch: Architecture) {
 /// target platforms.
 ///
 fn main() {
-    match target::build::target_platform() {
-        Platform::WindowsGNU | Platform::WindowsMSVC => {
+    let target_platform = target::build::target_platform();
+    match target_platform {
+        Platform::WindowsGNU | Platform::WindowsMSVC | Platform::UniversalWindowsMSVC => {
             // If we're building for windows we need to compile SDL2 ourselves. We already have the
             // source for android builds so we may as well build for windows as well rather than
             // try to bundle binaries
@@ -121,10 +127,18 @@ fn main() {
             let mut build = cmake::Config::new("thirdparty/SDL-mirror");
             build.generator("Ninja");
 
+            // Don't compile the SDL2 static library
+            build.define("SDL_STATIC", "OFF");
+
             // When compiling for MSVC we need to include vcruntime as some symbols are missing
             // if we don't link in this lib
-            if target::build::target_platform().is_msvc() {
+            if target_platform.is_msvc() && target_platform.is_win32() {
                 build.define("EXTRA_LIBS", "vcruntime");
+            }
+
+            if target_platform.is_uwp() {
+                build.define("WINDOWS_STORE", "TRUE");
+                build.define("SDL_SENSOR", "FALSE");
             }
 
             // Force to compile for release, we'll never need to debug this
@@ -150,6 +164,10 @@ fn main() {
             // Copy the output dll file to the target dir
             compile::copy_file_to_target_dir(&source)
                 .expect("Failed to copy SDL2 dll/so to target dir");
+        }
+        Platform::UniversalWindowsGNU => {
+            // We can't compile SDL2 for this platform as it requires msvc
+            panic!("Unsupported platform")
         }
         Platform::Linux | Platform::Unknown => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
