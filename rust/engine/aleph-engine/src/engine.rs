@@ -67,22 +67,22 @@ impl Engine {
         let version = app_info.version_string();
         let author = app_info.author.clone();
         let about = "Powered by AlephEngine";
-        let args = clap::App::new(app_info.name.clone())
-            .name(name)
-            .version(version.as_str())
-            .about(about)
-            .author(&*author)
-            .arg(
-                clap::Arg::with_name("GPU_DEBUG")
-                    .long("gpu-debug")
-                    .short("d"),
-            )
-            .arg(
-                clap::Arg::with_name("GPU_VALIDATION")
-                    .long("gpu-validation")
-                    .short("v"),
-            )
-            .get_matches();
+        //let args = clap::App::new(app_info.name.clone())
+        //    .name(name)
+        //    .version(version.as_str())
+        //    .about(about)
+        //    .author(&*author)
+        //    .arg(
+        //        clap::Arg::with_name("GPU_DEBUG")
+        //            .long("gpu-debug")
+        //            .short("d"),
+        //    )
+        //    .arg(
+        //        clap::Arg::with_name("GPU_VALIDATION")
+        //            .long("gpu-validation")
+        //            .short("v"),
+        //    )
+        //    .get_matches();
 
         // -----------------------------------------------------------------------------------------
         // Core Initialization
@@ -137,7 +137,7 @@ impl Engine {
 
         log::trace!("Creating DXGIFactory");
         let dxgi_factory = unsafe {
-            dx12::DXGIFactory::new(args.is_present("GPU_DEBUG"))
+            dx12::DXGIFactory::new(true)
                 .expect("Failed to create DXGI factory")
         };
 
@@ -151,8 +151,8 @@ impl Engine {
         // Enable debug layers if requested
         let _debug = unsafe {
             setup_debug_layer(
-                args.is_present("GPU_DEBUG"),
-                args.is_present("GPU_VALIDATION"),
+                true,
+                false,
             );
         };
 
