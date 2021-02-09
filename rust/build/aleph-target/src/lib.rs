@@ -47,12 +47,22 @@ pub mod build {
     #[inline]
     pub const fn host_platform() -> aleph_target::Platform {
         if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_windows) {
-            if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
-                aleph_target::Platform::WindowsMSVC
-            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
-                aleph_target::Platform::WindowsGNU
+            if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_universal_windows) {
+                if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
+                    aleph_target::Platform::UniversalWindowsMSVC
+                } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
+                    aleph_target::Platform::UniversalWindowsGNU
+                } else {
+                    aleph_target::Platform::Unknown
+                }
             } else {
-                aleph_target::Platform::Unknown
+                if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
+                    aleph_target::Platform::WindowsMSVC
+                } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
+                    aleph_target::Platform::WindowsGNU
+                } else {
+                    aleph_target::Platform::Unknown
+                }
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_android) {
             aleph_target::Platform::Android
@@ -94,12 +104,22 @@ pub mod build {
     ///
     pub const fn target_platform() -> aleph_target::Platform {
         if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_windows) {
-            if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
-                aleph_target::Platform::WindowsMSVC
-            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
-                aleph_target::Platform::WindowsGNU
+            if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_universal_windows) {
+                if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+                    aleph_target::Platform::UniversalWindowsMSVC
+                } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+                    aleph_target::Platform::UniversalWindowsGNU
+                } else {
+                    aleph_target::Platform::Unknown
+                }
             } else {
-                aleph_target::Platform::Unknown
+                if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+                    aleph_target::Platform::WindowsMSVC
+                } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+                    aleph_target::Platform::WindowsGNU
+                } else {
+                    aleph_target::Platform::Unknown
+                }
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_android) {
             aleph_target::Platform::Android

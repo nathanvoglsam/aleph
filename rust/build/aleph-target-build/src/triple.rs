@@ -37,6 +37,8 @@ use crate::{Architecture, Platform};
 pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&'static str> {
     match arch {
         Architecture::X8664 => match platform {
+            Platform::UniversalWindowsGNU => Some("x86_64-uwp-windows-gnu"),
+            Platform::UniversalWindowsMSVC => Some("x86_64-uwp-windows-msvc"),
             Platform::WindowsGNU => Some("x86_64-pc-windows-gnu"),
             Platform::WindowsMSVC => Some("x86_64-pc-windows-msvc"),
             Platform::Linux => Some("x86_64-unknown-linux-gnu"),
@@ -44,6 +46,8 @@ pub const fn recreate_triple(platform: Platform, arch: Architecture) -> Option<&
             Platform::Unknown => None,
         },
         Architecture::AARCH64 => match platform {
+            Platform::UniversalWindowsGNU => None,
+            Platform::UniversalWindowsMSVC => Some("aarch64-uwp-windows-msvc"),
             Platform::WindowsGNU => None,
             Platform::WindowsMSVC => Some("aarch64-pc-windows-msvc"),
             Platform::Linux => Some("aarch64-unknown-linux-gnu"),
