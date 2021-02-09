@@ -125,7 +125,11 @@ fn main() {
             // Perform the cmake build with the ninja generator, ninja will need to be in the system
             // path for this to work
             let mut build = cmake::Config::new("thirdparty/SDL-mirror");
-            build.generator("Ninja");
+            if target_platform.is_uwp() {
+                build.generator("Visual Studio 16 2019");
+            } else {
+                build.generator("Ninja");
+            }
 
             // Don't compile the SDL2 static library
             build.define("SDL_STATIC", "OFF");
@@ -137,6 +141,8 @@ fn main() {
             }
 
             if target_platform.is_uwp() {
+                build.define("CMAKE_SYSTEM_NAME", "WindowsStore");
+                build.define("CMAKE_SYSTEM_VERSION", "10.0");
                 build.define("WINDOWS_STORE", "TRUE");
                 build.define("SDL_SENSOR", "FALSE");
             }
