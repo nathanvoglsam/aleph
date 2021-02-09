@@ -381,8 +381,6 @@ impl UniformBuffers {
         layout: &Struct,
         buffer: &(Buffer, Allocation),
     ) {
-        optick::event!();
-
         let ptr = allocator
             .map_memory(&buffer.1)
             .expect("Failed to map memory");
@@ -422,8 +420,6 @@ impl UniformBuffers {
         buffer: &(Buffer, Allocation),
         aspect: f32,
     ) {
-        optick::event!();
-
         let ptr = allocator
             .map_memory(&buffer.1)
             .expect("Failed to map memory");
@@ -807,8 +803,6 @@ impl Renderer {
         swapchain: &mut Swapchain,
         drawable_size: (u32, u32),
     ) -> Option<usize> {
-        optick::event!();
-
         self.device
             .loader()
             .device_wait_idle()
@@ -836,8 +830,6 @@ impl Renderer {
         egui_ctx: &::egui::CtxRef,
         jobs: PaintJobs,
     ) {
-        optick::event!();
-
         self.egui_renderer
             .update_screen_info(egui_ctx.pixels_per_point());
 
@@ -867,8 +859,6 @@ impl Renderer {
             .expect("Failed to end command buffer");
 
         {
-            optick::event!("aleph_render::renderer::Renderer::submit_and_present");
-
             let command_buffers = [self.command_buffer];
             let wait_semaphores = [self.acquire_semaphore];
             let signal_semaphores = [self.signal_semaphore];
@@ -888,8 +878,6 @@ impl Renderer {
     }
 
     pub unsafe fn record_frame(&self, index: usize, command_buffer: CommandBuffer) {
-        optick::event!();
-
         // Build render area over entire image
         let base_colour = &self.gbuffer.base_colour;
         let offset = Offset2DBuilder::new().x(0).y(0);

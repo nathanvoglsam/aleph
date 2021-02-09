@@ -60,4 +60,3 @@ egui = "0.8"
 clap = "2"
 rayon = "1"
 once_cell = "1"
-optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }

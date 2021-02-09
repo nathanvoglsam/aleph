@@ -93,9 +93,6 @@ impl Engine {
         aleph_log::info!("");
         aleph_log::info!("Aleph Engine Starting");
 
-        // Init the profiler and mark the first frame
-        optick::next_frame();
-
         // Print info about the specific app to the log so we know what game and version we're on
         aleph_log::info!("");
         Engine::log_app_info(&app_info);
@@ -214,9 +211,6 @@ impl Engine {
 
         // Process the SDL2 events and store them into our own event queues for later use
         'game_loop: loop {
-            // Mark a new frame for the optick profiler
-            optick::next_frame();
-
             // Mark a new frame for the platform
             platform.frame();
 
@@ -236,10 +230,7 @@ impl Engine {
             let new_input = aleph_platform_egui::get_egui_input();
             egui_ctx.begin_frame(new_input);
 
-            {
-                optick::event!("aleph_engine::AppLogic::on_update");
-                app.on_update(&egui_ctx);
-            }
+            app.on_update(&egui_ctx);
 
             unsafe {
                 fence.signal(0).unwrap();

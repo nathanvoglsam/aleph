@@ -49,7 +49,6 @@ aleph-log = { path = "../../logging/aleph-log", version = "1" }
 aleph-macros = { path = "../../utils/aleph-macros", version = "1" }
 egui = "0.8"
 once_cell = "1"
-optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }
 
 [dependencies.ultraviolet]
 version = "0.7"

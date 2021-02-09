@@ -45,7 +45,6 @@ edition = "2018"
 aleph-log = { path = "../../logging/aleph-log", version = "1" }
 aleph-platform = { path = "../aleph-platform", version = "0.1" }
 egui = "0.8.0"
-optick = { git = "https://github.com/nathanvoglsam/optick-rs.git", branch = "remove-bundled-libs" }
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

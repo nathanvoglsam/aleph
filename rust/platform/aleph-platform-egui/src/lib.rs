@@ -33,8 +33,6 @@ use aleph_platform::{
 };
 
 pub fn get_egui_input() -> egui::RawInput {
-    optick::event!();
-
     let mouse_state = Mouse::get_state();
     let window_size = Window::size();
 
@@ -73,8 +71,6 @@ pub fn get_egui_input() -> egui::RawInput {
 }
 
 pub fn process_egui_output(output: egui::Output) {
-    optick::event!();
-
     if !output.copied_text.is_empty() {
         Clipboard::set(&output.copied_text);
     }

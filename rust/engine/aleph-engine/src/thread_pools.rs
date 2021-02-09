@@ -39,8 +39,6 @@ pub fn init_long_thread_pool(num_threads: usize) {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
             dx12::initialize_mta().unwrap();
-
-            optick::register_thread(&format!("LR Thread {}", id));
         })
         .build()
         .expect("Failed to create long running thread pool");
@@ -59,8 +57,6 @@ pub fn init_short_thread_pool(num_threads: usize) {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
             dx12::initialize_mta().unwrap();
-
-            optick::register_thread(&format!("SR Thread {}", id))
         })
         .build()
         .expect("Failed to create short running thread pool");

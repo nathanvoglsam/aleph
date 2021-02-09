@@ -109,8 +109,6 @@ impl Renderer {
         egui_ctx: &::egui::CtxRef,
         jobs: egui::PaintJobs,
     ) {
-        optick::event!();
-
         self.frames[index].font_objects.upload_texture(
             &self.device,
             &self.allocator,
