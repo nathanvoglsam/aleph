@@ -39,6 +39,17 @@ use sdl2::event::Event;
 use std::cell::Cell;
 use std::collections::HashMap;
 
+#[cfg(target_vendor = "uwp")]
+use std::ffi::c_void;
+
+#[cfg(target_vendor = "uwp")]
+use std::os::raw::c_int;
+
+#[cfg(target_vendor = "uwp")]
+extern "C" {
+    fn SDL_WinRTRunApp(main: *const c_void, reserved: *const c_void) -> c_int;
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlatformBuildError {
     ///
@@ -125,6 +136,9 @@ impl PlatformBuilder {
     /// Consumes the builder and constructs a new platform object
     ///
     pub fn build(self) -> Result<Platform, PlatformBuildError> {
+        #[cfg(target_vendor = "uwp")]
+        unsafe { SDL_WinRTRunApp(std::ptr::null(), std::ptr::null()); }
+
         aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().map_err(|v| PlatformBuildError::FailedToInitSDL2(v))?;
 
