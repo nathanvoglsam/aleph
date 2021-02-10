@@ -27,15 +27,12 @@
 // SOFTWARE.
 //
 
-use std::any::Any;
-use std::collections::HashMap;
-
 ///
 /// A pure data struct that is used for describing the initial state of the OS window
 ///
 /// This will usually be de-serialized from a file
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct WindowSettings {
     ///
     /// Will the window start fullscreen
@@ -67,25 +64,18 @@ impl Default for WindowSettings {
 /// A pure data struct that is used for describing initial engine settings, such as initial window
 /// state or graphics options,
 ///
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Settings {
     ///
     /// The initial state of the window
     ///
     pub window: WindowSettings,
-
-    ///
-    /// This member is for injecting your own settings into the engine's own preferences storage
-    /// system. This would generally be used for custom preferences specific to your game
-    ///
-    pub other: HashMap<String, Box<dyn Any>>,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
             window: WindowSettings::default(),
-            other: HashMap::new(),
         }
     }
 }
