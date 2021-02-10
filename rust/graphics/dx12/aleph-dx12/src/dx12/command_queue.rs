@@ -35,7 +35,7 @@ use crate::{
     CommandList, CommandListType, D3D12DeviceChild, D3D12Object, DXGIFactory, Device, Fence,
     SwapChainBuilder,
 };
-use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use raw_window_handle::HasRawWindowHandle;
 
 pub struct CommandQueueBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -83,18 +83,12 @@ impl CommandQueue {
     pub fn create_swapchain_builder<'a, 'b>(
         &'a self,
         factory: &'b DXGIFactory,
-        hwnd: &impl HasRawWindowHandle,
+        window_handle: &impl HasRawWindowHandle,
     ) -> SwapChainBuilder<'a, 'b> {
-        let hwnd = hwnd.raw_window_handle();
-        let hwnd = if let RawWindowHandle::Windows(hwnd) = hwnd {
-            hwnd
-        } else {
-            panic!();
-        };
         SwapChainBuilder {
             queue: self,
             factory,
-            hwnd,
+            window_handle: window_handle.raw_window_handle(),
             width: 0,
             height: 0,
             buffer_count: 2,

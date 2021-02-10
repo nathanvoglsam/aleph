@@ -36,12 +36,12 @@ use crate::raw::windows::win32::dxgi::{
 use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::{CommandQueue, DXGIFactory};
 use raw::windows::{Abi, Interface};
-use raw_window_handle::windows::WindowsHandle;
+use raw_window_handle::RawWindowHandle;
 
 pub struct SwapChainBuilder<'a, 'b> {
     pub(crate) queue: &'a CommandQueue,
     pub(crate) factory: &'b DXGIFactory,
-    pub(crate) hwnd: WindowsHandle,
+    pub(crate) window_handle: RawWindowHandle,
     pub(crate) width: u32,
     pub(crate) height: u32,
     pub(crate) buffer_count: u32,
@@ -108,24 +108,47 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
             flags: flags as _,
         };
 
-        let hwnd = self.hwnd.hwnd as isize;
-        let hwnd = HWND(hwnd);
-
         // Create the swapchain
-        let mut swapchain: Option<IDXGISwapChain1> = None;
-        let swapchain = self
-            .factory
-            .0
-            .CreateSwapChainForHwnd(
-                &self.queue.0,
-                hwnd,
-                &desc,
-                std::ptr::null(),
-                None,
-                &mut swapchain,
-            )
-            .and_some(swapchain)?;
-        let swapchain = swapchain.cast::<IDXGISwapChain4>()?;
+        let swapchain = match self.window_handle {
+            RawWindowHandle::Windows(hwnd) => {
+                let hwnd = hwnd.hwnd.unwrap().as_ptr() as isize;
+                let hwnd = HWND(hwnd);
+
+                let mut swapchain: Option<IDXGISwapChain1> = None;
+                let swapchain = self
+                    .factory
+                    .0
+                    .CreateSwapChainForHwnd(
+                        &self.queue.0,
+                        hwnd,
+                        &desc,
+                        std::ptr::null(),
+                        None,
+                        &mut swapchain,
+                    )
+                    .and_some(swapchain)?;
+                swapchain.cast::<IDXGISwapChain4>()?
+            }
+            RawWindowHandle::WinRT(core_window) => {
+                let core_window = core_window.core_window.unwrap();
+                let core_window: raw::windows::win32::winrt::IInspectable = std::mem::transmute(core_window);
+                let mut swapchain: Option<IDXGISwapChain1> = None;
+                let swapchain = self
+                    .factory
+                    .0
+                    .CreateSwapChainForCoreWindow(
+                        &self.queue.0,
+                        core_window,
+                        &desc,
+                        None,
+                        &mut swapchain,
+                    )
+                    .and_some(swapchain)?;
+                swapchain.cast::<IDXGISwapChain4>()?
+            }
+            _ => panic!("Unsupported window handle")
+        };
+
         Ok(SwapChain(swapchain))
     }
 }
