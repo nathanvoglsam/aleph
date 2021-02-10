@@ -35,7 +35,7 @@ pub fn init_long_thread_pool(num_threads: usize) {
     let long_running_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .thread_name(|id| format!("Long Running Task Thread {}", id))
-        .start_handler(|id| {
+        .start_handler(|_| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
             dx12::initialize_mta().unwrap();
@@ -53,7 +53,7 @@ pub fn init_short_thread_pool(num_threads: usize) {
     let short_running_pool = rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .thread_name(|id| format!("Short Running Task Thread {}", id))
-        .start_handler(|id| {
+        .start_handler(|_| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
             dx12::initialize_mta().unwrap();

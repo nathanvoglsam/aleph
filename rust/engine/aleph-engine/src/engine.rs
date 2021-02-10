@@ -63,10 +63,10 @@ impl Engine {
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches
         // -----------------------------------------------------------------------------------------
-        let name = app_info.name.clone();
-        let version = app_info.version_string();
-        let author = app_info.author.clone();
-        let about = "Powered by AlephEngine";
+        //let name = app_info.name.clone();
+        //let version = app_info.version_string();
+        //let author = app_info.author.clone();
+        //let about = "Powered by AlephEngine";
         //let args = clap::App::new(app_info.name.clone())
         //    .name(name)
         //    .version(version.as_str())
