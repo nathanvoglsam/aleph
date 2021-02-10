@@ -117,159 +117,156 @@ impl Engine {
         // SDL2 and Window Initialization
         // -----------------------------------------------------------------------------------------
 
-        let mut platform = Platform::builder()
+        Platform::builder()
             .headless(false)
             .app_info(app_info.clone())
-            .build()
-            .expect("Failed to build platform layer");
+            .build(move |platform| {
+                let mut platform = platform.expect("Failed to build platform layer");
 
-        // -----------------------------------------------------------------------------------------
-        // Egui Initialization
-        // -----------------------------------------------------------------------------------------
+                // ---------------------------------------------------------------------------------
+                // Egui Initialization
+                // ---------------------------------------------------------------------------------
 
-        // Initialize egui
-        let mut egui_ctx = egui::CtxRef::default();
-        egui_ctx.set_fonts(egui_font_definitions(true));
+                // Initialize egui
+                let mut egui_ctx = egui::CtxRef::default();
+                egui_ctx.set_fonts(egui_font_definitions(true));
 
-        // -----------------------------------------------------------------------------------------
-        // Graphics Initialization
-        // -----------------------------------------------------------------------------------------
+                // ---------------------------------------------------------------------------------
+                // Graphics Initialization
+                // ---------------------------------------------------------------------------------
 
-        log::trace!("Creating DXGIFactory");
-        let dxgi_factory = unsafe {
-            dx12::DXGIFactory::new(true)
-                .expect("Failed to create DXGI factory")
-        };
+                log::trace!("Creating DXGIFactory");
+                let dxgi_factory =
+                    unsafe { dx12::DXGIFactory::new(true).expect("Failed to create DXGI factory") };
 
-        log::trace!("Selecting DXGIAdatper");
-        let dxgi_adapter = unsafe {
-            dxgi_factory
-                .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
-                .expect("Failed to find capable GPU")
-        };
+                log::trace!("Selecting DXGIAdatper");
+                let dxgi_adapter = unsafe {
+                    dxgi_factory
+                        .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
+                        .expect("Failed to find capable GPU")
+                };
 
-        // Enable debug layers if requested
-        let _debug = unsafe {
-            setup_debug_layer(
-                true,
-                false,
-            );
-        };
+                // Enable debug layers if requested
+                let _debug = unsafe {
+                    setup_debug_layer(true, false);
+                };
 
-        log::trace!("Creating D3D12Device");
-        let device = unsafe {
-            dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
-                .expect("Failed to create D3D12 device")
-        };
+                log::trace!("Creating D3D12Device");
+                let device = unsafe {
+                    dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
+                        .expect("Failed to create D3D12 device")
+                };
 
-        let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
-        let _validator = unsafe { dx12::DxcValidator::new().unwrap() };
+                //let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
+                //let _validator = unsafe { dx12::DxcValidator::new().unwrap() };
 
-        aleph_log::info!("");
-        Self::log_gpu_info(&dxgi_adapter);
-        aleph_log::info!("");
+                aleph_log::info!("");
+                Self::log_gpu_info(&dxgi_adapter);
+                aleph_log::info!("");
 
-        let _allocator = unsafe {
-            device
-                .create_allocator_builder(&dxgi_adapter, 0)
-                .build()
-                .unwrap()
-        };
+                let _allocator = unsafe {
+                    device
+                        .create_allocator_builder(&dxgi_adapter, 0)
+                        .build()
+                        .unwrap()
+                };
 
-        let queue = unsafe {
-            device
-                .command_queue_builder(dx12::CommandListType::Direct)
-                .priority(0)
-                .build()
-                .unwrap()
-        };
+                let queue = unsafe {
+                    device
+                        .command_queue_builder(dx12::CommandListType::Direct)
+                        .priority(0)
+                        .build()
+                        .unwrap()
+                };
 
-        let event = dx12::Event::builder().build().unwrap();
-        let fence = unsafe { device.fence_builder().build().unwrap() };
+                let event = dx12::Event::builder().build().unwrap();
+                let fence = unsafe { device.fence_builder().build().unwrap() };
 
-        let drawable_size = Window::drawable_size();
-        let mut swapchain = unsafe {
-            queue
-                .create_swapchain_builder(&dxgi_factory, &platform)
-                .width(drawable_size.0)
-                .height(drawable_size.1)
-                .buffer_count(3)
-                .build()
-                .expect("Failed to create swapchain")
-        };
+                let drawable_size = Window::drawable_size();
+                let mut swapchain = unsafe {
+                    queue
+                        .create_swapchain_builder(&dxgi_factory, &platform)
+                        .width(drawable_size.0)
+                        .height(drawable_size.1)
+                        .buffer_count(3)
+                        .build()
+                        .expect("Failed to create swapchain")
+                };
 
-        //let mut renderer =
-        //    unsafe { render::Renderer::new(device.clone(), allocator.clone(), &swapchain) };
+                //let mut renderer = unsafe {
+                //    render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
+                //};
 
-        // =========================================================================================
-        // Engine Fully Initialized
-        // =========================================================================================
+                // =================================================================================
+                // Engine Fully Initialized
+                // =================================================================================
 
-        // Call the AppLogic on_init now that it is safe to do so
-        aleph_log::trace!("Calling AppLogic::on_init");
-        app.on_init();
+                // Call the AppLogic on_init now that it is safe to do so
+                aleph_log::trace!("Calling AppLogic::on_init");
+                app.on_init();
 
-        // Process the SDL2 events and store them into our own event queues for later use
-        'game_loop: loop {
-            // Mark a new frame for the platform
-            platform.frame();
+                // Process the SDL2 events and store them into our own event queues for later use
+                'game_loop: loop {
+                    // Mark a new frame for the platform
+                    platform.frame();
 
-            // Process requests and events
-            platform.process_requests();
-            platform.process_events(|| {
-                Engine::exit();
-            });
+                    // Process requests and events
+                    platform.process_requests();
+                    platform.process_events(|| {
+                        Engine::exit();
+                    });
 
-            // Check if the engine should shutdown. This will be updated by process_events so we
-            // need to check after calling process_events
-            if !Engine::keep_running() {
-                break 'game_loop;
-            }
+                    // Check if the engine should shutdown. This will be updated by process_events
+                    // so we need to check after calling process_events
+                    if !Engine::keep_running() {
+                        break 'game_loop;
+                    }
 
-            // Collect input and begin new Egui frame
-            let new_input = aleph_platform_egui::get_egui_input();
-            egui_ctx.begin_frame(new_input);
+                    // Collect input and begin new Egui frame
+                    let new_input = aleph_platform_egui::get_egui_input();
+                    egui_ctx.begin_frame(new_input);
 
-            app.on_update(&egui_ctx);
+                    app.on_update(&egui_ctx);
 
-            unsafe {
-                fence.signal(0).unwrap();
-                fence.set_event_on_completion(1, &event).unwrap();
-            }
+                    unsafe {
+                        fence.signal(0).unwrap();
+                        fence.set_event_on_completion(1, &event).unwrap();
+                    }
 
-            if Window::resized() {
-                let (width, height) = Window::drawable_size();
-                unsafe {
-                    swapchain.resize_buffers(width, height, 0).unwrap();
+                    if Window::resized() {
+                        let (width, height) = Window::drawable_size();
+                        unsafe {
+                            swapchain.resize_buffers(width, height, 0).unwrap();
+                        }
+                    }
+
+                    unsafe {
+                        swapchain.present(0, 0).unwrap();
+                    }
+
+                    unsafe {
+                        queue.signal(&fence, 1).unwrap();
+                        event.wait(None);
+                    }
+
+                    // End the egui frame
+                    let (output, shapes) = egui_ctx.end_frame();
+                    let _jobs: PaintJobs = egui_ctx.tessellate(shapes);
+                    aleph_platform_egui::process_egui_output(output);
+
+                    //unsafe {
+                    //    let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
+                    //    if i.is_none() {
+                    //        continue;
+                    //    }
+                    //    let index = i.unwrap();
+                    //    renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
+                    //}
                 }
-            }
 
-            unsafe {
-                swapchain.present(0, 0).unwrap();
-            }
-
-            unsafe {
-                queue.signal(&fence, 1).unwrap();
-                event.wait(None);
-            }
-
-            // End the egui frame
-            let (output, shapes) = egui_ctx.end_frame();
-            let _jobs: PaintJobs = egui_ctx.tessellate(shapes);
-            aleph_platform_egui::process_egui_output(output);
-
-            //unsafe {
-            //    let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
-            //    if i.is_none() {
-            //        continue;
-            //    }
-            //    let index = i.unwrap();
-            //    renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
-            //}
-        }
-
-        aleph_log::trace!("Calling AppLogic::on_exit");
-        app.on_exit();
+                aleph_log::trace!("Calling AppLogic::on_exit");
+                app.on_exit();
+            });
     }
 
     ///

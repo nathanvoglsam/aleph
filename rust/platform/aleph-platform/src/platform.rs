@@ -40,15 +40,85 @@ use std::cell::Cell;
 use std::collections::HashMap;
 
 #[cfg(target_vendor = "uwp")]
-use std::ffi::c_void;
+mod uwp {
+    use once_cell::sync::OnceCell;
+    use std::ffi::c_void;
+    use std::os::raw::{c_char, c_int};
 
-#[cfg(target_vendor = "uwp")]
-use std::os::raw::c_int;
+    type RTMain = unsafe extern "C" fn(c_int, *const *const c_char) -> c_int;
 
-#[cfg(target_vendor = "uwp")]
-extern "C" {
-    fn SDL_WinRTRunApp(main: *const c_void, reserved: *const c_void) -> c_int;
+    extern "C" {
+        fn SDL_WinRTRunApp(main: RTMain, reserved: *const c_void) -> c_int;
+    }
+
+    struct MainPayload {
+        closure: *mut (),
+        builder: super::PlatformBuilder,
+    }
+
+    unsafe impl Send for MainPayload {}
+    unsafe impl Sync for MainPayload {}
+
+    static MAIN_PAYLOAD: OnceCell<MainPayload> = OnceCell::new();
+
+    pub fn build<T: FnOnce(super::PlatformBuildResult)>(builder: super::PlatformBuilder, main: T) {
+        unsafe {
+            init_payload(builder, main);
+            SDL_WinRTRunApp(main_wrapper::<T>, std::ptr::null());
+        }
+    }
+
+    unsafe fn init_payload<T: FnOnce(super::PlatformBuildResult)>(
+        builder: super::PlatformBuilder,
+        main: T,
+    ) {
+        // Box our closure so it will live forever
+        let mut main_box = Box::new(main);
+
+        // Type erase the type so we can pass it through a global
+        let main_ref = main_box.as_mut() as *mut T as *mut ();
+
+        // Forget main fn as we will handle dropping it in the wrapper function
+        std::mem::forget(main_box);
+
+        MAIN_PAYLOAD.set(MainPayload {
+            closure: main_ref,
+            builder,
+        }).ok().unwrap();
+    }
+
+    unsafe extern "C" fn main_wrapper<T: FnOnce(super::PlatformBuildResult)>(
+        _argc: std::os::raw::c_int,
+        _argv: *const *const std::os::raw::c_char,
+    ) -> std::os::raw::c_int {
+        // Get our payload, panic if it isn't there
+        let payload = MAIN_PAYLOAD.get().unwrap();
+
+        // Do our actual SDL2 setup
+        let platform = payload.builder.actual_build();
+
+        // Un-erase the closure type and pull out of the pointer so drop will be handled
+        let main = payload.closure;
+        let main = main as *mut T;
+        let main = main.read();
+
+        // Call our closure
+        main(platform);
+
+        // Return our exit code
+        return 0;
+    }
 }
+
+#[cfg(not(target_vendor = "uwp"))]
+mod pc {
+    pub fn build<T: FnOnce(super::PlatformBuildResult)>(builder: super::PlatformBuilder, main: T) {
+        let platform = builder.actual_build();
+        main(platform);
+    }
+}
+
+pub type PlatformBuildResult = Result<Platform, PlatformBuildError>;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PlatformBuildError {
@@ -86,6 +156,7 @@ pub enum PlatformBuildError {
 ///
 /// Struct that handles initializing the engine's windowing and input systems
 ///
+#[derive(Clone)]
 pub struct PlatformBuilder {
     headless: bool,
     app_info: AppInfo,
@@ -135,10 +206,15 @@ impl PlatformBuilder {
     ///
     /// Consumes the builder and constructs a new platform object
     ///
-    pub fn build(self) -> Result<Platform, PlatformBuildError> {
+    pub fn build<T: FnOnce(PlatformBuildResult)>(self, main: T) {
         #[cfg(target_vendor = "uwp")]
-        unsafe { SDL_WinRTRunApp(std::ptr::null(), std::ptr::null()); }
+        uwp::build(self, main);
 
+        #[cfg(not(target_vendor = "uwp"))]
+        pc::build(self, main);
+    }
+
+    fn actual_build(&self) -> Result<Platform, PlatformBuildError> {
         aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().map_err(|v| PlatformBuildError::FailedToInitSDL2(v))?;
 
