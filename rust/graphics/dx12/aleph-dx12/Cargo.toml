@@ -60,6 +60,8 @@ version = "0.1"
 version = "1"
 
 [dependencies.raw-window-handle]
+git = "https://github.com/nathanvoglsam/raw-window-handle.git"
+branch = "core-window"
 version = "0.3"
 
 [dependencies.utf16_lit]
