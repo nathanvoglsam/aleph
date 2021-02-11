@@ -27,49 +27,46 @@
 // SOFTWARE.
 //
 
-#include "windows.h"
+#define USE_PIX
+#include "d3d12.h"
 #include "pix3.h"
 
 #include <stdint.h>
 
 extern "C" {
-    void SHIM_PIXBeginEvent_NW(uint64_t color, const uint16_t* formatString) {
-        PIXBeginEvent((UINT64)color, (PCWSTR)formatString);
+    void SHIM_PIXBeginEvent_N(uint64_t color, const char* string) {
+        PIXBeginEvent((UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_NC(uint64_t color, const char* formatString) {
-        PIXBeginEvent((UINT64)color, (PCSTR)formatString);
+    void SHIM_PIXSetMarker_N(uint64_t color, const char* string) {
+        PIXSetMarker((UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXSetMarker_NW(uint64_t color, const uint16_t* formatString) {
-        PIXSetMarker((UINT64)color, (PCWSTR)formatString);
+    void SHIM_PIXBeginEvent_CL(void* context, uint64_t color, const char* string) {
+        PIXBeginEvent((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXSetMarker_NC(uint64_t color, const char* formatString) {
-        PIXSetMarker((UINT64)color, (PCSTR)formatString);
+    void SHIM_PIXBeginEvent_CQ(void* context, uint64_t color, const char* string) {
+        PIXBeginEvent((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_CW(void* context, uint64_t color, const uint16_t* formatString) {
-        PIXBeginEvent(context, (UINT64)color, (PCWSTR)formatString);
+    void SHIM_PIXSetMarker_CL(void* context, uint64_t color, const char* string) {
+        PIXSetMarker((ID3D12GraphicsCommandList*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
-    void SHIM_PIXBeginEvent_CC(void* context, uint64_t color, const char* formatString) {
-        PIXBeginEvent(context, (UINT64)color, (PCSTR)formatString);
-    }
-
-    void SHIM_PIXSetMarker_CW(void* context, uint64_t color, const uint16_t* formatString) {
-        PIXSetMarker(context, (UINT64)color, (PCWSTR)formatString);
-    }
-
-    void SHIM_PIXSetMarker_CC(void* context, uint64_t color, const char* formatString) {
-        PIXSetMarker(context, (UINT64)color, (PCSTR)formatString);
+    void SHIM_PIXSetMarker_CQ(void* context, uint64_t color, const char* string) {
+        PIXSetMarker((ID3D12CommandQueue*)context, (UINT64)color, "%s", (PCSTR)string);
     }
 
     void SHIM_PIXEndEvent_N() {
         PIXEndEvent();
     }
 
-    void SHIM_PIXEndEvent_C(void* context) {
-        PIXEndEvent(context);
+    void SHIM_PIXEndEvent_CL(void* context) {
+        PIXEndEvent((ID3D12GraphicsCommandList*)context);
+    }
+
+    void SHIM_PIXEndEvent_CQ(void* context) {
+        PIXEndEvent((ID3D12CommandQueue*)context);
     }
 }

@@ -31,15 +31,13 @@ use std::os::raw::c_char;
 use std::os::raw::c_void;
 
 extern "C" {
-    // NO CONTEXT PWCHAR
-    pub fn SHIM_PIXBeginEvent_NW(color: u64, format_string: *const u16);
-    pub fn SHIM_PIXBeginEvent_NC(color: u64, format_string: *const c_char);
-    pub fn SHIM_PIXSetMarker_NW(color: u64, format_string: *const u16);
-    pub fn SHIM_PIXSetMarker_NC(color: u64, formatString: *const c_char);
-    pub fn SHIM_PIXBeginEvent_CW(context: *mut c_void, color: u64, format_string: *const u16);
-    pub fn SHIM_PIXBeginEvent_CC(context: *mut c_void, color: u64, format_string: *const c_char);
-    pub fn SHIM_PIXSetMarker_CW(context: *mut c_void, color: u64, format_string: *const u16);
-    pub fn SHIM_PIXSetMarker_CC(context: *mut c_void, color: u64, format_string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_N(color: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_N(color: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CL(context: *mut c_void, color: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CQ(context: *mut c_void, color: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_CL(context: *mut c_void, color: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_CQ(context: *mut c_void, color: u64, string: *const c_char);
     pub fn SHIM_PIXEndEvent_N();
-    pub fn SHIM_PIXEndEvent_C(context: *mut c_void);
+    pub fn SHIM_PIXEndEvent_CL(context: *mut c_void);
+    pub fn SHIM_PIXEndEvent_CQ(context: *mut c_void);
 }

@@ -26,3 +26,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+use aleph_pix_raw::*;
+use std::ffi::{CString, CStr};
+
+pub fn begin_event(color: u64, text: &str) {
+    let text = CString::new(text).unwrap();
+    unsafe {
+        SHIM_PIXBeginEvent_N(color, text.as_ptr())
+    }
+}
+
+
+pub fn begin_event_cstr(color: u64, text: &CStr) {
+    unsafe {
+        SHIM_PIXBeginEvent_N(color, text.as_ptr())
+    }
+}
+
+pub fn end_event() {
+    unsafe {
+        SHIM_PIXEndEvent_N();
+    }
+}
+
+pub fn set_marker(color: u64, text: &str) {
+    let text = CString::new(text).unwrap();
+    unsafe {
+        SHIM_PIXSetMarker_N(color, text.as_ptr());
+    }
+}
+
+pub fn set_marker_cstr(color: u64, text: &CStr) {
+    unsafe {
+        SHIM_PIXSetMarker_N(color, text.as_ptr());
+    }
+}
