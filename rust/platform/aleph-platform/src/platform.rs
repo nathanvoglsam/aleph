@@ -81,10 +81,13 @@ mod uwp {
         // Forget main fn as we will handle dropping it in the wrapper function
         std::mem::forget(main_box);
 
-        MAIN_PAYLOAD.set(MainPayload {
-            closure: main_ref,
-            builder,
-        }).ok().unwrap();
+        MAIN_PAYLOAD
+            .set(MainPayload {
+                closure: main_ref,
+                builder,
+            })
+            .ok()
+            .unwrap();
     }
 
     unsafe extern "C" fn main_wrapper<T: FnOnce(super::PlatformBuildResult)>(

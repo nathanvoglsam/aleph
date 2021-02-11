@@ -131,7 +131,8 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
             }
             RawWindowHandle::WinRT(core_window) => {
                 let core_window = core_window.core_window.unwrap();
-                let core_window: raw::windows::win32::winrt::IInspectable = std::mem::transmute(core_window);
+                let core_window: raw::windows::win32::winrt::IInspectable =
+                    std::mem::transmute(core_window);
                 let mut swapchain: Option<IDXGISwapChain1> = None;
                 let swapchain = self
                     .factory
@@ -146,7 +147,7 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
                     .and_some(swapchain)?;
                 swapchain.cast::<IDXGISwapChain4>()?
             }
-            _ => panic!("Unsupported window handle")
+            _ => panic!("Unsupported window handle"),
         };
 
         Ok(SwapChain(swapchain))
