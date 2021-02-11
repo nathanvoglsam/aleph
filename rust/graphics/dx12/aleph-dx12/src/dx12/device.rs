@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4, ID3D12GraphicsCommandList,
     PFN_D3D12_CREATE_DEVICE,
@@ -34,8 +35,8 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    AllocatorBuilder, CommandAllocator, CommandList, CommandListType, CommandQueueBuilder,
-    D3D12Object, DXGIAdapter, FeatureLevel, FenceBuilder, GraphicsCommandList,
+    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter,
+    FeatureLevel, FenceBuilder, GraphicsCommandList,
 };
 use utf16_lit::utf16_null;
 

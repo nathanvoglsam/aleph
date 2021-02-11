@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocator;
 pub(crate) mod command_allocator;
 pub(crate) mod command_list;
 pub(crate) mod command_queue;
@@ -48,8 +47,6 @@ pub(crate) mod root_signature_desc;
 pub(crate) mod swapchain;
 pub(crate) mod versioned_root_signature_desc;
 
-pub use allocator::Allocator;
-pub use allocator::AllocatorBuilder;
 pub use command_allocator::CommandAllocator;
 pub use command_list::CommandList;
 pub use command_list::CommandListType;

@@ -27,31 +27,7 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dx12_alloc_raw as alloc_raw;
-extern crate aleph_dx12_raw as raw;
-extern crate aleph_dxc_raw as dxc_raw;
+pub(crate) mod allocator;
 
-#[cfg(feature = "pix")]
-pub mod pix;
-
-#[cfg(feature = "dxc")]
-pub mod dxc;
-
-#[cfg(feature = "alloc")]
-pub mod alloc;
-
-mod dx12;
-mod dxgi;
-pub use dx12::*;
-pub use dxgi::*;
-
-mod utils;
-
-#[cfg(test)]
-mod tests;
-
-pub use raw::windows::initialize_mta;
-pub use raw::windows::initialize_sta;
-pub use raw::windows::ErrorCode;
-pub use raw::windows::Result;
-pub use utils::name_thread_as_main_thread;
+pub use allocator::Allocator;
+pub use allocator::AllocatorBuilder;
