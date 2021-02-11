@@ -169,6 +169,7 @@ pub struct DXGI_SAMPLE_DESC {
     pub count: u32,
     pub quality: u32,
 }
+impl DXGI_SAMPLE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SAMPLE_DESC_abi(u32, u32);
@@ -257,6 +258,7 @@ pub struct DXGI_ADAPTER_DESC {
     pub shared_system_memory: usize,
     pub adapter_luid: super::kernel::LUID,
 }
+impl DXGI_ADAPTER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_ADAPTER_DESC_abi(
@@ -361,6 +363,7 @@ pub struct DXGI_ADAPTER_DESC1 {
     pub adapter_luid: super::kernel::LUID,
     pub flags: u32,
 }
+impl DXGI_ADAPTER_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_ADAPTER_DESC1_abi(
@@ -544,6 +547,7 @@ pub struct DXGI_ADAPTER_DESC2 {
     pub graphics_preemption_granularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
     pub compute_preemption_granularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
 }
+impl DXGI_ADAPTER_DESC2 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_ADAPTER_DESC2_abi(
@@ -722,6 +726,7 @@ pub struct DXGI_ADAPTER_DESC3 {
     pub graphics_preemption_granularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
     pub compute_preemption_granularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
 }
+impl DXGI_ADAPTER_DESC3 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_ADAPTER_DESC3_abi(
@@ -1024,6 +1029,7 @@ unsafe impl ::windows::Abi for DXGI_DEBUG_RLO_FLAGS {
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC {
     pub flags: u32,
 }
+impl DXGI_DECODE_SWAP_CHAIN_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC_abi(u32);
@@ -1059,6 +1065,7 @@ pub struct DXGI_DISPLAY_COLOR_SPACE {
     pub primary_coordinates: [f32; 16usize],
     pub white_points: [f32; 32usize],
 }
+impl DXGI_DISPLAY_COLOR_SPACE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_DISPLAY_COLOR_SPACE_abi([f32; 16usize], [f32; 32usize]);
@@ -1184,6 +1191,7 @@ pub struct DXGI_FRAME_STATISTICS {
     pub sync_qpc_time: i64,
     pub sync_gpu_time: i64,
 }
+impl DXGI_FRAME_STATISTICS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_FRAME_STATISTICS_abi(u32, u32, u32, i64, i64);
@@ -1250,6 +1258,7 @@ pub struct DXGI_FRAME_STATISTICS_MEDIA {
     pub composition_mode: DXGI_FRAME_PRESENTATION_MODE,
     pub approved_present_duration: u32,
 }
+impl DXGI_FRAME_STATISTICS_MEDIA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_FRAME_STATISTICS_MEDIA_abi(
@@ -1334,6 +1343,7 @@ pub struct DXGI_RGB {
     pub green: f32,
     pub blue: f32,
 }
+impl DXGI_RGB {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_RGB_abi(f32, f32, f32);
@@ -1380,6 +1390,7 @@ pub struct DXGI_GAMMA_CONTROL {
     pub offset: DXGI_RGB,
     pub gamma_curve: [DXGI_RGB; 1025usize],
 }
+impl DXGI_GAMMA_CONTROL {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_GAMMA_CONTROL_abi(DXGI_RGB_abi, DXGI_RGB_abi, [DXGI_RGB_abi; 1025usize]);
@@ -2456,6 +2467,7 @@ pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
     pub num_gamma_control_points: u32,
     pub control_point_positions: [f32; 1025usize],
 }
+impl DXGI_GAMMA_CONTROL_CAPABILITIES {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_GAMMA_CONTROL_CAPABILITIES_abi(::windows::BOOL, f32, f32, u32, [f32; 1025usize]);
@@ -2670,6 +2682,7 @@ pub struct DXGI_HDR_METADATA_HDR10 {
     pub max_content_light_level: u16,
     pub max_frame_average_light_level: u16,
 }
+impl DXGI_HDR_METADATA_HDR10 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_HDR_METADATA_HDR10_abi(
@@ -2757,6 +2770,7 @@ impl ::std::cmp::Eq for DXGI_HDR_METADATA_HDR10 {}
 pub struct DXGI_HDR_METADATA_HDR10PLUS {
     pub data: [u8; 72usize],
 }
+impl DXGI_HDR_METADATA_HDR10PLUS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS_abi([u8; 72usize]);
@@ -2916,6 +2930,7 @@ pub struct DXGI_INFO_QUEUE_FILTER_DESC {
     pub num_ids: u32,
     pub p_id_list: *mut i32,
 }
+impl DXGI_INFO_QUEUE_FILTER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_INFO_QUEUE_FILTER_DESC_abi(
@@ -2988,6 +3003,7 @@ pub struct DXGI_INFO_QUEUE_FILTER {
     pub allow_list: DXGI_INFO_QUEUE_FILTER_DESC,
     pub deny_list: DXGI_INFO_QUEUE_FILTER_DESC,
 }
+impl DXGI_INFO_QUEUE_FILTER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_INFO_QUEUE_FILTER_abi(
@@ -3037,6 +3053,7 @@ pub struct DXGI_INFO_QUEUE_MESSAGE {
     pub p_description: *mut i8,
     pub description_byte_length: usize,
 }
+impl DXGI_INFO_QUEUE_MESSAGE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_INFO_QUEUE_MESSAGE_abi(
@@ -3106,6 +3123,7 @@ pub struct DXGI_JPEG_AC_HUFFMAN_TABLE {
     pub code_counts: [u8; 16usize],
     pub code_values: [u8; 162usize],
 }
+impl DXGI_JPEG_AC_HUFFMAN_TABLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE_abi([u8; 16usize], [u8; 162usize]);
@@ -3155,6 +3173,7 @@ pub struct DXGI_JPEG_DC_HUFFMAN_TABLE {
     pub code_counts: [u8; 12usize],
     pub code_values: [u8; 12usize],
 }
+impl DXGI_JPEG_DC_HUFFMAN_TABLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE_abi([u8; 12usize], [u8; 12usize]);
@@ -3196,6 +3215,7 @@ impl ::std::cmp::Eq for DXGI_JPEG_DC_HUFFMAN_TABLE {}
 pub struct DXGI_JPEG_QUANTIZATION_TABLE {
     pub elements: [u8; 64usize],
 }
+impl DXGI_JPEG_QUANTIZATION_TABLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE_abi([u8; 64usize]);
@@ -3239,6 +3259,7 @@ pub struct DXGI_MAPPED_RECT {
     pub pitch: i32,
     pub p_bits: *mut u8,
 }
+impl DXGI_MAPPED_RECT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_MAPPED_RECT_abi(i32, *mut u8);
@@ -3288,6 +3309,7 @@ pub struct DXGI_MATRIX_3X2_F {
     pub _31: f32,
     pub _32: f32,
 }
+impl DXGI_MATRIX_3X2_F {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_MATRIX_3X2_F_abi(f32, f32, f32, f32, f32, f32);
@@ -3381,6 +3403,7 @@ pub struct DXGI_RATIONAL {
     pub numerator: u32,
     pub denominator: u32,
 }
+impl DXGI_RATIONAL {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_RATIONAL_abi(u32, u32);
@@ -3496,6 +3519,7 @@ pub struct DXGI_MODE_DESC {
     pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
     pub scaling: DXGI_MODE_SCALING,
 }
+impl DXGI_MODE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_MODE_DESC_abi(
@@ -3570,6 +3594,7 @@ pub struct DXGI_MODE_DESC1 {
     pub scaling: DXGI_MODE_SCALING,
     pub stereo: ::windows::BOOL,
 }
+impl DXGI_MODE_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_MODE_DESC1_abi(
@@ -3785,6 +3810,7 @@ pub struct DXGI_OUTDUPL_DESC {
     pub rotation: DXGI_MODE_ROTATION,
     pub desktop_image_in_system_memory: ::windows::BOOL,
 }
+impl DXGI_OUTDUPL_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTDUPL_DESC_abi(DXGI_MODE_DESC_abi, DXGI_MODE_ROTATION, ::windows::BOOL);
@@ -3869,6 +3895,7 @@ pub struct DXGI_OUTDUPL_POINTER_POSITION {
     pub position: super::display_devices::POINT,
     pub visible: ::windows::BOOL,
 }
+impl DXGI_OUTDUPL_POINTER_POSITION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTDUPL_POINTER_POSITION_abi(super::display_devices::POINT_abi, ::windows::BOOL);
@@ -3917,6 +3944,7 @@ pub struct DXGI_OUTDUPL_FRAME_INFO {
     pub total_metadata_buffer_size: u32,
     pub pointer_shape_buffer_size: u32,
 }
+impl DXGI_OUTDUPL_FRAME_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTDUPL_FRAME_INFO_abi(
@@ -4021,6 +4049,7 @@ pub struct DXGI_OUTDUPL_MOVE_RECT {
     pub source_point: super::display_devices::POINT,
     pub destination_rect: super::display_devices::RECT,
 }
+impl DXGI_OUTDUPL_MOVE_RECT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTDUPL_MOVE_RECT_abi(
@@ -4076,6 +4105,7 @@ pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     pub pitch: u32,
     pub hot_spot: super::display_devices::POINT,
 }
+impl DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO_abi(
@@ -4174,6 +4204,7 @@ pub struct DXGI_OUTPUT_DESC {
     pub rotation: DXGI_MODE_ROTATION,
     pub monitor: isize,
 }
+impl DXGI_OUTPUT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTPUT_DESC_abi(
@@ -4260,6 +4291,7 @@ pub struct DXGI_OUTPUT_DESC1 {
     pub max_luminance: f32,
     pub max_full_frame_luminance: f32,
 }
+impl DXGI_OUTPUT_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_OUTPUT_DESC1_abi(
@@ -4452,6 +4484,7 @@ pub struct DXGI_PRESENT_PARAMETERS {
     pub p_scroll_rect: *mut super::display_devices::RECT,
     pub p_scroll_offset: *mut super::display_devices::POINT,
 }
+impl DXGI_PRESENT_PARAMETERS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_PRESENT_PARAMETERS_abi(
@@ -4528,6 +4561,7 @@ pub struct DXGI_QUERY_VIDEO_MEMORY_INFO {
     pub available_for_reservation: u64,
     pub current_reservation: u64,
 }
+impl DXGI_QUERY_VIDEO_MEMORY_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_QUERY_VIDEO_MEMORY_INFO_abi(u64, u64, u64, u64);
@@ -4660,6 +4694,7 @@ pub struct DXGI_RGBA {
     pub b: f32,
     pub a: f32,
 }
+impl DXGI_RGBA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_RGBA_abi(f32, f32, f32, f32);
@@ -4741,6 +4776,7 @@ unsafe impl ::windows::Abi for DXGI_SCALING {
 pub struct DXGI_SHARED_RESOURCE {
     pub handle: super::system_services::HANDLE,
 }
+impl DXGI_SHARED_RESOURCE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SHARED_RESOURCE_abi(super::system_services::HANDLE_abi);
@@ -4782,6 +4818,7 @@ pub struct DXGI_SURFACE_DESC {
     pub format: DXGI_FORMAT,
     pub sample_desc: DXGI_SAMPLE_DESC,
 }
+impl DXGI_SURFACE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SURFACE_DESC_abi(u32, u32, DXGI_FORMAT, DXGI_SAMPLE_DESC_abi);
@@ -4907,6 +4944,7 @@ pub struct DXGI_SWAP_CHAIN_DESC {
     pub swap_effect: DXGI_SWAP_EFFECT,
     pub flags: u32,
 }
+impl DXGI_SWAP_CHAIN_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SWAP_CHAIN_DESC_abi(
@@ -4994,6 +5032,7 @@ pub struct DXGI_SWAP_CHAIN_DESC1 {
     pub alpha_mode: DXGI_ALPHA_MODE,
     pub flags: u32,
 }
+impl DXGI_SWAP_CHAIN_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SWAP_CHAIN_DESC1_abi(
@@ -5131,6 +5170,7 @@ pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     pub scaling: DXGI_MODE_SCALING,
     pub windowed: ::windows::BOOL,
 }
+impl DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC_abi(
@@ -8370,7 +8410,7 @@ pub struct IDXGIDevice2_abi(
         this: ::windows::RawPtr,
         num_resources: u32,
         pp_resources: ::windows::RawPtr,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -8490,7 +8530,7 @@ impl IDXGIDevice2 {
         &self,
         num_resources: u32,
         pp_resources: T1__,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
@@ -8691,7 +8731,7 @@ pub struct IDXGIDevice3_abi(
         this: ::windows::RawPtr,
         num_resources: u32,
         pp_resources: ::windows::RawPtr,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -8812,7 +8852,7 @@ impl IDXGIDevice3 {
         &self,
         num_resources: u32,
         pp_resources: T1__,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
@@ -9038,7 +9078,7 @@ pub struct IDXGIDevice4_abi(
         this: ::windows::RawPtr,
         num_resources: u32,
         pp_resources: ::windows::RawPtr,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -9172,7 +9212,7 @@ impl IDXGIDevice4 {
         &self,
         num_resources: u32,
         pp_resources: T1__,
-        p_discarded: *mut i32,
+        p_discarded: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
@@ -9512,7 +9552,7 @@ pub struct IDXGISwapChain_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -9617,7 +9657,7 @@ impl IDXGISwapChain {
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self), p_fullscreen, pp_target)
@@ -10277,7 +10317,7 @@ pub struct IDXGISwapChain1_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -10426,7 +10466,7 @@ impl IDXGISwapChain1 {
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self), p_fullscreen, pp_target)
@@ -18704,7 +18744,7 @@ pub struct IDXGISwapChain2_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -18880,7 +18920,7 @@ impl IDXGISwapChain2 {
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self), p_fullscreen, pp_target)
@@ -19212,7 +19252,7 @@ pub struct IDXGISwapChain3_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -19408,7 +19448,7 @@ impl IDXGISwapChain3 {
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self), p_fullscreen, pp_target)
@@ -19806,7 +19846,7 @@ pub struct IDXGISwapChain4_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -20008,7 +20048,7 @@ impl IDXGISwapChain4 {
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut i32,
+        p_fullscreen: *mut ::windows::BOOL,
         pp_target: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self), p_fullscreen, pp_target)

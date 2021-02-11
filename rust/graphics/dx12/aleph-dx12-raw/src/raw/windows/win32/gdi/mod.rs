@@ -1,6 +1,7 @@
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct HDC(pub isize);
+impl HDC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct HDC_abi(isize);

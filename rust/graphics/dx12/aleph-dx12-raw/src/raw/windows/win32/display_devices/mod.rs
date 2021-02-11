@@ -6,6 +6,7 @@ pub struct RECT {
     pub right: i32,
     pub bottom: i32,
 }
+impl RECT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct RECT_abi(i32, i32, i32, i32);
@@ -57,6 +58,7 @@ pub struct POINT {
     pub x: i32,
     pub y: i32,
 }
+impl POINT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct POINT_abi(i32, i32);

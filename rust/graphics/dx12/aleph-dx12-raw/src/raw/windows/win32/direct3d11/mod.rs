@@ -84,6 +84,7 @@ pub struct D3D11_BUFFER_DESC {
     pub misc_flags: u32,
     pub structure_byte_stride: u32,
 }
+impl D3D11_BUFFER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_BUFFER_DESC_abi(u32, D3D11_USAGE, u32, u32, u32, u32);
@@ -150,6 +151,7 @@ pub struct D3D11_SUBRESOURCE_DATA {
     pub sys_mem_pitch: u32,
     pub sys_mem_slice_pitch: u32,
 }
+impl D3D11_SUBRESOURCE_DATA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_SUBRESOURCE_DATA_abi(*mut ::std::ffi::c_void, u32, u32);
@@ -677,6 +679,7 @@ pub struct D3D11_TEXTURE1D_DESC {
     pub cpu_access_flags: u32,
     pub misc_flags: u32,
 }
+impl D3D11_TEXTURE1D_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_TEXTURE1D_DESC_abi(
@@ -940,6 +943,7 @@ pub struct D3D11_TEXTURE2D_DESC {
     pub cpu_access_flags: u32,
     pub misc_flags: u32,
 }
+impl D3D11_TEXTURE2D_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_TEXTURE2D_DESC_abi(
@@ -1214,6 +1218,7 @@ pub struct D3D11_TEXTURE3D_DESC {
     pub cpu_access_flags: u32,
     pub misc_flags: u32,
 }
+impl D3D11_TEXTURE3D_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_TEXTURE3D_DESC_abi(
@@ -1551,6 +1556,7 @@ pub struct D3D11_SHADER_RESOURCE_VIEW_DESC {
     pub view_dimension: D3D_SRV_DIMENSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D11_SHADER_RESOURCE_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_SHADER_RESOURCE_VIEW_DESC_abi(
@@ -1964,6 +1970,7 @@ pub struct D3D11_UNORDERED_ACCESS_VIEW_DESC {
     pub view_dimension: D3D11_UAV_DIMENSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D11_UNORDERED_ACCESS_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_UNORDERED_ACCESS_VIEW_DESC_abi(
@@ -2233,6 +2240,7 @@ pub struct D3D11_RENDER_TARGET_VIEW_DESC {
     pub view_dimension: D3D11_RTV_DIMENSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D11_RENDER_TARGET_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_RENDER_TARGET_VIEW_DESC_abi(
@@ -2503,6 +2511,7 @@ pub struct D3D11_DEPTH_STENCIL_VIEW_DESC {
     pub flags: u32,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D11_DEPTH_STENCIL_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_DEPTH_STENCIL_VIEW_DESC_abi(
@@ -2776,6 +2785,7 @@ pub struct D3D11_INPUT_ELEMENT_DESC {
     pub input_slot_class: D3D11_INPUT_CLASSIFICATION,
     pub instance_data_step_rate: u32,
 }
+impl D3D11_INPUT_ELEMENT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_INPUT_ELEMENT_DESC_abi(
@@ -2993,6 +3003,7 @@ pub struct D3D11_CLASS_INSTANCE_DESC {
     pub base_sampler: u32,
     pub created: ::windows::BOOL,
 }
+impl D3D11_CLASS_INSTANCE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_CLASS_INSTANCE_DESC_abi(u32, u32, u32, u32, u32, u32, u32, ::windows::BOOL);
@@ -3701,6 +3712,7 @@ pub struct D3D11_SO_DECLARATION_ENTRY {
     pub component_count: u8,
     pub output_slot: u8,
 }
+impl D3D11_SO_DECLARATION_ENTRY {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_SO_DECLARATION_ENTRY_abi(u32, *mut i8, u32, u8, u8, u8);
@@ -4400,6 +4412,7 @@ pub struct D3D11_RENDER_TARGET_BLEND_DESC {
     pub blend_op_alpha: D3D11_BLEND_OP,
     pub render_target_write_mask: u8,
 }
+impl D3D11_RENDER_TARGET_BLEND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_RENDER_TARGET_BLEND_DESC_abi(
@@ -4486,6 +4499,7 @@ pub struct D3D11_BLEND_DESC {
     pub independent_blend_enable: ::windows::BOOL,
     pub render_target: [D3D11_RENDER_TARGET_BLEND_DESC; 8usize],
 }
+impl D3D11_BLEND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_BLEND_DESC_abi(
@@ -4810,6 +4824,7 @@ pub struct D3D11_DEPTH_STENCILOP_DESC {
     pub stencil_pass_op: D3D11_STENCIL_OP,
     pub stencil_func: D3D11_COMPARISON_FUNC,
 }
+impl D3D11_DEPTH_STENCILOP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_DEPTH_STENCILOP_DESC_abi(
@@ -4881,6 +4896,7 @@ pub struct D3D11_DEPTH_STENCIL_DESC {
     pub front_face: D3D11_DEPTH_STENCILOP_DESC,
     pub back_face: D3D11_DEPTH_STENCILOP_DESC,
 }
+impl D3D11_DEPTH_STENCIL_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_DEPTH_STENCIL_DESC_abi(
@@ -5186,6 +5202,7 @@ pub struct D3D11_RASTERIZER_DESC {
     pub multisample_enable: ::windows::BOOL,
     pub antialiased_line_enable: ::windows::BOOL,
 }
+impl D3D11_RASTERIZER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_RASTERIZER_DESC_abi(
@@ -5548,6 +5565,7 @@ pub struct D3D11_SAMPLER_DESC {
     pub min_lod: f32,
     pub max_lod: f32,
 }
+impl D3D11_SAMPLER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_SAMPLER_DESC_abi(
@@ -5825,6 +5843,7 @@ pub struct D3D11_QUERY_DESC {
     pub query: D3D11_QUERY,
     pub misc_flags: u32,
 }
+impl D3D11_QUERY_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_QUERY_DESC_abi(D3D11_QUERY, u32);
@@ -6388,6 +6407,7 @@ pub struct D3D11_COUNTER_DESC {
     pub counter: D3D11_COUNTER,
     pub misc_flags: u32,
 }
+impl D3D11_COUNTER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_COUNTER_DESC_abi(D3D11_COUNTER, u32);
@@ -6628,6 +6648,7 @@ pub struct D3D11_MAPPED_SUBRESOURCE {
     pub row_pitch: u32,
     pub depth_pitch: u32,
 }
+impl D3D11_MAPPED_SUBRESOURCE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_MAPPED_SUBRESOURCE_abi(*mut ::std::ffi::c_void, u32, u32);
@@ -6804,6 +6825,7 @@ pub struct D3D11_VIEWPORT {
     pub min_depth: f32,
     pub max_depth: f32,
 }
+impl D3D11_VIEWPORT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_VIEWPORT_abi(f32, f32, f32, f32, f32, f32);
@@ -6867,6 +6889,7 @@ pub struct D3D11_BOX {
     pub bottom: u32,
     pub back: u32,
 }
+impl D3D11_BOX {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_BOX_abi(u32, u32, u32, u32, u32, u32);
@@ -7594,7 +7617,7 @@ pub struct ID3D11DeviceContext_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         pp_predicate: *mut ::std::option::Option<ID3D11Predicate>,
-        p_predicate_value: *mut i32,
+        p_predicate_value: *mut ::windows::BOOL,
     ),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -8914,7 +8937,7 @@ impl ID3D11DeviceContext {
     pub unsafe fn GetPredication(
         &self,
         pp_predicate: *mut ::std::option::Option<ID3D11Predicate>,
-        p_predicate_value: *mut i32,
+        p_predicate_value: *mut ::windows::BOOL,
     ) {
         (::windows::Interface::vtable(self).86)(
             ::windows::Abi::abi(self),
@@ -9285,6 +9308,7 @@ pub struct D3D11_COUNTER_INFO {
     pub num_simultaneous_counters: u32,
     pub num_detectable_parallel_units: u8,
 }
+impl D3D11_COUNTER_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_COUNTER_INFO_abi(D3D11_COUNTER, u32, u8);

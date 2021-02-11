@@ -4,6 +4,7 @@ pub struct LUID {
     pub low_part: u32,
     pub high_part: i32,
 }
+impl LUID {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct LUID_abi(u32, i32);

@@ -1,6 +1,7 @@
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct HWND(pub isize);
+impl HWND {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct HWND_abi(isize);

@@ -4,6 +4,7 @@ pub struct FILETIME {
     pub dw_low_date_time: u32,
     pub dw_high_date_time: u32,
 }
+impl FILETIME {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct FILETIME_abi(u32, u32);

@@ -26,6 +26,7 @@ pub struct D3D11_RESOURCE_FLAGS {
     pub cpu_access_flags: u32,
     pub structure_byte_stride: u32,
 }
+impl D3D11_RESOURCE_FLAGS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D11_RESOURCE_FLAGS_abi(u32, u32, u32, u32);
@@ -89,7 +90,7 @@ extern "system" {
 #[link(name = "d3d12")]
 extern "system" {
     pub fn D3D12CreateRootSignatureDeserializer(
-        p_src_data: *mut ::std::ffi::c_void,
+        p_src_data: *const ::std::ffi::c_void,
         src_data_size_in_bytes: usize,
         p_root_signature_deserializer_interface: *const ::windows::Guid,
         pp_root_signature_deserializer: *mut *mut ::std::ffi::c_void,
@@ -98,7 +99,7 @@ extern "system" {
 #[link(name = "d3d12")]
 extern "system" {
     pub fn D3D12CreateVersionedRootSignatureDeserializer(
-        p_src_data: *mut ::std::ffi::c_void,
+        p_src_data: *const ::std::ffi::c_void,
         src_data_size_in_bytes: usize,
         p_root_signature_deserializer_interface: *const ::windows::Guid,
         pp_root_signature_deserializer: *mut *mut ::std::ffi::c_void,
@@ -113,6 +114,7 @@ extern "system" {
         p_configuration_struct_sizes: *mut u32,
     ) -> ::windows::ErrorCode;
 }
+pub const D3D12ExperimentalShaderModels: &'static str = "76f5573e-f13a-40f5-b297-81ce9e18933f";
 #[link(name = "d3d12")]
 extern "system" {
     pub fn D3D12GetDebugInterface(
@@ -120,6 +122,7 @@ extern "system" {
         ppv_debug: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode;
 }
+pub const D3D12MetaCommand: &'static str = "c734c97e-8077-48c8-9fdc-d9d1dd31dd77";
 #[allow(non_camel_case_types)]
 #[derive(PartialEq, Eq)]
 #[repr(transparent)]
@@ -202,6 +205,7 @@ pub struct D3D12_ROOT_PARAMETER {
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
 }
+impl D3D12_ROOT_PARAMETER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_PARAMETER_abi(
@@ -445,6 +449,7 @@ pub struct D3D12_STATIC_SAMPLER_DESC {
     pub register_space: u32,
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
 }
+impl D3D12_STATIC_SAMPLER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STATIC_SAMPLER_DESC_abi(
@@ -600,6 +605,7 @@ pub struct D3D12_ROOT_SIGNATURE_DESC {
     pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
     pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
 }
+impl D3D12_ROOT_SIGNATURE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_SIGNATURE_DESC_abi(
@@ -714,6 +720,7 @@ pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     pub version: D3D_ROOT_SIGNATURE_VERSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC_abi(
@@ -763,6 +770,7 @@ extern "system" {
         pp_error_blob: *mut ::std::option::Option<super::direct3d11::ID3DBlob>,
     ) -> ::windows::ErrorCode;
 }
+pub const D3D12TiledResourceTier4: &'static str = "c9c4725f-a81a-4f56-8c5b-c51039d694fb";
 pub const D3D12_16BIT_INDEX_STRIP_CUT_VALUE: u32 = 65535u32;
 pub const D3D12_32BIT_INDEX_STRIP_CUT_VALUE: u32 = 4294967295u32;
 pub const D3D12_8BIT_INDEX_STRIP_CUT_VALUE: u32 = 255u32;
@@ -1631,6 +1639,7 @@ pub struct D3D12_RANGE {
     pub begin: usize,
     pub end: usize,
 }
+impl D3D12_RANGE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RANGE_abi(usize, usize);
@@ -1788,6 +1797,7 @@ pub struct D3D12_RESOURCE_DESC {
     pub layout: D3D12_TEXTURE_LAYOUT,
     pub flags: D3D12_RESOURCE_FLAGS,
 }
+impl D3D12_RESOURCE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_DESC_abi(
@@ -1883,6 +1893,7 @@ pub struct D3D12_BOX {
     pub bottom: u32,
     pub back: u32,
 }
+impl D3D12_BOX {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BOX_abi(u32, u32, u32, u32, u32, u32);
@@ -2049,6 +2060,7 @@ pub struct D3D12_HEAP_PROPERTIES {
     pub creation_node_mask: u32,
     pub visible_node_mask: u32,
 }
+impl D3D12_HEAP_PROPERTIES {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_HEAP_PROPERTIES_abi(
@@ -2496,6 +2508,7 @@ pub struct D3D12_TEXTURE_COPY_LOCATION {
     pub r#type: D3D12_TEXTURE_COPY_TYPE,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_TEXTURE_COPY_LOCATION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEXTURE_COPY_LOCATION_abi(
@@ -2553,6 +2566,7 @@ pub struct D3D12_TILED_RESOURCE_COORDINATE {
     pub z: u32,
     pub subresource: u32,
 }
+impl D3D12_TILED_RESOURCE_COORDINATE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TILED_RESOURCE_COORDINATE_abi(u32, u32, u32, u32);
@@ -2607,6 +2621,7 @@ pub struct D3D12_TILE_REGION_SIZE {
     pub height: u16,
     pub depth: u16,
 }
+impl D3D12_TILE_REGION_SIZE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TILE_REGION_SIZE_abi(u32, ::windows::BOOL, u32, u16, u16);
@@ -2701,6 +2716,7 @@ pub struct D3D12_VIEWPORT {
     pub min_depth: f32,
     pub max_depth: f32,
 }
+impl D3D12_VIEWPORT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VIEWPORT_abi(f32, f32, f32, f32, f32, f32);
@@ -2829,6 +2845,7 @@ pub struct D3D12_RESOURCE_BARRIER {
     pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_RESOURCE_BARRIER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_BARRIER_abi(
@@ -2953,6 +2970,7 @@ pub struct D3D12_DESCRIPTOR_HEAP_DESC {
     pub flags: D3D12_DESCRIPTOR_HEAP_FLAGS,
     pub node_mask: u32,
 }
+impl D3D12_DESCRIPTOR_HEAP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DESCRIPTOR_HEAP_DESC_abi(
@@ -3011,6 +3029,7 @@ impl ::std::cmp::Eq for D3D12_DESCRIPTOR_HEAP_DESC {}
 pub struct D3D12_CPU_DESCRIPTOR_HANDLE {
     pub ptr: usize,
 }
+impl D3D12_CPU_DESCRIPTOR_HANDLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_CPU_DESCRIPTOR_HANDLE_abi(usize);
@@ -3045,6 +3064,7 @@ impl ::std::cmp::Eq for D3D12_CPU_DESCRIPTOR_HANDLE {}
 pub struct D3D12_GPU_DESCRIPTOR_HANDLE {
     pub ptr: u64,
 }
+impl D3D12_GPU_DESCRIPTOR_HANDLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GPU_DESCRIPTOR_HANDLE_abi(u64);
@@ -3468,6 +3488,7 @@ pub struct D3D12_INDEX_BUFFER_VIEW {
     pub size_in_bytes: u32,
     pub format: super::dxgi::DXGI_FORMAT,
 }
+impl D3D12_INDEX_BUFFER_VIEW {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INDEX_BUFFER_VIEW_abi(u64, u32, super::dxgi::DXGI_FORMAT);
@@ -3519,6 +3540,7 @@ pub struct D3D12_VERTEX_BUFFER_VIEW {
     pub size_in_bytes: u32,
     pub stride_in_bytes: u32,
 }
+impl D3D12_VERTEX_BUFFER_VIEW {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VERTEX_BUFFER_VIEW_abi(u64, u32, u32);
@@ -3573,6 +3595,7 @@ pub struct D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     pub size_in_bytes: u64,
     pub buffer_filled_size_location: u64,
 }
+impl D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STREAM_OUTPUT_BUFFER_VIEW_abi(u64, u64, u64);
@@ -3661,6 +3684,7 @@ pub struct D3D12_DISCARD_REGION {
     pub first_subresource: u32,
     pub num_subresources: u32,
 }
+impl D3D12_DISCARD_REGION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DISCARD_REGION_abi(u32, *mut super::display_devices::RECT_abi, u32, u32);
@@ -5475,6 +5499,7 @@ pub struct D3D12_HEAP_DESC {
     pub alignment: u64,
     pub flags: D3D12_HEAP_FLAGS,
 }
+impl D3D12_HEAP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_HEAP_DESC_abi(u64, D3D12_HEAP_PROPERTIES_abi, u64, D3D12_HEAP_FLAGS);
@@ -6029,6 +6054,7 @@ pub struct D3D12_COMMAND_QUEUE_DESC {
     pub flags: D3D12_COMMAND_QUEUE_FLAGS,
     pub node_mask: u32,
 }
+impl D3D12_COMMAND_QUEUE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_COMMAND_QUEUE_DESC_abi(
@@ -6534,6 +6560,7 @@ pub struct D3D12_AUTO_BREADCRUMB_NODE {
     pub p_command_history: *mut D3D12_AUTO_BREADCRUMB_OP,
     pub p_next: *mut D3D12_AUTO_BREADCRUMB_NODE,
 }
+impl D3D12_AUTO_BREADCRUMB_NODE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_AUTO_BREADCRUMB_NODE_abi(
@@ -6650,6 +6677,7 @@ pub struct D3D12_DRED_BREADCRUMB_CONTEXT {
     pub breadcrumb_index: u32,
     pub p_context_string: *mut u16,
 }
+impl D3D12_DRED_BREADCRUMB_CONTEXT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_BREADCRUMB_CONTEXT_abi(u32, *mut u16);
@@ -6709,6 +6737,7 @@ pub struct D3D12_AUTO_BREADCRUMB_NODE1 {
     pub breadcrumb_contexts_count: u32,
     pub p_breadcrumb_contexts: *mut D3D12_DRED_BREADCRUMB_CONTEXT,
 }
+impl D3D12_AUTO_BREADCRUMB_NODE1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_AUTO_BREADCRUMB_NODE1_abi(
@@ -7051,6 +7080,7 @@ pub struct D3D12_RENDER_TARGET_BLEND_DESC {
     pub logic_op: D3D12_LOGIC_OP,
     pub render_target_write_mask: u8,
 }
+impl D3D12_RENDER_TARGET_BLEND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_TARGET_BLEND_DESC_abi(
@@ -7150,6 +7180,7 @@ pub struct D3D12_BLEND_DESC {
     pub independent_blend_enable: ::windows::BOOL,
     pub render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8usize],
 }
+impl D3D12_BLEND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BLEND_DESC_abi(
@@ -7222,6 +7253,7 @@ pub struct D3D12_BUFFER_RTV {
     pub first_element: u64,
     pub num_elements: u32,
 }
+impl D3D12_BUFFER_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUFFER_RTV_abi(u64, u32);
@@ -7299,6 +7331,7 @@ pub struct D3D12_BUFFER_SRV {
     pub structure_byte_stride: u32,
     pub flags: D3D12_BUFFER_SRV_FLAGS,
 }
+impl D3D12_BUFFER_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUFFER_SRV_abi(u64, u32, u32, D3D12_BUFFER_SRV_FLAGS);
@@ -7389,6 +7422,7 @@ pub struct D3D12_BUFFER_UAV {
     pub counter_offset_in_bytes: u64,
     pub flags: D3D12_BUFFER_UAV_FLAGS,
 }
+impl D3D12_BUFFER_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUFFER_UAV_abi(u64, u32, u32, u64, D3D12_BUFFER_UAV_FLAGS);
@@ -7561,6 +7595,7 @@ pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     pub descs_layout: D3D12_ELEMENTS_LAYOUT,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_abi(
@@ -7626,6 +7661,7 @@ pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     pub source_acceleration_structure_data: u64,
     pub scratch_acceleration_structure_data: u64,
 }
+impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC_abi(
@@ -7694,6 +7730,7 @@ pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEA
     pub r#type: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE,
     pub num_descs: u32,
 }
+impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER_abi(
@@ -7749,6 +7786,7 @@ pub struct D3D12_CACHED_PIPELINE_STATE {
     pub p_cached_blob: *mut ::std::ffi::c_void,
     pub cached_blob_size_in_bytes: usize,
 }
+impl D3D12_CACHED_PIPELINE_STATE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_CACHED_PIPELINE_STATE_abi(*mut ::std::ffi::c_void, usize);
@@ -7797,6 +7835,7 @@ pub struct D3D12_CLEAR_VALUE {
     pub format: super::dxgi::DXGI_FORMAT,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_CLEAR_VALUE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_CLEAR_VALUE_abi(super::dxgi::DXGI_FORMAT, ::windows::NOT_YET_SUPPORTED_TYPE);
@@ -8090,6 +8129,7 @@ pub struct D3D12_INDIRECT_ARGUMENT_DESC {
     pub r#type: D3D12_INDIRECT_ARGUMENT_TYPE,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_INDIRECT_ARGUMENT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INDIRECT_ARGUMENT_DESC_abi(
@@ -8139,6 +8179,7 @@ pub struct D3D12_COMMAND_SIGNATURE_DESC {
     pub p_argument_descs: *mut D3D12_INDIRECT_ARGUMENT_DESC,
     pub node_mask: u32,
 }
+impl D3D12_COMMAND_SIGNATURE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_COMMAND_SIGNATURE_DESC_abi(u32, u32, *mut D3D12_INDIRECT_ARGUMENT_DESC_abi, u32);
@@ -8233,6 +8274,7 @@ pub struct D3D12_SHADER_BYTECODE {
     pub p_shader_bytecode: *mut ::std::ffi::c_void,
     pub bytecode_length: usize,
 }
+impl D3D12_SHADER_BYTECODE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_BYTECODE_abi(*mut ::std::ffi::c_void, usize);
@@ -8320,6 +8362,7 @@ pub struct D3D12_COMPUTE_PIPELINE_STATE_DESC {
     pub cached_pso: D3D12_CACHED_PIPELINE_STATE,
     pub flags: D3D12_PIPELINE_STATE_FLAGS,
 }
+impl D3D12_COMPUTE_PIPELINE_STATE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_COMPUTE_PIPELINE_STATE_DESC_abi(
@@ -8456,6 +8499,7 @@ pub struct D3D12_CONSTANT_BUFFER_VIEW_DESC {
     pub buffer_location: u64,
     pub size_in_bytes: u32,
 }
+impl D3D12_CONSTANT_BUFFER_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_CONSTANT_BUFFER_VIEW_DESC_abi(u64, u32);
@@ -8665,6 +8709,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE {
 pub struct D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     pub shader_patch_mode: D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE,
 }
+impl D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS_abi(
@@ -8778,6 +8823,7 @@ pub struct D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     pub default_shader_patch_mode: D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE,
     pub pipeline_state_create_flags: D3D12_GPU_BASED_VALIDATION_PIPELINE_STATE_CREATE_FLAGS,
 }
+impl D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS_abi(
@@ -8837,6 +8883,7 @@ impl ::std::cmp::Eq for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {}
 pub struct D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     pub slowdown_factor: f32,
 }
+impl D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR_abi(f32);
@@ -9019,6 +9066,7 @@ pub struct D3D12_DEPTH_STENCILOP_DESC {
     pub stencil_pass_op: D3D12_STENCIL_OP,
     pub stencil_func: D3D12_COMPARISON_FUNC,
 }
+impl D3D12_DEPTH_STENCILOP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEPTH_STENCILOP_DESC_abi(
@@ -9123,6 +9171,7 @@ pub struct D3D12_DEPTH_STENCIL_DESC {
     pub front_face: D3D12_DEPTH_STENCILOP_DESC,
     pub back_face: D3D12_DEPTH_STENCILOP_DESC,
 }
+impl D3D12_DEPTH_STENCIL_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEPTH_STENCIL_DESC_abi(
@@ -9215,6 +9264,7 @@ pub struct D3D12_DEPTH_STENCIL_DESC1 {
     pub back_face: D3D12_DEPTH_STENCILOP_DESC,
     pub depth_bounds_test_enable: ::windows::BOOL,
 }
+impl D3D12_DEPTH_STENCIL_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEPTH_STENCIL_DESC1_abi(
@@ -9310,6 +9360,7 @@ pub struct D3D12_DEPTH_STENCIL_VALUE {
     pub depth: f32,
     pub stencil: u8,
 }
+impl D3D12_DEPTH_STENCIL_VALUE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEPTH_STENCIL_VALUE_abi(f32, u8);
@@ -9426,6 +9477,7 @@ pub struct D3D12_DEPTH_STENCIL_VIEW_DESC {
     pub flags: D3D12_DSV_FLAGS,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_DEPTH_STENCIL_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEPTH_STENCIL_VIEW_DESC_abi(
@@ -9522,6 +9574,7 @@ pub struct D3D12_DESCRIPTOR_RANGE {
     pub register_space: u32,
     pub offset_in_descriptors_from_table_start: u32,
 }
+impl D3D12_DESCRIPTOR_RANGE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DESCRIPTOR_RANGE_abi(D3D12_DESCRIPTOR_RANGE_TYPE, u32, u32, u32, u32);
@@ -9629,6 +9682,7 @@ pub struct D3D12_DESCRIPTOR_RANGE1 {
     pub flags: D3D12_DESCRIPTOR_RANGE_FLAGS,
     pub offset_in_descriptors_from_table_start: u32,
 }
+impl D3D12_DESCRIPTOR_RANGE1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DESCRIPTOR_RANGE1_abi(
@@ -9740,6 +9794,7 @@ pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     pub flags: D3D12_DRED_FLAGS,
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE,
 }
+impl D3D12_DEVICE_REMOVED_EXTENDED_DATA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA_abi(
@@ -9791,6 +9846,7 @@ impl ::std::cmp::Eq for D3D12_DEVICE_REMOVED_EXTENDED_DATA {}
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE,
 }
+impl D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT_abi(*mut D3D12_AUTO_BREADCRUMB_NODE_abi);
@@ -9896,6 +9952,7 @@ pub struct D3D12_DRED_ALLOCATION_NODE {
     pub allocation_type: D3D12_DRED_ALLOCATION_TYPE,
     pub p_next: *mut D3D12_DRED_ALLOCATION_NODE,
 }
+impl D3D12_DRED_ALLOCATION_NODE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_ALLOCATION_NODE_abi(
@@ -9956,6 +10013,7 @@ pub struct D3D12_DRED_PAGE_FAULT_OUTPUT {
     pub p_head_existing_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE,
     pub p_head_recent_freed_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE,
 }
+impl D3D12_DRED_PAGE_FAULT_OUTPUT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_PAGE_FAULT_OUTPUT_abi(
@@ -10020,6 +10078,7 @@ pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     pub auto_breadcrumbs_output: D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT,
     pub page_fault_output: D3D12_DRED_PAGE_FAULT_OUTPUT,
 }
+impl D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA1_abi(
@@ -10086,6 +10145,7 @@ impl ::std::cmp::Eq for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {}
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE1,
 }
+impl D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1_abi(*mut D3D12_AUTO_BREADCRUMB_NODE1_abi);
@@ -10134,6 +10194,7 @@ pub struct D3D12_DRED_ALLOCATION_NODE1 {
     pub p_next: *mut D3D12_DRED_ALLOCATION_NODE1,
     pub p_object: ::std::option::Option<::windows::IUnknown>,
 }
+impl D3D12_DRED_ALLOCATION_NODE1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_ALLOCATION_NODE1_abi(
@@ -10201,6 +10262,7 @@ pub struct D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     pub p_head_existing_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE1,
     pub p_head_recent_freed_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE1,
 }
+impl D3D12_DRED_PAGE_FAULT_OUTPUT1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRED_PAGE_FAULT_OUTPUT1_abi(
@@ -10265,6 +10327,7 @@ pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     pub auto_breadcrumbs_output: D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1,
     pub page_fault_output: D3D12_DRED_PAGE_FAULT_OUTPUT1,
 }
+impl D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA2_abi(
@@ -10333,6 +10396,7 @@ pub struct D3D12_DISPATCH_ARGUMENTS {
     pub thread_group_county: u32,
     pub thread_group_countz: u32,
 }
+impl D3D12_DISPATCH_ARGUMENTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DISPATCH_ARGUMENTS_abi(u32, u32, u32);
@@ -10390,6 +10454,7 @@ pub struct D3D12_DISPATCH_MESH_ARGUMENTS {
     pub thread_group_county: u32,
     pub thread_group_countz: u32,
 }
+impl D3D12_DISPATCH_MESH_ARGUMENTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DISPATCH_MESH_ARGUMENTS_abi(u32, u32, u32);
@@ -10446,6 +10511,7 @@ pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     pub start_address: u64,
     pub size_in_bytes: u64,
 }
+impl D3D12_GPU_VIRTUAL_ADDRESS_RANGE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE_abi(u64, u64);
@@ -10489,6 +10555,7 @@ pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     pub size_in_bytes: u64,
     pub stride_in_bytes: u64,
 }
+impl D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE_abi(u64, u64, u64);
@@ -10544,6 +10611,7 @@ pub struct D3D12_DISPATCH_RAYS_DESC {
     pub height: u32,
     pub depth: u32,
 }
+impl D3D12_DISPATCH_RAYS_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DISPATCH_RAYS_DESC_abi(
@@ -10641,6 +10709,7 @@ pub struct D3D12_DRAW_ARGUMENTS {
     pub start_vertex_location: u32,
     pub start_instance_location: u32,
 }
+impl D3D12_DRAW_ARGUMENTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRAW_ARGUMENTS_abi(u32, u32, u32, u32);
@@ -10704,6 +10773,7 @@ pub struct D3D12_DRAW_INDEXED_ARGUMENTS {
     pub base_vertex_location: i32,
     pub start_instance_location: u32,
 }
+impl D3D12_DRAW_INDEXED_ARGUMENTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DRAW_INDEXED_ARGUMENTS_abi(u32, u32, u32, i32, u32);
@@ -10934,6 +11004,7 @@ pub struct D3D12_EXPORT_DESC {
     pub export_to_rename: *mut u16,
     pub flags: D3D12_EXPORT_FLAGS,
 }
+impl D3D12_EXPORT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_EXPORT_DESC_abi(*mut u16, *mut u16, D3D12_EXPORT_FLAGS);
@@ -10985,6 +11056,7 @@ pub struct D3D12_DXIL_LIBRARY_DESC {
     pub num_exports: u32,
     pub p_exports: *mut D3D12_EXPORT_DESC,
 }
+impl D3D12_DXIL_LIBRARY_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DXIL_LIBRARY_DESC_abi(D3D12_SHADER_BYTECODE_abi, u32, *mut D3D12_EXPORT_DESC_abi);
@@ -11033,6 +11105,7 @@ pub struct D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     pub num_exports: u32,
     pub p_exports: *mut *mut u16,
 }
+impl D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION_abi(*mut u16, u32, *mut *mut u16);
@@ -11272,6 +11345,7 @@ pub struct D3D12_EXISTING_COLLECTION_DESC {
     pub num_exports: u32,
     pub p_exports: *mut D3D12_EXPORT_DESC,
 }
+impl D3D12_EXISTING_COLLECTION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_EXISTING_COLLECTION_DESC_abi(::windows::RawPtr, u32, *mut D3D12_EXPORT_DESC_abi);
@@ -11384,6 +11458,7 @@ pub struct D3D12_FEATURE_DATA_ARCHITECTURE {
     pub uma: ::windows::BOOL,
     pub cache_coherent_uma: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_ARCHITECTURE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_ARCHITECTURE_abi(
@@ -11453,6 +11528,7 @@ pub struct D3D12_FEATURE_DATA_ARCHITECTURE1 {
     pub cache_coherent_uma: ::windows::BOOL,
     pub isolated_mmu: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_ARCHITECTURE1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_ARCHITECTURE1_abi(
@@ -11525,6 +11601,7 @@ pub struct D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     pub priority: u32,
     pub priority_for_type_is_supported: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY_abi(
@@ -11584,6 +11661,7 @@ pub struct D3D12_FEATURE_DATA_CROSS_NODE {
     pub sharing_tier: D3D12_CROSS_NODE_SHARING_TIER,
     pub atomic_shader_instructions: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_CROSS_NODE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_CROSS_NODE_abi(D3D12_CROSS_NODE_SHARING_TIER, ::windows::BOOL);
@@ -11783,6 +11861,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS {
         ::windows::BOOL,
     pub resource_heap_tier: D3D12_RESOURCE_HEAP_TIER,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS_abi(
@@ -11836,6 +11915,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     pub expanded_compute_resource_states: ::windows::BOOL,
     pub int64_shader_ops: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS1_abi(
@@ -11953,6 +12033,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     pub depth_bounds_test_supported: ::windows::BOOL,
     pub programmable_sample_positions_tier: D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS2 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS2_abi(
@@ -12045,6 +12126,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     pub view_instancing_tier: D3D12_VIEW_INSTANCING_TIER,
     pub barycentrics_supported: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS3 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS3_abi(
@@ -12164,6 +12246,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     pub shared_resource_compatibility_tier: D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER,
     pub native16_bit_shader_ops_supported: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS4 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS4_abi(
@@ -12297,6 +12380,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     pub render_passes_tier: D3D12_RENDER_PASS_TIER,
     pub raytracing_tier: D3D12_RAYTRACING_TIER,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS5 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS5_abi(
@@ -12396,6 +12480,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     pub shading_rate_image_tile_size: u32,
     pub background_processing_supported: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS6 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS6_abi(
@@ -12551,6 +12636,7 @@ pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     pub mesh_shader_tier: D3D12_MESH_SHADER_TIER,
     pub sampler_feedback_tier: D3D12_SAMPLER_FEEDBACK_TIER,
 }
+impl D3D12_FEATURE_DATA_D3D12_OPTIONS7 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS7_abi(
@@ -12602,6 +12688,7 @@ impl ::std::cmp::Eq for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {}
 pub struct D3D12_FEATURE_DATA_EXISTING_HEAPS {
     pub supported: ::windows::BOOL,
 }
+impl D3D12_FEATURE_DATA_EXISTING_HEAPS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_EXISTING_HEAPS_abi(::windows::BOOL);
@@ -12642,6 +12729,7 @@ pub struct D3D12_FEATURE_DATA_FEATURE_LEVELS {
     pub p_feature_levels_requested: *mut super::direct3d11::D3D_FEATURE_LEVEL,
     pub max_supported_feature_level: super::direct3d11::D3D_FEATURE_LEVEL,
 }
+impl D3D12_FEATURE_DATA_FEATURE_LEVELS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_FEATURE_LEVELS_abi(
@@ -12702,6 +12790,7 @@ pub struct D3D12_FEATURE_DATA_FORMAT_INFO {
     pub format: super::dxgi::DXGI_FORMAT,
     pub plane_count: u8,
 }
+impl D3D12_FEATURE_DATA_FORMAT_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_FORMAT_INFO_abi(super::dxgi::DXGI_FORMAT, u8);
@@ -12850,6 +12939,7 @@ pub struct D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     pub support1: D3D12_FORMAT_SUPPORT1,
     pub support2: D3D12_FORMAT_SUPPORT2,
 }
+impl D3D12_FEATURE_DATA_FORMAT_SUPPORT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_FORMAT_SUPPORT_abi(
@@ -12901,6 +12991,7 @@ pub struct D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     pub max_gpu_virtual_address_bits_per_resource: u32,
     pub max_gpu_virtual_address_bits_per_process: u32,
 }
+impl D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT_abi(u32, u32);
@@ -12988,6 +13079,7 @@ pub struct D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     pub flags: D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS,
     pub num_quality_levels: u32,
 }
+impl D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS_abi(
@@ -13080,6 +13172,7 @@ pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     pub node_index: u32,
     pub support: D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS,
 }
+impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT_abi(
@@ -13126,6 +13219,7 @@ pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     pub count: u32,
     pub p_types: *mut ::windows::Guid,
 }
+impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES_abi(u32, u32, *mut ::windows::Guid);
@@ -13173,6 +13267,7 @@ pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     pub node_index: u32,
     pub count: u32,
 }
+impl D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT_abi(u32, u32);
@@ -13219,6 +13314,7 @@ pub struct D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     pub p_query_output_data: *mut ::std::ffi::c_void,
     pub query_output_data_size_in_bytes: usize,
 }
+impl D3D12_FEATURE_DATA_QUERY_META_COMMAND {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_QUERY_META_COMMAND_abi(
@@ -13300,6 +13396,7 @@ impl ::std::cmp::Eq for D3D12_FEATURE_DATA_QUERY_META_COMMAND {}
 pub struct D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     pub highest_version: D3D_ROOT_SIGNATURE_VERSION,
 }
+impl D3D12_FEATURE_DATA_ROOT_SIGNATURE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_ROOT_SIGNATURE_abi(D3D_ROOT_SIGNATURE_VERSION);
@@ -13375,6 +13472,7 @@ pub struct D3D12_FEATURE_DATA_SERIALIZATION {
     pub node_index: u32,
     pub heap_serialization_tier: D3D12_HEAP_SERIALIZATION_TIER,
 }
+impl D3D12_FEATURE_DATA_SERIALIZATION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_SERIALIZATION_abi(u32, D3D12_HEAP_SERIALIZATION_TIER);
@@ -13456,6 +13554,7 @@ unsafe impl ::windows::Abi for D3D12_SHADER_CACHE_SUPPORT_FLAGS {
 pub struct D3D12_FEATURE_DATA_SHADER_CACHE {
     pub support_flags: D3D12_SHADER_CACHE_SUPPORT_FLAGS,
 }
+impl D3D12_FEATURE_DATA_SHADER_CACHE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_SHADER_CACHE_abi(D3D12_SHADER_CACHE_SUPPORT_FLAGS);
@@ -13533,6 +13632,7 @@ unsafe impl ::windows::Abi for D3D_SHADER_MODEL {
 pub struct D3D12_FEATURE_DATA_SHADER_MODEL {
     pub highest_shader_model: D3D_SHADER_MODEL,
 }
+impl D3D12_FEATURE_DATA_SHADER_MODEL {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FEATURE_DATA_SHADER_MODEL_abi(D3D_SHADER_MODEL);
@@ -13758,6 +13858,7 @@ pub struct D3D12_FUNCTION_DESC {
     pub has10_level9_vertex_shader: ::windows::BOOL,
     pub has10_level9_pixel_shader: ::windows::BOOL,
 }
+impl D3D12_FUNCTION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_FUNCTION_DESC_abi(
@@ -14040,6 +14141,7 @@ impl ::std::cmp::Eq for D3D12_FUNCTION_DESC {}
 pub struct D3D12_GLOBAL_ROOT_SIGNATURE {
     pub p_global_root_signature: ::std::option::Option<ID3D12RootSignature>,
 }
+impl D3D12_GLOBAL_ROOT_SIGNATURE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GLOBAL_ROOT_SIGNATURE_abi(::windows::RawPtr);
@@ -14118,6 +14220,7 @@ pub struct D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
     pub start_address: u64,
     pub stride_in_bytes: u64,
 }
+impl D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE_abi(u64, u64);
@@ -14167,6 +14270,7 @@ pub struct D3D12_SO_DECLARATION_ENTRY {
     pub component_count: u8,
     pub output_slot: u8,
 }
+impl D3D12_SO_DECLARATION_ENTRY {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SO_DECLARATION_ENTRY_abi(u32, *mut i8, u32, u8, u8, u8);
@@ -14235,6 +14339,7 @@ pub struct D3D12_STREAM_OUTPUT_DESC {
     pub num_strides: u32,
     pub rasterized_stream: u32,
 }
+impl D3D12_STREAM_OUTPUT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STREAM_OUTPUT_DESC_abi(
@@ -14316,6 +14421,7 @@ pub struct D3D12_RASTERIZER_DESC {
     pub forced_sample_count: u32,
     pub conservative_raster: D3D12_CONSERVATIVE_RASTERIZATION_MODE,
 }
+impl D3D12_RASTERIZER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RASTERIZER_DESC_abi(
@@ -14477,6 +14583,7 @@ pub struct D3D12_INPUT_ELEMENT_DESC {
     pub input_slot_class: D3D12_INPUT_CLASSIFICATION,
     pub instance_data_step_rate: u32,
 }
+impl D3D12_INPUT_ELEMENT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INPUT_ELEMENT_DESC_abi(
@@ -14557,6 +14664,7 @@ pub struct D3D12_INPUT_LAYOUT_DESC {
     pub p_input_element_descs: *mut D3D12_INPUT_ELEMENT_DESC,
     pub num_elements: u32,
 }
+impl D3D12_INPUT_LAYOUT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INPUT_LAYOUT_DESC_abi(*mut D3D12_INPUT_ELEMENT_DESC_abi, u32);
@@ -14694,6 +14802,7 @@ pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     pub cached_pso: D3D12_CACHED_PIPELINE_STATE,
     pub flags: D3D12_PIPELINE_STATE_FLAGS,
 }
+impl D3D12_GRAPHICS_PIPELINE_STATE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi(
@@ -14982,6 +15091,7 @@ pub struct D3D12_HIT_GROUP_DESC {
     pub closest_hit_shader_import: *mut u16,
     pub intersection_shader_import: *mut u16,
 }
+impl D3D12_HIT_GROUP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_HIT_GROUP_DESC_abi(*mut u16, D3D12_HIT_GROUP_TYPE, *mut u16, *mut u16, *mut u16);
@@ -16247,6 +16357,7 @@ pub struct D3D12_INFO_QUEUE_FILTER_DESC {
     pub num_ids: u32,
     pub p_id_list: *mut D3D12_MESSAGE_ID,
 }
+impl D3D12_INFO_QUEUE_FILTER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INFO_QUEUE_FILTER_DESC_abi(
@@ -16319,6 +16430,7 @@ pub struct D3D12_INFO_QUEUE_FILTER {
     pub allow_list: D3D12_INFO_QUEUE_FILTER_DESC,
     pub deny_list: D3D12_INFO_QUEUE_FILTER_DESC,
 }
+impl D3D12_INFO_QUEUE_FILTER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_INFO_QUEUE_FILTER_abi(
@@ -16371,6 +16483,7 @@ pub struct D3D12_LIBRARY_DESC {
     pub flags: u32,
     pub function_count: u32,
 }
+impl D3D12_LIBRARY_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_LIBRARY_DESC_abi(*mut i8, u32, u32);
@@ -16451,6 +16564,7 @@ pub const D3D12_LINEAR_GAMMA: f32 = 1f32;
 pub struct D3D12_LOCAL_ROOT_SIGNATURE {
     pub p_local_root_signature: ::std::option::Option<ID3D12RootSignature>,
 }
+impl D3D12_LOCAL_ROOT_SIGNATURE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_LOCAL_ROOT_SIGNATURE_abi(::windows::RawPtr);
@@ -16546,6 +16660,7 @@ pub struct D3D12_MEMCPY_DEST {
     pub row_pitch: usize,
     pub slice_pitch: usize,
 }
+impl D3D12_MEMCPY_DEST {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_MEMCPY_DEST_abi(*mut ::std::ffi::c_void, usize, usize);
@@ -16596,6 +16711,7 @@ pub struct D3D12_MESSAGE {
     pub p_description: *mut i8,
     pub description_byte_length: usize,
 }
+impl D3D12_MESSAGE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_MESSAGE_abi(
@@ -16662,6 +16778,7 @@ pub struct D3D12_META_COMMAND_DESC {
     pub initialization_dirty_state: D3D12_GRAPHICS_STATES,
     pub execution_dirty_state: D3D12_GRAPHICS_STATES,
 }
+impl D3D12_META_COMMAND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_META_COMMAND_DESC_abi(
@@ -16855,6 +16972,7 @@ pub struct D3D12_META_COMMAND_PARAMETER_DESC {
     pub required_resource_state: D3D12_RESOURCE_STATES,
     pub structure_offset: u32,
 }
+impl D3D12_META_COMMAND_PARAMETER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_META_COMMAND_PARAMETER_DESC_abi(
@@ -16967,6 +17085,7 @@ pub struct D3D12_MIP_REGION {
     pub height: u32,
     pub depth: u32,
 }
+impl D3D12_MIP_REGION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_MIP_REGION_abi(u32, u32, u32);
@@ -17046,6 +17165,7 @@ pub const D3D12_MULTISAMPLE_ANTIALIAS_LINE_WIDTH: f32 = 1.4f32;
 pub struct D3D12_NODE_MASK {
     pub node_mask: u32,
 }
+impl D3D12_NODE_MASK {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_NODE_MASK_abi(u32);
@@ -17088,6 +17208,7 @@ pub struct D3D12_PACKED_MIP_INFO {
     pub num_tiles_for_packed_mips: u32,
     pub start_tile_index_in_overall_resource: u32,
 }
+impl D3D12_PACKED_MIP_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PACKED_MIP_INFO_abi(u8, u8, u32, u32);
@@ -17163,6 +17284,7 @@ pub struct D3D12_PARAMETER_DESC {
     pub first_out_register: u32,
     pub first_out_component: u32,
 }
+impl D3D12_PARAMETER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PARAMETER_DESC_abi(
@@ -17274,6 +17396,7 @@ pub struct D3D12_PIPELINE_STATE_STREAM_DESC {
     pub size_in_bytes: usize,
     pub p_pipeline_state_subobject_stream: *mut ::std::ffi::c_void,
 }
+impl D3D12_PIPELINE_STATE_STREAM_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PIPELINE_STATE_STREAM_DESC_abi(usize, *mut ::std::ffi::c_void);
@@ -17384,6 +17507,7 @@ pub struct D3D12_SUBRESOURCE_FOOTPRINT {
     pub depth: u32,
     pub row_pitch: u32,
 }
+impl D3D12_SUBRESOURCE_FOOTPRINT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBRESOURCE_FOOTPRINT_abi(super::dxgi::DXGI_FORMAT, u32, u32, u32, u32);
@@ -17439,6 +17563,7 @@ pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
     pub offset: u64,
     pub footprint: D3D12_SUBRESOURCE_FOOTPRINT,
 }
+impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT_abi(u64, D3D12_SUBRESOURCE_FOOTPRINT_abi);
@@ -17514,6 +17639,7 @@ pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     pub node_mask: u32,
     pub flags: D3D12_PROTECTED_RESOURCE_SESSION_FLAGS,
 }
+impl D3D12_PROTECTED_RESOURCE_SESSION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC_abi(u32, D3D12_PROTECTED_RESOURCE_SESSION_FLAGS);
@@ -17557,6 +17683,7 @@ pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     pub flags: D3D12_PROTECTED_RESOURCE_SESSION_FLAGS,
     pub protection_type: ::windows::Guid,
 }
+impl D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC1_abi(
@@ -17676,6 +17803,7 @@ pub struct D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     pub ds_invocations: u64,
     pub cs_invocations: u64,
 }
+impl D3D12_QUERY_DATA_PIPELINE_STATISTICS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_QUERY_DATA_PIPELINE_STATISTICS_abi(
@@ -17767,6 +17895,7 @@ pub struct D3D12_QUERY_DATA_SO_STATISTICS {
     pub num_primitives_written: u64,
     pub primitives_storage_needed: u64,
 }
+impl D3D12_QUERY_DATA_SO_STATISTICS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_QUERY_DATA_SO_STATISTICS_abi(u64, u64);
@@ -17854,6 +17983,7 @@ pub struct D3D12_QUERY_HEAP_DESC {
     pub count: u32,
     pub node_mask: u32,
 }
+impl D3D12_QUERY_HEAP_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_QUERY_HEAP_DESC_abi(D3D12_QUERY_HEAP_TYPE, u32, u32);
@@ -17901,6 +18031,7 @@ pub struct D3D12_RANGE_UINT64 {
     pub begin: u64,
     pub end: u64,
 }
+impl D3D12_RANGE_UINT64 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RANGE_UINT64_abi(u64, u64);
@@ -17945,6 +18076,7 @@ pub struct D3D12_RAYTRACING_AABB {
     pub maxy: f32,
     pub maxz: f32,
 }
+impl D3D12_RAYTRACING_AABB {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_AABB_abi(f32, f32, f32, f32, f32, f32);
@@ -18042,6 +18174,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC {
     pub compacted_size_in_bytes: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC_abi(u64);
@@ -18095,6 +18228,7 @@ impl ::std::cmp::Eq for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_C
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC {
     pub current_size_in_bytes: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC_abi(u64);
@@ -18186,6 +18320,7 @@ pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     pub dest_buffer: u64,
     pub info_type: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TYPE,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC_abi(
@@ -18231,6 +18366,7 @@ pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_
     pub serialized_size_in_bytes: u64,
     pub num_bottom_level_acceleration_structure_pointers: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC_abi(u64, u64);
@@ -18296,6 +18432,7 @@ impl ::std::cmp::Eq for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_S
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC {
     pub decoded_size_in_bytes: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC_abi(u64);
@@ -18354,6 +18491,7 @@ pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     pub scratch_data_size_in_bytes: u64,
     pub update_scratch_data_size_in_bytes: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO_abi(u64, u64, u64);
@@ -18409,6 +18547,7 @@ impl ::std::cmp::Eq for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {}
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     pub location: u64,
 }
+impl D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV_abi(u64);
@@ -18446,6 +18585,7 @@ pub struct D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
     pub aabb_count: u64,
     pub aab_bs: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
 }
+impl D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_GEOMETRY_AABBS_DESC_abi(u64, D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE_abi);
@@ -18558,6 +18698,7 @@ pub struct D3D12_RAYTRACING_GEOMETRY_DESC {
     pub flags: D3D12_RAYTRACING_GEOMETRY_FLAGS,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_RAYTRACING_GEOMETRY_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_GEOMETRY_DESC_abi(
@@ -18616,6 +18757,7 @@ pub struct D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
     pub index_buffer: u64,
     pub vertex_buffer: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
 }
+impl D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC_abi(
@@ -18691,6 +18833,7 @@ pub struct D3D12_RAYTRACING_INSTANCE_DESC {
     pub _bitfield2: u32,
     pub acceleration_structure: u64,
 }
+impl D3D12_RAYTRACING_INSTANCE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_INSTANCE_DESC_abi([f32; 12usize], u32, u32, u64);
@@ -18790,6 +18933,7 @@ pub const D3D12_RAYTRACING_MAX_SHADER_RECORD_STRIDE: u32 = 4096u32;
 pub struct D3D12_RAYTRACING_PIPELINE_CONFIG {
     pub max_trace_recursion_depth: u32,
 }
+impl D3D12_RAYTRACING_PIPELINE_CONFIG {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_PIPELINE_CONFIG_abi(u32);
@@ -18866,6 +19010,7 @@ pub struct D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     pub max_trace_recursion_depth: u32,
     pub flags: D3D12_RAYTRACING_PIPELINE_FLAGS,
 }
+impl D3D12_RAYTRACING_PIPELINE_CONFIG1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_PIPELINE_CONFIG1_abi(u32, D3D12_RAYTRACING_PIPELINE_FLAGS);
@@ -18912,6 +19057,7 @@ pub struct D3D12_RAYTRACING_SHADER_CONFIG {
     pub max_payload_size_in_bytes: u32,
     pub max_attribute_size_in_bytes: u32,
 }
+impl D3D12_RAYTRACING_SHADER_CONFIG {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RAYTRACING_SHADER_CONFIG_abi(u32, u32);
@@ -19041,6 +19187,7 @@ pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS {
     pub r#type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_RENDER_PASS_BEGINNING_ACCESS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS_abi(
@@ -19087,6 +19234,7 @@ impl ::std::cmp::Eq for D3D12_RENDER_PASS_BEGINNING_ACCESS {}
 pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
     pub clear_value: D3D12_CLEAR_VALUE,
 }
+impl D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS_abi(D3D12_CLEAR_VALUE_abi);
@@ -19161,6 +19309,7 @@ pub struct D3D12_RENDER_PASS_ENDING_ACCESS {
     pub r#type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_RENDER_PASS_ENDING_ACCESS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_ENDING_ACCESS_abi(
@@ -19211,6 +19360,7 @@ pub struct D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
     pub depth_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
     pub stencil_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
 }
+impl D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi(
@@ -19299,6 +19449,7 @@ pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     pub dsty: u32,
     pub src_rect: super::display_devices::RECT,
 }
+impl D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS_abi(
@@ -19409,6 +19560,7 @@ pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     pub resolve_mode: D3D12_RESOLVE_MODE,
     pub preserve_resolve_source: ::windows::BOOL,
 }
+impl D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi(
@@ -19517,6 +19669,7 @@ pub struct D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     pub beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
     pub ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
 }
+impl D3D12_RENDER_PASS_RENDER_TARGET_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi(
@@ -19618,6 +19771,7 @@ pub struct D3D12_RENDER_TARGET_VIEW_DESC {
     pub view_dimension: D3D12_RTV_DIMENSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_RENDER_TARGET_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RENDER_TARGET_VIEW_DESC_abi(
@@ -19767,6 +19921,7 @@ pub struct D3D12_RESOURCE_ALIASING_BARRIER {
     pub p_resource_before: ::std::option::Option<ID3D12Resource>,
     pub p_resource_after: ::std::option::Option<ID3D12Resource>,
 }
+impl D3D12_RESOURCE_ALIASING_BARRIER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_ALIASING_BARRIER_abi(::windows::RawPtr, ::windows::RawPtr);
@@ -19820,6 +19975,7 @@ pub struct D3D12_RESOURCE_ALLOCATION_INFO {
     pub size_in_bytes: u64,
     pub alignment: u64,
 }
+impl D3D12_RESOURCE_ALLOCATION_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_ALLOCATION_INFO_abi(u64, u64);
@@ -19863,6 +20019,7 @@ pub struct D3D12_RESOURCE_ALLOCATION_INFO1 {
     pub alignment: u64,
     pub size_in_bytes: u64,
 }
+impl D3D12_RESOURCE_ALLOCATION_INFO1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_ALLOCATION_INFO1_abi(u64, u64, u64);
@@ -19920,6 +20077,7 @@ pub struct D3D12_RESOURCE_DESC1 {
     pub flags: D3D12_RESOURCE_FLAGS,
     pub sampler_feedback_mip_region: D3D12_MIP_REGION,
 }
+impl D3D12_RESOURCE_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_DESC1_abi(
@@ -20023,6 +20181,7 @@ pub struct D3D12_RESOURCE_TRANSITION_BARRIER {
     pub state_before: D3D12_RESOURCE_STATES,
     pub state_after: D3D12_RESOURCE_STATES,
 }
+impl D3D12_RESOURCE_TRANSITION_BARRIER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_TRANSITION_BARRIER_abi(
@@ -20080,6 +20239,7 @@ impl ::std::cmp::Eq for D3D12_RESOURCE_TRANSITION_BARRIER {}
 pub struct D3D12_RESOURCE_UAV_BARRIER {
     pub p_resource: ::std::option::Option<ID3D12Resource>,
 }
+impl D3D12_RESOURCE_UAV_BARRIER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RESOURCE_UAV_BARRIER_abi(::windows::RawPtr);
@@ -20157,6 +20317,7 @@ pub struct D3D12_ROOT_CONSTANTS {
     pub register_space: u32,
     pub num32_bit_values: u32,
 }
+impl D3D12_ROOT_CONSTANTS {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_CONSTANTS_abi(u32, u32, u32);
@@ -20210,6 +20371,7 @@ pub struct D3D12_ROOT_DESCRIPTOR {
     pub shader_register: u32,
     pub register_space: u32,
 }
+impl D3D12_ROOT_DESCRIPTOR {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_DESCRIPTOR_abi(u32, u32);
@@ -20291,6 +20453,7 @@ pub struct D3D12_ROOT_DESCRIPTOR1 {
     pub register_space: u32,
     pub flags: D3D12_ROOT_DESCRIPTOR_FLAGS,
 }
+impl D3D12_ROOT_DESCRIPTOR1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_DESCRIPTOR1_abi(u32, u32, D3D12_ROOT_DESCRIPTOR_FLAGS);
@@ -20341,6 +20504,7 @@ pub struct D3D12_ROOT_DESCRIPTOR_TABLE {
     pub num_descriptor_ranges: u32,
     pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE,
 }
+impl D3D12_ROOT_DESCRIPTOR_TABLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_DESCRIPTOR_TABLE_abi(u32, *mut D3D12_DESCRIPTOR_RANGE_abi);
@@ -20392,6 +20556,7 @@ pub struct D3D12_ROOT_DESCRIPTOR_TABLE1 {
     pub num_descriptor_ranges: u32,
     pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE1,
 }
+impl D3D12_ROOT_DESCRIPTOR_TABLE1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_DESCRIPTOR_TABLE1_abi(u32, *mut D3D12_DESCRIPTOR_RANGE1_abi);
@@ -20444,6 +20609,7 @@ pub struct D3D12_ROOT_PARAMETER1 {
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
 }
+impl D3D12_ROOT_PARAMETER1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_PARAMETER1_abi(
@@ -20503,6 +20669,7 @@ pub struct D3D12_ROOT_SIGNATURE_DESC1 {
     pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
     pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
 }
+impl D3D12_ROOT_SIGNATURE_DESC1 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_ROOT_SIGNATURE_DESC1_abi(
@@ -20575,6 +20742,7 @@ pub struct D3D12_RT_FORMAT_ARRAY {
     pub rt_formats: [super::dxgi::DXGI_FORMAT; 8usize],
     pub num_render_targets: u32,
 }
+impl D3D12_RT_FORMAT_ARRAY {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_RT_FORMAT_ARRAY_abi([super::dxgi::DXGI_FORMAT; 8usize], u32);
@@ -20639,6 +20807,7 @@ pub struct D3D12_SAMPLER_DESC {
     pub min_lod: f32,
     pub max_lod: f32,
 }
+impl D3D12_SAMPLER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SAMPLER_DESC_abi(
@@ -20728,6 +20897,7 @@ pub struct D3D12_SAMPLE_POSITION {
     pub x: i8,
     pub y: i8,
 }
+impl D3D12_SAMPLE_POSITION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SAMPLE_POSITION_abi(i8, i8);
@@ -20767,6 +20937,7 @@ pub struct D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     pub driver_opaque_guid: ::windows::Guid,
     pub driver_opaque_versioning_data: [u8; 16usize],
 }
+impl D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER_abi(::windows::Guid, [u8; 16usize]);
@@ -20854,6 +21025,7 @@ pub struct D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     pub deserialized_size_in_bytes: u64,
     pub num_bottom_level_acceleration_structure_pointers_after_header: u64,
 }
+impl D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER_abi(
@@ -20935,6 +21107,7 @@ pub struct D3D12_SHADER_BUFFER_DESC {
     pub size: u32,
     pub u_flags: u32,
 }
+impl D3D12_SHADER_BUFFER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_BUFFER_DESC_abi(
@@ -21072,6 +21245,7 @@ pub struct D3D12_SHADER_DESC {
     pub c_interlocked_instructions: u32,
     pub c_texture_store_instructions: u32,
 }
+impl D3D12_SHADER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_DESC_abi(
@@ -21406,6 +21580,7 @@ pub struct D3D12_SHADER_INPUT_BIND_DESC {
     pub space: u32,
     pub u_id: u32,
 }
+impl D3D12_SHADER_INPUT_BIND_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_INPUT_BIND_DESC_abi(
@@ -21543,6 +21718,7 @@ pub struct D3D12_SHADER_RESOURCE_VIEW_DESC {
     pub shader4_component_mapping: u32,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_SHADER_RESOURCE_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_RESOURCE_VIEW_DESC_abi(
@@ -21610,6 +21786,7 @@ pub struct D3D12_SHADER_TYPE_DESC {
     pub offset: u32,
     pub name: *mut i8,
 }
+impl D3D12_SHADER_TYPE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_TYPE_DESC_abi(
@@ -21693,6 +21870,7 @@ pub struct D3D12_SHADER_VARIABLE_DESC {
     pub start_sampler: u32,
     pub sampler_size: u32,
 }
+impl D3D12_SHADER_VARIABLE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SHADER_VARIABLE_DESC_abi(
@@ -21899,6 +22077,7 @@ pub struct D3D12_SIGNATURE_PARAMETER_DESC {
     pub stream: u32,
     pub min_precision: super::direct3d11::D3D_MIN_PRECISION,
 }
+impl D3D12_SIGNATURE_PARAMETER_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SIGNATURE_PARAMETER_DESC_abi(
@@ -22051,6 +22230,7 @@ unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_FLAGS {
 pub struct D3D12_STATE_OBJECT_CONFIG {
     pub flags: D3D12_STATE_OBJECT_FLAGS,
 }
+impl D3D12_STATE_OBJECT_CONFIG {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STATE_OBJECT_CONFIG_abi(D3D12_STATE_OBJECT_FLAGS);
@@ -22165,6 +22345,7 @@ pub struct D3D12_STATE_SUBOBJECT {
     pub r#type: D3D12_STATE_SUBOBJECT_TYPE,
     pub p_desc: *mut ::std::ffi::c_void,
 }
+impl D3D12_STATE_SUBOBJECT {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STATE_SUBOBJECT_abi(D3D12_STATE_SUBOBJECT_TYPE, *mut ::std::ffi::c_void);
@@ -22208,6 +22389,7 @@ pub struct D3D12_STATE_OBJECT_DESC {
     pub num_subobjects: u32,
     pub p_subobjects: *mut D3D12_STATE_SUBOBJECT,
 }
+impl D3D12_STATE_OBJECT_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_STATE_OBJECT_DESC_abi(
@@ -22262,6 +22444,7 @@ pub struct D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     pub num_exports: u32,
     pub p_exports: *mut *mut u16,
 }
+impl D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_abi(
@@ -22320,6 +22503,7 @@ pub struct D3D12_SUBRESOURCE_DATA {
     pub row_pitch: isize,
     pub slice_pitch: isize,
 }
+impl D3D12_SUBRESOURCE_DATA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBRESOURCE_DATA_abi(*mut ::std::ffi::c_void, isize, isize);
@@ -22368,6 +22552,7 @@ pub struct D3D12_SUBRESOURCE_INFO {
     pub row_pitch: u32,
     pub depth_pitch: u32,
 }
+impl D3D12_SUBRESOURCE_INFO {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBRESOURCE_INFO_abi(u64, u32, u32);
@@ -22415,6 +22600,7 @@ pub struct D3D12_SUBRESOURCE_RANGE_UINT64 {
     pub subresource: u32,
     pub range: D3D12_RANGE_UINT64,
 }
+impl D3D12_SUBRESOURCE_RANGE_UINT64 {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBRESOURCE_RANGE_UINT64_abi(u32, D3D12_RANGE_UINT64_abi);
@@ -22459,6 +22645,7 @@ pub struct D3D12_SUBRESOURCE_TILING {
     pub depth_in_tiles: u16,
     pub start_tile_index_in_overall_resource: u32,
 }
+impl D3D12_SUBRESOURCE_TILING {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_SUBRESOURCE_TILING_abi(u32, u16, u16, u32);
@@ -22528,6 +22715,7 @@ pub struct D3D12_TEX1D_ARRAY_DSV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX1D_ARRAY_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_ARRAY_DSV_abi(u32, u32, u32);
@@ -22579,6 +22767,7 @@ pub struct D3D12_TEX1D_ARRAY_RTV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX1D_ARRAY_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_ARRAY_RTV_abi(u32, u32, u32);
@@ -22632,6 +22821,7 @@ pub struct D3D12_TEX1D_ARRAY_SRV {
     pub array_size: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEX1D_ARRAY_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_ARRAY_SRV_abi(u32, u32, u32, u32, f32);
@@ -22697,6 +22887,7 @@ pub struct D3D12_TEX1D_ARRAY_UAV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX1D_ARRAY_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_ARRAY_UAV_abi(u32, u32, u32);
@@ -22746,6 +22937,7 @@ impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_UAV {}
 pub struct D3D12_TEX1D_DSV {
     pub mip_slice: u32,
 }
+impl D3D12_TEX1D_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_DSV_abi(u32);
@@ -22782,6 +22974,7 @@ impl ::std::cmp::Eq for D3D12_TEX1D_DSV {}
 pub struct D3D12_TEX1D_RTV {
     pub mip_slice: u32,
 }
+impl D3D12_TEX1D_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_RTV_abi(u32);
@@ -22820,6 +23013,7 @@ pub struct D3D12_TEX1D_SRV {
     pub mip_levels: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEX1D_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_SRV_abi(u32, u32, f32);
@@ -22872,6 +23066,7 @@ impl ::std::cmp::Eq for D3D12_TEX1D_SRV {}
 pub struct D3D12_TEX1D_UAV {
     pub mip_slice: u32,
 }
+impl D3D12_TEX1D_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX1D_UAV_abi(u32);
@@ -22909,6 +23104,7 @@ pub struct D3D12_TEX2DMS_ARRAY_DSV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX2DMS_ARRAY_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_ARRAY_DSV_abi(u32, u32);
@@ -22954,6 +23150,7 @@ pub struct D3D12_TEX2DMS_ARRAY_RTV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX2DMS_ARRAY_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_ARRAY_RTV_abi(u32, u32);
@@ -22999,6 +23196,7 @@ pub struct D3D12_TEX2DMS_ARRAY_SRV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX2DMS_ARRAY_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_ARRAY_SRV_abi(u32, u32);
@@ -23043,6 +23241,7 @@ impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_SRV {}
 pub struct D3D12_TEX2DMS_DSV {
     pub unused_field_nothing_to_define: u32,
 }
+impl D3D12_TEX2DMS_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_DSV_abi(u32);
@@ -23084,6 +23283,7 @@ impl ::std::cmp::Eq for D3D12_TEX2DMS_DSV {}
 pub struct D3D12_TEX2DMS_RTV {
     pub unused_field_nothing_to_define: u32,
 }
+impl D3D12_TEX2DMS_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_RTV_abi(u32);
@@ -23125,6 +23325,7 @@ impl ::std::cmp::Eq for D3D12_TEX2DMS_RTV {}
 pub struct D3D12_TEX2DMS_SRV {
     pub unused_field_nothing_to_define: u32,
 }
+impl D3D12_TEX2DMS_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2DMS_SRV_abi(u32);
@@ -23168,6 +23369,7 @@ pub struct D3D12_TEX2D_ARRAY_DSV {
     pub first_array_slice: u32,
     pub array_size: u32,
 }
+impl D3D12_TEX2D_ARRAY_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_ARRAY_DSV_abi(u32, u32, u32);
@@ -23220,6 +23422,7 @@ pub struct D3D12_TEX2D_ARRAY_RTV {
     pub array_size: u32,
     pub plane_slice: u32,
 }
+impl D3D12_TEX2D_ARRAY_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_ARRAY_RTV_abi(u32, u32, u32, u32);
@@ -23278,6 +23481,7 @@ pub struct D3D12_TEX2D_ARRAY_SRV {
     pub plane_slice: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEX2D_ARRAY_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_ARRAY_SRV_abi(u32, u32, u32, u32, u32, f32);
@@ -23348,6 +23552,7 @@ pub struct D3D12_TEX2D_ARRAY_UAV {
     pub array_size: u32,
     pub plane_slice: u32,
 }
+impl D3D12_TEX2D_ARRAY_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_ARRAY_UAV_abi(u32, u32, u32, u32);
@@ -23401,6 +23606,7 @@ impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_UAV {}
 pub struct D3D12_TEX2D_DSV {
     pub mip_slice: u32,
 }
+impl D3D12_TEX2D_DSV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_DSV_abi(u32);
@@ -23438,6 +23644,7 @@ pub struct D3D12_TEX2D_RTV {
     pub mip_slice: u32,
     pub plane_slice: u32,
 }
+impl D3D12_TEX2D_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_RTV_abi(u32, u32);
@@ -23482,6 +23689,7 @@ pub struct D3D12_TEX2D_SRV {
     pub plane_slice: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEX2D_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_SRV_abi(u32, u32, u32, f32);
@@ -23539,6 +23747,7 @@ pub struct D3D12_TEX2D_UAV {
     pub mip_slice: u32,
     pub plane_slice: u32,
 }
+impl D3D12_TEX2D_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX2D_UAV_abi(u32, u32);
@@ -23582,6 +23791,7 @@ pub struct D3D12_TEX3D_RTV {
     pub first_wslice: u32,
     pub wsize: u32,
 }
+impl D3D12_TEX3D_RTV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX3D_RTV_abi(u32, u32, u32);
@@ -23630,6 +23840,7 @@ pub struct D3D12_TEX3D_SRV {
     pub mip_levels: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEX3D_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX3D_SRV_abi(u32, u32, f32);
@@ -23684,6 +23895,7 @@ pub struct D3D12_TEX3D_UAV {
     pub first_wslice: u32,
     pub wsize: u32,
 }
+impl D3D12_TEX3D_UAV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEX3D_UAV_abi(u32, u32, u32);
@@ -23734,6 +23946,7 @@ pub struct D3D12_TEXCUBE_ARRAY_SRV {
     pub num_cubes: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEXCUBE_ARRAY_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEXCUBE_ARRAY_SRV_abi(u32, u32, u32, u32, f32);
@@ -23799,6 +24012,7 @@ pub struct D3D12_TEXCUBE_SRV {
     pub mip_levels: u32,
     pub resource_min_lod_clamp: f32,
 }
+impl D3D12_TEXCUBE_SRV {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TEXCUBE_SRV_abi(u32, u32, f32);
@@ -23857,6 +24071,7 @@ pub struct D3D12_TILE_SHAPE {
     pub height_in_texels: u32,
     pub depth_in_texels: u32,
 }
+impl D3D12_TILE_SHAPE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_TILE_SHAPE_abi(u32, u32, u32);
@@ -23956,6 +24171,7 @@ pub struct D3D12_UNORDERED_ACCESS_VIEW_DESC {
     pub view_dimension: D3D12_UAV_DIMENSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_UNORDERED_ACCESS_VIEW_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_UNORDERED_ACCESS_VIEW_DESC_abi(
@@ -24009,6 +24225,7 @@ pub struct D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     pub version: D3D12_DRED_VERSION,
     pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
 }
+impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_abi(
@@ -24067,6 +24284,7 @@ pub struct D3D12_VIEW_INSTANCE_LOCATION {
     pub viewport_array_index: u32,
     pub render_target_array_index: u32,
 }
+impl D3D12_VIEW_INSTANCE_LOCATION {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VIEW_INSTANCE_LOCATION_abi(u32, u32);
@@ -24150,6 +24368,7 @@ pub struct D3D12_VIEW_INSTANCING_DESC {
     pub p_view_instance_locations: *mut D3D12_VIEW_INSTANCE_LOCATION,
     pub flags: D3D12_VIEW_INSTANCING_FLAGS,
 }
+impl D3D12_VIEW_INSTANCING_DESC {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_VIEW_INSTANCING_DESC_abi(
@@ -24255,6 +24474,7 @@ pub struct D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     pub dest: u64,
     pub value: u32,
 }
+impl D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct D3D12_WRITEBUFFERIMMEDIATE_PARAMETER_abi(u64, u32);
@@ -33450,7 +33670,7 @@ pub struct ID3D12Device6_abi(
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
 );
 #[allow(non_snake_case)]
@@ -34310,7 +34530,7 @@ impl ID3D12Device6 {
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).65)(
             ::windows::Abi::abi(self),
@@ -34932,7 +35152,7 @@ pub struct ID3D12Device7_abi(
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -35805,7 +36025,7 @@ impl ID3D12Device7 {
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).65)(
             ::windows::Abi::abi(self),
@@ -36475,7 +36695,7 @@ pub struct ID3D12Device8_abi(
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -37394,7 +37614,7 @@ impl ID3D12Device8 {
         mode: D3D12_BACKGROUND_PROCESSING_MODE,
         measurements_action: D3D12_MEASUREMENTS_ACTION,
         h_event_to_signal_upon_completion: super::system_services::HANDLE,
-        pb_further_measurements_desired: *mut i32,
+        pb_further_measurements_desired: *mut ::windows::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).65)(
             ::windows::Abi::abi(self),
@@ -51883,7 +52103,7 @@ pub type PFN_D3D12_CREATE_DEVICE = extern "system" fn(
 ) -> ::windows::ErrorCode;
 #[allow(non_camel_case_types)]
 pub type PFN_D3D12_CREATE_ROOT_SIGNATURE_DESERIALIZER = extern "system" fn(
-    p_src_data: *mut ::std::ffi::c_void,
+    p_src_data: *const ::std::ffi::c_void,
     src_data_size_in_bytes: usize,
     p_root_signature_deserializer_interface: *const ::windows::Guid,
     pp_root_signature_deserializer: *mut *mut ::std::ffi::c_void,
@@ -51891,7 +52111,7 @@ pub type PFN_D3D12_CREATE_ROOT_SIGNATURE_DESERIALIZER = extern "system" fn(
 #[allow(non_camel_case_types)]
 pub type PFN_D3D12_CREATE_VERSIONED_ROOT_SIGNATURE_DESERIALIZER =
     extern "system" fn(
-        p_src_data: *mut ::std::ffi::c_void,
+        p_src_data: *const ::std::ffi::c_void,
         src_data_size_in_bytes: usize,
         p_root_signature_deserializer_interface: *const ::windows::Guid,
         pp_root_signature_deserializer: *mut *mut ::std::ffi::c_void,

@@ -1,6 +1,7 @@
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct HANDLE(pub isize);
+impl HANDLE {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct HANDLE_abi(isize);
@@ -38,6 +39,7 @@ pub struct SECURITY_ATTRIBUTES {
     pub lp_security_descriptor: *mut ::std::ffi::c_void,
     pub b_inherit_handle: ::windows::BOOL,
 }
+impl SECURITY_ATTRIBUTES {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct SECURITY_ATTRIBUTES_abi(u32, *mut ::std::ffi::c_void, ::windows::BOOL);

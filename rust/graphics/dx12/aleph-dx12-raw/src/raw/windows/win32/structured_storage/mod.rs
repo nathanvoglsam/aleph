@@ -13,6 +13,7 @@ pub struct STATSTG {
     pub grf_state_bits: u32,
     pub reserved: u32,
 }
+impl STATSTG {}
 #[repr(C)]
 #[doc(hidden)]
 pub struct STATSTG_abi(
