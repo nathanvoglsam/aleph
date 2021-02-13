@@ -132,6 +132,24 @@ impl D3D12DeviceChild for CommandList {
 pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
 impl GraphicsCommandList {
+    #[cfg(feature = "pix")]
+    pub unsafe fn scoped_event(
+        &self,
+        colour: crate::pix::Colour,
+        text: &str,
+    ) -> crate::pix::ScopedEvent {
+        crate::pix::ScopedEvent::for_list(self, colour, text)
+    }
+
+    #[cfg(feature = "pix")]
+    pub unsafe fn scoped_event_cstr(
+        &self,
+        colour: crate::pix::Colour,
+        text: &std::ffi::CStr,
+    ) -> crate::pix::ScopedEvent {
+        crate::pix::ScopedEvent::for_list_cstr(self, colour, text)
+    }
+
     pub unsafe fn get_type(&self) -> CommandListType {
         CommandListType::from_raw(self.0.GetType()).unwrap()
     }

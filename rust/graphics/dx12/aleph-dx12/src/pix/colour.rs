@@ -27,30 +27,28 @@
 // SOFTWARE.
 //
 
-mod colour;
-mod functions;
-mod scoped;
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+pub struct Colour(u64);
 
-pub use colour::Colour;
+impl Colour {
+    pub const RED: Self = Self(0xFFFF0000);
+    pub const GREEN: Self = Self(0xFF00FF00);
+    pub const BLUE: Self = Self(0xFF0000FF);
+    pub const YELLOW: Self = Self(0xFFFFFF00);
+    pub const MAGENTA: Self = Self(0xFFFF00FF);
+    pub const CYAN: Self = Self(0xFF00FFFF);
+    pub const WHITE: Self = Self(0xFFFFFFFF);
+}
 
-pub use functions::begin_event;
-pub use functions::begin_event_on_list;
-pub use functions::begin_event_on_queue;
+impl From<u64> for Colour {
+    fn from(v: u64) -> Self {
+        Self(v)
+    }
+}
 
-pub use functions::begin_event_cstr;
-pub use functions::begin_event_cstr_on_list;
-pub use functions::begin_event_cstr_on_queue;
-
-pub use functions::end_event;
-pub use functions::end_event_on_list;
-pub use functions::end_event_on_queue;
-
-pub use functions::set_marker;
-pub use functions::set_marker_on_list;
-pub use functions::set_marker_on_queue;
-
-pub use functions::set_marker_cstr;
-pub use functions::set_marker_cstr_on_list;
-pub use functions::set_marker_cstr_on_queue;
-
-pub use scoped::ScopedEvent;
+impl Into<u64> for Colour {
+    fn into(self) -> u64 {
+        self.0
+    }
+}

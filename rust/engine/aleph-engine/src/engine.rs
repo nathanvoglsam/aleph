@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::dx12::pix::{Colour, ScopedEvent};
 use crate::dx12::FeatureLevel;
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
@@ -207,6 +208,8 @@ impl Engine {
 
                 // Process the SDL2 events and store them into our own event queues for later use
                 'game_loop: loop {
+                    let _pix = unsafe { ScopedEvent::new(Colour::CYAN, "Frame") };
+
                     // Mark a new frame for the platform
                     platform.frame();
 

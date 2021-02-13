@@ -96,6 +96,24 @@ impl CommandQueue {
         }
     }
 
+    #[cfg(feature = "pix")]
+    pub unsafe fn scoped_event(
+        &self,
+        colour: crate::pix::Colour,
+        text: &str,
+    ) -> crate::pix::ScopedEvent {
+        crate::pix::ScopedEvent::for_queue(self, colour, text)
+    }
+
+    #[cfg(feature = "pix")]
+    pub unsafe fn scoped_event_cstr(
+        &self,
+        colour: crate::pix::Colour,
+        text: &std::ffi::CStr,
+    ) -> crate::pix::ScopedEvent {
+        crate::pix::ScopedEvent::for_queue_cstr(self, colour, text)
+    }
+
     pub unsafe fn execute_command_lists(&self, command_lists: &[CommandList]) {
         self.0
             .ExecuteCommandLists(command_lists.len() as _, &command_lists[0].0)

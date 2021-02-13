@@ -31,12 +31,12 @@ use std::os::raw::c_char;
 use std::os::raw::c_void;
 
 extern "C" {
-    pub fn SHIM_PIXBeginEvent_N(color: u64, string: *const c_char);
-    pub fn SHIM_PIXSetMarker_N(color: u64, string: *const c_char);
-    pub fn SHIM_PIXBeginEvent_CL(context: *mut c_void, color: u64, string: *const c_char);
-    pub fn SHIM_PIXBeginEvent_CQ(context: *mut c_void, color: u64, string: *const c_char);
-    pub fn SHIM_PIXSetMarker_CL(context: *mut c_void, color: u64, string: *const c_char);
-    pub fn SHIM_PIXSetMarker_CQ(context: *mut c_void, color: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_N(colour: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_N(colour: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CL(context: *mut c_void, colour: u64, string: *const c_char);
+    pub fn SHIM_PIXBeginEvent_CQ(context: *mut c_void, colour: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_CL(context: *mut c_void, colour: u64, string: *const c_char);
+    pub fn SHIM_PIXSetMarker_CQ(context: *mut c_void, colour: u64, string: *const c_char);
     pub fn SHIM_PIXEndEvent_N();
     pub fn SHIM_PIXEndEvent_CL(context: *mut c_void);
     pub fn SHIM_PIXEndEvent_CQ(context: *mut c_void);
