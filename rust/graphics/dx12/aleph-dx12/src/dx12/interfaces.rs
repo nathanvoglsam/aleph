@@ -27,21 +27,44 @@
 // SOFTWARE.
 //
 
+use crate::Device;
+use raw::windows::win32::direct3d12::{ID3D12Device4, ID3D12DeviceChild, ID3D12Object};
+use raw::windows::{Abi, Interface};
+
 /// Represents the `ID3D12Object` interface mapped to a rust trait
 pub trait D3D12Object {
     /// A simple function that takes a native rust string. This will allocate to convert it into a
     /// UTF16 string to pass to the underlying d3d12 API
-    unsafe fn set_name(&self, name: &str) -> raw::windows::Result<()> {
-        let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-        self.set_name_raw(&utf16)
-    }
+    unsafe fn set_name(&self, name: &str) -> raw::windows::Result<()>;
 
     /// A lower level version of `set_name` which allows for manually supplying a null terminated
     /// UTF16 string
     unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()>;
 }
 
+impl<T: Into<ID3D12Object> + Clone> D3D12Object for T {
+    unsafe fn set_name(&self, name: &str) -> raw::windows::Result<()> {
+        let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+        self.set_name_raw(&utf16)
+    }
+
+    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
+        let v: ID3D12Object = self.clone().into();
+        v.SetName(name.as_ptr()).ok()
+    }
+}
+
 /// Represents the `ID3D12DeviceChild` interface mapped to a rust trait
 pub trait D3D12DeviceChild {
     unsafe fn get_device(&self) -> raw::windows::Result<crate::Device>;
+}
+
+impl<T: Into<ID3D12DeviceChild> + Clone> D3D12DeviceChild for T {
+    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
+        let v: ID3D12DeviceChild = self.clone().into();
+        let mut device: Option<ID3D12Device4> = None;
+        v.GetDevice(&ID3D12Device4::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
+    }
 }

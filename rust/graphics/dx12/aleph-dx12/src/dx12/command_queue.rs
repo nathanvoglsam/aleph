@@ -28,13 +28,11 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandQueue, ID3D12Device4, D3D12_COMMAND_QUEUE_DESC, D3D12_COMMAND_QUEUE_FLAGS,
+    ID3D12CommandQueue, ID3D12DeviceChild, ID3D12Object, D3D12_COMMAND_QUEUE_DESC,
+    D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{
-    CommandList, CommandListType, D3D12DeviceChild, D3D12Object, DXGIFactory, Device, Fence,
-    SwapChainBuilder,
-};
+use crate::{CommandList, CommandListType, DXGIFactory, Device, Fence, SwapChainBuilder};
 use raw_window_handle::HasRawWindowHandle;
 
 pub struct CommandQueueBuilder<'a> {
@@ -120,18 +118,14 @@ impl CommandQueue {
     }
 }
 
-impl D3D12Object for CommandQueue {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
+impl Into<ID3D12Object> for CommandQueue {
+    fn into(self) -> ID3D12Object {
+        self.0.into()
     }
 }
 
-impl D3D12DeviceChild for CommandQueue {
-    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
-        let mut device: Option<ID3D12Device4> = None;
-        self.0
-            .GetDevice(&ID3D12Device4::IID, device.set_abi())
-            .and_some(device)
-            .map(|v| Device(v))
+impl Into<ID3D12DeviceChild> for CommandQueue {
+    fn into(self) -> ID3D12DeviceChild {
+        self.0.into()
     }
 }

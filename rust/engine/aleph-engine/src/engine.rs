@@ -153,10 +153,8 @@ impl Engine {
                 };
 
                 log::trace!("Creating D3D12Device");
-                let device = unsafe {
-                    dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
-                        .expect("Failed to create D3D12 device")
-                };
+                let device = dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
+                    .expect("Failed to create D3D12 device");
 
                 //let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
                 //let _validator = unsafe { dx12::DxcValidator::new().unwrap() };
@@ -181,7 +179,7 @@ impl Engine {
                 };
 
                 let event = dx12::Event::new().unwrap();
-                let fence = unsafe { device.fence_builder().build().unwrap() };
+                let fence = device.fence_builder().build().unwrap();
 
                 let drawable_size = Window::drawable_size();
                 let mut swapchain = unsafe {

@@ -48,20 +48,22 @@ pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
 pub struct Device(pub(crate) ID3D12Device4);
 
 impl Device {
-    pub unsafe fn new(
+    pub fn new(
         adapter: Option<&DXGIAdapter>,
         minimum_feature_level: FeatureLevel,
     ) -> raw::windows::Result<Device> {
-        let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
-        let mut device: Option<ID3D12Device4> = None;
-        create_fn(
-            adapter.map(|v| (&v.0).into()),
-            minimum_feature_level.into(),
-            &ID3D12Device4::IID,
-            device.set_abi(),
-        )
-        .and_some(device)
-        .map(|v| Self(v))
+        unsafe {
+            let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
+            let mut device: Option<ID3D12Device4> = None;
+            create_fn(
+                adapter.map(|v| (&v.0).into()),
+                minimum_feature_level.into(),
+                &ID3D12Device4::IID,
+                device.set_abi(),
+            )
+            .and_some(device)
+            .map(|v| Self(v))
+        }
     }
 
     pub fn command_queue_builder<'a>(
@@ -84,56 +86,62 @@ impl Device {
         }
     }
 
-    pub unsafe fn create_command_allocator(
+    pub fn create_command_allocator(
         &self,
         list_type: CommandListType,
     ) -> raw::windows::Result<CommandAllocator> {
-        let mut out: Option<ID3D12CommandAllocator> = None;
-        self.0
-            .CreateCommandAllocator(
-                list_type.into(),
-                &ID3D12CommandAllocator::IID,
-                out.set_abi(),
-            )
-            .and_some(out)
-            .map(|v| CommandAllocator(v))
+        unsafe {
+            let mut out: Option<ID3D12CommandAllocator> = None;
+            self.0
+                .CreateCommandAllocator(
+                    list_type.into(),
+                    &ID3D12CommandAllocator::IID,
+                    out.set_abi(),
+                )
+                .and_some(out)
+                .map(|v| CommandAllocator(v))
+        }
     }
 
-    pub unsafe fn create_command_list(
+    pub fn create_command_list(
         &self,
         list_type: CommandListType,
     ) -> raw::windows::Result<CommandList> {
-        let mut out: Option<ID3D12CommandList> = None;
-        self.0
-            .CreateCommandList1(
-                0,
-                list_type.into(),
-                Default::default(),
-                &ID3D12CommandList::IID,
-                out.set_abi(),
-            )
-            .and_some(out)
-            .map(|v| CommandList(v))
+        unsafe {
+            let mut out: Option<ID3D12CommandList> = None;
+            self.0
+                .CreateCommandList1(
+                    0,
+                    list_type.into(),
+                    Default::default(),
+                    &ID3D12CommandList::IID,
+                    out.set_abi(),
+                )
+                .and_some(out)
+                .map(|v| CommandList(v))
+        }
     }
 
-    pub unsafe fn create_graphics_command_list(
+    pub fn create_graphics_command_list(
         &self,
         list_type: CommandListType,
     ) -> raw::windows::Result<GraphicsCommandList> {
-        let mut out: Option<ID3D12GraphicsCommandList> = None;
-        self.0
-            .CreateCommandList1(
-                0,
-                list_type.into(),
-                Default::default(),
-                &ID3D12GraphicsCommandList::IID,
-                out.set_abi(),
-            )
-            .and_some(out)
-            .map(|v| GraphicsCommandList(v))
+        unsafe {
+            let mut out: Option<ID3D12GraphicsCommandList> = None;
+            self.0
+                .CreateCommandList1(
+                    0,
+                    list_type.into(),
+                    Default::default(),
+                    &ID3D12GraphicsCommandList::IID,
+                    out.set_abi(),
+                )
+                .and_some(out)
+                .map(|v| GraphicsCommandList(v))
+        }
     }
 
-    pub unsafe fn create_allocator_builder<'a, 'b>(
+    pub fn create_allocator_builder<'a, 'b>(
         &'a self,
         adapter: &'b DXGIAdapter,
         preferred_block_size: u64,

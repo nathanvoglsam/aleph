@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{ID3D12Device4, ID3D12Fence, D3D12_FENCE_FLAGS};
+use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
 use crate::raw::windows::{Abi, Interface};
-use crate::{D3D12DeviceChild, D3D12Object, Device, Event};
+use crate::{Device, Event};
 
 pub struct FenceBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -58,18 +58,20 @@ impl<'a> FenceBuilder<'a> {
         self
     }
 
-    pub unsafe fn build(self) -> raw::windows::Result<Fence> {
-        let mut fence: Option<ID3D12Fence> = None;
-        self.device
-            .0
-            .CreateFence(
-                self.initial_value,
-                self.flags,
-                &ID3D12Fence::IID,
-                fence.set_abi(),
-            )
-            .and_some(fence)
-            .map(|v| Fence(v))
+    pub fn build(self) -> raw::windows::Result<Fence> {
+        unsafe {
+            let mut fence: Option<ID3D12Fence> = None;
+            self.device
+                .0
+                .CreateFence(
+                    self.initial_value,
+                    self.flags,
+                    &ID3D12Fence::IID,
+                    fence.set_abi(),
+                )
+                .and_some(fence)
+                .map(|v| Fence(v))
+        }
     }
 }
 
@@ -88,21 +90,5 @@ impl Fence {
         event: &Event,
     ) -> raw::windows::Result<()> {
         self.0.SetEventOnCompletion(value, event.0).ok()
-    }
-}
-
-impl D3D12Object for Fence {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
-    }
-}
-
-impl D3D12DeviceChild for Fence {
-    unsafe fn get_device(&self) -> raw::windows::Result<Device> {
-        let mut device: Option<ID3D12Device4> = None;
-        self.0
-            .GetDevice(&ID3D12Device4::IID, device.set_abi())
-            .and_some(device)
-            .map(|v| Device(v))
     }
 }
