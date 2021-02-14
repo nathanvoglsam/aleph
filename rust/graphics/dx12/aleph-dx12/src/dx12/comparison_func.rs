@@ -27,37 +27,33 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use raw::windows::win32::direct3d12::D3D12_COMPARISON_FUNC;
 
-#[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum ComparisonFunc {
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
-    fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
+impl Into<D3D12_COMPARISON_FUNC> for ComparisonFunc {
+    fn into(self) -> D3D12_COMPARISON_FUNC {
+        match self {
+            ComparisonFunc::Never => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER,
+            ComparisonFunc::Less => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS,
+            ComparisonFunc::Equal => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_EQUAL,
+            ComparisonFunc::LessEqual => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS_EQUAL,
+            ComparisonFunc::Greater => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER,
+            ComparisonFunc::NotEqual => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NOT_EQUAL,
+            ComparisonFunc::GreaterEqual => {
+                D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL
+            }
+            ComparisonFunc::Always => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS,
         }
     }
 }

@@ -138,7 +138,7 @@ impl Engine {
 
                 log::trace!("Creating DXGIFactory");
                 let mut dxgi_factory =
-                    dx12::DXGIFactory::new(true).expect("Failed to create DXGI factory");
+                    dx12::Factory::new(true).expect("Failed to create DXGI factory");
 
                 log::trace!("Selecting DXGIAdatper");
                 let dxgi_adapter = dxgi_factory
@@ -352,7 +352,7 @@ impl Engine {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(adapter: &dx12::DXGIAdapter) {
+    fn log_gpu_info(adapter: &dx12::Adapter) {
         let info = adapter.get_adapter_desc().unwrap();
 
         let gpu_vendor = if info.vendor_id == 0x10DE {

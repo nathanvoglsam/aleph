@@ -27,20 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
+use crate::dx12::pipeline_state_stream::{
+    blob_to_shader, optional_blob_to_shader, PackedPipelineStateStreamObject,
+};
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
+    D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
     D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
     D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
     D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT,
     D3D12_STREAM_OUTPUT_DESC,
 };
 use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
-use crate::{Ras, RasterizerDesc, RenderTargetBlendDesc, ToPipelineStateStream};
+use crate::{
+    dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc, RasterizerDesc,
+    ToPipelineStateStream,
+};
 use std::ffi::c_void;
 use std::mem::transmute;
 
-#[derive(Clone, Debug, Default)]
 pub struct GraphicsPipelineStateDesc<'a> {
     pub root_signature: &'a crate::RootSignature,
     pub vertex_shader: &'a [u8],
@@ -49,27 +53,41 @@ pub struct GraphicsPipelineStateDesc<'a> {
     pub hull_shader: Option<&'a [u8]>,
     pub geometry_shader: Option<&'a [u8]>,
     pub stream_output: D3D12_STREAM_OUTPUT_DESC,
-    pub blend_state: RenderTargetBlendDesc,
+    pub blend_state: BlendDesc<'a>,
     pub sample_mask: u32,
     pub rasterizer_state: RasterizerDesc,
-    pub depth_stencil_state: D3D12_DEPTH_STENCIL_DESC,
-    pub input_layout: D3D12_INPUT_LAYOUT_DESC,
-    pub strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
+    pub depth_stencil_state: DepthStencilDesc,
+    pub input_layout: &'a [InputElementDesc<'a>],
+    pub strip_cut_value: IndexBufferStripCutValue,
     pub primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
-    pub num_render_targets: u32,
-    pub rtv_formats: [DXGI_FORMAT; D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT as _],
-    pub dsv_format: DXGI_FORMAT,
+    pub render_targets: &'a [dxgi::Format],
+    pub dsv_format: dxgi::Format,
     pub sample_desc: DXGI_SAMPLE_DESC,
     pub node_mask: u32,
     pub cached_pso: D3D12_CACHED_PIPELINE_STATE,
     pub flags: D3D12_PIPELINE_STATE_FLAGS,
 }
 
-impl ToPipelineStateStream for GraphicsPipelineStateDesc {
+impl<'a> ToPipelineStateStream for GraphicsPipelineStateDesc<'a> {
     type Buffer = [u8; std::mem::size_of::<Packed>()];
 
     fn into_pipeline_state_stream(self) -> Self::Buffer {
         type T = D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
+
+        assert!(self.render_targets.len() <= D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT as _);
+        let mut rt_formats = [
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+            DXGI_FORMAT::default(),
+        ];
+        for i in 0..self.render_targets.len() {
+            rt_formats[i] = self.render_targets[i].into();
+        }
 
         let packed = Packed {
             root_signature: PackedPipelineStateStreamObject::new(
@@ -78,23 +96,23 @@ impl ToPipelineStateStream for GraphicsPipelineStateDesc {
             ),
             vertex_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS,
-                self.vertex_shader,
+                blob_to_shader(self.vertex_shader),
             ),
             pixel_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,
-                self.pixel_shader,
+                blob_to_shader(self.pixel_shader),
             ),
             domain_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DS,
-                self.domain_shader,
+                optional_blob_to_shader(self.domain_shader),
             ),
             hull_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_HS,
-                self.hull_shader,
+                optional_blob_to_shader(self.hull_shader),
             ),
             geometry_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_GS,
-                self.geometry_shader,
+                optional_blob_to_shader(self.geometry_shader),
             ),
             stream_output: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT,
@@ -102,7 +120,7 @@ impl ToPipelineStateStream for GraphicsPipelineStateDesc {
             ),
             blend_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
-                self.blend_state,
+                self.blend_state.into(),
             ),
             sample_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
@@ -110,11 +128,11 @@ impl ToPipelineStateStream for GraphicsPipelineStateDesc {
             ),
             rasterizer_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
-                self.rasterizer_state,
+                self.rasterizer_state.into(),
             ),
             depth_stencil_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
-                self.depth_stencil_state,
+                self.depth_stencil_state.into(),
             ),
             input_layout: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,
@@ -122,7 +140,7 @@ impl ToPipelineStateStream for GraphicsPipelineStateDesc {
             ),
             strip_cut_value: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE,
-                self.strip_cut_value,
+                self.strip_cut_value.into(),
             ),
             primitive_topology_type: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,
@@ -131,13 +149,13 @@ impl ToPipelineStateStream for GraphicsPipelineStateDesc {
             render_targets: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
-                    rt_formats: self.rtv_formats,
-                    num_render_targets: self.num_render_targets,
+                    rt_formats,
+                    num_render_targets: self.render_targets.len() as _,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
-                self.dsv_format,
+                self.dsv_format.into(),
             ),
             sample_desc: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,

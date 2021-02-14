@@ -27,37 +27,32 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use crate::{dxgi, InputClassification};
+use raw::windows::win32::direct3d12::D3D12_INPUT_ELEMENT_DESC;
+use std::ffi::CStr;
+use std::os::raw::c_char;
 
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+pub struct InputElementDesc<'a> {
+    pub semantic_name: &'a CStr,
+    pub semantic_index: u32,
+    pub format: dxgi::Format,
+    pub input_slot: u32,
+    pub aligned_byte_offset: u32,
+    pub input_slot_class: InputClassification,
+    pub instance_data_step_rate: u32,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
-    fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
+impl<'a> Into<D3D12_INPUT_ELEMENT_DESC> for InputElementDesc<'a> {
+    fn into(self) -> D3D12_INPUT_ELEMENT_DESC {
+        D3D12_INPUT_ELEMENT_DESC {
+            semantic_name: self.semantic_name.as_ptr() as *mut c_char as *mut _,
+            semantic_index: self.semantic_index,
+            format: self.format.into(),
+            input_slot: self.input_slot,
+            aligned_byte_offset: self.aligned_byte_offset,
+            input_slot_class: self.input_slot_class.into(),
+            instance_data_step_rate: self.instance_data_step_rate,
         }
     }
 }

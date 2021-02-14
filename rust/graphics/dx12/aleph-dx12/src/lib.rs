@@ -40,10 +40,11 @@ pub mod dxc;
 #[cfg(feature = "alloc")]
 pub mod alloc;
 
+pub mod dxgi;
+
 mod dx12;
-mod dxgi;
+
 pub use dx12::*;
-pub use dxgi::*;
 
 mod utils;
 

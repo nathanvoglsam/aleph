@@ -27,37 +27,32 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use crate::{ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
+use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_DESC;
 
 #[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+pub struct DepthStencilDesc {
+    pub depth_enable: bool,
+    pub depth_write_mask: DepthWriteMask,
+    pub depth_func: ComparisonFunc,
+    pub stencil_enable: bool,
+    pub stencil_read_mask: u8,
+    pub stencil_write_mask: u8,
+    pub front_face: DepthStencilOpDesc,
+    pub back_face: DepthStencilOpDesc,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
-    fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
+impl Into<D3D12_DEPTH_STENCIL_DESC> for DepthStencilDesc {
+    fn into(self) -> D3D12_DEPTH_STENCIL_DESC {
+        D3D12_DEPTH_STENCIL_DESC {
+            depth_enable: self.depth_enable.into(),
+            depth_write_mask: self.depth_write_mask.into(),
+            depth_func: self.depth_func.into(),
+            stencil_enable: self.stencil_enable.into(),
+            stencil_read_mask: self.stencil_read_mask.into(),
+            stencil_write_mask: self.stencil_write_mask.into(),
+            front_face: self.front_face.into(),
+            back_face: self.back_face.into(),
         }
     }
 }

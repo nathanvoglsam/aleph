@@ -30,9 +30,9 @@
 use crate::raw::windows::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
 #[repr(transparent)]
-pub struct DXGIAdapter(pub(crate) IDXGIAdapter1);
+pub struct Adapter(pub(crate) IDXGIAdapter1);
 
-impl DXGIAdapter {
+impl Adapter {
     pub fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
         unsafe {
             let mut desc = DXGI_ADAPTER_DESC1::default();

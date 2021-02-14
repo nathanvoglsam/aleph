@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{raw, DXGIAdapter, Device};
+use crate::{dxgi, raw, Device};
 use std::ffi::c_void;
 use std::sync::Arc;
 
@@ -43,7 +43,7 @@ impl Drop for AllocatorInner {
 
 pub struct AllocatorBuilder<'a, 'b> {
     pub(crate) device: &'a Device,
-    pub(crate) adapter: &'b DXGIAdapter,
+    pub(crate) adapter: &'b dxgi::Adapter,
     pub(crate) flags: alloc_raw::AllocatorFlags,
     pub(crate) preferred_block_size: u64,
 }

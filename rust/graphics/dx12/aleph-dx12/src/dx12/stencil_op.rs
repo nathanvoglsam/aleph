@@ -27,37 +27,31 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use raw::windows::win32::direct3d12::D3D12_STENCIL_OP;
 
-#[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum StencilOp {
+    Keep,
+    Zero,
+    Replace,
+    IncrementSaturate,
+    DecrementSaturate,
+    Invert,
+    Increment,
+    Decrement,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
-    fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
+impl Into<D3D12_STENCIL_OP> for StencilOp {
+    fn into(self) -> D3D12_STENCIL_OP {
+        match self {
+            StencilOp::Keep => D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP,
+            StencilOp::Zero => D3D12_STENCIL_OP::D3D12_STENCIL_OP_ZERO,
+            StencilOp::Replace => D3D12_STENCIL_OP::D3D12_STENCIL_OP_REPLACE,
+            StencilOp::IncrementSaturate => D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR_SAT,
+            StencilOp::DecrementSaturate => D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR_SAT,
+            StencilOp::Invert => D3D12_STENCIL_OP::D3D12_STENCIL_OP_INVERT,
+            StencilOp::Increment => D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR,
+            StencilOp::Decrement => D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR,
         }
     }
 }

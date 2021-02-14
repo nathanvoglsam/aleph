@@ -34,13 +34,13 @@ use crate::raw::windows::win32::dxgi::{
     DXGI_USAGE_BACK_BUFFER, DXGI_USAGE_RENDER_TARGET_OUTPUT,
 };
 use crate::raw::windows::win32::windows_and_messaging::HWND;
-use crate::{CommandQueue, DXGIFactory};
+use crate::{dxgi, CommandQueue};
 use raw::windows::{Abi, Interface};
 use raw_window_handle::RawWindowHandle;
 
 pub struct SwapChainBuilder<'a, 'b> {
     pub(crate) queue: &'a mut CommandQueue,
-    pub(crate) factory: &'b DXGIFactory,
+    pub(crate) factory: &'b dxgi::Factory,
     pub(crate) window_handle: RawWindowHandle,
     pub(crate) width: u32,
     pub(crate) height: u32,

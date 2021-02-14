@@ -30,6 +30,7 @@
 use crate::{ConservativeRasterizationMode, CullMode, FillMode};
 use raw::windows::win32::direct3d12::D3D12_RASTERIZER_DESC;
 
+#[derive(Copy, Clone, Debug)]
 pub struct RasterizerDesc {
     pub fill_mode: FillMode,
     pub cull_mode: CullMode,

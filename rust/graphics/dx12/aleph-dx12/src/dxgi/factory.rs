@@ -34,7 +34,7 @@ use crate::raw::windows::win32::dxgi::{
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
-use crate::{DXGIAdapter, FeatureLevel};
+use crate::{dxgi, FeatureLevel};
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
@@ -47,10 +47,10 @@ static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
 
 #[repr(transparent)]
-pub struct DXGIFactory(pub(crate) IDXGIFactory2);
+pub struct Factory(pub(crate) IDXGIFactory2);
 
-impl DXGIFactory {
-    pub fn new(debug: bool) -> raw::windows::Result<DXGIFactory> {
+impl Factory {
+    pub fn new(debug: bool) -> raw::windows::Result<Factory> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
             let flags = if debug { 0x1 } else { 0x0 };
@@ -61,14 +61,14 @@ impl DXGIFactory {
         }
     }
 
-    pub fn enumerate_adapters(&mut self, i: u32) -> raw::windows::Result<DXGIAdapter> {
-        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| DXGIAdapter(v)) }
+    pub fn enumerate_adapters(&mut self, i: u32) -> raw::windows::Result<dxgi::Adapter> {
+        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| dxgi::Adapter(v)) }
     }
 
     pub fn select_hardware_adapter(
         &mut self,
         minimum_feature_level: FeatureLevel,
-    ) -> Option<DXGIAdapter> {
+    ) -> Option<dxgi::Adapter> {
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
@@ -108,7 +108,7 @@ impl DXGIFactory {
 
                     // If we succeeded then use the adapter
                     if result.is_ok() {
-                        return Some(DXGIAdapter(adapter));
+                        return Some(dxgi::Adapter(adapter));
                     }
                 } else {
                     break;
@@ -122,7 +122,7 @@ impl DXGIFactory {
     }
 }
 
-impl DXGIFactory {
+impl Factory {
     unsafe fn enum_edapter_new(
         factory: &IDXGIFactory6,
         i: u32,

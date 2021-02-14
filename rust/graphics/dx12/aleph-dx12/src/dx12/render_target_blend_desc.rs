@@ -28,7 +28,9 @@
 //
 
 use crate::{Blend, BlendOp, LogicOp};
+use raw::windows::win32::direct3d12::D3D12_RENDER_TARGET_BLEND_DESC;
 
+#[derive(Copy, Clone, Debug, Hash)]
 pub struct RenderTargetBlendDesc {
     pub blend_enable: bool,
     pub logic_op_enable: bool,
@@ -40,4 +42,21 @@ pub struct RenderTargetBlendDesc {
     pub blend_op_alpha: BlendOp,
     pub logic_op: LogicOp,
     pub render_target_write_mask: u8,
+}
+
+impl Into<D3D12_RENDER_TARGET_BLEND_DESC> for RenderTargetBlendDesc {
+    fn into(self) -> D3D12_RENDER_TARGET_BLEND_DESC {
+        D3D12_RENDER_TARGET_BLEND_DESC {
+            blend_enable: self.blend_enable.into(),
+            logic_op_enable: self.logic_op_enable.into(),
+            src_blend: self.src_blend.into(),
+            dest_blend: self.dest_blend.into(),
+            blend_op: self.blend_op.into(),
+            src_blend_alpha: self.src_blend_alpha.into(),
+            dest_blend_alpha: self.dest_blend_alpha.into(),
+            blend_op_alpha: self.blend_op_alpha.into(),
+            logic_op: self.logic_op.into(),
+            render_target_write_mask: self.render_target_write_mask.into(),
+        }
+    }
 }

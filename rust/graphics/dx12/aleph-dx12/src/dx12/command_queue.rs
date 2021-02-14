@@ -32,7 +32,7 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_COMMAND_QUEUE_FLAGS,
 };
 use crate::raw::windows::{Abi, Interface};
-use crate::{CommandListType, DXGIFactory, Device, Fence, SubmissionBuilder, SwapChainBuilder};
+use crate::{dxgi, CommandListType, Device, Fence, SubmissionBuilder, SwapChainBuilder};
 use raw_window_handle::HasRawWindowHandle;
 use std::ops::Deref;
 
@@ -82,7 +82,7 @@ impl CommandQueue {
 
     pub fn create_swapchain_builder<'a, 'b>(
         &'a mut self,
-        factory: &'b DXGIFactory,
+        factory: &'b dxgi::Factory,
         window_handle: &impl HasRawWindowHandle,
     ) -> SwapChainBuilder<'a, 'b> {
         SwapChainBuilder {

@@ -27,37 +27,23 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use raw::windows::win32::direct3d12::D3D12_INPUT_CLASSIFICATION;
 
-#[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum InputClassification {
+    PerVertex,
+    PerInstance,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
-    fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
+impl Into<D3D12_INPUT_CLASSIFICATION> for InputClassification {
+    fn into(self) -> D3D12_INPUT_CLASSIFICATION {
+        match self {
+            InputClassification::PerVertex => {
+                D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA
+            }
+            InputClassification::PerInstance => {
+                D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA
+            }
         }
     }
 }

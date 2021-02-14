@@ -29,6 +29,8 @@
 
 mod adapter;
 mod factory;
+mod format;
 
-pub use adapter::DXGIAdapter;
-pub use factory::DXGIFactory;
+pub use adapter::Adapter;
+pub use factory::Factory;
+pub use format::Format;

@@ -35,7 +35,7 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder, DXGIAdapter,
+    dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder,
     FeatureLevel, FenceBuilder,
 };
 use utf16_lit::utf16_null;
@@ -49,7 +49,7 @@ pub struct Device(pub(crate) ID3D12Device4);
 
 impl Device {
     pub fn new(
-        adapter: Option<&DXGIAdapter>,
+        adapter: Option<&dxgi::Adapter>,
         minimum_feature_level: FeatureLevel,
     ) -> raw::windows::Result<Device> {
         unsafe {
@@ -124,7 +124,7 @@ impl Device {
 
     pub fn create_allocator_builder<'a, 'b>(
         &'a self,
-        adapter: &'b DXGIAdapter,
+        adapter: &'b dxgi::Adapter,
         preferred_block_size: u64,
     ) -> AllocatorBuilder<'a, 'b> {
         AllocatorBuilder {
