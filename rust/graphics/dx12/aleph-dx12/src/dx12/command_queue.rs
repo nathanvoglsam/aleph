@@ -34,6 +34,7 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::{Abi, Interface};
 use crate::{CommandListType, DXGIFactory, Device, Fence, SubmissionBuilder, SwapChainBuilder};
 use raw_window_handle::HasRawWindowHandle;
+use std::ops::Deref;
 
 pub struct CommandQueueBuilder<'a> {
     pub(crate) device: &'a Device,
@@ -53,19 +54,21 @@ impl<'a> CommandQueueBuilder<'a> {
         self
     }
 
-    pub unsafe fn build(self) -> raw::windows::Result<CommandQueue> {
+    pub fn build(self) -> raw::windows::Result<CommandQueue> {
         let desc = D3D12_COMMAND_QUEUE_DESC {
             r#type: self.queue_type.into(),
             priority: self.priority,
             flags: self.flags,
             node_mask: 0,
         };
-        let mut queue: Option<ID3D12CommandQueue> = None;
-        self.device
-            .0
-            .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
-            .and_some(queue)
-            .map(|v| CommandQueue(v))
+        unsafe {
+            let mut queue: Option<ID3D12CommandQueue> = None;
+            self.device
+                .0
+                .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
+                .and_some(queue)
+                .map(|v| CommandQueue(v))
+        }
     }
 }
 
@@ -74,7 +77,7 @@ pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
     pub unsafe fn signal(&self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
-        self.0.Signal(&fence.0, value).ok()
+        self.0.Signal(fence.0.lock().unwrap().deref(), value).ok()
     }
 
     pub fn create_swapchain_builder<'a, 'b>(

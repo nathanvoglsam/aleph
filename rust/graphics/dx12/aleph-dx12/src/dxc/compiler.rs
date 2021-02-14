@@ -40,7 +40,6 @@ pub enum DxcCompilerCreateError {
     CreateCallFailed(raw::windows::Error),
 }
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DxcCompiler(pub(crate) dxc_raw::IDxcCompiler);
 

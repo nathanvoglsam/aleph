@@ -137,15 +137,13 @@ impl Engine {
                 // ---------------------------------------------------------------------------------
 
                 log::trace!("Creating DXGIFactory");
-                let dxgi_factory =
-                    unsafe { dx12::DXGIFactory::new(true).expect("Failed to create DXGI factory") };
+                let mut dxgi_factory =
+                    dx12::DXGIFactory::new(true).expect("Failed to create DXGI factory");
 
                 log::trace!("Selecting DXGIAdatper");
-                let dxgi_adapter = unsafe {
-                    dxgi_factory
-                        .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
-                        .expect("Failed to find capable GPU")
-                };
+                let dxgi_adapter = dxgi_factory
+                    .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
+                    .expect("Failed to find capable GPU");
 
                 // Enable debug layers if requested
                 let _debug = unsafe {
@@ -170,13 +168,11 @@ impl Engine {
                         .unwrap()
                 };
 
-                let mut queue = unsafe {
-                    device
-                        .command_queue_builder(dx12::CommandListType::Direct)
-                        .priority(0)
-                        .build()
-                        .unwrap()
-                };
+                let mut queue = device
+                    .command_queue_builder(dx12::CommandListType::Direct)
+                    .priority(0)
+                    .build()
+                    .unwrap();
 
                 let event = dx12::Event::new().unwrap();
                 let fence = device.fence_builder().build().unwrap();
@@ -229,10 +225,8 @@ impl Engine {
 
                     app.on_update(&egui_ctx);
 
-                    unsafe {
-                        fence.signal(0).unwrap();
-                        fence.set_event_on_completion(1, &event).unwrap();
-                    }
+                    fence.signal(0).unwrap();
+                    fence.set_event_on_completion(1, &event).unwrap();
 
                     if Window::resized() {
                         let (width, height) = Window::drawable_size();
@@ -359,7 +353,7 @@ impl Engine {
     /// Internal function for logging info about the CPU that is being used
     ///
     fn log_gpu_info(adapter: &dx12::DXGIAdapter) {
-        let info = unsafe { adapter.get_adapter_desc().unwrap() };
+        let info = adapter.get_adapter_desc().unwrap();
 
         let gpu_vendor = if info.vendor_id == 0x10DE {
             "NVIDIA"

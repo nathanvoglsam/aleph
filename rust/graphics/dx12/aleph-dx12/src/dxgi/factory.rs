@@ -46,76 +46,79 @@ type CreateFn = extern "system" fn(
 static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DXGIFactory(pub(crate) IDXGIFactory2);
 
 impl DXGIFactory {
-    pub unsafe fn new(debug: bool) -> raw::windows::Result<DXGIFactory> {
-        let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
-        let flags = if debug { 0x1 } else { 0x0 };
-        let mut dxgi_factory: Option<IDXGIFactory2> = None;
-        create_fn(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
-            .and_some(dxgi_factory)
-            .map(|v| Self(v))
+    pub fn new(debug: bool) -> raw::windows::Result<DXGIFactory> {
+        unsafe {
+            let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
+            let flags = if debug { 0x1 } else { 0x0 };
+            let mut dxgi_factory: Option<IDXGIFactory2> = None;
+            create_fn(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
+                .and_some(dxgi_factory)
+                .map(|v| Self(v))
+        }
     }
 
-    pub unsafe fn enumerate_adapters(&self, i: u32) -> raw::windows::Result<DXGIAdapter> {
-        Self::enum_edapter_old(&self.0, i).map(|v| DXGIAdapter(v))
+    pub fn enumerate_adapters(&mut self, i: u32) -> raw::windows::Result<DXGIAdapter> {
+        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| DXGIAdapter(v)) }
     }
 
-    pub unsafe fn select_hardware_adapter(
-        &self,
+    pub fn select_hardware_adapter(
+        &mut self,
         minimum_feature_level: FeatureLevel,
     ) -> Option<DXGIAdapter> {
-        // If possible we can explicitly ask for a "high performance" device.
-        let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
+        unsafe {
+            // If possible we can explicitly ask for a "high performance" device.
+            let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
 
-        // Loop over all the available adapters
-        let mut i = 0;
-        loop {
-            // Use the newest available interface to enumerate the adapter
-            let adapter = if let Some(factory) = factory_6.as_ref() {
-                Self::enum_edapter_new(factory, i)
-            } else {
-                Self::enum_edapter_old(&self.0, i)
-            };
+            // Loop over all the available adapters
+            let mut i = 0;
+            loop {
+                // Use the newest available interface to enumerate the adapter
+                let adapter = if let Some(factory) = factory_6.as_ref() {
+                    Self::enum_edapter_new(factory, i)
+                } else {
+                    Self::enum_edapter_old(&self.0, i)
+                };
 
-            // Check if we've gotten an adapter, or break from the loop if we don't as we've either hit
-            // a big error or enumerated all of them already
-            if let Ok(adapter) = adapter {
-                // Get the adapter description so we can decide if we want to use it or not
-                let mut desc = DXGI_ADAPTER_DESC1::default();
-                adapter.GetDesc1(&mut desc).unwrap();
+                // Check if we've gotten an adapter, or break from the loop if we don't as we've either hit
+                // a big error or enumerated all of them already
+                if let Ok(adapter) = adapter {
+                    // Get the adapter description so we can decide if we want to use it or not
+                    let mut desc = DXGI_ADAPTER_DESC1::default();
+                    adapter.GetDesc1(&mut desc).unwrap();
 
-                // We want to skip software adapters as they're going to be *very* slow
-                if (desc.flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
-                    continue;
+                    // We want to skip software adapters as they're going to be *very* slow
+                    if (desc.flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
+                        continue;
+                    }
+
+                    // Check if the device supports the feature level we want by trying to create a device
+                    let create_fn = *crate::dx12::device::CREATE_FN
+                        .get()
+                        .expect("Failed to load dxgi.dll");
+                    let result = create_fn(
+                        Some(adapter.cast().unwrap()),
+                        minimum_feature_level.into(),
+                        &ID3D12Device4::IID,
+                        std::ptr::null_mut(),
+                    );
+
+                    // If we succeeded then use the adapter
+                    if result.is_ok() {
+                        return Some(DXGIAdapter(adapter));
+                    }
+                } else {
+                    break;
                 }
 
-                // Check if the device supports the feature level we want by trying to create a device
-                let create_fn = *crate::dx12::device::CREATE_FN
-                    .get()
-                    .expect("Failed to load dxgi.dll");
-                let result = create_fn(
-                    Some(adapter.cast().unwrap()),
-                    minimum_feature_level.into(),
-                    &ID3D12Device4::IID,
-                    std::ptr::null_mut(),
-                );
-
-                // If we succeeded then use the adapter
-                if result.is_ok() {
-                    return Some(DXGIAdapter(adapter));
-                }
-            } else {
-                break;
+                i += 1;
             }
 
-            i += 1;
+            None
         }
-
-        None
     }
 }
 

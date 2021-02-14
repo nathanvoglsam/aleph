@@ -29,13 +29,14 @@
 
 use crate::raw::windows::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DXGIAdapter(pub(crate) IDXGIAdapter1);
 
 impl DXGIAdapter {
-    pub unsafe fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
-        let mut desc = DXGI_ADAPTER_DESC1::default();
-        self.0.GetDesc1(&mut desc).ok().map(|_| desc)
+    pub fn get_adapter_desc(&self) -> raw::windows::Result<DXGI_ADAPTER_DESC1> {
+        unsafe {
+            let mut desc = DXGI_ADAPTER_DESC1::default();
+            self.0.GetDesc1(&mut desc).ok().map(|_| desc)
+        }
     }
 }

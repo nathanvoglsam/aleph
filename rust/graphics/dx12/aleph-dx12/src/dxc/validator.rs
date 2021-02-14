@@ -40,7 +40,6 @@ pub enum DxcValidatorCreateError {
     CreateCallFailed(raw::windows::Error),
 }
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DxcValidator(pub(crate) dxc_raw::IDxcValidator);
 

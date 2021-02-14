@@ -121,20 +121,22 @@ impl DescriptorHeapBuilder {
         self
     }
 
-    pub unsafe fn build(self, device: &Device) -> raw::windows::Result<DescriptorHeap> {
-        let heap_type = self.heap_type.unwrap();
-        let desc = D3D12_DESCRIPTOR_HEAP_DESC {
-            r#type: heap_type.into(),
-            num_descriptors: self.num_descriptors,
-            flags: self.flags,
-            node_mask: 0,
-        };
-        let mut heap: Option<ID3D12DescriptorHeap> = None;
-        device
-            .0
-            .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, heap.set_abi())
-            .and_some(heap)
-            .map(|v| DescriptorHeap(v))
+    pub fn build(self, device: &Device) -> raw::windows::Result<DescriptorHeap> {
+        unsafe {
+            let heap_type = self.heap_type.unwrap();
+            let desc = D3D12_DESCRIPTOR_HEAP_DESC {
+                r#type: heap_type.into(),
+                num_descriptors: self.num_descriptors,
+                flags: self.flags,
+                node_mask: 0,
+            };
+            let mut heap: Option<ID3D12DescriptorHeap> = None;
+            device
+                .0
+                .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, heap.set_abi())
+                .and_some(heap)
+                .map(|v| DescriptorHeap(v))
+        }
     }
 }
 

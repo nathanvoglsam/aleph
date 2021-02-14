@@ -154,7 +154,6 @@ impl<'a, 'b> SwapChainBuilder<'a, 'b> {
     }
 }
 
-#[derive(Clone)]
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {
