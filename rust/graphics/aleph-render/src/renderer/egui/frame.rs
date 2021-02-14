@@ -29,18 +29,6 @@
 
 use crate::renderer::egui::constant::ConstantObjects;
 use crate::renderer::egui::global::GlobalObjects;
-use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage, Pool};
-use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlags, Buffer, BufferCreateInfoBuilder, BufferImageCopyBuilder, BufferUsageFlags,
-    CommandBuffer, DescriptorImageInfoBuilder, DescriptorPool, DescriptorSet,
-    DescriptorSetAllocateInfoBuilder, DescriptorSetLayout, DescriptorType, Extent3D, Format,
-    Framebuffer, FramebufferCreateInfoBuilder, Image, ImageAspectFlags, ImageCreateInfoBuilder,
-    ImageLayout, ImageMemoryBarrierBuilder, ImageSubresourceLayersBuilder,
-    ImageSubresourceRangeBuilder, ImageTiling, ImageType, ImageUsageFlags, ImageView,
-    ImageViewCreateInfoBuilder, ImageViewType, PipelineStageFlags, RenderPass, SampleCountFlagBits,
-    SharingMode, WriteDescriptorSetBuilder,
-};
-use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
 use std::sync::Arc;
 

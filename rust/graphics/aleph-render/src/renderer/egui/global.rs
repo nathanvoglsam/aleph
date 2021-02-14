@@ -28,22 +28,6 @@
 //
 
 use crate::renderer::egui::constant::ConstantObjects;
-use aleph_vulkan::pipeline::{
-    ColorBlendAttachmentState, ColorBlendState, DepthState, DynamicPipelineState,
-    GraphicsPipelineBuilder, InputAssemblyState, MultiSampleState, RasterizationState,
-    VertexInputState, ViewportState,
-};
-use aleph_vulkan::render_pass::AttachmentReference;
-use aleph_vulkan::shader::ShaderModule;
-use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, Filter, Format, FrontFace, ImageLayout,
-    Pipeline, PipelineBindPoint, PipelineLayout, PipelineStageFlags, PolygonMode,
-    PrimitiveTopology, RenderPass, RenderPassCreateInfoBuilder, Sampler, SamplerAddressMode,
-    SamplerCreateInfoBuilder, SamplerMipmapMode, SubpassDependencyBuilder,
-    SubpassDescriptionBuilder, VertexInputAttributeDescriptionBuilder,
-    VertexInputBindingDescriptionBuilder, VertexInputRate, LOD_CLAMP_NONE, SUBPASS_EXTERNAL,
-};
-use aleph_vulkan_core::{DebugName, SwapImage};
 use std::ffi::CString;
 
 ///

@@ -54,7 +54,7 @@ aleph-platform = { path = "../../platform/aleph-platform", version = "0.1" }
 aleph-platform-egui = { path = "../../platform/aleph-platform-egui", version = "0.1" }
 aleph-settings = { path = "../../config/aleph-settings", version = "0.1" }
 aleph-dx12 = { path = "../../graphics/dx12/aleph-dx12", version = "0.1" }
-#aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
+aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
 aleph-target = { path = "../../build/aleph-target", version = "2" }
 egui = "0.8"
 clap = "2"

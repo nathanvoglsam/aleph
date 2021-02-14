@@ -34,11 +34,6 @@ mod global;
 use crate::renderer::egui::constant::ConstantObjects;
 use crate::renderer::egui::frame::PerFrameObjects;
 use crate::renderer::egui::global::GlobalObjects;
-use aleph_vulkan_alloc::Allocator;
-use aleph_vulkan_core::erupt::vk1_0::{
-    CommandBuffer, Extent2DBuilder, IndexType, Offset2DBuilder, PipelineBindPoint, Rect2DBuilder,
-    RenderPassBeginInfoBuilder, ShaderStageFlags, SubpassContents, WHOLE_SIZE,
-};
 use egui::paint::PaintJob;
 use std::sync::Arc;
 

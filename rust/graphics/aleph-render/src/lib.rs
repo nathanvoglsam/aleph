@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
-//mod renderer;
-//
-//pub use renderer::Renderer;
+extern crate aleph_dx12 as dx12;
+
+mod renderer;
+
+pub use renderer::Renderer;

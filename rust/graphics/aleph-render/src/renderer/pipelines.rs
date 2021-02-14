@@ -27,17 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan::pipeline::{
-    ColorBlendState, DepthState, DynamicPipelineState, GraphicsPipelineBuilder, InputAssemblyState,
-    MultiSampleState, RasterizationState, VertexInputState, ViewportState,
-};
-use aleph_vulkan::pipeline_layout::PipelineLayout;
-use aleph_vulkan::shader::ShaderModule;
-use aleph_vulkan_core::erupt::vk1_0::{
-    CompareOp, FrontFace, Pipeline, PolygonMode, PrimitiveTopology, RenderPass,
-};
-use aleph_vulkan_core::Device;
-
 ///
 /// The pipeline state object for the geometry pass
 ///

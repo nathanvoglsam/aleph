@@ -27,13 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_vulkan::pipeline_layout::{PipelineLayout, PipelineLayoutBuilder};
-use aleph_vulkan::shader::ShaderModule;
-use aleph_vulkan_core::erupt::vk1_0::{
-    DescriptorPool, DescriptorPoolCreateFlags, DescriptorPoolCreateInfoBuilder,
-    DescriptorPoolSizeBuilder, DescriptorType,
-};
-use aleph_vulkan_core::DebugName;
 use std::ffi::CString;
 
 ///

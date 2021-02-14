@@ -32,31 +32,6 @@ mod pipelines;
 
 use self::pipelines::{GeometryPipeline, TonePipeline};
 use ::egui::PaintJobs;
-use aleph_vulkan::embedded::buffers::{CubeMeshBuffers, FullscreenQuadBuffers, SphereMeshBuffers};
-use aleph_vulkan::embedded::data::SphereMesh;
-use aleph_vulkan::image::{ColourImage, DepthImage};
-use aleph_vulkan::pipeline_layout::PipelineLayout;
-use aleph_vulkan::reflect::{BindingType, Struct};
-use aleph_vulkan::render_pass::AttachmentReference;
-use aleph_vulkan::shader::ShaderModule;
-use aleph_vulkan::uniform_buffer::Member;
-use aleph_vulkan::uniform_buffer::UniformBufferWriter;
-use aleph_vulkan_alloc::{Allocation, AllocationCreateInfoBuilder, Allocator, MemoryUsage};
-use aleph_vulkan_core::erupt::vk1_0::{
-    AccessFlags, AttachmentLoadOp, AttachmentStoreOp, Buffer, BufferCreateInfoBuilder,
-    BufferUsageFlags, ClearColorValue, ClearDepthStencilValue, ClearValue, CommandBuffer,
-    CommandBufferAllocateInfoBuilder, CommandBufferBeginInfoBuilder, CommandBufferLevel,
-    CommandBufferUsageFlags, CommandPool, CommandPoolCreateInfoBuilder,
-    DescriptorBufferInfoBuilder, DescriptorImageInfoBuilder, DescriptorPool,
-    DescriptorPoolCreateInfoBuilder, DescriptorPoolSizeBuilder, DescriptorSet,
-    DescriptorSetAllocateInfoBuilder, DescriptorType, Extent2DBuilder, Fence, Format, Framebuffer,
-    FramebufferCreateInfoBuilder, ImageLayout, IndexType, Offset2DBuilder, PipelineBindPoint,
-    PipelineStageFlags, Rect2DBuilder, RenderPass, RenderPassBeginInfoBuilder,
-    RenderPassCreateInfoBuilder, Semaphore, SemaphoreCreateInfoBuilder, SharingMode,
-    SubmitInfoBuilder, SubpassContents, SubpassDependencyBuilder, SubpassDescriptionBuilder,
-    WriteDescriptorSetBuilder, SUBPASS_EXTERNAL, WHOLE_SIZE,
-};
-use aleph_vulkan_core::{DebugName, Device, SwapImage, Swapchain};
 use std::sync::Arc;
 use std::time::Duration;
 use ultraviolet::{Bivec3, Isometry3, Rotor3, Vec3};
