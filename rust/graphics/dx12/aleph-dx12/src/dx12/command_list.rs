@@ -28,11 +28,8 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandList, ID3D12DeviceChild, ID3D12GraphicsCommandList, ID3D12Object,
-    D3D12_COMMAND_LIST_TYPE,
+    ID3D12DeviceChild, ID3D12GraphicsCommandList, ID3D12Object, D3D12_COMMAND_LIST_TYPE,
 };
-use crate::raw::windows::Interface;
-use std::convert::TryInto;
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
@@ -93,77 +90,61 @@ impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
     }
 }
 
-#[derive(Clone)]
 #[repr(transparent)]
-pub struct CommandList(pub(crate) ID3D12CommandList);
+pub struct OpenGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
-impl CommandList {
+impl OpenGraphicsCommandList {
+    #[cfg(feature = "pix")]
+    pub fn scoped_event(
+        &mut self,
+        colour: crate::pix::Colour,
+        text: &str,
+    ) -> crate::pix::ScopedEvent {
+        unsafe { crate::pix::ScopedEvent::for_list(self, colour, text) }
+    }
+
+    #[cfg(feature = "pix")]
+    pub fn scoped_event_cstr(
+        &mut self,
+        colour: crate::pix::Colour,
+        text: &std::ffi::CStr,
+    ) -> crate::pix::ScopedEvent {
+        unsafe { crate::pix::ScopedEvent::for_list_cstr(self, colour, text) }
+    }
+
+    pub fn get_type(&self) -> CommandListType {
+        unsafe { CommandListType::from_raw(self.0.GetType()).unwrap() }
+    }
+}
+
+#[repr(transparent)]
+pub struct ClosedGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
+
+impl ClosedGraphicsCommandList {
     pub unsafe fn get_type(&self) -> CommandListType {
         CommandListType::from_raw(self.0.GetType()).unwrap()
     }
 }
 
-impl TryInto<GraphicsCommandList> for CommandList {
-    type Error = raw::windows::Error;
-
-    fn try_into(self) -> Result<GraphicsCommandList, Self::Error> {
-        self.0.cast().map(|v| GraphicsCommandList(v))
-    }
-}
-
-impl Into<ID3D12Object> for CommandList {
+impl Into<ID3D12Object> for ClosedGraphicsCommandList {
     fn into(self) -> ID3D12Object {
         self.0.into()
     }
 }
 
-impl Into<ID3D12DeviceChild> for CommandList {
+impl Into<ID3D12DeviceChild> for ClosedGraphicsCommandList {
     fn into(self) -> ID3D12DeviceChild {
         self.0.into()
     }
 }
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
-
-impl GraphicsCommandList {
-    #[cfg(feature = "pix")]
-    pub unsafe fn scoped_event(
-        &self,
-        colour: crate::pix::Colour,
-        text: &str,
-    ) -> crate::pix::ScopedEvent {
-        crate::pix::ScopedEvent::for_list(self, colour, text)
-    }
-
-    #[cfg(feature = "pix")]
-    pub unsafe fn scoped_event_cstr(
-        &self,
-        colour: crate::pix::Colour,
-        text: &std::ffi::CStr,
-    ) -> crate::pix::ScopedEvent {
-        crate::pix::ScopedEvent::for_list_cstr(self, colour, text)
-    }
-
-    pub unsafe fn get_type(&self) -> CommandListType {
-        CommandListType::from_raw(self.0.GetType()).unwrap()
-    }
-}
-
-impl Into<CommandList> for GraphicsCommandList {
-    fn into(self) -> CommandList {
-        CommandList(self.0.into())
-    }
-}
-
-impl Into<ID3D12Object> for GraphicsCommandList {
+impl Into<ID3D12Object> for OpenGraphicsCommandList {
     fn into(self) -> ID3D12Object {
         self.0.into()
     }
 }
 
-impl Into<ID3D12DeviceChild> for GraphicsCommandList {
+impl Into<ID3D12DeviceChild> for OpenGraphicsCommandList {
     fn into(self) -> ID3D12DeviceChild {
         self.0.into()
     }

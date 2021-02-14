@@ -29,7 +29,7 @@
 
 use super::functions::*;
 use crate::pix::Colour;
-use crate::{CommandQueue, GraphicsCommandList};
+use crate::{CommandQueue, OpenGraphicsCommandList};
 use raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 use std::ffi::CStr;
 
@@ -69,7 +69,7 @@ impl<'a> ScopedEvent<'a> {
     }
 
     pub(crate) unsafe fn for_list(
-        list: &'a GraphicsCommandList,
+        list: &'a OpenGraphicsCommandList,
         colour: Colour,
         text: &str,
     ) -> Self {
@@ -78,7 +78,7 @@ impl<'a> ScopedEvent<'a> {
     }
 
     pub(crate) unsafe fn for_list_cstr(
-        list: &'a GraphicsCommandList,
+        list: &'a OpenGraphicsCommandList,
         colour: Colour,
         text: &CStr,
     ) -> Self {

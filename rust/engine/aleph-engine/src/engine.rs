@@ -170,7 +170,7 @@ impl Engine {
                         .unwrap()
                 };
 
-                let queue = unsafe {
+                let mut queue = unsafe {
                     device
                         .command_queue_builder(dx12::CommandListType::Direct)
                         .priority(0)

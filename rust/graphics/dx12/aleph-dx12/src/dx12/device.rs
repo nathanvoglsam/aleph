@@ -29,14 +29,14 @@
 
 use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4, ID3D12GraphicsCommandList,
-    ID3D12Object, PFN_D3D12_CREATE_DEVICE,
+    ID3D12CommandAllocator, ID3D12Device4, ID3D12GraphicsCommandList, ID3D12Object,
+    PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, DXGIAdapter, FeatureLevel,
-    FenceBuilder, GraphicsCommandList,
+    ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder, DXGIAdapter,
+    FeatureLevel, FenceBuilder,
 };
 use utf16_lit::utf16_null;
 
@@ -103,29 +103,10 @@ impl Device {
         }
     }
 
-    pub fn create_command_list(
-        &self,
-        list_type: CommandListType,
-    ) -> raw::windows::Result<CommandList> {
-        unsafe {
-            let mut out: Option<ID3D12CommandList> = None;
-            self.0
-                .CreateCommandList1(
-                    0,
-                    list_type.into(),
-                    Default::default(),
-                    &ID3D12CommandList::IID,
-                    out.set_abi(),
-                )
-                .and_some(out)
-                .map(|v| CommandList(v))
-        }
-    }
-
     pub fn create_graphics_command_list(
         &self,
         list_type: CommandListType,
-    ) -> raw::windows::Result<GraphicsCommandList> {
+    ) -> raw::windows::Result<ClosedGraphicsCommandList> {
         unsafe {
             let mut out: Option<ID3D12GraphicsCommandList> = None;
             self.0
@@ -137,7 +118,7 @@ impl Device {
                     out.set_abi(),
                 )
                 .and_some(out)
-                .map(|v| GraphicsCommandList(v))
+                .map(|v| ClosedGraphicsCommandList(v))
         }
     }
 

@@ -39,7 +39,7 @@ use raw::windows::{Abi, Interface};
 use raw_window_handle::RawWindowHandle;
 
 pub struct SwapChainBuilder<'a, 'b> {
-    pub(crate) queue: &'a CommandQueue,
+    pub(crate) queue: &'a mut CommandQueue,
     pub(crate) factory: &'b DXGIFactory,
     pub(crate) window_handle: RawWindowHandle,
     pub(crate) width: u32,
