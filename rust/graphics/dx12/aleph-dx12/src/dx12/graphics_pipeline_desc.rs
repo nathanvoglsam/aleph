@@ -36,22 +36,22 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_STREAM_OUTPUT_DESC,
 };
 use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
-use crate::ToPipelineStateStream;
+use crate::{Ras, RasterizerDesc, RenderTargetBlendDesc, ToPipelineStateStream};
 use std::ffi::c_void;
 use std::mem::transmute;
 
 #[derive(Clone, Debug, Default)]
-pub struct GraphicsPipelineStateDesc {
-    pub root_signature: Option<ID3D12RootSignature>,
-    pub vertex_shader: D3D12_SHADER_BYTECODE,
-    pub pixel_shader: D3D12_SHADER_BYTECODE,
-    pub domain_shader: D3D12_SHADER_BYTECODE,
-    pub hull_shader: D3D12_SHADER_BYTECODE,
-    pub geometry_shader: D3D12_SHADER_BYTECODE,
+pub struct GraphicsPipelineStateDesc<'a> {
+    pub root_signature: &'a crate::RootSignature,
+    pub vertex_shader: &'a [u8],
+    pub pixel_shader: &'a [u8],
+    pub domain_shader: Option<&'a [u8]>,
+    pub hull_shader: Option<&'a [u8]>,
+    pub geometry_shader: Option<&'a [u8]>,
     pub stream_output: D3D12_STREAM_OUTPUT_DESC,
-    pub blend_state: D3D12_BLEND_DESC,
+    pub blend_state: RenderTargetBlendDesc,
     pub sample_mask: u32,
-    pub rasterizer_state: D3D12_RASTERIZER_DESC,
+    pub rasterizer_state: RasterizerDesc,
     pub depth_stencil_state: D3D12_DEPTH_STENCIL_DESC,
     pub input_layout: D3D12_INPUT_LAYOUT_DESC,
     pub strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
