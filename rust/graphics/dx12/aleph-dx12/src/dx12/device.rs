@@ -30,13 +30,13 @@
 use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandList, ID3D12Device4, ID3D12GraphicsCommandList,
-    PFN_D3D12_CREATE_DEVICE,
+    ID3D12Object, PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, D3D12Object, DXGIAdapter,
-    FeatureLevel, FenceBuilder, GraphicsCommandList,
+    CommandAllocator, CommandList, CommandListType, CommandQueueBuilder, DXGIAdapter, FeatureLevel,
+    FenceBuilder, GraphicsCommandList,
 };
 use utf16_lit::utf16_null;
 
@@ -155,8 +155,8 @@ impl Device {
     }
 }
 
-impl D3D12Object for Device {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> raw::windows::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
+impl Into<ID3D12Object> for Device {
+    fn into(self) -> ID3D12Object {
+        self.0.into()
     }
 }
