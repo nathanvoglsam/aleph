@@ -180,7 +180,7 @@ impl Engine {
                         .unwrap()
                 };
 
-                let event = dx12::Event::builder().build().unwrap();
+                let event = dx12::Event::new().unwrap();
                 let fence = unsafe { device.fence_builder().build().unwrap() };
 
                 let drawable_size = Window::drawable_size();

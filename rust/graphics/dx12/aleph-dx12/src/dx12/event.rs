@@ -32,53 +32,25 @@ use crate::raw::windows::win32::system_services::{
 };
 use crate::raw::windows::win32::windows_programming::CloseHandle;
 
-pub struct EventBuilder {
-    manual_reset: bool,
-    start_signalled: bool,
-}
+#[repr(transparent)]
+pub struct Event(pub(crate) HANDLE);
 
-impl EventBuilder {
-    pub fn new() -> EventBuilder {
-        EventBuilder {
-            manual_reset: false,
-            start_signalled: false,
-        }
-    }
-
-    pub fn manual_reset(mut self, manual_reset: bool) -> Self {
-        self.manual_reset = manual_reset;
-        self
-    }
-
-    pub fn start_signalled(mut self, start_signalled: bool) -> Self {
-        self.start_signalled = start_signalled;
-        self
-    }
-
-    pub fn build(self) -> Option<Event> {
+impl Event {
+    pub fn new() -> Option<Self> {
         let event = unsafe {
             CreateEventW(
                 std::ptr::null_mut(),
-                self.manual_reset.into(),
-                self.start_signalled.into(),
+                false.into(),
+                false.into(),
                 std::ptr::null(),
             )
         };
 
         if event.0 != 0 {
-            Some(Event(event))
+            Some(Self(event))
         } else {
             None
         }
-    }
-}
-
-#[repr(transparent)]
-pub struct Event(pub(crate) HANDLE);
-
-impl Event {
-    pub fn builder() -> EventBuilder {
-        EventBuilder::new()
     }
 
     pub fn wait(&self, timeout: Option<u32>) -> u32 {
