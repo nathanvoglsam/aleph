@@ -29,7 +29,14 @@
 
 use crate::dx12::root_signature_desc::{D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1};
 use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
+use crate::{RootSignatureDesc, RootSignatureDesc1};
 use std::mem::ManuallyDrop;
+
+#[allow(non_camel_case_types)]
+pub enum VersionedRootSignatureDesc<'a> {
+    Desc(RootSignatureDesc<'a>),
+    Desc1(RootSignatureDesc1<'a>),
+}
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
@@ -42,5 +49,5 @@ pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
 #[allow(non_camel_case_types)]
 pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
     pub version_1_0: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
-    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
+    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
 }
