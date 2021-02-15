@@ -32,10 +32,29 @@ use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
 use crate::{RootSignatureDesc, RootSignatureDesc1};
 use std::mem::ManuallyDrop;
 
-#[allow(non_camel_case_types)]
+#[derive(Clone, Debug)]
 pub enum VersionedRootSignatureDesc<'a> {
     Desc(RootSignatureDesc<'a>),
     Desc1(RootSignatureDesc1<'a>),
+}
+
+impl<'a> Into<D3D12_VERSIONED_ROOT_SIGNATURE_DESC> for VersionedRootSignatureDesc<'a> {
+    fn into(self) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+        match self {
+            VersionedRootSignatureDesc::Desc(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+                version: D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_0,
+                desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
+                    version_1_0: ManuallyDrop::new(v.inner),
+                },
+            },
+            VersionedRootSignatureDesc::Desc1(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+                version: D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_1,
+                desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
+                    version_1_1: ManuallyDrop::new(v.inner),
+                },
+            },
+        }
+    }
 }
 
 #[repr(C)]

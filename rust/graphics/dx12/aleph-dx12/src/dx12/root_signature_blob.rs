@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::dx12::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as MyDesc;
 use crate::raw::windows::win32::direct3d11::ID3DBlob;
+use crate::raw::windows::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
 use crate::raw::windows::win32::direct3d12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
 use crate::utils::DynamicLoadCell;
 use crate::VersionedRootSignatureDesc;
@@ -47,24 +49,8 @@ impl RootSignatureBlob {
     pub unsafe fn new(
         desc: &VersionedRootSignatureDesc,
     ) -> Result<Self, (raw::windows::Error, String)> {
-        // Wrap the types to shorter names to keep the code readable
-        type MyDesc =
-            crate::dx12::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
-        type MyV10 = crate::dx12::root_signature_desc::D3D12_ROOT_SIGNATURE_DESC;
-        type MyV11 = crate::dx12::root_signature_desc::D3D12_ROOT_SIGNATURE_DESC1;
-        type MyPV10 = crate::dx12::root_parameter::D3D12_ROOT_PARAMETER;
-        type MyPV11 = crate::dx12::root_parameter::D3D12_ROOT_PARAMETER1;
-        type MyVersions = crate::dx12::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS;
-        type FFIDesc = crate::raw::windows::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
-        type FFISS = crate::raw::windows::win32::direct3d12::D3D12_STATIC_SAMPLER_DESC;
-
-        enum Buffers {
-            V10(Vec<MyPV10>, Vec<FFISS>),
-            V11(Vec<MyPV11>, Vec<FFISS>),
-        }
-
-        let (buffers, desc) = desc.clone().into_ffi();
-        let desc_ptr = &desc as *const MyDesc as *const FFIDesc;
+        let desc: MyDesc = desc.clone().into();
+        let desc_ptr = &desc as *const MyDesc as *const Desc;
 
         let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut blob: Option<ID3DBlob> = None;

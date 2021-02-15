@@ -29,7 +29,8 @@
 
 use crate::dx12::root_parameter::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
 use crate::raw::windows::win32::direct3d12::{
-    D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
+    D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_SIGNATURE_FLAGS,
+    D3D12_STATIC_SAMPLER_DESC,
 };
 use crate::{RootParameter, RootParameter1};
 use std::marker::PhantomData;
@@ -37,6 +38,7 @@ use std::marker::PhantomData;
 type F = D3D12_ROOT_SIGNATURE_FLAGS;
 
 pub struct RootSignatureDescBuilder {
+    ranges: Vec<Vec<D3D12_DESCRIPTOR_RANGE>>,
     parameters: Vec<D3D12_ROOT_PARAMETER>,
     static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
     flags: D3D12_ROOT_SIGNATURE_FLAGS,
@@ -45,6 +47,7 @@ pub struct RootSignatureDescBuilder {
 impl RootSignatureDescBuilder {
     pub fn new() -> Self {
         Self {
+            ranges: vec![],
             parameters: vec![],
             static_samplers: vec![],
             flags: Default::default(),
@@ -54,10 +57,14 @@ impl RootSignatureDescBuilder {
     pub fn parameters(mut self, parameters: &[RootParameter]) -> Self {
         self.parameters = parameters
             .iter()
-            .map(|v| D3D12_ROOT_PARAMETER {
-                parameter_type: v.parameter.get_type(),
-                types: v.parameter.get_raw(),
-                shader_visibility: v.shader_visibility.into(),
+            .map(|v| {
+                let (ranges, types) = v.parameter.get_raw();
+                self.ranges.push(ranges);
+                D3D12_ROOT_PARAMETER {
+                    parameter_type: v.parameter.get_type(),
+                    types,
+                    shader_visibility: v.shader_visibility.into(),
+                }
             })
             .collect();
         self
@@ -129,12 +136,28 @@ impl RootSignatureDescBuilder {
     }
 
     pub fn build(&self) -> RootSignatureDesc {
+        let (num_parameters, p_parameters) = if self.parameters.is_empty() {
+            (0, std::ptr::null_mut())
+        } else {
+            (
+                self.parameters.len() as _,
+                self.parameters.as_ptr() as *mut _,
+            )
+        };
+        let (num_static_samplers, p_static_samplers) = if self.static_samplers.is_empty() {
+            (0, std::ptr::null_mut())
+        } else {
+            (
+                self.static_samplers.len() as _,
+                self.static_samplers.as_ptr() as *mut _,
+            )
+        };
         RootSignatureDesc {
             inner: D3D12_ROOT_SIGNATURE_DESC {
-                num_parameters: self.parameters.len() as _,
-                p_parameters: self.parameters.as_ptr() as *mut _,
-                num_static_samplers: self.static_samplers.len() as _,
-                p_static_samplers: self.static_samplers.as_ptr() as *mut _,
+                num_parameters,
+                p_parameters,
+                num_static_samplers,
+                p_static_samplers,
                 flags: self.flags,
             },
             phantom: Default::default(),
@@ -143,6 +166,7 @@ impl RootSignatureDescBuilder {
 }
 
 pub struct RootSignatureDesc1Builder {
+    ranges: Vec<Vec<D3D12_DESCRIPTOR_RANGE1>>,
     parameters: Vec<D3D12_ROOT_PARAMETER1>,
     static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
     flags: D3D12_ROOT_SIGNATURE_FLAGS,
@@ -151,6 +175,7 @@ pub struct RootSignatureDesc1Builder {
 impl RootSignatureDesc1Builder {
     pub fn new() -> Self {
         Self {
+            ranges: vec![],
             parameters: vec![],
             static_samplers: vec![],
             flags: Default::default(),
@@ -160,10 +185,14 @@ impl RootSignatureDesc1Builder {
     pub fn parameters(mut self, parameters: &[RootParameter1]) -> Self {
         self.parameters = parameters
             .iter()
-            .map(|v| D3D12_ROOT_PARAMETER1 {
-                parameter_type: v.parameter.get_type(),
-                types: v.parameter.get_raw(),
-                shader_visibility: v.shader_visibility.into(),
+            .map(|v| {
+                let (ranges, types) = v.parameter.get_raw();
+                self.ranges.push(ranges);
+                D3D12_ROOT_PARAMETER1 {
+                    parameter_type: v.parameter.get_type(),
+                    types,
+                    shader_visibility: v.shader_visibility.into(),
+                }
             })
             .collect();
         self
@@ -244,12 +273,28 @@ impl RootSignatureDesc1Builder {
     }
 
     pub fn build(&self) -> RootSignatureDesc1 {
+        let (num_parameters, p_parameters) = if self.parameters.is_empty() {
+            (0, std::ptr::null_mut())
+        } else {
+            (
+                self.parameters.len() as _,
+                self.parameters.as_ptr() as *mut _,
+            )
+        };
+        let (num_static_samplers, p_static_samplers) = if self.static_samplers.is_empty() {
+            (0, std::ptr::null_mut())
+        } else {
+            (
+                self.static_samplers.len() as _,
+                self.static_samplers.as_ptr() as *mut _,
+            )
+        };
         RootSignatureDesc1 {
             inner: D3D12_ROOT_SIGNATURE_DESC1 {
-                num_parameters: self.parameters.len() as _,
-                p_parameters: self.parameters.as_ptr() as *mut _,
-                num_static_samplers: self.static_samplers.len() as _,
-                p_static_samplers: self.static_samplers.as_ptr() as *mut _,
+                num_parameters,
+                p_parameters,
+                num_static_samplers,
+                p_static_samplers,
                 flags: self.flags,
             },
             phantom: Default::default(),
@@ -257,16 +302,19 @@ impl RootSignatureDesc1Builder {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct RootSignatureDesc<'a> {
-    inner: D3D12_ROOT_SIGNATURE_DESC,
+    pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC,
     phantom: PhantomData<&'a ()>,
 }
 
+#[derive(Clone, Debug)]
 pub struct RootSignatureDesc1<'a> {
-    inner: D3D12_ROOT_SIGNATURE_DESC1,
+    pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC1,
     phantom: PhantomData<&'a ()>,
 }
 
+#[derive(Clone, Debug)]
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub struct D3D12_ROOT_SIGNATURE_DESC {
@@ -277,6 +325,7 @@ pub struct D3D12_ROOT_SIGNATURE_DESC {
     pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
 }
 
+#[derive(Clone, Debug)]
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub struct D3D12_ROOT_SIGNATURE_DESC1 {
