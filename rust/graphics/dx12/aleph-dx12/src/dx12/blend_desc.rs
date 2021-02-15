@@ -39,7 +39,6 @@ pub struct BlendDesc<'a> {
 
 impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
     fn into(self) -> D3D12_BLEND_DESC {
-        assert!(self.render_targets.len() <= 8);
         let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
             Default::default(),
             Default::default(),

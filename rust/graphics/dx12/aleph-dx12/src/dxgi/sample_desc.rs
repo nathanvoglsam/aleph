@@ -27,29 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
-use crate::{RootSignatureDesc, RootSignatureDesc1};
+use raw::windows::win32::dxgi::DXGI_SAMPLE_DESC;
 
-pub(crate) mod raw;
-
-#[derive(Clone)]
-pub enum VersionedRootSignatureDesc<'a> {
-    Version10(RootSignatureDesc<'a>),
-    Version11(RootSignatureDesc1<'a>),
+#[derive(Clone, Debug)]
+pub struct SampleDesc {
+    pub count: u32,
+    pub quality: u32,
 }
 
-impl<'a> Into<raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC> for VersionedRootSignatureDesc<'a> {
-    fn into(self) -> raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-        let (version, desc) = match self {
-            VersionedRootSignatureDesc::Version10(v) => (
-                D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_0,
-                v.into(),
-            ),
-            VersionedRootSignatureDesc::Version11(v) => (
-                D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_1,
-                v.into(),
-            ),
-        };
-        raw::D3D12_VERSIONED_ROOT_SIGNATURE_DESC { version, desc }
+impl Into<DXGI_SAMPLE_DESC> for SampleDesc {
+    fn into(self) -> DXGI_SAMPLE_DESC {
+        DXGI_SAMPLE_DESC {
+            count: self.count,
+            quality: self.quality,
+        }
     }
 }

@@ -27,27 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::dx12::root_parameter::raw::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
-use crate::raw::windows::win32::direct3d12::{
-    D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
-};
+use crate::StreamOutputDeclaration;
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC1 {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+#[derive(Clone, Debug)]
+pub struct StreamOutputDesc<'a> {
+    pub so_declarations: &'a [StreamOutputDeclaration<'a>],
+    pub buffer_strides: &'a [u32],
+    pub rasterized_stream: u32,
 }

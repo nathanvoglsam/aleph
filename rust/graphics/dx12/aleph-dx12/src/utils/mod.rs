@@ -28,6 +28,8 @@
 //
 
 use once_cell::sync::OnceCell;
+use raw::windows::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
+use raw::windows::win32::direct3d12::D3D12_SHADER_BYTECODE;
 use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
 use utf16_lit::utf16_null;
@@ -71,7 +73,6 @@ impl<T: Sized> DynamicLoadCell<T> {
 /// Utility function that tries to set the main thread's name to "AlephMainThread", silently failing
 /// if it doesn't
 ///
-#[cfg(target_os = "windows")]
 pub fn name_thread_as_main_thread() {
     use raw::windows::win32::system_services::GetCurrentThread;
     use raw::windows::win32::system_services::SetThreadDescription;
@@ -82,5 +83,36 @@ pub fn name_thread_as_main_thread() {
     }
 }
 
-#[cfg(not(target_os = "windows"))]
-pub fn name_thread_as_main_thread() {}
+pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {
+    D3D12_SHADER_BYTECODE {
+        p_shader_bytecode: blob.as_ptr() as _,
+        bytecode_length: blob.len() as _,
+    }
+}
+
+pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
+    match blob {
+        None => D3D12_SHADER_BYTECODE {
+            p_shader_bytecode: std::ptr::null_mut(),
+            bytecode_length: 0,
+        },
+        Some(blob) => blob_to_shader(blob),
+    }
+}
+
+pub fn blob_to_cached_pso(blob: &[u8]) -> D3D12_CACHED_PIPELINE_STATE {
+    D3D12_CACHED_PIPELINE_STATE {
+        p_cached_blob: blob.as_ptr() as _,
+        cached_blob_size_in_bytes: blob.len() as _,
+    }
+}
+
+pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE_STATE {
+    match blob {
+        None => D3D12_CACHED_PIPELINE_STATE {
+            p_cached_blob: std::ptr::null_mut(),
+            cached_blob_size_in_bytes: 0,
+        },
+        Some(blob) => blob_to_cached_pso(blob),
+    }
+}

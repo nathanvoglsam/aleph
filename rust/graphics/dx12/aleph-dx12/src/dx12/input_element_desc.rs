@@ -32,7 +32,7 @@ use raw::windows::win32::direct3d12::D3D12_INPUT_ELEMENT_DESC;
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash)]
 pub struct InputElementDesc<'a> {
     pub semantic_name: &'a CStr,
     pub semantic_index: u32,

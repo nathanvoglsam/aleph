@@ -30,7 +30,9 @@
 mod adapter;
 mod factory;
 mod format;
+mod sample_desc;
 
 pub use adapter::Adapter;
 pub use factory::Factory;
 pub use format::Format;
+pub use sample_desc::SampleDesc;

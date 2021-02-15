@@ -27,24 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DeviceChild, ID3D12Object, ID3D12RootSignature,
-};
+use crate::dx12::root_signature_desc::{D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1};
+use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
+use std::mem::ManuallyDrop;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct RootSignature(pub(crate) ID3D12RootSignature);
-
-impl RootSignature {}
-
-impl Into<ID3D12Object> for RootSignature {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+    pub version: D3D_ROOT_SIGNATURE_VERSION,
+    pub desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS,
 }
 
-impl Into<ID3D12DeviceChild> for RootSignature {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
+#[repr(C)]
+#[allow(non_camel_case_types)]
+pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
+    pub version_1_0: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
+    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
 }

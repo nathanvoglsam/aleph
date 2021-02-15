@@ -27,18 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_SHADER_BYTECODE,
-};
+use crate::raw::windows::win32::direct3d12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
-
-/// This trait allows for marking types that can be converted into a valid pipeline state stream
-pub trait ToPipelineStateStream {
-    type Buffer;
-
-    fn into_pipeline_state_stream(self) -> Self::Buffer;
-}
 
 #[repr(transparent)]
 pub(crate) struct PackedPipelineStateStreamObject<T>(AlignmentWrapper<Packed<T>>);
@@ -70,22 +61,5 @@ union AlignmentWrapper<T> {
 impl<T> Drop for AlignmentWrapper<T> {
     fn drop(&mut self) {
         let _drop = unsafe { ManuallyDrop::take(&mut self.wrapped) };
-    }
-}
-
-pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {
-    D3D12_SHADER_BYTECODE {
-        p_shader_bytecode: blob.as_ptr() as _,
-        bytecode_length: blob.len() as _,
-    }
-}
-
-pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
-    match blob {
-        None => D3D12_SHADER_BYTECODE {
-            p_shader_bytecode: std::ptr::null_mut(),
-            bytecode_length: 0,
-        },
-        Some(blob) => blob_to_shader(blob),
     }
 }

@@ -27,22 +27,28 @@
 // SOFTWARE.
 //
 
-use crate::dx12::root_signature_desc::raw::{
-    D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1,
-};
-use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
-use std::mem::ManuallyDrop;
+use raw::windows::win32::direct3d12::D3D12_SO_DECLARATION_ENTRY;
+use std::ffi::CStr;
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-    pub version: D3D_ROOT_SIGNATURE_VERSION,
-    pub desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS,
+#[derive(Clone, Debug)]
+pub struct StreamOutputDeclaration<'a> {
+    pub stream: u32,
+    pub semantic_name: &'a CStr,
+    pub semantic_index: u32,
+    pub start_component: u8,
+    pub component_count: u8,
+    pub output_slot: u8,
 }
 
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
-    pub version_1_0: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC>,
-    pub version_1_1: ManuallyDrop<D3D12_ROOT_SIGNATURE_DESC1>,
+impl<'a> Into<D3D12_SO_DECLARATION_ENTRY> for StreamOutputDeclaration<'a> {
+    fn into(self) -> D3D12_SO_DECLARATION_ENTRY {
+        D3D12_SO_DECLARATION_ENTRY {
+            stream: self.stream,
+            semantic_name: self.semantic_name.as_ptr() as *mut _,
+            semantic_index: self.semantic_index,
+            start_component: self.start_component,
+            component_count: self.component_count,
+            output_slot: self.output_slot,
+        }
+    }
 }

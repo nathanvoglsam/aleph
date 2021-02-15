@@ -27,24 +27,35 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DeviceChild, ID3D12Object, ID3D12RootSignature,
-};
+use raw::windows::win32::direct3d12::D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct RootSignature(pub(crate) ID3D12RootSignature);
-
-impl RootSignature {}
-
-impl Into<ID3D12Object> for RootSignature {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum PrimitiveTopologyType {
+    Undefined,
+    Point,
+    Line,
+    Triangle,
+    Patch,
 }
 
-impl Into<ID3D12DeviceChild> for RootSignature {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
+impl Into<D3D12_PRIMITIVE_TOPOLOGY_TYPE> for PrimitiveTopologyType {
+    fn into(self) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE {
+        match self {
+            PrimitiveTopologyType::Undefined => {
+                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED
+            }
+            PrimitiveTopologyType::Point => {
+                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT
+            }
+            PrimitiveTopologyType::Line => {
+                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
+            }
+            PrimitiveTopologyType::Triangle => {
+                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
+            }
+            PrimitiveTopologyType::Patch => {
+                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH
+            }
+        }
     }
 }
