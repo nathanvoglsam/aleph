@@ -32,7 +32,7 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_SIGNATURE_FLAGS,
     D3D12_STATIC_SAMPLER_DESC,
 };
-use crate::{RootParameter, RootParameter1};
+use crate::{RootParameter, RootParameter1, StaticSamplerDesc};
 use std::marker::PhantomData;
 
 type F = D3D12_ROOT_SIGNATURE_FLAGS;
@@ -70,7 +70,8 @@ impl RootSignatureDescBuilder {
         self
     }
 
-    pub fn static_samplers(mut self, static_samplers: &[()]) -> Self {
+    pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
+        self.static_samplers = static_samplers.iter().cloned().map(|v| v.into()).collect();
         self
     }
 
@@ -198,7 +199,8 @@ impl RootSignatureDesc1Builder {
         self
     }
 
-    pub fn static_samplers(mut self, static_samplers: &[()]) -> Self {
+    pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
+        self.static_samplers = static_samplers.iter().cloned().map(|v| v.into()).collect();
         self
     }
 
