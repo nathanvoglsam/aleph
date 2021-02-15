@@ -35,31 +35,6 @@ pub struct GeometryPipeline<'a> {
 }
 
 impl<'a> GeometryPipeline<'a> {
-    pub fn asd(root_signature: &dx12::RootSignature, vs: &[u8], ps: &[u8]) -> Self {
-        dx12::GraphicsPipelineStateDesc {
-            root_signature,
-            vertex_shader: vs,
-            pixel_shader: ps,
-            domain_shader: None,
-            hull_shader: None,
-            geometry_shader: None,
-            stream_output: Default::default(),
-            blend_state: Default::default(),
-            sample_mask: 0,
-            rasterizer_state: Default::default(),
-            depth_stencil_state: Default::default(),
-            input_layout: Default::default(),
-            strip_cut_value: Default::default(),
-            primitive_topology_type: Default::default(),
-            num_render_targets: 0,
-            render_targets: [],
-            dsv_format: Default::default(),
-            sample_desc: Default::default(),
-            node_mask: 0,
-            cached_pso: Default::default(),
-            flags: Default::default(),
-        }
-    }
     pub fn new(
         device: &Device,
         pipeline_layout: &PipelineLayout,
