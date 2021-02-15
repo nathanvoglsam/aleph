@@ -31,7 +31,10 @@ use crate::dx12::root_parameter::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
 use crate::raw::windows::win32::direct3d12::{
     D3D12_ROOT_SIGNATURE_FLAGS, D3D12_STATIC_SAMPLER_DESC,
 };
+use crate::{RootParameter, RootParameter1};
 use std::marker::PhantomData;
+
+type F = D3D12_ROOT_SIGNATURE_FLAGS;
 
 pub struct RootSignatureDescBuilder {
     parameters: Vec<D3D12_ROOT_PARAMETER>,
@@ -44,8 +47,85 @@ impl RootSignatureDescBuilder {
         Self {
             parameters: vec![],
             static_samplers: vec![],
-            flags: Default::default()
+            flags: Default::default(),
         }
+    }
+
+    pub fn parameters(mut self, parameters: &[RootParameter]) -> Self {
+        self.parameters = parameters
+            .iter()
+            .map(|v| D3D12_ROOT_PARAMETER {
+                parameter_type: v.parameter.get_type(),
+                types: v.parameter.get_raw(),
+                shader_visibility: v.shader_visibility.into(),
+            })
+            .collect();
+        self
+    }
+
+    pub fn static_samplers(mut self, static_samplers: &[()]) -> Self {
+        self
+    }
+
+    pub fn allow_input_assembler_input_layout(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT.0;
+        }
+        self
+    }
+    pub fn deny_vertex_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn deny_hull_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn deny_domain_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn deny_geometry_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn deny_pixel_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn allow_stream_output(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT.0;
+        }
+        self
+    }
+    pub fn local_root_signature(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE.0;
+        }
+        self
+    }
+    pub fn deny_amplification_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+    pub fn deny_mesh_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS.0;
+        }
+        self
     }
 
     pub fn build(&self) -> RootSignatureDesc {
@@ -55,9 +135,9 @@ impl RootSignatureDescBuilder {
                 p_parameters: self.parameters.as_ptr() as *mut _,
                 num_static_samplers: self.static_samplers.len() as _,
                 p_static_samplers: self.static_samplers.as_ptr() as *mut _,
-                flags: self.flags
+                flags: self.flags,
             },
-            phantom: Default::default()
+            phantom: Default::default(),
         }
     }
 }
@@ -73,10 +153,96 @@ impl RootSignatureDesc1Builder {
         Self {
             parameters: vec![],
             static_samplers: vec![],
-            flags: Default::default()
+            flags: Default::default(),
         }
     }
-    
+
+    pub fn parameters(mut self, parameters: &[RootParameter1]) -> Self {
+        self.parameters = parameters
+            .iter()
+            .map(|v| D3D12_ROOT_PARAMETER1 {
+                parameter_type: v.parameter.get_type(),
+                types: v.parameter.get_raw(),
+                shader_visibility: v.shader_visibility.into(),
+            })
+            .collect();
+        self
+    }
+
+    pub fn static_samplers(mut self, static_samplers: &[()]) -> Self {
+        self
+    }
+
+    pub fn allow_input_assembler_input_layout(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT.0;
+        }
+        self
+    }
+
+    pub fn deny_vertex_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_VERTEX_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn deny_hull_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn deny_domain_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn deny_geometry_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn deny_pixel_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_PIXEL_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn allow_stream_output(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT.0;
+        }
+        self
+    }
+
+    pub fn local_root_signature(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE.0;
+        }
+        self
+    }
+
+    pub fn deny_amplification_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_AMPLIFICATION_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
+    pub fn deny_mesh_shader_root_access(mut self, flag: bool) -> Self {
+        if flag {
+            self.flags.0 |= F::D3D12_ROOT_SIGNATURE_FLAG_DENY_MESH_SHADER_ROOT_ACCESS.0;
+        }
+        self
+    }
+
     pub fn build(&self) -> RootSignatureDesc1 {
         RootSignatureDesc1 {
             inner: D3D12_ROOT_SIGNATURE_DESC1 {
@@ -84,9 +250,9 @@ impl RootSignatureDesc1Builder {
                 p_parameters: self.parameters.as_ptr() as *mut _,
                 num_static_samplers: self.static_samplers.len() as _,
                 p_static_samplers: self.static_samplers.as_ptr() as *mut _,
-                flags: self.flags
+                flags: self.flags,
             },
-            phantom: Default::default()
+            phantom: Default::default(),
         }
     }
 }
