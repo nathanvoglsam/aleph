@@ -119,3 +119,4 @@ pub use stream_output_desc::StreamOutputDesc;
 pub use submission_builder::SubmissionBuilder;
 pub use swapchain::SwapChain;
 pub use swapchain::SwapChainBuilder;
+pub use versioned_root_signature_desc::VersionedRootSignatureDesc;
