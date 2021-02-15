@@ -320,6 +320,12 @@ pub struct GraphicsPipelineStateStream<'a> {
     phantom: PhantomData<&'a ()>,
 }
 
+impl<'a> GraphicsPipelineStateStream<'a> {
+    pub fn builder() -> GraphicsPipelineStateStreamBuilder<'a> {
+        GraphicsPipelineStateStreamBuilder::new()
+    }
+}
+
 impl<'a> Deref for GraphicsPipelineStateStream<'a> {
     type Target = [u8; size_of::<packed::Packed>()];
 
