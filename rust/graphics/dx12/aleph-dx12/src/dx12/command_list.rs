@@ -28,67 +28,9 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12DeviceChild, ID3D12GraphicsCommandList, ID3D12Object, D3D12_COMMAND_LIST_TYPE,
+    ID3D12DeviceChild, ID3D12GraphicsCommandList, ID3D12Object,
 };
-
-/// Wrapper for `D3D12_COMMAND_LIST_TYPE`
-#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
-pub enum CommandListType {
-    Direct,
-    Bundle,
-    Compute,
-    Copy,
-    VideoDecode,
-    VideoProcess,
-    VideoEncode,
-}
-
-impl CommandListType {
-    fn from_raw(v: D3D12_COMMAND_LIST_TYPE) -> Option<CommandListType> {
-        match v {
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT => {
-                Some(CommandListType::Direct)
-            }
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_BUNDLE => {
-                Some(CommandListType::Bundle)
-            }
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE => {
-                Some(CommandListType::Compute)
-            }
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY => Some(CommandListType::Copy),
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE => {
-                Some(CommandListType::VideoDecode)
-            }
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS => {
-                Some(CommandListType::VideoProcess)
-            }
-            D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE => {
-                Some(CommandListType::VideoEncode)
-            }
-            _ => None,
-        }
-    }
-}
-
-impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
-    fn into(self) -> D3D12_COMMAND_LIST_TYPE {
-        match self {
-            CommandListType::Direct => D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-            CommandListType::Bundle => D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_BUNDLE,
-            CommandListType::Compute => D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE,
-            CommandListType::Copy => D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY,
-            CommandListType::VideoDecode => {
-                D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE
-            }
-            CommandListType::VideoProcess => {
-                D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS
-            }
-            CommandListType::VideoEncode => {
-                D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE
-            }
-        }
-    }
-}
+use crate::CommandListType;
 
 #[repr(transparent)]
 pub struct OpenGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);

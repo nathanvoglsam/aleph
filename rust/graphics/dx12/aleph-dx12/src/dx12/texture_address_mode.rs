@@ -29,31 +29,18 @@
 
 use raw::windows::win32::direct3d12::D3D12_TEXTURE_ADDRESS_MODE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum TextureAddressMode {
-    Wrap,
-    Mirror,
-    Clamp,
-    Border,
-    MirrorOnce,
+    Wrap = 1,
+    Mirror = 2,
+    Clamp = 3,
+    Border = 4,
+    MirrorOnce = 5,
 }
 
 impl Into<D3D12_TEXTURE_ADDRESS_MODE> for TextureAddressMode {
     fn into(self) -> D3D12_TEXTURE_ADDRESS_MODE {
-        match self {
-            TextureAddressMode::Wrap => D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_WRAP,
-            TextureAddressMode::Mirror => {
-                D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_MIRROR
-            }
-            TextureAddressMode::Clamp => {
-                D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_CLAMP
-            }
-            TextureAddressMode::Border => {
-                D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_BORDER
-            }
-            TextureAddressMode::MirrorOnce => {
-                D3D12_TEXTURE_ADDRESS_MODE::D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE
-            }
-        }
+        D3D12_TEXTURE_ADDRESS_MODE(self as i32)
     }
 }

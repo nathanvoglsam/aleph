@@ -29,129 +29,49 @@
 
 use raw::windows::win32::direct3d12::D3D12_FILTER;
 
+#[repr(i32)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Filter {
-    MinMagMipPoint,
-    MinMagPointMipLinear,
-    MinPointMagLinearMipPoint,
-    MinPointMagMipLinear,
-    MinLinearMagMipPoint,
-    MinLinearMagPointMipLinear,
-    MinMagLinearMipPoint,
-    MinMagMipLinear,
-    Anisotropic,
-    ComparisonMinMagMipPoint,
-    ComparisonMinMagPointMipLinear,
-    ComparisonMinPointMagLinearMipPoint,
-    ComparisonMinPointMagMipLinear,
-    ComparisonMinLinearMagMipPoint,
-    ComparisonMinLinearMagPointMipLinear,
-    ComparisonMinMagLinearMipPoint,
-    ComparisonMinMagMipLinear,
-    ComparisonAnisotropic,
-    MinimumMinMagMipPoint,
-    MinimumMinMagPointMipLinear,
-    MinimumMinPointMagLinearMipPoint,
-    MinimumMinPointMagMipLinear,
-    MinimumMinLinearMagMipPoint,
-    MinimumMinLinearMagPointMipLinear,
-    MinimumMinMagLinearMipPoint,
-    MinimumMinMagMipLinear,
-    MinimumAnisotropic,
-    MaximumMinMagMipPoint,
-    MaximumMinMagPointMipLinear,
-    MaximumMinPointMagLinearMipPoint,
-    MaximumMinPointMagMipLinear,
-    MaximumMinLinearMagMipPoint,
-    MaximumMinLinearMagPointMipLinear,
-    MaximumMinMagLinearMipPoint,
-    MaximumMinMagMipLinear,
-    MaximumAnisotropic,
+    MinMagMipPoint = 0,
+    MinMagPointMipLinear = 1,
+    MinPointMagLinearMipPoint = 4,
+    MinPointMagMipLinear = 5,
+    MinLinearMagMipPoint = 16,
+    MinLinearMagPointMipLinear = 17,
+    MinMagLinearMipPoint = 20,
+    MinMagMipLinear = 21,
+    Anisotropic = 85,
+    ComparisonMinMagMipPoint = 128,
+    ComparisonMinMagPointMipLinear = 129,
+    ComparisonMinPointMagLinearMipPoint = 132,
+    ComparisonMinPointMagMipLinear = 133,
+    ComparisonMinLinearMagMipPoint = 144,
+    ComparisonMinLinearMagPointMipLinear = 145,
+    ComparisonMinMagLinearMipPoint = 148,
+    ComparisonMinMagMipLinear = 149,
+    ComparisonAnisotropic = 213,
+    MinimumMinMagMipPoint = 256,
+    MinimumMinMagPointMipLinear = 257,
+    MinimumMinPointMagLinearMipPoint = 260,
+    MinimumMinPointMagMipLinear = 261,
+    MinimumMinLinearMagMipPoint = 272,
+    MinimumMinLinearMagPointMipLinear = 273,
+    MinimumMinMagLinearMipPoint = 276,
+    MinimumMinMagMipLinear = 277,
+    MinimumAnisotropic = 341,
+    MaximumMinMagMipPoint = 384,
+    MaximumMinMagPointMipLinear = 385,
+    MaximumMinPointMagLinearMipPoint = 388,
+    MaximumMinPointMagMipLinear = 389,
+    MaximumMinLinearMagMipPoint = 400,
+    MaximumMinLinearMagPointMipLinear = 401,
+    MaximumMinMagLinearMipPoint = 404,
+    MaximumMinMagMipLinear = 405,
+    MaximumAnisotropic = 469,
 }
 
 impl Into<D3D12_FILTER> for Filter {
     fn into(self) -> D3D12_FILTER {
-        match self {
-            Filter::MinMagMipPoint => D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_POINT,
-            Filter::MinMagPointMipLinear => D3D12_FILTER::D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR,
-            Filter::MinPointMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT
-            }
-            Filter::MinPointMagMipLinear => D3D12_FILTER::D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR,
-            Filter::MinLinearMagMipPoint => D3D12_FILTER::D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT,
-            Filter::MinLinearMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-            }
-            Filter::MinMagLinearMipPoint => D3D12_FILTER::D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
-            Filter::MinMagMipLinear => D3D12_FILTER::D3D12_FILTER_MIN_MAG_MIP_LINEAR,
-            Filter::Anisotropic => D3D12_FILTER::D3D12_FILTER_ANISOTROPIC,
-            Filter::ComparisonMinMagMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT
-            }
-            Filter::ComparisonMinMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR
-            }
-            Filter::ComparisonMinPointMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT
-            }
-            Filter::ComparisonMinPointMagMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR
-            }
-            Filter::ComparisonMinLinearMagMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT
-            }
-            Filter::ComparisonMinLinearMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-            }
-            Filter::ComparisonMinMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT
-            }
-            Filter::ComparisonMinMagMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR
-            }
-            Filter::ComparisonAnisotropic => D3D12_FILTER::D3D12_FILTER_COMPARISON_ANISOTROPIC,
-            Filter::MinimumMinMagMipPoint => D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_MAG_MIP_POINT,
-            Filter::MinimumMinMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_MAG_POINT_MIP_LINEAR
-            }
-            Filter::MinimumMinPointMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT
-            }
-            Filter::MinimumMinPointMagMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_POINT_MAG_MIP_LINEAR
-            }
-            Filter::MinimumMinLinearMagMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_MIP_POINT
-            }
-            Filter::MinimumMinLinearMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-            }
-            Filter::MinimumMinMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_MAG_LINEAR_MIP_POINT
-            }
-            Filter::MinimumMinMagMipLinear => D3D12_FILTER::D3D12_FILTER_MINIMUM_MIN_MAG_MIP_LINEAR,
-            Filter::MinimumAnisotropic => D3D12_FILTER::D3D12_FILTER_MINIMUM_ANISOTROPIC,
-            Filter::MaximumMinMagMipPoint => D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_POINT,
-            Filter::MaximumMinMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_MAG_POINT_MIP_LINEAR
-            }
-            Filter::MaximumMinPointMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_LINEAR_MIP_POINT
-            }
-            Filter::MaximumMinPointMagMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_POINT_MAG_MIP_LINEAR
-            }
-            Filter::MaximumMinLinearMagMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_MIP_POINT
-            }
-            Filter::MaximumMinLinearMagPointMipLinear => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_LINEAR_MAG_POINT_MIP_LINEAR
-            }
-            Filter::MaximumMinMagLinearMipPoint => {
-                D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_MAG_LINEAR_MIP_POINT
-            }
-            Filter::MaximumMinMagMipLinear => D3D12_FILTER::D3D12_FILTER_MAXIMUM_MIN_MAG_MIP_LINEAR,
-            Filter::MaximumAnisotropic => D3D12_FILTER::D3D12_FILTER_MAXIMUM_ANISOTROPIC,
-        }
+        D3D12_FILTER(self as i32)
     }
 }

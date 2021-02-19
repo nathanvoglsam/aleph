@@ -29,17 +29,15 @@
 
 use raw::windows::win32::direct3d12::D3D12_DEPTH_WRITE_MASK;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum DepthWriteMask {
-    Zero,
-    All,
+    Zero = 0,
+    All = 1,
 }
 
 impl Into<D3D12_DEPTH_WRITE_MASK> for DepthWriteMask {
     fn into(self) -> D3D12_DEPTH_WRITE_MASK {
-        match self {
-            DepthWriteMask::Zero => D3D12_DEPTH_WRITE_MASK::D3D12_DEPTH_WRITE_MASK_ZERO,
-            DepthWriteMask::All => D3D12_DEPTH_WRITE_MASK::D3D12_DEPTH_WRITE_MASK_ALL,
-        }
+        D3D12_DEPTH_WRITE_MASK(self as i32)
     }
 }

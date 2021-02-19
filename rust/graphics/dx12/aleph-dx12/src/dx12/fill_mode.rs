@@ -29,17 +29,15 @@
 
 use raw::windows::win32::direct3d12::D3D12_FILL_MODE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum FillMode {
-    Wireframe,
-    Solid,
+    Wireframe = 2,
+    Solid = 3,
 }
 
 impl Into<D3D12_FILL_MODE> for FillMode {
     fn into(self) -> D3D12_FILL_MODE {
-        match self {
-            FillMode::Wireframe => D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME,
-            FillMode::Solid => D3D12_FILL_MODE::D3D12_FILL_MODE_SOLID,
-        }
+        D3D12_FILL_MODE(self as i32)
     }
 }

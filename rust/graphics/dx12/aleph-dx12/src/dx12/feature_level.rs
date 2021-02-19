@@ -35,34 +35,24 @@ use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 ///
 /// Using camel case for the names would make the names too difficult to read as there would be no
 /// way to separate the version parts (i.e 9_1 to 91)
+#[repr(i32)]
 #[allow(non_camel_case_types)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 pub enum FeatureLevel {
-    Level_1_0_Core,
-    Level_9_1,
-    Level_9_2,
-    Level_9_3,
-    Level_10_0,
-    Level_10_1,
-    Level_11_0,
-    Level_11_1,
-    Level_12_0,
-    Level_12_1,
+    Level_1_0_Core = 4096,
+    Level_9_1 = 37120,
+    Level_9_2 = 37376,
+    Level_9_3 = 37632,
+    Level_10_0 = 40960,
+    Level_10_1 = 41216,
+    Level_11_0 = 45056,
+    Level_11_1 = 45312,
+    Level_12_0 = 49152,
+    Level_12_1 = 49408,
 }
 
 impl Into<D3D_FEATURE_LEVEL> for FeatureLevel {
     fn into(self) -> D3D_FEATURE_LEVEL {
-        match self {
-            FeatureLevel::Level_1_0_Core => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_1_0_CORE,
-            FeatureLevel::Level_9_1 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_9_1,
-            FeatureLevel::Level_9_2 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_9_2,
-            FeatureLevel::Level_9_3 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_9_3,
-            FeatureLevel::Level_10_0 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_10_0,
-            FeatureLevel::Level_10_1 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_10_1,
-            FeatureLevel::Level_11_0 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_0,
-            FeatureLevel::Level_11_1 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_11_1,
-            FeatureLevel::Level_12_0 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_12_0,
-            FeatureLevel::Level_12_1 => D3D_FEATURE_LEVEL::D3D_FEATURE_LEVEL_12_1,
-        }
+        D3D_FEATURE_LEVEL(self as i32)
     }
 }

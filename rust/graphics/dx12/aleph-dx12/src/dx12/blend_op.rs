@@ -29,23 +29,18 @@
 
 use raw::windows::win32::direct3d12::D3D12_BLEND_OP;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum BlendOp {
-    Add,
-    Subtract,
-    SubtractReverse,
-    Min,
-    Max,
+    Add = 1,
+    Subtract = 2,
+    SubtractReverse = 3,
+    Min = 4,
+    Max = 5,
 }
 
 impl Into<D3D12_BLEND_OP> for BlendOp {
     fn into(self) -> D3D12_BLEND_OP {
-        match self {
-            BlendOp::Add => D3D12_BLEND_OP::D3D12_BLEND_OP_ADD,
-            BlendOp::Subtract => D3D12_BLEND_OP::D3D12_BLEND_OP_SUBTRACT,
-            BlendOp::SubtractReverse => D3D12_BLEND_OP::D3D12_BLEND_OP_REV_SUBTRACT,
-            BlendOp::Min => D3D12_BLEND_OP::D3D12_BLEND_OP_MIN,
-            BlendOp::Max => D3D12_BLEND_OP::D3D12_BLEND_OP_MAX,
-        }
+        D3D12_BLEND_OP(self as i32)
     }
 }

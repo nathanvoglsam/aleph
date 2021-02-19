@@ -27,18 +27,20 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_CULL_MODE;
+use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_TYPE;
 
+/// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[repr(i32)]
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub enum CullMode {
-    None = 1,
-    Front = 2,
-    Back = 3,
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+pub enum DescriptorHeapType {
+    CbvSrvUav = 0,
+    Sampler = 1,
+    RenderTargetView = 2,
+    DepthStencilView = 3,
 }
 
-impl Into<D3D12_CULL_MODE> for CullMode {
-    fn into(self) -> D3D12_CULL_MODE {
-        D3D12_CULL_MODE(self as i32)
+impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
+    fn into(self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
+        D3D12_DESCRIPTOR_HEAP_TYPE(self as i32)
     }
 }

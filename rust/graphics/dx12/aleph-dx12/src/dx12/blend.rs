@@ -29,47 +29,30 @@
 
 use raw::windows::win32::direct3d12::D3D12_BLEND;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum Blend {
-    Zero,
-    One,
-    SrcColor,
-    SrcColorInv,
-    SrcAlpha,
-    SrcAlphaInv,
-    DestAlpha,
-    DestAlphaInv,
-    DestColor,
-    DestColorInv,
-    SrcAlphaSaturated,
-    BlendFactor,
-    BlendFactorInv,
-    Src1Color,
-    Src1ColorInv,
-    Src1Alpha,
-    Src1AlphaInv,
+    Zero = 1,
+    One = 2,
+    SrcColor = 3,
+    SrcColorInv = 4,
+    SrcAlpha = 5,
+    SrcAlphaInv = 6,
+    DestAlpha = 7,
+    DestAlphaInv = 8,
+    DestColor = 9,
+    DestColorInv = 10,
+    SrcAlphaSaturated = 11,
+    BlendFactor = 14,
+    BlendFactorInv = 15,
+    Src1Color = 16,
+    Src1ColorInv = 17,
+    Src1Alpha = 18,
+    Src1AlphaInv = 19,
 }
 
 impl Into<D3D12_BLEND> for Blend {
     fn into(self) -> D3D12_BLEND {
-        match self {
-            Blend::Zero => D3D12_BLEND::D3D12_BLEND_ZERO,
-            Blend::One => D3D12_BLEND::D3D12_BLEND_ONE,
-            Blend::SrcColor => D3D12_BLEND::D3D12_BLEND_SRC_COLOR,
-            Blend::SrcColorInv => D3D12_BLEND::D3D12_BLEND_INV_SRC_COLOR,
-            Blend::SrcAlpha => D3D12_BLEND::D3D12_BLEND_SRC_ALPHA,
-            Blend::SrcAlphaInv => D3D12_BLEND::D3D12_BLEND_INV_SRC_ALPHA,
-            Blend::DestAlpha => D3D12_BLEND::D3D12_BLEND_DEST_ALPHA,
-            Blend::DestAlphaInv => D3D12_BLEND::D3D12_BLEND_INV_DEST_ALPHA,
-            Blend::DestColor => D3D12_BLEND::D3D12_BLEND_DEST_COLOR,
-            Blend::DestColorInv => D3D12_BLEND::D3D12_BLEND_INV_DEST_COLOR,
-            Blend::SrcAlphaSaturated => D3D12_BLEND::D3D12_BLEND_SRC_ALPHA_SAT,
-            Blend::BlendFactor => D3D12_BLEND::D3D12_BLEND_BLEND_FACTOR,
-            Blend::BlendFactorInv => D3D12_BLEND::D3D12_BLEND_INV_BLEND_FACTOR,
-            Blend::Src1Color => D3D12_BLEND::D3D12_BLEND_SRC1_COLOR,
-            Blend::Src1ColorInv => D3D12_BLEND::D3D12_BLEND_INV_SRC1_COLOR,
-            Blend::Src1Alpha => D3D12_BLEND::D3D12_BLEND_SRC1_ALPHA,
-            Blend::Src1AlphaInv => D3D12_BLEND::D3D12_BLEND_INV_SRC1_ALPHA,
-        }
+        D3D12_BLEND(self as i32)
     }
 }

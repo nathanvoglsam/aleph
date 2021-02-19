@@ -29,31 +29,21 @@
 
 use raw::windows::win32::direct3d12::D3D12_SHADER_VISIBILITY;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum ShaderVisibility {
-    All,
-    Vertex,
-    Hull,
-    Domain,
-    Geometry,
-    Pixel,
-    Amplification,
-    Mesh,
+    All = 0,
+    Vertex = 1,
+    Hull = 2,
+    Domain = 3,
+    Geometry = 4,
+    Pixel = 5,
+    Amplification = 6,
+    Mesh = 7,
 }
 
 impl Into<D3D12_SHADER_VISIBILITY> for ShaderVisibility {
     fn into(self) -> D3D12_SHADER_VISIBILITY {
-        match self {
-            ShaderVisibility::All => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_ALL,
-            ShaderVisibility::Vertex => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_VERTEX,
-            ShaderVisibility::Hull => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_HULL,
-            ShaderVisibility::Domain => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_DOMAIN,
-            ShaderVisibility::Geometry => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_GEOMETRY,
-            ShaderVisibility::Pixel => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_PIXEL,
-            ShaderVisibility::Amplification => {
-                D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_AMPLIFICATION
-            }
-            ShaderVisibility::Mesh => D3D12_SHADER_VISIBILITY::D3D12_SHADER_VISIBILITY_MESH,
-        }
+        D3D12_SHADER_VISIBILITY(self as i32)
     }
 }

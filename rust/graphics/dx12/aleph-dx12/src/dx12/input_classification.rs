@@ -29,21 +29,15 @@
 
 use raw::windows::win32::direct3d12::D3D12_INPUT_CLASSIFICATION;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum InputClassification {
-    PerVertex,
-    PerInstance,
+    PerVertex = 0,
+    PerInstance = 1,
 }
 
 impl Into<D3D12_INPUT_CLASSIFICATION> for InputClassification {
     fn into(self) -> D3D12_INPUT_CLASSIFICATION {
-        match self {
-            InputClassification::PerVertex => {
-                D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA
-            }
-            InputClassification::PerInstance => {
-                D3D12_INPUT_CLASSIFICATION::D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA
-            }
-        }
+        D3D12_INPUT_CLASSIFICATION(self as i32)
     }
 }

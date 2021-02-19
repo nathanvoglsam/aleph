@@ -29,25 +29,16 @@
 
 use raw::windows::win32::direct3d12::D3D12_STATIC_BORDER_COLOR;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash, Debug)]
 pub enum StaticBorderColor {
-    TransparentBlack,
-    OpaqueBlack,
-    OpaqueWhite,
+    TransparentBlack = 0,
+    OpaqueBlack = 1,
+    OpaqueWhite = 2,
 }
 
 impl Into<D3D12_STATIC_BORDER_COLOR> for StaticBorderColor {
     fn into(self) -> D3D12_STATIC_BORDER_COLOR {
-        match self {
-            StaticBorderColor::TransparentBlack => {
-                D3D12_STATIC_BORDER_COLOR::D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK
-            }
-            StaticBorderColor::OpaqueBlack => {
-                D3D12_STATIC_BORDER_COLOR::D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK
-            }
-            StaticBorderColor::OpaqueWhite => {
-                D3D12_STATIC_BORDER_COLOR::D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE
-            }
-        }
+        D3D12_STATIC_BORDER_COLOR(self as i32)
     }
 }

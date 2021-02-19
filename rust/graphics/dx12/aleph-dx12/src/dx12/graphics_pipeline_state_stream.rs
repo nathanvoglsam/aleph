@@ -38,14 +38,14 @@ use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 use crate::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 use crate::{
     dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc,
-    PrimitiveTopologyType, RasterizerDesc, StreamOutputDesc,
+    PrimitiveTopologyType, RasterizerDesc, RootSignature, StreamOutputDesc,
 };
 use std::marker::PhantomData;
 use std::mem::{size_of, transmute, transmute_copy};
 use std::ops::Deref;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
-    root_signature: Option<&'a crate::RootSignature>,
+    root_signature: Option<&'a RootSignature>,
     vertex_shader: Option<&'a [u8]>,
     pixel_shader: Option<&'a [u8]>,
     domain_shader: Option<&'a [u8]>,

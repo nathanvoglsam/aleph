@@ -29,31 +29,21 @@
 
 use raw::windows::win32::direct3d12::D3D12_COMPARISON_FUNC;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum ComparisonFunc {
-    Never,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterEqual,
-    Always,
+    Never = 1,
+    Less = 2,
+    Equal = 3,
+    LessEqual = 4,
+    Greater = 5,
+    NotEqual = 6,
+    GreaterEqual = 7,
+    Always = 8,
 }
 
 impl Into<D3D12_COMPARISON_FUNC> for ComparisonFunc {
     fn into(self) -> D3D12_COMPARISON_FUNC {
-        match self {
-            ComparisonFunc::Never => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER,
-            ComparisonFunc::Less => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS,
-            ComparisonFunc::Equal => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_EQUAL,
-            ComparisonFunc::LessEqual => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS_EQUAL,
-            ComparisonFunc::Greater => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER,
-            ComparisonFunc::NotEqual => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NOT_EQUAL,
-            ComparisonFunc::GreaterEqual => {
-                D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL
-            }
-            ComparisonFunc::Always => D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS,
-        }
+        D3D12_COMPARISON_FUNC(self as i32)
     }
 }

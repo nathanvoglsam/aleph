@@ -29,21 +29,15 @@
 
 use raw::windows::win32::direct3d12::D3D12_CONSERVATIVE_RASTERIZATION_MODE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum ConservativeRasterizationMode {
-    Off,
-    On,
+    Off = 0,
+    On = 1,
 }
 
 impl Into<D3D12_CONSERVATIVE_RASTERIZATION_MODE> for ConservativeRasterizationMode {
     fn into(self) -> D3D12_CONSERVATIVE_RASTERIZATION_MODE {
-        match self {
-            ConservativeRasterizationMode::Off => {
-                D3D12_CONSERVATIVE_RASTERIZATION_MODE::D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF
-            }
-            ConservativeRasterizationMode::On => {
-                D3D12_CONSERVATIVE_RASTERIZATION_MODE::D3D12_CONSERVATIVE_RASTERIZATION_MODE_ON
-            }
-        }
+        D3D12_CONSERVATIVE_RASTERIZATION_MODE(self as i32)
     }
 }

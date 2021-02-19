@@ -29,33 +29,18 @@
 
 use raw::windows::win32::direct3d12::D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum PrimitiveTopologyType {
-    Undefined,
-    Point,
-    Line,
-    Triangle,
-    Patch,
+    Undefined = 0,
+    Point = 1,
+    Line = 2,
+    Triangle = 3,
+    Patch = 4,
 }
 
 impl Into<D3D12_PRIMITIVE_TOPOLOGY_TYPE> for PrimitiveTopologyType {
     fn into(self) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE {
-        match self {
-            PrimitiveTopologyType::Undefined => {
-                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED
-            }
-            PrimitiveTopologyType::Point => {
-                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT
-            }
-            PrimitiveTopologyType::Line => {
-                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE
-            }
-            PrimitiveTopologyType::Triangle => {
-                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE
-            }
-            PrimitiveTopologyType::Patch => {
-                D3D12_PRIMITIVE_TOPOLOGY_TYPE::D3D12_PRIMITIVE_TOPOLOGY_TYPE_PATCH
-            }
-        }
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE(self as i32)
     }
 }

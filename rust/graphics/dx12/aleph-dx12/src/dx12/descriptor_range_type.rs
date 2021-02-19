@@ -29,29 +29,17 @@
 
 use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_RANGE_TYPE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum DescriptorRangeType {
-    SRV,
-    UAV,
-    CBV,
-    SAMPLER,
+    SRV = 0,
+    UAV = 1,
+    CBV = 2,
+    Sampler = 3,
 }
 
 impl Into<D3D12_DESCRIPTOR_RANGE_TYPE> for DescriptorRangeType {
     fn into(self) -> D3D12_DESCRIPTOR_RANGE_TYPE {
-        match self {
-            DescriptorRangeType::SRV => {
-                D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SRV
-            }
-            DescriptorRangeType::UAV => {
-                D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_UAV
-            }
-            DescriptorRangeType::CBV => {
-                D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_CBV
-            }
-            DescriptorRangeType::SAMPLER => {
-                D3D12_DESCRIPTOR_RANGE_TYPE::D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER
-            }
-        }
+        D3D12_DESCRIPTOR_RANGE_TYPE(self as i32)
     }
 }

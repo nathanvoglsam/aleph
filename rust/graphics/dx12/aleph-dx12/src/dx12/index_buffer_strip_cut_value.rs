@@ -29,25 +29,16 @@
 
 use raw::windows::win32::direct3d12::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE;
 
+#[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum IndexBufferStripCutValue {
-    Disabled,
-    All16,
-    All32,
+    Disabled = 0,
+    All16 = 1,
+    All32 = 2,
 }
 
 impl Into<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE> for IndexBufferStripCutValue {
     fn into(self) -> D3D12_INDEX_BUFFER_STRIP_CUT_VALUE {
-        match self {
-            IndexBufferStripCutValue::Disabled => {
-                D3D12_INDEX_BUFFER_STRIP_CUT_VALUE::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED
-            }
-            IndexBufferStripCutValue::All16 => {
-                D3D12_INDEX_BUFFER_STRIP_CUT_VALUE::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFF
-            }
-            IndexBufferStripCutValue::All32 => {
-                D3D12_INDEX_BUFFER_STRIP_CUT_VALUE::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_0xFFFFFFFF
-            }
-        }
+        D3D12_INDEX_BUFFER_STRIP_CUT_VALUE(self as i32)
     }
 }
