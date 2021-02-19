@@ -27,11 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, ID3D12DeviceChild, ID3D12Object, D3D12_DESCRIPTOR_HEAP_DESC,
-    D3D12_DESCRIPTOR_HEAP_FLAGS,
-};
-use crate::raw::windows::{Abi, Interface};
+use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_DESC;
 use crate::{DescriptorHeapFlags, DescriptorHeapType};
 
 pub struct DescriptorHeapDescBuilder {

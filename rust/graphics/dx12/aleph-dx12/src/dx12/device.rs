@@ -164,7 +164,7 @@ impl Device {
         descriptor_heap_desc: &DescriptorHeapDesc,
     ) -> raw::windows::Result<DescriptorHeap> {
         unsafe {
-            let desc = descriptor_heap_desc.into();
+            let desc = descriptor_heap_desc.clone().into();
             let mut out: Option<ID3D12DescriptorHeap> = None;
             self.0
                 .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, out.set_abi())
