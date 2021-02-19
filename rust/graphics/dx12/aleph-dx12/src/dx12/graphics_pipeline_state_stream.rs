@@ -59,7 +59,7 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     input_layout: Option<Vec<D3D12_INPUT_ELEMENT_DESC>>,
     strip_cut_value: Option<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE>,
     primitive_topology_type: Option<D3D12_PRIMITIVE_TOPOLOGY_TYPE>,
-    render_targets: Option<Vec<DXGI_FORMAT>>,
+    render_targets: Option<&'a [DXGI_FORMAT]>,
     dsv_format: Option<DXGI_FORMAT>,
     sample_desc: Option<DXGI_SAMPLE_DESC>,
     node_mask: Option<u32>,
@@ -177,7 +177,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     }
 
     pub fn render_targets(mut self, render_targets: &[dxgi::Format]) -> Self {
-        self.render_targets = Some(render_targets.iter().map(|v| v.clone().into()).collect());
+        self.render_targets = Some(unsafe { std::mem::transmute(render_targets) });
         self
     }
 
