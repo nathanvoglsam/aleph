@@ -41,7 +41,7 @@ struct EguiPixelInput {
  * The standard vertex input layout that the Egui shaders use
  */
 struct EguiVertexInput {
-    [[vk::location(0)]] float2 Pos   : SV_POSITION;
+    [[vk::location(0)]] float2 Pos   : POSITION;
     [[vk::location(1)]] float2 UV    : TEXCOORD0;
     [[vk::location(2)]] float4 Color : COLOR0;
 };
