@@ -28,12 +28,11 @@
 //
 
 use std::ffi::CStr;
-use std::mem;
 
 #[inline]
 #[allow(dead_code)]
 pub unsafe fn str_to_cstr(string: &'static str) -> &'static CStr {
-    mem::transmute(string)
+    CStr::from_ptr(string.as_ptr() as *const _)
 }
 
 #[macro_export]
