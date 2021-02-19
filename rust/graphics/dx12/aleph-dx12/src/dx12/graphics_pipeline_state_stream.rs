@@ -39,6 +39,7 @@ use crate::{
     dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc,
     PrimitiveTopologyType, RasterizerDesc, RootSignature, StreamOutputDesc,
 };
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::mem::{size_of, transmute, transmute_copy};
 use std::ops::Deref;
@@ -58,7 +59,7 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     input_layout: Option<Vec<D3D12_INPUT_ELEMENT_DESC>>,
     strip_cut_value: IndexBufferStripCutValue,
     primitive_topology_type: PrimitiveTopologyType,
-    render_targets: &'a [dxgi::Format],
+    rtv_formats: &'a [dxgi::Format],
     dsv_format: dxgi::Format,
     sample_desc: dxgi::SampleDesc,
     cached_pso: Option<&'a [u8]>,
@@ -81,7 +82,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             input_layout: None,
             strip_cut_value: IndexBufferStripCutValue::default(),
             primitive_topology_type: PrimitiveTopologyType::default(),
-            render_targets: &[],
+            rtv_formats: &[],
             dsv_format: dxgi::Format::default(),
             sample_desc: dxgi::SampleDesc::default(),
             cached_pso: None,
@@ -171,8 +172,8 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
-    pub fn render_targets(mut self, render_targets: &'a [dxgi::Format]) -> Self {
-        self.render_targets = render_targets;
+    pub fn rtv_formats(mut self, rtv_formats: &'a [dxgi::Format]) -> Self {
+        self.rtv_formats = rtv_formats;
         self
     }
 
@@ -196,8 +197,8 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
 
         // Build the render target format array
         let mut rt_formats = [DXGI_FORMAT::default(); 8];
-        for i in 0..self.render_targets.len() {
-            rt_formats[i] = self.render_targets[i].into();
+        for i in 0..self.rtv_formats.len() {
+            rt_formats[i] = self.rtv_formats[i].into();
         }
 
         // Get the input layout array
@@ -275,7 +276,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
                     rt_formats,
-                    num_render_targets: self.render_targets.len() as _,
+                    num_render_targets: self.rtv_formats.len() as _,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
@@ -309,9 +310,16 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     }
 }
 
+#[derive(Clone)]
 pub struct GraphicsPipelineStateStream<'a> {
     buffer: [u8; size_of::<packed::Packed>()],
     phantom: PhantomData<&'a ()>,
+}
+
+impl<'a> Hash for GraphicsPipelineStateStream<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.buffer.hash(state)
+    }
 }
 
 impl<'a> GraphicsPipelineStateStream<'a> {

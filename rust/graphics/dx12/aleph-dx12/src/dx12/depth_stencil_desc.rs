@@ -30,6 +30,62 @@
 use crate::{ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
 use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_DESC;
 
+pub struct DepthStencilDescBuilder {
+    inner: DepthStencilDesc,
+}
+
+impl DepthStencilDescBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: DepthStencilDesc::default(),
+        }
+    }
+
+    pub fn depth_enable(mut self, depth_enable: bool) -> Self {
+        self.inner.depth_enable = depth_enable;
+        self
+    }
+
+    pub fn depth_write_mask(mut self, depth_write_mask: DepthWriteMask) -> Self {
+        self.inner.depth_write_mask = depth_write_mask;
+        self
+    }
+
+    pub fn depth_func(mut self, depth_func: ComparisonFunc) -> Self {
+        self.inner.depth_func = depth_func;
+        self
+    }
+
+    pub fn stencil_enable(mut self, stencil_enable: bool) -> Self {
+        self.inner.stencil_enable = stencil_enable;
+        self
+    }
+
+    pub fn stencil_read_mask(mut self, stencil_read_mask: u8) -> Self {
+        self.inner.stencil_read_mask = stencil_read_mask;
+        self
+    }
+
+    pub fn stencil_write_mask(mut self, stencil_write_mask: u8) -> Self {
+        self.inner.stencil_write_mask = stencil_write_mask;
+        self
+    }
+
+    pub fn front_face(mut self, front_face: DepthStencilOpDesc) -> Self {
+        self.inner.front_face = front_face;
+        self
+    }
+
+    pub fn back_face(mut self, back_face: DepthStencilOpDesc) -> Self {
+        self.inner.back_face = back_face;
+        self
+    }
+
+    pub fn build(self) -> DepthStencilDesc {
+        self.inner
+    }
+}
+
 #[derive(Clone, Debug, Hash)]
 pub struct DepthStencilDesc {
     pub depth_enable: bool,
@@ -40,6 +96,12 @@ pub struct DepthStencilDesc {
     pub stencil_write_mask: u8,
     pub front_face: DepthStencilOpDesc,
     pub back_face: DepthStencilOpDesc,
+}
+
+impl DepthStencilDesc {
+    pub fn builder() -> DepthStencilDescBuilder {
+        DepthStencilDescBuilder::new()
+    }
 }
 
 impl Default for DepthStencilDesc {

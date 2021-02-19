@@ -30,13 +30,15 @@
 use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12Device4, ID3D12GraphicsCommandList, ID3D12Object,
+    ID3D12PipelineState, ID3D12RootSignature, D3D12_PIPELINE_STATE_STREAM_DESC,
     PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder,
-    FeatureLevel, FenceBuilder,
+    FeatureLevel, FenceBuilder, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
+    RootSignatureBlob,
 };
 use utf16_lit::utf16_null;
 
@@ -118,6 +120,42 @@ impl Device {
                 )
                 .and_some(out)
                 .map(|v| ClosedGraphicsCommandList(v))
+        }
+    }
+
+    pub fn create_graphics_pipeline_state(
+        &self,
+        state_stream: &GraphicsPipelineStateStream,
+    ) -> raw::windows::Result<GraphicsPipelineState> {
+        unsafe {
+            let desc = D3D12_PIPELINE_STATE_STREAM_DESC {
+                size_in_bytes: state_stream.len(),
+                p_pipeline_state_subobject_stream: state_stream.as_ptr() as *mut u8 as *mut _,
+            };
+            let mut out: Option<ID3D12PipelineState> = None;
+            self.0
+                .CreatePipelineState(&desc, &ID3D12PipelineState::IID, out.set_abi())
+                .and_some(out)
+                .map(|v| GraphicsPipelineState(v))
+        }
+    }
+
+    pub fn create_root_signature(
+        &self,
+        root_signature_blob: &RootSignatureBlob,
+    ) -> raw::windows::Result<RootSignature> {
+        unsafe {
+            let mut out: Option<ID3D12RootSignature> = None;
+            self.0
+                .CreateRootSignature(
+                    0,
+                    root_signature_blob.0.GetBufferPointer(),
+                    root_signature_blob.0.GetBufferSize(),
+                    &ID3D12RootSignature::IID,
+                    out.set_abi(),
+                )
+                .and_some(out)
+                .map(|v| RootSignature(v))
         }
     }
 

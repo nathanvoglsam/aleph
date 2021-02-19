@@ -32,7 +32,7 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_SIGNATURE_FLAGS,
     D3D12_STATIC_SAMPLER_DESC,
 };
-use crate::{RootParameter, RootParameter1, StaticSamplerDesc};
+use crate::{RootParameter, RootParameter1, StaticSamplerDesc, VersionedRootSignatureDesc};
 use std::marker::PhantomData;
 
 type F = D3D12_ROOT_SIGNATURE_FLAGS;
@@ -310,10 +310,34 @@ pub struct RootSignatureDesc<'a> {
     phantom: PhantomData<&'a ()>,
 }
 
+impl<'a> RootSignatureDesc<'a> {
+    pub fn builder() -> RootSignatureDescBuilder {
+        RootSignatureDescBuilder::new()
+    }
+}
+
+impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc<'a> {
+    fn into(self) -> VersionedRootSignatureDesc<'a> {
+        VersionedRootSignatureDesc::Desc(self)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct RootSignatureDesc1<'a> {
     pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC1,
     phantom: PhantomData<&'a ()>,
+}
+
+impl<'a> RootSignatureDesc1<'a> {
+    pub fn builder() -> RootSignatureDesc1Builder {
+        RootSignatureDesc1Builder::new()
+    }
+}
+
+impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc1<'a> {
+    fn into(self) -> VersionedRootSignatureDesc<'a> {
+        VersionedRootSignatureDesc::Desc1(self)
+    }
 }
 
 #[derive(Clone, Debug)]
