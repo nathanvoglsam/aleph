@@ -85,14 +85,14 @@ impl Default for BlendDesc {
             alpha_to_coverage_enable: false,
             independent_blend_enable: false,
             render_targets: [
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
+                RenderTargetBlendDesc::default(),
             ],
         }
     }
@@ -101,14 +101,14 @@ impl Default for BlendDesc {
 impl Into<D3D12_BLEND_DESC> for BlendDesc {
     fn into(self) -> D3D12_BLEND_DESC {
         let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
-            Default::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
         ];
         for i in 0..self.render_targets.len() {
             render_target[i] = self.render_targets[i].clone().into();
