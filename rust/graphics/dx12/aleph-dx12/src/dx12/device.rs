@@ -29,16 +29,16 @@
 
 use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandAllocator, ID3D12Device4, ID3D12GraphicsCommandList, ID3D12Object,
-    ID3D12PipelineState, ID3D12RootSignature, D3D12_PIPELINE_STATE_STREAM_DESC,
+    ID3D12CommandAllocator, ID3D12DescriptorHeap, ID3D12Device4, ID3D12GraphicsCommandList,
+    ID3D12Object, ID3D12PipelineState, ID3D12RootSignature, D3D12_PIPELINE_STATE_STREAM_DESC,
     PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder,
-    FeatureLevel, FenceBuilder, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
-    RootSignatureBlob,
+    DescriptorHeap, DescriptorHeapDesc, FeatureLevel, FenceBuilder, GraphicsPipelineState,
+    GraphicsPipelineStateStream, RootSignature, RootSignatureBlob,
 };
 use utf16_lit::utf16_null;
 
@@ -156,6 +156,20 @@ impl Device {
                 )
                 .and_some(out)
                 .map(|v| RootSignature(v))
+        }
+    }
+
+    pub fn create_descriptor_heap(
+        &self,
+        descriptor_heap_desc: &DescriptorHeapDesc,
+    ) -> raw::windows::Result<DescriptorHeap> {
+        unsafe {
+            let desc = descriptor_heap_desc.into();
+            let mut out: Option<ID3D12DescriptorHeap> = None;
+            self.0
+                .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, out.set_abi())
+                .and_some(out)
+                .map(|v| DescriptorHeap(v))
         }
     }
 

@@ -27,23 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, ID3D12DeviceChild, ID3D12Object,
-};
+use raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_FLAGS;
 
-#[repr(transparent)]
-pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct DescriptorHeapFlags(pub i32);
 
-impl DescriptorHeap {}
-
-impl Into<ID3D12Object> for DescriptorHeap {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
+impl DescriptorHeapFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const SHADER_VISIBLE: Self = Self(1i32);
 }
 
-impl Into<ID3D12DeviceChild> for DescriptorHeap {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
+impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
+    fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
+        D3D12_DESCRIPTOR_HEAP_FLAGS(self.0)
     }
 }
