@@ -39,6 +39,12 @@ pub enum PrimitiveTopologyType {
     Patch = 4,
 }
 
+impl Default for PrimitiveTopologyType {
+    fn default() -> Self {
+        Self::Undefined
+    }
+}
+
 impl Into<D3D12_PRIMITIVE_TOPOLOGY_TYPE> for PrimitiveTopologyType {
     fn into(self) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE {
         D3D12_PRIMITIVE_TOPOLOGY_TYPE(self as i32)

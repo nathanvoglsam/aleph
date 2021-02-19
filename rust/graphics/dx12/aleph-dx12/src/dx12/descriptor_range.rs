@@ -30,7 +30,7 @@
 use crate::raw::windows::win32::direct3d12::{D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1};
 use crate::{DescriptorRangeFlags, DescriptorRangeType};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct DescriptorRange {
     pub range_type: DescriptorRangeType,
     pub num_descriptors: u32,
@@ -51,7 +51,7 @@ impl Into<D3D12_DESCRIPTOR_RANGE> for DescriptorRange {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct DescriptorRange1 {
     pub range_type: DescriptorRangeType,
     pub num_descriptors: u32,

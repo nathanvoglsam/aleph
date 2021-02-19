@@ -30,7 +30,7 @@
 use raw::windows::win32::direct3d12::D3D12_FILTER;
 
 #[repr(i32)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum Filter {
     MinMagMipPoint = 0,
     MinMagPointMipLinear = 1,

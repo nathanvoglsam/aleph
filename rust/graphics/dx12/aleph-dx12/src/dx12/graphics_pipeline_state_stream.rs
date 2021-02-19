@@ -29,12 +29,11 @@
 
 use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
 use crate::raw::windows::win32::direct3d12::{
-    D3D12_BLEND_DESC, D3D12_DEPTH_STENCIL_DESC, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     D3D12_INPUT_ELEMENT_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
-    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
-    D3D12_RT_FORMAT_ARRAY, D3D12_SO_DECLARATION_ENTRY, D3D12_STREAM_OUTPUT_DESC,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_RT_FORMAT_ARRAY, D3D12_SO_DECLARATION_ENTRY,
+    D3D12_STREAM_OUTPUT_DESC,
 };
-use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+use crate::raw::windows::win32::dxgi::DXGI_FORMAT;
 use crate::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 use crate::{
     dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc,
@@ -52,19 +51,17 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     hull_shader: Option<&'a [u8]>,
     geometry_shader: Option<&'a [u8]>,
     stream_output: Option<(Vec<D3D12_SO_DECLARATION_ENTRY>, &'a [u32], u32)>,
-    blend_state: Option<D3D12_BLEND_DESC>,
-    sample_mask: Option<u32>,
-    rasterizer_state: Option<D3D12_RASTERIZER_DESC>,
-    depth_stencil_state: Option<D3D12_DEPTH_STENCIL_DESC>,
+    blend_state: BlendDesc,
+    sample_mask: u32,
+    rasterizer_state: RasterizerDesc,
+    depth_stencil_state: DepthStencilDesc,
     input_layout: Option<Vec<D3D12_INPUT_ELEMENT_DESC>>,
-    strip_cut_value: Option<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE>,
-    primitive_topology_type: Option<D3D12_PRIMITIVE_TOPOLOGY_TYPE>,
-    render_targets: Option<&'a [DXGI_FORMAT]>,
-    dsv_format: Option<DXGI_FORMAT>,
-    sample_desc: Option<DXGI_SAMPLE_DESC>,
-    node_mask: Option<u32>,
+    strip_cut_value: IndexBufferStripCutValue,
+    primitive_topology_type: PrimitiveTopologyType,
+    render_targets: &'a [dxgi::Format],
+    dsv_format: dxgi::Format,
+    sample_desc: dxgi::SampleDesc,
     cached_pso: Option<&'a [u8]>,
-    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
@@ -77,19 +74,17 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             hull_shader: None,
             geometry_shader: None,
             stream_output: None,
-            blend_state: None,
-            sample_mask: None,
-            rasterizer_state: None,
-            depth_stencil_state: None,
+            blend_state: BlendDesc::default(),
+            sample_mask: 0,
+            rasterizer_state: RasterizerDesc::default(),
+            depth_stencil_state: DepthStencilDesc::default(),
             input_layout: None,
-            strip_cut_value: None,
-            primitive_topology_type: None,
-            render_targets: None,
-            dsv_format: None,
-            sample_desc: None,
-            node_mask: None,
+            strip_cut_value: IndexBufferStripCutValue::default(),
+            primitive_topology_type: PrimitiveTopologyType::default(),
+            render_targets: &[],
+            dsv_format: dxgi::Format::default(),
+            sample_desc: dxgi::SampleDesc::default(),
             cached_pso: None,
-            phantom: Default::default(),
         }
     }
 
@@ -137,23 +132,23 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
-    pub fn blend_state(mut self, blend_state: BlendDesc<'a>) -> Self {
-        self.blend_state = Some(blend_state.into());
+    pub fn blend_state(mut self, blend_state: BlendDesc) -> Self {
+        self.blend_state = blend_state;
         self
     }
 
     pub fn sample_mask(mut self, sample_mask: u32) -> Self {
-        self.sample_mask = Some(sample_mask);
+        self.sample_mask = sample_mask;
         self
     }
 
     pub fn rasterizer_state(mut self, rasterizer_state: RasterizerDesc) -> Self {
-        self.rasterizer_state = Some(rasterizer_state.into());
+        self.rasterizer_state = rasterizer_state;
         self
     }
 
     pub fn depth_stencil_state(mut self, depth_stencil_state: DepthStencilDesc) -> Self {
-        self.depth_stencil_state = Some(depth_stencil_state.into());
+        self.depth_stencil_state = depth_stencil_state;
         self
     }
 
@@ -164,7 +159,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     }
 
     pub fn strip_cut_value(mut self, strip_cut_value: IndexBufferStripCutValue) -> Self {
-        self.strip_cut_value = Some(strip_cut_value.into());
+        self.strip_cut_value = strip_cut_value;
         self
     }
 
@@ -172,22 +167,22 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         mut self,
         primitive_topology_type: PrimitiveTopologyType,
     ) -> Self {
-        self.primitive_topology_type = Some(primitive_topology_type.into());
+        self.primitive_topology_type = primitive_topology_type;
         self
     }
 
-    pub fn render_targets(mut self, render_targets: &[dxgi::Format]) -> Self {
-        self.render_targets = Some(unsafe { std::mem::transmute(render_targets) });
+    pub fn render_targets(mut self, render_targets: &'a [dxgi::Format]) -> Self {
+        self.render_targets = render_targets;
         self
     }
 
     pub fn dsv_format(mut self, dsv_format: dxgi::Format) -> Self {
-        self.dsv_format = Some(dsv_format.into());
+        self.dsv_format = dsv_format;
         self
     }
 
     pub fn sample_desc(mut self, sample_desc: dxgi::SampleDesc) -> Self {
-        self.sample_desc = Some(sample_desc.into());
+        self.sample_desc = sample_desc;
         self
     }
 
@@ -200,10 +195,9 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         type T = D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 
         // Build the render target format array
-        let render_targets = self.render_targets.as_ref().unwrap();
         let mut rt_formats = [DXGI_FORMAT::default(); 8];
-        for i in 0..render_targets.len() {
-            rt_formats[i] = render_targets[i];
+        for i in 0..self.render_targets.len() {
+            rt_formats[i] = self.render_targets[i].into();
         }
 
         // Get the input layout array
@@ -248,19 +242,19 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             blend_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
-                self.blend_state.clone().unwrap(),
+                self.blend_state.clone().into(),
             ),
             sample_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
-                self.sample_mask.unwrap(),
+                self.sample_mask,
             ),
             rasterizer_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
-                self.rasterizer_state.clone().unwrap(),
+                self.rasterizer_state.clone().into(),
             ),
             depth_stencil_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
-                self.depth_stencil_state.clone().unwrap(),
+                self.depth_stencil_state.clone().into(),
             ),
             input_layout: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,
@@ -271,30 +265,30 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             strip_cut_value: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE,
-                self.strip_cut_value.unwrap(),
+                self.strip_cut_value.into(),
             ),
             primitive_topology_type: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,
-                self.primitive_topology_type.unwrap(),
+                self.primitive_topology_type.into(),
             ),
             render_targets: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
                     rt_formats,
-                    num_render_targets: render_targets.len() as _,
+                    num_render_targets: self.render_targets.len() as _,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
-                self.dsv_format.unwrap(),
+                self.dsv_format.into(),
             ),
             sample_desc: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
-                self.sample_desc.clone().unwrap(),
+                self.sample_desc.clone().into(),
             ),
             node_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
-                self.node_mask.unwrap(),
+                0,
             ),
             cached_pso: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,

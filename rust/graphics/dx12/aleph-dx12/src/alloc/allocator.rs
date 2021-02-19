@@ -29,7 +29,6 @@
 
 use crate::{dxgi, raw, Device};
 use std::ffi::c_void;
-use std::sync::Arc;
 
 struct AllocatorInner(*mut c_void);
 
@@ -68,14 +67,13 @@ impl<'a, 'b> AllocatorBuilder<'a, 'b> {
             .map(|_| {
                 assert!(!out.is_null());
                 let out = AllocatorInner(out);
-                let out = Allocator(Arc::new(out));
+                let out = Allocator(out);
                 out
             })
     }
 }
 
-#[derive(Clone)]
 #[repr(transparent)]
-pub struct Allocator(Arc<AllocatorInner>);
+pub struct Allocator(AllocatorInner);
 
 impl Allocator {}

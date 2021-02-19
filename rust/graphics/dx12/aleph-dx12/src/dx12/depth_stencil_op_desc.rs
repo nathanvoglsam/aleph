@@ -30,12 +30,23 @@
 use crate::{ComparisonFunc, StencilOp};
 use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCILOP_DESC;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash)]
 pub struct DepthStencilOpDesc {
     pub stencil_fail_op: StencilOp,
     pub stencil_depth_fail_op: StencilOp,
     pub stencil_pass_op: StencilOp,
     pub stencil_func: ComparisonFunc,
+}
+
+impl Default for DepthStencilOpDesc {
+    fn default() -> Self {
+        Self {
+            stencil_fail_op: StencilOp::Keep,
+            stencil_depth_fail_op: StencilOp::Keep,
+            stencil_pass_op: StencilOp::Keep,
+            stencil_func: ComparisonFunc::Always,
+        }
+    }
 }
 
 impl Into<D3D12_DEPTH_STENCILOP_DESC> for DepthStencilOpDesc {

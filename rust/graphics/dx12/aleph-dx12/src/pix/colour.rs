@@ -28,7 +28,7 @@
 //
 
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct Colour(u64);
 
 impl Colour {

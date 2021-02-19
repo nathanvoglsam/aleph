@@ -27,21 +27,24 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_ROOT_CONSTANTS;
+use raw::windows::win32::direct3d12::D3D12_COLOR_WRITE_ENABLE;
 
-#[derive(Clone, Debug, Hash)]
-pub struct RootConstants {
-    pub shader_register: u32,
-    pub register_space: u32,
-    pub num32_bit_values: u32,
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct ColorWriteEnable(pub u8);
+
+impl ColorWriteEnable {
+    pub const RED: Self = Self(0);
+    pub const GREEN: Self = Self(2);
+    pub const BLUE: Self = Self(4);
+    pub const ALPHA: Self = Self(8);
+
+    pub fn all() -> Self {
+        Self(Self::RED.0 | Self::BLUE.0 | Self::GREEN.0 | Self::ALPHA.0)
+    }
 }
 
-impl Into<D3D12_ROOT_CONSTANTS> for RootConstants {
-    fn into(self) -> D3D12_ROOT_CONSTANTS {
-        D3D12_ROOT_CONSTANTS {
-            shader_register: self.shader_register,
-            register_space: self.register_space,
-            num32_bit_values: self.num32_bit_values,
-        }
+impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
+    fn into(self) -> D3D12_COLOR_WRITE_ENABLE {
+        D3D12_COLOR_WRITE_ENABLE(self.0 as i32)
     }
 }

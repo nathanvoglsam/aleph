@@ -155,6 +155,12 @@ pub enum Format {
     SamplerFeedbackMipRegionUsedOpaque = 190,
 }
 
+impl Default for Format {
+    fn default() -> Self {
+        Self::Unknown
+    }
+}
+
 impl Into<DXGI_FORMAT> for Format {
     fn into(self) -> DXGI_FORMAT {
         DXGI_FORMAT(self as u32)

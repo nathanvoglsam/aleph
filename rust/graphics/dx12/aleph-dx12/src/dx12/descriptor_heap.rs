@@ -83,7 +83,6 @@ impl DescriptorHeapBuilder {
     }
 }
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 

@@ -37,7 +37,7 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 use std::mem::transmute;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct MeshShaderPipelineStateDesc {
     pub root_signature: Option<ID3D12RootSignature>,
     pub amplification_shader: D3D12_SHADER_BYTECODE,

@@ -30,7 +30,7 @@
 use crate::raw::windows::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
 
 #[repr(transparent)]
-#[derive(Copy, Clone, Debug, PartialOrd, PartialEq, Ord, Eq, Hash)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct CPUDescriptorHandle(usize);
 
 impl CPUDescriptorHandle {

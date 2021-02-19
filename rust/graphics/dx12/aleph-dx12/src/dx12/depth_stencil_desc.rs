@@ -30,7 +30,7 @@
 use crate::{ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
 use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_DESC;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash)]
 pub struct DepthStencilDesc {
     pub depth_enable: bool,
     pub depth_write_mask: DepthWriteMask,
@@ -40,6 +40,21 @@ pub struct DepthStencilDesc {
     pub stencil_write_mask: u8,
     pub front_face: DepthStencilOpDesc,
     pub back_face: DepthStencilOpDesc,
+}
+
+impl Default for DepthStencilDesc {
+    fn default() -> Self {
+        Self {
+            depth_enable: true,
+            depth_write_mask: DepthWriteMask::All,
+            depth_func: ComparisonFunc::Less,
+            stencil_enable: false,
+            stencil_read_mask: 0xFF,
+            stencil_write_mask: 0xFF,
+            front_face: Default::default(),
+            back_face: Default::default(),
+        }
+    }
 }
 
 impl Into<D3D12_DEPTH_STENCIL_DESC> for DepthStencilDesc {

@@ -30,6 +30,7 @@
 pub(crate) mod blend;
 pub(crate) mod blend_desc;
 pub(crate) mod blend_op;
+pub(crate) mod color_write_enable;
 pub(crate) mod command_allocator;
 pub(crate) mod command_list;
 pub(crate) mod command_list_type;
@@ -85,7 +86,9 @@ pub(crate) mod versioned_root_signature_desc;
 
 pub use blend::Blend;
 pub use blend_desc::BlendDesc;
+pub use blend_desc::BlendDescBuilder;
 pub use blend_op::BlendOp;
+pub use color_write_enable::ColorWriteEnable;
 pub use command_allocator::CommandAllocator;
 pub use command_list::ClosedGraphicsCommandList;
 pub use command_list::OpenGraphicsCommandList;
@@ -126,6 +129,7 @@ pub use logic_op::LogicOp;
 pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
 pub use primitive_topology_type::PrimitiveTopologyType;
 pub use rasterizer_desc::RasterizerDesc;
+pub use rasterizer_desc::RasterizerDescBuilder;
 pub use render_target_blend_desc::RenderTargetBlendDesc;
 pub use root_constants::RootConstants;
 pub use root_descriptor::RootDescriptor;

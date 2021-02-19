@@ -30,14 +30,75 @@
 use crate::RenderTargetBlendDesc;
 use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
 
-#[derive(Copy, Clone, Debug, Hash)]
-pub struct BlendDesc<'a> {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
-    pub render_targets: &'a [RenderTargetBlendDesc],
+pub struct BlendDescBuilder {
+    inner: BlendDesc,
 }
 
-impl<'a> Into<D3D12_BLEND_DESC> for BlendDesc<'a> {
+impl BlendDescBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
+
+    pub fn alpha_to_coverage_enable(mut self, alpha_to_coverage_enable: bool) -> Self {
+        self.inner.alpha_to_coverage_enable = alpha_to_coverage_enable;
+        self
+    }
+    pub fn independent_blend_enable(mut self, independent_blend_enable: bool) -> Self {
+        self.inner.independent_blend_enable = independent_blend_enable;
+        self
+    }
+    pub fn render_targets(mut self, render_targets: &[RenderTargetBlendDesc]) -> Self {
+        assert!(render_targets.len() <= 8);
+        render_targets
+            .iter()
+            .cloned()
+            .enumerate()
+            .for_each(|(i, desc)| {
+                self.inner.render_targets[i] = desc;
+            });
+        self
+    }
+
+    pub fn build(self) -> BlendDesc {
+        self.inner
+    }
+}
+
+#[derive(Clone, Debug, Hash)]
+pub struct BlendDesc {
+    pub alpha_to_coverage_enable: bool,
+    pub independent_blend_enable: bool,
+    pub render_targets: [RenderTargetBlendDesc; 8],
+}
+
+impl BlendDesc {
+    pub fn builder() -> BlendDescBuilder {
+        BlendDescBuilder::new()
+    }
+}
+
+impl Default for BlendDesc {
+    fn default() -> Self {
+        Self {
+            alpha_to_coverage_enable: false,
+            independent_blend_enable: false,
+            render_targets: [
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+            ],
+        }
+    }
+}
+
+impl Into<D3D12_BLEND_DESC> for BlendDesc {
     fn into(self) -> D3D12_BLEND_DESC {
         let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
             Default::default(),

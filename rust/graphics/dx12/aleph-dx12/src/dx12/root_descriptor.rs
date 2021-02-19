@@ -31,7 +31,7 @@ use crate::RootDescriptorFlags;
 use raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR;
 use raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR1;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct RootDescriptor {
     pub shader_register: u32,
     pub register_space: u32,
@@ -46,7 +46,7 @@ impl Into<D3D12_ROOT_DESCRIPTOR> for RootDescriptor {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct RootDescriptor1 {
     pub shader_register: u32,
     pub register_space: u32,

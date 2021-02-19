@@ -38,13 +38,13 @@ use crate::{
 };
 use std::mem::ManuallyDrop;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct RootParameter<'a> {
     pub parameter: RootParameterType<'a>,
     pub shader_visibility: ShaderVisibility,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub enum RootParameterType<'a> {
     DescriptorTable(&'a [DescriptorRange]),
     Constants(RootConstants),
@@ -110,13 +110,13 @@ impl<'a> RootParameterType<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct RootParameter1<'a> {
     pub parameter: RootParameterType1<'a>,
     pub shader_visibility: ShaderVisibility,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub enum RootParameterType1<'a> {
     DescriptorTable(&'a [DescriptorRange1]),
     Constants(RootConstants),

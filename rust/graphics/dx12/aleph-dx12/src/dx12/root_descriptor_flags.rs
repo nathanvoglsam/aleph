@@ -29,7 +29,7 @@
 
 use raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR_FLAGS;
 
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct RootDescriptorFlags(pub i32);
 
 impl RootDescriptorFlags {

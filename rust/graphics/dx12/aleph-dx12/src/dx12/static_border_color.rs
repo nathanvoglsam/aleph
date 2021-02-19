@@ -30,7 +30,7 @@
 use raw::windows::win32::direct3d12::D3D12_STATIC_BORDER_COLOR;
 
 #[repr(i32)]
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Hash, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum StaticBorderColor {
     TransparentBlack = 0,
     OpaqueBlack = 1,

@@ -29,7 +29,7 @@
 
 use crate::StreamOutputDeclaration;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct StreamOutputDesc<'a> {
     pub so_declarations: &'a [StreamOutputDeclaration<'a>],
     pub buffer_strides: &'a [u32],

@@ -30,7 +30,7 @@
 use raw::windows::win32::direct3d12::D3D12_SO_DECLARATION_ENTRY;
 use std::ffi::CStr;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct StreamOutputDeclaration<'a> {
     pub stream: u32,
     pub semantic_name: &'a CStr,

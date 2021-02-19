@@ -29,7 +29,7 @@
 
 use raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_RANGE_FLAGS;
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct DescriptorRangeFlags(pub i32);
 
 impl DescriptorRangeFlags {

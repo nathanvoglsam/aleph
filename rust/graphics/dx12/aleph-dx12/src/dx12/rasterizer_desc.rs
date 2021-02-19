@@ -30,7 +30,71 @@
 use crate::{ConservativeRasterizationMode, CullMode, FillMode};
 use raw::windows::win32::direct3d12::D3D12_RASTERIZER_DESC;
 
-#[derive(Copy, Clone, Debug)]
+pub struct RasterizerDescBuilder {
+    inner: RasterizerDesc,
+}
+
+impl RasterizerDescBuilder {
+    pub fn new() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
+
+    pub fn fill_mode(mut self, fill_mode: FillMode) -> Self {
+        self.inner.fill_mode = fill_mode;
+        self
+    }
+    pub fn cull_mode(mut self, cull_mode: CullMode) -> Self {
+        self.inner.cull_mode = cull_mode;
+        self
+    }
+    pub fn front_counter_clockwise(mut self, front_counter_clockwise: bool) -> Self {
+        self.inner.front_counter_clockwise = front_counter_clockwise;
+        self
+    }
+    pub fn depth_bias(mut self, depth_bias: i32) -> Self {
+        self.inner.depth_bias = depth_bias;
+        self
+    }
+    pub fn depth_bias_clamp(mut self, depth_bias_clamp: f32) -> Self {
+        self.inner.depth_bias_clamp = depth_bias_clamp;
+        self
+    }
+    pub fn slope_scaled_depth_bias(mut self, slope_scaled_depth_bias: f32) -> Self {
+        self.inner.slope_scaled_depth_bias = slope_scaled_depth_bias;
+        self
+    }
+    pub fn depth_clip_enable(mut self, depth_clip_enable: bool) -> Self {
+        self.inner.depth_clip_enable = depth_clip_enable;
+        self
+    }
+    pub fn multisample_enable(mut self, multisample_enable: bool) -> Self {
+        self.inner.multisample_enable = multisample_enable;
+        self
+    }
+    pub fn antialiased_line_enable(mut self, antialiased_line_enable: bool) -> Self {
+        self.inner.antialiased_line_enable = antialiased_line_enable;
+        self
+    }
+    pub fn forced_sample_count(mut self, forced_sample_count: u32) -> Self {
+        self.inner.forced_sample_count = forced_sample_count;
+        self
+    }
+    pub fn conservative_raster(
+        mut self,
+        conservative_raster: ConservativeRasterizationMode,
+    ) -> Self {
+        self.inner.conservative_raster = conservative_raster;
+        self
+    }
+
+    pub fn build(self) -> RasterizerDesc {
+        self.inner
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct RasterizerDesc {
     pub fill_mode: FillMode,
     pub cull_mode: CullMode,
@@ -43,6 +107,30 @@ pub struct RasterizerDesc {
     pub antialiased_line_enable: bool,
     pub forced_sample_count: u32,
     pub conservative_raster: ConservativeRasterizationMode,
+}
+
+impl RasterizerDesc {
+    pub fn builder() -> RasterizerDescBuilder {
+        RasterizerDescBuilder::new()
+    }
+}
+
+impl Default for RasterizerDesc {
+    fn default() -> Self {
+        Self {
+            fill_mode: FillMode::Solid,
+            cull_mode: CullMode::Back,
+            front_counter_clockwise: false,
+            depth_bias: 0,
+            depth_bias_clamp: 0.0,
+            slope_scaled_depth_bias: 0.0,
+            depth_clip_enable: true,
+            multisample_enable: false,
+            antialiased_line_enable: false,
+            forced_sample_count: 0,
+            conservative_raster: ConservativeRasterizationMode::Off,
+        }
+    }
 }
 
 impl Into<D3D12_RASTERIZER_DESC> for RasterizerDesc {

@@ -37,7 +37,7 @@ use crate::raw::windows::win32::direct3d11::D3D_FEATURE_LEVEL;
 /// way to separate the version parts (i.e 9_1 to 91)
 #[repr(i32)]
 #[allow(non_camel_case_types)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub enum FeatureLevel {
     Level_1_0_Core = 4096,
     Level_9_1 = 37120,

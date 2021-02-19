@@ -43,7 +43,6 @@ use utf16_lit::utf16_null;
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct Device(pub(crate) ID3D12Device4);
 

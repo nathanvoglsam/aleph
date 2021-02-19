@@ -29,10 +29,19 @@
 
 use raw::windows::win32::dxgi::DXGI_SAMPLE_DESC;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct SampleDesc {
     pub count: u32,
     pub quality: u32,
+}
+
+impl Default for SampleDesc {
+    fn default() -> Self {
+        Self {
+            count: 1,
+            quality: 0,
+        }
+    }
 }
 
 impl Into<DXGI_SAMPLE_DESC> for SampleDesc {

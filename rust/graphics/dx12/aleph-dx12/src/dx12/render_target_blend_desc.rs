@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{Blend, BlendOp, LogicOp};
+use crate::{Blend, BlendOp, ColorWriteEnable, LogicOp};
 use raw::windows::win32::direct3d12::D3D12_RENDER_TARGET_BLEND_DESC;
 
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Clone, Debug, Hash)]
 pub struct RenderTargetBlendDesc {
     pub blend_enable: bool,
     pub logic_op_enable: bool,
@@ -41,7 +41,24 @@ pub struct RenderTargetBlendDesc {
     pub dest_blend_alpha: Blend,
     pub blend_op_alpha: BlendOp,
     pub logic_op: LogicOp,
-    pub render_target_write_mask: u8,
+    pub render_target_write_mask: ColorWriteEnable,
+}
+
+impl Default for RenderTargetBlendDesc {
+    fn default() -> Self {
+        Self {
+            blend_enable: false,
+            logic_op_enable: false,
+            src_blend: Blend::One,
+            dest_blend: Blend::Zero,
+            blend_op: BlendOp::Add,
+            src_blend_alpha: Blend::One,
+            dest_blend_alpha: Blend::Zero,
+            blend_op_alpha: BlendOp::Add,
+            logic_op: LogicOp::Noop,
+            render_target_write_mask: ColorWriteEnable::all(),
+        }
+    }
 }
 
 impl Into<D3D12_RENDER_TARGET_BLEND_DESC> for RenderTargetBlendDesc {
@@ -56,7 +73,7 @@ impl Into<D3D12_RENDER_TARGET_BLEND_DESC> for RenderTargetBlendDesc {
             dest_blend_alpha: self.dest_blend_alpha.into(),
             blend_op_alpha: self.blend_op_alpha.into(),
             logic_op: self.logic_op.into(),
-            render_target_write_mask: self.render_target_write_mask.into(),
+            render_target_write_mask: self.render_target_write_mask.0,
         }
     }
 }
