@@ -27,49 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandQueue, ID3D12DeviceChild, ID3D12Object, D3D12_COMMAND_QUEUE_DESC,
-    D3D12_COMMAND_QUEUE_FLAGS,
-};
-use crate::raw::windows::{Abi, Interface};
-use crate::{dxgi, CommandListType, Device, Fence, SubmissionBuilder, SwapChainBuilder};
+use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12DeviceChild, ID3D12Object};
+use crate::{dxgi, Fence, SubmissionBuilder, SwapChainBuilder};
 use raw_window_handle::HasRawWindowHandle;
-
-pub struct CommandQueueBuilder<'a> {
-    pub(crate) device: &'a Device,
-    pub(crate) priority: i32,
-    pub(crate) queue_type: CommandListType,
-    pub(crate) flags: D3D12_COMMAND_QUEUE_FLAGS,
-}
-
-impl<'a> CommandQueueBuilder<'a> {
-    pub fn priority(mut self, priority: i32) -> Self {
-        self.priority = priority;
-        self
-    }
-
-    pub fn disable_gpu_timeout(mut self) -> Self {
-        self.flags.0 |= D3D12_COMMAND_QUEUE_FLAGS::D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT.0;
-        self
-    }
-
-    pub fn build(self) -> raw::windows::Result<CommandQueue> {
-        let desc = D3D12_COMMAND_QUEUE_DESC {
-            r#type: self.queue_type.into(),
-            priority: self.priority,
-            flags: self.flags,
-            node_mask: 0,
-        };
-        unsafe {
-            let mut queue: Option<ID3D12CommandQueue> = None;
-            self.device
-                .0
-                .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, queue.set_abi())
-                .and_some(queue)
-                .map(|v| CommandQueue(v))
-        }
-    }
-}
 
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);

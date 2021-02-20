@@ -29,16 +29,17 @@
 
 use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12CommandAllocator, ID3D12DescriptorHeap, ID3D12Device4, ID3D12GraphicsCommandList,
-    ID3D12Object, ID3D12PipelineState, ID3D12RootSignature, D3D12_PIPELINE_STATE_STREAM_DESC,
-    PFN_D3D12_CREATE_DEVICE,
+    ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
+    ID3D12GraphicsCommandList, ID3D12Object, ID3D12PipelineState, ID3D12RootSignature,
+    D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueueBuilder,
-    DescriptorHeap, DescriptorHeapDesc, FeatureLevel, FenceBuilder, GraphicsPipelineState,
-    GraphicsPipelineStateStream, RootSignature, RootSignatureBlob,
+    dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueue,
+    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence, FenceBuilder,
+    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
+    RootSignatureBlob,
 };
 use utf16_lit::utf16_null;
 
@@ -67,15 +68,22 @@ impl Device {
         }
     }
 
-    pub fn command_queue_builder<'a>(
-        &'a self,
-        queue_type: CommandListType,
-    ) -> CommandQueueBuilder<'a> {
-        CommandQueueBuilder::<'a> {
-            device: self,
-            priority: 0,
-            queue_type,
-            flags: Default::default(),
+    pub fn create_fence(
+        &self,
+        initial_value: u64,
+        flags: FenceFlags,
+    ) -> raw::windows::Result<Fence> {
+        unsafe {
+            let mut fence: Option<ID3D12Fence> = None;
+            self.0
+                .CreateFence(
+                    initial_value,
+                    flags.into(),
+                    &ID3D12Fence::IID,
+                    fence.set_abi(),
+                )
+                .and_some(fence)
+                .map(|v| Fence(v))
         }
     }
 
@@ -170,6 +178,20 @@ impl Device {
                 .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, out.set_abi())
                 .and_some(out)
                 .map(|v| DescriptorHeap(v))
+        }
+    }
+
+    pub fn create_command_queue(
+        &self,
+        command_queue_desc: &CommandQueueDesc,
+    ) -> raw::windows::Result<CommandQueue> {
+        unsafe {
+            let desc = command_queue_desc.clone().into();
+            let mut out: Option<ID3D12CommandQueue> = None;
+            self.0
+                .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, out.set_abi())
+                .and_some(out)
+                .map(|v| CommandQueue(v))
         }
     }
 
