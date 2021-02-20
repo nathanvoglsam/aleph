@@ -36,9 +36,10 @@ use crate::raw::windows::win32::direct3d12::{
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
-    dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueue,
-    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence, FenceFlags,
-    GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature, RootSignatureBlob,
+    dxgi, CPUDescriptorHandle, ClosedGraphicsCommandList, CommandAllocator, CommandListType,
+    CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence,
+    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
+    RootSignatureBlob, SamplerDesc,
 };
 use utf16_lit::utf16_null;
 
@@ -184,6 +185,12 @@ impl Device {
                 .and_some(out)
                 .map(|v| CommandQueue(v))
         }
+    }
+
+    pub unsafe fn create_sampler(&self, sampler_desc: &SamplerDesc, dest: CPUDescriptorHandle) {
+        // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
+        let desc = sampler_desc.clone().into();
+        self.0.CreateSampler(&desc, dest.into())
     }
 
     pub fn create_allocator_builder<'a, 'b>(
