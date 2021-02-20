@@ -41,7 +41,7 @@ impl DescriptorHeap {
         unsafe {
             let mut out = D3D12_CPU_DESCRIPTOR_HANDLE::default();
             self.0.GetCPUDescriptorHandleForHeapStart(&mut out);
-            CPUDescriptorHandle(out.ptr)
+            CPUDescriptorHandle::from(out)
         }
     }
 
@@ -49,7 +49,7 @@ impl DescriptorHeap {
         unsafe {
             let mut out = D3D12_GPU_DESCRIPTOR_HANDLE::default();
             self.0.GetGPUDescriptorHandleForHeapStart(&mut out);
-            GPUDescriptorHandle(out.ptr)
+            GPUDescriptorHandle::from(out)
         }
     }
 }
