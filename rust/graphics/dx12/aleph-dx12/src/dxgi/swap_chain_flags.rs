@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::dxgi::DXGI_SWAP_CHAIN_FLAG;
-
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct SwapChainFlags(pub u32);
 
