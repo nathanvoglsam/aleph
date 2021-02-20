@@ -28,13 +28,31 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, ID3D12DeviceChild, ID3D12Object,
+    ID3D12DescriptorHeap, ID3D12DeviceChild, ID3D12Object, D3D12_CPU_DESCRIPTOR_HANDLE,
+    D3D12_GPU_DESCRIPTOR_HANDLE,
 };
+use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
 
 #[repr(transparent)]
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 
-impl DescriptorHeap {}
+impl DescriptorHeap {
+    pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> CPUDescriptorHandle {
+        unsafe {
+            let mut out = D3D12_CPU_DESCRIPTOR_HANDLE::default();
+            self.0.GetCPUDescriptorHandleForHeapStart(&mut out);
+            CPUDescriptorHandle(out.ptr)
+        }
+    }
+
+    pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> GPUDescriptorHandle {
+        unsafe {
+            let mut out = D3D12_GPU_DESCRIPTOR_HANDLE::default();
+            self.0.GetGPUDescriptorHandleForHeapStart(&mut out);
+            GPUDescriptorHandle(out.ptr)
+        }
+    }
+}
 
 impl Into<ID3D12Object> for DescriptorHeap {
     fn into(self) -> ID3D12Object {
