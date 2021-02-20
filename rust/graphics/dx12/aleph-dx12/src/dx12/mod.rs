@@ -88,7 +88,9 @@ pub(crate) mod stream_output_desc;
 pub(crate) mod submission_builder;
 pub(crate) mod texture_address_mode;
 pub(crate) mod versioned_root_signature_desc;
+pub(crate) mod resource;
 
+pub use resource::Resource;
 pub use blend::Blend;
 pub use blend_desc::BlendDesc;
 pub use blend_desc::BlendDescBuilder;

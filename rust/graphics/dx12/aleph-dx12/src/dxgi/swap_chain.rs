@@ -27,34 +27,35 @@
 // SOFTWARE.
 //
 
-use crate::dxgi::SwapChainDesc1;
+use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
 use crate::raw::windows::win32::direct3d12::ID3D12Resource;
-use crate::raw::windows::win32::dxgi::{IDXGISwapChain4, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS};
+use crate::raw::windows::win32::dxgi::{IDXGISwapChain4, DXGI_PRESENT_PARAMETERS};
 use raw::windows::{Abi, Interface};
 use std::convert::TryInto;
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {
-    pub unsafe fn resize_buffers(
+    pub fn resize_buffers(
         &mut self,
+        buffer_count: u32,
         width: u32,
         height: u32,
-        flags: u32,
+        new_format: Format,
+        flags: SwapChainFlags,
     ) -> raw::windows::Result<()> {
-        self.0
-            .ResizeBuffers(0, width, height, DXGI_FORMAT::DXGI_FORMAT_UNKNOWN, flags)
-            .ok()
+        unsafe {
+            self.0
+                .ResizeBuffers(buffer_count, width, height, new_format.into(), flags.0)
+                .ok()
+        }
     }
 
-    pub unsafe fn get_current_back_buffer_index(&self) -> u32 {
-        self.0.GetCurrentBackBufferIndex()
+    pub fn get_current_back_buffer_index(&self) -> u32 {
+        unsafe { self.0.GetCurrentBackBufferIndex() }
     }
 
-    pub unsafe fn get_buffers(
-        &self,
-        buffer_count: u32,
-    ) -> raw::windows::Result<Vec<ID3D12Resource>> {
+    pub fn get_buffers(&mut self, buffer_count: u32) -> raw::windows::Result<Vec<crate::Resource>> {
         let mut out = Vec::with_capacity(buffer_count as usize);
         for i in 0..buffer_count {
             out.push(self.get_buffer(i)?);
@@ -62,11 +63,14 @@ impl SwapChain {
         Ok(out)
     }
 
-    pub unsafe fn get_buffer(&self, buffer: u32) -> raw::windows::Result<ID3D12Resource> {
-        let mut resource: Option<ID3D12Resource> = None;
-        self.0
-            .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
-            .and_some(resource)
+    pub fn get_buffer(&mut self, buffer: u32) -> raw::windows::Result<crate::Resource> {
+        unsafe {
+            let mut resource: Option<ID3D12Resource> = None;
+            self.0
+                .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
+                .and_some(resource)
+                .map(|v| crate::Resource(v))
+        }
     }
 
     pub unsafe fn present(
