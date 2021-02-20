@@ -28,6 +28,7 @@
 //
 
 use raw::windows::win32::dxgi::DXGI_SWAP_EFFECT;
+use std::convert::TryFrom;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -36,6 +37,20 @@ pub enum SwapEffect {
     Sequential = 1,
     FlipSequential = 3,
     FlipDiscard = 4,
+}
+
+impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
+    type Error = ();
+
+    fn try_from(value: DXGI_SWAP_EFFECT) -> Result<Self, Self::Error> {
+        match value {
+            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD => Ok(SwapEffect::Discard),
+            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_SEQUENTIAL => Ok(SwapEffect::Sequential),
+            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL => Ok(SwapEffect::FlipSequential),
+            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD => Ok(SwapEffect::FlipDiscard),
+            _ => Err(()),
+        }
+    }
 }
 
 impl Into<DXGI_SWAP_EFFECT> for SwapEffect {

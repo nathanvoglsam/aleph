@@ -28,6 +28,7 @@
 //
 
 use raw::windows::win32::dxgi::DXGI_SCALING;
+use std::convert::TryFrom;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -35,6 +36,19 @@ pub enum Scaling {
     Stretch = 0,
     None = 1,
     AspectRatioStretch = 2,
+}
+
+impl TryFrom<DXGI_SCALING> for Scaling {
+    type Error = ();
+
+    fn try_from(value: DXGI_SCALING) -> Result<Self, Self::Error> {
+        match value {
+            DXGI_SCALING::DXGI_SCALING_STRETCH => Ok(Scaling::Stretch),
+            DXGI_SCALING::DXGI_SCALING_NONE => Ok(Scaling::None),
+            DXGI_SCALING::DXGI_SCALING_ASPECT_RATIO_STRETCH => Ok(Scaling::AspectRatioStretch),
+            _ => Err(()),
+        }
+    }
 }
 
 impl Into<DXGI_SCALING> for Scaling {

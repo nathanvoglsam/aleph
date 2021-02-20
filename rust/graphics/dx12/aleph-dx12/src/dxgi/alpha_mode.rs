@@ -28,6 +28,7 @@
 //
 
 use raw::windows::win32::dxgi::DXGI_ALPHA_MODE;
+use std::convert::TryFrom;
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -36,6 +37,20 @@ pub enum AlphaMode {
     PreMultiplied = 1,
     Straight = 2,
     Ignore = 3,
+}
+
+impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
+    type Error = ();
+
+    fn try_from(value: DXGI_ALPHA_MODE) -> Result<Self, Self::Error> {
+        match value {
+            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_UNSPECIFIED => Ok(AlphaMode::Unspecified),
+            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_PREMULTIPLIED => Ok(AlphaMode::PreMultiplied),
+            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_STRAIGHT => Ok(AlphaMode::Straight),
+            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_IGNORE => Ok(AlphaMode::Ignore),
+            _ => Err(()),
+        }
+    }
 }
 
 impl Into<DXGI_ALPHA_MODE> for AlphaMode {

@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
+use crate::dxgi::SwapChainDesc1;
 use crate::raw::windows::win32::direct3d12::ID3D12Resource;
-use crate::raw::windows::win32::dxgi::{
-    IDXGISwapChain4, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS, DXGI_SWAP_CHAIN_DESC1,
-};
+use crate::raw::windows::win32::dxgi::{IDXGISwapChain4, DXGI_FORMAT, DXGI_PRESENT_PARAMETERS};
 use raw::windows::{Abi, Interface};
+use std::convert::TryInto;
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
@@ -85,8 +85,11 @@ impl SwapChain {
             .ok()
     }
 
-    pub unsafe fn get_description(&self) -> raw::windows::Result<DXGI_SWAP_CHAIN_DESC1> {
+    pub unsafe fn get_description(&self) -> raw::windows::Result<SwapChainDesc1> {
         let mut desc = Default::default();
-        self.0.GetDesc1(&mut desc).ok().map(|_| desc)
+        self.0
+            .GetDesc1(&mut desc)
+            .ok()
+            .map(|_| desc.try_into().unwrap())
     }
 }

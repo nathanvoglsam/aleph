@@ -44,6 +44,15 @@ impl Default for SampleDesc {
     }
 }
 
+impl From<DXGI_SAMPLE_DESC> for SampleDesc {
+    fn from(v: DXGI_SAMPLE_DESC) -> Self {
+        Self {
+            count: v.count,
+            quality: v.quality,
+        }
+    }
+}
+
 impl Into<DXGI_SAMPLE_DESC> for SampleDesc {
     fn into(self) -> DXGI_SAMPLE_DESC {
         DXGI_SAMPLE_DESC {

@@ -29,6 +29,7 @@
 
 use crate::dxgi::{AlphaMode, Format, SampleDesc, Scaling, SwapChainFlags, SwapEffect, UsageFlags};
 use crate::raw::windows::win32::dxgi::DXGI_SWAP_CHAIN_DESC1;
+use std::convert::{TryFrom, TryInto};
 
 pub struct SwapChainDesc1Builder {
     inner: SwapChainDesc1,
@@ -270,6 +271,27 @@ pub struct SwapChainDesc1 {
 impl SwapChainDesc1 {
     pub fn builder() -> SwapChainDesc1Builder {
         SwapChainDesc1Builder::new()
+    }
+}
+
+impl TryFrom<DXGI_SWAP_CHAIN_DESC1> for SwapChainDesc1 {
+    type Error = ();
+
+    fn try_from(v: DXGI_SWAP_CHAIN_DESC1) -> Result<Self, Self::Error> {
+        let out = Self {
+            width: v.width,
+            height: v.height,
+            format: v.format.try_into()?,
+            stereo: v.stereo.as_bool(),
+            sample_desc: v.sample_desc.into(),
+            buffer_usage: UsageFlags(v.buffer_usage),
+            buffer_count: v.buffer_count,
+            scaling: v.scaling.try_into()?,
+            swap_effect: v.swap_effect.try_into()?,
+            alpha_mode: v.alpha_mode.try_into()?,
+            flags: SwapChainFlags(v.flags),
+        };
+        Ok(out)
     }
 }
 
