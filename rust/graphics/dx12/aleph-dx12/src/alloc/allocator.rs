@@ -48,8 +48,10 @@ pub struct AllocatorBuilder<'a, 'b> {
 }
 
 impl<'a, 'b> AllocatorBuilder<'a, 'b> {
-    pub fn always_committed(mut self) -> Self {
-        self.flags.0 |= alloc_raw::AllocatorFlags::ALWAYS_COMMITTED.0;
+    pub fn always_committed(mut self, always_committed: bool) -> Self {
+        if always_committed {
+            self.flags.0 |= alloc_raw::AllocatorFlags::ALWAYS_COMMITTED.0;
+        }
         self
     }
 

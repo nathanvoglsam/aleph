@@ -27,53 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{ID3D12Fence, D3D12_FENCE_FLAGS};
-use crate::raw::windows::{Abi, Interface};
-use crate::{Device, Event};
-
-pub struct FenceBuilder<'a> {
-    pub(crate) device: &'a Device,
-    pub(crate) initial_value: u64,
-    pub(crate) flags: D3D12_FENCE_FLAGS,
-}
-
-impl<'a> FenceBuilder<'a> {
-    pub fn shared(mut self) -> Self {
-        self.flags.0 |= D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_SHARED.0;
-        self
-    }
-
-    pub fn shared_cross_adapter(mut self) -> Self {
-        self.flags.0 |= D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_SHARED_CROSS_ADAPTER.0;
-        self
-    }
-
-    pub fn non_monitored(mut self) -> Self {
-        self.flags.0 |= D3D12_FENCE_FLAGS::D3D12_FENCE_FLAG_NON_MONITORED.0;
-        self
-    }
-
-    pub fn initial_value(mut self, initial_value: u64) -> Self {
-        self.initial_value = initial_value;
-        self
-    }
-
-    pub fn build(self) -> raw::windows::Result<Fence> {
-        unsafe {
-            let mut fence: Option<ID3D12Fence> = None;
-            self.device
-                .0
-                .CreateFence(
-                    self.initial_value,
-                    self.flags,
-                    &ID3D12Fence::IID,
-                    fence.set_abi(),
-                )
-                .and_some(fence)
-                .map(|v| Fence(v))
-        }
-    }
-}
+use crate::raw::windows::win32::direct3d12::ID3D12Fence;
+use crate::Event;
 
 #[repr(transparent)]
 pub struct Fence(pub(crate) ID3D12Fence);

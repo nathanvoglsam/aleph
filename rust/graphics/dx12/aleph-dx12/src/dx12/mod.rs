@@ -123,7 +123,6 @@ pub use device::Device;
 pub use event::Event;
 pub use feature_level::FeatureLevel;
 pub use fence::Fence;
-pub use fence::FenceBuilder;
 pub use fence_flags::FenceFlags;
 pub use fill_mode::FillMode;
 pub use filter::Filter;

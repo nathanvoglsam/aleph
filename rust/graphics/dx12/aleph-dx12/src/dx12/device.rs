@@ -37,9 +37,8 @@ use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, ClosedGraphicsCommandList, CommandAllocator, CommandListType, CommandQueue,
-    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence, FenceBuilder,
-    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
-    RootSignatureBlob,
+    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence, FenceFlags,
+    GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature, RootSignatureBlob,
 };
 use utf16_lit::utf16_null;
 
@@ -84,14 +83,6 @@ impl Device {
                 )
                 .and_some(fence)
                 .map(|v| Fence(v))
-        }
-    }
-
-    pub fn fence_builder<'a>(&'a self) -> FenceBuilder<'a> {
-        FenceBuilder::<'a> {
-            device: self,
-            initial_value: 0,
-            flags: Default::default(),
         }
     }
 

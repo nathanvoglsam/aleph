@@ -56,8 +56,10 @@ impl DescriptorHeapDescBuilder {
         self
     }
 
-    pub fn shader_visible(mut self) -> Self {
-        self.flags.0 |= DescriptorHeapFlags::SHADER_VISIBLE.0;
+    pub fn shader_visible(mut self, shader_visible: bool) -> Self {
+        if shader_visible {
+            self.flags.0 |= DescriptorHeapFlags::SHADER_VISIBLE.0;
+        }
         self
     }
 
