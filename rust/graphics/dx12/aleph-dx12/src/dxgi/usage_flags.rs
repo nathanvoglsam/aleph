@@ -27,26 +27,16 @@
 // SOFTWARE.
 //
 
-mod adapter;
-mod alpha_mode;
-mod factory;
-mod format;
-mod sample_desc;
-mod scaling;
-mod swap_chain;
-mod swap_chain_desc;
-mod swap_chain_flags;
-mod swap_effect;
-mod usage_flags;
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct UsageFlags(pub u32);
 
-pub use adapter::Adapter;
-pub use alpha_mode::AlphaMode;
-pub use factory::Factory;
-pub use format::Format;
-pub use sample_desc::SampleDesc;
-pub use scaling::Scaling;
-pub use swap_chain::SwapChain;
-pub use swap_chain_desc::SwapChainDesc1;
-pub use swap_chain_flags::SwapChainFlags;
-pub use swap_effect::SwapEffect;
-pub use usage_flags::UsageFlags;
+impl UsageFlags {
+    pub const NONE: Self = Self(0);
+    pub const BACK_BUFFER: Self = Self(64);
+    pub const DISCARD_ON_PRESENT: Self = Self(512);
+    pub const READ_ONLY: Self = Self(256);
+    pub const RENDER_TARGET_OUTPUT: Self = Self(32);
+    pub const SHADER_INPUT: Self = Self(16);
+    pub const SHARED: Self = Self(128);
+    pub const UNORDERED_ACCESS: Self = Self(1024);
+}

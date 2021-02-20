@@ -30,6 +30,7 @@
 use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_DESC;
 use crate::{DescriptorHeapFlags, DescriptorHeapType};
 
+#[derive(Clone, Debug)]
 pub struct DescriptorHeapDescBuilder {
     heap_type: Option<DescriptorHeapType>,
     num_descriptors: u32,

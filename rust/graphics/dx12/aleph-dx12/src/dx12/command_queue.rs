@@ -28,8 +28,7 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12DeviceChild, ID3D12Object};
-use crate::{dxgi, Fence, SubmissionBuilder, SwapChainBuilder};
-use raw_window_handle::HasRawWindowHandle;
+use crate::{Fence, SubmissionBuilder};
 
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
@@ -37,22 +36,6 @@ pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 impl CommandQueue {
     pub unsafe fn signal(&self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
         self.0.Signal(&fence.0, value).ok()
-    }
-
-    pub fn create_swapchain_builder<'a, 'b>(
-        &'a mut self,
-        factory: &'b dxgi::Factory,
-        window_handle: &impl HasRawWindowHandle,
-    ) -> SwapChainBuilder<'a, 'b> {
-        SwapChainBuilder {
-            queue: self,
-            factory,
-            window_handle: window_handle.raw_window_handle(),
-            width: 0,
-            height: 0,
-            buffer_count: 2,
-            allow_tearing: false,
-        }
     }
 
     #[cfg(feature = "pix")]

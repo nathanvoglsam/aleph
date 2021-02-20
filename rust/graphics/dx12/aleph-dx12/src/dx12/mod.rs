@@ -86,7 +86,6 @@ pub(crate) mod stencil_op;
 pub(crate) mod stream_output_declaration;
 pub(crate) mod stream_output_desc;
 pub(crate) mod submission_builder;
-pub(crate) mod swapchain;
 pub(crate) mod texture_address_mode;
 pub(crate) mod versioned_root_signature_desc;
 
@@ -162,7 +161,5 @@ pub use stencil_op::StencilOp;
 pub use stream_output_declaration::StreamOutputDeclaration;
 pub use stream_output_desc::StreamOutputDesc;
 pub use submission_builder::SubmissionBuilder;
-pub use swapchain::SwapChain;
-pub use swapchain::SwapChainBuilder;
 pub use texture_address_mode::TextureAddressMode;
 pub use versioned_root_signature_desc::VersionedRootSignatureDesc;

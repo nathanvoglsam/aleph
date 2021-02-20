@@ -27,14 +27,18 @@
 // SOFTWARE.
 //
 
+use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
 use crate::raw::windows::win32::direct3d12::ID3D12Device4;
 use crate::raw::windows::win32::dxgi::{
-    IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG,
-    DXGI_GPU_PREFERENCE,
+    IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
+    DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
 };
+use crate::raw::windows::win32::windows_and_messaging::HWND;
 use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
-use crate::{dxgi, FeatureLevel};
+use crate::{CommandQueue, FeatureLevel};
+use raw::windows::win32::winrt::IInspectable;
+use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
@@ -61,14 +65,78 @@ impl Factory {
         }
     }
 
-    pub fn enumerate_adapters(&mut self, i: u32) -> raw::windows::Result<dxgi::Adapter> {
-        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| dxgi::Adapter(v)) }
+    pub fn create_swap_chain(
+        &mut self,
+        queue: &CommandQueue,
+        window_handle: &impl HasRawWindowHandle,
+        swap_chain_desc: &SwapChainDesc1,
+    ) -> raw::windows::Result<SwapChain> {
+        unsafe {
+            let desc = swap_chain_desc.clone().into();
+            let window_handle = window_handle.raw_window_handle();
+
+            // Create the swapchain
+            let swapchain = match window_handle {
+                RawWindowHandle::Windows(hwnd) => {
+                    let hwnd = hwnd.hwnd.unwrap().as_ptr() as isize;
+                    let hwnd = HWND(hwnd);
+                    self.create_swap_chain_for_hwnd(queue, hwnd, desc)?
+                }
+                RawWindowHandle::WinRT(core_window) => {
+                    let core_window = core_window.core_window.unwrap();
+                    let core_window: IInspectable = std::mem::transmute(core_window);
+                    self.create_swap_chain_for_core_window(queue, core_window, desc)?
+                }
+                _ => panic!("Unsupported window handle"),
+            };
+
+            Ok(SwapChain(swapchain))
+        }
+    }
+
+    unsafe fn create_swap_chain_for_hwnd(
+        &mut self,
+        queue: &CommandQueue,
+        hwnd: HWND,
+        desc: DXGI_SWAP_CHAIN_DESC1,
+    ) -> raw::windows::Result<IDXGISwapChain4> {
+        let mut swapchain: Option<IDXGISwapChain1> = None;
+        let swapchain = self
+            .0
+            .CreateSwapChainForHwnd(
+                &queue.0,
+                hwnd,
+                &desc,
+                std::ptr::null(),
+                None,
+                &mut swapchain,
+            )
+            .and_some(swapchain)?;
+        swapchain.cast::<IDXGISwapChain4>()
+    }
+
+    unsafe fn create_swap_chain_for_core_window(
+        &mut self,
+        queue: &CommandQueue,
+        core_window: IInspectable,
+        desc: DXGI_SWAP_CHAIN_DESC1,
+    ) -> raw::windows::Result<IDXGISwapChain4> {
+        let mut swapchain: Option<IDXGISwapChain1> = None;
+        let swapchain = self
+            .0
+            .CreateSwapChainForCoreWindow(&queue.0, core_window, &desc, None, &mut swapchain)
+            .and_some(swapchain)?;
+        swapchain.cast::<IDXGISwapChain4>()
+    }
+
+    pub fn enumerate_adapters(&mut self, i: u32) -> raw::windows::Result<Adapter> {
+        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| Adapter(v)) }
     }
 
     pub fn select_hardware_adapter(
         &mut self,
         minimum_feature_level: FeatureLevel,
-    ) -> Option<dxgi::Adapter> {
+    ) -> Option<Adapter> {
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
@@ -108,7 +176,7 @@ impl Factory {
 
                     // If we succeeded then use the adapter
                     if result.is_ok() {
-                        return Some(dxgi::Adapter(adapter));
+                        return Some(Adapter(adapter));
                     }
                 } else {
                     break;

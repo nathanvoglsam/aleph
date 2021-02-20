@@ -27,26 +27,19 @@
 // SOFTWARE.
 //
 
-mod adapter;
-mod alpha_mode;
-mod factory;
-mod format;
-mod sample_desc;
-mod scaling;
-mod swap_chain;
-mod swap_chain_desc;
-mod swap_chain_flags;
-mod swap_effect;
-mod usage_flags;
+use raw::windows::win32::dxgi::DXGI_SWAP_EFFECT;
 
-pub use adapter::Adapter;
-pub use alpha_mode::AlphaMode;
-pub use factory::Factory;
-pub use format::Format;
-pub use sample_desc::SampleDesc;
-pub use scaling::Scaling;
-pub use swap_chain::SwapChain;
-pub use swap_chain_desc::SwapChainDesc1;
-pub use swap_chain_flags::SwapChainFlags;
-pub use swap_effect::SwapEffect;
-pub use usage_flags::UsageFlags;
+#[repr(i32)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum SwapEffect {
+    Discard = 0,
+    Sequential = 1,
+    FlipSequential = 3,
+    FlipDiscard = 4,
+}
+
+impl Into<DXGI_SWAP_EFFECT> for SwapEffect {
+    fn into(self) -> DXGI_SWAP_EFFECT {
+        DXGI_SWAP_EFFECT(self as i32)
+    }
+}

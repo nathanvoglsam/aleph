@@ -27,26 +27,19 @@
 // SOFTWARE.
 //
 
-mod adapter;
-mod alpha_mode;
-mod factory;
-mod format;
-mod sample_desc;
-mod scaling;
-mod swap_chain;
-mod swap_chain_desc;
-mod swap_chain_flags;
-mod swap_effect;
-mod usage_flags;
+use raw::windows::win32::dxgi::DXGI_ALPHA_MODE;
 
-pub use adapter::Adapter;
-pub use alpha_mode::AlphaMode;
-pub use factory::Factory;
-pub use format::Format;
-pub use sample_desc::SampleDesc;
-pub use scaling::Scaling;
-pub use swap_chain::SwapChain;
-pub use swap_chain_desc::SwapChainDesc1;
-pub use swap_chain_flags::SwapChainFlags;
-pub use swap_effect::SwapEffect;
-pub use usage_flags::UsageFlags;
+#[repr(u32)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum AlphaMode {
+    Unspecified = 0,
+    PreMultiplied = 1,
+    Straight = 2,
+    Ignore = 3,
+}
+
+impl Into<DXGI_ALPHA_MODE> for AlphaMode {
+    fn into(self) -> DXGI_ALPHA_MODE {
+        DXGI_ALPHA_MODE(self as u32)
+    }
+}

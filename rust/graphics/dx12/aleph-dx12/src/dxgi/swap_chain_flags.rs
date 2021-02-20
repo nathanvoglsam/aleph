@@ -27,26 +27,24 @@
 // SOFTWARE.
 //
 
-mod adapter;
-mod alpha_mode;
-mod factory;
-mod format;
-mod sample_desc;
-mod scaling;
-mod swap_chain;
-mod swap_chain_desc;
-mod swap_chain_flags;
-mod swap_effect;
-mod usage_flags;
+use raw::windows::win32::dxgi::DXGI_SWAP_CHAIN_FLAG;
 
-pub use adapter::Adapter;
-pub use alpha_mode::AlphaMode;
-pub use factory::Factory;
-pub use format::Format;
-pub use sample_desc::SampleDesc;
-pub use scaling::Scaling;
-pub use swap_chain::SwapChain;
-pub use swap_chain_desc::SwapChainDesc1;
-pub use swap_chain_flags::SwapChainFlags;
-pub use swap_effect::SwapEffect;
-pub use usage_flags::UsageFlags;
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct SwapChainFlags(pub u32);
+
+impl SwapChainFlags {
+    pub const NONE: Self = Self(0);
+    pub const NON_PRE_ROTATED: Self = Self(1);
+    pub const ALLOW_MODE_SWITCH: Self = Self(2);
+    pub const GDI_COMPATIBLE: Self = Self(4);
+    pub const RESTRICTED_CONTENT: Self = Self(8);
+    pub const RESTRICT_SHARED_RESOURCE_DRIVER: Self = Self(16);
+    pub const DISPLAY_ONLY: Self = Self(32);
+    pub const FRAME_LATENCY_WAITABLE_OBJECT: Self = Self(64);
+    pub const FOREGROUND_LAYER: Self = Self(128);
+    pub const FULLSCREEN_VIDEO: Self = Self(256);
+    pub const YUV_VIDEO: Self = Self(512);
+    pub const HW_PROTECTED: Self = Self(1024);
+    pub const ALLOW_TEARING: Self = Self(2048);
+    pub const RESTRICTED_TO_ALL_HOLOGRAPHIC_DISPLAYS: Self = Self(4096);
+}
