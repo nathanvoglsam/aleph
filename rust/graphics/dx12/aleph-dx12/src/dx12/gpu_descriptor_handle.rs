@@ -28,41 +28,46 @@
 //
 
 use crate::raw::windows::win32::direct3d12::D3D12_GPU_DESCRIPTOR_HANDLE;
+use std::num::NonZeroU64;
+use std::convert::TryFrom;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct GPUDescriptorHandle(u64);
+pub struct GPUDescriptorHandle(NonZeroU64);
 
 impl GPUDescriptorHandle {
     pub fn offset(self, offset: i64) -> Self {
-        let ptr = self.0 as i64;
+        let ptr = self.0.get() as i64;
         let ptr = ptr + offset;
-        Self(ptr as u64)
+        Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
     pub fn add(self, offset: u64) -> Self {
-        Self(self.0 + offset)
+        Self(NonZeroU64::new(self.0.get() + offset).unwrap())
     }
 
     pub fn offset_increments(self, offset: i64, increment: u64) -> Self {
-        let ptr = self.0 as i64;
+        let ptr = self.0.get() as i64;
         let ptr = ptr + (offset * increment as i64);
-        Self(ptr as u64)
+        Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
     pub fn add_increments(self, offset: u64, increment: u64) -> Self {
-        Self(self.0 + (offset * increment))
+        Self(NonZeroU64::new(self.0.get() + (offset * increment)).unwrap())
     }
 }
 
 impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
     fn into(self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
-        D3D12_GPU_DESCRIPTOR_HANDLE { ptr: self.0 }
+        D3D12_GPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
     }
 }
 
-impl From<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
-    fn from(v: D3D12_GPU_DESCRIPTOR_HANDLE) -> Self {
-        Self(v.ptr)
+impl TryFrom<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
+    type Error = ();
+
+    fn try_from(value: D3D12_GPU_DESCRIPTOR_HANDLE) -> Result<Self, Self::Error> {
+        let value = NonZeroU64::new(value.ptr).ok_or(())?;
+        Ok(Self(value))
     }
 }

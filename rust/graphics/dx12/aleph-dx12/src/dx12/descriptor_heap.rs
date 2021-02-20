@@ -32,24 +32,25 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_GPU_DESCRIPTOR_HANDLE,
 };
 use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
+use std::convert::TryFrom;
 
 #[repr(transparent)]
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 
 impl DescriptorHeap {
-    pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> CPUDescriptorHandle {
+    pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> Option<CPUDescriptorHandle> {
         unsafe {
             let mut out = D3D12_CPU_DESCRIPTOR_HANDLE::default();
             self.0.GetCPUDescriptorHandleForHeapStart(&mut out);
-            CPUDescriptorHandle::from(out)
+            CPUDescriptorHandle::try_from(out).ok()
         }
     }
 
-    pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> GPUDescriptorHandle {
+    pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> Option<GPUDescriptorHandle> {
         unsafe {
             let mut out = D3D12_GPU_DESCRIPTOR_HANDLE::default();
             self.0.GetGPUDescriptorHandleForHeapStart(&mut out);
-            GPUDescriptorHandle::from(out)
+            GPUDescriptorHandle::try_from(out).ok()
         }
     }
 }

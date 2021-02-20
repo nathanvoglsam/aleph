@@ -28,41 +28,46 @@
 //
 
 use crate::raw::windows::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
+use std::num::NonZeroUsize;
+use std::convert::TryFrom;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct CPUDescriptorHandle(usize);
+pub struct CPUDescriptorHandle(NonZeroUsize);
 
 impl CPUDescriptorHandle {
     pub fn offset(self, offset: isize) -> Self {
-        let ptr = self.0 as isize;
+        let ptr = self.0.get() as isize;
         let ptr = ptr + offset;
-        Self(ptr as usize)
+        Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
     pub fn add(self, offset: usize) -> Self {
-        Self(self.0 + offset)
+        Self(NonZeroUsize::new(self.0.get() + offset).unwrap())
     }
 
     pub fn offset_increments(self, offset: isize, increment: usize) -> Self {
-        let ptr = self.0 as isize;
+        let ptr = self.0.get() as isize;
         let ptr = ptr + (offset * increment as isize);
-        Self(ptr as usize)
+        Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
     pub fn add_increments(self, offset: usize, increment: usize) -> Self {
-        Self(self.0 + (offset * increment))
+        Self(NonZeroUsize::new(self.0.get() + (offset * increment)).unwrap())
     }
 }
 
 impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
     fn into(self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
-        D3D12_CPU_DESCRIPTOR_HANDLE { ptr: self.0 }
+        D3D12_CPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
     }
 }
 
-impl From<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
-    fn from(v: D3D12_CPU_DESCRIPTOR_HANDLE) -> Self {
-        Self(v.ptr)
+impl TryFrom<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
+    type Error = ();
+
+    fn try_from(value: D3D12_CPU_DESCRIPTOR_HANDLE) -> Result<Self, Self::Error> {
+        let value = NonZeroUsize::new(value.ptr).ok_or(())?;
+        Ok(Self(value))
     }
 }
