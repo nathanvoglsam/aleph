@@ -35,6 +35,7 @@ use raw::windows::win32::direct3d12::ID3D12Resource;
 use raw::windows::{Abi, Interface};
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 pub struct AllocatorDescBuilder {
     inner: AllocatorDesc,
@@ -109,8 +110,9 @@ impl Into<D3D12MA_ALLOCATOR_DESC> for AllocatorDesc {
     }
 }
 
+#[derive(Clone)]
 #[repr(transparent)]
-pub struct Allocator(NonNull<c_void>);
+pub struct Allocator(Arc<NonNull<c_void>>);
 
 impl Allocator {
     pub fn new(allocator_desc: AllocatorDesc) -> raw::windows::Result<Self> {
@@ -124,7 +126,7 @@ impl Allocator {
             alloc_raw::D3D12MA_Allocator_CreateAllocator(&desc, &mut out)
                 .ok()
                 .map(|_| {
-                    let out = Allocator(NonNull::new(out).unwrap());
+                    let out = Allocator(Arc::new(NonNull::new(out).unwrap()));
                     out
                 })
         }
