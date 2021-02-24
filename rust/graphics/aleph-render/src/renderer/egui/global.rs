@@ -99,6 +99,13 @@ impl GlobalObjects {
 
         let blend = dx12::RenderTargetBlendDesc::builder()
             .blend_enable(true)
+            .logic_op_enable(false)
+            .src_blend(dx12::Blend::One)
+            .dest_blend(dx12::Blend::SrcAlphaInv)
+            .blend_op(dx12::BlendOp::Add)
+            .src_blend_alpha(dx12::Blend::DestAlphaInv)
+            .dest_blend_alpha(dx12::Blend::One)
+            .blend_op_alpha(dx12::BlendOp::Add)
             .build();
         let blend_desc = dx12::BlendDesc::builder()
             .alpha_to_coverage_enable(false)
@@ -125,8 +132,5 @@ impl GlobalObjects {
             .unwrap();
 
         pipeline_state
-
-        // TODO: premultiplied alpha blending
-        //let attachments = [ColorBlendAttachmentState::pre_multiplied_alpha_blending()];
     }
 }

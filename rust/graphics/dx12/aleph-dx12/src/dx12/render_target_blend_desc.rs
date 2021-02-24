@@ -42,17 +42,17 @@ impl RenderTargetBlendDescBuilder {
     }
 
     pub fn blend_enable(mut self, blend_enable: bool) -> Self {
-        self.blend_enable = blend_enable;
+        self.inner.blend_enable = blend_enable;
         self
     }
 
     pub fn logic_op_enable(mut self, logic_op_enable: bool) -> Self {
-        self.logic_op_enable = logic_op_enable;
+        self.inner.logic_op_enable = logic_op_enable;
         self
     }
 
     pub fn src_blend(mut self, src_blend: Blend) -> Self {
-        self.src_blend = src_blend;
+        self.inner.src_blend = src_blend;
         self
     }
 
@@ -89,6 +89,10 @@ impl RenderTargetBlendDescBuilder {
     pub fn render_target_write_mask(mut self, render_target_write_mask: ColorWriteEnable) -> Self {
         self.inner.render_target_write_mask = render_target_write_mask;
         self
+    }
+
+    pub fn build(self) -> RenderTargetBlendDesc {
+        self.inner
     }
 }
 
