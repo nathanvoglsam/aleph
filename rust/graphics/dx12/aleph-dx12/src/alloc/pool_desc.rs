@@ -65,6 +65,10 @@ impl PoolDescBuilder {
         self.inner.max_block_count = max_block_count;
         self
     }
+
+    pub fn build(self) -> PoolDesc {
+        self.inner
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -74,6 +78,12 @@ pub struct PoolDesc {
     pub block_size: u64,
     pub min_block_count: u32,
     pub max_block_count: u32,
+}
+
+impl PoolDesc {
+    pub fn builder() -> PoolDescBuilder {
+        PoolDescBuilder::new()
+    }
 }
 
 impl Default for PoolDesc {
