@@ -28,6 +28,7 @@
 //
 
 use crate::alloc::{AllocationFlags, Pool};
+use crate::{Heap, Resource};
 use alloc_raw::D3D12MA_ALLOCATION_DESC;
 use std::ffi::c_void;
 use std::ptr::NonNull;
@@ -117,4 +118,14 @@ impl Drop for AllocationInner {
 #[repr(transparent)]
 pub struct Allocation(pub(crate) Arc<AllocationInner>);
 
-impl Allocation {}
+impl Allocation {
+    pub fn get_resource(&self) -> Option<Resource> {
+        unsafe {
+            alloc_raw::D3D12MA_Allocation_GetResource(self.0 .0.as_ptr()).map(|v| Resource(v))
+        }
+    }
+
+    pub fn get_heap(&self) -> Option<Heap> {
+        unsafe { alloc_raw::D3D12MA_Allocation_GetHeap(self.0 .0.as_ptr()).map(|v| Heap(v)) }
+    }
+}
