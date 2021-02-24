@@ -19,10 +19,14 @@ UINT64 D3D12MA_Allocation_GetSize(const D3D12MA::Allocation* self) {
     return self->GetSize();
 }
 ID3D12Resource* D3D12MA_Allocation_GetResource(const D3D12MA::Allocation* self) {
-    return self->GetResource();
+    auto resource = self->GetResource();
+    resource->AddRef();
+    return resource;
 }
 ID3D12Heap* D3D12MA_Allocation_GetHeap(const D3D12MA::Allocation* self) {
-    return self->GetHeap();
+    auto heap = self->GetHeap();
+    heap->AddRef();
+    return heap;
 }
 void D3D12MA_Allocation_SetName(D3D12MA::Allocation* self, LPCWSTR Name) {
     self->SetName(Name);

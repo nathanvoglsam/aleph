@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
+use crate::alloc::allocation::AllocationInner;
 use crate::alloc::{Allocation, AllocationDesc, AllocatorFlags};
 use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
-use crate::{dxgi, raw, ClearValue, Device, Resource, ResourceDesc, ResourceStates};
+use crate::{dxgi, raw, ClearValue, Device, ResourceDesc, ResourceStates};
 use alloc_raw::D3D12MA_ALLOCATOR_DESC;
-use raw::windows::win32::direct3d12::ID3D12Resource;
-use raw::windows::{Abi, Interface};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::Arc;
@@ -110,9 +109,20 @@ impl Into<D3D12MA_ALLOCATOR_DESC> for AllocatorDesc {
     }
 }
 
+#[repr(transparent)]
+struct AllocatorInner(NonNull<c_void>);
+
+impl Drop for AllocatorInner {
+    fn drop(&mut self) {
+        unsafe {
+            alloc_raw::D3D12MA_Allocator_Release(self.0.as_ptr());
+        }
+    }
+}
+
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Allocator(Arc<NonNull<c_void>>);
+pub struct Allocator(Arc<AllocatorInner>);
 
 impl Allocator {
     pub fn new(allocator_desc: AllocatorDesc) -> raw::windows::Result<Self> {
@@ -126,7 +136,8 @@ impl Allocator {
             alloc_raw::D3D12MA_Allocator_CreateAllocator(&desc, &mut out)
                 .ok()
                 .map(|_| {
-                    let out = Allocator(Arc::new(NonNull::new(out).unwrap()));
+                    let out = AllocatorInner(NonNull::new(out).unwrap());
+                    let out = Allocator(Arc::new(out));
                     out
                 })
         }
@@ -138,58 +149,49 @@ impl Allocator {
         resource_desc: &ResourceDesc,
         initial_resource_state: ResourceStates,
         optimized_clear_value: Option<&ClearValue>,
-    ) -> raw::windows::Result<(Resource, Allocation)> {
+    ) -> raw::windows::Result<Allocation> {
         unsafe {
             let alloc_desc = alloc_desc.into();
             let resource_desc = resource_desc.clone().into();
 
             let mut allocation = std::ptr::null_mut();
-            let mut resource: Option<ID3D12Resource> = None;
 
             if let Some(optimized_clear_value) = optimized_clear_value {
                 let optimized_clear_value: D3D12_CLEAR_VALUE = optimized_clear_value.clone().into();
                 alloc_raw::D3D12MA_Allocator_CreateResource(
-                    self.0.as_ptr(),
+                    self.0 .0.as_ptr(),
                     &alloc_desc,
                     &resource_desc,
                     initial_resource_state.into(),
                     &optimized_clear_value as *const D3D12_CLEAR_VALUE as *const _,
                     &mut allocation,
-                    &ID3D12Resource::IID,
-                    resource.set_abi(),
+                    std::ptr::null(),
+                    std::ptr::null_mut(),
                 )
                 .ok()
                 .map(|_| {
-                    let resource = Resource(resource.unwrap());
-                    let allocation = Allocation(NonNull::new(allocation).unwrap());
-                    (resource, allocation)
+                    let allocation = AllocationInner(NonNull::new(allocation).unwrap());
+                    let allocation = Allocation(Arc::new(allocation));
+                    allocation
                 })
             } else {
                 alloc_raw::D3D12MA_Allocator_CreateResource(
-                    self.0.as_ptr(),
+                    self.0 .0.as_ptr(),
                     &alloc_desc,
                     &resource_desc,
                     initial_resource_state.into(),
                     std::ptr::null(),
                     &mut allocation,
-                    &ID3D12Resource::IID,
-                    resource.set_abi(),
+                    std::ptr::null(),
+                    std::ptr::null_mut(),
                 )
                 .ok()
                 .map(|_| {
-                    let resource = Resource(resource.unwrap());
-                    let allocation = Allocation(NonNull::new(allocation).unwrap());
-                    (resource, allocation)
+                    let allocation = AllocationInner(NonNull::new(allocation).unwrap());
+                    let allocation = Allocation(Arc::new(allocation));
+                    allocation
                 })
             }
-        }
-    }
-}
-
-impl Drop for Allocator {
-    fn drop(&mut self) {
-        unsafe {
-            alloc_raw::D3D12MA_Allocator_Release(self.0.as_ptr());
         }
     }
 }

@@ -31,6 +31,7 @@ use crate::alloc::{AllocationFlags, Pool};
 use alloc_raw::D3D12MA_ALLOCATION_DESC;
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 pub struct AllocationDescBuilder<'a> {
     inner: AllocationDesc<'a>,
@@ -103,15 +104,17 @@ impl<'a> Into<D3D12MA_ALLOCATION_DESC> for &AllocationDesc<'a> {
     }
 }
 
-#[repr(transparent)]
-pub struct Allocation(pub(crate) NonNull<c_void>);
+pub struct AllocationInner(pub NonNull<c_void>);
 
-impl Allocation {}
-
-impl Drop for Allocation {
+impl Drop for AllocationInner {
     fn drop(&mut self) {
         unsafe {
             alloc_raw::D3D12MA_Allocation_Release(self.0.as_ptr());
         }
     }
 }
+
+#[repr(transparent)]
+pub struct Allocation(pub(crate) Arc<AllocationInner>);
+
+impl Allocation {}
