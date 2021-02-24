@@ -34,26 +34,25 @@ use alloc_raw::D3D12MA_ALLOCATOR_DESC;
 use raw::windows::win32::direct3d12::ID3D12Resource;
 use raw::windows::{Abi, Interface};
 use std::ffi::c_void;
-use std::mem::transmute_copy;
 use std::ptr::NonNull;
 
-pub struct AllocatorDescBuilder<'a> {
-    inner: AllocatorDesc<'a>,
+pub struct AllocatorDescBuilder {
+    inner: AllocatorDesc,
 }
 
-impl<'a> AllocatorDescBuilder<'a> {
+impl AllocatorDescBuilder {
     pub fn new() -> Self {
         Self {
             inner: AllocatorDesc::default(),
         }
     }
 
-    pub fn device(mut self, device: &'a Device) -> Self {
+    pub fn device(mut self, device: Device) -> Self {
         self.inner.device = Some(device);
         self
     }
 
-    pub fn adapter(mut self, adapter: &'a dxgi::Adapter) -> Self {
+    pub fn adapter(mut self, adapter: dxgi::Adapter) -> Self {
         self.inner.adapter = Some(adapter);
         self
     }
@@ -68,26 +67,26 @@ impl<'a> AllocatorDescBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> AllocatorDesc<'a> {
+    pub fn build(self) -> AllocatorDesc {
         self.inner
     }
 }
 
-pub struct AllocatorDesc<'a> {
-    pub device: Option<&'a Device>,
-    pub adapter: Option<&'a dxgi::Adapter>,
+pub struct AllocatorDesc {
+    pub device: Option<Device>,
+    pub adapter: Option<dxgi::Adapter>,
     pub preferred_block_size: u64,
     pub flags: AllocatorFlags,
     // pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
 }
 
-impl<'a> AllocatorDesc<'a> {
-    pub fn builder() -> AllocatorDescBuilder<'a> {
+impl AllocatorDesc {
+    pub fn builder() -> AllocatorDescBuilder {
         AllocatorDescBuilder::new()
     }
 }
 
-impl<'a> Default for AllocatorDesc<'a> {
+impl Default for AllocatorDesc {
     fn default() -> Self {
         Self {
             device: None,
@@ -98,16 +97,14 @@ impl<'a> Default for AllocatorDesc<'a> {
     }
 }
 
-impl<'a> Into<D3D12MA_ALLOCATOR_DESC> for &AllocatorDesc<'a> {
+impl Into<D3D12MA_ALLOCATOR_DESC> for AllocatorDesc {
     fn into(self) -> D3D12MA_ALLOCATOR_DESC {
-        unsafe {
-            D3D12MA_ALLOCATOR_DESC {
-                flags: self.flags,
-                p_device: transmute_copy(&self.device.unwrap().0),
-                preferred_block_size: self.preferred_block_size,
-                p_allocation_callbacks: std::ptr::null(),
-                p_adapter: transmute_copy(&self.adapter.unwrap().0),
-            }
+        D3D12MA_ALLOCATOR_DESC {
+            flags: self.flags,
+            p_device: self.device.map(|v| v.0.into()),
+            preferred_block_size: self.preferred_block_size,
+            p_allocation_callbacks: std::ptr::null(),
+            p_adapter: self.adapter.map(|v| v.0.into()),
         }
     }
 }
@@ -116,7 +113,7 @@ impl<'a> Into<D3D12MA_ALLOCATOR_DESC> for &AllocatorDesc<'a> {
 pub struct Allocator(NonNull<c_void>);
 
 impl Allocator {
-    pub fn new(allocator_desc: &AllocatorDesc) -> raw::windows::Result<Self> {
+    pub fn new(allocator_desc: AllocatorDesc) -> raw::windows::Result<Self> {
         if allocator_desc.flags & AllocatorFlags::SINGLE_THREADED != AllocatorFlags::NONE {
             panic!("AllocatorFlags::SINGLE_THREADED not supported by rust bindings")
         }

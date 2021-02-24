@@ -27,13 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12Resource;
+use crate::raw::windows::win32::direct3d12::D3D12_PLACED_SUBRESOURCE_FOOTPRINT;
+use crate::SubresourceFootprint;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct Resource(pub(crate) ID3D12Resource);
+#[derive(Clone, Debug)]
+pub struct PlacedSubresourceFootprint {
+    pub offset: u64,
+    pub footprint: SubresourceFootprint,
+}
 
-impl Resource {}
-
-crate::object_impl!(Resource);
-crate::device_child_impl!(Resource);
+impl Into<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> for PlacedSubresourceFootprint {
+    fn into(self) -> D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+        D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+            offset: self.offset,
+            footprint: self.footprint.into(),
+        }
+    }
+}

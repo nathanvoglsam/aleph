@@ -32,10 +32,12 @@
 extern crate aleph_dx12_raw as dx12_raw;
 
 use dx12_raw::windows::win32::direct3d12::{
-    ID3D12ProtectedResourceSession, D3D12_CLEAR_VALUE, D3D12_FEATURE_DATA_D3D12_OPTIONS,
-    D3D12_HEAP_FLAGS, D3D12_HEAP_TYPE, D3D12_RESOURCE_ALLOCATION_INFO, D3D12_RESOURCE_DESC,
-    D3D12_RESOURCE_DESC1, D3D12_RESOURCE_STATES,
+    ID3D12Device, ID3D12Heap, ID3D12ProtectedResourceSession, ID3D12Resource, D3D12_CLEAR_VALUE,
+    D3D12_FEATURE_DATA_D3D12_OPTIONS, D3D12_HEAP_FLAGS, D3D12_HEAP_TYPE,
+    D3D12_RESOURCE_ALLOCATION_INFO, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DESC1,
+    D3D12_RESOURCE_STATES,
 };
+use dx12_raw::windows::win32::dxgi::IDXGIAdapter;
 use dx12_raw::windows::ErrorCode;
 use dx12_raw::windows::Guid;
 use dx12_raw::windows::BOOL;
@@ -144,13 +146,13 @@ pub struct D3D12MA_ALLOCATOR_DESC {
     pub flags: D3D12MA_ALLOCATOR_FLAGS,
 
     // AddRef/Release handled by allocator
-    pub p_device: *mut c_void,
+    pub p_device: Option<ID3D12Device>,
 
     pub preferred_block_size: u64,
     pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
 
     // AddRef/Release handled by allocator
-    pub p_adapter: *mut c_void,
+    pub p_adapter: Option<IDXGIAdapter>,
 }
 
 #[repr(C)]
@@ -214,8 +216,8 @@ extern "C" {
     pub fn D3D12MA_Allocation_Release(this: ThisPtr);
     pub fn D3D12MA_Allocation_GetOffset(this: ThisPtrConst) -> u64;
     pub fn D3D12MA_Allocation_GetSize(this: ThisPtrConst) -> u64;
-    pub fn D3D12MA_Allocation_GetResource(this: ThisPtrConst) -> *mut ();
-    pub fn D3D12MA_Allocation_GetHeap(this: ThisPtrConst) -> *mut ();
+    pub fn D3D12MA_Allocation_GetResource(this: ThisPtrConst) -> Option<ID3D12Resource>;
+    pub fn D3D12MA_Allocation_GetHeap(this: ThisPtrConst) -> Option<ID3D12Heap>;
     pub fn D3D12MA_Allocation_SetName(this: ThisPtr, name: *const u16);
     pub fn D3D12MA_Allocation_GetName(this: ThisPtrConst) -> *const u16;
     pub fn D3D12MA_Allocation_WasZeroInitialized(this: ThisPtrConst) -> BOOL;

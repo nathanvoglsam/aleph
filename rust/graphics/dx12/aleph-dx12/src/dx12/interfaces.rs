@@ -31,9 +31,11 @@
 pub trait D3D12Object {
     /// A simple function that takes a native rust string. This will allocate to convert it into a
     /// UTF16 string to pass to the underlying d3d12 API
-    unsafe fn set_name(&self, name: &str) -> raw::windows::Result<()> {
-        let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-        self.set_name_raw(&utf16)
+    fn set_name(&self, name: &str) -> raw::windows::Result<()> {
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            self.set_name_raw(&utf16)
+        }
     }
 
     /// A lower level version of `set_name` which allows for manually supplying a null terminated

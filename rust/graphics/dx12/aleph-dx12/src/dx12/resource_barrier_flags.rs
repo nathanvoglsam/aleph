@@ -27,13 +27,21 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12Resource;
+use raw::windows::win32::direct3d12::D3D12_RESOURCE_BARRIER_FLAGS;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct Resource(pub(crate) ID3D12Resource);
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct ResourceBarrierFlags(pub i32);
 
-impl Resource {}
+impl ResourceBarrierFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const BEGIN_ONLY: Self = Self(1i32);
+    pub const END_ONLY: Self = Self(2i32);
+}
 
-crate::object_impl!(Resource);
-crate::device_child_impl!(Resource);
+crate::flags_bitwise_impl!(ResourceBarrierFlags);
+
+impl Into<D3D12_RESOURCE_BARRIER_FLAGS> for ResourceBarrierFlags {
+    fn into(self) -> D3D12_RESOURCE_BARRIER_FLAGS {
+        D3D12_RESOURCE_BARRIER_FLAGS(self.0)
+    }
+}

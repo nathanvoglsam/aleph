@@ -29,6 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::ID3D12CommandAllocator;
 
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct CommandAllocator(pub(crate) ID3D12CommandAllocator);
 

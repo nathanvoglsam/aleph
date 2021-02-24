@@ -41,11 +41,11 @@ use crate::{
 };
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::mem::{size_of, transmute, transmute_copy};
+use std::mem::size_of;
 use std::ops::Deref;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
-    root_signature: Option<&'a RootSignature>,
+    root_signature: Option<RootSignature>,
     vertex_shader: Option<&'a [u8]>,
     pixel_shader: Option<&'a [u8]>,
     domain_shader: Option<&'a [u8]>,
@@ -89,7 +89,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         }
     }
 
-    pub fn root_signature(mut self, root_signature: &'a crate::RootSignature) -> Self {
+    pub fn root_signature(mut self, root_signature: crate::RootSignature) -> Self {
         self.root_signature = Some(root_signature);
         self
     }
@@ -209,7 +209,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         let packed = packed::Packed {
             root_signature: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
-                unsafe { transmute_copy(&self.root_signature.unwrap().0) },
+                self.root_signature.clone().map(|v| v.0),
             ),
             vertex_shader: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS,
@@ -301,25 +301,16 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
         };
 
-        unsafe {
-            GraphicsPipelineStateStream {
-                buffer: transmute(packed),
-                phantom: Default::default(),
-            }
+        GraphicsPipelineStateStream {
+            packed,
+            phantom: Default::default(),
         }
     }
 }
 
-#[derive(Clone)]
 pub struct GraphicsPipelineStateStream<'a> {
-    buffer: [u8; size_of::<packed::Packed>()],
+    packed: packed::Packed,
     phantom: PhantomData<&'a ()>,
-}
-
-impl<'a> Hash for GraphicsPipelineStateStream<'a> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.buffer.hash(state)
-    }
 }
 
 impl<'a> GraphicsPipelineStateStream<'a> {
@@ -328,26 +319,36 @@ impl<'a> GraphicsPipelineStateStream<'a> {
     }
 }
 
+impl<'a> Hash for GraphicsPipelineStateStream<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.deref().hash(state)
+    }
+}
+
 impl<'a> Deref for GraphicsPipelineStateStream<'a> {
-    type Target = [u8; size_of::<packed::Packed>()];
+    type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        &self.buffer
+        unsafe {
+            std::slice::from_raw_parts(
+                &self.packed as *const packed::Packed as *const u8,
+                size_of::<packed::Packed>(),
+            )
+        }
     }
 }
 
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
     use crate::raw::windows::win32::direct3d12::{
-        D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
-        D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC, D3D12_RT_FORMAT_ARRAY,
-        D3D12_SHADER_BYTECODE, D3D12_STREAM_OUTPUT_DESC,
+        ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE,
+        D3D12_DEPTH_STENCIL_DESC, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC,
+        D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
+        D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE, D3D12_STREAM_OUTPUT_DESC,
     };
     use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
-    use std::ffi::c_void;
 
-    pub(crate) type RootSignature = PackedPipelineStateStreamObject<*mut c_void>;
+    pub(crate) type RootSignature = PackedPipelineStateStreamObject<Option<ID3D12RootSignature>>;
     pub(crate) type VertexShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
     pub(crate) type PixelShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
     pub(crate) type DomainShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;

@@ -52,8 +52,8 @@ impl<'a> SubmissionBuilder<'a> {
         Self { buffer: vec![] }
     }
 
-    pub fn add(&mut self, list: &'a ClosedGraphicsCommandList) -> &mut Self {
-        let entry = ListEntry(list.0.clone().into(), Default::default());
+    pub fn add(&mut self, list: ClosedGraphicsCommandList) -> &mut Self {
+        let entry = ListEntry(list.0.into(), Default::default());
         self.buffer.push(entry);
         self
     }

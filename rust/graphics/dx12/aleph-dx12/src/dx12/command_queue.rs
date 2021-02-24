@@ -30,6 +30,7 @@
 use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
 use crate::{Fence, SubmissionBuilder};
 
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 

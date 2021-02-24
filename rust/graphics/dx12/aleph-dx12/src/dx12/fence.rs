@@ -30,6 +30,7 @@
 use crate::raw::windows::win32::direct3d12::ID3D12Fence;
 use crate::Event;
 
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct Fence(pub(crate) ID3D12Fence);
 
