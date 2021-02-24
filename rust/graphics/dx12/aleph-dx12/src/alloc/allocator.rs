@@ -124,7 +124,7 @@ impl Allocator {
 
     pub fn create_pool(&self, pool_desc: &PoolDesc) -> raw::windows::Result<Pool> {
         unsafe {
-            let pool_desc = pool_desc.into();
+            let pool_desc = pool_desc.clone().into();
             let mut pool = std::ptr::null_mut();
             alloc_raw::D3D12MA_Allocator_CreatePool(self.0 .0.as_ptr(), &pool_desc, &mut pool)
                 .ok()
