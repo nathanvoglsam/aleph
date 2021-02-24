@@ -56,8 +56,8 @@ impl DescriptorHeapDescBuilder {
         self
     }
 
-    pub fn flag(mut self, flag: DescriptorHeapFlags) -> Self {
-        self.flags |= flag;
+    pub fn flags(mut self, flags: DescriptorHeapFlags) -> Self {
+        self.flags |= flags;
         self
     }
 

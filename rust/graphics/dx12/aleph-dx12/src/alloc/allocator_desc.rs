@@ -57,8 +57,8 @@ impl AllocatorDescBuilder {
         self
     }
 
-    pub fn flag(mut self, flag: AllocatorFlags) -> Self {
-        self.inner.flags |= flag;
+    pub fn flags(mut self, flags: AllocatorFlags) -> Self {
+        self.inner.flags |= flags;
         self
     }
 

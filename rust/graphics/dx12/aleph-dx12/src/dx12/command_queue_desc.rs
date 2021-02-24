@@ -55,8 +55,8 @@ impl CommandQueueDescBuilder {
         self
     }
 
-    pub fn flag(mut self, flag: CommandQueueFlags) -> Self {
-        self.inner.flags |= flag;
+    pub fn flags(mut self, flags: CommandQueueFlags) -> Self {
+        self.inner.flags |= flags;
         self
     }
 

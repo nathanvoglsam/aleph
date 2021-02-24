@@ -99,13 +99,13 @@ impl SwapChainDesc1Builder {
         self
     }
 
-    pub fn usage_flag(mut self, flag: UsageFlags) -> Self {
-        self.inner.buffer_usage |= flag;
+    pub fn usage_flags(mut self, usage_flags: UsageFlags) -> Self {
+        self.inner.buffer_usage |= usage_flags;
         self
     }
 
-    pub fn flag(mut self, flag: SwapChainFlags) -> Self {
-        self.inner.flags |= flag;
+    pub fn flags(mut self, flags: SwapChainFlags) -> Self {
+        self.inner.flags |= flags;
         self
     }
 

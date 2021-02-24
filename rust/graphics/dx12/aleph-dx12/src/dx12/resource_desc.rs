@@ -87,7 +87,7 @@ impl ResourceDescBuilder {
     }
 
     pub fn flags(mut self, flags: ResourceFlags) -> Self {
-        self.inner.flags = flags;
+        self.inner.flags |= flags;
         self
     }
 
@@ -122,12 +122,12 @@ impl Default for ResourceDesc {
             dimension: ResourceDimension::Unknown,
             alignment: 0,
             width: 0,
-            height: 0,
-            depth_or_array_size: 0,
-            mip_levels: 0,
+            height: 1,
+            depth_or_array_size: 1,
+            mip_levels: 1,
             format: Default::default(),
             sample_desc: Default::default(),
-            layout: TextureLayout::Unknown,
+            layout: TextureLayout::RowMajor,
             flags: ResourceFlags::NONE,
         }
     }

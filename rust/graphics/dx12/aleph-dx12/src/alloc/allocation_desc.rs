@@ -42,7 +42,7 @@ impl<'a> AllocationDescBuilder<'a> {
     }
 
     pub fn flags(mut self, flags: AllocationFlags) -> Self {
-        self.inner.flags = flags;
+        self.inner.flags |= flags;
         self
     }
 
@@ -52,7 +52,7 @@ impl<'a> AllocationDescBuilder<'a> {
     }
 
     pub fn extra_heap_flags(mut self, extra_heap_flags: crate::HeapFlags) -> Self {
-        self.inner.extra_heap_flags = extra_heap_flags;
+        self.inner.extra_heap_flags |= extra_heap_flags;
         self
     }
 

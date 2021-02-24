@@ -76,8 +76,8 @@ impl RootSignatureDescBuilder {
         self
     }
 
-    pub fn flag(mut self, flag: RootSignatureFlags) -> Self {
-        self.flags |= flag;
+    pub fn flags(mut self, flags: RootSignatureFlags) -> Self {
+        self.flags |= flags;
         self
     }
 
@@ -149,8 +149,8 @@ impl RootSignatureDesc1Builder {
         self
     }
 
-    pub fn flag(mut self, flag: RootSignatureFlags) -> Self {
-        self.flags |= flag;
+    pub fn flags(mut self, flags: RootSignatureFlags) -> Self {
+        self.flags |= flags;
         self
     }
 
