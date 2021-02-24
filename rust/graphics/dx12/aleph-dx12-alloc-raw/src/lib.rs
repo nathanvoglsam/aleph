@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(non_camel_case_types)]
+
 extern crate aleph_dx12_raw as dx12_raw;
 
 use dx12_raw::windows::win32::direct3d12::{
@@ -39,14 +41,14 @@ use dx12_raw::windows::Guid;
 use dx12_raw::windows::BOOL;
 use std::ffi::c_void;
 
-pub type AllocateFn = extern "C" fn();
-pub type FreeFn = extern "C" fn();
+pub type D3D12MA_ALLOCATE_FN = extern "C" fn();
+pub type D3D12MA_FREE_FN = extern "C" fn();
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[repr(transparent)]
-pub struct AllocationFlags(pub u32);
+pub struct D3D12MA_ALLOCATION_FLAGS(pub u32);
 
-impl AllocationFlags {
+impl D3D12MA_ALLOCATION_FLAGS {
     pub const NONE: Self = Self(0b0);
     pub const COMMITTED: Self = Self(0b1);
     pub const NEVER_ALLOCATE: Self = Self(0b10);
@@ -54,22 +56,22 @@ impl AllocationFlags {
 }
 
 #[repr(C)]
-pub struct AllocationCallbacks {
-    pub p_allocate: AllocateFn,
-    pub p_free: FreeFn,
+pub struct D3D12MA_ALLOCATION_CALLBACKS {
+    pub p_allocate: D3D12MA_ALLOCATE_FN,
+    pub p_free: D3D12MA_FREE_FN,
     pub p_user_data: *mut c_void,
 }
 
 #[repr(C)]
-pub struct AllocationDesc {
-    pub flags: AllocationFlags,
+pub struct D3D12MA_ALLOCATION_DESC {
+    pub flags: D3D12MA_ALLOCATION_FLAGS,
     pub heap_type: D3D12_HEAP_TYPE,
     pub extra_heap_flags: D3D12_HEAP_FLAGS,
     pub pool: *mut c_void,
 }
 
 #[repr(C)]
-pub struct PoolDesc {
+pub struct D3D12MA_POOL_DESC {
     pub heap_type: D3D12_HEAP_TYPE,
     pub heap_flags: D3D12_HEAP_FLAGS,
     pub block_size: u64,
@@ -79,30 +81,30 @@ pub struct PoolDesc {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[repr(transparent)]
-pub struct AllocatorFlags(pub u32);
+pub struct D3D12MA_ALLOCATOR_FLAGS(pub u32);
 
-impl AllocatorFlags {
+impl D3D12MA_ALLOCATOR_FLAGS {
     pub const NONE: Self = Self(0b0);
     pub const SINGLE_THREADED: Self = Self(0b1);
     pub const ALWAYS_COMMITTED: Self = Self(0b10);
 }
 
 #[repr(C)]
-pub struct AllocatorDesc {
-    pub flags: AllocatorFlags,
+pub struct D3D12MA_ALLOCATOR_DESC {
+    pub flags: D3D12MA_ALLOCATOR_FLAGS,
 
     // AddRef/Release handled by allocator
     pub p_device: *mut c_void,
 
     pub preferred_block_size: u64,
-    pub p_allocation_callbacks: *const AllocationCallbacks,
+    pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
 
     // AddRef/Release handled by allocator
     pub p_adapter: *mut c_void,
 }
 
 #[repr(C)]
-pub struct StatInfo {
+pub struct D3D12MA_STAT_INFO {
     pub block_count: u32,
     pub allocation_count: u32,
     pub unused_range_count: u32,
@@ -119,13 +121,13 @@ pub struct StatInfo {
 pub const HEAP_TYPE_COUNT: usize = 3;
 
 #[repr(C)]
-pub struct Stats {
-    pub total: StatInfo,
-    pub heap_type: [StatInfo; HEAP_TYPE_COUNT],
+pub struct D3D12MA_STATS {
+    pub total: D3D12MA_STAT_INFO,
+    pub heap_type: [D3D12MA_STAT_INFO; HEAP_TYPE_COUNT],
 }
 
 #[repr(C)]
-pub struct Budget {
+pub struct D3D12MA_BUDGET {
     pub block_bytes: u64,
     pub allocation_bytes: u64,
     pub usage_bytes: u64,
@@ -133,20 +135,20 @@ pub struct Budget {
 }
 
 #[repr(C)]
-pub struct VirtualBlockDesc {
+pub struct D3D12MA_VIRTUAL_BLOCK_DESC {
     pub size: u64,
-    pub p_allocation_callbacks: *const AllocationCallbacks,
+    pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
 }
 
 #[repr(C)]
-pub struct VirtualAllocationDesc {
+pub struct D3D12MA_VIRTUAL_ALLOCATION_DESC {
     pub size: u64,
     pub alignment: u64,
     pub p_user_data: *mut c_void,
 }
 
 #[repr(C)]
-pub struct VirtualAllocationInfo {
+pub struct D3D12MA_VIRTUAL_ALLOCATION_INFO {
     pub size: u64,
     pub p_user_data: *mut c_void,
 }
@@ -172,9 +174,9 @@ extern "C" {
     // POOL
     //
     pub fn D3D12MA_Pool_Release(this: ThisPtr);
-    pub fn D3D12MA_Pool_GetDesc(this: ThisPtrConst) -> PoolDesc;
+    pub fn D3D12MA_Pool_GetDesc(this: ThisPtrConst) -> D3D12MA_POOL_DESC;
     pub fn D3D12MA_Pool_SetMinBytes(this: ThisPtr, min_bytes: u64) -> ErrorCode;
-    pub fn D3D12MA_Pool_CalculateStats(this: ThisPtr, p_stats: *mut StatInfo);
+    pub fn D3D12MA_Pool_CalculateStats(this: ThisPtr, p_stats: *mut D3D12MA_STAT_INFO);
     pub fn D3D12MA_Pool_SetName(this: ThisPtr, name: *const u16);
     pub fn D3D12MA_Pool_GetName(this: ThisPtrConst) -> *const u16;
 
@@ -182,7 +184,7 @@ extern "C" {
     // ALLOCATOR
     //
     pub fn D3D12MA_Allocator_CreateAllocator(
-        p_desc: *const AllocatorDesc,
+        p_desc: *const D3D12MA_ALLOCATOR_DESC,
         pp_allocator: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_Release(this: ThisPtr);
@@ -191,7 +193,7 @@ extern "C" {
     ) -> *const D3D12_FEATURE_DATA_D3D12_OPTIONS;
     pub fn D3D12MA_Allocator_CreateResource(
         this: ThisPtr,
-        p_alloc_desc: *const AllocationDesc,
+        p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_resource_desc: *const D3D12_RESOURCE_DESC,
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
@@ -201,7 +203,7 @@ extern "C" {
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreateResource1(
         this: ThisPtr,
-        p_alloc_desc: *const AllocationDesc,
+        p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_resource_desc: *const D3D12_RESOURCE_DESC,
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
@@ -212,7 +214,7 @@ extern "C" {
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreateResource2(
         this: ThisPtr,
-        p_alloc_desc: *const AllocationDesc,
+        p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_resource_desc: *const D3D12_RESOURCE_DESC1,
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
@@ -223,13 +225,13 @@ extern "C" {
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_AllocateMemory(
         this: ThisPtr,
-        p_alloc_desc: *const AllocationDesc,
+        p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_alloc_info: *const D3D12_RESOURCE_ALLOCATION_INFO,
         pp_allocation: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_AllocateMemory1(
         this: ThisPtr,
-        p_alloc_desc: *const AllocationDesc,
+        p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_alloc_info: *const D3D12_RESOURCE_ALLOCATION_INFO,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
@@ -246,7 +248,7 @@ extern "C" {
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreatePool(
         this: ThisPtr,
-        p_pool_desc: *const PoolDesc,
+        p_pool_desc: *const D3D12MA_POOL_DESC,
         pp_pool: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_SetDefaultHeapMinBytes(
@@ -256,11 +258,11 @@ extern "C" {
         min_bytes: u64,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_SetCurrentFrameIndex(this: ThisPtr, frame_index: u32);
-    pub fn D3D12MA_Allocator_CalculateStats(this: ThisPtr, p_stats: *mut Stats);
+    pub fn D3D12MA_Allocator_CalculateStats(this: ThisPtr, p_stats: *mut D3D12MA_STATS);
     pub fn D3D12MA_Allocator_GetBudget(
         this: ThisPtr,
-        p_gpu_budget: *mut Budget,
-        p_cpu_budget: *mut Budget,
+        p_gpu_budget: *mut D3D12MA_BUDGET,
+        p_cpu_budget: *mut D3D12MA_BUDGET,
     );
     pub fn D3D12MA_Allocator_BuildStatsString(
         this: ThisPtrConst,
@@ -273,7 +275,7 @@ extern "C" {
     // VIRTUAL BLOCK
     //
     pub fn D3D12MA_VirtualBlock_CreateAllocator(
-        p_desc: *const VirtualBlockDesc,
+        p_desc: *const D3D12MA_VIRTUAL_BLOCK_DESC,
         pp_allocator: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_VirtualBlock_Release(this: ThisPtr);
@@ -281,11 +283,11 @@ extern "C" {
     pub fn D3D12MA_VirtualBlock_GetAllocationInfo(
         this: ThisPtrConst,
         offset: u64,
-        p_info: *mut VirtualAllocationInfo,
+        p_info: *mut D3D12MA_VIRTUAL_ALLOCATION_INFO,
     );
     pub fn D3D12MA_VirtualBlock_Allocate(
         this: ThisPtr,
-        p_desc: *const VirtualAllocationDesc,
+        p_desc: *const D3D12MA_VIRTUAL_ALLOCATION_DESC,
         p_offset: *mut u64,
     ) -> ErrorCode;
     pub fn D3D12MA_VirtualBlock_FreeAllocation(this: ThisPtr, offset: u64);
@@ -295,7 +297,7 @@ extern "C" {
         offset: u64,
         p_user_data: *mut c_void,
     );
-    pub fn D3D12MA_VirtualBlock_CalculateStats(this: ThisPtrConst, p_stats: *mut Stats);
+    pub fn D3D12MA_VirtualBlock_CalculateStats(this: ThisPtrConst, p_stats: *mut D3D12MA_STATS);
     pub fn D3D12MA_VirtualBlock_BuildStatsString(
         this: ThisPtrConst,
         pp_stats_string: *mut *mut u16,
