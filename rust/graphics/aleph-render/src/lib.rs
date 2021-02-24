@@ -28,6 +28,7 @@
 //
 
 extern crate aleph_dx12 as dx12;
+extern crate aleph_embedded_data as embedded_data;
 extern crate aleph_macros as macros;
 
 mod renderer;

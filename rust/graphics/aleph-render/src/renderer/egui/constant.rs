@@ -54,7 +54,9 @@ impl ConstantObjects {
         let root_signature = Self::create_root_signature(device);
 
         unsafe {
-            let dest = heap.get_cpu_descriptor_handle_for_heap_start();
+            let dest = sampler_heap
+                .get_cpu_descriptor_handle_for_heap_start()
+                .unwrap();
             let desc = dx12::SamplerDesc::builder()
                 .address_u(dx12::TextureAddressMode::Clamp)
                 .address_v(dx12::TextureAddressMode::Clamp)

@@ -29,7 +29,6 @@
 
 use crate::renderer::egui::constant::ConstantObjects;
 use dx12::dxgi;
-use std::ffi::CString;
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -44,8 +43,8 @@ impl GlobalObjects {
         let pipeline_state = Self::create_pipeline_state(
             device,
             &constant.root_signature,
-            vertex_shader,
-            pixel_shader,
+            embedded_data::shaders::egui_vert_shader(),
+            embedded_data::shaders::egui_frag_shader(),
         );
 
         Self { pipeline_state }
