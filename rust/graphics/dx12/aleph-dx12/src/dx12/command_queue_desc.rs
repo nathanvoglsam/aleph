@@ -55,10 +55,8 @@ impl CommandQueueDescBuilder {
         self
     }
 
-    pub fn disable_gpu_timeout(mut self, disable_gpu_timeout: bool) -> Self {
-        if disable_gpu_timeout {
-            self.inner.flags.0 |= CommandQueueFlags::DISABLE_GPU_TIMEOUT.0;
-        }
+    pub fn flag(mut self, flag: CommandQueueFlags) -> Self {
+        self.inner.flags |= flag;
         self
     }
 

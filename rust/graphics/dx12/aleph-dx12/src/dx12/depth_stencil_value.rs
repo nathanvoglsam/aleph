@@ -27,17 +27,20 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct DepthStencilValue {
+    pub depth: f32,
+    pub stencil: u8,
+}
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl Into<D3D12_DEPTH_STENCIL_VALUE> for DepthStencilValue {
+    fn into(self) -> D3D12_DEPTH_STENCIL_VALUE {
+        D3D12_DEPTH_STENCIL_VALUE {
+            depth: self.depth,
+            stencil: self.stencil,
+        }
+    }
+}

@@ -37,6 +37,8 @@ impl DescriptorHeapFlags {
     pub const SHADER_VISIBLE: Self = Self(1i32);
 }
 
+crate::flags_bitwise_impl!(DescriptorHeapFlags);
+
 impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
         D3D12_DESCRIPTOR_HEAP_FLAGS(self.0)

@@ -46,3 +46,5 @@ impl SwapChainFlags {
     pub const ALLOW_TEARING: Self = Self(2048);
     pub const RESTRICTED_TO_ALL_HOLOGRAPHIC_DISPLAYS: Self = Self(4096);
 }
+
+crate::flags_bitwise_impl!(SwapChainFlags);

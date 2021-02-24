@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use crate::raw::windows::win32::direct3d12::D3D12_TEXTURE_LAYOUT;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[repr(i32)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum TextureLayout {
+    Unknown = 0,
+    RowMajor = 1,
+    UndefinedSwizzle64KB = 2,
+    StandardSwizzle64KB = 3,
+}
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl Into<D3D12_TEXTURE_LAYOUT> for TextureLayout {
+    fn into(self) -> D3D12_TEXTURE_LAYOUT {
+        D3D12_TEXTURE_LAYOUT(self as i32)
+    }
+}

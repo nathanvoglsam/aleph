@@ -116,3 +116,50 @@ pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE
         Some(blob) => blob_to_cached_pso(blob),
     }
 }
+
+#[macro_export]
+macro_rules! flags_bitwise_impl {
+    ($t:ident) => {
+        impl std::ops::BitOr for $t {
+            type Output = Self;
+
+            fn bitor(self, rhs: Self) -> Self::Output {
+                Self(self.0 | rhs.0)
+            }
+        }
+
+        impl std::ops::BitOrAssign for $t {
+            fn bitor_assign(&mut self, rhs: Self) {
+                self.0 |= rhs.0
+            }
+        }
+
+        impl std::ops::BitAnd for $t {
+            type Output = Self;
+
+            fn bitand(self, rhs: Self) -> Self::Output {
+                Self(self.0 & rhs.0)
+            }
+        }
+
+        impl std::ops::BitAndAssign for $t {
+            fn bitand_assign(&mut self, rhs: Self) {
+                self.0 &= rhs.0
+            }
+        }
+
+        impl std::ops::BitXor for $t {
+            type Output = Self;
+
+            fn bitxor(self, rhs: Self) -> Self::Output {
+                Self(self.0 ^ rhs.0)
+            }
+        }
+
+        impl std::ops::BitXorAssign for $t {
+            fn bitxor_assign(&mut self, rhs: Self) {
+                self.0 ^= rhs.0
+            }
+        }
+    };
+}

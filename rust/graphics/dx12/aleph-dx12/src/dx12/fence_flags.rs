@@ -39,6 +39,8 @@ impl FenceFlags {
     pub const NON_MONITORED: Self = Self(4i32);
 }
 
+crate::flags_bitwise_impl!(FenceFlags);
+
 impl Into<D3D12_FENCE_FLAGS> for FenceFlags {
     fn into(self) -> D3D12_FENCE_FLAGS {
         D3D12_FENCE_FLAGS(self.0)

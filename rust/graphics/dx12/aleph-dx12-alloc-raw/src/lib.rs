@@ -41,6 +41,52 @@ use dx12_raw::windows::Guid;
 use dx12_raw::windows::BOOL;
 use std::ffi::c_void;
 
+macro_rules! flags_bitwise_impl {
+    ($t:ident) => {
+        impl std::ops::BitOr for $t {
+            type Output = Self;
+
+            fn bitor(self, rhs: Self) -> Self::Output {
+                Self(self.0 | rhs.0)
+            }
+        }
+
+        impl std::ops::BitOrAssign for $t {
+            fn bitor_assign(&mut self, rhs: Self) {
+                self.0 |= rhs.0
+            }
+        }
+
+        impl std::ops::BitAnd for $t {
+            type Output = Self;
+
+            fn bitand(self, rhs: Self) -> Self::Output {
+                Self(self.0 & rhs.0)
+            }
+        }
+
+        impl std::ops::BitAndAssign for $t {
+            fn bitand_assign(&mut self, rhs: Self) {
+                self.0 &= rhs.0
+            }
+        }
+
+        impl std::ops::BitXor for $t {
+            type Output = Self;
+
+            fn bitxor(self, rhs: Self) -> Self::Output {
+                Self(self.0 ^ rhs.0)
+            }
+        }
+
+        impl std::ops::BitXorAssign for $t {
+            fn bitxor_assign(&mut self, rhs: Self) {
+                self.0 ^= rhs.0
+            }
+        }
+    };
+}
+
 pub type D3D12MA_ALLOCATE_FN = extern "C" fn();
 pub type D3D12MA_FREE_FN = extern "C" fn();
 
@@ -54,6 +100,8 @@ impl D3D12MA_ALLOCATION_FLAGS {
     pub const NEVER_ALLOCATE: Self = Self(0b10);
     pub const WITHIN_BUDGET: Self = Self(0b100);
 }
+
+flags_bitwise_impl!(D3D12MA_ALLOCATION_FLAGS);
 
 #[repr(C)]
 pub struct D3D12MA_ALLOCATION_CALLBACKS {
@@ -88,6 +136,8 @@ impl D3D12MA_ALLOCATOR_FLAGS {
     pub const SINGLE_THREADED: Self = Self(0b1);
     pub const ALWAYS_COMMITTED: Self = Self(0b10);
 }
+
+flags_bitwise_impl!(D3D12MA_ALLOCATOR_FLAGS);
 
 #[repr(C)]
 pub struct D3D12MA_ALLOCATOR_DESC {
@@ -198,7 +248,7 @@ extern "C" {
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         pp_allocation: *mut *mut c_void,
-        riid_resource: Guid,
+        riid_resource: *const Guid,
         ppv_resource: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreateResource1(
@@ -209,7 +259,7 @@ extern "C" {
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
-        riid_resource: Guid,
+        riid_resource: *const Guid,
         ppv_resource: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreateResource2(
@@ -220,7 +270,7 @@ extern "C" {
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
-        riid_resource: Guid,
+        riid_resource: *const Guid,
         ppv_resource: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_AllocateMemory(
@@ -243,7 +293,7 @@ extern "C" {
         p_resource_desc: *const D3D12_RESOURCE_DESC,
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
-        riid_resource: Guid,
+        riid_resource: *const Guid,
         ppv_resource: *mut *mut c_void,
     ) -> ErrorCode;
     pub fn D3D12MA_Allocator_CreatePool(

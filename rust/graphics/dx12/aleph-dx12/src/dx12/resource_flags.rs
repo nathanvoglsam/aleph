@@ -27,17 +27,26 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use raw::windows::win32::direct3d12::D3D12_RESOURCE_FLAGS;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct ResourceFlags(pub i32);
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl ResourceFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const ALLOW_RENDER_TARGET: Self = Self(1i32);
+    pub const ALLOW_DEPTH_STENCIL: Self = Self(2i32);
+    pub const ALLOW_UNORDERED_ACCESS: Self = Self(4i32);
+    pub const DENY_SHADER_RESOURCE: Self = Self(8i32);
+    pub const ALLOW_CROSS_ADAPTER: Self = Self(16i32);
+    pub const ALLOW_SIMULTANEOUS_ACCESS: Self = Self(32i32);
+    pub const VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64i32);
+}
+
+crate::flags_bitwise_impl!(ResourceFlags);
+
+impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {
+    fn into(self) -> D3D12_RESOURCE_FLAGS {
+        D3D12_RESOURCE_FLAGS(self.0)
+    }
+}

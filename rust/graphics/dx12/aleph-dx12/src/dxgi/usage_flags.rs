@@ -40,3 +40,5 @@ impl UsageFlags {
     pub const SHARED: Self = Self(128);
     pub const UNORDERED_ACCESS: Self = Self(1024);
 }
+
+crate::flags_bitwise_impl!(UsageFlags);

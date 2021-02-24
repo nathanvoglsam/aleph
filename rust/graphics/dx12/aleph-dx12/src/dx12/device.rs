@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::alloc::AllocatorBuilder;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12Object, ID3D12PipelineState, ID3D12RootSignature,
@@ -191,19 +190,6 @@ impl Device {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc = sampler_desc.clone().into();
         self.0.CreateSampler(&desc, dest.into())
-    }
-
-    pub fn create_allocator_builder<'a, 'b>(
-        &'a self,
-        adapter: &'b dxgi::Adapter,
-        preferred_block_size: u64,
-    ) -> AllocatorBuilder<'a, 'b> {
-        AllocatorBuilder {
-            device: &self,
-            adapter,
-            flags: alloc_raw::AllocatorFlags::NONE,
-            preferred_block_size,
-        }
     }
 }
 

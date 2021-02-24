@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use crate::raw::windows::win32::direct3d12::D3D12_HEAP_TYPE;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[repr(i32)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum HeapType {
+    Default = 1,
+    Upload = 2,
+    ReadBack = 3,
+    Custom = 4,
+}
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl Into<D3D12_HEAP_TYPE> for HeapType {
+    fn into(self) -> D3D12_HEAP_TYPE {
+        D3D12_HEAP_TYPE(self as i32)
+    }
+}

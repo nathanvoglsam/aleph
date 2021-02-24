@@ -37,6 +37,8 @@ impl CommandQueueFlags {
     pub const DISABLE_GPU_TIMEOUT: Self = Self(1i32);
 }
 
+crate::flags_bitwise_impl!(CommandQueueFlags);
+
 impl Into<D3D12_COMMAND_QUEUE_FLAGS> for CommandQueueFlags {
     fn into(self) -> D3D12_COMMAND_QUEUE_FLAGS {
         D3D12_COMMAND_QUEUE_FLAGS(self.0)

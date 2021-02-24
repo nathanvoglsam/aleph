@@ -156,6 +156,17 @@ pub enum Format {
     SamplerFeedbackMipRegionUsedOpaque = 190,
 }
 
+impl Format {
+    pub fn is_depth_stencil(&self) -> bool {
+        match self {
+            Self::D32Float | Self::D24UnormS8Uint | Self::D16Unorm | Self::D32FloatS8X24Uint => {
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
 impl Default for Format {
     fn default() -> Self {
         Self::Unknown

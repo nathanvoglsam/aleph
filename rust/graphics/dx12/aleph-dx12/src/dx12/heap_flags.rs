@@ -27,17 +27,34 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use raw::windows::win32::direct3d12::D3D12_HEAP_FLAGS;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct HeapFlags(pub i32);
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl HeapFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const SHARED: Self = Self(1i32);
+    pub const DENY_BUFFERS: Self = Self(4i32);
+    pub const ALLOW_DISPLAY: Self = Self(8i32);
+    pub const SHARED_CROSS_ADAPTER: Self = Self(32i32);
+    pub const DENY_RT_DS_TEXTURES: Self = Self(64i32);
+    pub const DENY_NON_RT_DS_TEXTURES: Self = Self(128i32);
+    pub const HARDWARE_PROTECTED: Self = Self(256i32);
+    pub const ALLOW_WRITE_WATCH: Self = Self(512i32);
+    pub const ALLOW_SHADER_ATOMICS: Self = Self(1024i32);
+    pub const CREATE_NOT_RESIDENT: Self = Self(2048i32);
+    pub const CREATE_NOT_ZEROED: Self = Self(4096i32);
+    pub const ALLOW_ALL_BUFFERS_AND_TEXTURES: Self = Self(0i32);
+    pub const ALLOW_ONLY_BUFFERS: Self = Self(192i32);
+    pub const ALLOW_ONLY_NON_RT_DS_TEXTURES: Self = Self(68i32);
+    pub const ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132i32);
+}
+
+crate::flags_bitwise_impl!(HeapFlags);
+
+impl Into<D3D12_HEAP_FLAGS> for HeapFlags {
+    fn into(self) -> D3D12_HEAP_FLAGS {
+        D3D12_HEAP_FLAGS(self.0)
+    }
+}

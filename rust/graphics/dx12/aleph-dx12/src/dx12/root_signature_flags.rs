@@ -27,17 +27,29 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocator;
-pub(crate) mod pool;
+use raw::windows::win32::direct3d12::D3D12_ROOT_SIGNATURE_FLAGS;
 
-pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
-pub use pool::Pool;
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct RootSignatureFlags(pub i32);
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl RootSignatureFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT: Self = Self(1i32);
+    pub const DENY_VERTEX_SHADER_ROOT_ACCESS: Self = Self(2i32);
+    pub const DENY_HULL_SHADER_ROOT_ACCESS: Self = Self(4i32);
+    pub const DENY_DOMAIN_SHADER_ROOT_ACCESS: Self = Self(8i32);
+    pub const DENY_GEOMETRY_SHADER_ROOT_ACCESS: Self = Self(16i32);
+    pub const DENY_PIXEL_SHADER_ROOT_ACCESS: Self = Self(32i32);
+    pub const ALLOW_STREAM_OUTPUT: Self = Self(64i32);
+    pub const LOCAL_ROOT_SIGNATURE: Self = Self(128i32);
+    pub const DENY_AMPLIFICATION_SHADER_ROOT_ACCESS: Self = Self(256i32);
+    pub const DENY_MESH_SHADER_ROOT_ACCESS: Self = Self(512i32);
+}
+
+crate::flags_bitwise_impl!(RootSignatureFlags);
+
+impl Into<D3D12_ROOT_SIGNATURE_FLAGS> for RootSignatureFlags {
+    fn into(self) -> D3D12_ROOT_SIGNATURE_FLAGS {
+        D3D12_ROOT_SIGNATURE_FLAGS(self.0)
+    }
+}

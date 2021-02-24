@@ -33,15 +33,17 @@ use raw::windows::win32::direct3d12::D3D12_COLOR_WRITE_ENABLE;
 pub struct ColorWriteEnable(pub u8);
 
 impl ColorWriteEnable {
-    pub const RED: Self = Self(0);
+    pub const RED: Self = Self(1);
     pub const GREEN: Self = Self(2);
     pub const BLUE: Self = Self(4);
     pub const ALPHA: Self = Self(8);
 
     pub fn all() -> Self {
-        Self(Self::RED.0 | Self::BLUE.0 | Self::GREEN.0 | Self::ALPHA.0)
+        Self::RED | Self::BLUE | Self::GREEN | Self::ALPHA
     }
 }
+
+crate::flags_bitwise_impl!(ColorWriteEnable);
 
 impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
     fn into(self) -> D3D12_COLOR_WRITE_ENABLE {
