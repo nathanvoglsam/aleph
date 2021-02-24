@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use dx12::D3D12Object;
+
 ///
 /// A struct to wrap resources that are created and destroyed once during the Imgui renderer's
 /// lifecycle
@@ -64,6 +66,10 @@ impl ConstantObjects {
                 .build();
             device.create_sampler(&desc, dest);
         }
+
+        rtv_heap.set_name("egui::RTVHeap");
+        sampler_heap.set_name("egui::SamplerHeap");
+        root_signature.set_name("egui::RootSignature");
 
         Self {
             rtv_heap,
