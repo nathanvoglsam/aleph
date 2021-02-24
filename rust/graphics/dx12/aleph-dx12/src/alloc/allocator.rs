@@ -28,7 +28,8 @@
 //
 
 use crate::alloc::allocation::AllocationInner;
-use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags};
+use crate::alloc::pool::PoolInner;
+use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
 use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
 use crate::{raw, ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
@@ -118,6 +119,20 @@ impl Allocator {
                     allocation
                 })
             }
+        }
+    }
+
+    pub fn create_pool(&self, pool_desc: &PoolDesc) -> raw::windows::Result<Pool> {
+        unsafe {
+            let pool_desc = pool_desc.into();
+            let mut pool = std::ptr::null_mut();
+            alloc_raw::D3D12MA_Allocator_CreatePool(self.0 .0.as_ptr(), &pool_desc, &mut pool)
+                .ok()
+                .map(|_| {
+                    let pool = PoolInner(NonNull::new(pool).unwrap());
+                    let pool = Pool(Arc::new(pool));
+                    pool
+                })
         }
     }
 }

@@ -29,6 +29,7 @@
 
 use std::ffi::c_void;
 use std::ptr::NonNull;
+use std::sync::Arc;
 
 pub(crate) struct PoolInner(pub(crate) NonNull<c_void>);
 
@@ -39,4 +40,4 @@ impl Drop for PoolInner {
 }
 
 #[repr(transparent)]
-pub struct Pool(pub(crate) PoolInner);
+pub struct Pool(pub(crate) Arc<PoolInner>);
