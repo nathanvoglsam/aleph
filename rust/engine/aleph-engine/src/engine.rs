@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::dx12::dxgi;
 use crate::dx12::pix::{Colour, ScopedEvent};
 use crate::dx12::FeatureLevel;
 use crate::platform::{Platform, Window};
@@ -138,7 +139,7 @@ impl Engine {
 
                 log::trace!("Creating DXGIFactory");
                 let mut dxgi_factory =
-                    dx12::Factory::new(true).expect("Failed to create DXGI factory");
+                    dxgi::Factory::new(true).expect("Failed to create DXGI factory");
 
                 log::trace!("Selecting DXGIAdatper");
                 let dxgi_adapter = dxgi_factory
@@ -168,25 +169,27 @@ impl Engine {
                         .unwrap()
                 };
 
-                let mut queue = device
-                    .command_queue_builder(dx12::CommandListType::Direct)
+                let desc = dx12::CommandQueueDesc::builder()
+                    .queue_type(dx12::CommandListType::Direct)
                     .priority(0)
-                    .build()
-                    .unwrap();
+                    .build();
+                let mut queue = device.create_command_queue(&desc).unwrap();
 
                 let event = dx12::Event::new().unwrap();
-                let fence = device.fence_builder().build().unwrap();
+                let fence = device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
 
                 let drawable_size = Window::drawable_size();
-                let mut swapchain = unsafe {
-                    queue
-                        .create_swapchain_builder(&dxgi_factory, &platform)
-                        .width(drawable_size.0)
-                        .height(drawable_size.1)
-                        .buffer_count(3)
-                        .build()
-                        .expect("Failed to create swapchain")
-                };
+                let desc = dxgi::SwapChainDesc1::builder()
+                    .width(drawable_size.0)
+                    .height(drawable_size.1)
+                    .format(dxgi::Format::R8G8B8A8Unorm)
+                    .buffer_count(3)
+                    .usage_back_buffer(true)
+                    .usage_render_target_output(true)
+                    .build();
+                let mut swapchain = dxgi_factory
+                    .create_swap_chain(&queue, &platform, &desc)
+                    .unwrap();
 
                 //let mut renderer = unsafe {
                 //    render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
@@ -230,9 +233,15 @@ impl Engine {
 
                     if Window::resized() {
                         let (width, height) = Window::drawable_size();
-                        unsafe {
-                            swapchain.resize_buffers(width, height, 0).unwrap();
-                        }
+                        swapchain
+                            .resize_buffers(
+                                0,
+                                width,
+                                height,
+                                dxgi::Format::Unknown,
+                                dxgi::SwapChainFlags::NONE,
+                            )
+                            .unwrap();
                     }
 
                     unsafe {
