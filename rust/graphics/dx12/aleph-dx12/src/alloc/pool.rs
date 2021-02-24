@@ -30,5 +30,13 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 
+pub(crate) struct PoolInner(pub(crate) NonNull<c_void>);
+
+impl Drop for PoolInner {
+    fn drop(&mut self) {
+        unsafe { alloc_raw::D3D12MA_Pool_Release(self.0.as_ptr()) }
+    }
+}
+
 #[repr(transparent)]
-pub struct Pool(NonNull<c_void>);
+pub struct Pool(pub(crate) PoolInner);

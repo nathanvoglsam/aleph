@@ -28,15 +28,17 @@
 //
 
 pub(crate) mod allocation;
+pub(crate) mod allocation_desc;
 pub(crate) mod allocator;
+pub(crate) mod allocator_desc;
 pub(crate) mod pool;
 
 pub use allocation::Allocation;
-pub use allocation::AllocationDesc;
-pub use allocation::AllocationDescBuilder;
+pub use allocation_desc::AllocationDesc;
+pub use allocation_desc::AllocationDescBuilder;
 pub use allocator::Allocator;
-pub use allocator::AllocatorDesc;
-pub use allocator::AllocatorDescBuilder;
+pub use allocator_desc::AllocatorDesc;
+pub use allocator_desc::AllocatorDescBuilder;
 pub use pool::Pool;
 
 pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;

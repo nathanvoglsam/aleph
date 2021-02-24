@@ -28,89 +28,15 @@
 //
 
 use crate::alloc::allocation::AllocationInner;
-use crate::alloc::{Allocation, AllocationDesc, AllocatorFlags};
+use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags};
 use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
-use crate::{dxgi, raw, ClearValue, Device, ResourceDesc, ResourceStates};
-use alloc_raw::D3D12MA_ALLOCATOR_DESC;
+use crate::{raw, ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
-pub struct AllocatorDescBuilder {
-    inner: AllocatorDesc,
-}
-
-impl AllocatorDescBuilder {
-    pub fn new() -> Self {
-        Self {
-            inner: AllocatorDesc::default(),
-        }
-    }
-
-    pub fn device(mut self, device: Device) -> Self {
-        self.inner.device = Some(device);
-        self
-    }
-
-    pub fn adapter(mut self, adapter: dxgi::Adapter) -> Self {
-        self.inner.adapter = Some(adapter);
-        self
-    }
-
-    pub fn preferred_block_size(mut self, preferred_block_size: u64) -> Self {
-        self.inner.preferred_block_size = preferred_block_size;
-        self
-    }
-
-    pub fn flag(mut self, flag: AllocatorFlags) -> Self {
-        self.inner.flags |= flag;
-        self
-    }
-
-    pub fn build(self) -> AllocatorDesc {
-        self.inner
-    }
-}
-
-pub struct AllocatorDesc {
-    pub device: Option<Device>,
-    pub adapter: Option<dxgi::Adapter>,
-    pub preferred_block_size: u64,
-    pub flags: AllocatorFlags,
-    // pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
-}
-
-impl AllocatorDesc {
-    pub fn builder() -> AllocatorDescBuilder {
-        AllocatorDescBuilder::new()
-    }
-}
-
-impl Default for AllocatorDesc {
-    fn default() -> Self {
-        Self {
-            device: None,
-            adapter: None,
-            preferred_block_size: 0,
-            flags: Default::default(),
-        }
-    }
-}
-
-impl Into<D3D12MA_ALLOCATOR_DESC> for AllocatorDesc {
-    fn into(self) -> D3D12MA_ALLOCATOR_DESC {
-        D3D12MA_ALLOCATOR_DESC {
-            flags: self.flags,
-            p_device: self.device.map(|v| v.0.into()),
-            preferred_block_size: self.preferred_block_size,
-            p_allocation_callbacks: std::ptr::null(),
-            p_adapter: self.adapter.map(|v| v.0.into()),
-        }
-    }
-}
-
 #[repr(transparent)]
-struct AllocatorInner(NonNull<c_void>);
+pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);
 
 impl Drop for AllocatorInner {
     fn drop(&mut self) {
@@ -122,7 +48,7 @@ impl Drop for AllocatorInner {
 
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Allocator(Arc<AllocatorInner>);
+pub struct Allocator(pub(crate) Arc<AllocatorInner>);
 
 impl Allocator {
     pub fn new(allocator_desc: AllocatorDesc) -> raw::windows::Result<Self> {
