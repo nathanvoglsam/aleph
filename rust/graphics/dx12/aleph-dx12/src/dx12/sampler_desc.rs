@@ -37,18 +37,7 @@ pub struct SamplerDescBuilder {
 impl SamplerDescBuilder {
     pub fn new() -> Self {
         Self {
-            inner: SamplerDesc {
-                filter: Filter::MinMagMipLinear,
-                address_u: TextureAddressMode::Wrap,
-                address_v: TextureAddressMode::Wrap,
-                address_w: TextureAddressMode::Wrap,
-                mip_lod_bias: 0.0,
-                max_anisotropy: 0,
-                comparison_func: ComparisonFunc::Never,
-                border_color: [0.0, 0.0, 0.0, 0.0],
-                min_lod: 0.0,
-                max_lod: 256.0,
-            },
+            inner: SamplerDesc::default(),
         }
     }
 
@@ -119,6 +108,23 @@ pub struct SamplerDesc {
     pub border_color: [f32; 4],
     pub min_lod: f32,
     pub max_lod: f32,
+}
+
+impl Default for SamplerDesc {
+    fn default() -> Self {
+        Self {
+            filter: Filter::MinMagMipLinear,
+            address_u: TextureAddressMode::Wrap,
+            address_v: TextureAddressMode::Wrap,
+            address_w: TextureAddressMode::Wrap,
+            mip_lod_bias: 0.0,
+            max_anisotropy: 0,
+            comparison_func: ComparisonFunc::Never,
+            border_color: [0.0, 0.0, 0.0, 0.0],
+            min_lod: 0.0,
+            max_lod: 4096.0,
+        }
+    }
 }
 
 impl SamplerDesc {
