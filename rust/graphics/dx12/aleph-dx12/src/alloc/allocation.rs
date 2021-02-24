@@ -105,3 +105,15 @@ impl<'a> Into<D3D12MA_ALLOCATION_DESC> for &AllocationDesc<'a> {
 
 #[repr(transparent)]
 pub struct Allocation(pub(crate) NonNull<c_void>);
+
+impl Allocation {
+
+}
+
+impl Drop for Allocation {
+    fn drop(&mut self) {
+        unsafe {
+            alloc_raw::D3D12MA_Allocation_Release(self.0.as_ptr());
+        }
+    }
+}
