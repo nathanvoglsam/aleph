@@ -106,9 +106,7 @@ impl<'a> Into<D3D12MA_ALLOCATION_DESC> for &AllocationDesc<'a> {
 #[repr(transparent)]
 pub struct Allocation(pub(crate) NonNull<c_void>);
 
-impl Allocation {
-
-}
+impl Allocation {}
 
 impl Drop for Allocation {
     fn drop(&mut self) {

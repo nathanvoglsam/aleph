@@ -27,23 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DeviceChild, ID3D12Object, ID3D12RootSignature,
-};
+use crate::raw::windows::win32::direct3d12::ID3D12RootSignature;
 
 #[repr(transparent)]
 pub struct RootSignature(pub(crate) ID3D12RootSignature);
 
 impl RootSignature {}
 
-impl Into<ID3D12Object> for RootSignature {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
-
-impl Into<ID3D12DeviceChild> for RootSignature {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
-}
+crate::object_impl!(RootSignature);
+crate::device_child_impl!(RootSignature);

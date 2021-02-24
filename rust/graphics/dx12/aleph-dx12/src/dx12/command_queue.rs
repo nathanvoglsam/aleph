@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12DeviceChild, ID3D12Object};
+use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
 use crate::{Fence, SubmissionBuilder};
 
 #[repr(transparent)]
@@ -62,14 +62,5 @@ impl CommandQueue {
     }
 }
 
-impl Into<ID3D12Object> for CommandQueue {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
-
-impl Into<ID3D12DeviceChild> for CommandQueue {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
-}
+crate::object_impl!(CommandQueue);
+crate::device_child_impl!(CommandQueue);

@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DeviceChild, ID3D12GraphicsCommandList, ID3D12Object,
-};
+use crate::raw::windows::win32::direct3d12::ID3D12GraphicsCommandList;
 use crate::CommandListType;
 
 #[repr(transparent)]
@@ -68,26 +66,8 @@ impl ClosedGraphicsCommandList {
     }
 }
 
-impl Into<ID3D12Object> for ClosedGraphicsCommandList {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
+crate::object_impl!(ClosedGraphicsCommandList);
+crate::device_child_impl!(ClosedGraphicsCommandList);
 
-impl Into<ID3D12DeviceChild> for ClosedGraphicsCommandList {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
-}
-
-impl Into<ID3D12Object> for OpenGraphicsCommandList {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
-
-impl Into<ID3D12DeviceChild> for OpenGraphicsCommandList {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
-}
+crate::object_impl!(OpenGraphicsCommandList);
+crate::device_child_impl!(OpenGraphicsCommandList);

@@ -29,7 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
-    ID3D12GraphicsCommandList, ID3D12Object, ID3D12PipelineState, ID3D12RootSignature,
+    ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
@@ -193,8 +193,4 @@ impl Device {
     }
 }
 
-impl Into<ID3D12Object> for Device {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
+crate::object_impl!(Device);

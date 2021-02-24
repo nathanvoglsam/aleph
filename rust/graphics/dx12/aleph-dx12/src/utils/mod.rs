@@ -172,7 +172,8 @@ macro_rules! device_child_impl {
                 use $crate::raw::windows::{Abi, Interface};
                 type D = $crate::raw::windows::win32::direct3d12::ID3D12Device4;
                 let mut device: Option<D> = None;
-                self.0.GetDevice(&D::IID, device.set_abi())
+                self.0
+                    .GetDevice(&D::IID, device.set_abi())
                     .and_some(device)
                     .map(|v| $crate::Device(v))
             }

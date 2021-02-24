@@ -28,8 +28,7 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, ID3D12DeviceChild, ID3D12Object, D3D12_CPU_DESCRIPTOR_HANDLE,
-    D3D12_GPU_DESCRIPTOR_HANDLE,
+    ID3D12DescriptorHeap, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE,
 };
 use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
 use std::convert::TryFrom;
@@ -55,14 +54,5 @@ impl DescriptorHeap {
     }
 }
 
-impl Into<ID3D12Object> for DescriptorHeap {
-    fn into(self) -> ID3D12Object {
-        self.0.into()
-    }
-}
-
-impl Into<ID3D12DeviceChild> for DescriptorHeap {
-    fn into(self) -> ID3D12DeviceChild {
-        self.0.into()
-    }
-}
+crate::object_impl!(DescriptorHeap);
+crate::device_child_impl!(DescriptorHeap);
