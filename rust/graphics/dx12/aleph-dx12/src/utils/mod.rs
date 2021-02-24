@@ -163,3 +163,30 @@ macro_rules! flags_bitwise_impl {
         }
     };
 }
+
+#[macro_export]
+macro_rules! device_child_impl {
+    ($t:ident) => {
+        impl $crate::D3D12DeviceChild for $t {
+            unsafe fn get_device(&self) -> $crate::raw::windows::Result<$crate::Device> {
+                use $crate::raw::windows::{Abi, Interface};
+                type D = $crate::raw::windows::win32::direct3d12::ID3D12Device4;
+                let mut device: Option<D> = None;
+                self.0.GetDevice(&D::IID, device.set_abi())
+                    .and_some(device)
+                    .map(|v| $crate::Device(v))
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! object_impl {
+    ($t:ident) => {
+        impl $crate::D3D12Object for $t {
+            unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::raw::windows::Result<()> {
+                self.0.SetName(name.as_ptr()).ok()
+            }
+        }
+    };
+}
