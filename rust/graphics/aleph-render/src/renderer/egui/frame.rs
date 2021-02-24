@@ -33,10 +33,10 @@ use std::ffi::CString;
 use std::sync::Arc;
 
 pub struct PerFrameFontObjects {
-    pub staging_buffer: (Buffer, Allocation),
+    pub staging_buffer: dx12::Resource,
 
     pub staged_pool: Arc<Pool>,
-    pub staged_image: (Image, Allocation),
+    pub staged_image: dx12::Resource,
     pub staged_view: ImageView,
     pub staged_size: (u32, u32),
     pub staged_hash: u64,
@@ -46,7 +46,7 @@ pub struct PerFrameFontObjects {
 
 impl PerFrameFontObjects {
     pub fn new(
-        device: &aleph_vulkan_core::Device,
+        device: &dx12::Device,
         constant: &ConstantObjects,
         allocator: &Arc<Allocator>,
     ) -> Self {
@@ -73,7 +73,7 @@ impl PerFrameFontObjects {
 
     pub unsafe fn upload_texture(
         &mut self,
-        device: &aleph_vulkan_core::Device,
+        device: &dx12::Device,
         allocator: &Allocator,
         command_buffer: CommandBuffer,
         global: &GlobalObjects,
@@ -101,7 +101,7 @@ impl PerFrameFontObjects {
 
     unsafe fn record_buffer_staging(
         &self,
-        device: &aleph_vulkan_core::Device,
+        device: &dx12::Device,
         command_buffer: CommandBuffer,
         dimensions: (u32, u32),
     ) {
@@ -349,11 +349,6 @@ impl PerFrameFontObjects {
     fn requires_new_image(&self, dimensions: (u32, u32)) -> bool {
         dimensions.0 != self.staged_size.0 || dimensions.1 != self.staged_size.1
     }
-
-    pub unsafe fn destroy(&mut self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {
-        self.free_staged_resources(device, allocator);
-        allocator.destroy_buffer(self.staging_buffer.0, self.staging_buffer.1);
-    }
 }
 
 ///
@@ -450,18 +445,5 @@ impl PerFrameObjects {
 
     pub fn index_buffer_size() -> usize {
         1024 * 1024 * 2
-    }
-
-    pub unsafe fn destroy(&mut self, device: &aleph_vulkan_core::Device, allocator: &Allocator) {
-        self.font_objects.destroy(device, allocator);
-        if self.vtx_buffer.0 != Buffer::null() {
-            allocator.destroy_buffer(self.vtx_buffer.0, self.vtx_buffer.1);
-        }
-        if self.idx_buffer.0 != Buffer::null() {
-            allocator.destroy_buffer(self.idx_buffer.0, self.idx_buffer.1);
-        }
-        device
-            .loader()
-            .destroy_framebuffer(Some(self.framebuffer), None);
     }
 }

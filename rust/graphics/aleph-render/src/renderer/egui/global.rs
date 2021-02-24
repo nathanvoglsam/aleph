@@ -28,6 +28,7 @@
 //
 
 use crate::renderer::egui::constant::ConstantObjects;
+use dx12::dxgi;
 use std::ffi::CString;
 
 ///
@@ -35,174 +36,97 @@ use std::ffi::CString;
 /// swapchain is rebuilt
 ///
 pub struct GlobalObjects {
-    pub render_pass: RenderPass,
-    pub pipeline: Pipeline,
-    pub sampler: Sampler,
+    pub pipeline_state: dx12::GraphicsPipelineState,
 }
 
 impl GlobalObjects {
-    pub fn init(
-        device: &aleph_vulkan_core::Device,
-        constant: &ConstantObjects,
-        swap_image: &SwapImage,
-    ) -> Self {
-        let render_pass = Self::create_render_pass(device, swap_image);
-        let pipeline_layout = constant.pipeline_layout.pipeline_layout();
-        let pipeline = Self::create_pipeline(
+    pub fn init(device: &dx12::Device, constant: &ConstantObjects) -> Self {
+        let pipeline_state = Self::create_pipeline_state(
             device,
-            pipeline_layout,
-            render_pass,
-            &constant.vertex_module,
-            &constant.fragment_module,
-        );
-        let sampler = Self::create_sampler(device);
-
-        Self {
-            render_pass,
-            pipeline,
-            sampler,
-        }
-    }
-
-    pub fn create_render_pass(
-        device: &aleph_vulkan_core::Device,
-        swap_image: &SwapImage,
-    ) -> RenderPass {
-        let attachment = swap_image.attachment_description(
-            ImageLayout::COLOR_ATTACHMENT_OPTIMAL,
-            ImageLayout::PRESENT_SRC_KHR,
-            AttachmentLoadOp::LOAD,
-            AttachmentStoreOp::STORE,
+            &constant.root_signature,
+            vertex_shader,
+            pixel_shader,
         );
 
-        let color_attachments = [AttachmentReference::color(0)];
-        let subpass = SubpassDescriptionBuilder::new()
-            .pipeline_bind_point(PipelineBindPoint::GRAPHICS)
-            .color_attachments(&color_attachments);
-
-        let dependency = SubpassDependencyBuilder::new()
-            .src_subpass(SUBPASS_EXTERNAL)
-            .dst_subpass(0)
-            .src_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
-            .dst_access_mask(AccessFlags::COLOR_ATTACHMENT_WRITE)
-            .src_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
-            .dst_stage_mask(PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT);
-
-        let attachments = [attachment];
-        let subpasses = [subpass];
-        let dependencies = [dependency];
-        let create_info = RenderPassCreateInfoBuilder::new()
-            .attachments(&attachments)
-            .subpasses(&subpasses)
-            .dependencies(&dependencies);
-        unsafe {
-            let render_pass = device
-                .loader()
-                .create_render_pass(&create_info, None, None)
-                .expect("Failed to create render pass");
-
-            let name = format!("{}::RenderPass", module_path!());
-            let name = CString::new(name).unwrap();
-            render_pass.add_debug_name(device, &name);
-
-            render_pass
-        }
+        Self { pipeline_state }
     }
 
-    pub fn create_pipeline(
-        device: &aleph_vulkan_core::Device,
-        pipeline_layout: PipelineLayout,
-        render_pass: RenderPass,
-        vertex_module: &ShaderModule,
-        fragment_module: &ShaderModule,
-    ) -> Pipeline {
-        assert!(vertex_module.is_vertex_shader());
-        assert!(fragment_module.is_fragment_shader());
+    pub fn create_pipeline_state(
+        device: &dx12::Device,
+        root_signature: &dx12::RootSignature,
+        vertex_shader: &[u8],
+        pixel_shader: &[u8],
+    ) -> dx12::GraphicsPipelineState {
+        let rasterizer_state = dx12::RasterizerDesc::builder()
+            .fill_mode(dx12::FillMode::Solid)
+            .cull_mode(dx12::CullMode::None)
+            .front_counter_clockwise(true)
+            .build();
 
-        let binding = VertexInputBindingDescriptionBuilder::new()
-            .binding(0)
-            .input_rate(VertexInputRate::VERTEX)
-            .stride(5 * core::mem::size_of::<f32>() as u32);
-        let pos_attr = VertexInputAttributeDescriptionBuilder::new()
-            .binding(0)
-            .offset(0)
-            .location(0)
-            .format(Format::R32G32_SFLOAT);
-        let uv_attr = VertexInputAttributeDescriptionBuilder::new()
-            .binding(0)
-            .offset(8)
-            .location(1)
-            .format(Format::R32G32_SFLOAT);
-        let col_attr = VertexInputAttributeDescriptionBuilder::new()
-            .binding(0)
-            .offset(16)
-            .location(2)
-            .format(Format::R8G8B8A8_UNORM);
-        let bindings = [binding];
-        let attributes = [pos_attr, uv_attr, col_attr];
+        let depth_stencil_state = dx12::DepthStencilDesc::builder()
+            .depth_enable(false)
+            .build();
 
-        // Check the vertex shader is getting the right input
-        vertex_module
-            .vertex_layout()
-            .unwrap()
-            .is_layout_compatible(&VertexInputState::new(&bindings, &attributes))
-            .expect("Specified vertex format not compatible with vertex shader");
+        let input_layout = [
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("POSITION"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32Float,
+                input_slot: 0,
+                aligned_byte_offset: 0,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("TEXCOORD"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32Float,
+                input_slot: 0,
+                aligned_byte_offset: 8,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("COLOR"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32B32A32Float,
+                input_slot: 0,
+                aligned_byte_offset: 16,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+        ];
 
-        let input_assembly = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
-        let rasterization =
-            RasterizationState::unculled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
-        let attachments = [ColorBlendAttachmentState::pre_multiplied_alpha_blending()];
-        let vstage = vertex_module.pipeline_shader_stage().unwrap();
-        let fstage = fragment_module.pipeline_shader_stage().unwrap();
-        let pipeline = GraphicsPipelineBuilder::new()
-            .debug_name(aleph_macros::cstr!(concat!(module_path!(), "::Pipeline")))
-            .layout(pipeline_layout)
-            .render_pass(render_pass)
-            .subpass(0)
-            .stages(&[vstage, fstage])
-            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
-            .input_assembly_state(&input_assembly)
-            .viewport_state(&ViewportState::dynamic(1, 1))
-            .rasterization_state(&rasterization)
-            .multisample_state(&MultiSampleState::disabled())
-            .depth_stencil_state(&DepthState::disabled())
-            .color_blend_state(&ColorBlendState::attachments(&attachments))
-            .dynamic_state(&DynamicPipelineState::viewport_scissor())
-            .build(device)
-            .expect("Failed to create pipeline");
+        let blend = dx12::RenderTargetBlendDesc::builder()
+            .blend_enable(true)
+            .build();
+        let blend_desc = dx12::BlendDesc::builder()
+            .alpha_to_coverage_enable(false)
+            .independent_blend_enable(false)
+            .render_targets(&[blend])
+            .build();
 
-        pipeline
-    }
+        let state_stream = dx12::GraphicsPipelineStateStream::builder()
+            .root_signature(root_signature)
+            .vertex_shader(vertex_shader)
+            .pixel_shader(pixel_shader)
+            .sample_mask(u32::MAX)
+            .blend_state(blend_desc)
+            .rasterizer_state(rasterizer_state)
+            .depth_stencil_state(depth_stencil_state)
+            .input_layout(&input_layout)
+            .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
+            .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
+            .dsv_format(dxgi::Format::D32Float)
+            .build();
 
-    pub fn create_sampler(device: &aleph_vulkan_core::Device) -> Sampler {
-        let create_info = SamplerCreateInfoBuilder::new()
-            .address_mode_u(SamplerAddressMode::CLAMP_TO_EDGE)
-            .address_mode_v(SamplerAddressMode::CLAMP_TO_EDGE)
-            .address_mode_w(SamplerAddressMode::CLAMP_TO_EDGE)
-            .anisotropy_enable(false)
-            .min_filter(Filter::LINEAR)
-            .mag_filter(Filter::LINEAR)
-            .mipmap_mode(SamplerMipmapMode::LINEAR)
-            .min_lod(0.0)
-            .max_lod(LOD_CLAMP_NONE);
-        unsafe {
-            let sampler = device
-                .loader()
-                .create_sampler(&create_info, None, None)
-                .expect("Failed to create sampler");
-            sampler.add_debug_name(
-                device,
-                aleph_macros::cstr!(concat!(module_path!(), "::FontSampler")),
-            );
-            sampler
-        }
-    }
+        let pipeline_state = device
+            .create_graphics_pipeline_state(&state_stream)
+            .unwrap();
 
-    pub unsafe fn destroy(&self, device: &aleph_vulkan_core::Device) {
-        device.loader().destroy_sampler(Some(self.sampler), None);
-        device
-            .loader()
-            .destroy_render_pass(Some(self.render_pass), None);
-        device.loader().destroy_pipeline(Some(self.pipeline), None);
+        pipeline_state
+
+        // TODO: premultiplied alpha blending
+        //let attachments = [ColorBlendAttachmentState::pre_multiplied_alpha_blending()];
     }
 }

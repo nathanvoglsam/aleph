@@ -358,15 +358,3 @@ impl Renderer {
         );
     }
 }
-
-impl Drop for Renderer {
-    fn drop(&mut self) {
-        unsafe {
-            for frame in self.frames.iter_mut() {
-                frame.destroy(&self.device, &self.allocator)
-            }
-            self.global.destroy(&self.device);
-            self.constant.destroy(&self.device);
-        }
-    }
-}

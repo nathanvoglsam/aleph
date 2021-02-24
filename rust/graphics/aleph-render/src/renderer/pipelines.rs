@@ -27,71 +27,91 @@
 // SOFTWARE.
 //
 
+use dx12::dxgi;
+
 ///
 /// The pipeline state object for the geometry pass
 ///
-pub struct GeometryPipeline<'a> {
-    pipeline: dx12::GraphicsPipelineStateDesc<'a>,
+pub struct GeometryPipeline {
+    pub pipeline_state: dx12::GraphicsPipelineState,
 }
 
-impl<'a> GeometryPipeline<'a> {
+impl GeometryPipeline {
     pub fn new(
-        device: &Device,
-        pipeline_layout: &PipelineLayout,
-        render_pass: RenderPass,
-        vert_module: &ShaderModule,
-        frag_module: &ShaderModule,
+        device: &dx12::Device,
+        root_signature: &dx12::RootSignature,
+        vertex_shader: &[u8],
+        pixel_shader: &[u8],
     ) -> Self {
-        assert!(vert_module.is_vertex_shader());
-        assert!(frag_module.is_fragment_shader());
+        let rasterizer_state = dx12::RasterizerDesc::builder()
+            .fill_mode(dx12::FillMode::Solid)
+            .cull_mode(dx12::CullMode::Back)
+            .front_counter_clockwise(true)
+            .build();
 
-        // Fill out the list of bindings and attributes for compatibility with a static mesh
-        let mut bindings = Vec::new();
-        let mut attributes = Vec::new();
-        VertexInputState::for_static_mesh(&mut bindings, &mut attributes);
+        let depth_stencil_state = dx12::DepthStencilDesc::builder()
+            .depth_enable(true)
+            .depth_write_mask(dx12::DepthWriteMask::All)
+            .depth_func(dx12::ComparisonFunc::Less)
+            .build();
 
-        let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
-        let rasterization_state =
-            RasterizationState::backface_culled(PolygonMode::FILL, FrontFace::COUNTER_CLOCKWISE);
-        let vstage = vert_module.pipeline_shader_stage().unwrap();
-        let fstage = frag_module.pipeline_shader_stage().unwrap();
-        let pipeline = GraphicsPipelineBuilder::new()
-            .debug_name(aleph_macros::cstr!(concat!(
-                module_path!(),
-                "::GeomPipeline"
-            )))
-            .layout(pipeline_layout.pipeline_layout())
-            .render_pass(render_pass)
-            .subpass(0)
-            .color_blend_state(&ColorBlendState::disabled(1))
-            .depth_stencil_state(&DepthState::enabled(true, CompareOp::LESS))
-            .dynamic_state(&DynamicPipelineState::viewport_scissor())
-            .input_assembly_state(&input_assembly_state)
-            .multisample_state(&MultiSampleState::disabled())
-            .rasterization_state(&rasterization_state)
-            .stages(&[vstage, fstage])
-            .viewport_state(&ViewportState::dynamic(1, 1))
-            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
-            .build(device)
-            .expect("Failed to create geometry pipeline");
+        let input_layout = [
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("POSITION"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32B32Float,
+                input_slot: 0,
+                aligned_byte_offset: 0,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("NORMAL"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32B32Float,
+                input_slot: 0,
+                aligned_byte_offset: 12,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("TANGENT"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32B32A32Float,
+                input_slot: 0,
+                aligned_byte_offset: 24,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+            dx12::InputElementDesc {
+                semantic_name: macros::cstr!("TEXCOORD"),
+                semantic_index: 0,
+                format: dxgi::Format::R32G32B32Float,
+                input_slot: 0,
+                aligned_byte_offset: 40,
+                input_slot_class: dx12::InputClassification::PerVertex,
+                instance_data_step_rate: 0,
+            },
+        ];
 
-        Self { pipeline }
-    }
+        let state_stream = dx12::GraphicsPipelineStateStream::builder()
+            .root_signature(root_signature)
+            .vertex_shader(vertex_shader)
+            .pixel_shader(pixel_shader)
+            .sample_mask(u32::MAX)
+            .rasterizer_state(rasterizer_state)
+            .depth_stencil_state(depth_stencil_state)
+            .input_layout(&input_layout)
+            .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
+            .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
+            .dsv_format(dxgi::Format::D24UnormS8Uint)
+            .build();
 
-    ///
-    /// Gets the underlying pipeline handle
-    ///
-    pub fn pipeline(&self) -> Pipeline {
-        self.pipeline
-    }
+        let pipeline_state = device
+            .create_graphics_pipeline_state(&state_stream)
+            .unwrap();
 
-    ///
-    /// Destroys the pipeline state object.
-    ///
-    /// Unsafe as the destroy is not synchronized
-    ///
-    pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_pipeline(Some(self.pipeline), None);
+        Self { pipeline_state }
     }
 }
 
@@ -99,66 +119,52 @@ impl<'a> GeometryPipeline<'a> {
 /// The pipeline state object for the geometry pass
 ///
 pub struct TonePipeline {
-    pipeline: Pipeline,
+    pub pipeline_state: dx12::GraphicsPipelineState,
 }
 
 impl TonePipeline {
     pub fn new(
-        device: &Device,
-        pipeline_layout: &PipelineLayout,
-        render_pass: RenderPass,
-        vert_module: &ShaderModule,
-        frag_module: &ShaderModule,
+        device: &dx12::Device,
+        root_signature: &dx12::RootSignature,
+        vertex_shader: &[u8],
+        pixel_shader: &[u8],
     ) -> Self {
-        assert!(vert_module.is_vertex_shader());
-        assert!(frag_module.is_fragment_shader());
+        let rasterizer_state = dx12::RasterizerDesc::builder()
+            .fill_mode(dx12::FillMode::Solid)
+            .cull_mode(dx12::CullMode::None)
+            .front_counter_clockwise(true)
+            .build();
 
-        // Fill out the list of bindings and attributes for compatibility with a static mesh
-        let mut bindings = Vec::new();
-        let mut attributes = Vec::new();
-        VertexInputState::for_fullscreen_quad(&mut bindings, &mut attributes);
+        let depth_stencil_state = dx12::DepthStencilDesc::builder()
+            .depth_enable(false)
+            .build();
 
-        let input_assembly_state = InputAssemblyState::no_restart(PrimitiveTopology::TRIANGLE_LIST);
-        let rasterization_state =
-            RasterizationState::unculled(PolygonMode::FILL, FrontFace::CLOCKWISE);
-        let vstage = vert_module.pipeline_shader_stage().unwrap();
-        let fstage = frag_module.pipeline_shader_stage().unwrap();
-        let pipeline = GraphicsPipelineBuilder::new()
-            .debug_name(aleph_macros::cstr!(concat!(
-                module_path!(),
-                "::TonePipeline"
-            )))
-            .layout(pipeline_layout.pipeline_layout())
-            .render_pass(render_pass)
-            .subpass(1)
-            .color_blend_state(&ColorBlendState::disabled(1))
-            .depth_stencil_state(&DepthState::disabled())
-            .dynamic_state(&DynamicPipelineState::viewport_scissor())
-            .input_assembly_state(&input_assembly_state)
-            .multisample_state(&MultiSampleState::disabled())
-            .rasterization_state(&rasterization_state)
-            .stages(&[vstage, fstage])
-            .viewport_state(&ViewportState::dynamic(1, 1))
-            .vertex_input_state(&VertexInputState::new(&bindings, &attributes))
-            .build(device)
-            .expect("Failed to create tonemapping pipeline");
+        let input_layout = [dx12::InputElementDesc {
+            semantic_name: macros::cstr!("POSITION"),
+            semantic_index: 0,
+            format: dxgi::Format::R32G32Float,
+            input_slot: 0,
+            aligned_byte_offset: 0,
+            input_slot_class: dx12::InputClassification::PerVertex,
+            instance_data_step_rate: 0,
+        }];
 
-        Self { pipeline }
-    }
+        let state_stream = dx12::GraphicsPipelineStateStream::builder()
+            .root_signature(root_signature)
+            .vertex_shader(vertex_shader)
+            .pixel_shader(pixel_shader)
+            .sample_mask(u32::MAX)
+            .rasterizer_state(rasterizer_state)
+            .depth_stencil_state(depth_stencil_state)
+            .input_layout(&input_layout)
+            .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
+            .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
+            .build();
 
-    ///
-    /// Gets the underlying pipeline handle
-    ///
-    pub fn pipeline(&self) -> Pipeline {
-        self.pipeline
-    }
+        let pipeline_state = device
+            .create_graphics_pipeline_state(&state_stream)
+            .unwrap();
 
-    ///
-    /// Destroys the pipeline state object.
-    ///
-    /// Unsafe as the destroy is not synchronized
-    ///
-    pub unsafe fn destroy(&self, device: &Device) {
-        device.loader().destroy_pipeline(Some(self.pipeline), None);
+        Self { pipeline_state }
     }
 }
