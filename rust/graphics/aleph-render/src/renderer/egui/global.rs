@@ -28,7 +28,7 @@
 //
 
 use crate::renderer::egui::constant::ConstantObjects;
-use dx12::dxgi;
+use dx12::{dxgi, D3D12Object};
 
 ///
 /// This represents resources where only one is needed, but they need to be recreated when the
@@ -113,7 +113,7 @@ impl GlobalObjects {
             .build();
 
         let state_stream = dx12::GraphicsPipelineStateStream::builder()
-            .root_signature(root_signature)
+            .root_signature(root_signature.clone())
             .vertex_shader(vertex_shader)
             .pixel_shader(pixel_shader)
             .sample_mask(u32::MAX)
@@ -129,6 +129,8 @@ impl GlobalObjects {
         let pipeline_state = device
             .create_graphics_pipeline_state(&state_stream)
             .unwrap();
+
+        pipeline_state.set_name("egui::GraphicsPipelineState");
 
         pipeline_state
     }

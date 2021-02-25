@@ -95,7 +95,7 @@ impl GeometryPipeline {
         ];
 
         let state_stream = dx12::GraphicsPipelineStateStream::builder()
-            .root_signature(root_signature)
+            .root_signature(root_signature.clone())
             .vertex_shader(vertex_shader)
             .pixel_shader(pixel_shader)
             .sample_mask(u32::MAX)
@@ -150,7 +150,7 @@ impl TonePipeline {
         }];
 
         let state_stream = dx12::GraphicsPipelineStateStream::builder()
-            .root_signature(root_signature)
+            .root_signature(root_signature.clone())
             .vertex_shader(vertex_shader)
             .pixel_shader(pixel_shader)
             .sample_mask(u32::MAX)
