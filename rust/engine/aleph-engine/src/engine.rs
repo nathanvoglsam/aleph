@@ -162,12 +162,11 @@ impl Engine {
                 Self::log_gpu_info(&dxgi_adapter);
                 aleph_log::info!("");
 
-                let _allocator = unsafe {
-                    device
-                        .create_allocator_builder(&dxgi_adapter, 0)
-                        .build()
-                        .unwrap()
-                };
+                let allocator_desc = dx12::alloc::AllocatorDesc::builder()
+                    .device(&device)
+                    .adapter(&dxgi_adapter)
+                    .build();
+                let _allocator = dx12::alloc::Allocator::new(&allocator_desc).unwrap();
 
                 let desc = dx12::CommandQueueDesc::builder()
                     .queue_type(dx12::CommandListType::Direct)
