@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::{dxgi, InputClassification};
+use crate::{dxgi, CStrFFI, InputClassification};
 use raw::windows::win32::direct3d12::D3D12_INPUT_ELEMENT_DESC;
-use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct InputElementDesc<'a> {
-    pub semantic_name: &'a CStr,
+    pub semantic_name: CStrFFI<'a>,
     pub semantic_index: u32,
     pub format: dxgi::Format,
     pub input_slot: u32,
@@ -45,14 +45,6 @@ pub struct InputElementDesc<'a> {
 
 impl<'a> Into<D3D12_INPUT_ELEMENT_DESC> for InputElementDesc<'a> {
     fn into(self) -> D3D12_INPUT_ELEMENT_DESC {
-        D3D12_INPUT_ELEMENT_DESC {
-            semantic_name: self.semantic_name.as_ptr() as *mut c_char as *mut _,
-            semantic_index: self.semantic_index,
-            format: self.format.into(),
-            input_slot: self.input_slot,
-            aligned_byte_offset: self.aligned_byte_offset,
-            input_slot_class: self.input_slot_class.into(),
-            instance_data_step_rate: self.instance_data_step_rate,
-        }
+        unsafe { transmute(self) }
     }
 }

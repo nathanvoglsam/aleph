@@ -32,7 +32,46 @@ use raw::windows::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
 use raw::windows::win32::direct3d12::D3D12_SHADER_BYTECODE;
 use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
+use std::ffi::CStr;
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
+use std::marker::PhantomData;
+use std::os::raw::c_char;
 use utf16_lit::utf16_null;
+
+#[repr(transparent)]
+#[derive(Copy, Clone)]
+pub struct CStrFFI<'a> {
+    ptr: *const c_char,
+    phantom: PhantomData<&'a ()>,
+}
+
+impl<'a> From<&'a CStr> for CStrFFI<'a> {
+    fn from(v: &'a CStr) -> Self {
+        Self {
+            ptr: v.as_ptr(),
+            phantom: Default::default(),
+        }
+    }
+}
+
+impl<'a> CStrFFI<'a> {
+    pub unsafe fn as_cstr(&self) -> &CStr {
+        CStr::from_ptr(self.ptr)
+    }
+}
+
+impl<'a> Hash for CStrFFI<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        unsafe { self.as_cstr().hash(state) }
+    }
+}
+
+impl<'a> Debug for CStrFFI<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        unsafe { self.as_cstr().fmt(f) }
+    }
+}
 
 #[repr(transparent)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
