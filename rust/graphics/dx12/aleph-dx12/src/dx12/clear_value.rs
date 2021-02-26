@@ -34,15 +34,21 @@ use std::mem::ManuallyDrop;
 
 #[derive(Clone, Debug)]
 pub enum ClearValue {
-    Color(dxgi::Format, [f32; 4]),
-    Depth(dxgi::Format, DepthStencilValue),
+    Color {
+        format: dxgi::Format,
+        color: [f32; 4],
+    },
+    Depth {
+        format: dxgi::Format,
+        depth_stencil: DepthStencilValue,
+    },
 }
 
 impl ClearValue {
     pub fn format(&self) -> dxgi::Format {
         match self {
-            ClearValue::Color(format, _) => *format,
-            ClearValue::Depth(format, _) => *format,
+            ClearValue::Color { format, .. } => *format,
+            ClearValue::Depth { format, .. } => *format,
         }
     }
 }
@@ -50,14 +56,17 @@ impl ClearValue {
 impl Into<D3D12_CLEAR_VALUE> for ClearValue {
     fn into(self) -> D3D12_CLEAR_VALUE {
         match self {
-            ClearValue::Color(format, color) => {
+            ClearValue::Color { format, color } => {
                 assert!(!format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
                     format: format.into(),
                     variant: D3D12_CLEAR_VALUE_VARIANT { color },
                 }
             }
-            ClearValue::Depth(format, depth_stencil) => {
+            ClearValue::Depth {
+                format,
+                depth_stencil,
+            } => {
                 assert!(format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
                     format: format.into(),

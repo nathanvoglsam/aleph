@@ -35,15 +35,21 @@ use std::mem::ManuallyDrop;
 
 #[derive(Clone)]
 pub enum TextureCopyLocation {
-    Placed(Option<Resource>, PlacedSubresourceFootprint),
-    Subresource(Option<Resource>, u32),
+    Placed {
+        resource: Option<Resource>,
+        placed_footprint: PlacedSubresourceFootprint,
+    },
+    Subresource {
+        resource: Option<Resource>,
+        subresource_index: u32,
+    },
 }
 
 impl TextureCopyLocation {
     pub fn resource(&self) -> Option<Resource> {
         match self {
-            TextureCopyLocation::Placed(resource, _) => resource.clone(),
-            TextureCopyLocation::Subresource(resource, _) => resource.clone(),
+            TextureCopyLocation::Placed { resource, .. } => resource.clone(),
+            TextureCopyLocation::Subresource { resource, .. } => resource.clone(),
         }
     }
 }
@@ -51,22 +57,24 @@ impl TextureCopyLocation {
 impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
     fn into(self) -> D3D12_TEXTURE_COPY_LOCATION {
         match self {
-            TextureCopyLocation::Placed(resource, placed_footprint) => {
-                D3D12_TEXTURE_COPY_LOCATION {
-                    p_resource: resource.map(|v| v.0),
-                    r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-                    variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT {
-                        placed_footprint: ManuallyDrop::new(placed_footprint.into()),
-                    },
-                }
-            }
-            TextureCopyLocation::Subresource(resource, subresource_index) => {
-                D3D12_TEXTURE_COPY_LOCATION {
-                    p_resource: resource.map(|v| v.0),
-                    r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-                    variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT { subresource_index },
-                }
-            }
+            TextureCopyLocation::Placed {
+                resource,
+                placed_footprint,
+            } => D3D12_TEXTURE_COPY_LOCATION {
+                p_resource: resource.map(|v| v.0),
+                r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+                variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT {
+                    placed_footprint: ManuallyDrop::new(placed_footprint.into()),
+                },
+            },
+            TextureCopyLocation::Subresource {
+                resource,
+                subresource_index,
+            } => D3D12_TEXTURE_COPY_LOCATION {
+                p_resource: resource.map(|v| v.0),
+                r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT { subresource_index },
+            },
         }
     }
 }
