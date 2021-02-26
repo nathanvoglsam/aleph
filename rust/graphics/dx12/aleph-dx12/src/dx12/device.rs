@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::dx12::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
@@ -37,8 +38,8 @@ use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, CPUDescriptorHandle, ClosedGraphicsCommandList, CommandAllocator, CommandListType,
     CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence,
-    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, RootSignature,
-    RootSignatureBlob, SamplerDesc,
+    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, Resource, RootSignature,
+    RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
 use utf16_lit::utf16_null;
 
@@ -191,6 +192,19 @@ impl Device {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc = sampler_desc.clone().into();
         self.0.CreateSampler(&desc, dest.into())
+    }
+
+    pub unsafe fn create_shader_resource_view(
+        &self,
+        resource: &Resource,
+        srv_desc: &ShaderResourceViewDesc,
+        dest: CPUDescriptorHandle,
+    ) {
+        // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
+        let desc: D3D12_SHADER_RESOURCE_VIEW_DESC = srv_desc.clone().into();
+        let p_desc = &desc as *const D3D12_SHADER_RESOURCE_VIEW_DESC;
+        self.0
+            .CreateShaderResourceView(&resource.0, p_desc as *const _, dest.into())
     }
 }
 
