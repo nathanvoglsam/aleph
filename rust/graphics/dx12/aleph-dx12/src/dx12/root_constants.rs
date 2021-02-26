@@ -28,7 +28,9 @@
 //
 
 use raw::windows::win32::direct3d12::D3D12_ROOT_CONSTANTS;
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct RootConstants {
     pub shader_register: u32,
@@ -38,10 +40,6 @@ pub struct RootConstants {
 
 impl Into<D3D12_ROOT_CONSTANTS> for RootConstants {
     fn into(self) -> D3D12_ROOT_CONSTANTS {
-        D3D12_ROOT_CONSTANTS {
-            shader_register: self.shader_register,
-            register_space: self.register_space,
-            num32_bit_values: self.num32_bit_values,
-        }
+        unsafe { transmute(self) }
     }
 }

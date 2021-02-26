@@ -29,7 +29,9 @@
 
 use crate::{ComparisonFunc, Filter, ShaderVisibility, StaticBorderColor, TextureAddressMode};
 use raw::windows::win32::direct3d12::D3D12_STATIC_SAMPLER_DESC;
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct StaticSamplerDesc {
     pub filter: Filter,
@@ -49,20 +51,6 @@ pub struct StaticSamplerDesc {
 
 impl Into<D3D12_STATIC_SAMPLER_DESC> for StaticSamplerDesc {
     fn into(self) -> D3D12_STATIC_SAMPLER_DESC {
-        D3D12_STATIC_SAMPLER_DESC {
-            filter: self.filter.into(),
-            addressu: self.address_u.into(),
-            addressv: self.address_v.into(),
-            addressw: self.address_w.into(),
-            mip_lod_bias: self.mip_lod_bias.into(),
-            max_anisotropy: self.max_anisotropy.into(),
-            comparison_func: self.comparison_func.into(),
-            border_color: self.border_color.into(),
-            min_lod: self.min_lod.into(),
-            max_lod: self.max_lod.into(),
-            shader_register: self.shader_register.into(),
-            register_space: self.register_space.into(),
-            shader_visibility: self.shader_visibility.into(),
-        }
+        unsafe { transmute(self) }
     }
 }

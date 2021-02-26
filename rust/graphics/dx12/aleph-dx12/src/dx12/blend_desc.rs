@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::RenderTargetBlendDesc;
-use raw::windows::win32::direct3d12::{D3D12_BLEND_DESC, D3D12_RENDER_TARGET_BLEND_DESC};
+use crate::{Bool, RenderTargetBlendDesc};
+use raw::windows::win32::direct3d12::D3D12_BLEND_DESC;
+use std::mem::transmute;
 
 pub struct BlendDescBuilder {
     inner: BlendDesc,
@@ -42,11 +43,11 @@ impl BlendDescBuilder {
     }
 
     pub fn alpha_to_coverage_enable(mut self, alpha_to_coverage_enable: bool) -> Self {
-        self.inner.alpha_to_coverage_enable = alpha_to_coverage_enable;
+        self.inner.alpha_to_coverage_enable = alpha_to_coverage_enable.into();
         self
     }
     pub fn independent_blend_enable(mut self, independent_blend_enable: bool) -> Self {
-        self.inner.independent_blend_enable = independent_blend_enable;
+        self.inner.independent_blend_enable = independent_blend_enable.into();
         self
     }
     pub fn render_targets(mut self, render_targets: &[RenderTargetBlendDesc]) -> Self {
@@ -66,10 +67,11 @@ impl BlendDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct BlendDesc {
-    pub alpha_to_coverage_enable: bool,
-    pub independent_blend_enable: bool,
+    pub alpha_to_coverage_enable: Bool,
+    pub independent_blend_enable: Bool,
     pub render_targets: [RenderTargetBlendDesc; 8],
 }
 
@@ -82,8 +84,8 @@ impl BlendDesc {
 impl Default for BlendDesc {
     fn default() -> Self {
         Self {
-            alpha_to_coverage_enable: false,
-            independent_blend_enable: false,
+            alpha_to_coverage_enable: false.into(),
+            independent_blend_enable: false.into(),
             render_targets: [
                 RenderTargetBlendDesc::default(),
                 RenderTargetBlendDesc::default(),
@@ -100,24 +102,6 @@ impl Default for BlendDesc {
 
 impl Into<D3D12_BLEND_DESC> for BlendDesc {
     fn into(self) -> D3D12_BLEND_DESC {
-        let mut render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8] = [
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-        ];
-        for i in 0..self.render_targets.len() {
-            render_target[i] = self.render_targets[i].clone().into();
-        }
-
-        D3D12_BLEND_DESC {
-            alpha_to_coverage_enable: self.alpha_to_coverage_enable.into(),
-            independent_blend_enable: self.independent_blend_enable.into(),
-            render_target,
-        }
+        unsafe { transmute(self) }
     }
 }

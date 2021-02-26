@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{Blend, BlendOp, ColorWriteEnable, LogicOp};
+use crate::{Blend, BlendOp, Bool, ColorWriteEnable, LogicOp};
 use raw::windows::win32::direct3d12::D3D12_RENDER_TARGET_BLEND_DESC;
+use std::mem::transmute;
 
 pub struct RenderTargetBlendDescBuilder {
     inner: RenderTargetBlendDesc,
@@ -42,12 +43,12 @@ impl RenderTargetBlendDescBuilder {
     }
 
     pub fn blend_enable(mut self, blend_enable: bool) -> Self {
-        self.inner.blend_enable = blend_enable;
+        self.inner.blend_enable = blend_enable.into();
         self
     }
 
     pub fn logic_op_enable(mut self, logic_op_enable: bool) -> Self {
-        self.inner.logic_op_enable = logic_op_enable;
+        self.inner.logic_op_enable = logic_op_enable.into();
         self
     }
 
@@ -96,10 +97,11 @@ impl RenderTargetBlendDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct RenderTargetBlendDesc {
-    pub blend_enable: bool,
-    pub logic_op_enable: bool,
+    pub blend_enable: Bool,
+    pub logic_op_enable: Bool,
     pub src_blend: Blend,
     pub dest_blend: Blend,
     pub blend_op: BlendOp,
@@ -119,8 +121,8 @@ impl RenderTargetBlendDesc {
 impl Default for RenderTargetBlendDesc {
     fn default() -> Self {
         Self {
-            blend_enable: false,
-            logic_op_enable: false,
+            blend_enable: false.into(),
+            logic_op_enable: false.into(),
             src_blend: Blend::One,
             dest_blend: Blend::Zero,
             blend_op: BlendOp::Add,
@@ -135,17 +137,6 @@ impl Default for RenderTargetBlendDesc {
 
 impl Into<D3D12_RENDER_TARGET_BLEND_DESC> for RenderTargetBlendDesc {
     fn into(self) -> D3D12_RENDER_TARGET_BLEND_DESC {
-        D3D12_RENDER_TARGET_BLEND_DESC {
-            blend_enable: self.blend_enable.into(),
-            logic_op_enable: self.logic_op_enable.into(),
-            src_blend: self.src_blend.into(),
-            dest_blend: self.dest_blend.into(),
-            blend_op: self.blend_op.into(),
-            src_blend_alpha: self.src_blend_alpha.into(),
-            dest_blend_alpha: self.dest_blend_alpha.into(),
-            blend_op_alpha: self.blend_op_alpha.into(),
-            logic_op: self.logic_op.into(),
-            render_target_write_mask: self.render_target_write_mask.0,
-        }
+        unsafe { transmute(self) }
     }
 }

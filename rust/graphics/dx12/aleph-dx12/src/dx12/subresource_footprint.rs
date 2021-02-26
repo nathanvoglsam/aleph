@@ -29,7 +29,9 @@
 
 use crate::dxgi;
 use crate::raw::windows::win32::direct3d12::D3D12_SUBRESOURCE_FOOTPRINT;
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct SubresourceFootprint {
     pub format: dxgi::Format,
@@ -41,12 +43,6 @@ pub struct SubresourceFootprint {
 
 impl Into<D3D12_SUBRESOURCE_FOOTPRINT> for SubresourceFootprint {
     fn into(self) -> D3D12_SUBRESOURCE_FOOTPRINT {
-        D3D12_SUBRESOURCE_FOOTPRINT {
-            format: self.format.into(),
-            width: self.width,
-            height: self.height,
-            depth: self.depth,
-            row_pitch: self.row_pitch,
-        }
+        unsafe { transmute(self) }
     }
 }

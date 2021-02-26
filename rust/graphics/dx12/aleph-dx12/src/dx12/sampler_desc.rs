@@ -29,6 +29,7 @@
 
 use crate::{ComparisonFunc, Filter, TextureAddressMode};
 use raw::windows::win32::direct3d12::D3D12_SAMPLER_DESC;
+use std::mem::transmute;
 
 pub struct SamplerDescBuilder {
     inner: SamplerDesc,
@@ -96,6 +97,7 @@ impl SamplerDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct SamplerDesc {
     pub filter: Filter,
@@ -135,17 +137,6 @@ impl SamplerDesc {
 
 impl Into<D3D12_SAMPLER_DESC> for SamplerDesc {
     fn into(self) -> D3D12_SAMPLER_DESC {
-        D3D12_SAMPLER_DESC {
-            filter: self.filter.into(),
-            addressu: self.address_u.into(),
-            addressv: self.address_v.into(),
-            addressw: self.address_w.into(),
-            mip_lod_bias: self.mip_lod_bias.into(),
-            max_anisotropy: self.max_anisotropy.into(),
-            comparison_func: self.comparison_func.into(),
-            border_color: self.border_color,
-            min_lod: self.min_lod.into(),
-            max_lod: self.max_lod.into(),
-        }
+        unsafe { transmute(self) }
     }
 }

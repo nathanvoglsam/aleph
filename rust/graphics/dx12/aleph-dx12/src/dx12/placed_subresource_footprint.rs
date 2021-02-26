@@ -29,7 +29,9 @@
 
 use crate::raw::windows::win32::direct3d12::D3D12_PLACED_SUBRESOURCE_FOOTPRINT;
 use crate::SubresourceFootprint;
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct PlacedSubresourceFootprint {
     pub offset: u64,
@@ -38,9 +40,6 @@ pub struct PlacedSubresourceFootprint {
 
 impl Into<D3D12_PLACED_SUBRESOURCE_FOOTPRINT> for PlacedSubresourceFootprint {
     fn into(self) -> D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-        D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-            offset: self.offset,
-            footprint: self.footprint.into(),
-        }
+        unsafe { transmute(self) }
     }
 }

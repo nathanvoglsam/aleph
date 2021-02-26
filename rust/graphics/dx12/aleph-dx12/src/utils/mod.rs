@@ -34,6 +34,49 @@ use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
 use utf16_lit::utf16_null;
 
+#[repr(transparent)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
+pub struct Bool(u32);
+
+impl PartialEq<bool> for Bool {
+    fn eq(&self, other: &bool) -> bool {
+        let num = *other as u32;
+        self.0.eq(&num)
+    }
+}
+
+impl Into<u32> for Bool {
+    fn into(self) -> u32 {
+        self.0
+    }
+}
+
+impl From<u32> for Bool {
+    fn from(v: u32) -> Self {
+        if v != 0 {
+            Bool(1)
+        } else {
+            Bool(0)
+        }
+    }
+}
+
+impl Into<bool> for Bool {
+    fn into(self) -> bool {
+        if self.0 != 0 {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl From<bool> for Bool {
+    fn from(v: bool) -> Self {
+        Bool(v as u32)
+    }
+}
+
 pub struct DynamicLoadCell<T: Sized> {
     cell: OnceCell<T>,
     lib_name: &'static [u16],

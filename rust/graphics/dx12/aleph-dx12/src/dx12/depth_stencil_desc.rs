@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
+use crate::{Bool, ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
 use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_DESC;
+use std::mem::transmute;
 
 pub struct DepthStencilDescBuilder {
     inner: DepthStencilDesc,
@@ -42,7 +43,7 @@ impl DepthStencilDescBuilder {
     }
 
     pub fn depth_enable(mut self, depth_enable: bool) -> Self {
-        self.inner.depth_enable = depth_enable;
+        self.inner.depth_enable = depth_enable.into();
         self
     }
 
@@ -57,7 +58,7 @@ impl DepthStencilDescBuilder {
     }
 
     pub fn stencil_enable(mut self, stencil_enable: bool) -> Self {
-        self.inner.stencil_enable = stencil_enable;
+        self.inner.stencil_enable = stencil_enable.into();
         self
     }
 
@@ -86,12 +87,13 @@ impl DepthStencilDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DepthStencilDesc {
-    pub depth_enable: bool,
+    pub depth_enable: Bool,
     pub depth_write_mask: DepthWriteMask,
     pub depth_func: ComparisonFunc,
-    pub stencil_enable: bool,
+    pub stencil_enable: Bool,
     pub stencil_read_mask: u8,
     pub stencil_write_mask: u8,
     pub front_face: DepthStencilOpDesc,
@@ -107,10 +109,10 @@ impl DepthStencilDesc {
 impl Default for DepthStencilDesc {
     fn default() -> Self {
         Self {
-            depth_enable: true,
+            depth_enable: true.into(),
             depth_write_mask: DepthWriteMask::All,
             depth_func: ComparisonFunc::Less,
-            stencil_enable: false,
+            stencil_enable: false.into(),
             stencil_read_mask: 0xFF,
             stencil_write_mask: 0xFF,
             front_face: Default::default(),
@@ -121,15 +123,6 @@ impl Default for DepthStencilDesc {
 
 impl Into<D3D12_DEPTH_STENCIL_DESC> for DepthStencilDesc {
     fn into(self) -> D3D12_DEPTH_STENCIL_DESC {
-        D3D12_DEPTH_STENCIL_DESC {
-            depth_enable: self.depth_enable.into(),
-            depth_write_mask: self.depth_write_mask.into(),
-            depth_func: self.depth_func.into(),
-            stencil_enable: self.stencil_enable.into(),
-            stencil_read_mask: self.stencil_read_mask.into(),
-            stencil_write_mask: self.stencil_write_mask.into(),
-            front_face: self.front_face.into(),
-            back_face: self.back_face.into(),
-        }
+        unsafe { transmute(self) }
     }
 }

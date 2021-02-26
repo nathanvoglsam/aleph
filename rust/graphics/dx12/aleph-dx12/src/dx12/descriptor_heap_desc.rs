@@ -29,6 +29,7 @@
 
 use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_DESC;
 use crate::{DescriptorHeapFlags, DescriptorHeapType};
+use std::mem::transmute;
 
 #[derive(Clone, Debug)]
 pub struct DescriptorHeapDescBuilder {
@@ -66,15 +67,18 @@ impl DescriptorHeapDescBuilder {
             heap_type: self.heap_type.unwrap(),
             num_descriptors: self.num_descriptors,
             flags: self.flags,
+            node_mask: 0,
         }
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DescriptorHeapDesc {
     pub heap_type: DescriptorHeapType,
     pub num_descriptors: u32,
     pub flags: DescriptorHeapFlags,
+    pub node_mask: u32,
 }
 
 impl DescriptorHeapDesc {
@@ -85,11 +89,6 @@ impl DescriptorHeapDesc {
 
 impl Into<D3D12_DESCRIPTOR_HEAP_DESC> for DescriptorHeapDesc {
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_DESC {
-        D3D12_DESCRIPTOR_HEAP_DESC {
-            r#type: self.heap_type.into(),
-            num_descriptors: self.num_descriptors,
-            flags: self.flags.into(),
-            node_mask: 0,
-        }
+        unsafe { transmute(self) }
     }
 }

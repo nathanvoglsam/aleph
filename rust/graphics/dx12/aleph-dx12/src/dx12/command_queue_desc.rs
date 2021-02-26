@@ -29,6 +29,7 @@
 
 use crate::{CommandListType, CommandQueueFlags};
 use raw::windows::win32::direct3d12::D3D12_COMMAND_QUEUE_DESC;
+use std::mem::transmute;
 
 pub struct CommandQueueDescBuilder {
     inner: CommandQueueDesc,
@@ -41,6 +42,7 @@ impl CommandQueueDescBuilder {
                 queue_type: CommandListType::Direct,
                 priority: 0,
                 flags: CommandQueueFlags::NONE,
+                node_mask: 0,
             },
         }
     }
@@ -65,11 +67,13 @@ impl CommandQueueDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct CommandQueueDesc {
     pub queue_type: CommandListType,
     pub priority: i32,
     pub flags: CommandQueueFlags,
+    pub node_mask: u32,
 }
 
 impl CommandQueueDesc {
@@ -80,11 +84,6 @@ impl CommandQueueDesc {
 
 impl Into<D3D12_COMMAND_QUEUE_DESC> for CommandQueueDesc {
     fn into(self) -> D3D12_COMMAND_QUEUE_DESC {
-        D3D12_COMMAND_QUEUE_DESC {
-            r#type: self.queue_type.into(),
-            priority: self.priority,
-            flags: self.flags.into(),
-            node_mask: 0,
-        }
+        unsafe { transmute(self) }
     }
 }

@@ -29,7 +29,9 @@
 
 use crate::raw::windows::win32::direct3d12::{D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1};
 use crate::{DescriptorRangeFlags, DescriptorRangeType};
+use std::mem::transmute;
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DescriptorRange {
     pub range_type: DescriptorRangeType,
@@ -41,16 +43,11 @@ pub struct DescriptorRange {
 
 impl Into<D3D12_DESCRIPTOR_RANGE> for DescriptorRange {
     fn into(self) -> D3D12_DESCRIPTOR_RANGE {
-        D3D12_DESCRIPTOR_RANGE {
-            range_type: self.range_type.into(),
-            num_descriptors: self.num_descriptors,
-            base_shader_register: self.base_shader_register,
-            register_space: self.register_space,
-            offset_in_descriptors_from_table_start: self.offset_in_descriptors_from_table_start,
-        }
+        unsafe { transmute(self) }
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DescriptorRange1 {
     pub range_type: DescriptorRangeType,
@@ -63,13 +60,6 @@ pub struct DescriptorRange1 {
 
 impl Into<D3D12_DESCRIPTOR_RANGE1> for DescriptorRange1 {
     fn into(self) -> D3D12_DESCRIPTOR_RANGE1 {
-        D3D12_DESCRIPTOR_RANGE1 {
-            range_type: self.range_type.into(),
-            num_descriptors: self.num_descriptors,
-            base_shader_register: self.base_shader_register,
-            register_space: self.register_space,
-            flags: self.flags.into(),
-            offset_in_descriptors_from_table_start: self.offset_in_descriptors_from_table_start,
-        }
+        unsafe { transmute(self) }
     }
 }

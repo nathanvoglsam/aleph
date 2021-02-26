@@ -37,9 +37,9 @@ use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, CPUDescriptorHandle, ClosedGraphicsCommandList, CommandAllocator, CommandListType,
-    CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, FeatureLevel, Fence,
-    FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, Resource, RootSignature,
-    RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
+    CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType,
+    FeatureLevel, Fence, FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, Resource,
+    RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
 use utf16_lit::utf16_null;
 
@@ -185,6 +185,16 @@ impl Device {
                 .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, out.set_abi())
                 .and_some(out)
                 .map(|v| CommandQueue(v))
+        }
+    }
+
+    pub fn get_descriptor_handle_increment_size(
+        &self,
+        descriptor_heap_type: DescriptorHeapType,
+    ) -> u32 {
+        unsafe {
+            self.0
+                .GetDescriptorHandleIncrementSize(descriptor_heap_type.into())
         }
     }
 

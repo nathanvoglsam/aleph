@@ -29,6 +29,7 @@
 
 use crate::{dxgi, ResourceDimension, ResourceFlags, TextureLayout};
 use raw::windows::win32::direct3d12::D3D12_RESOURCE_DESC;
+use std::mem::transmute;
 
 pub struct ResourceDescBuilder {
     inner: ResourceDesc,
@@ -96,6 +97,7 @@ impl ResourceDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct ResourceDesc {
     pub dimension: ResourceDimension,
@@ -135,17 +137,6 @@ impl Default for ResourceDesc {
 
 impl Into<D3D12_RESOURCE_DESC> for ResourceDesc {
     fn into(self) -> D3D12_RESOURCE_DESC {
-        D3D12_RESOURCE_DESC {
-            dimension: self.dimension.into(),
-            alignment: self.alignment,
-            width: self.width,
-            height: self.height,
-            depth_or_array_size: self.depth_or_array_size,
-            mip_levels: self.mip_levels,
-            format: self.format.into(),
-            sample_desc: self.sample_desc.into(),
-            layout: self.layout.into(),
-            flags: self.flags.into(),
-        }
+        unsafe { transmute(self) }
     }
 }
