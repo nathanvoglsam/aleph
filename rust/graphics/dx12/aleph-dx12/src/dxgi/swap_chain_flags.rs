@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+#[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct SwapChainFlags(pub u32);
 

@@ -39,6 +39,7 @@ use crate::utils::DynamicLoadCell;
 use crate::{CommandQueue, FeatureLevel};
 use raw::windows::win32::winrt::IInspectable;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
+use std::mem::transmute;
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
@@ -72,7 +73,8 @@ impl Factory {
         swap_chain_desc: &SwapChainDesc1,
     ) -> raw::windows::Result<SwapChain> {
         unsafe {
-            let desc = swap_chain_desc.clone().into();
+            let desc = swap_chain_desc.clone();
+            let desc = transmute(desc);
             let window_handle = window_handle.raw_window_handle();
 
             // Create the swapchain

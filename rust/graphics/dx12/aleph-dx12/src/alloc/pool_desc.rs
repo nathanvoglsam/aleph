@@ -29,6 +29,7 @@
 
 use crate::{HeapFlags, HeapType};
 use alloc_raw::D3D12MA_POOL_DESC;
+use std::mem::transmute;
 
 pub struct PoolDescBuilder {
     inner: PoolDesc,
@@ -71,6 +72,7 @@ impl PoolDescBuilder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct PoolDesc {
     pub heap_type: HeapType,
@@ -100,12 +102,6 @@ impl Default for PoolDesc {
 
 impl Into<D3D12MA_POOL_DESC> for PoolDesc {
     fn into(self) -> D3D12MA_POOL_DESC {
-        D3D12MA_POOL_DESC {
-            heap_type: self.heap_type.into(),
-            heap_flags: self.heap_flags.into(),
-            block_size: self.block_size,
-            min_block_count: self.min_block_count,
-            max_block_count: self.max_block_count,
-        }
+        unsafe { transmute(self) }
     }
 }

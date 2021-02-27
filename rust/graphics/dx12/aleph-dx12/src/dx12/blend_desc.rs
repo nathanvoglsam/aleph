@@ -28,8 +28,6 @@
 //
 
 use crate::{Bool, RenderTargetBlendDesc};
-use raw::windows::win32::direct3d12::D3D12_BLEND_DESC;
-use std::mem::transmute;
 
 pub struct BlendDescBuilder {
     inner: BlendDesc,
@@ -97,11 +95,5 @@ impl Default for BlendDesc {
                 RenderTargetBlendDesc::default(),
             ],
         }
-    }
-}
-
-impl Into<D3D12_BLEND_DESC> for BlendDesc {
-    fn into(self) -> D3D12_BLEND_DESC {
-        unsafe { transmute(self) }
     }
 }

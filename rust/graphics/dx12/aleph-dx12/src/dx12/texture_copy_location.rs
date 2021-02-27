@@ -31,7 +31,7 @@ use crate::{PlacedSubresourceFootprint, Resource};
 use raw::windows::win32::direct3d12::{
     ID3D12Resource, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE,
 };
-use std::mem::ManuallyDrop;
+use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone)]
 pub enum TextureCopyLocation {
@@ -64,7 +64,7 @@ impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
                 p_resource: resource.map(|v| v.0),
                 r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
                 variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT {
-                    placed_footprint: ManuallyDrop::new(placed_footprint.into()),
+                    placed_footprint: ManuallyDrop::new(unsafe { transmute(placed_footprint) }),
                 },
             },
             TextureCopyLocation::Subresource {

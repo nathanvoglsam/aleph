@@ -28,9 +28,6 @@
 //
 
 use crate::RootDescriptorFlags;
-use raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR;
-use raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR1;
-use std::mem::transmute;
 
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
@@ -39,22 +36,10 @@ pub struct RootDescriptor {
     pub register_space: u32,
 }
 
-impl Into<D3D12_ROOT_DESCRIPTOR> for RootDescriptor {
-    fn into(self) -> D3D12_ROOT_DESCRIPTOR {
-        unsafe { transmute(self) }
-    }
-}
-
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct RootDescriptor1 {
     pub shader_register: u32,
     pub register_space: u32,
     pub flags: RootDescriptorFlags,
-}
-
-impl Into<D3D12_ROOT_DESCRIPTOR1> for RootDescriptor1 {
-    fn into(self) -> D3D12_ROOT_DESCRIPTOR1 {
-        unsafe { transmute(self) }
-    }
 }

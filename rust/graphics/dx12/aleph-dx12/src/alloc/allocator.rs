@@ -33,6 +33,7 @@ use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Po
 use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
 use crate::{raw, ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
+use std::mem::transmute;
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -79,7 +80,7 @@ impl Allocator {
     ) -> raw::windows::Result<Allocation> {
         unsafe {
             let alloc_desc = alloc_desc.into();
-            let resource_desc = resource_desc.clone().into();
+            let resource_desc = transmute(resource_desc.clone());
 
             let mut allocation = std::ptr::null_mut();
 

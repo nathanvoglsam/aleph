@@ -28,8 +28,6 @@
 //
 
 use crate::{Bool, ConservativeRasterizationMode, CullMode, FillMode};
-use raw::windows::win32::direct3d12::D3D12_RASTERIZER_DESC;
-use std::mem::transmute;
 
 pub struct RasterizerDescBuilder {
     inner: RasterizerDesc,
@@ -132,11 +130,5 @@ impl Default for RasterizerDesc {
             forced_sample_count: 0,
             conservative_raster: ConservativeRasterizationMode::Off,
         }
-    }
-}
-
-impl Into<D3D12_RASTERIZER_DESC> for RasterizerDesc {
-    fn into(self) -> D3D12_RASTERIZER_DESC {
-        unsafe { transmute(self) }
     }
 }

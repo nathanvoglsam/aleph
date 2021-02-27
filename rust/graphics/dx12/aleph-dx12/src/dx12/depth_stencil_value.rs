@@ -27,20 +27,9 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
-
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct DepthStencilValue {
     pub depth: f32,
     pub stencil: u8,
-}
-
-impl Into<D3D12_DEPTH_STENCIL_VALUE> for DepthStencilValue {
-    fn into(self) -> D3D12_DEPTH_STENCIL_VALUE {
-        D3D12_DEPTH_STENCIL_VALUE {
-            depth: self.depth,
-            stencil: self.stencil,
-        }
-    }
 }

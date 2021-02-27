@@ -41,6 +41,7 @@ use crate::{
     FeatureLevel, Fence, FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, Resource,
     RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
+use std::mem::transmute;
 use utf16_lit::utf16_null;
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
@@ -165,7 +166,7 @@ impl Device {
         descriptor_heap_desc: &DescriptorHeapDesc,
     ) -> raw::windows::Result<DescriptorHeap> {
         unsafe {
-            let desc = descriptor_heap_desc.clone().into();
+            let desc = transmute(descriptor_heap_desc.clone());
             let mut out: Option<ID3D12DescriptorHeap> = None;
             self.0
                 .CreateDescriptorHeap(&desc, &ID3D12DescriptorHeap::IID, out.set_abi())
@@ -179,7 +180,7 @@ impl Device {
         command_queue_desc: &CommandQueueDesc,
     ) -> raw::windows::Result<CommandQueue> {
         unsafe {
-            let desc = command_queue_desc.clone().into();
+            let desc = transmute(command_queue_desc.clone());
             let mut out: Option<ID3D12CommandQueue> = None;
             self.0
                 .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, out.set_abi())
@@ -200,7 +201,7 @@ impl Device {
 
     pub unsafe fn create_sampler(&self, sampler_desc: &SamplerDesc, dest: CPUDescriptorHandle) {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
-        let desc = sampler_desc.clone().into();
+        let desc = transmute(sampler_desc.clone());
         self.0.CreateSampler(&desc, dest.into())
     }
 

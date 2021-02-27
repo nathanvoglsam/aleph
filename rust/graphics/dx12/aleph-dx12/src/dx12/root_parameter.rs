@@ -36,7 +36,7 @@ use crate::{
     DescriptorRange, DescriptorRange1, RootConstants, RootDescriptor, RootDescriptor1,
     ShaderVisibility,
 };
-use std::mem::ManuallyDrop;
+use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone, Debug, Hash)]
 pub struct RootParameter<'a> {
@@ -73,7 +73,7 @@ impl<'a> RootParameterType<'a> {
         match self {
             RootParameterType::DescriptorTable(v) => {
                 let ranges: Vec<D3D12_DESCRIPTOR_RANGE> =
-                    v.iter().cloned().map(|v| v.into()).collect();
+                    v.iter().cloned().map(|v| unsafe { transmute(v) }).collect();
                 let types = D3D12_ROOT_PARAMETER_TYPES {
                     descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE {
                         num_descriptor_ranges: ranges.len() as _,
@@ -84,25 +84,25 @@ impl<'a> RootParameterType<'a> {
             }
             RootParameterType::Constants(v) => {
                 let types = D3D12_ROOT_PARAMETER_TYPES {
-                    constants: ManuallyDrop::new(v.clone().into()),
+                    constants: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType::CBV(v) => {
                 let types = D3D12_ROOT_PARAMETER_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType::SRV(v) => {
                 let types = D3D12_ROOT_PARAMETER_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType::UAV(v) => {
                 let types = D3D12_ROOT_PARAMETER_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
@@ -145,7 +145,7 @@ impl<'a> RootParameterType1<'a> {
         match self {
             RootParameterType1::DescriptorTable(v) => {
                 let ranges: Vec<D3D12_DESCRIPTOR_RANGE1> =
-                    v.iter().cloned().map(|v| v.into()).collect();
+                    v.iter().cloned().map(|v| unsafe { transmute(v) }).collect();
                 let types = D3D12_ROOT_PARAMETER1_TYPES {
                     descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE1 {
                         num_descriptor_ranges: ranges.len() as _,
@@ -156,25 +156,25 @@ impl<'a> RootParameterType1<'a> {
             }
             RootParameterType1::Constants(v) => {
                 let types = D3D12_ROOT_PARAMETER1_TYPES {
-                    constants: ManuallyDrop::new(v.clone().into()),
+                    constants: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType1::CBV(v) => {
                 let types = D3D12_ROOT_PARAMETER1_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType1::SRV(v) => {
                 let types = D3D12_ROOT_PARAMETER1_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }
             RootParameterType1::UAV(v) => {
                 let types = D3D12_ROOT_PARAMETER1_TYPES {
-                    descriptor: ManuallyDrop::new(v.clone().into()),
+                    descriptor: ManuallyDrop::new(unsafe { transmute(v.clone()) }),
                 };
                 (empty, types)
             }

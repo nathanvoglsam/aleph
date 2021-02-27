@@ -28,8 +28,6 @@
 //
 
 use crate::{Bool, ComparisonFunc, DepthStencilOpDesc, DepthWriteMask};
-use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_DESC;
-use std::mem::transmute;
 
 pub struct DepthStencilDescBuilder {
     inner: DepthStencilDesc,
@@ -118,11 +116,5 @@ impl Default for DepthStencilDesc {
             front_face: Default::default(),
             back_face: Default::default(),
         }
-    }
-}
-
-impl Into<D3D12_DEPTH_STENCIL_DESC> for DepthStencilDesc {
-    fn into(self) -> D3D12_DEPTH_STENCIL_DESC {
-        unsafe { transmute(self) }
     }
 }

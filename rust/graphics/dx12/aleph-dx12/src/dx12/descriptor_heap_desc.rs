@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_DESC;
 use crate::{DescriptorHeapFlags, DescriptorHeapType};
-use std::mem::transmute;
 
 #[derive(Clone, Debug)]
 pub struct DescriptorHeapDescBuilder {
@@ -84,11 +82,5 @@ pub struct DescriptorHeapDesc {
 impl DescriptorHeapDesc {
     pub fn builder() -> DescriptorHeapDescBuilder {
         DescriptorHeapDescBuilder::new()
-    }
-}
-
-impl Into<D3D12_DESCRIPTOR_HEAP_DESC> for DescriptorHeapDesc {
-    fn into(self) -> D3D12_DESCRIPTOR_HEAP_DESC {
-        unsafe { transmute(self) }
     }
 }

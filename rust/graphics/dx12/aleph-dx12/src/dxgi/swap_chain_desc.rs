@@ -28,8 +28,7 @@
 //
 
 use crate::dxgi::{AlphaMode, Format, SampleDesc, Scaling, SwapChainFlags, SwapEffect, UsageFlags};
-use crate::raw::windows::win32::dxgi::DXGI_SWAP_CHAIN_DESC1;
-use std::convert::{TryFrom, TryInto};
+use crate::Bool;
 
 pub struct SwapChainDesc1Builder {
     inner: SwapChainDesc1,
@@ -42,7 +41,7 @@ impl SwapChainDesc1Builder {
                 width: 0,
                 height: 0,
                 format: Default::default(),
-                stereo: false,
+                stereo: false.into(),
                 sample_desc: Default::default(),
                 buffer_usage: UsageFlags::NONE,
                 buffer_count: 0,
@@ -70,7 +69,7 @@ impl SwapChainDesc1Builder {
     }
 
     pub fn stereo(mut self, stereo: bool) -> Self {
-        self.inner.stereo = stereo;
+        self.inner.stereo = stereo.into();
         self
     }
 
@@ -114,12 +113,13 @@ impl SwapChainDesc1Builder {
     }
 }
 
+#[repr(C)]
 #[derive(Clone, Debug)]
 pub struct SwapChainDesc1 {
     pub width: u32,
     pub height: u32,
     pub format: Format,
-    pub stereo: bool,
+    pub stereo: Bool,
     pub sample_desc: SampleDesc,
     pub buffer_usage: UsageFlags,
     pub buffer_count: u32,
@@ -132,44 +132,5 @@ pub struct SwapChainDesc1 {
 impl SwapChainDesc1 {
     pub fn builder() -> SwapChainDesc1Builder {
         SwapChainDesc1Builder::new()
-    }
-}
-
-impl TryFrom<DXGI_SWAP_CHAIN_DESC1> for SwapChainDesc1 {
-    type Error = ();
-
-    fn try_from(v: DXGI_SWAP_CHAIN_DESC1) -> Result<Self, Self::Error> {
-        let out = Self {
-            width: v.width,
-            height: v.height,
-            format: v.format.try_into()?,
-            stereo: v.stereo.as_bool(),
-            sample_desc: v.sample_desc.into(),
-            buffer_usage: UsageFlags(v.buffer_usage),
-            buffer_count: v.buffer_count,
-            scaling: v.scaling.try_into()?,
-            swap_effect: v.swap_effect.try_into()?,
-            alpha_mode: v.alpha_mode.try_into()?,
-            flags: SwapChainFlags(v.flags),
-        };
-        Ok(out)
-    }
-}
-
-impl Into<DXGI_SWAP_CHAIN_DESC1> for SwapChainDesc1 {
-    fn into(self) -> DXGI_SWAP_CHAIN_DESC1 {
-        DXGI_SWAP_CHAIN_DESC1 {
-            width: self.width,
-            height: self.height,
-            format: self.format.into(),
-            stereo: self.stereo.into(),
-            sample_desc: self.sample_desc.into(),
-            buffer_usage: self.buffer_usage.0,
-            buffer_count: self.buffer_count,
-            scaling: self.scaling.into(),
-            swap_effect: self.swap_effect.into(),
-            alpha_mode: self.alpha_mode.into(),
-            flags: self.flags.0,
-        }
     }
 }

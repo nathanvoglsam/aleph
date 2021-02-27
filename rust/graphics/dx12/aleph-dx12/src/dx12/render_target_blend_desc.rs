@@ -28,8 +28,6 @@
 //
 
 use crate::{Blend, BlendOp, Bool, ColorWriteEnable, LogicOp};
-use raw::windows::win32::direct3d12::D3D12_RENDER_TARGET_BLEND_DESC;
-use std::mem::transmute;
 
 pub struct RenderTargetBlendDescBuilder {
     inner: RenderTargetBlendDesc,
@@ -132,11 +130,5 @@ impl Default for RenderTargetBlendDesc {
             logic_op: LogicOp::Noop,
             render_target_write_mask: ColorWriteEnable::all(),
         }
-    }
-}
-
-impl Into<D3D12_RENDER_TARGET_BLEND_DESC> for RenderTargetBlendDesc {
-    fn into(self) -> D3D12_RENDER_TARGET_BLEND_DESC {
-        unsafe { transmute(self) }
     }
 }

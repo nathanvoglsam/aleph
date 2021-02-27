@@ -28,8 +28,6 @@
 //
 
 use crate::{ComparisonFunc, StencilOp};
-use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCILOP_DESC;
-use std::mem::transmute;
 
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
@@ -48,11 +46,5 @@ impl Default for DepthStencilOpDesc {
             stencil_pass_op: StencilOp::Keep,
             stencil_func: ComparisonFunc::Always,
         }
-    }
-}
-
-impl Into<D3D12_DEPTH_STENCILOP_DESC> for DepthStencilOpDesc {
-    fn into(self) -> D3D12_DEPTH_STENCILOP_DESC {
-        unsafe { transmute(self) }
     }
 }

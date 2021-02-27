@@ -27,9 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1};
 use crate::{DescriptorRangeFlags, DescriptorRangeType};
-use std::mem::transmute;
 
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
@@ -41,12 +39,6 @@ pub struct DescriptorRange {
     pub offset_in_descriptors_from_table_start: u32,
 }
 
-impl Into<D3D12_DESCRIPTOR_RANGE> for DescriptorRange {
-    fn into(self) -> D3D12_DESCRIPTOR_RANGE {
-        unsafe { transmute(self) }
-    }
-}
-
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DescriptorRange1 {
@@ -56,10 +48,4 @@ pub struct DescriptorRange1 {
     pub register_space: u32,
     pub flags: DescriptorRangeFlags,
     pub offset_in_descriptors_from_table_start: u32,
-}
-
-impl Into<D3D12_DESCRIPTOR_RANGE1> for DescriptorRange1 {
-    fn into(self) -> D3D12_DESCRIPTOR_RANGE1 {
-        unsafe { transmute(self) }
-    }
 }

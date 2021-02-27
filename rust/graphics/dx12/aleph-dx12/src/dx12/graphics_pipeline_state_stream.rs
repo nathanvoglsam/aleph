@@ -41,7 +41,7 @@ use crate::{
 };
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::mem::size_of;
+use std::mem::{size_of, transmute};
 use std::ops::Deref;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
@@ -243,7 +243,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             blend_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
-                self.blend_state.clone().into(),
+                unsafe { transmute(self.blend_state.clone()) },
             ),
             sample_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
@@ -251,11 +251,11 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             rasterizer_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
-                self.rasterizer_state.clone().into(),
+                unsafe { transmute(self.rasterizer_state.clone()) },
             ),
             depth_stencil_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
-                self.depth_stencil_state.clone().into(),
+                unsafe { transmute(self.depth_stencil_state.clone()) },
             ),
             input_layout: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,

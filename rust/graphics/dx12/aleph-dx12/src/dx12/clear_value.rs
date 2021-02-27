@@ -30,7 +30,7 @@
 use crate::{dxgi, DepthStencilValue};
 use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
 use raw::windows::win32::dxgi::DXGI_FORMAT;
-use std::mem::ManuallyDrop;
+use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone, Debug)]
 pub enum ClearValue {
@@ -71,7 +71,7 @@ impl Into<D3D12_CLEAR_VALUE> for ClearValue {
                 D3D12_CLEAR_VALUE {
                     format: format.into(),
                     variant: D3D12_CLEAR_VALUE_VARIANT {
-                        depth_stencil: ManuallyDrop::new(depth_stencil.into()),
+                        depth_stencil: ManuallyDrop::new(unsafe { transmute(depth_stencil) }),
                     },
                 }
             }

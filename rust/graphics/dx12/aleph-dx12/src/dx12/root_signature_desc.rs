@@ -37,6 +37,7 @@ use crate::{
     VersionedRootSignatureDesc,
 };
 use std::marker::PhantomData;
+use std::mem::transmute;
 
 pub struct RootSignatureDescBuilder {
     ranges: Vec<Vec<D3D12_DESCRIPTOR_RANGE>>,
@@ -72,7 +73,11 @@ impl RootSignatureDescBuilder {
     }
 
     pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
-        self.static_samplers = static_samplers.iter().cloned().map(|v| v.into()).collect();
+        self.static_samplers = static_samplers
+            .iter()
+            .cloned()
+            .map(|v| unsafe { transmute(v) })
+            .collect();
         self
     }
 
@@ -145,7 +150,11 @@ impl RootSignatureDesc1Builder {
     }
 
     pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
-        self.static_samplers = static_samplers.iter().cloned().map(|v| v.into()).collect();
+        self.static_samplers = static_samplers
+            .iter()
+            .cloned()
+            .map(|v| unsafe { transmute(v) })
+            .collect();
         self
     }
 

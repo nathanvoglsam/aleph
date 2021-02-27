@@ -28,8 +28,6 @@
 //
 
 use crate::{ComparisonFunc, Filter, TextureAddressMode};
-use raw::windows::win32::direct3d12::D3D12_SAMPLER_DESC;
-use std::mem::transmute;
 
 pub struct SamplerDescBuilder {
     inner: SamplerDesc,
@@ -132,11 +130,5 @@ impl Default for SamplerDesc {
 impl SamplerDesc {
     pub fn builder() -> SamplerDescBuilder {
         SamplerDescBuilder::new()
-    }
-}
-
-impl Into<D3D12_SAMPLER_DESC> for SamplerDesc {
-    fn into(self) -> D3D12_SAMPLER_DESC {
-        unsafe { transmute(self) }
     }
 }
