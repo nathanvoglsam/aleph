@@ -37,7 +37,7 @@ use crate::{
     VersionedRootSignatureDesc,
 };
 use std::marker::PhantomData;
-use std::mem::transmute;
+use std::mem::{align_of, size_of, transmute};
 
 pub struct RootSignatureDescBuilder<'a> {
     parameters: Vec<D3D12_ROOT_PARAMETER>,
@@ -51,14 +51,14 @@ static SS_EMPTY: [D3D12_STATIC_SAMPLER_DESC; 0] = [];
 impl<'a> RootSignatureDescBuilder<'a> {
     pub fn new() -> Self {
         Self {
-            parameters: vec![],
+            parameters: Vec::new(),
             static_samplers: &SS_EMPTY,
             flags: RootSignatureFlags::NONE,
             phantom: Default::default(),
         }
     }
 
-    pub fn parameters(mut self, parameters: &'a [RootParameter<'a>]) -> Self {
+    pub fn parameters(mut self, parameters: &[RootParameter<'a>]) -> Self {
         self.parameters = parameters
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER {
@@ -71,6 +71,14 @@ impl<'a> RootSignatureDescBuilder<'a> {
     }
 
     pub fn static_samplers(mut self, static_samplers: &'a [StaticSamplerDesc]) -> Self {
+        assert_eq!(
+            size_of::<StaticSamplerDesc>(),
+            size_of::<D3D12_STATIC_SAMPLER_DESC>()
+        );
+        assert_eq!(
+            align_of::<StaticSamplerDesc>(),
+            align_of::<D3D12_STATIC_SAMPLER_DESC>()
+        );
         self.static_samplers = unsafe { transmute(static_samplers) };
         self
     }
@@ -127,7 +135,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         }
     }
 
-    pub fn parameters(mut self, parameters: &'a [RootParameter1<'a>]) -> Self {
+    pub fn parameters(mut self, parameters: &[RootParameter1<'a>]) -> Self {
         self.parameters = parameters
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER1 {
@@ -140,6 +148,14 @@ impl<'a> RootSignatureDesc1Builder<'a> {
     }
 
     pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
+        assert_eq!(
+            size_of::<StaticSamplerDesc>(),
+            size_of::<D3D12_STATIC_SAMPLER_DESC>()
+        );
+        assert_eq!(
+            align_of::<StaticSamplerDesc>(),
+            align_of::<D3D12_STATIC_SAMPLER_DESC>()
+        );
         self.static_samplers = unsafe { transmute(static_samplers) };
         self
     }
