@@ -34,12 +34,14 @@ use crate::raw::windows::win32::direct3d12::{
     D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use crate::raw::windows::{Abi, Interface};
+use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
 use crate::utils::DynamicLoadCell;
 use crate::{
     dxgi, CPUDescriptorHandle, ClosedGraphicsCommandList, CommandAllocator, CommandListType,
     CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType,
-    FeatureLevel, Fence, FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream, Resource,
-    RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
+    FeatureLevel, Fence, FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream,
+    RenderTargetViewDesc, Resource, RootSignature, RootSignatureBlob, SamplerDesc,
+    ShaderResourceViewDesc,
 };
 use std::mem::transmute;
 use utf16_lit::utf16_null;
@@ -216,6 +218,19 @@ impl Device {
         let p_desc = &desc as *const D3D12_SHADER_RESOURCE_VIEW_DESC;
         self.0
             .CreateShaderResourceView(&resource.0, p_desc as *const _, dest.into())
+    }
+
+    pub unsafe fn create_render_target_view(
+        &self,
+        resource: &Resource,
+        rtv_desc: &RenderTargetViewDesc,
+        dest: CPUDescriptorHandle,
+    ) {
+        // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
+        let desc: D3D12_RENDER_TARGET_VIEW_DESC = rtv_desc.clone().into();
+        let p_desc = &desc as *const D3D12_RENDER_TARGET_VIEW_DESC;
+        self.0
+            .CreateRenderTargetView(&resource.0, p_desc as *const _, dest.into())
     }
 }
 
