@@ -77,7 +77,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
         match self {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
-                view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER,
+                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_BUFFER,
                 variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                     buffer: ManuallyDrop::new(unsafe { transmute(buffer) }),
                 },
@@ -85,7 +85,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture1D { format, texture_1d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
-                    view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1D,
+                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1D,
                     variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                         texture_1d: ManuallyDrop::new(texture_1d),
                     },
@@ -96,7 +96,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_1d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
-                view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
+                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
                 variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                     texture_1d_array: ManuallyDrop::new(texture_1d_array),
                 },
@@ -104,7 +104,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture2D { format, texture_2d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
-                    view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D,
+                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2D,
                     variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                         texture_2d: ManuallyDrop::new(texture_2d),
                     },
@@ -115,7 +115,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
-                view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
                 variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                     texture_2d_array: ManuallyDrop::new(texture_2d_array),
                 },
@@ -125,7 +125,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2dms,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
-                view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMS,
+                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMS,
                 variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                     texture_2dms: ManuallyDrop::new(texture_2dms),
                 },
@@ -135,7 +135,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2dms_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
-                view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY,
+                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
                 variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                     texture_2dms_array: ManuallyDrop::new(texture_2dms_array),
                 },
@@ -143,7 +143,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture3D { format, texture_3d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
-                    view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE3D,
+                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE3D,
                     variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
                         texture_3d: ManuallyDrop::new(texture_3d),
                     },
