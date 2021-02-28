@@ -39,45 +39,39 @@ use crate::{
 use std::marker::PhantomData;
 use std::mem::transmute;
 
-pub struct RootSignatureDescBuilder {
-    ranges: Vec<Vec<D3D12_DESCRIPTOR_RANGE>>,
+pub struct RootSignatureDescBuilder<'a> {
     parameters: Vec<D3D12_ROOT_PARAMETER>,
-    static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
+    static_samplers: &'a [D3D12_STATIC_SAMPLER_DESC],
     flags: RootSignatureFlags,
+    phantom: PhantomData<&'a [D3D12_DESCRIPTOR_RANGE]>,
 }
 
-impl RootSignatureDescBuilder {
+static SS_EMPTY: [D3D12_STATIC_SAMPLER_DESC; 0] = [];
+
+impl<'a> RootSignatureDescBuilder<'a> {
     pub fn new() -> Self {
         Self {
-            ranges: vec![],
             parameters: vec![],
-            static_samplers: vec![],
+            static_samplers: &SS_EMPTY,
             flags: RootSignatureFlags::NONE,
+            phantom: Default::default(),
         }
     }
 
-    pub fn parameters(mut self, parameters: &[RootParameter]) -> Self {
+    pub fn parameters(mut self, parameters: &'a [RootParameter<'a>]) -> Self {
         self.parameters = parameters
             .iter()
-            .map(|v| {
-                let (ranges, types) = v.parameter.get_raw();
-                self.ranges.push(ranges);
-                D3D12_ROOT_PARAMETER {
-                    parameter_type: v.parameter.get_type(),
-                    types,
-                    shader_visibility: v.shader_visibility.into(),
-                }
+            .map(|v| D3D12_ROOT_PARAMETER {
+                parameter_type: v.get_parameter_type(),
+                variant: v.get_variant(),
+                shader_visibility: v.get_shader_visibility(),
             })
             .collect();
         self
     }
 
-    pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
-        self.static_samplers = static_samplers
-            .iter()
-            .cloned()
-            .map(|v| unsafe { transmute(v) })
-            .collect();
+    pub fn static_samplers(mut self, static_samplers: &'a [StaticSamplerDesc]) -> Self {
+        self.static_samplers = unsafe { transmute(static_samplers) };
         self
     }
 
@@ -86,7 +80,7 @@ impl RootSignatureDescBuilder {
         self
     }
 
-    pub fn build(&self) -> RootSignatureDesc {
+    pub fn build(&self) -> RootSignatureDesc<'a> {
         let (num_parameters, p_parameters) = if self.parameters.is_empty() {
             (0, std::ptr::null_mut())
         } else {
@@ -116,45 +110,37 @@ impl RootSignatureDescBuilder {
     }
 }
 
-pub struct RootSignatureDesc1Builder {
-    ranges: Vec<Vec<D3D12_DESCRIPTOR_RANGE1>>,
+pub struct RootSignatureDesc1Builder<'a> {
     parameters: Vec<D3D12_ROOT_PARAMETER1>,
-    static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
+    static_samplers: &'a [D3D12_STATIC_SAMPLER_DESC],
     flags: RootSignatureFlags,
+    phantom: PhantomData<&'a [D3D12_DESCRIPTOR_RANGE1]>,
 }
 
-impl RootSignatureDesc1Builder {
+impl<'a> RootSignatureDesc1Builder<'a> {
     pub fn new() -> Self {
         Self {
-            ranges: vec![],
             parameters: vec![],
-            static_samplers: vec![],
+            static_samplers: &SS_EMPTY,
             flags: RootSignatureFlags::NONE,
+            phantom: Default::default(),
         }
     }
 
-    pub fn parameters(mut self, parameters: &[RootParameter1]) -> Self {
+    pub fn parameters(mut self, parameters: &'a [RootParameter1<'a>]) -> Self {
         self.parameters = parameters
             .iter()
-            .map(|v| {
-                let (ranges, types) = v.parameter.get_raw();
-                self.ranges.push(ranges);
-                D3D12_ROOT_PARAMETER1 {
-                    parameter_type: v.parameter.get_type(),
-                    types,
-                    shader_visibility: v.shader_visibility.into(),
-                }
+            .map(|v| D3D12_ROOT_PARAMETER1 {
+                parameter_type: v.get_parameter_type(),
+                variant: v.get_variant(),
+                shader_visibility: v.get_shader_visibility(),
             })
             .collect();
         self
     }
 
     pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
-        self.static_samplers = static_samplers
-            .iter()
-            .cloned()
-            .map(|v| unsafe { transmute(v) })
-            .collect();
+        self.static_samplers = unsafe { transmute(static_samplers) };
         self
     }
 
@@ -163,7 +149,7 @@ impl RootSignatureDesc1Builder {
         self
     }
 
-    pub fn build(&self) -> RootSignatureDesc1 {
+    pub fn build(&self) -> RootSignatureDesc1<'a> {
         let (num_parameters, p_parameters) = if self.parameters.is_empty() {
             (0, std::ptr::null_mut())
         } else {
@@ -200,7 +186,7 @@ pub struct RootSignatureDesc<'a> {
 }
 
 impl<'a> RootSignatureDesc<'a> {
-    pub fn builder() -> RootSignatureDescBuilder {
+    pub fn builder() -> RootSignatureDescBuilder<'a> {
         RootSignatureDescBuilder::new()
     }
 }
@@ -218,7 +204,7 @@ pub struct RootSignatureDesc1<'a> {
 }
 
 impl<'a> RootSignatureDesc1<'a> {
-    pub fn builder() -> RootSignatureDesc1Builder {
+    pub fn builder() -> RootSignatureDesc1Builder<'a> {
         RootSignatureDesc1Builder::new()
     }
 }
