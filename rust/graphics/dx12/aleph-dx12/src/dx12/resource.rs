@@ -28,6 +28,7 @@
 //
 
 use crate::raw::windows::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
+use crate::utils::optional_ref_to_ptr;
 use std::ops::Range;
 use std::ptr::NonNull;
 
@@ -50,9 +51,7 @@ impl Resource {
     ) -> crate::Result<()> {
         // TODO: input size validation on src_row_pitch and src_depth_pitch
         unsafe {
-            let dst_box = dst_box
-                .map(|v| v as *const crate::Box)
-                .unwrap_or(std::ptr::null());
+            let dst_box = optional_ref_to_ptr(dst_box);
             self.0
                 .WriteToSubresource(
                     dst_subresource,
@@ -75,9 +74,7 @@ impl Resource {
     ) -> crate::Result<()> {
         // TODO: input size validation on dst_row_pitch and dst_depth_pitch
         unsafe {
-            let src_box = src_box
-                .map(|v| v as *const crate::Box)
-                .unwrap_or(std::ptr::null());
+            let src_box = optional_ref_to_ptr(src_box);
             self.0
                 .ReadFromSubresource(
                     dst_data.as_mut_ptr() as *mut _,

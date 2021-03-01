@@ -30,7 +30,7 @@
 use crate::dx12::resource_barrier::D3D12_RESOURCE_BARRIER;
 use crate::dx12::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
 use crate::raw::windows::win32::direct3d12::ID3D12GraphicsCommandList;
-use crate::utils::optional_slice_to_num_ptr_pair;
+use crate::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
     D3D12DeviceChild, D3D12Object, DescriptorHeap, DescriptorHeapType, Device, DiscardRegion,
@@ -160,12 +160,13 @@ impl<'a> GraphicsCommandListRecorder<'a> {
         dst_y: u32,
         dst_z: u32,
         src: &TextureCopyLocation,
-        src_box: &crate::Box,
+        src_box: Option<&crate::Box>,
     ) {
         let dst: D3D12_TEXTURE_COPY_LOCATION = dst.clone().into();
         let p_dst = &dst as *const D3D12_TEXTURE_COPY_LOCATION;
         let src: D3D12_TEXTURE_COPY_LOCATION = src.clone().into();
         let p_src = &src as *const D3D12_TEXTURE_COPY_LOCATION;
+        let src_box = optional_ref_to_ptr(src_box);
         unsafe {
             self.0.CopyTextureRegion(
                 p_dst as *const _,

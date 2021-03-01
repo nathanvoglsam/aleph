@@ -211,6 +211,14 @@ pub fn optional_slice_to_num_ptr_pair<T>(slice: Option<&[T]>) -> (u32, *const T)
     }
 }
 
+pub fn optional_ref_to_ptr<T>(option: Option<&T>) -> *const T {
+    option.map(|v| v as *const T).unwrap_or(std::ptr::null())
+}
+
+pub fn optional_ref_to_ptr_mut<T>(option: Option<&mut T>) -> *mut T {
+    option.map(|v| v as *mut T).unwrap_or(std::ptr::null_mut())
+}
+
 #[macro_export]
 macro_rules! flags_bitwise_impl {
     ($t:ident) => {
