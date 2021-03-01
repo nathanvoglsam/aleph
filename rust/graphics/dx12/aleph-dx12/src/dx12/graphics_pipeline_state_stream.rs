@@ -84,7 +84,10 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             primitive_topology_type: PrimitiveTopologyType::default(),
             rtv_formats: &[],
             dsv_format: dxgi::Format::default(),
-            sample_desc: dxgi::SampleDesc::default(),
+            sample_desc: dxgi::SampleDesc {
+                count: 1,
+                quality: 0,
+            },
             cached_pso: None,
         }
     }

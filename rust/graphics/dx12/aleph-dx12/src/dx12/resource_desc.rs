@@ -126,7 +126,10 @@ impl Default for ResourceDesc {
             depth_or_array_size: 1,
             mip_levels: 1,
             format: Default::default(),
-            sample_desc: Default::default(),
+            sample_desc: dxgi::SampleDesc {
+                count: 1,
+                quality: 0,
+            },
             layout: TextureLayout::RowMajor,
             flags: ResourceFlags::NONE,
         }

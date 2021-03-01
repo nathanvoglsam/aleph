@@ -42,7 +42,10 @@ impl SwapChainDesc1Builder {
                 height: 0,
                 format: Default::default(),
                 stereo: false.into(),
-                sample_desc: Default::default(),
+                sample_desc: SampleDesc {
+                    count: 1,
+                    quality: 0,
+                },
                 buffer_usage: UsageFlags::NONE,
                 buffer_count: 0,
                 scaling: Scaling::Stretch,
