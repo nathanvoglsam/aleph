@@ -28,33 +28,35 @@
 //
 
 use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
-use crate::{Fence, SubmissionBuilder};
+use crate::{D3D12DeviceChild, D3D12Object, Device, Fence, SubmissionBuilder};
+use std::sync::{Arc, RwLock};
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
+pub struct CommandQueueRecorder<'a>(pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12CommandQueue>);
 
-impl CommandQueue {
-    pub unsafe fn signal(&self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
-        self.0.Signal(&fence.0, value).ok()
-    }
-
-    #[cfg(feature = "pix")]
-    pub unsafe fn scoped_event(
+#[cfg(feature = "pix")]
+impl<'a> CommandQueueRecorder<'a> {
+    pub fn scoped_event(
         &mut self,
         colour: crate::pix::Colour,
         text: &str,
-    ) -> crate::pix::ScopedEvent {
-        crate::pix::ScopedEvent::for_queue(self, colour, text)
+        f: impl FnOnce(&mut Self),
+    ) {
+        unsafe { crate::pix::for_queue(self, colour, text, f) }
     }
 
-    #[cfg(feature = "pix")]
-    pub unsafe fn scoped_event_cstr(
+    pub fn scoped_event_cstr(
         &mut self,
         colour: crate::pix::Colour,
         text: &std::ffi::CStr,
-    ) -> crate::pix::ScopedEvent {
-        crate::pix::ScopedEvent::for_queue_cstr(self, colour, text)
+        f: impl FnOnce(&mut Self),
+    ) {
+        unsafe { crate::pix::for_queue_cstr(self, colour, text, f) }
+    }
+}
+
+impl<'a> CommandQueueRecorder<'a> {
+    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
+        self.0.Signal(&fence.0, value).ok()
     }
 
     pub unsafe fn execute_command_lists(&mut self, command_lists: &SubmissionBuilder) {
@@ -63,5 +65,38 @@ impl CommandQueue {
     }
 }
 
-crate::object_impl!(CommandQueue);
-crate::device_child_impl!(CommandQueue);
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct CommandQueue(pub(crate) Arc<RwLock<ID3D12CommandQueue>>);
+
+impl CommandQueue {
+    pub fn record(&self) -> CommandQueueRecorder {
+        CommandQueueRecorder(self.get_exclusive())
+    }
+
+    pub(crate) fn get_shared(&self) -> std::sync::RwLockReadGuard<ID3D12CommandQueue> {
+        self.0.read().unwrap()
+    }
+
+    pub(crate) fn get_exclusive(&self) -> std::sync::RwLockWriteGuard<ID3D12CommandQueue> {
+        self.0.write().unwrap()
+    }
+}
+
+impl D3D12Object for CommandQueue {
+    unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
+        self.get_shared().SetName(name.as_ptr()).ok()
+    }
+}
+
+impl D3D12DeviceChild for CommandQueue {
+    unsafe fn get_device(&self) -> crate::Result<Device> {
+        use raw::windows::{Abi, Interface};
+        type D = raw::windows::win32::direct3d12::ID3D12Device4;
+        let mut device: Option<D> = None;
+        self.get_shared()
+            .GetDevice(&D::IID, device.set_abi())
+            .and_some(device)
+            .map(|v| Device(v))
+    }
+}

@@ -40,6 +40,7 @@ use crate::{CommandQueue, FeatureLevel};
 use raw::windows::win32::winrt::IInspectable;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::transmute;
+use std::ops::Deref;
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
@@ -106,7 +107,7 @@ impl Factory {
         let swapchain = self
             .0
             .CreateSwapChainForHwnd(
-                &queue.0,
+                queue.get_shared().deref(),
                 hwnd,
                 &desc,
                 std::ptr::null(),
@@ -126,7 +127,13 @@ impl Factory {
         let mut swapchain: Option<IDXGISwapChain1> = None;
         let swapchain = self
             .0
-            .CreateSwapChainForCoreWindow(&queue.0, core_window, &desc, None, &mut swapchain)
+            .CreateSwapChainForCoreWindow(
+                queue.get_shared().deref(),
+                core_window,
+                &desc,
+                None,
+                &mut swapchain,
+            )
             .and_some(swapchain)?;
         swapchain.cast::<IDXGISwapChain4>()
     }

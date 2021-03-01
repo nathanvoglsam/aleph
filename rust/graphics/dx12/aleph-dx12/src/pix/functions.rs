@@ -41,7 +41,7 @@ pub unsafe fn begin_event_cstr(colour: Colour, text: &CStr) {
     SHIM_PIXBeginEvent_N(colour.into(), text.as_ptr())
 }
 
-pub unsafe fn begin_event_on_queue(context: &ID3D12CommandQueue, colour: Colour, text: &str) {
+pub unsafe fn begin_event_on_queue(context: &mut ID3D12CommandQueue, colour: Colour, text: &str) {
     let text = CString::new(text).unwrap();
     SHIM_PIXBeginEvent_CQ(
         std::mem::transmute_copy(context),
@@ -50,7 +50,11 @@ pub unsafe fn begin_event_on_queue(context: &ID3D12CommandQueue, colour: Colour,
     )
 }
 
-pub unsafe fn begin_event_cstr_on_queue(context: &ID3D12CommandQueue, colour: Colour, text: &CStr) {
+pub unsafe fn begin_event_cstr_on_queue(
+    context: &mut ID3D12CommandQueue,
+    colour: Colour,
+    text: &CStr,
+) {
     SHIM_PIXBeginEvent_CQ(
         std::mem::transmute_copy(context),
         colour.into(),
@@ -58,7 +62,11 @@ pub unsafe fn begin_event_cstr_on_queue(context: &ID3D12CommandQueue, colour: Co
     )
 }
 
-pub unsafe fn begin_event_on_list(context: &ID3D12GraphicsCommandList, colour: Colour, text: &str) {
+pub unsafe fn begin_event_on_list(
+    context: &mut ID3D12GraphicsCommandList,
+    colour: Colour,
+    text: &str,
+) {
     let text = CString::new(text).unwrap();
     SHIM_PIXBeginEvent_CL(
         std::mem::transmute_copy(context),
@@ -68,7 +76,7 @@ pub unsafe fn begin_event_on_list(context: &ID3D12GraphicsCommandList, colour: C
 }
 
 pub unsafe fn begin_event_cstr_on_list(
-    context: &ID3D12GraphicsCommandList,
+    context: &mut ID3D12GraphicsCommandList,
     colour: Colour,
     text: &CStr,
 ) {
@@ -83,11 +91,11 @@ pub unsafe fn end_event() {
     SHIM_PIXEndEvent_N();
 }
 
-pub unsafe fn end_event_on_queue(context: &ID3D12CommandQueue) {
+pub unsafe fn end_event_on_queue(context: &mut ID3D12CommandQueue) {
     SHIM_PIXEndEvent_CQ(std::mem::transmute_copy(context));
 }
 
-pub unsafe fn end_event_on_list(context: &ID3D12GraphicsCommandList) {
+pub unsafe fn end_event_on_list(context: &mut ID3D12GraphicsCommandList) {
     SHIM_PIXEndEvent_CL(std::mem::transmute_copy(context));
 }
 
@@ -100,7 +108,7 @@ pub unsafe fn set_marker_cstr(colour: Colour, text: &CStr) {
     SHIM_PIXSetMarker_N(colour.into(), text.as_ptr());
 }
 
-pub unsafe fn set_marker_on_queue(context: &ID3D12CommandQueue, colour: Colour, text: &str) {
+pub unsafe fn set_marker_on_queue(context: &mut ID3D12CommandQueue, colour: Colour, text: &str) {
     let text = CString::new(text).unwrap();
     SHIM_PIXSetMarker_CQ(
         std::mem::transmute_copy(context),
@@ -109,7 +117,11 @@ pub unsafe fn set_marker_on_queue(context: &ID3D12CommandQueue, colour: Colour, 
     );
 }
 
-pub unsafe fn set_marker_cstr_on_queue(context: &ID3D12CommandQueue, colour: Colour, text: &CStr) {
+pub unsafe fn set_marker_cstr_on_queue(
+    context: &mut ID3D12CommandQueue,
+    colour: Colour,
+    text: &CStr,
+) {
     SHIM_PIXSetMarker_CQ(
         std::mem::transmute_copy(context),
         colour.into(),
@@ -117,7 +129,11 @@ pub unsafe fn set_marker_cstr_on_queue(context: &ID3D12CommandQueue, colour: Col
     );
 }
 
-pub unsafe fn set_marker_on_list(context: &ID3D12GraphicsCommandList, colour: Colour, text: &str) {
+pub unsafe fn set_marker_on_list(
+    context: &mut ID3D12GraphicsCommandList,
+    colour: Colour,
+    text: &str,
+) {
     let text = CString::new(text).unwrap();
     SHIM_PIXSetMarker_CL(
         std::mem::transmute_copy(context),
@@ -127,7 +143,7 @@ pub unsafe fn set_marker_on_list(context: &ID3D12GraphicsCommandList, colour: Co
 }
 
 pub unsafe fn set_marker_cstr_on_list(
-    context: &ID3D12GraphicsCommandList,
+    context: &mut ID3D12GraphicsCommandList,
     colour: Colour,
     text: &CStr,
 ) {

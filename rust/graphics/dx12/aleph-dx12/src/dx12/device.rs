@@ -37,13 +37,13 @@ use crate::raw::windows::{Abi, Interface};
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
 use crate::utils::DynamicLoadCell;
 use crate::{
-    dxgi, CPUDescriptorHandle, ClosedGraphicsCommandList, CommandAllocator, CommandListType,
-    CommandQueue, CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType,
-    FeatureLevel, Fence, FenceFlags, GraphicsPipelineState, GraphicsPipelineStateStream,
-    RenderTargetViewDesc, Resource, RootSignature, RootSignatureBlob, SamplerDesc,
-    ShaderResourceViewDesc,
+    dxgi, CPUDescriptorHandle, CommandAllocator, CommandListType, CommandQueue, CommandQueueDesc,
+    DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence, FenceFlags,
+    GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, RenderTargetViewDesc,
+    Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
 use std::mem::transmute;
+use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
@@ -111,7 +111,7 @@ impl Device {
     pub fn create_graphics_command_list(
         &self,
         list_type: CommandListType,
-    ) -> raw::windows::Result<ClosedGraphicsCommandList> {
+    ) -> raw::windows::Result<GraphicsCommandList> {
         unsafe {
             let mut out: Option<ID3D12GraphicsCommandList> = None;
             self.0
@@ -123,7 +123,7 @@ impl Device {
                     out.set_abi(),
                 )
                 .and_some(out)
-                .map(|v| ClosedGraphicsCommandList(v))
+                .map(|v| GraphicsCommandList(Arc::new(RwLock::new(v))))
         }
     }
 
@@ -187,7 +187,7 @@ impl Device {
             self.0
                 .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, out.set_abi())
                 .and_some(out)
-                .map(|v| CommandQueue(v))
+                .map(|v| CommandQueue(Arc::new(RwLock::new(v))))
         }
     }
 

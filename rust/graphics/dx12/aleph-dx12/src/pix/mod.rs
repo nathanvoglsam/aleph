@@ -54,3 +54,8 @@ pub use functions::set_marker_cstr_on_list;
 pub use functions::set_marker_cstr_on_queue;
 
 pub use scoped::ScopedEvent;
+
+pub(crate) use scoped::for_list;
+pub(crate) use scoped::for_list_cstr;
+pub(crate) use scoped::for_queue;
+pub(crate) use scoped::for_queue_cstr;

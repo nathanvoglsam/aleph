@@ -27,34 +27,27 @@
 // SOFTWARE.
 //
 
-use crate::ClosedGraphicsCommandList;
-use raw::windows::win32::direct3d12::ID3D12CommandList;
-use std::marker::PhantomData;
-
-#[repr(transparent)]
-struct ListEntry<'a>(
-    ID3D12CommandList,
-    PhantomData<&'a ClosedGraphicsCommandList>,
-);
+use crate::GraphicsCommandList;
+use raw::windows::win32::direct3d12::{ID3D12CommandList, ID3D12GraphicsCommandList};
+use std::ops::Deref;
 
 pub struct SubmissionBuilder<'a> {
-    buffer: Vec<ListEntry<'a>>,
+    buffer: Vec<ID3D12CommandList>,
+    locks: Vec<std::sync::RwLockReadGuard<'a, ID3D12GraphicsCommandList>>,
 }
 
 impl<'a> SubmissionBuilder<'a> {
     pub fn new() -> SubmissionBuilder<'a> {
-        // Assert the layouts are the same
-        use std::mem::align_of;
-        use std::mem::size_of;
-        assert_eq!(size_of::<ListEntry<'a>>(), size_of::<ID3D12CommandList>());
-        assert_eq!(align_of::<ListEntry<'a>>(), align_of::<ID3D12CommandList>());
-
-        Self { buffer: vec![] }
+        Self {
+            buffer: vec![],
+            locks: vec![],
+        }
     }
 
-    pub fn add(&mut self, list: ClosedGraphicsCommandList) -> &mut Self {
-        let entry = ListEntry(list.0.into(), Default::default());
-        self.buffer.push(entry);
+    pub fn add(&mut self, list: &'a GraphicsCommandList) -> &mut Self {
+        let entry = list.get_shared();
+        self.buffer.push(entry.deref().clone().into());
+        self.locks.push(entry);
         self
     }
 
