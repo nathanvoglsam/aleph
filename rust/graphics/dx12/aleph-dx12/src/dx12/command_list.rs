@@ -39,10 +39,10 @@ use crate::{
     TiledResourceCoordinate, VertexBufferView, Viewport,
 };
 use raw::windows::win32::direct3d12::{
-    D3D12_INDEX_BUFFER_VIEW, D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE,
-    D3D12_VERTEX_BUFFER_VIEW, ID3D12DescriptorHeap
+    ID3D12DescriptorHeap, D3D12_INDEX_BUFFER_VIEW, D3D12_STREAM_OUTPUT_BUFFER_VIEW,
+    D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
-use std::mem::{align_of, size_of, transmute, forget};
+use std::mem::{align_of, forget, size_of, transmute};
 
 #[repr(transparent)]
 pub struct OpenGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
@@ -335,7 +335,8 @@ impl OpenGraphicsCommandList {
             let pp_descriptor_heaps = descriptor_heaps.as_ptr();
             let pp_descriptor_heaps: ID3D12DescriptorHeap = transmute(pp_descriptor_heaps);
 
-            self.0.SetDescriptorHeaps(num_descriptor_heaps, &pp_descriptor_heaps);
+            self.0
+                .SetDescriptorHeaps(num_descriptor_heaps, &pp_descriptor_heaps);
 
             forget(pp_descriptor_heaps);
         }
@@ -865,8 +866,9 @@ crate::device_child_impl!(OpenGraphicsCommandList);
 pub struct ClosedGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
 impl ClosedGraphicsCommandList {
-    pub unsafe fn get_type(&self) -> CommandListType {
-        CommandListType::from_raw(self.0.GetType()).unwrap()
+    /// `ID3D12GraphicsCommandList::GetType`
+    pub fn get_type(&self) -> CommandListType {
+        unsafe { CommandListType::from_raw(self.0.GetType()).unwrap() }
     }
 }
 
