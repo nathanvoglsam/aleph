@@ -57,7 +57,7 @@ impl GeometryPipeline {
 
         let input_layout = [
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("POSITION"),
+                semantic_name: macros::cstr!("POSITION").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32B32Float,
                 input_slot: 0,
@@ -66,7 +66,7 @@ impl GeometryPipeline {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("NORMAL"),
+                semantic_name: macros::cstr!("NORMAL").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32B32Float,
                 input_slot: 0,
@@ -75,7 +75,7 @@ impl GeometryPipeline {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("TANGENT"),
+                semantic_name: macros::cstr!("TANGENT").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32B32A32Float,
                 input_slot: 0,
@@ -84,7 +84,7 @@ impl GeometryPipeline {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("TEXCOORD"),
+                semantic_name: macros::cstr!("TEXCOORD").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32B32Float,
                 input_slot: 0,
@@ -140,7 +140,7 @@ impl TonePipeline {
             .build();
 
         let input_layout = [dx12::InputElementDesc {
-            semantic_name: macros::cstr!("POSITION"),
+            semantic_name: macros::cstr!("POSITION").into(),
             semantic_index: 0,
             format: dxgi::Format::R32G32Float,
             input_slot: 0,
