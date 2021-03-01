@@ -30,10 +30,10 @@
 #include "egui.inc.hlsl"
 
 [[vk::binding(0,0)]]
-Texture2D Tex;
+Texture2D Tex : register(t0);
 
 [[vk::binding(1,0)]]
-SamplerState Sampler;
+SamplerState Sampler : register(s0);
 
 float4 main(in EguiPixelInput input) : SV_Target0 {
     return input.Color * Tex.Sample(Sampler, input.UV).r;

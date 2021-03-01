@@ -30,19 +30,18 @@
 #include "egui.inc.hlsl"
 #include <srgb.hlsl>
 
-struct PushConstantLayout {
+struct RootConstantLayout {
     float2 ScreenSize;
 };
 
-[[vk::push_constant]]
-PushConstantLayout PushConstants;
+ConstantBuffer<RootConstantLayout> RootConstants : register(b0);
 
 EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     EguiPixelInput output;
 
     // Transform input into final output vertex position
-    const float x = 2.0 * input.Pos.x / PushConstants.ScreenSize.x - 1.0;
-    const float y = 2.0 * input.Pos.y / PushConstants.ScreenSize.y - 1.0;
+    const float x = 2.0 * input.Pos.x / RootConstants.ScreenSize.x - 1.0;
+    const float y = 2.0 * input.Pos.y / RootConstants.ScreenSize.y - 1.0;
     const float z = 0.0;
     const float w = 1.0;
     Pos = float4(x, y, z, w);
