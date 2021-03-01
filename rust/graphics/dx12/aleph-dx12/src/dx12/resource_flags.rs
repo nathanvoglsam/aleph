@@ -44,6 +44,12 @@ impl ResourceFlags {
     pub const VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64i32);
 }
 
+impl Default for ResourceFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(ResourceFlags);
 
 impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {

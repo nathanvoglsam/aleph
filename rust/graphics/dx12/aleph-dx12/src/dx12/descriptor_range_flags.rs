@@ -41,6 +41,12 @@ impl DescriptorRangeFlags {
     pub const DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS: Self = Self(65536i32);
 }
 
+impl Default for DescriptorRangeFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(DescriptorRangeFlags);
 
 impl Into<D3D12_DESCRIPTOR_RANGE_FLAGS> for DescriptorRangeFlags {

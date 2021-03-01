@@ -39,6 +39,12 @@ impl TileCopyFlags {
     pub const SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4i32);
 }
 
+impl Default for TileCopyFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(TileCopyFlags);
 
 impl Into<D3D12_TILE_COPY_FLAGS> for TileCopyFlags {

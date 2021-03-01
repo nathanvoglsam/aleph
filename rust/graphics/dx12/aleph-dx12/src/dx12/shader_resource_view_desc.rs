@@ -256,6 +256,12 @@ impl BufferSrvFlags {
     pub const RAW: Self = Self(1i32);
 }
 
+impl Default for BufferSrvFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(BufferSrvFlags);
 
 pub type Tex1DSrv = D3D12_TEX1D_SRV;

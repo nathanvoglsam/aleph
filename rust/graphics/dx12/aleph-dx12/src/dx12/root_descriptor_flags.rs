@@ -40,6 +40,12 @@ impl RootDescriptorFlags {
     pub const DATA_STATIC: Self = Self(8i32);
 }
 
+impl Default for RootDescriptorFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(RootDescriptorFlags);
 
 impl Into<D3D12_ROOT_DESCRIPTOR_FLAGS> for RootDescriptorFlags {

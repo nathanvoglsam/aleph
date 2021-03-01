@@ -38,6 +38,12 @@ impl ResourceBarrierFlags {
     pub const END_ONLY: Self = Self(2i32);
 }
 
+impl Default for ResourceBarrierFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(ResourceBarrierFlags);
 
 impl Into<D3D12_RESOURCE_BARRIER_FLAGS> for ResourceBarrierFlags {

@@ -51,6 +51,12 @@ impl HeapFlags {
     pub const ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132i32);
 }
 
+impl Default for HeapFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(HeapFlags);
 
 impl Into<D3D12_HEAP_FLAGS> for HeapFlags {

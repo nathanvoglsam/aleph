@@ -46,6 +46,12 @@ impl RootSignatureFlags {
     pub const DENY_MESH_SHADER_ROOT_ACCESS: Self = Self(512i32);
 }
 
+impl Default for RootSignatureFlags {
+    fn default() -> Self {
+        Self::NONE
+    }
+}
+
 crate::flags_bitwise_impl!(RootSignatureFlags);
 
 impl Into<D3D12_ROOT_SIGNATURE_FLAGS> for RootSignatureFlags {
