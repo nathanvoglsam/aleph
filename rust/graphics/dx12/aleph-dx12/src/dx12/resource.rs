@@ -40,6 +40,56 @@ impl Resource {
         unsafe { self.0.GetGPUVirtualAddress() }
     }
 
+    pub fn write_to_subresource(
+        &self,
+        dst_subresource: u32,
+        dst_box: Option<&crate::Box>,
+        src_data: &[u8],
+        src_row_pitch: u32,
+        src_depth_pitch: u32,
+    ) -> crate::Result<()> {
+        // TODO: input size validation on src_row_pitch and src_depth_pitch
+        unsafe {
+            let dst_box = dst_box
+                .map(|v| v as *const crate::Box)
+                .unwrap_or(std::ptr::null());
+            self.0
+                .WriteToSubresource(
+                    dst_subresource,
+                    dst_box,
+                    src_data.as_ptr() as *const _,
+                    src_row_pitch,
+                    src_depth_pitch,
+                )
+                .ok()
+        }
+    }
+
+    pub fn read_from_subresource(
+        &self,
+        dst_data: &mut [u8],
+        dst_row_pitch: u32,
+        dst_depth_pitch: u32,
+        src_subresource: u32,
+        src_box: Option<&crate::Box>,
+    ) -> crate::Result<()> {
+        // TODO: input size validation on dst_row_pitch and dst_depth_pitch
+        unsafe {
+            let src_box = src_box
+                .map(|v| v as *const crate::Box)
+                .unwrap_or(std::ptr::null());
+            self.0
+                .ReadFromSubresource(
+                    dst_data.as_mut_ptr() as *mut _,
+                    dst_row_pitch,
+                    dst_depth_pitch,
+                    src_subresource,
+                    src_box,
+                )
+                .ok()
+        }
+    }
+
     pub fn map(
         &self,
         subresource: u32,
