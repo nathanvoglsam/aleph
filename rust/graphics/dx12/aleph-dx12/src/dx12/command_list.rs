@@ -40,9 +40,9 @@ use crate::{
 };
 use raw::windows::win32::direct3d12::{
     D3D12_INDEX_BUFFER_VIEW, D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE,
-    D3D12_VERTEX_BUFFER_VIEW,
+    D3D12_VERTEX_BUFFER_VIEW, ID3D12DescriptorHeap
 };
-use std::mem::{align_of, size_of};
+use std::mem::{align_of, size_of, transmute, forget};
 
 #[repr(transparent)]
 pub struct OpenGraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
@@ -319,8 +319,25 @@ impl OpenGraphicsCommandList {
         // Perform the actual API call
         unsafe {
             let num_descriptor_heaps = descriptor_heaps.len() as u32;
+
+            // This is a load of hacky crap to let the function call actually compile
+            //
+            // The bindings are generated incorrectly and the function believes it takes a regular
+            // ID3D12DescriptorHeap pointer. It actually takes a pointer to an array of
+            // ID3D12DescriptorHeap pointers.
+            //
+            // I have to cast the pointer types around and do some mem::forget stuff to prevent it
+            // from calling drop as that would explode very violently
+            //
+            // Fingers crossed this actually works
+            //
+            // TODO: Remove this when the bindings are generated correctly by windows-rs
             let pp_descriptor_heaps = descriptor_heaps.as_ptr();
-            //self.0.SetDescriptorHeaps(num_descriptor_heaps);
+            let pp_descriptor_heaps: ID3D12DescriptorHeap = transmute(pp_descriptor_heaps);
+
+            self.0.SetDescriptorHeaps(num_descriptor_heaps, &pp_descriptor_heaps);
+
+            forget(pp_descriptor_heaps);
         }
     }
 
