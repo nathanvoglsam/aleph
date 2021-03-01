@@ -33,6 +33,7 @@ use raw::windows::win32::direct3d12::D3D12_COLOR_WRITE_ENABLE;
 pub struct ColorWriteEnable(pub u8);
 
 impl ColorWriteEnable {
+    pub const NONE: Self = Self(0);
     pub const RED: Self = Self(1);
     pub const GREEN: Self = Self(2);
     pub const BLUE: Self = Self(4);
@@ -40,6 +41,12 @@ impl ColorWriteEnable {
 
     pub fn all() -> Self {
         Self::RED | Self::BLUE | Self::GREEN | Self::ALPHA
+    }
+}
+
+impl Default for ColorWriteEnable {
+    fn default() -> Self {
+        Self::NONE
     }
 }
 

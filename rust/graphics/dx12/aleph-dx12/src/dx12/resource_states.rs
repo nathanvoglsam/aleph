@@ -62,6 +62,12 @@ impl ResourceStates {
     pub const VIDEO_ENCODE_WRITE: Self = Self(8388608i32);
 }
 
+impl Default for ResourceStates {
+    fn default() -> Self {
+        Self::COMMON
+    }
+}
+
 crate::flags_bitwise_impl!(ResourceStates);
 
 impl Into<D3D12_RESOURCE_STATES> for ResourceStates {
