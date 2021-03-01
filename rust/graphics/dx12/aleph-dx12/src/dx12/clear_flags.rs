@@ -27,37 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use raw::windows::win32::direct3d12::D3D12_CLEAR_FLAGS;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct PipelineState(pub(crate) ID3D12PipelineState);
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct ClearFlags(pub i32);
 
-crate::object_impl!(PipelineState);
-crate::device_child_impl!(PipelineState);
+impl ClearFlags {
+    pub const DEPTH: Self = Self(1i32);
+    pub const STENCIL: Self = Self(2i32);
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for GraphicsPipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+    pub fn all() -> Self {
+        Self::DEPTH | Self::STENCIL
     }
 }
 
-crate::object_impl!(GraphicsPipelineState);
-crate::device_child_impl!(GraphicsPipelineState);
+crate::flags_bitwise_impl!(ClearFlags);
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for ComputePipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+impl Into<D3D12_CLEAR_FLAGS> for ClearFlags {
+    fn into(self) -> D3D12_CLEAR_FLAGS {
+        D3D12_CLEAR_FLAGS(self.0)
     }
 }
-
-crate::object_impl!(ComputePipelineState);
-crate::device_child_impl!(ComputePipelineState);

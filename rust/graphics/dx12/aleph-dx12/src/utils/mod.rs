@@ -199,6 +199,18 @@ pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE
     }
 }
 
+pub fn optional_slice_to_num_ptr_pair<T>(slice: Option<&[T]>) -> (u32, *const T) {
+    if let Some(slice) = slice {
+        let num = slice.len() as u32;
+        let ptr = slice.as_ptr();
+        (num, ptr)
+    } else {
+        let num = 0;
+        let ptr = std::ptr::null();
+        (num, ptr)
+    }
+}
+
 #[macro_export]
 macro_rules! flags_bitwise_impl {
     ($t:ident) => {

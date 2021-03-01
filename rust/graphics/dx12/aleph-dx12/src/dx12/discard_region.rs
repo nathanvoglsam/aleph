@@ -27,37 +27,26 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use crate::utils::optional_slice_to_num_ptr_pair;
+use crate::Rect;
+use raw::windows::win32::direct3d12::D3D12_DISCARD_REGION;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct PipelineState(pub(crate) ID3D12PipelineState);
-
-crate::object_impl!(PipelineState);
-crate::device_child_impl!(PipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for GraphicsPipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
-    }
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct DiscardRegion<'a> {
+    pub rects: Option<&'a [Rect]>,
+    pub first_subresource: u32,
+    pub num_subresources: u32,
 }
 
-crate::object_impl!(GraphicsPipelineState);
-crate::device_child_impl!(GraphicsPipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for ComputePipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+impl<'a> Into<D3D12_DISCARD_REGION> for DiscardRegion<'a> {
+    fn into(self) -> D3D12_DISCARD_REGION {
+        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(self.rects);
+        D3D12_DISCARD_REGION {
+            num_rects,
+            p_rects: p_rects as *mut _,
+            first_subresource: self.first_subresource,
+            num_subresources: self.num_subresources,
+        }
     }
 }
-
-crate::object_impl!(ComputePipelineState);
-crate::device_child_impl!(ComputePipelineState);

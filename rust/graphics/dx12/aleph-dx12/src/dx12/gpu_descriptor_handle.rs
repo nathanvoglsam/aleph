@@ -55,6 +55,10 @@ impl GPUDescriptorHandle {
     pub fn add_increments(self, offset: u64, increment: u64) -> Self {
         Self(NonZeroU64::new(self.0.get() + (offset * increment)).unwrap())
     }
+
+    pub fn get_inner(&self) -> NonZeroU64 {
+        self.0
+    }
 }
 
 impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {

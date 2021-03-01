@@ -27,37 +27,22 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use raw::windows::win32::direct3d12::D3D12_TILE_COPY_FLAGS;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct PipelineState(pub(crate) ID3D12PipelineState);
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct TileCopyFlags(pub i32);
 
-crate::object_impl!(PipelineState);
-crate::device_child_impl!(PipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for GraphicsPipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
-    }
+impl TileCopyFlags {
+    pub const NONE: Self = Self(0i32);
+    pub const NO_HAZARD: Self = Self(1i32);
+    pub const LINEAR_BUFFER_TO_SWIZZLED_TILED_RESOURCE: Self = Self(2i32);
+    pub const SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4i32);
 }
 
-crate::object_impl!(GraphicsPipelineState);
-crate::device_child_impl!(GraphicsPipelineState);
+crate::flags_bitwise_impl!(TileCopyFlags);
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for ComputePipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+impl Into<D3D12_TILE_COPY_FLAGS> for TileCopyFlags {
+    fn into(self) -> D3D12_TILE_COPY_FLAGS {
+        D3D12_TILE_COPY_FLAGS(self.0)
     }
 }
-
-crate::object_impl!(ComputePipelineState);
-crate::device_child_impl!(ComputePipelineState);

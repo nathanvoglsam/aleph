@@ -27,37 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use crate::raw::windows::win32::direct3d12::D3D12_PREDICATION_OP;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct PipelineState(pub(crate) ID3D12PipelineState);
-
-crate::object_impl!(PipelineState);
-crate::device_child_impl!(PipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for GraphicsPipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
-    }
+/// Wrapper for `D3D12_PREDICATION_OP`
+#[repr(i32)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub enum PredicationOp {
+    EqualZero = 0,
+    NotEqualZero = 1,
 }
 
-crate::object_impl!(GraphicsPipelineState);
-crate::device_child_impl!(GraphicsPipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for ComputePipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+impl Into<D3D12_PREDICATION_OP> for PredicationOp {
+    fn into(self) -> D3D12_PREDICATION_OP {
+        D3D12_PREDICATION_OP(self as i32)
     }
 }
-
-crate::object_impl!(ComputePipelineState);
-crate::device_child_impl!(ComputePipelineState);

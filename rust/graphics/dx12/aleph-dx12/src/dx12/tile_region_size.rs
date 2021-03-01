@@ -27,37 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use crate::Bool;
 
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct PipelineState(pub(crate) ID3D12PipelineState);
-
-crate::object_impl!(PipelineState);
-crate::device_child_impl!(PipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for GraphicsPipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
-    }
+#[repr(C)]
+pub struct TileRegionSize {
+    pub num_tiles: u32,
+    pub use_box: Bool,
+    pub width: u32,
+    pub height: u16,
+    pub depth: u16,
 }
-
-crate::object_impl!(GraphicsPipelineState);
-crate::device_child_impl!(GraphicsPipelineState);
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
-
-impl Into<PipelineState> for ComputePipelineState {
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
-    }
-}
-
-crate::object_impl!(ComputePipelineState);
-crate::device_child_impl!(ComputePipelineState);

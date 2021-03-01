@@ -55,6 +55,10 @@ impl CPUDescriptorHandle {
     pub fn add_increments(self, offset: usize, increment: usize) -> Self {
         Self(NonZeroUsize::new(self.0.get() + (offset * increment)).unwrap())
     }
+
+    pub fn get_inner(&self) -> NonZeroUsize {
+        self.0
+    }
 }
 
 impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
