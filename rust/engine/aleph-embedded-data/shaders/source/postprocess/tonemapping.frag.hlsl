@@ -30,8 +30,6 @@
 #include <aces.hlsl>
 #include <fullscreen_quad/fullscreen_quad.inc.hlsl>
 
-[[vk::input_attachment_index(0)]]
-[[vk::binding(0, 0)]]
 SubpassInput<float4> ColourInput; // TODO: Port this to DX12
 
 float3 LinearTosRGB(in float3 color) {

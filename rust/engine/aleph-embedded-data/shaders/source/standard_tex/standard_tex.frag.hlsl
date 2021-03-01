@@ -32,19 +32,13 @@
 #include "standard_tex.inc.hlsl"
 
 [[vk::binding(0,0)]]
-ConstantBuffer<CameraLayout> camera_buffer;
+ConstantBuffer<CameraLayout> camera_buffer: register(b0);
 
-[[vk::binding(0,2)]]
-SamplerState BaseColourSampler;
+Texture2D<float3> BaseColourTex : register(t0);
+SamplerState BaseColourSampler : register(s0);
 
-[[vk::binding(1,2)]]
-Texture2D<float3> BaseColourTex;
-
-[[vk::binding(2,2)]]
-SamplerState NormalSampler;
-
-[[vk::binding(3,2)]]
-Texture2D<float3> NormalTex;
+Texture2D<float3> NormalTex : register(t1);
+SamplerState NormalSampler : register(s1);
 
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {
 	// Load buffers so auto complete works properly

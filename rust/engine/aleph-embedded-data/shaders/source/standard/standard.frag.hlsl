@@ -30,8 +30,7 @@
 #include "standard.inc.hlsl"
 #include "pbr.hlsl"
 
-[[vk::binding(0,0)]]
-ConstantBuffer<CameraLayout> camera_buffer;
+ConstantBuffer<CameraLayout> camera_buffer : register(b0);
 
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     // Load buffers so auto complete works properly
