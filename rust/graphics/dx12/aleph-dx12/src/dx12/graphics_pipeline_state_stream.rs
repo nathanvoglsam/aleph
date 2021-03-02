@@ -225,7 +225,24 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         // Get the input layout array
         let input_layout = self.input_layout.unwrap();
 
-        let stream_output = self.stream_output.unwrap();
+        let stream_output = if let Some(stream_output) = self.stream_output {
+            D3D12_STREAM_OUTPUT_DESC {
+                p_so_declaration: stream_output.0.as_ptr() as *mut _,
+                num_entries: stream_output.0.len() as _,
+                p_buffer_strides: stream_output.1.as_ptr() as *mut _,
+                num_strides: stream_output.1.len() as _,
+                rasterized_stream: stream_output.2,
+            }
+        } else {
+            D3D12_STREAM_OUTPUT_DESC {
+                p_so_declaration: std::ptr::null_mut(),
+                num_entries: 0,
+                p_buffer_strides: std::ptr::null_mut(),
+                num_strides: 0,
+                rasterized_stream: 0,
+            }
+
+        };
 
         let packed = packed::Packed {
             root_signature: PackedPipelineStateStreamObject::new(
@@ -254,13 +271,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             stream_output: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT,
-                D3D12_STREAM_OUTPUT_DESC {
-                    p_so_declaration: stream_output.0.as_ptr() as *mut _,
-                    num_entries: stream_output.0.len() as _,
-                    p_buffer_strides: stream_output.1.as_ptr() as *mut _,
-                    num_strides: stream_output.1.len() as _,
-                    rasterized_stream: stream_output.2,
-                },
+                stream_output,
             ),
             blend_state: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,

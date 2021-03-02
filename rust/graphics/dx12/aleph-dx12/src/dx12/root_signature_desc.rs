@@ -88,7 +88,7 @@ impl<'a> RootSignatureDescBuilder<'a> {
         self
     }
 
-    pub fn build(&self) -> RootSignatureDesc<'a> {
+    pub fn build(&'a self) -> RootSignatureDesc<'a> {
         let (num_parameters, p_parameters) = if self.parameters.is_empty() {
             (0, std::ptr::null_mut())
         } else {

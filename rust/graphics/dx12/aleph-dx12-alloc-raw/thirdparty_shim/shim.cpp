@@ -97,6 +97,7 @@ HRESULT D3D12MA_Allocator_CreateResource(
         ppv_resource
     );
 }
+#ifdef __ID3D12Device4_INTERFACE_DEFINED__
 HRESULT D3D12MA_Allocator_CreateResource1(
     D3D12MA::Allocator* self,
     const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
@@ -119,6 +120,8 @@ HRESULT D3D12MA_Allocator_CreateResource1(
         ppv_resource
     );
 }
+#endif // #ifdef __ID3D12Device4_INTERFACE_DEFINED__
+#ifdef __ID3D12Device8_INTERFACE_DEFINED__
 HRESULT D3D12MA_Allocator_CreateResource2(
     D3D12MA::Allocator* self,
     const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
@@ -141,6 +144,7 @@ HRESULT D3D12MA_Allocator_CreateResource2(
         ppv_resource
     );
 }
+#endif // #ifdef __ID3D12Device8_INTERFACE_DEFINED__
 HRESULT D3D12MA_Allocator_AllocateMemory(
     D3D12MA::Allocator* self,
     const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
@@ -153,6 +157,7 @@ HRESULT D3D12MA_Allocator_AllocateMemory(
         pp_allocation
     );
 }
+#ifdef __ID3D12Device4_INTERFACE_DEFINED__
 HRESULT D3D12MA_Allocator_AllocateMemory1(
     D3D12MA::Allocator* self,
     const D3D12MA::ALLOCATION_DESC* p_alloc_desc,
@@ -167,6 +172,7 @@ HRESULT D3D12MA_Allocator_AllocateMemory1(
         pp_allocation
     );
 }
+#endif // #ifdef __ID3D12Device4_INTERFACE_DEFINED__
 HRESULT D3D12MA_Allocator_CreateAliasingResource(
     D3D12MA::Allocator* self,
     D3D12MA::Allocation* p_allocation,
