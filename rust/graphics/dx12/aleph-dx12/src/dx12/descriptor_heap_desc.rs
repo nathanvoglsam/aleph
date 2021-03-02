@@ -43,7 +43,7 @@ impl DescriptorHeapDescBuilder {
             heap_type: None,
             num_descriptors: 0,
             flags: DescriptorHeapFlags::NONE,
-            node_mask: 0
+            node_mask: 0,
         }
     }
 

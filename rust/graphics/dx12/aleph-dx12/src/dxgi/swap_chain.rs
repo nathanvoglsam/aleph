@@ -32,15 +32,16 @@ use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource}
 use crate::raw::windows::win32::dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
+use crate::utils::optional_slice_to_num_ptr_pair;
 use crate::CommandQueue;
 use raw::windows::{Abi, Interface};
 use std::mem::{forget, transmute};
-use crate::utils::optional_slice_to_num_ptr_pair;
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {
-    pub fn resize_buffers(
+    /// `IDXGISwapChain3::ResizeBuffers1`
+    pub unsafe fn resize_buffers(
         &mut self,
         buffer_count: u32,
         width: u32,
@@ -57,33 +58,50 @@ impl SwapChain {
 
         let (_, node_masks) = optional_slice_to_num_ptr_pair(node_masks);
 
-        unsafe {
-            // This is a load of hacky crap to let the function call actually compile
-            //
-            // Fingers crossed this actually works
-            //
-            // TODO: Remove this when the bindings are generated correctly by windows-rs
-            let pp_queues = queues.as_ptr();
-            let pp_queues: ID3D12CommandQueue = transmute(pp_queues);
+        // This is a load of hacky crap to let the function call actually compile
+        //
+        // Fingers crossed this actually works
+        //
+        // TODO: Remove this when the bindings are generated correctly by windows-rs
+        let pp_queues = queues.as_ptr();
+        let pp_queues: ID3D12CommandQueue = transmute(pp_queues);
 
-            self.0
-                .ResizeBuffers1(
-                    buffer_count,
-                    width,
-                    height,
-                    format.into(),
-                    flags.0,
-                    node_masks,
-                    &pp_queues,
-                )
-                .ok()?;
+        self.0
+            .ResizeBuffers1(
+                buffer_count,
+                width,
+                height,
+                format.into(),
+                flags.0,
+                node_masks,
+                &pp_queues,
+            )
+            .ok()?;
 
-            forget(pp_queues);
-        }
+        forget(pp_queues);
+
         Ok(())
     }
 
-    pub fn get_current_back_buffer_index(&self) -> u32 {
+    /// `IDXGISwapChain1::Present1`
+    pub unsafe fn present(
+        &mut self,
+        sync_interval: u32,
+        present_flags: u32,
+    ) -> crate::raw::windows::Result<()> {
+        let presentation_params = DXGI_PRESENT_PARAMETERS {
+            dirty_rects_count: 0,
+            p_dirty_rects: std::ptr::null_mut(),
+            p_scroll_rect: std::ptr::null_mut(),
+            p_scroll_offset: std::ptr::null_mut(),
+        };
+        self.0
+            .Present1(sync_interval, present_flags, &presentation_params)
+            .ok()
+    }
+
+    /// `IDXGISwapChain3::GetCurrentBackBufferIndex`
+    pub fn get_current_back_buffer_index(&mut self) -> u32 {
         unsafe { self.0.GetCurrentBackBufferIndex() }
     }
 
@@ -105,24 +123,10 @@ impl SwapChain {
         }
     }
 
-    pub unsafe fn present(
-        &self,
-        sync_interval: u32,
-        present_flags: u32,
-    ) -> crate::raw::windows::Result<()> {
-        let presentation_params = DXGI_PRESENT_PARAMETERS {
-            dirty_rects_count: 0,
-            p_dirty_rects: std::ptr::null_mut(),
-            p_scroll_rect: std::ptr::null_mut(),
-            p_scroll_offset: std::ptr::null_mut(),
-        };
-        self.0
-            .Present1(sync_interval, present_flags, &presentation_params)
-            .ok()
-    }
-
-    pub unsafe fn get_description(&self) -> raw::windows::Result<SwapChainDesc1> {
-        let mut desc = Default::default();
-        self.0.GetDesc1(&mut desc).ok().map(|_| transmute(desc))
+    pub fn get_description(&mut self) -> raw::windows::Result<SwapChainDesc1> {
+        unsafe {
+            let mut desc = Default::default();
+            self.0.GetDesc1(&mut desc).ok().map(|_| transmute(desc))
+        }
     }
 }

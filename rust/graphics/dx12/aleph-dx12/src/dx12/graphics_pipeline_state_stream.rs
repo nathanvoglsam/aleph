@@ -91,7 +91,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
                 quality: 0,
             },
             cached_pso: None,
-            node_mask: 0
+            node_mask: 0,
         }
     }
 
