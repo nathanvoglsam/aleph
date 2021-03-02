@@ -28,8 +28,6 @@
 //
 
 use crate::CStrFFI;
-use raw::windows::win32::direct3d12::D3D12_SO_DECLARATION_ENTRY;
-use std::mem::transmute;
 
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
@@ -40,10 +38,4 @@ pub struct StreamOutputDeclaration<'a> {
     pub start_component: u8,
     pub component_count: u8,
     pub output_slot: u8,
-}
-
-impl<'a> Into<D3D12_SO_DECLARATION_ENTRY> for StreamOutputDeclaration<'a> {
-    fn into(self) -> D3D12_SO_DECLARATION_ENTRY {
-        unsafe { transmute(self) }
-    }
 }

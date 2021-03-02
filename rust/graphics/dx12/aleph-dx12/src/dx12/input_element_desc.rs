@@ -28,8 +28,6 @@
 //
 
 use crate::{dxgi, CStrFFI, InputClassification};
-use raw::windows::win32::direct3d12::D3D12_INPUT_ELEMENT_DESC;
-use std::mem::transmute;
 
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
@@ -41,10 +39,4 @@ pub struct InputElementDesc<'a> {
     pub aligned_byte_offset: u32,
     pub input_slot_class: InputClassification,
     pub instance_data_step_rate: u32,
-}
-
-impl<'a> Into<D3D12_INPUT_ELEMENT_DESC> for InputElementDesc<'a> {
-    fn into(self) -> D3D12_INPUT_ELEMENT_DESC {
-        unsafe { transmute(self) }
-    }
 }

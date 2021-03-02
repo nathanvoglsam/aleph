@@ -37,11 +37,12 @@ use crate::raw::windows::win32::dxgi::DXGI_FORMAT;
 use crate::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
 use crate::{
     dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc,
-    PrimitiveTopologyType, RasterizerDesc, RootSignature, StreamOutputDesc,
+    PrimitiveTopologyType, RasterizerDesc, RootSignature, StreamOutputDeclaration,
+    StreamOutputDesc,
 };
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
-use std::mem::{size_of, transmute};
+use std::mem::{align_of, size_of, transmute};
 use std::ops::Deref;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
@@ -51,12 +52,12 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     domain_shader: Option<&'a [u8]>,
     hull_shader: Option<&'a [u8]>,
     geometry_shader: Option<&'a [u8]>,
-    stream_output: Option<(Vec<D3D12_SO_DECLARATION_ENTRY>, &'a [u32], u32)>,
+    stream_output: Option<(&'a [StreamOutputDeclaration<'a>], &'a [u32], u32)>,
     blend_state: BlendDesc,
     sample_mask: u32,
     rasterizer_state: RasterizerDesc,
     depth_stencil_state: DepthStencilDesc,
-    input_layout: Option<Vec<D3D12_INPUT_ELEMENT_DESC>>,
+    input_layout: Option<&'a [InputElementDesc<'a>]>,
     strip_cut_value: IndexBufferStripCutValue,
     primitive_topology_type: PrimitiveTopologyType,
     rtv_formats: &'a [dxgi::Format],
@@ -123,13 +124,16 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     }
 
     pub fn stream_output(mut self, stream_output: StreamOutputDesc<'a>) -> Self {
-        let vec = stream_output
-            .so_declarations
-            .iter()
-            .map(|v| v.clone().into())
-            .collect();
+        assert_eq!(
+            size_of::<StreamOutputDeclaration>(),
+            size_of::<D3D12_SO_DECLARATION_ENTRY>()
+        );
+        assert_eq!(
+            align_of::<StreamOutputDeclaration>(),
+            align_of::<D3D12_SO_DECLARATION_ENTRY>()
+        );
         self.stream_output = Some((
-            vec,
+            stream_output.so_declarations,
             stream_output.buffer_strides,
             stream_output.rasterized_stream,
         ));
@@ -156,9 +160,16 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
-    pub fn input_layout(mut self, input_layout: &[InputElementDesc<'a>]) -> Self {
-        let desc = input_layout.into_iter().map(|v| v.clone().into()).collect();
-        self.input_layout = Some(desc);
+    pub fn input_layout(mut self, input_layout: &'a [InputElementDesc<'a>]) -> Self {
+        assert_eq!(
+            size_of::<InputElementDesc>(),
+            size_of::<D3D12_INPUT_ELEMENT_DESC>()
+        );
+        assert_eq!(
+            align_of::<InputElementDesc>(),
+            align_of::<D3D12_INPUT_ELEMENT_DESC>()
+        );
+        self.input_layout = Some(input_layout);
         self
     }
 
@@ -195,7 +206,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
-    pub fn build(&self) -> GraphicsPipelineStateStream<'a> {
+    pub fn build(self) -> GraphicsPipelineStateStream<'a> {
         type T = D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 
         // Build the render target format array
@@ -205,9 +216,9 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         }
 
         // Get the input layout array
-        let input_layout = self.input_layout.as_ref().unwrap();
+        let input_layout = self.input_layout.unwrap();
 
-        let stream_output = self.stream_output.as_ref().unwrap();
+        let stream_output = self.stream_output.unwrap();
 
         let packed = packed::Packed {
             root_signature: PackedPipelineStateStreamObject::new(
