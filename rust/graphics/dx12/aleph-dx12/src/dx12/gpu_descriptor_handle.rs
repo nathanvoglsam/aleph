@@ -33,7 +33,7 @@ use std::num::NonZeroU64;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct GPUDescriptorHandle(NonZeroU64);
+pub struct GPUDescriptorHandle(pub(crate) NonZeroU64);
 
 impl GPUDescriptorHandle {
     pub fn offset(self, offset: i64) -> Self {
