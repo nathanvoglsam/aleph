@@ -166,6 +166,8 @@ impl EguiRenderer {
             idx_base += triangles.indices.len();
         }
 
+        command_list.close().unwrap();
+
         // Unmap the buffers
         self.unmap_buffers(index);
     }
@@ -196,6 +198,11 @@ impl EguiRenderer {
         command_list: &mut dx12::GraphicsCommandListRecorder,
     ) {
         //
+        // Bind the Root Signature
+        //
+        command_list.set_graphics_root_signature(&self.global.root_signature);
+
+        //
         // Bind the render target
         //
         command_list.om_set_render_targets(Some(&[self.swap_dependent[index].rtv_cpu]), None);
@@ -203,7 +210,9 @@ impl EguiRenderer {
         //
         // Bind the texture
         //
-        command_list.set_graphics_root_shader_resource_view(0, self.frames[index].font_gpu_srv);
+        command_list.set_graphics_root_descriptor_table(0, self.frames[index].font_gpu_srv);
+
+        command_list.ia_set_primitive_topology(dx12::PrimitiveTopology::TriangleList);
 
         //
         // Bind the vertex and index buffers to render with
@@ -240,8 +249,8 @@ impl EguiRenderer {
         command_list.rs_set_viewports(&[dx12::Viewport {
             top_left_x: 0.0,
             top_left_y: 0.0,
-            width: 0.0,  // TODO: These
-            height: 0.0, // TODO: These
+            width: self.global.swap_width as _,
+            height: self.global.swap_height as _,
             min_depth: 0.0,
             max_depth: 1.0,
         }]);
@@ -254,7 +263,7 @@ impl EguiRenderer {
         let width_points = width_pixels / self.pixels_per_point;
         let height_points = height_pixels / self.pixels_per_point;
         let values = [transmute(width_points), transmute(height_points)];
-        command_list.set_compute_root_32bit_constants(0, &values, 0);
+        command_list.set_graphics_root_32bit_constants(0, &values, 0);
     }
 
     unsafe fn map_buffers(&self, index: usize) -> (*mut u8, *mut u8, *mut u8, *mut u8) {

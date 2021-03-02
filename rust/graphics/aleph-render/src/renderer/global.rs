@@ -80,12 +80,15 @@ impl GlobalObjects {
 
     pub fn create_root_signature(device: &dx12::Device) -> dx12::RootSignature {
         let parameters = [
-            dx12::RootParameter::SRV {
+            dx12::RootParameter::DescriptorTable {
                 visibility: dx12::ShaderVisibility::All,
-                srv: dx12::RootDescriptor {
-                    shader_register: 0,
+                ranges: &[dx12::DescriptorRange {
+                    range_type: dx12::DescriptorRangeType::SRV,
+                    num_descriptors: 1,
+                    base_shader_register: 0,
                     register_space: 0,
-                },
+                    offset_in_descriptors_from_table_start: 0
+                }]
             },
             dx12::RootParameter::Constants {
                 visibility: dx12::ShaderVisibility::All,
@@ -104,10 +107,11 @@ impl GlobalObjects {
             .shader_register(0)
             .register_space(0)
             .build()];
-        let desc = dx12::RootSignatureDesc::builder()
+        let desc_builder = dx12::RootSignatureDesc::builder()
             .parameters(&parameters)
             .static_samplers(&static_samplers)
-            .build();
+            .flags(dx12::RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+        let desc = desc_builder.build();
         let desc = dx12::VersionedRootSignatureDesc::Desc(desc);
         let root_signature_blob = unsafe { dx12::RootSignatureBlob::new(&desc).unwrap() };
         let root_signature = device.create_root_signature(&root_signature_blob).unwrap();
