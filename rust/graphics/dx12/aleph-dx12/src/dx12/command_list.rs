@@ -384,7 +384,7 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 
     /// `ID3D12GraphicsCommandList::SetComputeRoot32BitConstant`
-    pub fn set_compute_root32bit_constant(
+    pub fn set_compute_root_32bit_constant(
         &mut self,
         root_parameter_index: u32,
         value: u32,
@@ -400,7 +400,7 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 
     /// `ID3D12GraphicsCommandList::SetGraphicsRoot32BitConstant`
-    pub fn set_graphics_root32bit_constant(
+    pub fn set_graphics_root_32bit_constant(
         &mut self,
         root_parameter_index: u32,
         value: u32,

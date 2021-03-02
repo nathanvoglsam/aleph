@@ -29,6 +29,8 @@
 
 use crate::raw::windows::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
 use crate::utils::optional_ref_to_ptr;
+use crate::GPUDescriptorHandle;
+use std::num::NonZeroU64;
 use std::ops::Range;
 use std::ptr::NonNull;
 
@@ -37,8 +39,11 @@ use std::ptr::NonNull;
 pub struct Resource(pub(crate) ID3D12Resource);
 
 impl Resource {
-    pub fn get_gpu_virtual_address(&self) -> u64 {
-        unsafe { self.0.GetGPUVirtualAddress() }
+    pub fn get_gpu_virtual_address(&self) -> Option<GPUDescriptorHandle> {
+        unsafe {
+            let ptr = self.0.GetGPUVirtualAddress();
+            NonZeroU64::new(ptr).map(|v| GPUDescriptorHandle(v))
+        }
     }
 
     pub fn write_to_subresource(
