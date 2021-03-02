@@ -36,10 +36,12 @@ pub struct GlobalObjects {
     pub srv_heap: dx12::DescriptorHeap,
     pub root_signature: dx12::RootSignature,
     pub pipeline_state: dx12::GraphicsPipelineState,
+    pub swap_width: u32,
+    pub swap_height: u32,
 }
 
 impl GlobalObjects {
-    pub fn new(device: &dx12::Device) -> Self {
+    pub fn new(device: &dx12::Device, swap_width: u32, swap_height: u32) -> Self {
         let desc = dx12::DescriptorHeapDesc::builder()
             .heap_type(dx12::DescriptorHeapType::RenderTargetView)
             .num_descriptors(3)
@@ -63,14 +65,16 @@ impl GlobalObjects {
             embedded_data::shaders::egui_frag_shader(),
         );
 
-        rtv_heap.set_name("egui::RTVHeap");
-        root_signature.set_name("egui::RootSignature");
+        rtv_heap.set_name("egui::RTVHeap").unwrap();
+        root_signature.set_name("egui::RootSignature").unwrap();
 
         Self {
             rtv_heap,
             srv_heap,
             root_signature,
             pipeline_state,
+            swap_width,
+            swap_height,
         }
     }
 
@@ -189,7 +193,9 @@ impl GlobalObjects {
             .create_graphics_pipeline_state(&state_stream)
             .unwrap();
 
-        pipeline_state.set_name("egui::GraphicsPipelineState");
+        pipeline_state
+            .set_name("egui::GraphicsPipelineState")
+            .unwrap();
 
         pipeline_state
     }

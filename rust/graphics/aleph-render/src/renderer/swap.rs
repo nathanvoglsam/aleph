@@ -35,14 +35,20 @@ pub struct SwapDependentObjects {
 }
 
 impl SwapDependentObjects {
-    pub fn new(device: &dx12::Device, global: &GlobalObjects, index: usize) -> Self {
-        let rtv_cpu = unsafe { Self::create_rtv(device, global, index) };
+    pub fn new(
+        device: &dx12::Device,
+        global: &GlobalObjects,
+        buffers: &[dx12::Resource],
+        index: usize,
+    ) -> Self {
+        let rtv_cpu = unsafe { Self::create_rtv(device, global, buffers, index) };
         Self { rtv_cpu }
     }
 
     pub unsafe fn create_rtv(
         device: &dx12::Device,
         global: &GlobalObjects,
+        buffers: &[dx12::Resource],
         index: usize,
     ) -> dx12::CPUDescriptorHandle {
         let size =
@@ -59,7 +65,7 @@ impl SwapDependentObjects {
             plane_slice: 0,
         };
         let rtv_desc = dx12::RenderTargetViewDesc::Texture2D { format, texture_2d };
-        device.create_render_target_view(r, &rtv_desc, dest);
+        device.create_render_target_view(&buffers[index], &rtv_desc, dest);
         dest
     }
 }

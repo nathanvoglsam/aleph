@@ -34,6 +34,8 @@ pub struct PerFrameObjects {
     pub vtx_buffer: dx12::alloc::Allocation,
     pub idx_buffer: dx12::alloc::Allocation,
 
+    pub command_allocator: dx12::CommandAllocator,
+
     pub font_staging_allocation: dx12::alloc::Allocation,
     pub font_staging_resource: dx12::Resource,
 
@@ -103,9 +105,14 @@ impl PerFrameObjects {
             .unwrap()
             .add(index as u64 * size as u64);
 
+        let command_allocator = device
+            .create_command_allocator(dx12::CommandListType::Direct)
+            .unwrap();
+
         Self {
             vtx_buffer,
             idx_buffer,
+            command_allocator,
             font_staging_allocation,
             font_staging_resource,
             font_staged_pool,
@@ -164,7 +171,12 @@ impl PerFrameObjects {
             dx12::pix::Colour::GREEN,
             "Egui Texture Upload",
             |command_list| {
-                let staged_resource = self.font_staged_image.unwrap().get_resource().unwrap();
+                let staged_resource = self
+                    .font_staged_image
+                    .as_ref()
+                    .unwrap()
+                    .get_resource()
+                    .unwrap();
 
                 let dst = dx12::TextureCopyLocation::Subresource {
                     resource: Some(staged_resource.clone()),
@@ -239,7 +251,12 @@ impl PerFrameObjects {
             },
         };
         device.create_shader_resource_view(
-            &self.font_staged_image.unwrap().get_resource().unwrap(),
+            &self
+                .font_staged_image
+                .as_ref()
+                .unwrap()
+                .get_resource()
+                .unwrap(),
             &srv_desc,
             self.font_cpu_srv,
         );

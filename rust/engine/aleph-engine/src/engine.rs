@@ -166,13 +166,13 @@ impl Engine {
                     .device(device.clone())
                     .adapter(dxgi_adapter.clone())
                     .build();
-                let _allocator = dx12::alloc::Allocator::new(allocator_desc).unwrap();
+                let allocator = dx12::alloc::Allocator::new(allocator_desc).unwrap();
 
                 let desc = dx12::CommandQueueDesc::builder()
                     .queue_type(dx12::CommandListType::Direct)
                     .priority(0)
                     .build();
-                let mut queue = device.create_command_queue(&desc).unwrap();
+                let queue = device.create_command_queue(&desc).unwrap();
 
                 let event = dx12::Event::new().unwrap();
                 let fence = device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
@@ -189,10 +189,23 @@ impl Engine {
                 let mut swapchain = dxgi_factory
                     .create_swap_chain(&queue, &platform, &desc)
                     .unwrap();
+                let mut buffers = swapchain.get_buffers(3).unwrap();
+                let command_lists: Vec<dx12::GraphicsCommandList> = (0..3)
+                    .into_iter()
+                    .map(|_| {
+                        device
+                            .create_graphics_command_list(dx12::CommandListType::Direct)
+                            .unwrap()
+                    })
+                    .collect();
 
-                //let mut renderer = unsafe {
-                //    render::Renderer::new(device.clone(), allocator.clone(), &swapchain)
-                //};
+                let mut renderer = render::EguiRenderer::new(
+                    device.clone(),
+                    allocator.clone(),
+                    &buffers,
+                    drawable_size.0,
+                    drawable_size.1,
+                );
 
                 // =================================================================================
                 // Engine Fully Initialized
@@ -204,7 +217,7 @@ impl Engine {
 
                 // Process the SDL2 events and store them into our own event queues for later use
                 'game_loop: loop {
-                    let _pix = unsafe { ScopedEvent::new(Colour::CYAN, "Frame") };
+                    let _pix = ScopedEvent::new(Colour::CYAN, "Frame");
 
                     // Mark a new frame for the platform
                     platform.frame();
@@ -232,39 +245,44 @@ impl Engine {
 
                     if Window::resized() {
                         let (width, height) = Window::drawable_size();
-                        swapchain
-                            .resize_buffers(
-                                0,
-                                width,
-                                height,
-                                dxgi::Format::Unknown,
-                                dxgi::SwapChainFlags::NONE,
-                            )
-                            .unwrap();
-                    }
-
-                    unsafe {
-                        swapchain.present(0, 0).unwrap();
-                    }
-
-                    unsafe {
-                        queue.signal(&fence, 1).unwrap();
-                        event.wait(None);
+                        unsafe {
+                            buffers.clear();
+                            swapchain
+                                .resize_buffers(
+                                    0,
+                                    width,
+                                    height,
+                                    dxgi::Format::Unknown,
+                                    dxgi::SwapChainFlags::NONE,
+                                    None,
+                                    &[queue.clone()],
+                                )
+                                .unwrap();
+                            buffers = swapchain.get_buffers(3).unwrap();
+                        }
                     }
 
                     // End the egui frame
                     let (output, shapes) = egui_ctx.end_frame();
-                    let _jobs: PaintJobs = egui_ctx.tessellate(shapes);
+                    let jobs: PaintJobs = egui_ctx.tessellate(shapes);
                     aleph_platform_egui::process_egui_output(output);
 
-                    //unsafe {
-                    //    let i = renderer.acquire_swap_image(&mut swapchain, Window::drawable_size());
-                    //    if i.is_none() {
-                    //        continue;
-                    //    }
-                    //    let index = i.unwrap();
-                    //    renderer.render_frame(index, &mut swapchain, &egui_ctx, jobs);
-                    //}
+                    unsafe {
+                        let index = swapchain.get_current_back_buffer_index();
+                        let command_list = &command_lists[index as usize];
+                        renderer.record_frame(index as usize, command_list, &egui_ctx, jobs);
+
+                        let mut queue_recorder = queue.record();
+
+                        let mut submission_builder = dx12::SubmissionBuilder::new();
+                        submission_builder.add(command_list);
+                        queue_recorder.execute_command_lists(&submission_builder);
+
+                        swapchain.present(0, 0).unwrap();
+
+                        queue_recorder.signal(&fence, 1).unwrap();
+                        event.wait(None);
+                    }
                 }
 
                 aleph_log::trace!("Calling AppLogic::on_exit");
@@ -360,7 +378,7 @@ impl Engine {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(adapter: &dx12::Adapter) {
+    fn log_gpu_info(adapter: &dxgi::Adapter) {
         let info = adapter.get_adapter_desc().unwrap();
 
         let gpu_vendor = if info.vendor_id == 0x10DE {

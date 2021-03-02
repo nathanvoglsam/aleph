@@ -32,7 +32,6 @@ mod global;
 mod swap;
 
 use dx12::dxgi;
-
 use egui::paint::PaintJob;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
@@ -55,10 +54,16 @@ pub struct EguiRenderer {
 }
 
 impl EguiRenderer {
-    pub fn new(device: dx12::Device, allocator: dx12::alloc::Allocator) -> Self {
+    pub fn new(
+        device: dx12::Device,
+        allocator: dx12::alloc::Allocator,
+        buffers: &[dx12::Resource],
+        swap_width: u32,
+        swap_height: u32,
+    ) -> Self {
         aleph_log::trace!("Initializing Egui Renderer");
 
-        let global = GlobalObjects::new(&device);
+        let global = GlobalObjects::new(&device, swap_width, swap_height);
 
         let frames = (0..3)
             .into_iter()
@@ -67,7 +72,7 @@ impl EguiRenderer {
 
         let swap_dependent = (0..3)
             .into_iter()
-            .map(|index| SwapDependentObjects::new(&device, &global, index))
+            .map(|index| SwapDependentObjects::new(&device, &global, buffers, index))
             .collect();
 
         Self {
@@ -93,7 +98,10 @@ impl EguiRenderer {
     ) {
         // Begin recording commands into the command list
         let mut command_list = command_list
-            .reset(command_allocator, &self.global.pipeline_state)
+            .reset(
+                &self.frames[index].command_allocator,
+                &self.global.pipeline_state,
+            )
             .unwrap();
 
         // Handles creating the texture data resources and placing it into the staging buffer if
@@ -152,7 +160,7 @@ impl EguiRenderer {
             v_ptr = v_ptr_next;
             i_ptr = i_ptr_next;
 
-            self.record_job_commands(index, &mut command_list, &job, vtx_base, idx_base);
+            self.record_job_commands(&mut command_list, &job, vtx_base, idx_base);
 
             vtx_base += triangles.vertices.len();
             idx_base += triangles.indices.len();
@@ -164,7 +172,6 @@ impl EguiRenderer {
 
     unsafe fn record_job_commands(
         &mut self,
-        index: usize,
         command_list: &mut dx12::GraphicsCommandListRecorder,
         job: &PaintJob,
         vtx_base: usize,
@@ -172,7 +179,7 @@ impl EguiRenderer {
     ) {
         let triangles = &job.1;
 
-        let scissor_rect = self.calculate_clip_rect(index, job);
+        let scissor_rect = self.calculate_clip_rect(job);
         command_list.rs_set_scissor_rects(&[scissor_rect]);
         command_list.draw_indexed_instanced(
             triangles.indices.len() as _,
@@ -188,6 +195,11 @@ impl EguiRenderer {
         index: usize,
         command_list: &mut dx12::GraphicsCommandListRecorder,
     ) {
+        //
+        // Bind the render target
+        //
+        command_list.om_set_render_targets(Some(&[self.swap_dependent[index].rtv_cpu]), None);
+
         //
         // Bind the texture
         //
@@ -237,8 +249,8 @@ impl EguiRenderer {
         //
         // Push screen size via push constants
         //
-        let width_pixels = self.frames[index].swap_image.width() as f32;
-        let height_pixels = self.frames[index].swap_image.height() as f32;
+        let width_pixels = self.global.swap_width as f32;
+        let height_pixels = self.global.swap_height as f32;
         let width_points = width_pixels / self.pixels_per_point;
         let height_points = height_pixels / self.pixels_per_point;
         let values = [transmute(width_points), transmute(height_points)];
@@ -283,9 +295,9 @@ impl EguiRenderer {
         idx_buffer.unmap(0, None);
     }
 
-    fn calculate_clip_rect(&self, index: usize, job: &PaintJob) -> dx12::Rect {
-        let width_pixels = self.frames[index].swap_image.width() as f32;
-        let height_pixels = self.frames[index].swap_image.height() as f32;
+    fn calculate_clip_rect(&self, job: &PaintJob) -> dx12::Rect {
+        let width_pixels = self.global.swap_width as f32;
+        let height_pixels = self.global.swap_height as f32;
 
         // Calculate clip offset
         let min = job.0.min;

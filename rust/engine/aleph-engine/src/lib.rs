@@ -36,7 +36,7 @@ pub extern crate aleph_app_info as app_info;
 pub extern crate aleph_dx12 as dx12;
 pub extern crate aleph_log as log;
 pub extern crate aleph_platform as platform;
-//pub extern crate aleph_render as render;
+pub extern crate aleph_render as render;
 pub extern crate egui;
 pub extern crate rayon;
 
