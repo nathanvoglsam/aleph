@@ -157,7 +157,7 @@ impl GlobalObjects {
             dx12::InputElementDesc {
                 semantic_name: macros::cstr!("COLOR").into(),
                 semantic_index: 0,
-                format: dxgi::Format::R32G32B32A32Float,
+                format: dxgi::Format::R8G8B8A8Unorm,
                 input_slot: 0,
                 aligned_byte_offset: 16,
                 input_slot_class: dx12::InputClassification::PerVertex,
