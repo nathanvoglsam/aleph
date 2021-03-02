@@ -124,6 +124,7 @@ impl EguiRenderer {
         // Begin the render pass and bind our resources
         self.bind_resources(index, &mut command_list);
 
+        // Transition from present to render target state
         let barrier = dx12::ResourceBarrier::Transition {
             flags: Default::default(),
             resource: Some(buffers[index].clone()),
@@ -132,6 +133,9 @@ impl EguiRenderer {
             state_after: dx12::ResourceStates::RENDER_TARGET,
         };
         command_list.resource_barrier_single(&barrier);
+
+        // Clear the render target
+        command_list.clear_render_target_view(self.swap_dependent[index].rtv_cpu, &[0.0, 0.0, 0.0, 0.0], None);
 
         let mut vtx_base = 0;
         let mut idx_base = 0;
