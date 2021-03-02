@@ -28,10 +28,14 @@
 //
 
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
-use crate::raw::windows::win32::direct3d12::ID3D12Resource;
-use crate::raw::windows::win32::dxgi::{IDXGISwapChain4, DXGI_PRESENT_PARAMETERS};
+use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
+use crate::raw::windows::win32::dxgi::{
+    IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
+};
+use crate::CommandQueue;
 use raw::windows::{Abi, Interface};
-use std::mem::transmute;
+use std::mem::{forget, transmute};
+use crate::utils::optional_slice_to_num_ptr_pair;
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
@@ -41,14 +45,42 @@ impl SwapChain {
         buffer_count: u32,
         width: u32,
         height: u32,
-        new_format: Format,
+        format: Format,
         flags: SwapChainFlags,
+        node_masks: Option<&[u32]>,
+        queues: &[CommandQueue],
     ) -> raw::windows::Result<()> {
-        unsafe {
-            self.0
-                .ResizeBuffers(buffer_count, width, height, new_format.into(), flags.0)
-                .ok()
+        if let Some(node_masks) = &node_masks {
+            assert!(node_masks.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize);
         }
+        assert!(buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS);
+
+        let (_, node_masks) = optional_slice_to_num_ptr_pair(node_masks);
+
+        unsafe {
+            // This is a load of hacky crap to let the function call actually compile
+            //
+            // Fingers crossed this actually works
+            //
+            // TODO: Remove this when the bindings are generated correctly by windows-rs
+            let pp_queues = queues.as_ptr();
+            let pp_queues: ID3D12CommandQueue = transmute(pp_queues);
+
+            self.0
+                .ResizeBuffers1(
+                    buffer_count,
+                    width,
+                    height,
+                    format.into(),
+                    flags.0,
+                    node_masks,
+                    &pp_queues,
+                )
+                .ok()?;
+
+            forget(pp_queues);
+        }
+        Ok(())
     }
 
     pub fn get_current_back_buffer_index(&self) -> u32 {

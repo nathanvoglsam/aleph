@@ -64,6 +64,7 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
     dsv_format: dxgi::Format,
     sample_desc: dxgi::SampleDesc,
     cached_pso: Option<&'a [u8]>,
+    node_mask: u32,
 }
 
 impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
@@ -90,6 +91,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
                 quality: 0,
             },
             cached_pso: None,
+            node_mask: 0
         }
     }
 
@@ -206,6 +208,11 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
+    pub fn node_mask(mut self, node_mask: u32) -> Self {
+        self.node_mask = node_mask;
+        self
+    }
+
     pub fn build(self) -> GraphicsPipelineStateStream<'a> {
         type T = D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 
@@ -303,7 +310,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             node_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
-                0,
+                self.node_mask,
             ),
             cached_pso: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,

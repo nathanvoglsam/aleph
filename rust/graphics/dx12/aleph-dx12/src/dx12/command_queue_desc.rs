@@ -60,6 +60,11 @@ impl CommandQueueDescBuilder {
         self
     }
 
+    pub fn node_mask(mut self, node_mask: u32) -> Self {
+        self.inner.node_mask = node_mask;
+        self
+    }
+
     pub fn build(self) -> CommandQueueDesc {
         self.inner
     }

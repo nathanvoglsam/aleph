@@ -34,6 +34,7 @@ pub struct DescriptorHeapDescBuilder {
     heap_type: Option<DescriptorHeapType>,
     num_descriptors: u32,
     flags: DescriptorHeapFlags,
+    node_mask: u32,
 }
 
 impl DescriptorHeapDescBuilder {
@@ -42,6 +43,7 @@ impl DescriptorHeapDescBuilder {
             heap_type: None,
             num_descriptors: 0,
             flags: DescriptorHeapFlags::NONE,
+            node_mask: 0
         }
     }
 
@@ -60,12 +62,17 @@ impl DescriptorHeapDescBuilder {
         self
     }
 
+    pub fn node_mask(mut self, node_mask: u32) -> Self {
+        self.node_mask = node_mask;
+        self
+    }
+
     pub fn build(self) -> DescriptorHeapDesc {
         DescriptorHeapDesc {
             heap_type: self.heap_type.unwrap(),
             num_descriptors: self.num_descriptors,
             flags: self.flags,
-            node_mask: 0,
+            node_mask: self.node_mask,
         }
     }
 }
