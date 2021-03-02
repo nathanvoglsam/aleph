@@ -66,7 +66,7 @@ impl PerFrameObjects {
                 .create_resource(
                     &alloc_desc,
                     &resource_desc,
-                    dx12::ResourceStates::VERTEX_AND_CONSTANT_BUFFER,
+                    dx12::ResourceStates::GENERIC_READ,
                     None,
                 )
                 .unwrap()
@@ -81,7 +81,7 @@ impl PerFrameObjects {
                 .create_resource(
                     &alloc_desc,
                     &resource_desc,
-                    dx12::ResourceStates::INDEX_BUFFER,
+                    dx12::ResourceStates::GENERIC_READ,
                     None,
                 )
                 .unwrap()
@@ -191,7 +191,7 @@ impl PerFrameObjects {
                             width: self.font_staged_size.0,
                             height: self.font_staged_size.1,
                             depth: 1,
-                            row_pitch: self.font_staged_size.1,
+                            row_pitch: self.font_staged_size.0,
                         },
                     },
                 };
@@ -241,7 +241,7 @@ impl PerFrameObjects {
     unsafe fn update_srv(&self, device: &dx12::Device) {
         let srv_desc = dx12::ShaderResourceViewDesc::Texture2D {
             format: dxgi::Format::R8Unorm,
-            component_mapping: 0, // TODO: Need to warp the macros the C++ api uses
+            component_mapping: 0x1688, // TODO: Need to warp the macros the C++ api uses
             texture_2d: dx12::Tex2DSrv {
                 // TODO: Fill this out
                 most_detailed_mip: 0,
