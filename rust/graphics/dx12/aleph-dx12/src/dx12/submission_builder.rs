@@ -53,7 +53,7 @@ impl<'a> SubmissionBuilder<'a> {
 
     pub(crate) unsafe fn lists(&self) -> (u32, ID3D12CommandList) {
         let len = self.buffer.len() as u32;
-        let ptr: ID3D12CommandList = unsafe { std::mem::transmute(self.buffer.as_ptr()) };
+        let ptr: ID3D12CommandList = std::mem::transmute(self.buffer.as_ptr());
         (len, ptr)
     }
 }
