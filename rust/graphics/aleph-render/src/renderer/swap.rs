@@ -59,7 +59,7 @@ impl SwapDependentObjects {
             .unwrap()
             .add(index * size as usize);
 
-        let format = dxgi::Format::Unknown;
+        let format = dxgi::Format::R8G8B8A8UnormSRGB;
         let texture_2d = dx12::Tex2DRtv {
             mip_slice: 0,
             plane_slice: 0,
