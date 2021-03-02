@@ -163,10 +163,10 @@ impl Engine {
                 aleph_log::info!("");
 
                 let allocator_desc = dx12::alloc::AllocatorDesc::builder()
-                    .device(&device)
-                    .adapter(&dxgi_adapter)
+                    .device(device.clone())
+                    .adapter(dxgi_adapter.clone())
                     .build();
-                let _allocator = dx12::alloc::Allocator::new(&allocator_desc).unwrap();
+                let _allocator = dx12::alloc::Allocator::new(allocator_desc).unwrap();
 
                 let desc = dx12::CommandQueueDesc::builder()
                     .queue_type(dx12::CommandListType::Direct)
@@ -183,8 +183,8 @@ impl Engine {
                     .height(drawable_size.1)
                     .format(dxgi::Format::R8G8B8A8Unorm)
                     .buffer_count(3)
-                    .usage_back_buffer(true)
-                    .usage_render_target_output(true)
+                    .usage_flags(dxgi::UsageFlags::BACK_BUFFER)
+                    .usage_flags(dxgi::UsageFlags::RENDER_TARGET_OUTPUT)
                     .build();
                 let mut swapchain = dxgi_factory
                     .create_swap_chain(&queue, &platform, &desc)

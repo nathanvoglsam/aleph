@@ -27,27 +27,87 @@
 // SOFTWARE.
 //
 
-use crate::renderer::egui::constant::ConstantObjects;
-use dx12::{dxgi, D3D12Object};
+use dx12::dxgi;
+use dx12::D3D12Object;
 
-///
-/// This represents resources where only one is needed, but they need to be recreated when the
-/// swapchain is rebuilt
-///
+/// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
+    pub rtv_heap: dx12::DescriptorHeap,
+    pub srv_heap: dx12::DescriptorHeap,
+    pub root_signature: dx12::RootSignature,
     pub pipeline_state: dx12::GraphicsPipelineState,
 }
 
 impl GlobalObjects {
-    pub fn init(device: &dx12::Device, constant: &ConstantObjects) -> Self {
+    pub fn new(device: &dx12::Device) -> Self {
+        let desc = dx12::DescriptorHeapDesc::builder()
+            .heap_type(dx12::DescriptorHeapType::RenderTargetView)
+            .num_descriptors(3)
+            .build();
+        let rtv_heap = device.create_descriptor_heap(&desc).unwrap();
+
+        let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
+            .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
+            .num_descriptors(3)
+            .build();
+        let srv_heap = device
+            .create_descriptor_heap(&descriptor_heap_desc)
+            .unwrap();
+
+        let root_signature = Self::create_root_signature(device);
+
         let pipeline_state = Self::create_pipeline_state(
             device,
-            &constant.root_signature,
+            &root_signature,
             embedded_data::shaders::egui_vert_shader(),
             embedded_data::shaders::egui_frag_shader(),
         );
 
-        Self { pipeline_state }
+        rtv_heap.set_name("egui::RTVHeap");
+        root_signature.set_name("egui::RootSignature");
+
+        Self {
+            rtv_heap,
+            srv_heap,
+            root_signature,
+            pipeline_state,
+        }
+    }
+
+    pub fn create_root_signature(device: &dx12::Device) -> dx12::RootSignature {
+        let parameters = [
+            dx12::RootParameter::SRV {
+                visibility: dx12::ShaderVisibility::All,
+                srv: dx12::RootDescriptor {
+                    shader_register: 0,
+                    register_space: 0,
+                },
+            },
+            dx12::RootParameter::Constants {
+                visibility: dx12::ShaderVisibility::All,
+                constants: dx12::RootConstants {
+                    shader_register: 0,
+                    register_space: 0,
+                    num32_bit_values: 2,
+                },
+            },
+        ];
+        let static_samplers = [dx12::StaticSamplerDesc::builder()
+            .address_u(dx12::TextureAddressMode::Clamp)
+            .address_v(dx12::TextureAddressMode::Clamp)
+            .address_w(dx12::TextureAddressMode::Clamp)
+            .shader_visibility(dx12::ShaderVisibility::All)
+            .shader_register(0)
+            .register_space(0)
+            .build()];
+        let desc = dx12::RootSignatureDesc::builder()
+            .parameters(&parameters)
+            .static_samplers(&static_samplers)
+            .build();
+        let desc = dx12::VersionedRootSignatureDesc::Desc(desc);
+        let root_signature_blob = unsafe { dx12::RootSignatureBlob::new(&desc).unwrap() };
+        let root_signature = device.create_root_signature(&root_signature_blob).unwrap();
+        root_signature
     }
 
     pub fn create_pipeline_state(
@@ -68,7 +128,7 @@ impl GlobalObjects {
 
         let input_layout = [
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("POSITION"),
+                semantic_name: macros::cstr!("POSITION").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
@@ -77,7 +137,7 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("TEXCOORD"),
+                semantic_name: macros::cstr!("TEXCOORD").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
@@ -86,7 +146,7 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("COLOR"),
+                semantic_name: macros::cstr!("COLOR").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32B32A32Float,
                 input_slot: 0,
@@ -123,7 +183,6 @@ impl GlobalObjects {
             .input_layout(&input_layout)
             .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
             .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
-            .dsv_format(dxgi::Format::D32Float)
             .build();
 
         let pipeline_state = device

@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Aleph" pattern="!file[aleph]:rust/platform/aleph-platform/thirdparty//*&amp;&amp;!file[aleph]:rust/graphics/dx12/aleph-dx12-alloc-raw/thirdparty//*" />
+</component>

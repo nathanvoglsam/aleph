@@ -27,10 +27,39 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_embedded_data as embedded_data;
-extern crate aleph_macros as macros;
+use crate::renderer::GlobalObjects;
+use dx12::dxgi;
 
-mod renderer;
+pub struct SwapDependentObjects {
+    pub rtv_cpu: dx12::CPUDescriptorHandle,
+}
 
-pub use renderer::EguiRenderer;
+impl SwapDependentObjects {
+    pub fn new(device: &dx12::Device, global: &GlobalObjects, index: usize) -> Self {
+        let rtv_cpu = unsafe { Self::create_rtv(device, global, index) };
+        Self { rtv_cpu }
+    }
+
+    pub unsafe fn create_rtv(
+        device: &dx12::Device,
+        global: &GlobalObjects,
+        index: usize,
+    ) -> dx12::CPUDescriptorHandle {
+        let size =
+            device.get_descriptor_handle_increment_size(dx12::DescriptorHeapType::RenderTargetView);
+        let dest = global
+            .rtv_heap
+            .get_cpu_descriptor_handle_for_heap_start()
+            .unwrap()
+            .add(index * size as usize);
+
+        let format = dxgi::Format::Unknown;
+        let texture_2d = dx12::Tex2DRtv {
+            mip_slice: 0,
+            plane_slice: 0,
+        };
+        let rtv_desc = dx12::RenderTargetViewDesc::Texture2D { format, texture_2d };
+        device.create_render_target_view(r, &rtv_desc, dest);
+        dest
+    }
+}
