@@ -88,8 +88,8 @@ impl GlobalObjects {
                     num_descriptors: 1,
                     base_shader_register: 0,
                     register_space: 0,
-                    offset_in_descriptors_from_table_start: 0
-                }]
+                    offset_in_descriptors_from_table_start: 0,
+                }],
             },
             dx12::RootParameter::Constants {
                 visibility: dx12::ShaderVisibility::All,

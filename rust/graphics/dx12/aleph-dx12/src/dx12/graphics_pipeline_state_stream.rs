@@ -241,7 +241,6 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
                 num_strides: 0,
                 rasterized_stream: 0,
             }
-
         };
 
         let packed = packed::Packed {

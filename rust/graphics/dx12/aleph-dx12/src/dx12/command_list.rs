@@ -868,7 +868,8 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     pub fn close(mut self) -> crate::Result<()> {
         unsafe {
             // Take the guard from self
-            let taken: RwLockWriteGuard<'a, ID3D12GraphicsCommandList> = std::mem::transmute_copy(&mut self.0);
+            let taken: RwLockWriteGuard<'a, ID3D12GraphicsCommandList> =
+                std::mem::transmute_copy(&mut self.0);
 
             // Forget self so we can't ever call Self::drop
             std::mem::forget(self);

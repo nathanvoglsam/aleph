@@ -135,7 +135,11 @@ impl EguiRenderer {
         command_list.resource_barrier_single(&barrier);
 
         // Clear the render target
-        command_list.clear_render_target_view(self.swap_dependent[index].rtv_cpu, &[0.0, 0.0, 0.0, 0.0], None);
+        command_list.clear_render_target_view(
+            self.swap_dependent[index].rtv_cpu,
+            &[0.0, 0.0, 0.0, 0.0],
+            None,
+        );
 
         let mut vtx_base = 0;
         let mut idx_base = 0;
