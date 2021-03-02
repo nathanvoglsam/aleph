@@ -44,7 +44,7 @@ EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     const float y = 2.0 * input.Pos.y / RootConstants.ScreenSize.y - 1.0;
     const float z = 0.0;
     const float w = 1.0;
-    Pos = float4(x, y, z, w);
+    Pos = float4(x, -y, z, w);
 
     // Package up fragment payload
     output.Color = LinearFromSRGBA(input.Color);
