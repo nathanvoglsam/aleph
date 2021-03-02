@@ -51,12 +51,11 @@ impl SwapChain {
         node_masks: Option<&[u32]>,
         queues: &[CommandQueue],
     ) -> raw::windows::Result<()> {
-        if let Some(node_masks) = &node_masks {
-            assert!(node_masks.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize);
-        }
-        assert!(buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS);
-
-        let (_, node_masks) = optional_slice_to_num_ptr_pair(node_masks);
+        let (node_masks_len, node_masks) = optional_slice_to_num_ptr_pair(node_masks);
+        assert!(node_masks_len <= DXGI_MAX_SWAP_CHAIN_BUFFERS);
+        assert_eq!(node_masks_len, buffer_count);
+        assert!(queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize);
+        assert_eq!(queues.len(), buffer_count as usize);
 
         // This is a load of hacky crap to let the function call actually compile
         //
