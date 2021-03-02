@@ -257,7 +257,7 @@ impl EguiRenderer {
             &[dx12::VertexBufferView {
                 buffer_location,
                 size_in_bytes: PerFrameObjects::vertex_buffer_size() as _,
-                stride_in_bytes: 4 * 4,
+                stride_in_bytes: (4 * 4) + 4,
             }],
         );
         let buffer_location = self.frames[index]
