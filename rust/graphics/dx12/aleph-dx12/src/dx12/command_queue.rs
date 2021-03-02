@@ -61,7 +61,8 @@ impl<'a> CommandQueueRecorder<'a> {
 
     pub unsafe fn execute_command_lists(&mut self, command_lists: &SubmissionBuilder) {
         let lists = command_lists.lists();
-        self.0.ExecuteCommandLists(lists.0, lists.1)
+        self.0.ExecuteCommandLists(lists.0, &lists.1);
+        std::mem::forget(lists.1)
     }
 }
 
