@@ -45,7 +45,7 @@ use raw::windows::win32::direct3d12::{
 };
 use std::mem::{align_of, forget, size_of, transmute};
 use std::ops::Deref;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 pub struct GraphicsCommandListRecorder<'a>(
     pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12GraphicsCommandList>,
@@ -867,16 +867,15 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     /// a value.
     pub fn close(mut self) -> crate::Result<()> {
         unsafe {
+            // Take the guard from self
+            let taken: RwLockWriteGuard<'a, ID3D12GraphicsCommandList> = std::mem::transmute_copy(&mut self.0);
+
+            // Forget self so we can't ever call Self::drop
+            std::mem::forget(self);
+
             // Call close to end the recording session
-            self.0.Close().ok()?;
-
-            // Drop the lock guard manually
-            std::ptr::drop_in_place(&mut self.0);
-
-            // Forget `self` to avoid the `Drop` implementation that also calls `Close`
-            std::mem::forget(self)
+            taken.Close().ok()
         }
-        Ok(())
     }
 
     /// `ID3D12GraphicsCommandList::GetType`
