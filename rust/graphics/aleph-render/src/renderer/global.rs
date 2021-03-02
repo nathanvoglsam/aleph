@@ -51,6 +51,7 @@ impl GlobalObjects {
         let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
             .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
             .num_descriptors(3)
+            .flags(dx12::DescriptorHeapFlags::SHADER_VISIBLE)
             .build();
         let srv_heap = device
             .create_descriptor_heap(&descriptor_heap_desc)

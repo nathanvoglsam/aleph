@@ -270,7 +270,7 @@ impl Engine {
                     unsafe {
                         let index = swapchain.get_current_back_buffer_index();
                         let command_list = &command_lists[index as usize];
-                        renderer.record_frame(index as usize, command_list, &egui_ctx, jobs);
+                        renderer.record_frame(index as usize, command_list, &buffers, &egui_ctx, jobs);
 
                         let mut queue_recorder = queue.record();
 

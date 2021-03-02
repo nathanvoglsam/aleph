@@ -93,6 +93,7 @@ impl EguiRenderer {
         &mut self,
         index: usize,
         command_list: &dx12::GraphicsCommandList,
+        buffers: &[dx12::Resource],
         egui_ctx: &::egui::CtxRef,
         jobs: egui::PaintJobs,
     ) {
@@ -122,6 +123,15 @@ impl EguiRenderer {
 
         // Begin the render pass and bind our resources
         self.bind_resources(index, &mut command_list);
+
+        let barrier = dx12::ResourceBarrier::Transition {
+            flags: Default::default(),
+            resource: Some(buffers[index].clone()),
+            subresource: 0,
+            state_before: dx12::ResourceStates::PRESENT,
+            state_after: dx12::ResourceStates::RENDER_TARGET,
+        };
+        command_list.resource_barrier_single(&barrier);
 
         let mut vtx_base = 0;
         let mut idx_base = 0;
@@ -166,6 +176,15 @@ impl EguiRenderer {
             idx_base += triangles.indices.len();
         }
 
+        let barrier = dx12::ResourceBarrier::Transition {
+            flags: Default::default(),
+            resource: Some(buffers[index].clone()),
+            subresource: 0,
+            state_before: dx12::ResourceStates::RENDER_TARGET,
+            state_after: dx12::ResourceStates::PRESENT,
+        };
+        command_list.resource_barrier_single(&barrier);
+
         command_list.close().unwrap();
 
         // Unmap the buffers
@@ -203,14 +222,24 @@ impl EguiRenderer {
         command_list.set_graphics_root_signature(&self.global.root_signature);
 
         //
-        // Bind the render target
+        // Bind the descriptor heap
         //
-        command_list.om_set_render_targets(Some(&[self.swap_dependent[index].rtv_cpu]), None);
+        command_list.set_descriptor_heaps(&[self.global.srv_heap.clone()]);
 
         //
         // Bind the texture
         //
         command_list.set_graphics_root_descriptor_table(0, self.frames[index].font_gpu_srv);
+
+        //
+        // Push screen size via root constants
+        //
+        let width_pixels = self.global.swap_width as f32;
+        let height_pixels = self.global.swap_height as f32;
+        let width_points = width_pixels / self.pixels_per_point;
+        let height_points = height_pixels / self.pixels_per_point;
+        let values = [transmute(width_points), transmute(height_points)];
+        command_list.set_graphics_root_32bit_constants(1, &values, 0);
 
         command_list.ia_set_primitive_topology(dx12::PrimitiveTopology::TriangleList);
 
@@ -244,6 +273,11 @@ impl EguiRenderer {
         });
 
         //
+        // Bind the render target
+        //
+        command_list.om_set_render_targets(Some(&[self.swap_dependent[index].rtv_cpu]), None);
+
+        //
         // Set the viewport state, we're going to be rendering to the whole frame
         //
         command_list.rs_set_viewports(&[dx12::Viewport {
@@ -254,16 +288,6 @@ impl EguiRenderer {
             min_depth: 0.0,
             max_depth: 1.0,
         }]);
-
-        //
-        // Push screen size via push constants
-        //
-        let width_pixels = self.global.swap_width as f32;
-        let height_pixels = self.global.swap_height as f32;
-        let width_points = width_pixels / self.pixels_per_point;
-        let height_points = height_pixels / self.pixels_per_point;
-        let values = [transmute(width_points), transmute(height_points)];
-        command_list.set_graphics_root_32bit_constants(0, &values, 0);
     }
 
     unsafe fn map_buffers(&self, index: usize) -> (*mut u8, *mut u8, *mut u8, *mut u8) {
