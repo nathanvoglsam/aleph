@@ -33,7 +33,7 @@ use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Po
 use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
 use crate::{raw, ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
-use std::mem::transmute;
+use std::mem::{align_of, size_of, transmute};
 use std::ptr::NonNull;
 use std::sync::Arc;
 
@@ -53,21 +53,32 @@ impl Drop for AllocatorInner {
 pub struct Allocator(pub(crate) Arc<AllocatorInner>);
 
 impl Allocator {
-    pub fn new(allocator_desc: AllocatorDesc) -> raw::windows::Result<Self> {
+    pub fn new(allocator_desc: &AllocatorDesc) -> raw::windows::Result<Self> {
+        assert_eq!(
+            size_of::<AllocatorDesc>(),
+            size_of::<aleph_dx12_alloc_raw::D3D12MA_ALLOCATOR_DESC>()
+        );
+        assert_eq!(
+            align_of::<AllocatorDesc>(),
+            align_of::<aleph_dx12_alloc_raw::D3D12MA_ALLOCATOR_DESC>()
+        );
+
         if allocator_desc.flags & AllocatorFlags::SINGLE_THREADED != AllocatorFlags::NONE {
             panic!("AllocatorFlags::SINGLE_THREADED not supported by rust bindings")
         }
 
         unsafe {
-            let desc = allocator_desc.into();
             let mut out = std::ptr::null_mut();
-            alloc_raw::D3D12MA_Allocator_CreateAllocator(&desc, &mut out)
-                .ok()
-                .map(|_| {
-                    let out = AllocatorInner(NonNull::new(out).unwrap());
-                    let out = Allocator(Arc::new(out));
-                    out
-                })
+            alloc_raw::D3D12MA_Allocator_CreateAllocator(
+                allocator_desc as *const AllocatorDesc as *const _,
+                &mut out,
+            )
+            .ok()
+            .map(|_| {
+                let out = AllocatorInner(NonNull::new(out).unwrap());
+                let out = Allocator(Arc::new(out));
+                out
+            })
         }
     }
 

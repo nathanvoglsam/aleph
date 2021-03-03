@@ -39,7 +39,7 @@ use crate::utils::DynamicLoadCell;
 use crate::{CommandQueue, FeatureLevel};
 use raw::windows::win32::winrt::IInspectable;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use std::mem::transmute;
+use std::mem::{transmute, transmute_copy};
 use std::ops::Deref;
 use utf16_lit::utf16_null;
 
@@ -150,6 +150,10 @@ impl Factory {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
 
+            let create_fn = *crate::dx12::device::CREATE_FN
+                .get()
+                .expect("Failed to load dxgi.dll");
+
             // Loop over all the available adapters
             let mut i = 0;
             loop {
@@ -174,11 +178,8 @@ impl Factory {
                     }
 
                     // Check if the device supports the feature level we want by trying to create a device
-                    let create_fn = *crate::dx12::device::CREATE_FN
-                        .get()
-                        .expect("Failed to load dxgi.dll");
                     let result = create_fn(
-                        Some(adapter.clone().into()),
+                        Some(transmute_copy(&adapter)),
                         minimum_feature_level.into(),
                         &ID3D12Device4::IID,
                         std::ptr::null_mut(),

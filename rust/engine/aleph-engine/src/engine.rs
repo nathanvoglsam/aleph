@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::dx12::dxgi;
 use crate::dx12::pix::{Colour, ScopedEvent};
 use crate::dx12::FeatureLevel;
+use crate::dx12::{dxgi, D3D12Object};
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
 use egui::PaintJobs;
@@ -119,6 +119,8 @@ impl Engine {
         // SDL2 and Window Initialization
         // -----------------------------------------------------------------------------------------
 
+        let mut dxgi_debug = dxgi::Debug::new().unwrap();
+
         Platform::builder()
             .headless(false)
             .app_info(app_info.clone())
@@ -143,7 +145,7 @@ impl Engine {
 
                 log::trace!("Selecting DXGIAdatper");
                 let dxgi_adapter = dxgi_factory
-                    .select_hardware_adapter(dx12::FeatureLevel::Level_12_0)
+                    .select_hardware_adapter(dx12::FeatureLevel::Level_11_0)
                     .expect("Failed to find capable GPU");
 
                 // Enable debug layers if requested
@@ -152,7 +154,7 @@ impl Engine {
                 };
 
                 log::trace!("Creating D3D12Device");
-                let device = dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_12_0)
+                let device = dx12::Device::new(Some(&dxgi_adapter), FeatureLevel::Level_11_0)
                     .expect("Failed to create D3D12 device");
 
                 //let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
@@ -166,7 +168,7 @@ impl Engine {
                     .device(device.clone())
                     .adapter(dxgi_adapter.clone())
                     .build();
-                let allocator = dx12::alloc::Allocator::new(allocator_desc).unwrap();
+                let allocator = dx12::alloc::Allocator::new(&allocator_desc).unwrap();
 
                 let desc = dx12::CommandQueueDesc::builder()
                     .queue_type(dx12::CommandListType::Direct)
@@ -190,6 +192,9 @@ impl Engine {
                     .create_swap_chain(&queue, &platform, &desc)
                     .unwrap();
                 let mut buffers = swapchain.get_buffers(3).unwrap();
+                buffers.iter().for_each(|v| {
+                    v.set_name("SwapChainImage").unwrap();
+                });
                 let command_lists: Vec<dx12::GraphicsCommandList> = (0..3)
                     .into_iter()
                     .map(|_| {
@@ -244,22 +249,22 @@ impl Engine {
                     fence.set_event_on_completion(1, &event).unwrap();
 
                     if Window::resized() {
-                        let (width, height) = Window::drawable_size();
-                        unsafe {
-                            buffers.clear();
-                            swapchain
-                                .resize_buffers(
-                                    0,
-                                    width,
-                                    height,
-                                    dxgi::Format::Unknown,
-                                    dxgi::SwapChainFlags::NONE,
-                                    None,
-                                    &[queue.clone()],
-                                )
-                                .unwrap();
-                            buffers = swapchain.get_buffers(3).unwrap();
-                        }
+                        //let (width, height) = Window::drawable_size();
+                        //unsafe {
+                        //    buffers.clear();
+                        //    swapchain
+                        //        .resize_buffers(
+                        //            0,
+                        //            width,
+                        //            height,
+                        //            dxgi::Format::Unknown,
+                        //            dxgi::SwapChainFlags::NONE,
+                        //            None,
+                        //            &[queue.clone()],
+                        //        )
+                        //        .unwrap();
+                        //    buffers = swapchain.get_buffers(3).unwrap();
+                        //}
                     }
 
                     // End the egui frame
@@ -294,6 +299,11 @@ impl Engine {
                 aleph_log::trace!("Calling AppLogic::on_exit");
                 app.on_exit();
             });
+
+        std::thread::sleep(std::time::Duration::from_millis(500));
+        dxgi_debug
+            .report_live_objects(dxgi::DebugID::All, dxgi::DebugRLOFlags::ALL)
+            .unwrap();
     }
 
     ///

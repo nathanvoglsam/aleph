@@ -28,7 +28,7 @@
 //
 
 use crate::renderer::GlobalObjects;
-use dx12::dxgi;
+use dx12::{dxgi, D3D12Object};
 
 pub struct PerFrameObjects {
     pub vtx_buffer: dx12::alloc::Allocation,
@@ -71,6 +71,11 @@ impl PerFrameObjects {
                 )
                 .unwrap()
         };
+        vtx_buffer
+            .get_resource()
+            .unwrap()
+            .set_name("egui::VtxBuffer")
+            .unwrap();
 
         let idx_buffer = {
             let resource_desc = dx12::ResourceDesc::builder()
@@ -86,10 +91,18 @@ impl PerFrameObjects {
                 )
                 .unwrap()
         };
+        idx_buffer
+            .get_resource()
+            .unwrap()
+            .set_name("egui::IdxBuffer")
+            .unwrap();
 
         let font_staging_allocation =
             unsafe { Self::create_font_staging_allocation(&allocator, (4096, 4096)) };
         let font_staging_resource = font_staging_allocation.get_resource().unwrap();
+        font_staging_resource
+            .set_name("egui::FontStagingBuffer")
+            .unwrap();
 
         let font_staged_pool = unsafe { Self::create_staged_pool(&allocator, (4096, 4096)) };
 
@@ -107,6 +120,9 @@ impl PerFrameObjects {
 
         let command_allocator = device
             .create_command_allocator(dx12::CommandListType::Direct)
+            .unwrap();
+        command_allocator
+            .set_name("egui::CommandAllocator")
             .unwrap();
 
         Self {
@@ -233,6 +249,11 @@ impl PerFrameObjects {
                 dx12::ResourceStates::COPY_DEST,
                 None,
             )
+            .unwrap();
+        allocation
+            .get_resource()
+            .unwrap()
+            .set_name("egui::FontImage")
             .unwrap();
 
         self.font_staged_image = Some(allocation);

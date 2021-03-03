@@ -47,6 +47,7 @@ impl GlobalObjects {
             .num_descriptors(3)
             .build();
         let rtv_heap = device.create_descriptor_heap(&desc).unwrap();
+        rtv_heap.set_name("egui::RTVHeap").unwrap();
 
         let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
             .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
@@ -56,8 +57,10 @@ impl GlobalObjects {
         let srv_heap = device
             .create_descriptor_heap(&descriptor_heap_desc)
             .unwrap();
+        srv_heap.set_name("egui::SRVHeap").unwrap();
 
         let root_signature = Self::create_root_signature(device);
+        root_signature.set_name("egui::RootSignature").unwrap();
 
         let pipeline_state = Self::create_pipeline_state(
             device,
@@ -65,9 +68,9 @@ impl GlobalObjects {
             embedded_data::shaders::egui_vert_shader(),
             embedded_data::shaders::egui_frag_shader(),
         );
-
-        rtv_heap.set_name("egui::RTVHeap").unwrap();
-        root_signature.set_name("egui::RootSignature").unwrap();
+        pipeline_state
+            .set_name("egui::GraphicsPipelineState")
+            .unwrap();
 
         Self {
             rtv_heap,
@@ -196,10 +199,6 @@ impl GlobalObjects {
 
         let pipeline_state = device
             .create_graphics_pipeline_state(&state_stream)
-            .unwrap();
-
-        pipeline_state
-            .set_name("egui::GraphicsPipelineState")
             .unwrap();
 
         pipeline_state

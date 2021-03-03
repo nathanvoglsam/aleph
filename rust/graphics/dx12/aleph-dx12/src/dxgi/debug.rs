@@ -33,13 +33,13 @@ use raw::windows::{Abi, Interface};
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
-    flags: u32,
+    //flags: u32,
     riid: *const raw::windows::Guid,
     p_debug: *mut *mut ::std::ffi::c_void,
 ) -> raw::windows::ErrorCode;
 
 static CREATE_FN: DynamicLoadCell<CreateFn> =
-    DynamicLoadCell::new(&utf16_null!("dxgidebug.dll"), "DXGIGetDebugInterface1\0");
+    DynamicLoadCell::new(&utf16_null!("dxgidebug.dll"), "DXGIGetDebugInterface\0");
 
 #[repr(transparent)]
 pub struct Debug(pub(crate) IDXGIDebug1);
@@ -49,7 +49,7 @@ impl Debug {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgidebug.dll");
             let mut dxgi_debug: Option<IDXGIDebug1> = None;
-            create_fn(0, &IDXGIDebug1::IID, dxgi_debug.set_abi())
+            create_fn(&IDXGIDebug1::IID, dxgi_debug.set_abi())
                 .and_some(dxgi_debug)
                 .map(|v| Self(v))
         }

@@ -214,6 +214,36 @@ pub struct D3D12_ROOT_PARAMETER {
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
 }
 
+impl Drop for D3D12_ROOT_PARAMETER {
+    fn drop(&mut self) {
+        unsafe {
+            if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor_table)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
+            {
+                ManuallyDrop::drop(&mut self.variant.constants)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else {
+                unreachable!();
+            }
+        }
+    }
+}
+
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_ROOT_PARAMETER_VARIANT {
@@ -228,6 +258,36 @@ pub struct D3D12_ROOT_PARAMETER1 {
     pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
     pub variant: D3D12_ROOT_PARAMETER1_VARIANT,
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
+}
+
+impl Drop for D3D12_ROOT_PARAMETER1 {
+    fn drop(&mut self) {
+        unsafe {
+            if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor_table)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
+            {
+                ManuallyDrop::drop(&mut self.variant.constants)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else if self.parameter_type
+                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV
+            {
+                ManuallyDrop::drop(&mut self.variant.descriptor)
+            } else {
+                unreachable!();
+            }
+        }
+    }
 }
 
 #[repr(C)]

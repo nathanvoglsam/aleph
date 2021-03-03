@@ -42,7 +42,7 @@ use crate::{
     GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, RenderTargetViewDesc,
     Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
-use std::mem::transmute;
+use std::mem::{transmute, transmute_copy};
 use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
 
@@ -62,7 +62,7 @@ impl Device {
             let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
             let mut device: Option<ID3D12Device4> = None;
             create_fn(
-                adapter.map(|v| (&v.0).into()),
+                adapter.map(|v| transmute_copy(&v.0)),
                 minimum_feature_level.into(),
                 &ID3D12Device4::IID,
                 device.set_abi(),

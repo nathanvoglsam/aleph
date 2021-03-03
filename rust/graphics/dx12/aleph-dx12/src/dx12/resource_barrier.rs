@@ -110,6 +110,24 @@ pub struct D3D12_RESOURCE_BARRIER {
     variant: D3D12_RESOURCE_BARRIER_VARIANT,
 }
 
+impl Drop for D3D12_RESOURCE_BARRIER {
+    fn drop(&mut self) {
+        unsafe {
+            if self.r#type == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION {
+                ManuallyDrop::drop(&mut self.variant.transition);
+            } else if self.r#type
+                == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_ALIASING
+            {
+                ManuallyDrop::drop(&mut self.variant.aliasing);
+            } else if self.r#type == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV {
+                ManuallyDrop::drop(&mut self.variant.uav);
+            } else {
+                unreachable!("All possible types of D3D12_RESOURCE_BARRIER_TYPE enumerated");
+            }
+        }
+    }
+}
+
 #[repr(C)]
 #[allow(non_camel_case_types)]
 pub union D3D12_RESOURCE_BARRIER_VARIANT {

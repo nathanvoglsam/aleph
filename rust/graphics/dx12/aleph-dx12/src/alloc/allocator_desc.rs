@@ -29,7 +29,6 @@
 
 use crate::alloc::AllocatorFlags;
 use crate::{dxgi, Device};
-use alloc_raw::D3D12MA_ALLOCATOR_DESC;
 
 pub struct AllocatorDescBuilder {
     inner: AllocatorDesc,
@@ -67,12 +66,13 @@ impl AllocatorDescBuilder {
     }
 }
 
+#[repr(C)]
 pub struct AllocatorDesc {
-    pub device: Option<Device>,
-    pub adapter: Option<dxgi::Adapter>,
-    pub preferred_block_size: u64,
     pub flags: AllocatorFlags,
-    // pub p_allocation_callbacks: *const D3D12MA_ALLOCATION_CALLBACKS,
+    pub device: Option<Device>,
+    pub preferred_block_size: u64,
+    p_allocation_callbacks: *const u8, // D3D12MA_ALLOCATION_CALLBACKS
+    pub adapter: Option<dxgi::Adapter>,
 }
 
 impl AllocatorDesc {
@@ -87,19 +87,8 @@ impl Default for AllocatorDesc {
             device: None,
             adapter: None,
             preferred_block_size: 0,
-            flags: Default::default(),
-        }
-    }
-}
-
-impl Into<D3D12MA_ALLOCATOR_DESC> for AllocatorDesc {
-    fn into(self) -> D3D12MA_ALLOCATOR_DESC {
-        D3D12MA_ALLOCATOR_DESC {
-            flags: self.flags,
-            p_device: self.device.map(|v| v.0.into()),
-            preferred_block_size: self.preferred_block_size,
             p_allocation_callbacks: std::ptr::null(),
-            p_adapter: self.adapter.map(|v| v.0.into()),
+            flags: Default::default(),
         }
     }
 }
