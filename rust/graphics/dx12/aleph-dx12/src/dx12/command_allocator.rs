@@ -33,7 +33,11 @@ use crate::raw::windows::win32::direct3d12::ID3D12CommandAllocator;
 #[repr(transparent)]
 pub struct CommandAllocator(pub(crate) ID3D12CommandAllocator);
 
-impl CommandAllocator {}
+impl CommandAllocator {
+    pub unsafe fn reset(&self) -> crate::Result<()> {
+        self.0.Reset().ok()
+    }
+}
 
 crate::object_impl!(CommandAllocator);
 crate::device_child_impl!(CommandAllocator);

@@ -97,6 +97,9 @@ impl EguiRenderer {
         egui_ctx: &::egui::CtxRef,
         jobs: egui::PaintJobs,
     ) {
+        // Clear the command allocator
+        &self.frames[index].command_allocator.reset().unwrap();
+
         // Begin recording commands into the command list
         let mut command_list = command_list
             .reset(
