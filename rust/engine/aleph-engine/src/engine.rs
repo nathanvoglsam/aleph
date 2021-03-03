@@ -119,8 +119,6 @@ impl Engine {
         // SDL2 and Window Initialization
         // -----------------------------------------------------------------------------------------
 
-        let mut dxgi_debug = dxgi::Debug::new().unwrap();
-
         Platform::builder()
             .headless(false)
             .app_info(app_info.clone())
@@ -299,11 +297,6 @@ impl Engine {
                 aleph_log::trace!("Calling AppLogic::on_exit");
                 app.on_exit();
             });
-
-        std::thread::sleep(std::time::Duration::from_millis(500));
-        dxgi_debug
-            .report_live_objects(dxgi::DebugID::All, dxgi::DebugRLOFlags::ALL)
-            .unwrap();
     }
 
     ///
