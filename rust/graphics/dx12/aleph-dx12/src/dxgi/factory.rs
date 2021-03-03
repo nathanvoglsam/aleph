@@ -169,6 +169,7 @@ impl Factory {
 
                     // We want to skip software adapters as they're going to be *very* slow
                     if (desc.flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
+                        i += 1;
                         continue;
                     }
 
@@ -177,7 +178,7 @@ impl Factory {
                         .get()
                         .expect("Failed to load dxgi.dll");
                     let result = create_fn(
-                        Some(adapter.cast().unwrap()),
+                        Some(adapter.clone().into()),
                         minimum_feature_level.into(),
                         &ID3D12Device4::IID,
                         std::ptr::null_mut(),
