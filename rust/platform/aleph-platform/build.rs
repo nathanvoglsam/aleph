@@ -147,14 +147,19 @@ fn main() {
                 build.define("SDL_SENSOR", "FALSE");
             }
 
-            // Force to compile for release, we'll never need to debug this
-            build.profile("Release");
+            if target::build::target_build_type().is_debug() {
+                build.profile("Debug");
+                build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+            } else {
+                build.profile("Release");
+            }
 
             let out_dir = build.build();
 
             // We're going to need the output lib and bin dir
             let lib_dir = out_dir.join("lib");
             let bin_dir = out_dir.join("bin");
+            let bld_dir = out_dir.join("build");
 
             // Give rustc the directory of where to find the lib files to link to
             println!("cargo:rustc-link-search=all={}", &lib_dir.display());
@@ -170,6 +175,15 @@ fn main() {
             // Copy the output dll file to the target dir
             compile::copy_file_to_target_dir(&source)
                 .expect("Failed to copy SDL2 dll/so to target dir");
+
+            // Copy the SDL2 pdb
+            if target::build::target_platform().is_msvc() && target::build::target_build_type().is_debug() {
+                let source = bld_dir.join("SDL2.pdb");
+                compile::copy_file_to_artifacts_dir(&source)
+                    .expect("Failed to copy SDL2 pdb to artifacts dir");
+                compile::copy_file_to_target_dir(&source)
+                    .expect("Failed to copy SDL2 pdb to target dir");
+            }
         }
         Platform::UniversalWindowsGNU => {
             // We can't compile SDL2 for this platform as it requires msvc
