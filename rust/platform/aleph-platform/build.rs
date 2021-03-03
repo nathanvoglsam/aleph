@@ -148,7 +148,7 @@ fn main() {
             }
 
             if target::build::target_build_type().is_debug() {
-                build.profile("Debug");
+                build.profile("RelWithDebInfo");
                 build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
             } else {
                 build.profile("Release");
@@ -177,8 +177,14 @@ fn main() {
                 .expect("Failed to copy SDL2 dll/so to target dir");
 
             // Copy the SDL2 pdb
-            if target::build::target_platform().is_msvc() && target::build::target_build_type().is_debug() {
-                let source = bld_dir.join("SDL2.pdb");
+            if target::build::target_platform().is_msvc()
+                && target::build::target_build_type().is_debug()
+            {
+                let source = if target::build::target_platform().is_uwp() {
+                    bld_dir.join("RelWithDebInfo").join("SDL2.pdb")
+                } else {
+                    bld_dir.join("SDL2.pdb")
+                };
                 compile::copy_file_to_artifacts_dir(&source)
                     .expect("Failed to copy SDL2 pdb to artifacts dir");
                 compile::copy_file_to_target_dir(&source)
