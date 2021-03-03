@@ -1,0 +1,54 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31019.35
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "aleph-test", "target\debug\aleph-test.exe", "{B1722BFB-2106-4C41-BE95-92A8B2558998}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = D:\Code\aleph\target\debug\aleph-test.exe
+		RemoteMachine = DESKTOP-EQ6K1EM
+		StartingDirectory = D:\Code\aleph\target\debug
+		Environment = Default
+		LaunchingEngine = 00000000-0000-0000-0000-000000000000
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug", "Debug", "{722200FF-EC7A-4EE0-B8C4-F667CD048420}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Release", "Release", "{FEEC6EC6-7B50-493E-AAAD-A15B6521C6DA}"
+EndProject
+Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "aleph-test", "target\release\aleph-test.exe", "{B9B807C8-DDA9-4822-A52D-B67EC5301D40}"
+	ProjectSection(DebuggerProjectSystem) = preProject
+		PortSupplier = 00000000-0000-0000-0000-000000000000
+		Executable = D:\Code\aleph\target\release\aleph-test.exe
+		RemoteMachine = DESKTOP-EQ6K1EM
+		StartingDirectory = D:\Code\aleph\target\release
+		Environment = Default
+		LaunchingEngine = 00000000-0000-0000-0000-000000000000
+		UseLegacyDebugEngines = No
+		LaunchSQLEngine = No
+		AttachLaunchAction = No
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B1722BFB-2106-4C41-BE95-92A8B2558998}.Release|x64.ActiveCfg = Release|x64
+		{B9B807C8-DDA9-4822-A52D-B67EC5301D40}.Release|x64.ActiveCfg = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B1722BFB-2106-4C41-BE95-92A8B2558998} = {722200FF-EC7A-4EE0-B8C4-F667CD048420}
+		{B9B807C8-DDA9-4822-A52D-B67EC5301D40} = {FEEC6EC6-7B50-493E-AAAD-A15B6521C6DA}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C59D4AE7-DD98-4239-919C-CD4C002A3133}
+	EndGlobalSection
+EndGlobal
