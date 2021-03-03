@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![cfg_attr(target_vendor = "uwp", windows_subsystem = "windows")]
+
 extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
