@@ -29,6 +29,7 @@
 
 mod adapter;
 mod alpha_mode;
+mod debug;
 mod factory;
 mod format;
 mod sample_desc;
@@ -41,6 +42,9 @@ mod usage_flags;
 
 pub use adapter::Adapter;
 pub use alpha_mode::AlphaMode;
+pub use debug::Debug;
+pub use debug::DebugID;
+pub use debug::DebugRLOFlags;
 pub use factory::Factory;
 pub use format::Format;
 pub use sample_desc::SampleDesc;
