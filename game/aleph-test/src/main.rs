@@ -59,7 +59,7 @@ impl aleph::AppLogic for AlephAppLogic {
     fn on_update(&mut self, egui_ctx: &aleph::egui::CtxRef) {
         self.frame_times.update();
 
-        //self.demo_window.ui(egui_ctx);
+        self.demo_window.ui(egui_ctx);
 
         aleph::egui::Window::new("Colour Test")
             .collapsible(false)
