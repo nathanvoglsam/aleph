@@ -32,10 +32,12 @@ use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource}
 use crate::raw::windows::win32::dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
-use crate::utils::optional_slice_to_num_ptr_pair;
+use crate::raw::windows::IUnknown;
 use crate::CommandQueue;
 use raw::windows::{Abi, Interface};
 use std::mem::{forget, transmute};
+use std::ops::Deref;
+use std::sync::RwLockReadGuard;
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
@@ -49,23 +51,60 @@ impl SwapChain {
         format: Format,
         flags: SwapChainFlags,
         node_masks: Option<&[u32]>,
-        queues: &[CommandQueue],
+        queues: &[&CommandQueue],
     ) -> raw::windows::Result<()> {
-        let (node_masks_len, node_masks) = optional_slice_to_num_ptr_pair(node_masks);
-        assert!(node_masks_len <= DXGI_MAX_SWAP_CHAIN_BUFFERS);
-        assert_eq!(node_masks_len, buffer_count);
-        assert!(queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize);
-        assert_eq!(queues.len(), buffer_count as usize);
+        assert!(
+            queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
+            "queues len must be <= 16"
+        );
+        assert_eq!(
+            queues.len(),
+            buffer_count as usize,
+            "queues len must == buffer count if buffer count != 0"
+        );
+        assert!(
+            buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS,
+            "can't have more than 16 swap chain buffers"
+        );
+
+        let node_masks = if let Some(node_masks) = node_masks {
+            assert!(!node_masks.iter().any(|v| v.count_ones() > 1));
+            assert!(
+                node_masks.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
+                "node masks len must be <= 16"
+            );
+            assert_eq!(
+                node_masks.len(),
+                buffer_count as usize,
+                "node masks len must == buffer count"
+            );
+            node_masks.as_ptr()
+        } else {
+            static DEFAULT_NODE_MASKS: [u32; 16] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+            DEFAULT_NODE_MASKS.as_ptr()
+        };
 
         // This is a load of hacky crap to let the function call actually compile
         //
         // Fingers crossed this actually works
         //
         // TODO: Remove this when the bindings are generated correctly by windows-rs
-        let pp_queues = queues.as_ptr();
-        let pp_queues: ID3D12CommandQueue = transmute(pp_queues);
+        let mut locks: [Option<RwLockReadGuard<ID3D12CommandQueue>>; 16] = [
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None,
+        ];
+        let mut unpacked_queues = [0usize; 16];
+        queues.iter().enumerate().for_each(|(index, queue)| {
+            let lock = queue.get_shared();
+            let ptr = lock.deref().clone();
+            unpacked_queues[index] = transmute(ptr);
+            locks[index] = Some(lock);
+        });
 
-        self.0
+        let pp_queues: IUnknown = transmute(unpacked_queues.as_ptr());
+
+        if let Err(err) = self
+            .0
             .ResizeBuffers1(
                 buffer_count,
                 width,
@@ -75,11 +114,14 @@ impl SwapChain {
                 node_masks,
                 &pp_queues,
             )
-            .ok()?;
-
-        forget(pp_queues);
-
-        Ok(())
+            .ok()
+        {
+            forget(pp_queues);
+            Err(err)
+        } else {
+            forget(pp_queues);
+            Ok(())
+        }
     }
 
     /// `IDXGISwapChain1::Present1`
