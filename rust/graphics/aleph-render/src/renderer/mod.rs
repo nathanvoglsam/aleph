@@ -89,6 +89,21 @@ impl EguiRenderer {
         self.pixels_per_point = pixels_per_point;
     }
 
+    pub unsafe fn recreate_swap_resources(
+        &mut self,
+        device: &dx12::Device,
+        buffers: &[dx12::Resource],
+        new_dimensions: (u32, u32),
+    ) {
+        self.global.swap_width = new_dimensions.0;
+        self.global.swap_height = new_dimensions.1;
+        let swap_dependent = (0..3)
+            .into_iter()
+            .map(|index| SwapDependentObjects::new(device, &self.global, buffers, index))
+            .collect();
+        self.swap_dependent = swap_dependent;
+    }
+
     pub unsafe fn record_frame(
         &mut self,
         index: usize,

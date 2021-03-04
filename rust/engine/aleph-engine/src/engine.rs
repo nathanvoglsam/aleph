@@ -247,22 +247,23 @@ impl Engine {
                     fence.set_event_on_completion(1, &event).unwrap();
 
                     if Window::resized() {
-                        //let (width, height) = Window::drawable_size();
-                        //unsafe {
-                        //    buffers.clear();
-                        //    swapchain
-                        //        .resize_buffers(
-                        //            0,
-                        //            width,
-                        //            height,
-                        //            dxgi::Format::Unknown,
-                        //            dxgi::SwapChainFlags::NONE,
-                        //            None,
-                        //            &[queue.clone()],
-                        //        )
-                        //        .unwrap();
-                        //    buffers = swapchain.get_buffers(3).unwrap();
-                        //}
+                        let dimensions = Window::size();
+                        unsafe {
+                            buffers.clear();
+                            swapchain
+                                .resize_buffers(
+                                    3,
+                                    dimensions.0,
+                                    dimensions.1,
+                                    dxgi::Format::Unknown,
+                                    dxgi::SwapChainFlags::NONE,
+                                    None,
+                                    &[&queue, &queue, &queue],
+                                )
+                                .unwrap();
+                            buffers = swapchain.get_buffers(3).unwrap();
+                            renderer.recreate_swap_resources(&device, &buffers, dimensions);
+                        }
                     }
 
                     // End the egui frame
