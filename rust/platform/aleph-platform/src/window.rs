@@ -352,10 +352,6 @@ impl Window {
                 }
             }
         }
-
-        let drawable_size = window.vulkan_drawable_size();
-        window_state.drawable_width = drawable_size.0;
-        window_state.drawable_height = drawable_size.1;
     }
 
     fn handle_go_fullscreen(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
@@ -415,6 +411,10 @@ impl Window {
     pub(crate) fn update_state(window: &mut sdl2::video::Window, window_state: &mut WindowState) {
         let display_mode = window.display_mode().unwrap();
         window_state.refresh_rate = display_mode.refresh_rate as _;
+
+        let drawable_size = window.vulkan_drawable_size();
+        window_state.drawable_width = drawable_size.0;
+        window_state.drawable_height = drawable_size.1;
     }
 
     ///

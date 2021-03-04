@@ -357,8 +357,6 @@ impl Platform {
             Mouse::process_mouse_requests(&window, &mouse_utils, &self.cursors);
             Window::process_window_requests(&mut window, window_state);
 
-            Window::update_state(&mut window, window_state);
-
             self.mouse_util.set(Some(mouse_utils));
             self.window.set(Some(window));
         }
@@ -460,6 +458,10 @@ impl Platform {
 
             // Update the mouse's state from the fresh sequence of events
             Mouse::update_state(&event_pump);
+
+            let mut window = self.window.take().unwrap();
+            Window::update_state(&mut window, window_state);
+            self.window.set(Some(window));
         } else {
             // Clear the event pump and delegate the events to their event handlers
             for event in event_pump.poll_iter() {
