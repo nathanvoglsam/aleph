@@ -73,8 +73,8 @@ optional = true
 version = "1"
 
 [dependencies.raw-window-handle]
-git = "https://github.com/nathanvoglsam/raw-window-handle.git"
-branch = "core-window"
+git = "https://github.com/rust-windowing/raw-window-handle.git"
+branch = "master"
 version = "0.3"
 
 [dependencies.utf16_lit]

@@ -55,8 +55,8 @@ version = "0.34"
 features = ["raw-window-handle"]
 
 [dependencies.raw-window-handle]
-git = "https://github.com/nathanvoglsam/raw-window-handle.git"
-branch = "core-window"
+git = "https://github.com/rust-windowing/raw-window-handle.git"
+branch = "master"
 version = "0.3"
 
 [build-dependencies]
