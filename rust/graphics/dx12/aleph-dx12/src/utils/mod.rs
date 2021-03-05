@@ -55,7 +55,6 @@ mod temp {
     }
 }
 
-
 #[repr(transparent)]
 #[derive(Copy, Clone)]
 pub struct CStrFFI<'a> {
