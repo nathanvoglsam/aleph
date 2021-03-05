@@ -32,9 +32,9 @@ use crate::raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource}
 use crate::raw::windows::win32::dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
-use crate::raw::windows::IUnknown;
 use crate::CommandQueue;
-use raw::windows::{Abi, Interface};
+use crate::IUnknown;
+use crate::{Abi, Interface};
 use std::mem::{forget, transmute};
 use std::ops::Deref;
 use std::sync::RwLockReadGuard;
@@ -52,7 +52,7 @@ impl SwapChain {
         flags: SwapChainFlags,
         node_masks: Option<&[u32]>,
         queues: &[&CommandQueue],
-    ) -> raw::windows::Result<()> {
+    ) -> crate::Result<()> {
         assert!(
             queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
             "queues len must be <= 16"
@@ -80,7 +80,7 @@ impl SwapChain {
             );
             node_masks.as_ptr()
         } else {
-            static DEFAULT_NODE_MASKS: [u32; 16] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+            static DEFAULT_NODE_MASKS: [u32; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
             DEFAULT_NODE_MASKS.as_ptr()
         };
 
@@ -125,11 +125,7 @@ impl SwapChain {
     }
 
     /// `IDXGISwapChain1::Present1`
-    pub unsafe fn present(
-        &mut self,
-        sync_interval: u32,
-        present_flags: u32,
-    ) -> crate::raw::windows::Result<()> {
+    pub unsafe fn present(&mut self, sync_interval: u32, present_flags: u32) -> crate::Result<()> {
         let presentation_params = DXGI_PRESENT_PARAMETERS {
             dirty_rects_count: 0,
             p_dirty_rects: std::ptr::null_mut(),
@@ -146,7 +142,7 @@ impl SwapChain {
         unsafe { self.0.GetCurrentBackBufferIndex() }
     }
 
-    pub fn get_buffers(&mut self, buffer_count: u32) -> raw::windows::Result<Vec<crate::Resource>> {
+    pub fn get_buffers(&mut self, buffer_count: u32) -> crate::Result<Vec<crate::Resource>> {
         let mut out = Vec::with_capacity(buffer_count as usize);
         for i in 0..buffer_count {
             out.push(self.get_buffer(i)?);
@@ -154,7 +150,7 @@ impl SwapChain {
         Ok(out)
     }
 
-    pub fn get_buffer(&mut self, buffer: u32) -> raw::windows::Result<crate::Resource> {
+    pub fn get_buffer(&mut self, buffer: u32) -> crate::Result<crate::Resource> {
         unsafe {
             let mut resource: Option<ID3D12Resource> = None;
             self.0
@@ -164,7 +160,7 @@ impl SwapChain {
         }
     }
 
-    pub fn get_description(&mut self) -> raw::windows::Result<SwapChainDesc1> {
+    pub fn get_description(&mut self) -> crate::Result<SwapChainDesc1> {
         unsafe {
             let mut desc = Default::default();
             self.0.GetDesc1(&mut desc).ok().map(|_| transmute(desc))

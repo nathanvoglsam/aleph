@@ -29,14 +29,14 @@
 
 use crate::raw::windows::win32::dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 use crate::utils::DynamicLoadCell;
-use raw::windows::{Abi, Interface};
+use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 
 type CreateFn = extern "system" fn(
     //flags: u32,
-    riid: *const raw::windows::Guid,
+    riid: *const crate::Guid,
     p_debug: *mut *mut ::std::ffi::c_void,
-) -> raw::windows::ErrorCode;
+) -> crate::ErrorCode;
 
 static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgidebug.dll"), "DXGIGetDebugInterface\0");
@@ -45,7 +45,7 @@ static CREATE_FN: DynamicLoadCell<CreateFn> =
 pub struct Debug(pub(crate) IDXGIDebug1);
 
 impl Debug {
-    pub fn new() -> raw::windows::Result<Debug> {
+    pub fn new() -> crate::Result<Debug> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgidebug.dll");
             let mut dxgi_debug: Option<IDXGIDebug1> = None;
@@ -74,34 +74,34 @@ pub enum DebugID {
     Direct3D11,
 }
 
-impl Into<raw::windows::Guid> for DebugID {
-    fn into(self) -> raw::windows::Guid {
+impl Into<crate::Guid> for DebugID {
+    fn into(self) -> crate::Guid {
         match self {
-            DebugID::All => raw::windows::Guid::from_values(
+            DebugID::All => crate::Guid::from_values(
                 0xe48ae283,
                 0xda80,
                 0x490b,
                 [0x87, 0xe6, 0x43, 0xe9, 0xa9, 0xcf, 0xda, 0x8],
             ),
-            DebugID::DirectX => raw::windows::Guid::from_values(
+            DebugID::DirectX => crate::Guid::from_values(
                 0x35cdd7fc,
                 0x13b2,
                 0x421d,
                 [0xa5, 0xd7, 0x7e, 0x44, 0x51, 0x28, 0x7d, 0x64],
             ),
-            DebugID::DXGI => raw::windows::Guid::from_values(
+            DebugID::DXGI => crate::Guid::from_values(
                 0x25cddaa4,
                 0xb1c6,
                 0x47e1,
                 [0xac, 0x3e, 0x98, 0x87, 0x5b, 0x5a, 0x2e, 0x2a],
             ),
-            DebugID::App => raw::windows::Guid::from_values(
+            DebugID::App => crate::Guid::from_values(
                 0x6cd6e01,
                 0x4219,
                 0x4ebd,
                 [0x87, 0x9, 0x27, 0xed, 0x23, 0x36, 0xc, 0x62],
             ),
-            DebugID::Direct3D11 => raw::windows::Guid::from_values(
+            DebugID::Direct3D11 => crate::Guid::from_values(
                 0x4b99317b,
                 0xac39,
                 0x4aa6,

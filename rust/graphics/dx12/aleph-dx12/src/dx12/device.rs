@@ -33,7 +33,6 @@ use crate::raw::windows::win32::direct3d12::{
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
-use crate::raw::windows::{Abi, Interface};
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
 use crate::utils::DynamicLoadCell;
 use crate::{
@@ -42,6 +41,7 @@ use crate::{
     GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, RenderTargetViewDesc,
     Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
+use crate::{Abi, Interface};
 use std::mem::{transmute, transmute_copy};
 use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
@@ -57,7 +57,7 @@ impl Device {
     pub fn new(
         adapter: Option<&dxgi::Adapter>,
         minimum_feature_level: FeatureLevel,
-    ) -> raw::windows::Result<Device> {
+    ) -> crate::Result<Device> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
             let mut device: Option<ID3D12Device4> = None;
@@ -72,11 +72,7 @@ impl Device {
         }
     }
 
-    pub fn create_fence(
-        &self,
-        initial_value: u64,
-        flags: FenceFlags,
-    ) -> raw::windows::Result<Fence> {
+    pub fn create_fence(&self, initial_value: u64, flags: FenceFlags) -> crate::Result<Fence> {
         unsafe {
             let mut fence: Option<ID3D12Fence> = None;
             self.0
@@ -94,7 +90,7 @@ impl Device {
     pub fn create_command_allocator(
         &self,
         list_type: CommandListType,
-    ) -> raw::windows::Result<CommandAllocator> {
+    ) -> crate::Result<CommandAllocator> {
         unsafe {
             let mut out: Option<ID3D12CommandAllocator> = None;
             self.0
@@ -111,7 +107,7 @@ impl Device {
     pub fn create_graphics_command_list(
         &self,
         list_type: CommandListType,
-    ) -> raw::windows::Result<GraphicsCommandList> {
+    ) -> crate::Result<GraphicsCommandList> {
         unsafe {
             let mut out: Option<ID3D12GraphicsCommandList> = None;
             self.0
@@ -130,7 +126,7 @@ impl Device {
     pub fn create_graphics_pipeline_state(
         &self,
         state_stream: &GraphicsPipelineStateStream,
-    ) -> raw::windows::Result<GraphicsPipelineState> {
+    ) -> crate::Result<GraphicsPipelineState> {
         unsafe {
             let desc = D3D12_PIPELINE_STATE_STREAM_DESC {
                 size_in_bytes: state_stream.len(),
@@ -147,7 +143,7 @@ impl Device {
     pub fn create_root_signature(
         &self,
         root_signature_blob: &RootSignatureBlob,
-    ) -> raw::windows::Result<RootSignature> {
+    ) -> crate::Result<RootSignature> {
         unsafe {
             let mut out: Option<ID3D12RootSignature> = None;
             self.0
@@ -166,7 +162,7 @@ impl Device {
     pub fn create_descriptor_heap(
         &self,
         descriptor_heap_desc: &DescriptorHeapDesc,
-    ) -> raw::windows::Result<DescriptorHeap> {
+    ) -> crate::Result<DescriptorHeap> {
         unsafe {
             let desc = transmute(descriptor_heap_desc.clone());
             let mut out: Option<ID3D12DescriptorHeap> = None;
@@ -180,7 +176,7 @@ impl Device {
     pub fn create_command_queue(
         &self,
         command_queue_desc: &CommandQueueDesc,
-    ) -> raw::windows::Result<CommandQueue> {
+    ) -> crate::Result<CommandQueue> {
         unsafe {
             let desc = transmute(command_queue_desc.clone());
             let mut out: Option<ID3D12CommandQueue> = None;

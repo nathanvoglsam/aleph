@@ -46,27 +46,15 @@ pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_
 pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
 impl RootSignatureBlob {
-    pub unsafe fn new(
-        desc: &VersionedRootSignatureDesc,
-    ) -> Result<Self, (raw::windows::Error, String)> {
+    pub unsafe fn new(desc: &VersionedRootSignatureDesc) -> crate::Result<Self> {
         let desc: MyDesc = desc.clone().into();
         let desc_ptr = &desc as *const MyDesc as *const Desc;
 
         let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut blob: Option<ID3DBlob> = None;
-        let mut err: Option<ID3DBlob> = None;
+        let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
         create_fn(desc_ptr, &mut blob, &mut err)
             .and_some(blob)
             .map(|v| RootSignatureBlob(v))
-            .map_err(|v| {
-                if let Some(err) = err {
-                    // TODO: See if this returns a string and wrap it into the error type
-                    let _ptr = err.GetBufferPointer() as *const u8;
-                    let _sze = err.GetBufferSize();
-                    (v, String::new())
-                } else {
-                    (v, String::new())
-                }
-            })
     }
 }

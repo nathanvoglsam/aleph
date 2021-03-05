@@ -65,10 +65,7 @@ impl Event {
 impl Drop for Event {
     fn drop(&mut self) {
         unsafe {
-            assert_ne!(
-                CloseHandle(self.0.clone()),
-                crate::raw::windows::BOOL::from(false)
-            );
+            assert_ne!(CloseHandle(self.0.clone()), crate::BOOL::from(false));
         }
     }
 }

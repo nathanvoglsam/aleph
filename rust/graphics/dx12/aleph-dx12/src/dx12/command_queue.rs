@@ -55,7 +55,7 @@ impl<'a> CommandQueueRecorder<'a> {
 }
 
 impl<'a> CommandQueueRecorder<'a> {
-    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> raw::windows::Result<()> {
+    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> crate::Result<()> {
         self.0.Signal(&fence.0, value).ok()
     }
 
@@ -92,7 +92,7 @@ impl D3D12Object for CommandQueue {
 
 impl D3D12DeviceChild for CommandQueue {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use raw::windows::{Abi, Interface};
+        use crate::{Abi, Interface};
         type D = raw::windows::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_shared()

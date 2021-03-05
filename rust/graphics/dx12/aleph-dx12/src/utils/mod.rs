@@ -266,8 +266,8 @@ macro_rules! flags_bitwise_impl {
 macro_rules! device_child_impl {
     ($t:ident) => {
         impl $crate::D3D12DeviceChild for $t {
-            unsafe fn get_device(&self) -> $crate::raw::windows::Result<$crate::Device> {
-                use $crate::raw::windows::{Abi, Interface};
+            unsafe fn get_device(&self) -> $crate::Result<$crate::Device> {
+                use $crate::{Abi, Interface};
                 type D = $crate::raw::windows::win32::direct3d12::ID3D12Device4;
                 let mut device: Option<D> = None;
                 self.0
@@ -283,7 +283,7 @@ macro_rules! device_child_impl {
 macro_rules! object_impl {
     ($t:ident) => {
         impl $crate::D3D12Object for $t {
-            unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::raw::windows::Result<()> {
+            unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::Result<()> {
                 self.0.SetName(name.as_ptr()).ok()
             }
         }

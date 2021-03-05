@@ -35,11 +35,11 @@ use crate::Event;
 pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
-    pub fn signal(&self, value: u64) -> raw::windows::Result<()> {
+    pub fn signal(&self, value: u64) -> crate::Result<()> {
         unsafe { self.0.Signal(value).ok() }
     }
 
-    pub fn set_event_on_completion(&self, value: u64, event: &Event) -> raw::windows::Result<()> {
+    pub fn set_event_on_completion(&self, value: u64, event: &Event) -> crate::Result<()> {
         unsafe { self.0.SetEventOnCompletion(value, event.0).ok() }
     }
 }

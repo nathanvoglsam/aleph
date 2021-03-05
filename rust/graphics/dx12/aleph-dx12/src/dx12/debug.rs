@@ -30,8 +30,8 @@
 use crate::raw::windows::win32::direct3d12::{
     ID3D12Debug, ID3D12Debug1, PFN_D3D12_GET_DEBUG_INTERFACE,
 };
-use crate::raw::windows::{Abi, Interface};
 use crate::utils::DynamicLoadCell;
+use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
@@ -42,7 +42,7 @@ pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
 pub struct Debug(pub(crate) ID3D12Debug);
 
 impl Debug {
-    pub unsafe fn new() -> raw::windows::Result<Self> {
+    pub unsafe fn new() -> crate::Result<Self> {
         let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut debug: Option<ID3D12Debug> = None;
         create_fn(&ID3D12Debug::IID, debug.set_abi())
@@ -54,7 +54,7 @@ impl Debug {
         self.0.EnableDebugLayer()
     }
 
-    pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> raw::windows::Result<()> {
+    pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> crate::Result<()> {
         let casted = self.0.cast::<ID3D12Debug1>()?;
         casted.SetEnableGPUBasedValidation(enable.into());
         Ok(())
@@ -63,7 +63,7 @@ impl Debug {
     pub unsafe fn set_enable_synchronized_command_queue_validation(
         &self,
         enable: bool,
-    ) -> raw::windows::Result<()> {
+    ) -> crate::Result<()> {
         let casted = self.0.cast::<ID3D12Debug1>()?;
         casted.SetEnableSynchronizedCommandQueueValidation(enable.into());
         Ok(())

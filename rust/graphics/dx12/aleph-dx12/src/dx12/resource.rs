@@ -96,7 +96,7 @@ impl Resource {
         &self,
         subresource: u32,
         read_range: Option<Range<usize>>,
-    ) -> raw::windows::Result<Option<NonNull<u8>>> {
+    ) -> crate::Result<Option<NonNull<u8>>> {
         unsafe {
             let mut out = std::ptr::null_mut();
             if let Some(read_range) = read_range {

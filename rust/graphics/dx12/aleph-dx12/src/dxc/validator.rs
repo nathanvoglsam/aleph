@@ -28,7 +28,7 @@
 //
 
 use crate::utils::DynamicLoadCell;
-use raw::windows::{Abi, Interface};
+use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 
 static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
@@ -48,7 +48,7 @@ impl DxcValidator {
         let create_fn = CREATE_FN
             .get()
             .ok_or(DxcValidatorCreateError::FailedToLoadLibrary)?;
-        let clsid = raw::windows::Guid::from(dxc_raw::CLSID_DxcValidator);
+        let clsid = crate::Guid::from(dxc_raw::CLSID_DxcValidator);
         let riid = &dxc_raw::IDxcValidator::IID;
         let mut out: Option<dxc_raw::IDxcValidator> = None;
         create_fn(&clsid, riid, out.set_abi())

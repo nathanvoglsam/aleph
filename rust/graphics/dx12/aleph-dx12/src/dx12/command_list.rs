@@ -836,7 +836,7 @@ impl<'a> D3D12Object for GraphicsCommandListRecorder<'a> {
 
 impl<'a> D3D12DeviceChild for GraphicsCommandListRecorder<'a> {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use raw::windows::{Abi, Interface};
+        use crate::{Abi, Interface};
         type D = raw::windows::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.0
@@ -851,18 +851,16 @@ impl<'a> D3D12DeviceChild for GraphicsCommandListRecorder<'a> {
 pub struct GraphicsCommandList(pub(crate) Arc<RwLock<ID3D12GraphicsCommandList>>);
 
 impl GraphicsCommandList {
-    pub fn reset<T: Into<PipelineState> + Clone>(
+    pub unsafe fn reset<T: Into<PipelineState> + Clone>(
         &self,
         allocator: &CommandAllocator,
         initial_state: &T,
     ) -> crate::Result<GraphicsCommandListRecorder> {
         let exclusive = self.get_exclusive();
-        unsafe {
-            exclusive
-                .Reset(&allocator.0, initial_state.clone().into().0)
-                .ok()
-                .map(|_| GraphicsCommandListRecorder(exclusive))
-        }
+        exclusive
+            .Reset(&allocator.0, initial_state.clone().into().0)
+            .ok()
+            .map(|_| GraphicsCommandListRecorder(exclusive))
     }
 
     /// `ID3D12GraphicsCommandList::GetType`
@@ -887,7 +885,7 @@ impl D3D12Object for GraphicsCommandList {
 
 impl D3D12DeviceChild for GraphicsCommandList {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use raw::windows::{Abi, Interface};
+        use crate::{Abi, Interface};
         type D = raw::windows::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_shared()
