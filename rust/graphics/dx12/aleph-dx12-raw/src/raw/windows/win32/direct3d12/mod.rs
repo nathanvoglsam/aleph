@@ -6640,13 +6640,156 @@ impl ::std::convert::From<i32> for D3D12_BLEND {
 unsafe impl ::windows::Abi for D3D12_BLEND {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_BLEND_OP(pub i32);
+impl D3D12_BLEND_OP {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_BLEND_OP_ADD: Self = Self(1i32);
+    pub const D3D12_BLEND_OP_SUBTRACT: Self = Self(2i32);
+    pub const D3D12_BLEND_OP_REV_SUBTRACT: Self = Self(3i32);
+    pub const D3D12_BLEND_OP_MIN: Self = Self(4i32);
+    pub const D3D12_BLEND_OP_MAX: Self = Self(5i32);
+}
+impl ::std::convert::From<i32> for D3D12_BLEND_OP {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_BLEND_OP {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_LOGIC_OP(pub i32);
+impl D3D12_LOGIC_OP {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_LOGIC_OP_CLEAR: Self = Self(0i32);
+    pub const D3D12_LOGIC_OP_SET: Self = Self(1i32);
+    pub const D3D12_LOGIC_OP_COPY: Self = Self(2i32);
+    pub const D3D12_LOGIC_OP_COPY_INVERTED: Self = Self(3i32);
+    pub const D3D12_LOGIC_OP_NOOP: Self = Self(4i32);
+    pub const D3D12_LOGIC_OP_INVERT: Self = Self(5i32);
+    pub const D3D12_LOGIC_OP_AND: Self = Self(6i32);
+    pub const D3D12_LOGIC_OP_NAND: Self = Self(7i32);
+    pub const D3D12_LOGIC_OP_OR: Self = Self(8i32);
+    pub const D3D12_LOGIC_OP_NOR: Self = Self(9i32);
+    pub const D3D12_LOGIC_OP_XOR: Self = Self(10i32);
+    pub const D3D12_LOGIC_OP_EQUIV: Self = Self(11i32);
+    pub const D3D12_LOGIC_OP_AND_REVERSE: Self = Self(12i32);
+    pub const D3D12_LOGIC_OP_AND_INVERTED: Self = Self(13i32);
+    pub const D3D12_LOGIC_OP_OR_REVERSE: Self = Self(14i32);
+    pub const D3D12_LOGIC_OP_OR_INVERTED: Self = Self(15i32);
+}
+impl ::std::convert::From<i32> for D3D12_LOGIC_OP {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_LOGIC_OP {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RENDER_TARGET_BLEND_DESC {
+    pub blend_enable: super::system_services::BOOL,
+    pub logic_op_enable: super::system_services::BOOL,
+    pub src_blend: D3D12_BLEND,
+    pub dest_blend: D3D12_BLEND,
+    pub blend_op: D3D12_BLEND_OP,
+    pub src_blend_alpha: D3D12_BLEND,
+    pub dest_blend_alpha: D3D12_BLEND,
+    pub blend_op_alpha: D3D12_BLEND_OP,
+    pub logic_op: D3D12_LOGIC_OP,
+    pub render_target_write_mask: u8,
+}
+impl D3D12_RENDER_TARGET_BLEND_DESC {}
+impl ::std::default::Default for D3D12_RENDER_TARGET_BLEND_DESC {
+    fn default() -> Self {
+        Self {
+            blend_enable: ::std::default::Default::default(),
+            logic_op_enable: ::std::default::Default::default(),
+            src_blend: ::std::default::Default::default(),
+            dest_blend: ::std::default::Default::default(),
+            blend_op: ::std::default::Default::default(),
+            src_blend_alpha: ::std::default::Default::default(),
+            dest_blend_alpha: ::std::default::Default::default(),
+            blend_op_alpha: ::std::default::Default::default(),
+            logic_op: ::std::default::Default::default(),
+            render_target_write_mask: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RENDER_TARGET_BLEND_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RENDER_TARGET_BLEND_DESC")
+            .field("blend_enable", &format_args!("{:?}", self.blend_enable))
+            .field(
+                "logic_op_enable",
+                &format_args!("{:?}", self.logic_op_enable),
+            )
+            .field("src_blend", &format_args!("{:?}", self.src_blend))
+            .field("dest_blend", &format_args!("{:?}", self.dest_blend))
+            .field("blend_op", &format_args!("{:?}", self.blend_op))
+            .field(
+                "src_blend_alpha",
+                &format_args!("{:?}", self.src_blend_alpha),
+            )
+            .field(
+                "dest_blend_alpha",
+                &format_args!("{:?}", self.dest_blend_alpha),
+            )
+            .field("blend_op_alpha", &format_args!("{:?}", self.blend_op_alpha))
+            .field("logic_op", &format_args!("{:?}", self.logic_op))
+            .field(
+                "render_target_write_mask",
+                &format_args!("{:?}", self.render_target_write_mask),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RENDER_TARGET_BLEND_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.blend_enable == other.blend_enable
+            && self.logic_op_enable == other.logic_op_enable
+            && self.src_blend == other.src_blend
+            && self.dest_blend == other.dest_blend
+            && self.blend_op == other.blend_op
+            && self.src_blend_alpha == other.src_blend_alpha
+            && self.dest_blend_alpha == other.dest_blend_alpha
+            && self.blend_op_alpha == other.blend_op_alpha
+            && self.logic_op == other.logic_op
+            && self.render_target_write_mask == other.render_target_write_mask
+    }
+}
+impl ::std::cmp::Eq for D3D12_RENDER_TARGET_BLEND_DESC {}
+unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_BLEND_DESC {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone)]
 pub struct D3D12_BLEND_DESC {
     pub alpha_to_coverage_enable: super::system_services::BOOL,
     pub independent_blend_enable: super::system_services::BOOL,
-    pub render_target: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8usize],
 }
 impl D3D12_BLEND_DESC {}
 impl ::std::default::Default for D3D12_BLEND_DESC {
@@ -6654,7 +6797,16 @@ impl ::std::default::Default for D3D12_BLEND_DESC {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
             independent_blend_enable: ::std::default::Default::default(),
-            render_target: ::std::default::Default::default(),
+            render_target: [
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+            ],
         }
     }
 }
@@ -6682,33 +6834,6 @@ impl ::std::cmp::PartialEq for D3D12_BLEND_DESC {
 }
 impl ::std::cmp::Eq for D3D12_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D12_BLEND_DESC {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_BLEND_OP(pub i32);
-impl D3D12_BLEND_OP {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_BLEND_OP_ADD: Self = Self(1i32);
-    pub const D3D12_BLEND_OP_SUBTRACT: Self = Self(2i32);
-    pub const D3D12_BLEND_OP_REV_SUBTRACT: Self = Self(3i32);
-    pub const D3D12_BLEND_OP_MIN: Self = Self(4i32);
-    pub const D3D12_BLEND_OP_MAX: Self = Self(5i32);
-}
-impl ::std::convert::From<i32> for D3D12_BLEND_OP {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_BLEND_OP {
     type Abi = Self;
 }
 #[repr(C)]
@@ -12453,7 +12578,7 @@ pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     pub ib_strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     pub primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     pub num_render_targets: u32,
-    pub rtv_formats: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8usize],
     pub dsv_format: super::dxgi::DXGI_FORMAT,
     pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
     pub node_mask: u32,
@@ -12479,7 +12604,16 @@ impl ::std::default::Default for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             ib_strip_cut_value: ::std::default::Default::default(),
             primitive_topology_type: ::std::default::Default::default(),
             num_render_targets: 0,
-            rtv_formats: ::std::default::Default::default(),
+            rtv_formats: [
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+            ],
             dsv_format: ::std::default::Default::default(),
             sample_desc: ::std::default::Default::default(),
             node_mask: 0,
@@ -12577,7 +12711,7 @@ pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi(
     D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     u32,
-    ::windows::NOT_YET_SUPPORTED_TYPE,
+    [super::dxgi::DXGI_FORMAT; 8usize],
     super::dxgi::DXGI_FORMAT,
     super::dxgi::DXGI_SAMPLE_DESC,
     u32,
@@ -14080,44 +14214,6 @@ impl ::std::cmp::Eq for D3D12_LOCAL_ROOT_SIGNATURE {}
 pub struct D3D12_LOCAL_ROOT_SIGNATURE_abi(::windows::RawPtr);
 unsafe impl ::windows::Abi for D3D12_LOCAL_ROOT_SIGNATURE {
     type Abi = D3D12_LOCAL_ROOT_SIGNATURE_abi;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_LOGIC_OP(pub i32);
-impl D3D12_LOGIC_OP {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_LOGIC_OP_CLEAR: Self = Self(0i32);
-    pub const D3D12_LOGIC_OP_SET: Self = Self(1i32);
-    pub const D3D12_LOGIC_OP_COPY: Self = Self(2i32);
-    pub const D3D12_LOGIC_OP_COPY_INVERTED: Self = Self(3i32);
-    pub const D3D12_LOGIC_OP_NOOP: Self = Self(4i32);
-    pub const D3D12_LOGIC_OP_INVERT: Self = Self(5i32);
-    pub const D3D12_LOGIC_OP_AND: Self = Self(6i32);
-    pub const D3D12_LOGIC_OP_NAND: Self = Self(7i32);
-    pub const D3D12_LOGIC_OP_OR: Self = Self(8i32);
-    pub const D3D12_LOGIC_OP_NOR: Self = Self(9i32);
-    pub const D3D12_LOGIC_OP_XOR: Self = Self(10i32);
-    pub const D3D12_LOGIC_OP_EQUIV: Self = Self(11i32);
-    pub const D3D12_LOGIC_OP_AND_REVERSE: Self = Self(12i32);
-    pub const D3D12_LOGIC_OP_AND_INVERTED: Self = Self(13i32);
-    pub const D3D12_LOGIC_OP_OR_REVERSE: Self = Self(14i32);
-    pub const D3D12_LOGIC_OP_OR_INVERTED: Self = Self(15i32);
-}
-impl ::std::convert::From<i32> for D3D12_LOGIC_OP {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_LOGIC_OP {
-    type Abi = Self;
 }
 pub const D3D12_MAG_FILTER_SHIFT: u32 = 2u32;
 pub const D3D12_MAJOR_VERSION: u32 = 12u32;
@@ -15817,7 +15913,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone)]
 pub struct D3D12_RAYTRACING_INSTANCE_DESC {
-    pub transform: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub transform: [f32; 12usize],
     pub _bitfield1: u32,
     pub _bitfield2: u32,
     pub acceleration_structure: u64,
@@ -15826,7 +15922,7 @@ impl D3D12_RAYTRACING_INSTANCE_DESC {}
 impl ::std::default::Default for D3D12_RAYTRACING_INSTANCE_DESC {
     fn default() -> Self {
         Self {
-            transform: ::std::default::Default::default(),
+            transform: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
             _bitfield1: 0,
             _bitfield2: 0,
             acceleration_structure: 0,
@@ -16492,84 +16588,6 @@ impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
 }
 impl ::std::cmp::Eq for D3D12_RENDER_PASS_RENDER_TARGET_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RENDER_TARGET_BLEND_DESC {
-    pub blend_enable: super::system_services::BOOL,
-    pub logic_op_enable: super::system_services::BOOL,
-    pub src_blend: D3D12_BLEND,
-    pub dest_blend: D3D12_BLEND,
-    pub blend_op: D3D12_BLEND_OP,
-    pub src_blend_alpha: D3D12_BLEND,
-    pub dest_blend_alpha: D3D12_BLEND,
-    pub blend_op_alpha: D3D12_BLEND_OP,
-    pub logic_op: D3D12_LOGIC_OP,
-    pub render_target_write_mask: u8,
-}
-impl D3D12_RENDER_TARGET_BLEND_DESC {}
-impl ::std::default::Default for D3D12_RENDER_TARGET_BLEND_DESC {
-    fn default() -> Self {
-        Self {
-            blend_enable: ::std::default::Default::default(),
-            logic_op_enable: ::std::default::Default::default(),
-            src_blend: ::std::default::Default::default(),
-            dest_blend: ::std::default::Default::default(),
-            blend_op: ::std::default::Default::default(),
-            src_blend_alpha: ::std::default::Default::default(),
-            dest_blend_alpha: ::std::default::Default::default(),
-            blend_op_alpha: ::std::default::Default::default(),
-            logic_op: ::std::default::Default::default(),
-            render_target_write_mask: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RENDER_TARGET_BLEND_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_TARGET_BLEND_DESC")
-            .field("blend_enable", &format_args!("{:?}", self.blend_enable))
-            .field(
-                "logic_op_enable",
-                &format_args!("{:?}", self.logic_op_enable),
-            )
-            .field("src_blend", &format_args!("{:?}", self.src_blend))
-            .field("dest_blend", &format_args!("{:?}", self.dest_blend))
-            .field("blend_op", &format_args!("{:?}", self.blend_op))
-            .field(
-                "src_blend_alpha",
-                &format_args!("{:?}", self.src_blend_alpha),
-            )
-            .field(
-                "dest_blend_alpha",
-                &format_args!("{:?}", self.dest_blend_alpha),
-            )
-            .field("blend_op_alpha", &format_args!("{:?}", self.blend_op_alpha))
-            .field("logic_op", &format_args!("{:?}", self.logic_op))
-            .field(
-                "render_target_write_mask",
-                &format_args!("{:?}", self.render_target_write_mask),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_TARGET_BLEND_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.blend_enable == other.blend_enable
-            && self.logic_op_enable == other.logic_op_enable
-            && self.src_blend == other.src_blend
-            && self.dest_blend == other.dest_blend
-            && self.blend_op == other.blend_op
-            && self.src_blend_alpha == other.src_blend_alpha
-            && self.dest_blend_alpha == other.dest_blend_alpha
-            && self.blend_op_alpha == other.blend_op_alpha
-            && self.logic_op == other.logic_op
-            && self.render_target_write_mask == other.render_target_write_mask
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_TARGET_BLEND_DESC {}
-unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_BLEND_DESC {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
@@ -17344,14 +17362,23 @@ pub const D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT: u32 = 2u32;
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone)]
 pub struct D3D12_RT_FORMAT_ARRAY {
-    pub rt_formats: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub rt_formats: [super::dxgi::DXGI_FORMAT; 8usize],
     pub num_render_targets: u32,
 }
 impl D3D12_RT_FORMAT_ARRAY {}
 impl ::std::default::Default for D3D12_RT_FORMAT_ARRAY {
     fn default() -> Self {
         Self {
-            rt_formats: ::std::default::Default::default(),
+            rt_formats: [
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+            ],
             num_render_targets: 0,
         }
     }
@@ -17387,7 +17414,7 @@ pub struct D3D12_SAMPLER_DESC {
     pub mip_lod_bias: f32,
     pub max_anisotropy: u32,
     pub comparison_func: D3D12_COMPARISON_FUNC,
-    pub border_color: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub border_color: [f32; 4usize],
     pub min_lod: f32,
     pub max_lod: f32,
 }
@@ -17402,7 +17429,7 @@ impl ::std::default::Default for D3D12_SAMPLER_DESC {
             mip_lod_bias: 0.0,
             max_anisotropy: 0,
             comparison_func: ::std::default::Default::default(),
-            border_color: ::std::default::Default::default(),
+            border_color: [0.0, 0.0, 0.0, 0.0],
             min_lod: 0.0,
             max_lod: 0.0,
         }
@@ -17480,14 +17507,14 @@ unsafe impl ::windows::Abi for D3D12_SAMPLE_POSITION {
 #[derive(:: std :: clone :: Clone)]
 pub struct D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     pub driver_opaque_guid: ::windows::Guid,
-    pub driver_opaque_versioning_data: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub driver_opaque_versioning_data: [u8; 16usize],
 }
 impl D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {}
 impl ::std::default::Default for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     fn default() -> Self {
         Self {
             driver_opaque_guid: ::std::default::Default::default(),
-            driver_opaque_versioning_data: ::std::default::Default::default(),
+            driver_opaque_versioning_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         }
     }
 }

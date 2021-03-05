@@ -4143,13 +4143,146 @@ pub struct ID3D11ComputeShader_abi(
         p_data: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D11_BLEND(pub i32);
+impl D3D11_BLEND {
+    #![allow(non_upper_case_globals)]
+    pub const D3D11_BLEND_ZERO: Self = Self(1i32);
+    pub const D3D11_BLEND_ONE: Self = Self(2i32);
+    pub const D3D11_BLEND_SRC_COLOR: Self = Self(3i32);
+    pub const D3D11_BLEND_INV_SRC_COLOR: Self = Self(4i32);
+    pub const D3D11_BLEND_SRC_ALPHA: Self = Self(5i32);
+    pub const D3D11_BLEND_INV_SRC_ALPHA: Self = Self(6i32);
+    pub const D3D11_BLEND_DEST_ALPHA: Self = Self(7i32);
+    pub const D3D11_BLEND_INV_DEST_ALPHA: Self = Self(8i32);
+    pub const D3D11_BLEND_DEST_COLOR: Self = Self(9i32);
+    pub const D3D11_BLEND_INV_DEST_COLOR: Self = Self(10i32);
+    pub const D3D11_BLEND_SRC_ALPHA_SAT: Self = Self(11i32);
+    pub const D3D11_BLEND_BLEND_FACTOR: Self = Self(14i32);
+    pub const D3D11_BLEND_INV_BLEND_FACTOR: Self = Self(15i32);
+    pub const D3D11_BLEND_SRC1_COLOR: Self = Self(16i32);
+    pub const D3D11_BLEND_INV_SRC1_COLOR: Self = Self(17i32);
+    pub const D3D11_BLEND_SRC1_ALPHA: Self = Self(18i32);
+    pub const D3D11_BLEND_INV_SRC1_ALPHA: Self = Self(19i32);
+}
+impl ::std::convert::From<i32> for D3D11_BLEND {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D11_BLEND {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D11_BLEND_OP(pub i32);
+impl D3D11_BLEND_OP {
+    #![allow(non_upper_case_globals)]
+    pub const D3D11_BLEND_OP_ADD: Self = Self(1i32);
+    pub const D3D11_BLEND_OP_SUBTRACT: Self = Self(2i32);
+    pub const D3D11_BLEND_OP_REV_SUBTRACT: Self = Self(3i32);
+    pub const D3D11_BLEND_OP_MIN: Self = Self(4i32);
+    pub const D3D11_BLEND_OP_MAX: Self = Self(5i32);
+}
+impl ::std::convert::From<i32> for D3D11_BLEND_OP {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D11_BLEND_OP {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D11_RENDER_TARGET_BLEND_DESC {
+    pub blend_enable: super::system_services::BOOL,
+    pub src_blend: D3D11_BLEND,
+    pub dest_blend: D3D11_BLEND,
+    pub blend_op: D3D11_BLEND_OP,
+    pub src_blend_alpha: D3D11_BLEND,
+    pub dest_blend_alpha: D3D11_BLEND,
+    pub blend_op_alpha: D3D11_BLEND_OP,
+    pub render_target_write_mask: u8,
+}
+impl D3D11_RENDER_TARGET_BLEND_DESC {}
+impl ::std::default::Default for D3D11_RENDER_TARGET_BLEND_DESC {
+    fn default() -> Self {
+        Self {
+            blend_enable: ::std::default::Default::default(),
+            src_blend: ::std::default::Default::default(),
+            dest_blend: ::std::default::Default::default(),
+            blend_op: ::std::default::Default::default(),
+            src_blend_alpha: ::std::default::Default::default(),
+            dest_blend_alpha: ::std::default::Default::default(),
+            blend_op_alpha: ::std::default::Default::default(),
+            render_target_write_mask: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D11_RENDER_TARGET_BLEND_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D11_RENDER_TARGET_BLEND_DESC")
+            .field("blend_enable", &format_args!("{:?}", self.blend_enable))
+            .field("src_blend", &format_args!("{:?}", self.src_blend))
+            .field("dest_blend", &format_args!("{:?}", self.dest_blend))
+            .field("blend_op", &format_args!("{:?}", self.blend_op))
+            .field(
+                "src_blend_alpha",
+                &format_args!("{:?}", self.src_blend_alpha),
+            )
+            .field(
+                "dest_blend_alpha",
+                &format_args!("{:?}", self.dest_blend_alpha),
+            )
+            .field("blend_op_alpha", &format_args!("{:?}", self.blend_op_alpha))
+            .field(
+                "render_target_write_mask",
+                &format_args!("{:?}", self.render_target_write_mask),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D11_RENDER_TARGET_BLEND_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.blend_enable == other.blend_enable
+            && self.src_blend == other.src_blend
+            && self.dest_blend == other.dest_blend
+            && self.blend_op == other.blend_op
+            && self.src_blend_alpha == other.src_blend_alpha
+            && self.dest_blend_alpha == other.dest_blend_alpha
+            && self.blend_op_alpha == other.blend_op_alpha
+            && self.render_target_write_mask == other.render_target_write_mask
+    }
+}
+impl ::std::cmp::Eq for D3D11_RENDER_TARGET_BLEND_DESC {}
+unsafe impl ::windows::Abi for D3D11_RENDER_TARGET_BLEND_DESC {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone)]
 pub struct D3D11_BLEND_DESC {
     pub alpha_to_coverage_enable: super::system_services::BOOL,
     pub independent_blend_enable: super::system_services::BOOL,
-    pub render_target: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub render_target: [D3D11_RENDER_TARGET_BLEND_DESC; 8usize],
 }
 impl D3D11_BLEND_DESC {}
 impl ::std::default::Default for D3D11_BLEND_DESC {
@@ -4157,7 +4290,16 @@ impl ::std::default::Default for D3D11_BLEND_DESC {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
             independent_blend_enable: ::std::default::Default::default(),
-            render_target: ::std::default::Default::default(),
+            render_target: [
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+                ::std::default::Default::default(),
+            ],
         }
     }
 }
@@ -5055,7 +5197,7 @@ pub struct D3D11_SAMPLER_DESC {
     pub mip_lod_bias: f32,
     pub max_anisotropy: u32,
     pub comparison_func: D3D11_COMPARISON_FUNC,
-    pub border_color: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub border_color: [f32; 4usize],
     pub min_lod: f32,
     pub max_lod: f32,
 }
@@ -5070,7 +5212,7 @@ impl ::std::default::Default for D3D11_SAMPLER_DESC {
             mip_lod_bias: 0.0,
             max_anisotropy: 0,
             comparison_func: ::std::default::Default::default(),
-            border_color: ::std::default::Default::default(),
+            border_color: [0.0, 0.0, 0.0, 0.0],
             min_lod: 0.0,
             max_lod: 0.0,
         }
