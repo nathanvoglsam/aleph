@@ -1,16 +1,12 @@
+#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
 pub struct FILETIME {
     pub dw_low_date_time: u32,
     pub dw_high_date_time: u32,
 }
 impl FILETIME {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct FILETIME_abi(u32, u32);
-unsafe impl ::windows::Abi for FILETIME {
-    type Abi = FILETIME_abi;
-}
 impl ::std::default::Default for FILETIME {
     fn default() -> Self {
         Self {
@@ -33,14 +29,6 @@ impl ::std::fmt::Debug for FILETIME {
             .finish()
     }
 }
-impl ::std::clone::Clone for FILETIME {
-    fn clone(&self) -> Self {
-        Self {
-            dw_low_date_time: self.dw_low_date_time,
-            dw_high_date_time: self.dw_high_date_time,
-        }
-    }
-}
 impl ::std::cmp::PartialEq for FILETIME {
     fn eq(&self, other: &Self) -> bool {
         self.dw_low_date_time == other.dw_low_date_time
@@ -48,7 +36,17 @@ impl ::std::cmp::PartialEq for FILETIME {
     }
 }
 impl ::std::cmp::Eq for FILETIME {}
-#[link(name = "KERNEL32")]
-extern "system" {
-    pub fn CloseHandle(h_object: super::system_services::HANDLE) -> ::windows::BOOL;
+unsafe impl ::windows::Abi for FILETIME {
+    type Abi = Self;
+}
+pub unsafe fn CloseHandle<'a, T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>>(
+    h_object: T0__,
+) -> super::system_services::BOOL {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn CloseHandle(
+            h_object: super::system_services::HANDLE,
+        ) -> super::system_services::BOOL;
+    }
+    CloseHandle(h_object.into_param().abi())
 }

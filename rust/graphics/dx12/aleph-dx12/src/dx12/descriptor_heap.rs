@@ -27,12 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE,
-};
+use crate::raw::windows::win32::direct3d12::ID3D12DescriptorHeap;
 use crate::{CPUDescriptorHandle, DescriptorHeapDesc, GPUDescriptorHandle};
 use std::convert::TryFrom;
-use std::mem::{transmute, MaybeUninit};
+use std::mem::transmute;
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -41,27 +39,20 @@ pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 impl DescriptorHeap {
     pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> Option<CPUDescriptorHandle> {
         unsafe {
-            let mut out = D3D12_CPU_DESCRIPTOR_HANDLE::default();
-            self.0.GetCPUDescriptorHandleForHeapStart(&mut out);
+            let out = self.0.GetCPUDescriptorHandleForHeapStart();
             CPUDescriptorHandle::try_from(out).ok()
         }
     }
 
     pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> Option<GPUDescriptorHandle> {
         unsafe {
-            let mut out = D3D12_GPU_DESCRIPTOR_HANDLE::default();
-            self.0.GetGPUDescriptorHandleForHeapStart(&mut out);
+            let out = self.0.GetGPUDescriptorHandleForHeapStart();
             GPUDescriptorHandle::try_from(out).ok()
         }
     }
 
     pub fn get_desc(&self) -> DescriptorHeapDesc {
-        unsafe {
-            let mut out = MaybeUninit::uninit();
-            self.0.GetDesc(out.as_mut_ptr());
-            let out = out.assume_init();
-            transmute(out)
-        }
+        unsafe { transmute(self.0.GetDesc()) }
     }
 }
 

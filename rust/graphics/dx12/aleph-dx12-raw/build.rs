@@ -35,7 +35,7 @@ use quote::ToTokens;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
-use syn::{Item, ItemMod, Visibility};
+use syn::{AttrStyle, Item, ItemMod, Visibility};
 
 #[cfg(target_os = "windows")]
 fn main() {
@@ -51,7 +51,7 @@ fn main() {
             INFINITE,
             LoadLibraryW,
             LoadLibraryA,
-            GetProcAddress,
+            //GetProcAddress,
             GetCurrentThread,
             SetThreadDescription,
         },
@@ -137,7 +137,10 @@ fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &ItemMod
 
 #[cfg(target_os = "windows")]
 fn write_module_file<P: AsRef<Path>>(file: P, module: ItemMod) {
-    let attrs = module.attrs.clone();
+    let mut attrs = module.attrs.clone();
+    for attr in attrs.iter_mut() {
+        attr.style = AttrStyle::Inner(Default::default())
+    }
     let items = if let Some((_, items)) = module.content {
         items
     } else {

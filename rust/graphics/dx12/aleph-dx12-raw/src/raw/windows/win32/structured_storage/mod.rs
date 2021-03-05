@@ -1,7 +1,9 @@
+#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
 pub struct STATSTG {
-    pub pwcs_name: *mut u16,
+    pub pwcs_name: super::system_services::PWSTR,
     pub r#type: u32,
     pub cb_size: u64,
     pub mtime: super::windows_programming::FILETIME,
@@ -14,28 +16,10 @@ pub struct STATSTG {
     pub reserved: u32,
 }
 impl STATSTG {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct STATSTG_abi(
-    *mut u16,
-    u32,
-    u64,
-    super::windows_programming::FILETIME_abi,
-    super::windows_programming::FILETIME_abi,
-    super::windows_programming::FILETIME_abi,
-    u32,
-    u32,
-    ::windows::Guid,
-    u32,
-    u32,
-);
-unsafe impl ::windows::Abi for STATSTG {
-    type Abi = STATSTG_abi;
-}
 impl ::std::default::Default for STATSTG {
     fn default() -> Self {
         Self {
-            pwcs_name: ::std::ptr::null_mut(),
+            pwcs_name: ::std::default::Default::default(),
             r#type: 0,
             cb_size: 0,
             mtime: ::std::default::Default::default(),
@@ -43,7 +27,7 @@ impl ::std::default::Default for STATSTG {
             atime: ::std::default::Default::default(),
             grf_mode: 0,
             grf_locks_supported: 0,
-            clsid: ::windows::Guid::zeroed(),
+            clsid: ::std::default::Default::default(),
             grf_state_bits: 0,
             reserved: 0,
         }
@@ -69,23 +53,6 @@ impl ::std::fmt::Debug for STATSTG {
             .finish()
     }
 }
-impl ::std::clone::Clone for STATSTG {
-    fn clone(&self) -> Self {
-        Self {
-            pwcs_name: self.pwcs_name,
-            r#type: self.r#type,
-            cb_size: self.cb_size,
-            mtime: <super::windows_programming::FILETIME as std::clone::Clone>::clone(&self.mtime),
-            ctime: <super::windows_programming::FILETIME as std::clone::Clone>::clone(&self.ctime),
-            atime: <super::windows_programming::FILETIME as std::clone::Clone>::clone(&self.atime),
-            grf_mode: self.grf_mode,
-            grf_locks_supported: self.grf_locks_supported,
-            clsid: <::windows::Guid as std::clone::Clone>::clone(&self.clsid),
-            grf_state_bits: self.grf_state_bits,
-            reserved: self.reserved,
-        }
-    }
-}
 impl ::std::cmp::PartialEq for STATSTG {
     fn eq(&self, other: &Self) -> bool {
         self.pwcs_name == other.pwcs_name
@@ -102,31 +69,76 @@ impl ::std::cmp::PartialEq for STATSTG {
     }
 }
 impl ::std::cmp::Eq for STATSTG {}
+unsafe impl ::windows::Abi for STATSTG {
+    type Abi = Self;
+}
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ISequentialStream(::windows::IUnknown);
-impl ::std::clone::Clone for ISequentialStream {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
-    }
-}
-impl ::std::fmt::Debug for ISequentialStream {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        write!(f, "{:?}", self.0)
-    }
-}
-impl ::std::cmp::PartialEq for ISequentialStream {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::std::cmp::Eq for ISequentialStream {}
+impl ISequentialStream {}
 unsafe impl ::windows::Interface for ISequentialStream {
     type Vtable = ISequentialStream_abi;
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(208878128, 10780, 4558, [173, 229, 0, 170, 0, 68, 119, 61]);
 }
+#[allow(non_snake_case)]
+impl ISequentialStream {
+    pub unsafe fn Read(
+        &self,
+        pv: *mut ::std::ffi::c_void,
+        cb: u32,
+        pcb_read: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pv),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(pcb_read),
+        )
+    }
+    pub unsafe fn Write(
+        &self,
+        pv: *const ::std::ffi::c_void,
+        cb: u32,
+        pcb_written: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pv),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(pcb_written),
+        )
+    }
+}
+impl ::std::convert::From<ISequentialStream> for ::windows::IUnknown {
+    fn from(value: ISequentialStream) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ISequentialStream> for ::windows::IUnknown {
+    fn from(value: &ISequentialStream) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ISequentialStream {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ISequentialStream {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
 #[repr(C)]
+#[doc(hidden)]
 pub struct ISequentialStream_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -148,15 +160,71 @@ pub struct ISequentialStream_abi(
         pcb_written: *mut u32,
     ) -> ::windows::ErrorCode,
 );
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct STREAM_SEEK(pub u32);
+impl STREAM_SEEK {
+    #![allow(non_upper_case_globals)]
+    pub const STREAM_SEEK_SET: Self = Self(0u32);
+    pub const STREAM_SEEK_CUR: Self = Self(1u32);
+    pub const STREAM_SEEK_END: Self = Self(2u32);
+}
+impl ::std::convert::From<u32> for STREAM_SEEK {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for STREAM_SEEK {
+    type Abi = Self;
+}
+impl ::std::ops::BitOr for STREAM_SEEK {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+impl ::std::ops::BitAnd for STREAM_SEEK {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+#[repr(transparent)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IStream(::windows::IUnknown);
+impl IStream {}
+unsafe impl ::windows::Interface for IStream {
+    type Vtable = IStream_abi;
+    const IID: ::windows::Guid =
+        ::windows::Guid::from_values(12, 0, 0, [192, 0, 0, 0, 0, 0, 0, 70]);
+}
 #[allow(non_snake_case)]
-impl ISequentialStream {
+impl IStream {
     pub unsafe fn Read(
         &self,
         pv: *mut ::std::ffi::c_void,
         cb: u32,
         pcb_read: *mut u32,
     ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(::windows::Abi::abi(self), pv, cb, pcb_read)
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pv),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(pcb_read),
+        )
     }
     pub unsafe fn Write(
         &self,
@@ -164,56 +232,142 @@ impl ISequentialStream {
         cb: u32,
         pcb_written: *mut u32,
     ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(::windows::Abi::abi(self), pv, cb, pcb_written)
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pv),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(pcb_written),
+        )
+    }
+    pub unsafe fn Seek(
+        &self,
+        dlib_move: i64,
+        dw_origin: STREAM_SEEK,
+        plib_new_position: *mut u64,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(dlib_move),
+            ::std::mem::transmute(dw_origin),
+            ::std::mem::transmute(plib_new_position),
+        )
+    }
+    pub unsafe fn SetSize(&self, lib_new_size: u64) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(lib_new_size),
+        )
+    }
+    pub unsafe fn CopyTo<'a, T0__: ::windows::IntoParam<'a, IStream>>(
+        &self,
+        pstm: T0__,
+        cb: u64,
+        pcb_read: *mut u64,
+        pcb_written: *mut u64,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            pstm.into_param().abi(),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(pcb_read),
+            ::std::mem::transmute(pcb_written),
+        )
+    }
+    pub unsafe fn Commit(&self, grf_commit_flags: u32) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(grf_commit_flags),
+        )
+    }
+    pub unsafe fn Revert(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn LockRegion(
+        &self,
+        lib_offset: u64,
+        cb: u64,
+        dw_lock_type: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(lib_offset),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(dw_lock_type),
+        )
+    }
+    pub unsafe fn UnlockRegion(
+        &self,
+        lib_offset: u64,
+        cb: u64,
+        dw_lock_type: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).11)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(lib_offset),
+            ::std::mem::transmute(cb),
+            ::std::mem::transmute(dw_lock_type),
+        )
+    }
+    pub unsafe fn Stat(&self, pstatstg: *mut STATSTG, grf_stat_flag: u32) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pstatstg),
+            ::std::mem::transmute(grf_stat_flag),
+        )
+    }
+    pub unsafe fn Clone(&self, ppstm: *mut ::std::option::Option<IStream>) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(ppstm),
+        )
     }
 }
-impl ::std::convert::From<ISequentialStream> for ::windows::IUnknown {
-    fn from(value: ISequentialStream) -> Self {
+impl ::std::convert::From<IStream> for ::windows::IUnknown {
+    fn from(value: IStream) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&ISequentialStream> for ::windows::IUnknown {
-    fn from(value: &ISequentialStream) -> Self {
+impl ::std::convert::From<&IStream> for ::windows::IUnknown {
+    fn from(value: &IStream) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<::windows::Param<'a, ::windows::IUnknown>> for ISequentialStream {
-    fn into(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IStream {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<::windows::Param<'a, ::windows::IUnknown>> for &'a ISequentialStream {
-    fn into(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IStream {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-pub struct IStream(::windows::IUnknown);
-impl ::std::clone::Clone for IStream {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+impl ::std::convert::From<IStream> for ISequentialStream {
+    fn from(value: IStream) -> Self {
+        unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::fmt::Debug for IStream {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        write!(f, "{:?}", self.0)
+impl ::std::convert::From<&IStream> for ISequentialStream {
+    fn from(value: &IStream) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl ::std::cmp::PartialEq for IStream {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+impl<'a> ::windows::IntoParam<'a, ISequentialStream> for IStream {
+    fn into_param(self) -> ::windows::Param<'a, ISequentialStream> {
+        ::windows::Param::Owned(::std::convert::Into::<ISequentialStream>::into(self))
     }
 }
-impl ::std::cmp::Eq for IStream {}
-unsafe impl ::windows::Interface for IStream {
-    type Vtable = IStream_abi;
-    const IID: ::windows::Guid =
-        ::windows::Guid::from_values(12, 0, 0, [192, 0, 0, 0, 0, 0, 0, 70]);
+impl<'a> ::windows::IntoParam<'a, ISequentialStream> for &'a IStream {
+    fn into_param(self) -> ::windows::Param<'a, ISequentialStream> {
+        ::windows::Param::Owned(::std::convert::Into::<ISequentialStream>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
 }
 #[repr(C)]
+#[doc(hidden)]
 pub struct IStream_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -237,7 +391,7 @@ pub struct IStream_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         dlib_move: i64,
-        dw_origin: u32,
+        dw_origin: STREAM_SEEK,
         plib_new_position: *mut u64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
@@ -275,138 +429,6 @@ pub struct IStream_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        ppstm: *mut ::std::option::Option<IStream>,
+        ppstm: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
-#[allow(non_snake_case)]
-impl IStream {
-    pub unsafe fn Read(
-        &self,
-        pv: *mut ::std::ffi::c_void,
-        cb: u32,
-        pcb_read: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(::windows::Abi::abi(self), pv, cb, pcb_read)
-    }
-    pub unsafe fn Write(
-        &self,
-        pv: *const ::std::ffi::c_void,
-        cb: u32,
-        pcb_written: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(::windows::Abi::abi(self), pv, cb, pcb_written)
-    }
-    pub unsafe fn Seek(
-        &self,
-        dlib_move: i64,
-        dw_origin: u32,
-        plib_new_position: *mut u64,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            dlib_move,
-            dw_origin,
-            plib_new_position,
-        )
-    }
-    pub unsafe fn SetSize(&self, lib_new_size: u64) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), lib_new_size)
-    }
-    pub unsafe fn CopyTo<'a, T0__: ::std::convert::Into<::windows::Param<'a, IStream>>>(
-        &self,
-        pstm: T0__,
-        cb: u64,
-        pcb_read: *mut u64,
-        pcb_written: *mut u64,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            pstm.into().abi(),
-            cb,
-            pcb_read,
-            pcb_written,
-        )
-    }
-    pub unsafe fn Commit(&self, grf_commit_flags: u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self), grf_commit_flags)
-    }
-    pub unsafe fn Revert(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn LockRegion(
-        &self,
-        lib_offset: u64,
-        cb: u64,
-        dw_lock_type: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            lib_offset,
-            cb,
-            dw_lock_type,
-        )
-    }
-    pub unsafe fn UnlockRegion(
-        &self,
-        lib_offset: u64,
-        cb: u64,
-        dw_lock_type: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            lib_offset,
-            cb,
-            dw_lock_type,
-        )
-    }
-    pub unsafe fn Stat(&self, pstatstg: *mut STATSTG, grf_stat_flag: u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(::windows::Abi::abi(self), pstatstg, grf_stat_flag)
-    }
-    pub unsafe fn Clone(&self, ppstm: *mut ::std::option::Option<IStream>) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self), ppstm)
-    }
-}
-impl ::std::convert::From<IStream> for ::windows::IUnknown {
-    fn from(value: IStream) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IStream> for ::windows::IUnknown {
-    fn from(value: &IStream) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::std::convert::Into<::windows::Param<'a, ::windows::IUnknown>> for IStream {
-    fn into(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::std::convert::Into<::windows::Param<'a, ::windows::IUnknown>> for &'a IStream {
-    fn into(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IStream> for ISequentialStream {
-    fn from(value: IStream) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IStream> for ISequentialStream {
-    fn from(value: &IStream) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::std::convert::Into<::windows::Param<'a, ISequentialStream>> for IStream {
-    fn into(self) -> ::windows::Param<'a, ISequentialStream> {
-        ::windows::Param::Owned(::std::convert::Into::<ISequentialStream>::into(self))
-    }
-}
-impl<'a> ::std::convert::Into<::windows::Param<'a, ISequentialStream>> for &'a IStream {
-    fn into(self) -> ::windows::Param<'a, ISequentialStream> {
-        ::windows::Param::Owned(::std::convert::Into::<ISequentialStream>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}

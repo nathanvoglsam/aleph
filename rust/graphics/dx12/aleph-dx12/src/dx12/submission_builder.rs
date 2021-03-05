@@ -51,9 +51,9 @@ impl<'a> SubmissionBuilder<'a> {
         self
     }
 
-    pub(crate) unsafe fn lists(&self) -> (u32, ID3D12CommandList) {
+    pub(crate) unsafe fn lists(&self) -> (u32, *mut Option<ID3D12CommandList>) {
         let len = self.buffer.len() as u32;
-        let ptr: ID3D12CommandList = std::mem::transmute(self.buffer.as_ptr());
+        let ptr = self.buffer.as_ptr() as *mut ID3D12CommandList as *mut Option<ID3D12CommandList>;
         (len, ptr)
     }
 }

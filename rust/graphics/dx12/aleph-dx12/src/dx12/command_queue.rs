@@ -28,6 +28,7 @@
 //
 
 use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
+use crate::raw::windows::win32::system_services::PWSTR;
 use crate::{D3D12DeviceChild, D3D12Object, Device, Fence, SubmissionBuilder};
 use std::sync::{Arc, RwLock};
 
@@ -61,8 +62,7 @@ impl<'a> CommandQueueRecorder<'a> {
 
     pub unsafe fn execute_command_lists(&mut self, command_lists: &SubmissionBuilder) {
         let lists = command_lists.lists();
-        self.0.ExecuteCommandLists(lists.0, &lists.1);
-        std::mem::forget(lists.1)
+        self.0.ExecuteCommandLists(lists.0, lists.1);
     }
 }
 
@@ -86,7 +86,9 @@ impl CommandQueue {
 
 impl D3D12Object for CommandQueue {
     unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.get_shared().SetName(name.as_ptr()).ok()
+        self.get_shared()
+            .SetName(PWSTR(name.as_ptr() as *mut u16))
+            .ok()
     }
 }
 

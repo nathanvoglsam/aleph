@@ -27,7 +27,22 @@
 // SOFTWARE.
 //
 
+pub extern crate windows as windows_rs;
+
 #[cfg(target_os = "windows")]
 mod raw;
 
 pub use raw::*;
+
+pub use crate::windows::win32::system_services::BOOL;
+pub use windows_rs::initialize_mta;
+pub use windows_rs::initialize_sta;
+pub use windows_rs::Abi;
+pub use windows_rs::Error;
+pub use windows_rs::ErrorCode;
+pub use windows_rs::Guid;
+pub use windows_rs::IUnknown;
+pub use windows_rs::Interface;
+pub use windows_rs::Param;
+pub use windows_rs::RawPtr;
+pub use windows_rs::Result;

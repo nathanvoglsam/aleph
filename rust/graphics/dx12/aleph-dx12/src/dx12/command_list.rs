@@ -40,10 +40,11 @@ use crate::{
     Viewport,
 };
 use raw::windows::win32::direct3d12::{
-    ID3D12DescriptorHeap, D3D12_INDEX_BUFFER_VIEW, D3D12_STREAM_OUTPUT_BUFFER_VIEW,
-    D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
+    D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
+    D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
-use std::mem::{align_of, forget, size_of, transmute};
+use raw::windows::win32::system_services::PWSTR;
+use std::mem::{align_of, size_of};
 use std::ops::Deref;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
@@ -313,25 +314,11 @@ impl<'a> GraphicsCommandListRecorder<'a> {
         // Perform the actual API call
         let num_descriptor_heaps = descriptor_heaps.len() as u32;
 
-        // This is a load of hacky crap to let the function call actually compile
-        //
-        // The bindings are generated incorrectly and the function believes it takes a regular
-        // ID3D12DescriptorHeap pointer. It actually takes a pointer to an array of
-        // ID3D12DescriptorHeap pointers.
-        //
-        // I have to cast the pointer types around and do some mem::forget stuff to prevent it
-        // from calling drop as that would explode very violently
-        //
-        // Fingers crossed this actually works
-        //
-        // TODO: Remove this when the bindings are generated correctly by windows-rs
         let pp_descriptor_heaps = descriptor_heaps.as_ptr();
-        let pp_descriptor_heaps: ID3D12DescriptorHeap = transmute(pp_descriptor_heaps);
+        let pp_descriptor_heaps = pp_descriptor_heaps as *mut Option<_>;
 
         self.0
-            .SetDescriptorHeaps(num_descriptor_heaps, &pp_descriptor_heaps);
-
-        forget(pp_descriptor_heaps);
+            .SetDescriptorHeaps(num_descriptor_heaps, pp_descriptor_heaps);
     }
 
     /// `ID3D12GraphicsCommandList::SetComputeRootSignature`
@@ -350,8 +337,9 @@ impl<'a> GraphicsCommandListRecorder<'a> {
         root_parameter_index: u32,
         base_descriptor: GPUDescriptorHandle,
     ) {
+        let base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE = base_descriptor.into();
         self.0
-            .SetComputeRootDescriptorTable(root_parameter_index, base_descriptor.into())
+            .SetComputeRootDescriptorTable(root_parameter_index, base_descriptor)
     }
 
     /// `ID3D12GraphicsCommandList::SetGraphicsRootDescriptorTable`
@@ -360,8 +348,9 @@ impl<'a> GraphicsCommandListRecorder<'a> {
         root_parameter_index: u32,
         base_descriptor: GPUDescriptorHandle,
     ) {
+        let base_descriptor: D3D12_GPU_DESCRIPTOR_HANDLE = base_descriptor.into();
         self.0
-            .SetGraphicsRootDescriptorTable(root_parameter_index, base_descriptor.into())
+            .SetGraphicsRootDescriptorTable(root_parameter_index, base_descriptor)
     }
 
     /// `ID3D12GraphicsCommandList::SetComputeRoot32BitConstant`
@@ -571,12 +560,8 @@ impl<'a> GraphicsCommandListRecorder<'a> {
             std::ptr::null()
         };
 
-        self.0.OMSetRenderTargets(
-            num_rt,
-            p_rt_desc as *const _,
-            false.into(),
-            p_ds_desc as *const _,
-        )
+        self.0
+            .OMSetRenderTargets(num_rt, p_rt_desc as *const _, false, p_ds_desc as *const _)
     }
 
     /// `ID3D12GraphicsCommandList::OMSetRenderTargets`
@@ -616,7 +601,7 @@ impl<'a> GraphicsCommandListRecorder<'a> {
         self.0.OMSetRenderTargets(
             num_render_target_descriptors,
             p_rt_desc as *const _,
-            true.into(),
+            true,
             p_ds_desc as *const _,
         )
     }
@@ -632,8 +617,9 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     ) {
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
+        let depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE = depth_stencil_view.into();
         self.0.ClearDepthStencilView(
-            depth_stencil_view.into(),
+            depth_stencil_view,
             clear_flags.into(),
             depth,
             stencil,
@@ -653,16 +639,13 @@ impl<'a> GraphicsCommandListRecorder<'a> {
 
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
-        self.0.ClearRenderTargetView(
-            render_target_view.into(),
-            color_rgba.as_ptr(),
-            num_rects,
-            p_rects,
-        )
+        let render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE = render_target_view.into();
+        self.0
+            .ClearRenderTargetView(render_target_view, color_rgba.as_ptr(), num_rects, p_rects)
     }
 
     /// `ID3D12GraphicsCommandList::ClearUnorderedAccessViewUint`
-    pub unsafe fn clear_unordered_acces_view_uint(
+    pub unsafe fn clear_unordered_access_view_uint(
         &mut self,
         view_gpu_handle_in_current_heap: GPUDescriptorHandle,
         view_cpu_handle: CPUDescriptorHandle,
@@ -674,9 +657,12 @@ impl<'a> GraphicsCommandListRecorder<'a> {
 
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
+        let view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE =
+            view_gpu_handle_in_current_heap.into();
+        let view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE = view_cpu_handle.into();
         self.0.ClearUnorderedAccessViewUint(
-            view_gpu_handle_in_current_heap.into(),
-            view_cpu_handle.into(),
+            view_gpu_handle_in_current_heap,
+            view_cpu_handle,
             &resource.0,
             values.as_ptr(),
             num_rects,
@@ -697,9 +683,12 @@ impl<'a> GraphicsCommandListRecorder<'a> {
 
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
+        let view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE =
+            view_gpu_handle_in_current_heap.into();
+        let view_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE = view_cpu_handle.into();
         self.0.ClearUnorderedAccessViewFloat(
-            view_gpu_handle_in_current_heap.into(),
-            view_cpu_handle.into(),
+            view_gpu_handle_in_current_heap,
+            view_cpu_handle,
             &resource.0,
             values.as_ptr(),
             num_rects,
@@ -830,7 +819,7 @@ impl<'a> Drop for GraphicsCommandListRecorder<'a> {
 
 impl<'a> D3D12Object for GraphicsCommandListRecorder<'a> {
     unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.0.SetName(name.as_ptr()).ok()
+        self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
     }
 }
 
@@ -879,7 +868,9 @@ impl GraphicsCommandList {
 
 impl D3D12Object for GraphicsCommandList {
     unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.get_shared().SetName(name.as_ptr()).ok()
+        self.get_shared()
+            .SetName(PWSTR(name.as_ptr() as *mut u16))
+            .ok()
     }
 }
 

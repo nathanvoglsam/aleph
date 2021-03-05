@@ -176,7 +176,7 @@ impl Factory {
 
                     // Check if the device supports the feature level we want by trying to create a device
                     let result = create_fn(
-                        Some(transmute_copy(&adapter)),
+                        transmute_copy(&adapter),
                         minimum_feature_level.into(),
                         &ID3D12Device4::IID,
                         std::ptr::null_mut(),

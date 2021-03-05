@@ -1,16 +1,12 @@
+#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
 pub struct LUID {
     pub low_part: u32,
     pub high_part: i32,
 }
 impl LUID {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct LUID_abi(u32, i32);
-unsafe impl ::windows::Abi for LUID {
-    type Abi = LUID_abi;
-}
 impl ::std::default::Default for LUID {
     fn default() -> Self {
         Self {
@@ -27,17 +23,12 @@ impl ::std::fmt::Debug for LUID {
             .finish()
     }
 }
-impl ::std::clone::Clone for LUID {
-    fn clone(&self) -> Self {
-        Self {
-            low_part: self.low_part,
-            high_part: self.high_part,
-        }
-    }
-}
 impl ::std::cmp::PartialEq for LUID {
     fn eq(&self, other: &Self) -> bool {
         self.low_part == other.low_part && self.high_part == other.high_part
     }
 }
 impl ::std::cmp::Eq for LUID {}
+unsafe impl ::windows::Abi for LUID {
+    type Abi = Self;
+}

@@ -1,5 +1,7 @@
+#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
 pub struct RECT {
     pub left: i32,
     pub top: i32,
@@ -7,12 +9,6 @@ pub struct RECT {
     pub bottom: i32,
 }
 impl RECT {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct RECT_abi(i32, i32, i32, i32);
-unsafe impl ::windows::Abi for RECT {
-    type Abi = RECT_abi;
-}
 impl ::std::default::Default for RECT {
     fn default() -> Self {
         Self {
@@ -33,16 +29,6 @@ impl ::std::fmt::Debug for RECT {
             .finish()
     }
 }
-impl ::std::clone::Clone for RECT {
-    fn clone(&self) -> Self {
-        Self {
-            left: self.left,
-            top: self.top,
-            right: self.right,
-            bottom: self.bottom,
-        }
-    }
-}
 impl ::std::cmp::PartialEq for RECT {
     fn eq(&self, other: &Self) -> bool {
         self.left == other.left
@@ -52,19 +38,17 @@ impl ::std::cmp::PartialEq for RECT {
     }
 }
 impl ::std::cmp::Eq for RECT {}
+unsafe impl ::windows::Abi for RECT {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
 pub struct POINT {
     pub x: i32,
     pub y: i32,
 }
 impl POINT {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct POINT_abi(i32, i32);
-unsafe impl ::windows::Abi for POINT {
-    type Abi = POINT_abi;
-}
 impl ::std::default::Default for POINT {
     fn default() -> Self {
         Self { x: 0, y: 0 }
@@ -78,17 +62,12 @@ impl ::std::fmt::Debug for POINT {
             .finish()
     }
 }
-impl ::std::clone::Clone for POINT {
-    fn clone(&self) -> Self {
-        Self {
-            x: self.x,
-            y: self.y,
-        }
-    }
-}
 impl ::std::cmp::PartialEq for POINT {
     fn eq(&self, other: &Self) -> bool {
         self.x == other.x && self.y == other.y
     }
 }
 impl ::std::cmp::Eq for POINT {}
+unsafe impl ::windows::Abi for POINT {
+    type Abi = Self;
+}

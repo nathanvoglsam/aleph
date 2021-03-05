@@ -37,7 +37,7 @@ static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
 #[derive(Clone, Debug)]
 pub enum DxcValidatorCreateError {
     FailedToLoadLibrary,
-    CreateCallFailed(raw::windows::Error),
+    CreateCallFailed(raw::Error),
 }
 
 #[repr(transparent)]

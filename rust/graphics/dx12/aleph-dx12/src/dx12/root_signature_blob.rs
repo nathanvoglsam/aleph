@@ -32,7 +32,7 @@ use crate::raw::windows::win32::direct3d11::ID3DBlob;
 use crate::raw::windows::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
 use crate::raw::windows::win32::direct3d12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
 use crate::utils::DynamicLoadCell;
-use crate::VersionedRootSignatureDesc;
+use crate::{Abi, VersionedRootSignatureDesc};
 use utf16_lit::utf16_null;
 
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
@@ -53,7 +53,7 @@ impl RootSignatureBlob {
         let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut blob: Option<ID3DBlob> = None;
         let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
-        create_fn(desc_ptr, &mut blob, &mut err)
+        create_fn(desc_ptr, blob.set_abi(), err.set_abi())
             .and_some(blob)
             .map(|v| RootSignatureBlob(v))
     }

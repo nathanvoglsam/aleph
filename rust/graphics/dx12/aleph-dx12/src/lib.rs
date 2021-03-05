@@ -51,18 +51,17 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use raw::windows::Abi;
+pub(crate) use raw::Abi;
+pub(crate) use raw::Guid;
+pub(crate) use raw::IUnknown;
+pub(crate) use raw::Interface;
+pub(crate) use raw::BOOL;
 
-pub(crate) use raw::windows::Guid;
-pub(crate) use raw::windows::IUnknown;
-pub(crate) use raw::windows::Interface;
-pub(crate) use raw::windows::BOOL;
-
-pub use raw::windows::initialize_mta;
-pub use raw::windows::initialize_sta;
-pub use raw::windows::Error;
-pub use raw::windows::ErrorCode;
-pub use raw::windows::Result;
+pub use raw::initialize_mta;
+pub use raw::initialize_sta;
+pub use raw::Error;
+pub use raw::ErrorCode;
+pub use raw::Result;
 pub use utils::name_thread_as_main_thread;
 pub use utils::Bool;
 pub use utils::CStrFFI;

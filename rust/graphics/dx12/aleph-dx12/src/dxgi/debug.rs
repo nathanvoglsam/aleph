@@ -60,7 +60,8 @@ impl Debug {
         debug_id: DebugID,
         flags: DebugRLOFlags,
     ) -> crate::Result<()> {
-        unsafe { self.0.ReportLiveObjects(debug_id.into(), flags.into()).ok() }
+        let debug_id: crate::Guid = debug_id.into();
+        unsafe { self.0.ReportLiveObjects(debug_id, flags.into()).ok() }
     }
 }
 

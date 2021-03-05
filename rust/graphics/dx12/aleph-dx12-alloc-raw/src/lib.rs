@@ -38,9 +38,9 @@ use dx12_raw::windows::win32::direct3d12::{
     D3D12_RESOURCE_STATES,
 };
 use dx12_raw::windows::win32::dxgi::IDXGIAdapter;
-use dx12_raw::windows::ErrorCode;
-use dx12_raw::windows::Guid;
-use dx12_raw::windows::BOOL;
+use dx12_raw::ErrorCode;
+use dx12_raw::Guid;
+use dx12_raw::BOOL;
 use std::ffi::c_void;
 
 macro_rules! flags_bitwise_impl {

@@ -35,7 +35,7 @@ use crate::raw::windows::win32::dxgi::{
 use crate::CommandQueue;
 use crate::IUnknown;
 use crate::{Abi, Interface};
-use std::mem::{forget, transmute};
+use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::RwLockReadGuard;
 
@@ -84,16 +84,14 @@ impl SwapChain {
             DEFAULT_NODE_MASKS.as_ptr()
         };
 
-        // This is a load of hacky crap to let the function call actually compile
-        //
-        // Fingers crossed this actually works
-        //
-        // TODO: Remove this when the bindings are generated correctly by windows-rs
         let mut locks: [Option<RwLockReadGuard<ID3D12CommandQueue>>; 16] = [
             None, None, None, None, None, None, None, None, None, None, None, None, None, None,
             None, None,
         ];
-        let mut unpacked_queues = [0usize; 16];
+        let mut unpacked_queues: [Option<IUnknown>; 16] = [
+            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+            None, None,
+        ];
         queues.iter().enumerate().for_each(|(index, queue)| {
             let lock = queue.get_shared();
             let ptr = lock.deref().clone();
@@ -101,10 +99,7 @@ impl SwapChain {
             locks[index] = Some(lock);
         });
 
-        let pp_queues: IUnknown = transmute(unpacked_queues.as_ptr());
-
-        if let Err(err) = self
-            .0
+        self.0
             .ResizeBuffers1(
                 buffer_count,
                 width,
@@ -112,16 +107,9 @@ impl SwapChain {
                 format.into(),
                 flags.0,
                 node_masks,
-                &pp_queues,
+                unpacked_queues.as_mut_ptr(),
             )
             .ok()
-        {
-            forget(pp_queues);
-            Err(err)
-        } else {
-            forget(pp_queues);
-            Ok(())
-        }
     }
 
     /// `IDXGISwapChain1::Present1`

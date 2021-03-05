@@ -82,7 +82,7 @@ impl DXC_OUT_KIND {
     pub const DXC_OUT_EXTRA_OUTPUTS: Self = Self(10i32);
     pub const DXC_OUT_FORCE_DWORD: Self = Self(-1i32);
 }
-unsafe impl windows::Abi for DXC_OUT_KIND {
+unsafe impl dx12_raw::Abi for DXC_OUT_KIND {
     type Abi = Self;
 }
 #[repr(C)]
@@ -95,7 +95,7 @@ pub struct DxcBuffer {
 #[repr(C)]
 #[doc(hidden)]
 pub struct DxcBuffer_abi(*mut ::std::ffi::c_void, usize, u32);
-unsafe impl windows::Abi for DxcBuffer {
+unsafe impl dx12_raw::Abi for DxcBuffer {
     type Abi = DxcBuffer_abi;
 }
 impl ::std::default::Default for DxcBuffer {
@@ -134,16 +134,16 @@ impl ::std::cmp::Eq for DxcBuffer {}
 #[allow(non_camel_case_types)]
 pub type DxcCreateInstance2Proc = extern "system" fn(
     p_malloc: ::std::option::Option<windows::win32::com::IMalloc>,
-    rclsid: *const windows::Guid,
-    riid: *const windows::Guid,
+    rclsid: *const dx12_raw::Guid,
+    riid: *const dx12_raw::Guid,
     ppv: *mut *mut ::std::ffi::c_void,
-) -> windows::ErrorCode;
+) -> dx12_raw::ErrorCode;
 #[allow(non_camel_case_types)]
 pub type DxcCreateInstanceProc = extern "system" fn(
-    rclsid: *const windows::Guid,
-    riid: *const windows::Guid,
+    rclsid: *const dx12_raw::Guid,
+    riid: *const dx12_raw::Guid,
     ppv: *mut *mut ::std::ffi::c_void,
-) -> windows::ErrorCode;
+) -> dx12_raw::ErrorCode;
 #[repr(C)]
 #[allow(non_snake_case)]
 pub struct DxcDefine {
@@ -153,7 +153,7 @@ pub struct DxcDefine {
 #[repr(C)]
 #[doc(hidden)]
 pub struct DxcDefine_abi(*mut u16, *mut u16);
-unsafe impl windows::Abi for DxcDefine {
+unsafe impl dx12_raw::Abi for DxcDefine {
     type Abi = DxcDefine_abi;
 }
 impl ::std::default::Default for DxcDefine {
@@ -195,7 +195,7 @@ pub struct DxcShaderHash {
 #[repr(C)]
 #[doc(hidden)]
 pub struct DxcShaderHash_abi(u32, [u8; 16usize]);
-unsafe impl windows::Abi for DxcShaderHash {
+unsafe impl dx12_raw::Abi for DxcShaderHash {
     type Abi = DxcShaderHash_abi;
 }
 impl ::std::default::Default for DxcShaderHash {
@@ -238,7 +238,7 @@ pub const DxcVersionInfoFlags_Internal: u32 = 2u32;
 pub const DxcVersionInfoFlags_None: u32 = 0u32;
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcBlob(windows::IUnknown);
+pub struct IDxcBlob(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcBlob {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -255,57 +255,57 @@ impl ::std::cmp::PartialEq for IDxcBlob {
     }
 }
 impl ::std::cmp::Eq for IDxcBlob {}
-unsafe impl windows::Interface for IDxcBlob {
+unsafe impl dx12_raw::Interface for IDxcBlob {
     type Vtable = IDxcBlob_abi;
-    const IID: windows::Guid =
-        windows::Guid::from_values(2342910728, 20885, 16610, [172, 88, 13, 152, 156, 58, 1, 2]);
+    const IID: dx12_raw::Guid =
+        dx12_raw::Guid::from_values(2342910728, 20885, 16610, [172, 88, 13, 152, 156, 58, 1, 2]);
 }
 #[repr(C)]
 pub struct IDxcBlob_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *mut ::std::ffi::c_void,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *mut ::std::ffi::c_void,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
 );
 #[allow(non_snake_case)]
 impl IDxcBlob {
     pub unsafe fn GetBufferPointer(&self) -> *mut ::std::ffi::c_void {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetBufferSize(&self) -> usize {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self))
     }
 }
-impl ::std::convert::From<IDxcBlob> for windows::IUnknown {
+impl ::std::convert::From<IDxcBlob> for dx12_raw::IUnknown {
     fn from(value: IDxcBlob) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcBlob> for windows::IUnknown {
+impl ::std::convert::From<&IDxcBlob> for dx12_raw::IUnknown {
     fn from(value: &IDxcBlob) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcBlob {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcBlob {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcBlob {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcBlob {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcBlobEncoding(windows::IUnknown);
+pub struct IDxcBlobEncoding(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcBlobEncoding {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -322,9 +322,9 @@ impl ::std::cmp::PartialEq for IDxcBlobEncoding {
     }
 }
 impl ::std::cmp::Eq for IDxcBlobEncoding {}
-unsafe impl windows::Interface for IDxcBlobEncoding {
+unsafe impl dx12_raw::Interface for IDxcBlobEncoding {
     type Vtable = IDxcBlobEncoding_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         1916916772,
         9798,
         16785,
@@ -334,54 +334,54 @@ unsafe impl windows::Interface for IDxcBlobEncoding {
 #[repr(C)]
 pub struct IDxcBlobEncoding_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *mut ::std::ffi::c_void,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *mut ::std::ffi::c_void,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_known: *mut windows::BOOL,
+        this: dx12_raw::RawPtr,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcBlobEncoding {
     pub unsafe fn GetBufferPointer(&self) -> *mut ::std::ffi::c_void {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetBufferSize(&self) -> usize {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows::BOOL,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_known, p_code_page)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), p_known, p_code_page)
     }
 }
-impl ::std::convert::From<IDxcBlobEncoding> for windows::IUnknown {
+impl ::std::convert::From<IDxcBlobEncoding> for dx12_raw::IUnknown {
     fn from(value: IDxcBlobEncoding) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcBlobEncoding> for windows::IUnknown {
+impl ::std::convert::From<&IDxcBlobEncoding> for dx12_raw::IUnknown {
     fn from(value: &IDxcBlobEncoding) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcBlobEncoding {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcBlobEncoding {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcBlobEncoding {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcBlobEncoding {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -396,21 +396,21 @@ impl ::std::convert::From<&IDxcBlobEncoding> for IDxcBlob {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for IDxcBlobEncoding {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for IDxcBlobEncoding {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for &'a IDxcBlobEncoding {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for &'a IDxcBlobEncoding {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcOperationResult(windows::IUnknown);
+pub struct IDxcOperationResult(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcOperationResult {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -427,9 +427,9 @@ impl ::std::cmp::PartialEq for IDxcOperationResult {
     }
 }
 impl ::std::cmp::Eq for IDxcOperationResult {}
-unsafe impl windows::Interface for IDxcOperationResult {
+unsafe impl dx12_raw::Interface for IDxcOperationResult {
     type Vtable = IDxcOperationResult_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         3470477386,
         54505,
         17498,
@@ -439,68 +439,68 @@ unsafe impl windows::Interface for IDxcOperationResult {
 #[repr(C)]
 pub struct IDxcOperationResult_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_status: *mut windows::ErrorCode,
-    ) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        p_status: *mut dx12_raw::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_errors: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcOperationResult {
-    pub unsafe fn GetStatus(&self, p_status: *mut windows::ErrorCode) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_status)
+    pub unsafe fn GetStatus(&self, p_status: *mut dx12_raw::ErrorCode) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_status)
     }
     pub unsafe fn GetResult(
         &self,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), pp_result)
     }
     pub unsafe fn GetErrorBuffer(
         &self,
         pp_errors: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), pp_errors)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), pp_errors)
     }
 }
-impl ::std::convert::From<IDxcOperationResult> for windows::IUnknown {
+impl ::std::convert::From<IDxcOperationResult> for dx12_raw::IUnknown {
     fn from(value: IDxcOperationResult) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcOperationResult> for windows::IUnknown {
+impl ::std::convert::From<&IDxcOperationResult> for dx12_raw::IUnknown {
     fn from(value: &IDxcOperationResult) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcOperationResult {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcOperationResult {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcOperationResult {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcOperationResult {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcAssembler(windows::IUnknown);
+pub struct IDxcAssembler(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcAssembler {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -517,9 +517,9 @@ impl ::std::cmp::PartialEq for IDxcAssembler {
     }
 }
 impl ::std::cmp::Eq for IDxcAssembler {}
-unsafe impl windows::Interface for IDxcAssembler {
+unsafe impl dx12_raw::Interface for IDxcAssembler {
     type Vtable = IDxcAssembler_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         153057830,
         7199,
         18760,
@@ -529,60 +529,60 @@ unsafe impl windows::Interface for IDxcAssembler {
 #[repr(C)]
 pub struct IDxcAssembler_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_shader: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_shader: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcAssembler {
     pub unsafe fn AssembleToContainer<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
     >(
         &self,
         p_shader: T0__,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_shader.into().abi(),
             pp_result,
         )
     }
 }
-impl ::std::convert::From<IDxcAssembler> for windows::IUnknown {
+impl ::std::convert::From<IDxcAssembler> for dx12_raw::IUnknown {
     fn from(value: IDxcAssembler) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcAssembler> for windows::IUnknown {
+impl ::std::convert::From<&IDxcAssembler> for dx12_raw::IUnknown {
     fn from(value: &IDxcAssembler) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcAssembler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcAssembler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcAssembler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcAssembler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcBlobUtf16(windows::IUnknown);
+pub struct IDxcBlobUtf16(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcBlobUtf16 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -599,9 +599,9 @@ impl ::std::cmp::PartialEq for IDxcBlobUtf16 {
     }
 }
 impl ::std::cmp::Eq for IDxcBlobUtf16 {}
-unsafe impl windows::Interface for IDxcBlobUtf16 {
+unsafe impl dx12_raw::Interface for IDxcBlobUtf16 {
     type Vtable = IDxcBlobUtf16_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2750959275,
         4010,
         18814,
@@ -611,62 +611,62 @@ unsafe impl windows::Interface for IDxcBlobUtf16 {
 #[repr(C)]
 pub struct IDxcBlobUtf16_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *mut ::std::ffi::c_void,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *mut ::std::ffi::c_void,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_known: *mut windows::BOOL,
+        this: dx12_raw::RawPtr,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *const u16,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *const u16,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
 );
 #[allow(non_snake_case)]
 impl IDxcBlobUtf16 {
     pub unsafe fn GetBufferPointer(&self) -> *mut ::std::ffi::c_void {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetBufferSize(&self) -> usize {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows::BOOL,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_known, p_code_page)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), p_known, p_code_page)
     }
     pub unsafe fn GetStringPointer(&self) -> *const u16 {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetStringLength(&self) -> usize {
-        (windows::Interface::vtable(self).7)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).7)(dx12_raw::Abi::abi(self))
     }
 }
-impl ::std::convert::From<IDxcBlobUtf16> for windows::IUnknown {
+impl ::std::convert::From<IDxcBlobUtf16> for dx12_raw::IUnknown {
     fn from(value: IDxcBlobUtf16) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcBlobUtf16> for windows::IUnknown {
+impl ::std::convert::From<&IDxcBlobUtf16> for dx12_raw::IUnknown {
     fn from(value: &IDxcBlobUtf16) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -681,14 +681,14 @@ impl ::std::convert::From<&IDxcBlobUtf16> for IDxcBlobEncoding {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlobEncoding>> for IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, IDxcBlobEncoding> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlobEncoding>> for IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlobEncoding> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlobEncoding>> for &'a IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, IDxcBlobEncoding> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlobEncoding>> for &'a IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlobEncoding> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -703,21 +703,21 @@ impl ::std::convert::From<&IDxcBlobUtf16> for IDxcBlob {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for &'a IDxcBlobUtf16 {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for &'a IDxcBlobUtf16 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcBlobUtf8(windows::IUnknown);
+pub struct IDxcBlobUtf8(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcBlobUtf8 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -734,70 +734,70 @@ impl ::std::cmp::PartialEq for IDxcBlobUtf8 {
     }
 }
 impl ::std::cmp::Eq for IDxcBlobUtf8 {}
-unsafe impl windows::Interface for IDxcBlobUtf8 {
+unsafe impl dx12_raw::Interface for IDxcBlobUtf8 {
     type Vtable = IDxcBlobUtf8_abi;
-    const IID: windows::Guid =
-        windows::Guid::from_values(1034303177, 47729, 16420, [163, 1, 48, 203, 241, 37, 48, 91]);
+    const IID: dx12_raw::Guid =
+        dx12_raw::Guid::from_values(1034303177, 47729, 16420, [163, 1, 48, 203, 241, 37, 48, 91]);
 }
 #[repr(C)]
 pub struct IDxcBlobUtf8_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *mut ::std::ffi::c_void,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *mut ::std::ffi::c_void,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_known: *mut windows::BOOL,
+        this: dx12_raw::RawPtr,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *const i8,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> usize,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *const i8,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> usize,
 );
 #[allow(non_snake_case)]
 impl IDxcBlobUtf8 {
     pub unsafe fn GetBufferPointer(&self) -> *mut ::std::ffi::c_void {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetBufferSize(&self) -> usize {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows::BOOL,
+        p_known: *mut dx12_raw::BOOL,
         p_code_page: *mut u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_known, p_code_page)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), p_known, p_code_page)
     }
     pub unsafe fn GetStringPointer(&self) -> *const i8 {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetStringLength(&self) -> usize {
-        (windows::Interface::vtable(self).7)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).7)(dx12_raw::Abi::abi(self))
     }
 }
-impl ::std::convert::From<IDxcBlobUtf8> for windows::IUnknown {
+impl ::std::convert::From<IDxcBlobUtf8> for dx12_raw::IUnknown {
     fn from(value: IDxcBlobUtf8) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcBlobUtf8> for windows::IUnknown {
+impl ::std::convert::From<&IDxcBlobUtf8> for dx12_raw::IUnknown {
     fn from(value: &IDxcBlobUtf8) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -812,14 +812,14 @@ impl ::std::convert::From<&IDxcBlobUtf8> for IDxcBlobEncoding {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlobEncoding>> for IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, IDxcBlobEncoding> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlobEncoding>> for IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlobEncoding> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlobEncoding>> for &'a IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, IDxcBlobEncoding> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlobEncoding>> for &'a IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlobEncoding> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlobEncoding>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -834,21 +834,21 @@ impl ::std::convert::From<&IDxcBlobUtf8> for IDxcBlob {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcBlob>> for &'a IDxcBlobUtf8 {
-    fn into(self) -> windows::Param<'a, IDxcBlob> {
-        windows::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>> for &'a IDxcBlobUtf8 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcBlob> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcBlob>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcIncludeHandler(windows::IUnknown);
+pub struct IDxcIncludeHandler(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcIncludeHandler {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -865,9 +865,9 @@ impl ::std::cmp::PartialEq for IDxcIncludeHandler {
     }
 }
 impl ::std::cmp::Eq for IDxcIncludeHandler {}
-unsafe impl windows::Interface for IDxcIncludeHandler {
+unsafe impl dx12_raw::Interface for IDxcIncludeHandler {
     type Vtable = IDxcIncludeHandler_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2137128061,
         38157,
         18047,
@@ -877,17 +877,17 @@ unsafe impl windows::Interface for IDxcIncludeHandler {
 #[repr(C)]
 pub struct IDxcIncludeHandler_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_filename: *const u16,
         pp_include_source: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcIncludeHandler {
@@ -895,35 +895,39 @@ impl IDxcIncludeHandler {
         &self,
         p_filename: *const u16,
         pp_include_source: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_filename, pp_include_source)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
+            p_filename,
+            pp_include_source,
+        )
     }
 }
-impl ::std::convert::From<IDxcIncludeHandler> for windows::IUnknown {
+impl ::std::convert::From<IDxcIncludeHandler> for dx12_raw::IUnknown {
     fn from(value: IDxcIncludeHandler) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcIncludeHandler> for windows::IUnknown {
+impl ::std::convert::From<&IDxcIncludeHandler> for dx12_raw::IUnknown {
     fn from(value: &IDxcIncludeHandler) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcIncludeHandler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcIncludeHandler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcIncludeHandler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcIncludeHandler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcCompiler(windows::IUnknown);
+pub struct IDxcCompiler(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcCompiler {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -940,9 +944,9 @@ impl ::std::cmp::PartialEq for IDxcCompiler {
     }
 }
 impl ::std::cmp::Eq for IDxcCompiler {}
-unsafe impl windows::Interface for IDxcCompiler {
+unsafe impl dx12_raw::Interface for IDxcCompiler {
     type Vtable = IDxcCompiler_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2350975987,
         287,
         17442,
@@ -952,15 +956,15 @@ unsafe impl windows::Interface for IDxcCompiler {
 #[repr(C)]
 pub struct IDxcCompiler_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_entry_point: *const u16,
         p_target_profile: *const u16,
@@ -968,32 +972,32 @@ pub struct IDxcCompiler_abi(
         arg_count: u32,
         p_defines: *const DxcDefine,
         define_count: u32,
-        p_include_handler: windows::RawPtr,
+        p_include_handler: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_arguments: *mut *mut u16,
         arg_count: u32,
         p_defines: *const DxcDefine,
         define_count: u32,
-        p_include_handler: windows::RawPtr,
+        p_include_handler: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         pp_disassembly: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcCompiler {
     pub unsafe fn Compile<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
-        T8__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
+        T8__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: T0__,
@@ -1006,9 +1010,9 @@ impl IDxcCompiler {
         define_count: u32,
         p_include_handler: T8__,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             p_source_name,
             p_entry_point,
@@ -1023,8 +1027,8 @@ impl IDxcCompiler {
     }
     pub unsafe fn Preprocess<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
-        T6__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
+        T6__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: T0__,
@@ -1035,9 +1039,9 @@ impl IDxcCompiler {
         define_count: u32,
         p_include_handler: T6__,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             p_source_name,
             p_arguments,
@@ -1048,43 +1052,43 @@ impl IDxcCompiler {
             pp_result,
         )
     }
-    pub unsafe fn Disassemble<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn Disassemble<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_source: T0__,
         pp_disassembly: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             pp_disassembly,
         )
     }
 }
-impl ::std::convert::From<IDxcCompiler> for windows::IUnknown {
+impl ::std::convert::From<IDxcCompiler> for dx12_raw::IUnknown {
     fn from(value: IDxcCompiler) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcCompiler> for windows::IUnknown {
+impl ::std::convert::From<&IDxcCompiler> for dx12_raw::IUnknown {
     fn from(value: &IDxcCompiler) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcCompiler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcCompiler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcCompiler {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcCompiler {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcCompiler2(windows::IUnknown);
+pub struct IDxcCompiler2(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcCompiler2 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1101,9 +1105,9 @@ impl ::std::cmp::PartialEq for IDxcCompiler2 {
     }
 }
 impl ::std::cmp::Eq for IDxcCompiler2 {}
-unsafe impl windows::Interface for IDxcCompiler2 {
+unsafe impl dx12_raw::Interface for IDxcCompiler2 {
     type Vtable = IDxcCompiler2_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2684725721,
         47291,
         17812,
@@ -1113,15 +1117,15 @@ unsafe impl windows::Interface for IDxcCompiler2 {
 #[repr(C)]
 pub struct IDxcCompiler2_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_entry_point: *const u16,
         p_target_profile: *const u16,
@@ -1129,28 +1133,28 @@ pub struct IDxcCompiler2_abi(
         arg_count: u32,
         p_defines: *const DxcDefine,
         define_count: u32,
-        p_include_handler: windows::RawPtr,
+        p_include_handler: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_arguments: *mut *mut u16,
         arg_count: u32,
         p_defines: *const DxcDefine,
         define_count: u32,
-        p_include_handler: windows::RawPtr,
+        p_include_handler: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         pp_disassembly: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_source: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_source: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_entry_point: *const u16,
         p_target_profile: *const u16,
@@ -1158,18 +1162,18 @@ pub struct IDxcCompiler2_abi(
         arg_count: u32,
         p_defines: *const DxcDefine,
         define_count: u32,
-        p_include_handler: windows::RawPtr,
+        p_include_handler: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
         pp_debug_blob_name: *mut *mut u16,
         pp_debug_blob: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcCompiler2 {
     pub unsafe fn Compile<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
-        T8__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
+        T8__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: T0__,
@@ -1182,9 +1186,9 @@ impl IDxcCompiler2 {
         define_count: u32,
         p_include_handler: T8__,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             p_source_name,
             p_entry_point,
@@ -1199,8 +1203,8 @@ impl IDxcCompiler2 {
     }
     pub unsafe fn Preprocess<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
-        T6__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
+        T6__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: T0__,
@@ -1211,9 +1215,9 @@ impl IDxcCompiler2 {
         define_count: u32,
         p_include_handler: T6__,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             p_source_name,
             p_arguments,
@@ -1224,21 +1228,21 @@ impl IDxcCompiler2 {
             pp_result,
         )
     }
-    pub unsafe fn Disassemble<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn Disassemble<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_source: T0__,
         pp_disassembly: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             pp_disassembly,
         )
     }
     pub unsafe fn CompileWithDebug<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
-        T8__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
+        T8__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: T0__,
@@ -1253,9 +1257,9 @@ impl IDxcCompiler2 {
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
         pp_debug_blob_name: *mut *mut u16,
         pp_debug_blob: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(
+            dx12_raw::Abi::abi(self),
             p_source.into().abi(),
             p_source_name,
             p_entry_point,
@@ -1271,24 +1275,24 @@ impl IDxcCompiler2 {
         )
     }
 }
-impl ::std::convert::From<IDxcCompiler2> for windows::IUnknown {
+impl ::std::convert::From<IDxcCompiler2> for dx12_raw::IUnknown {
     fn from(value: IDxcCompiler2) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcCompiler2> for windows::IUnknown {
+impl ::std::convert::From<&IDxcCompiler2> for dx12_raw::IUnknown {
     fn from(value: &IDxcCompiler2) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcCompiler2 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcCompiler2 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcCompiler2 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcCompiler2 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -1303,21 +1307,21 @@ impl ::std::convert::From<&IDxcCompiler2> for IDxcCompiler {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcCompiler>> for IDxcCompiler2 {
-    fn into(self) -> windows::Param<'a, IDxcCompiler> {
-        windows::Param::Owned(::std::convert::Into::<IDxcCompiler>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcCompiler>> for IDxcCompiler2 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcCompiler> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcCompiler>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcCompiler>> for &'a IDxcCompiler2 {
-    fn into(self) -> windows::Param<'a, IDxcCompiler> {
-        windows::Param::Owned(::std::convert::Into::<IDxcCompiler>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcCompiler>> for &'a IDxcCompiler2 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcCompiler> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcCompiler>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcCompiler3(windows::IUnknown);
+pub struct IDxcCompiler3(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcCompiler3 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1334,52 +1338,52 @@ impl ::std::cmp::PartialEq for IDxcCompiler3 {
     }
 }
 impl ::std::cmp::Eq for IDxcCompiler3 {}
-unsafe impl windows::Interface for IDxcCompiler3 {
+unsafe impl dx12_raw::Interface for IDxcCompiler3 {
     type Vtable = IDxcCompiler3_abi;
-    const IID: windows::Guid =
-        windows::Guid::from_values(579552903, 23146, 18224, [144, 12, 151, 2, 178, 32, 63, 84]);
+    const IID: dx12_raw::Guid =
+        dx12_raw::Guid::from_values(579552903, 23146, 18224, [144, 12, 151, 2, 178, 32, 63, 84]);
 }
 #[repr(C)]
 pub struct IDxcCompiler3_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_source: *const DxcBuffer,
         p_arguments: *mut *mut u16,
         arg_count: u32,
-        p_include_handler: windows::RawPtr,
-        riid: *const windows::Guid,
+        p_include_handler: dx12_raw::RawPtr,
+        riid: *const dx12_raw::Guid,
         pp_result: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_object: *const DxcBuffer,
-        riid: *const windows::Guid,
+        riid: *const dx12_raw::Guid,
         pp_result: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcCompiler3 {
     pub unsafe fn Compile<
         'a,
-        T3__: ::std::convert::Into<windows::Param<'a, IDxcIncludeHandler>>,
+        T3__: ::std::convert::Into<dx12_raw::Param<'a, IDxcIncludeHandler>>,
     >(
         &self,
         p_source: *const DxcBuffer,
         p_arguments: *mut *mut u16,
         arg_count: u32,
         p_include_handler: T3__,
-        riid: *const windows::Guid,
+        riid: *const dx12_raw::Guid,
         pp_result: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_source,
             p_arguments,
             arg_count,
@@ -1391,37 +1395,37 @@ impl IDxcCompiler3 {
     pub unsafe fn Disassemble(
         &self,
         p_object: *const DxcBuffer,
-        riid: *const windows::Guid,
+        riid: *const dx12_raw::Guid,
         pp_result: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), p_object, riid, pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), p_object, riid, pp_result)
     }
 }
-impl ::std::convert::From<IDxcCompiler3> for windows::IUnknown {
+impl ::std::convert::From<IDxcCompiler3> for dx12_raw::IUnknown {
     fn from(value: IDxcCompiler3) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcCompiler3> for windows::IUnknown {
+impl ::std::convert::From<&IDxcCompiler3> for dx12_raw::IUnknown {
     fn from(value: &IDxcCompiler3) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcCompiler3 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcCompiler3 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcCompiler3 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcCompiler3 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcCompilerArgs(windows::IUnknown);
+pub struct IDxcCompilerArgs(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcCompilerArgs {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1438,9 +1442,9 @@ impl ::std::cmp::PartialEq for IDxcCompilerArgs {
     }
 }
 impl ::std::cmp::Eq for IDxcCompilerArgs {}
-unsafe impl windows::Interface for IDxcCompilerArgs {
+unsafe impl dx12_raw::Interface for IDxcCompilerArgs {
     type Vtable = IDxcCompilerArgs_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         1945108010,
         28892,
         17912,
@@ -1450,85 +1454,85 @@ unsafe impl windows::Interface for IDxcCompilerArgs {
 #[repr(C)]
 pub struct IDxcCompilerArgs_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> *mut *mut u16,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> *mut *mut u16,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_arguments: *mut *mut u16,
         arg_count: u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_arguments: *mut *mut i8,
         arg_count: u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_defines: *const DxcDefine,
         define_count: u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcCompilerArgs {
     pub unsafe fn GetArguments(&self) -> *mut *mut u16 {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetCount(&self) -> u32 {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn AddArguments(
         &self,
         p_arguments: *mut *mut u16,
         arg_count: u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_arguments, arg_count)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), p_arguments, arg_count)
     }
     pub unsafe fn AddArgumentsUTF8(
         &self,
         p_arguments: *mut *mut i8,
         arg_count: u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self), p_arguments, arg_count)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self), p_arguments, arg_count)
     }
     pub unsafe fn AddDefines(
         &self,
         p_defines: *const DxcDefine,
         define_count: u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(windows::Abi::abi(self), p_defines, define_count)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(dx12_raw::Abi::abi(self), p_defines, define_count)
     }
 }
-impl ::std::convert::From<IDxcCompilerArgs> for windows::IUnknown {
+impl ::std::convert::From<IDxcCompilerArgs> for dx12_raw::IUnknown {
     fn from(value: IDxcCompilerArgs) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcCompilerArgs> for windows::IUnknown {
+impl ::std::convert::From<&IDxcCompilerArgs> for dx12_raw::IUnknown {
     fn from(value: &IDxcCompilerArgs) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcCompilerArgs {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcCompilerArgs {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcCompilerArgs {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcCompilerArgs {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcContainerBuilder(windows::IUnknown);
+pub struct IDxcContainerBuilder(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcContainerBuilder {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1545,9 +1549,9 @@ impl ::std::cmp::PartialEq for IDxcContainerBuilder {
     }
 }
 impl ::std::cmp::Eq for IDxcContainerBuilder {}
-unsafe impl windows::Interface for IDxcContainerBuilder {
+unsafe impl dx12_raw::Interface for IDxcContainerBuilder {
     type Vtable = IDxcContainerBuilder_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         860561232,
         8850,
         19253,
@@ -1557,84 +1561,86 @@ unsafe impl windows::Interface for IDxcContainerBuilder {
 #[repr(C)]
 pub struct IDxcContainerBuilder_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_dxil_container_header: windows::RawPtr,
-    ) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        p_dxil_container_header: dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         four_cc: u32,
-        p_source: windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr, four_cc: u32) -> windows::ErrorCode,
+        p_source: dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, four_cc: u32) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcContainerBuilder {
-    pub unsafe fn Load<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn Load<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_dxil_container_header: T0__,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_dxil_container_header.into().abi(),
         )
     }
-    pub unsafe fn AddPart<'a, T1__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn AddPart<'a, T1__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         four_cc: u32,
         p_source: T1__,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             four_cc,
             p_source.into().abi(),
         )
     }
-    pub unsafe fn RemovePart(&self, four_cc: u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), four_cc)
+    pub unsafe fn RemovePart(&self, four_cc: u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), four_cc)
     }
     pub unsafe fn SerializeContainer(
         &self,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self), pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self), pp_result)
     }
 }
-impl ::std::convert::From<IDxcContainerBuilder> for windows::IUnknown {
+impl ::std::convert::From<IDxcContainerBuilder> for dx12_raw::IUnknown {
     fn from(value: IDxcContainerBuilder) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcContainerBuilder> for windows::IUnknown {
+impl ::std::convert::From<&IDxcContainerBuilder> for dx12_raw::IUnknown {
     fn from(value: &IDxcContainerBuilder) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcContainerBuilder {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcContainerBuilder {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcContainerBuilder {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>>
+    for &'a IDxcContainerBuilder
+{
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcContainerReflection(windows::IUnknown);
+pub struct IDxcContainerReflection(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcContainerReflection {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1651,9 +1657,9 @@ impl ::std::cmp::PartialEq for IDxcContainerReflection {
     }
 }
 impl ::std::cmp::Eq for IDxcContainerReflection {}
-unsafe impl windows::Interface for IDxcContainerReflection {
+unsafe impl dx12_raw::Interface for IDxcContainerReflection {
     type Vtable = IDxcContainerReflection_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         3535936294,
         33616,
         19420,
@@ -1663,99 +1669,99 @@ unsafe impl windows::Interface for IDxcContainerReflection {
 #[repr(C)]
 pub struct IDxcContainerReflection_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_container: windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr, p_result: *mut u32) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        p_container: dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, p_result: *mut u32) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         idx: u32,
         p_result: *mut u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         idx: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         kind: u32,
         p_result: *mut u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         idx: u32,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcContainerReflection {
-    pub unsafe fn Load<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn Load<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_container: T0__,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_container.into().abi())
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_container.into().abi())
     }
-    pub unsafe fn GetPartCount(&self, p_result: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), p_result)
+    pub unsafe fn GetPartCount(&self, p_result: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), p_result)
     }
-    pub unsafe fn GetPartKind(&self, idx: u32, p_result: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), idx, p_result)
+    pub unsafe fn GetPartKind(&self, idx: u32, p_result: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), idx, p_result)
     }
     pub unsafe fn GetPartContent(
         &self,
         idx: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self), idx, pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self), idx, pp_result)
     }
-    pub unsafe fn FindFirstPartKind(&self, kind: u32, p_result: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(windows::Abi::abi(self), kind, p_result)
+    pub unsafe fn FindFirstPartKind(&self, kind: u32, p_result: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(dx12_raw::Abi::abi(self), kind, p_result)
     }
     pub unsafe fn GetPartReflection(
         &self,
         idx: u32,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).8)(windows::Abi::abi(self), idx, iid, ppv_object)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).8)(dx12_raw::Abi::abi(self), idx, iid, ppv_object)
     }
 }
-impl ::std::convert::From<IDxcContainerReflection> for windows::IUnknown {
+impl ::std::convert::From<IDxcContainerReflection> for dx12_raw::IUnknown {
     fn from(value: IDxcContainerReflection) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcContainerReflection> for windows::IUnknown {
+impl ::std::convert::From<&IDxcContainerReflection> for dx12_raw::IUnknown {
     fn from(value: &IDxcContainerReflection) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcContainerReflection {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcContainerReflection {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>>
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>>
     for &'a IDxcContainerReflection
 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcExtraOutputs(windows::IUnknown);
+pub struct IDxcExtraOutputs(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcExtraOutputs {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1772,9 +1778,9 @@ impl ::std::cmp::PartialEq for IDxcExtraOutputs {
     }
 }
 impl ::std::cmp::Eq for IDxcExtraOutputs {}
-unsafe impl windows::Interface for IDxcExtraOutputs {
+unsafe impl dx12_raw::Interface for IDxcExtraOutputs {
     type Vtable = IDxcExtraOutputs_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         832255906,
         42434,
         18762,
@@ -1784,37 +1790,37 @@ unsafe impl windows::Interface for IDxcExtraOutputs {
 #[repr(C)]
 pub struct IDxcExtraOutputs_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         u_index: u32,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
         pp_output_type: *mut ::std::option::Option<IDxcBlobUtf16>,
         pp_output_name: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcExtraOutputs {
     pub unsafe fn GetOutputCount(&self) -> u32 {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetOutput(
         &self,
         u_index: u32,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
         pp_output_type: *mut ::std::option::Option<IDxcBlobUtf16>,
         pp_output_name: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             u_index,
             iid,
             ppv_object,
@@ -1823,31 +1829,31 @@ impl IDxcExtraOutputs {
         )
     }
 }
-impl ::std::convert::From<IDxcExtraOutputs> for windows::IUnknown {
+impl ::std::convert::From<IDxcExtraOutputs> for dx12_raw::IUnknown {
     fn from(value: IDxcExtraOutputs) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcExtraOutputs> for windows::IUnknown {
+impl ::std::convert::From<&IDxcExtraOutputs> for dx12_raw::IUnknown {
     fn from(value: &IDxcExtraOutputs) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcExtraOutputs {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcExtraOutputs {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcExtraOutputs {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcExtraOutputs {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcLibrary(windows::IUnknown);
+pub struct IDxcLibrary(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcLibrary {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -1864,9 +1870,9 @@ impl ::std::cmp::PartialEq for IDxcLibrary {
     }
 }
 impl ::std::cmp::Eq for IDxcLibrary {}
-unsafe impl windows::Interface for IDxcLibrary {
+unsafe impl dx12_raw::Interface for IDxcLibrary {
     type Vtable = IDxcLibrary_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         3844099527,
         53644,
         19516,
@@ -1876,94 +1882,94 @@ unsafe impl windows::Interface for IDxcLibrary {
 #[repr(C)]
 pub struct IDxcLibrary_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_malloc: windows::RawPtr,
-    ) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        p_malloc: dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         offset: u32,
         length: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_file_name: *const u16,
         code_page: *mut u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_text: *mut ::std::ffi::c_void,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_text: *mut ::std::ffi::c_void,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_text: *mut ::std::ffi::c_void,
-        p_imalloc: windows::RawPtr,
+        p_imalloc: dx12_raw::RawPtr,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcIncludeHandler>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         pp_stream: *mut ::std::option::Option<windows::win32::structured_storage::IStream>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcLibrary {
     pub unsafe fn SetMalloc<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, windows::win32::com::IMalloc>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, windows::win32::com::IMalloc>>,
     >(
         &self,
         p_malloc: T0__,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_malloc.into().abi())
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_malloc.into().abi())
     }
     pub unsafe fn CreateBlobFromBlob<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
     >(
         &self,
         p_blob: T0__,
         offset: u32,
         length: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             offset,
             length,
@@ -1975,9 +1981,9 @@ impl IDxcLibrary {
         p_file_name: *const u16,
         code_page: *mut u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
             p_file_name,
             code_page,
             p_blob_encoding,
@@ -1989,9 +1995,9 @@ impl IDxcLibrary {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(
+            dx12_raw::Abi::abi(self),
             p_text,
             size,
             code_page,
@@ -2004,9 +2010,9 @@ impl IDxcLibrary {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(
+            dx12_raw::Abi::abi(self),
             p_text,
             size,
             code_page,
@@ -2015,7 +2021,7 @@ impl IDxcLibrary {
     }
     pub unsafe fn CreateBlobWithEncodingOnMalloc<
         'a,
-        T1__: ::std::convert::Into<windows::Param<'a, windows::win32::com::IMalloc>>,
+        T1__: ::std::convert::Into<dx12_raw::Param<'a, windows::win32::com::IMalloc>>,
     >(
         &self,
         p_text: *mut ::std::ffi::c_void,
@@ -2023,9 +2029,9 @@ impl IDxcLibrary {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).8)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).8)(
+            dx12_raw::Abi::abi(self),
             p_text,
             p_imalloc.into().abi(),
             size,
@@ -2036,71 +2042,71 @@ impl IDxcLibrary {
     pub unsafe fn CreateIncludeHandler(
         &self,
         pp_result: *mut ::std::option::Option<IDxcIncludeHandler>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).9)(windows::Abi::abi(self), pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).9)(dx12_raw::Abi::abi(self), pp_result)
     }
     pub unsafe fn CreateStreamFromBlobReadOnly<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
     >(
         &self,
         p_blob: T0__,
         pp_stream: *mut ::std::option::Option<windows::win32::structured_storage::IStream>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).10)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).10)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             pp_stream,
         )
     }
-    pub unsafe fn GetBlobAsUtf8<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn GetBlobAsUtf8<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_blob: T0__,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).11)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).11)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             p_blob_encoding,
         )
     }
-    pub unsafe fn GetBlobAsUtf16<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn GetBlobAsUtf16<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_blob: T0__,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).12)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).12)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             p_blob_encoding,
         )
     }
 }
-impl ::std::convert::From<IDxcLibrary> for windows::IUnknown {
+impl ::std::convert::From<IDxcLibrary> for dx12_raw::IUnknown {
     fn from(value: IDxcLibrary) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcLibrary> for windows::IUnknown {
+impl ::std::convert::From<&IDxcLibrary> for dx12_raw::IUnknown {
     fn from(value: &IDxcLibrary) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcLibrary {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcLibrary {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcLibrary {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcLibrary {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcLinker(windows::IUnknown);
+pub struct IDxcLinker(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcLinker {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2117,9 +2123,9 @@ impl ::std::cmp::PartialEq for IDxcLinker {
     }
 }
 impl ::std::cmp::Eq for IDxcLinker {}
-unsafe impl windows::Interface for IDxcLinker {
+unsafe impl dx12_raw::Interface for IDxcLinker {
     type Vtable = IDxcLinker_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         4055219754,
         25309,
         17191,
@@ -2129,19 +2135,19 @@ unsafe impl windows::Interface for IDxcLinker {
 #[repr(C)]
 pub struct IDxcLinker_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_lib_name: *const u16,
-        p_lib: windows::RawPtr,
-    ) -> windows::ErrorCode,
+        p_lib: dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_entry_name: *const u16,
         p_target_profile: *const u16,
         p_lib_names: *const *const u16,
@@ -2149,17 +2155,17 @@ pub struct IDxcLinker_abi(
         p_arguments: *const *const u16,
         arg_count: u32,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcLinker {
-    pub unsafe fn RegisterLibrary<'a, T1__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn RegisterLibrary<'a, T1__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_lib_name: *const u16,
         p_lib: T1__,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_lib_name,
             p_lib.into().abi(),
         )
@@ -2173,9 +2179,9 @@ impl IDxcLinker {
         p_arguments: *const *const u16,
         arg_count: u32,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             p_entry_name,
             p_target_profile,
             p_lib_names,
@@ -2186,31 +2192,31 @@ impl IDxcLinker {
         )
     }
 }
-impl ::std::convert::From<IDxcLinker> for windows::IUnknown {
+impl ::std::convert::From<IDxcLinker> for dx12_raw::IUnknown {
     fn from(value: IDxcLinker) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcLinker> for windows::IUnknown {
+impl ::std::convert::From<&IDxcLinker> for dx12_raw::IUnknown {
     fn from(value: &IDxcLinker) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcLinker {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcLinker {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcLinker {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcLinker {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcOptimizerPass(windows::IUnknown);
+pub struct IDxcOptimizerPass(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcOptimizerPass {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2227,9 +2233,9 @@ impl ::std::cmp::PartialEq for IDxcOptimizerPass {
     }
 }
 impl ::std::cmp::Eq for IDxcOptimizerPass {}
-unsafe impl windows::Interface for IDxcOptimizerPass {
+unsafe impl dx12_raw::Interface for IDxcOptimizerPass {
     type Vtable = IDxcOptimizerPass_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2922174367,
         52258,
         17727,
@@ -2239,83 +2245,83 @@ unsafe impl windows::Interface for IDxcOptimizerPass {
 #[repr(C)]
 pub struct IDxcOptimizerPass_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr, p_count: *mut u32) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, p_count: *mut u32) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         arg_index: u32,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         arg_index: u32,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcOptimizerPass {
-    pub unsafe fn GetOptionName(&self, pp_result: *mut *mut u16) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), pp_result)
+    pub unsafe fn GetOptionName(&self, pp_result: *mut *mut u16) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), pp_result)
     }
-    pub unsafe fn GetDescription(&self, pp_result: *mut *mut u16) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), pp_result)
+    pub unsafe fn GetDescription(&self, pp_result: *mut *mut u16) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), pp_result)
     }
-    pub unsafe fn GetOptionArgCount(&self, p_count: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_count)
+    pub unsafe fn GetOptionArgCount(&self, p_count: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), p_count)
     }
     pub unsafe fn GetOptionArgName(
         &self,
         arg_index: u32,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self), arg_index, pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self), arg_index, pp_result)
     }
     pub unsafe fn GetOptionArgDescription(
         &self,
         arg_index: u32,
         pp_result: *mut *mut u16,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(windows::Abi::abi(self), arg_index, pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(dx12_raw::Abi::abi(self), arg_index, pp_result)
     }
 }
-impl ::std::convert::From<IDxcOptimizerPass> for windows::IUnknown {
+impl ::std::convert::From<IDxcOptimizerPass> for dx12_raw::IUnknown {
     fn from(value: IDxcOptimizerPass) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcOptimizerPass> for windows::IUnknown {
+impl ::std::convert::From<&IDxcOptimizerPass> for dx12_raw::IUnknown {
     fn from(value: &IDxcOptimizerPass) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcOptimizerPass {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcOptimizerPass {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcOptimizerPass {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcOptimizerPass {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcOptimizer(windows::IUnknown);
+pub struct IDxcOptimizer(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcOptimizer {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2332,9 +2338,9 @@ impl ::std::cmp::PartialEq for IDxcOptimizer {
     }
 }
 impl ::std::cmp::Eq for IDxcOptimizer {}
-unsafe impl windows::Interface for IDxcOptimizer {
+unsafe impl dx12_raw::Interface for IDxcOptimizer {
     type Vtable = IDxcOptimizer_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         628362798,
         40122,
         16411,
@@ -2344,49 +2350,49 @@ unsafe impl windows::Interface for IDxcOptimizer {
 #[repr(C)]
 pub struct IDxcOptimizer_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr, p_count: *mut u32) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, p_count: *mut u32) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         index: u32,
         pp_result: *mut ::std::option::Option<IDxcOptimizerPass>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         pp_options: *mut *mut u16,
         option_count: u32,
         p_output_module: *mut ::std::option::Option<IDxcBlob>,
         pp_output_text: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcOptimizer {
-    pub unsafe fn GetAvailablePassCount(&self, p_count: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_count)
+    pub unsafe fn GetAvailablePassCount(&self, p_count: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_count)
     }
     pub unsafe fn GetAvailablePass(
         &self,
         index: u32,
         pp_result: *mut ::std::option::Option<IDxcOptimizerPass>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), index, pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), index, pp_result)
     }
-    pub unsafe fn RunOptimizer<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn RunOptimizer<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_blob: T0__,
         pp_options: *mut *mut u16,
         option_count: u32,
         p_output_module: *mut ::std::option::Option<IDxcBlob>,
         pp_output_text: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             pp_options,
             option_count,
@@ -2395,31 +2401,31 @@ impl IDxcOptimizer {
         )
     }
 }
-impl ::std::convert::From<IDxcOptimizer> for windows::IUnknown {
+impl ::std::convert::From<IDxcOptimizer> for dx12_raw::IUnknown {
     fn from(value: IDxcOptimizer) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcOptimizer> for windows::IUnknown {
+impl ::std::convert::From<&IDxcOptimizer> for dx12_raw::IUnknown {
     fn from(value: &IDxcOptimizer) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcOptimizer {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcOptimizer {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcOptimizer {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcOptimizer {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcResult(windows::IUnknown);
+pub struct IDxcResult(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcResult {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2436,9 +2442,9 @@ impl ::std::cmp::PartialEq for IDxcResult {
     }
 }
 impl ::std::cmp::Eq for IDxcResult {}
-unsafe impl windows::Interface for IDxcResult {
+unsafe impl dx12_raw::Interface for IDxcResult {
     type Vtable = IDxcResult_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         1479830746,
         56807,
         17559,
@@ -2448,68 +2454,68 @@ unsafe impl windows::Interface for IDxcResult {
 #[repr(C)]
 pub struct IDxcResult_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_status: *mut windows::ErrorCode,
-    ) -> windows::ErrorCode,
+        this: dx12_raw::RawPtr,
+        p_status: *mut dx12_raw::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_errors: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         dxc_out_kind: DXC_OUT_KIND,
-    ) -> windows::BOOL,
+    ) -> dx12_raw::BOOL,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         dxc_out_kind: DXC_OUT_KIND,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
         pp_output_name: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr, index: u32) -> DXC_OUT_KIND,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> DXC_OUT_KIND,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, index: u32) -> DXC_OUT_KIND,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> DXC_OUT_KIND,
 );
 #[allow(non_snake_case)]
 impl IDxcResult {
-    pub unsafe fn GetStatus(&self, p_status: *mut windows::ErrorCode) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_status)
+    pub unsafe fn GetStatus(&self, p_status: *mut dx12_raw::ErrorCode) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_status)
     }
     pub unsafe fn GetResult(
         &self,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), pp_result)
     }
     pub unsafe fn GetErrorBuffer(
         &self,
         pp_errors: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), pp_errors)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(dx12_raw::Abi::abi(self), pp_errors)
     }
-    pub unsafe fn HasOutput(&self, dxc_out_kind: DXC_OUT_KIND) -> windows::BOOL {
-        (windows::Interface::vtable(self).6)(windows::Abi::abi(self), dxc_out_kind)
+    pub unsafe fn HasOutput(&self, dxc_out_kind: DXC_OUT_KIND) -> dx12_raw::BOOL {
+        (dx12_raw::Interface::vtable(self).6)(dx12_raw::Abi::abi(self), dxc_out_kind)
     }
     pub unsafe fn GetOutput(
         &self,
         dxc_out_kind: DXC_OUT_KIND,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_object: *mut *mut ::std::ffi::c_void,
         pp_output_name: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(
+            dx12_raw::Abi::abi(self),
             dxc_out_kind,
             iid,
             ppv_object,
@@ -2517,33 +2523,33 @@ impl IDxcResult {
         )
     }
     pub unsafe fn GetNumOutputs(&self) -> u32 {
-        (windows::Interface::vtable(self).8)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).8)(dx12_raw::Abi::abi(self))
     }
     pub unsafe fn GetOutputByIndex(&self, index: u32) -> DXC_OUT_KIND {
-        (windows::Interface::vtable(self).9)(windows::Abi::abi(self), index)
+        (dx12_raw::Interface::vtable(self).9)(dx12_raw::Abi::abi(self), index)
     }
     pub unsafe fn PrimaryOutput(&self) -> DXC_OUT_KIND {
-        (windows::Interface::vtable(self).10)(windows::Abi::abi(self))
+        (dx12_raw::Interface::vtable(self).10)(dx12_raw::Abi::abi(self))
     }
 }
-impl ::std::convert::From<IDxcResult> for windows::IUnknown {
+impl ::std::convert::From<IDxcResult> for dx12_raw::IUnknown {
     fn from(value: IDxcResult) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcResult> for windows::IUnknown {
+impl ::std::convert::From<&IDxcResult> for dx12_raw::IUnknown {
     fn from(value: &IDxcResult) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcResult {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcResult {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcResult {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcResult {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -2558,21 +2564,21 @@ impl ::std::convert::From<&IDxcResult> for IDxcOperationResult {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcOperationResult>> for IDxcResult {
-    fn into(self) -> windows::Param<'a, IDxcOperationResult> {
-        windows::Param::Owned(::std::convert::Into::<IDxcOperationResult>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcOperationResult>> for IDxcResult {
+    fn into(self) -> dx12_raw::Param<'a, IDxcOperationResult> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcOperationResult>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcOperationResult>> for &'a IDxcResult {
-    fn into(self) -> windows::Param<'a, IDxcOperationResult> {
-        windows::Param::Owned(::std::convert::Into::<IDxcOperationResult>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcOperationResult>> for &'a IDxcResult {
+    fn into(self) -> dx12_raw::Param<'a, IDxcOperationResult> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcOperationResult>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcUtils(windows::IUnknown);
+pub struct IDxcUtils(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcUtils {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2589,9 +2595,9 @@ impl ::std::cmp::PartialEq for IDxcUtils {
     }
 }
 impl ::std::cmp::Eq for IDxcUtils {}
-unsafe impl windows::Interface for IDxcUtils {
+unsafe impl dx12_raw::Interface for IDxcUtils {
     type Vtable = IDxcUtils_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         1174783179,
         8217,
         18730,
@@ -2601,81 +2607,81 @@ unsafe impl windows::Interface for IDxcUtils {
 #[repr(C)]
 pub struct IDxcUtils_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         offset: u32,
         length: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_data: *mut ::std::ffi::c_void,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_data: *mut ::std::ffi::c_void,
-        p_imalloc: windows::RawPtr,
+        p_imalloc: dx12_raw::RawPtr,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_data: *mut ::std::ffi::c_void,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_file_name: *const u16,
         p_code_page: *mut u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         pp_stream: *mut ::std::option::Option<windows::win32::structured_storage::IStream>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         pp_result: *mut ::std::option::Option<IDxcIncludeHandler>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobUtf8>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_blob: dx12_raw::RawPtr,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_shader: *const DxcBuffer,
         dxc_part: u32,
         pp_part_data: *mut *mut ::std::ffi::c_void,
         p_part_size_in_bytes: *mut u32,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_data: *const DxcBuffer,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_reflection: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_source_name: *const u16,
         p_entry_point: *const u16,
         p_target_profile: *const u16,
@@ -2684,28 +2690,28 @@ pub struct IDxcUtils_abi(
         p_defines: *const DxcDefine,
         define_count: u32,
         pp_args: *mut ::std::option::Option<IDxcCompilerArgs>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_pdb_blob: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_pdb_blob: dx12_raw::RawPtr,
         pp_hash: *mut ::std::option::Option<IDxcBlob>,
         pp_container: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcUtils {
     pub unsafe fn CreateBlobFromBlob<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
     >(
         &self,
         p_blob: T0__,
         offset: u32,
         length: u32,
         pp_result: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             offset,
             length,
@@ -2718,9 +2724,9 @@ impl IDxcUtils {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(
+            dx12_raw::Abi::abi(self),
             p_data,
             size,
             code_page,
@@ -2729,7 +2735,7 @@ impl IDxcUtils {
     }
     pub unsafe fn MoveToBlob<
         'a,
-        T1__: ::std::convert::Into<windows::Param<'a, windows::win32::com::IMalloc>>,
+        T1__: ::std::convert::Into<dx12_raw::Param<'a, windows::win32::com::IMalloc>>,
     >(
         &self,
         p_data: *mut ::std::ffi::c_void,
@@ -2737,9 +2743,9 @@ impl IDxcUtils {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
             p_data,
             p_imalloc.into().abi(),
             size,
@@ -2753,9 +2759,9 @@ impl IDxcUtils {
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).6)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).6)(
+            dx12_raw::Abi::abi(self),
             p_data,
             size,
             code_page,
@@ -2767,9 +2773,9 @@ impl IDxcUtils {
         p_file_name: *const u16,
         p_code_page: *mut u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).7)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).7)(
+            dx12_raw::Abi::abi(self),
             p_file_name,
             p_code_page,
             p_blob_encoding,
@@ -2777,14 +2783,14 @@ impl IDxcUtils {
     }
     pub unsafe fn CreateReadOnlyStreamFromBlob<
         'a,
-        T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>,
+        T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>,
     >(
         &self,
         p_blob: T0__,
         pp_stream: *mut ::std::option::Option<windows::win32::structured_storage::IStream>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).8)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).8)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             pp_stream,
         )
@@ -2792,27 +2798,27 @@ impl IDxcUtils {
     pub unsafe fn CreateDefaultIncludeHandler(
         &self,
         pp_result: *mut ::std::option::Option<IDxcIncludeHandler>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).9)(windows::Abi::abi(self), pp_result)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).9)(dx12_raw::Abi::abi(self), pp_result)
     }
-    pub unsafe fn GetBlobAsUtf8<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn GetBlobAsUtf8<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_blob: T0__,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobUtf8>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).10)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).10)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             p_blob_encoding,
         )
     }
-    pub unsafe fn GetBlobAsUtf16<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn GetBlobAsUtf16<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_blob: T0__,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobUtf16>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).11)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).11)(
+            dx12_raw::Abi::abi(self),
             p_blob.into().abi(),
             p_blob_encoding,
         )
@@ -2823,9 +2829,9 @@ impl IDxcUtils {
         dxc_part: u32,
         pp_part_data: *mut *mut ::std::ffi::c_void,
         p_part_size_in_bytes: *mut u32,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).12)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).12)(
+            dx12_raw::Abi::abi(self),
             p_shader,
             dxc_part,
             pp_part_data,
@@ -2835,10 +2841,15 @@ impl IDxcUtils {
     pub unsafe fn CreateReflection(
         &self,
         p_data: *const DxcBuffer,
-        iid: *const windows::Guid,
+        iid: *const dx12_raw::Guid,
         ppv_reflection: *mut *mut ::std::ffi::c_void,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).13)(windows::Abi::abi(self), p_data, iid, ppv_reflection)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).13)(
+            dx12_raw::Abi::abi(self),
+            p_data,
+            iid,
+            ppv_reflection,
+        )
     }
     pub unsafe fn BuildArguments(
         &self,
@@ -2850,9 +2861,9 @@ impl IDxcUtils {
         p_defines: *const DxcDefine,
         define_count: u32,
         pp_args: *mut ::std::option::Option<IDxcCompilerArgs>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).14)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).14)(
+            dx12_raw::Abi::abi(self),
             p_source_name,
             p_entry_point,
             p_target_profile,
@@ -2863,45 +2874,45 @@ impl IDxcUtils {
             pp_args,
         )
     }
-    pub unsafe fn GetPDBContents<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn GetPDBContents<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_pdb_blob: T0__,
         pp_hash: *mut ::std::option::Option<IDxcBlob>,
         pp_container: *mut ::std::option::Option<IDxcBlob>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).15)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).15)(
+            dx12_raw::Abi::abi(self),
             p_pdb_blob.into().abi(),
             pp_hash,
             pp_container,
         )
     }
 }
-impl ::std::convert::From<IDxcUtils> for windows::IUnknown {
+impl ::std::convert::From<IDxcUtils> for dx12_raw::IUnknown {
     fn from(value: IDxcUtils) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcUtils> for windows::IUnknown {
+impl ::std::convert::From<&IDxcUtils> for dx12_raw::IUnknown {
     fn from(value: &IDxcUtils) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcUtils {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcUtils {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcUtils {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcUtils {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcValidator(windows::IUnknown);
+pub struct IDxcValidator(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcValidator {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -2918,9 +2929,9 @@ impl ::std::cmp::PartialEq for IDxcValidator {
     }
 }
 impl ::std::cmp::Eq for IDxcValidator {}
-unsafe impl windows::Interface for IDxcValidator {
+unsafe impl dx12_raw::Interface for IDxcValidator {
     type Vtable = IDxcValidator_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2800233426,
         8151,
         18470,
@@ -2930,60 +2941,60 @@ unsafe impl windows::Interface for IDxcValidator {
 #[repr(C)]
 pub struct IDxcValidator_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        p_shader: windows::RawPtr,
+        this: dx12_raw::RawPtr,
+        p_shader: dx12_raw::RawPtr,
         flags: u32,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcValidator {
-    pub unsafe fn Validate<'a, T0__: ::std::convert::Into<windows::Param<'a, IDxcBlob>>>(
+    pub unsafe fn Validate<'a, T0__: ::std::convert::Into<dx12_raw::Param<'a, IDxcBlob>>>(
         &self,
         p_shader: T0__,
         flags: u32,
         pp_result: *mut ::std::option::Option<IDxcOperationResult>,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(
+            dx12_raw::Abi::abi(self),
             p_shader.into().abi(),
             flags,
             pp_result,
         )
     }
 }
-impl ::std::convert::From<IDxcValidator> for windows::IUnknown {
+impl ::std::convert::From<IDxcValidator> for dx12_raw::IUnknown {
     fn from(value: IDxcValidator) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcValidator> for windows::IUnknown {
+impl ::std::convert::From<&IDxcValidator> for dx12_raw::IUnknown {
     fn from(value: &IDxcValidator) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcValidator {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcValidator {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcValidator {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcValidator {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcVersionInfo(windows::IUnknown);
+pub struct IDxcVersionInfo(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcVersionInfo {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -3000,9 +3011,9 @@ impl ::std::cmp::PartialEq for IDxcVersionInfo {
     }
 }
 impl ::std::cmp::Eq for IDxcVersionInfo {}
-unsafe impl windows::Interface for IDxcVersionInfo {
+unsafe impl dx12_raw::Interface for IDxcVersionInfo {
     type Vtable = IDxcVersionInfo_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         2957990736,
         8281,
         20242,
@@ -3012,53 +3023,53 @@ unsafe impl windows::Interface for IDxcVersionInfo {
 #[repr(C)]
 pub struct IDxcVersionInfo_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_major: *mut u32,
         p_minor: *mut u32,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr, p_flags: *mut u32) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, p_flags: *mut u32) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcVersionInfo {
-    pub unsafe fn GetVersion(&self, p_major: *mut u32, p_minor: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_major, p_minor)
+    pub unsafe fn GetVersion(&self, p_major: *mut u32, p_minor: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_major, p_minor)
     }
-    pub unsafe fn GetFlags(&self, p_flags: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), p_flags)
+    pub unsafe fn GetFlags(&self, p_flags: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), p_flags)
     }
 }
-impl ::std::convert::From<IDxcVersionInfo> for windows::IUnknown {
+impl ::std::convert::From<IDxcVersionInfo> for dx12_raw::IUnknown {
     fn from(value: IDxcVersionInfo) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcVersionInfo> for windows::IUnknown {
+impl ::std::convert::From<&IDxcVersionInfo> for dx12_raw::IUnknown {
     fn from(value: &IDxcVersionInfo) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcVersionInfo {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcVersionInfo {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcVersionInfo {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcVersionInfo {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
-pub struct IDxcVersionInfo2(windows::IUnknown);
+pub struct IDxcVersionInfo2(dx12_raw::IUnknown);
 impl ::std::clone::Clone for IDxcVersionInfo2 {
     fn clone(&self) -> Self {
         Self(self.0.clone())
@@ -3075,9 +3086,9 @@ impl ::std::cmp::PartialEq for IDxcVersionInfo2 {
     }
 }
 impl ::std::cmp::Eq for IDxcVersionInfo2 {}
-unsafe impl windows::Interface for IDxcVersionInfo2 {
+unsafe impl dx12_raw::Interface for IDxcVersionInfo2 {
     type Vtable = IDxcVersionInfo2_abi;
-    const IID: windows::Guid = windows::Guid::from_values(
+    const IID: dx12_raw::Guid = dx12_raw::Guid::from_values(
         4217963716,
         17136,
         19298,
@@ -3087,58 +3098,62 @@ unsafe impl windows::Interface for IDxcVersionInfo2 {
 #[repr(C)]
 pub struct IDxcVersionInfo2_abi(
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
-        iid: &windows::Guid,
-        interface: *mut windows::RawPtr,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: windows::RawPtr) -> u32,
+        this: dx12_raw::RawPtr,
+        iid: &dx12_raw::Guid,
+        interface: *mut dx12_raw::RawPtr,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_major: *mut u32,
         p_minor: *mut u32,
-    ) -> windows::ErrorCode,
-    pub unsafe extern "system" fn(this: windows::RawPtr, p_flags: *mut u32) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
+    pub unsafe extern "system" fn(this: dx12_raw::RawPtr, p_flags: *mut u32) -> dx12_raw::ErrorCode,
     pub  unsafe extern "system" fn(
-        this: windows::RawPtr,
+        this: dx12_raw::RawPtr,
         p_commit_count: *mut u32,
         p_commit_hash: *mut *mut i8,
-    ) -> windows::ErrorCode,
+    ) -> dx12_raw::ErrorCode,
 );
 #[allow(non_snake_case)]
 impl IDxcVersionInfo2 {
-    pub unsafe fn GetVersion(&self, p_major: *mut u32, p_minor: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_major, p_minor)
+    pub unsafe fn GetVersion(&self, p_major: *mut u32, p_minor: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).3)(dx12_raw::Abi::abi(self), p_major, p_minor)
     }
-    pub unsafe fn GetFlags(&self, p_flags: *mut u32) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).4)(windows::Abi::abi(self), p_flags)
+    pub unsafe fn GetFlags(&self, p_flags: *mut u32) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).4)(dx12_raw::Abi::abi(self), p_flags)
     }
     pub unsafe fn GetCommitInfo(
         &self,
         p_commit_count: *mut u32,
         p_commit_hash: *mut *mut i8,
-    ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_commit_count, p_commit_hash)
+    ) -> dx12_raw::ErrorCode {
+        (dx12_raw::Interface::vtable(self).5)(
+            dx12_raw::Abi::abi(self),
+            p_commit_count,
+            p_commit_hash,
+        )
     }
 }
-impl ::std::convert::From<IDxcVersionInfo2> for windows::IUnknown {
+impl ::std::convert::From<IDxcVersionInfo2> for dx12_raw::IUnknown {
     fn from(value: IDxcVersionInfo2) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDxcVersionInfo2> for windows::IUnknown {
+impl ::std::convert::From<&IDxcVersionInfo2> for dx12_raw::IUnknown {
     fn from(value: &IDxcVersionInfo2) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcVersionInfo2 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for IDxcVersionInfo2 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcVersionInfo2 {
-    fn into(self) -> windows::Param<'a, windows::IUnknown> {
-        windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, dx12_raw::IUnknown>> for &'a IDxcVersionInfo2 {
+    fn into(self) -> dx12_raw::Param<'a, dx12_raw::IUnknown> {
+        dx12_raw::Param::Owned(::std::convert::Into::<dx12_raw::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
@@ -3153,14 +3168,14 @@ impl ::std::convert::From<&IDxcVersionInfo2> for IDxcVersionInfo {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcVersionInfo>> for IDxcVersionInfo2 {
-    fn into(self) -> windows::Param<'a, IDxcVersionInfo> {
-        windows::Param::Owned(::std::convert::Into::<IDxcVersionInfo>::into(self))
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcVersionInfo>> for IDxcVersionInfo2 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcVersionInfo> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcVersionInfo>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, IDxcVersionInfo>> for &'a IDxcVersionInfo2 {
-    fn into(self) -> windows::Param<'a, IDxcVersionInfo> {
-        windows::Param::Owned(::std::convert::Into::<IDxcVersionInfo>::into(
+impl<'a> ::std::convert::Into<dx12_raw::Param<'a, IDxcVersionInfo>> for &'a IDxcVersionInfo2 {
+    fn into(self) -> dx12_raw::Param<'a, IDxcVersionInfo> {
+        dx12_raw::Param::Owned(::std::convert::Into::<IDxcVersionInfo>::into(
             ::std::clone::Clone::clone(self),
         ))
     }

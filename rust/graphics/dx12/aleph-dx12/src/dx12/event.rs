@@ -28,7 +28,7 @@
 //
 
 use crate::raw::windows::win32::system_services::{
-    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, HANDLE, INFINITE,
+    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, INFINITE, PWSTR,
 };
 use crate::raw::windows::win32::windows_programming::CloseHandle;
 
@@ -40,9 +40,9 @@ impl Event {
         let event = unsafe {
             CreateEventW(
                 std::ptr::null_mut(),
-                false.into(),
-                false.into(),
-                std::ptr::null(),
+                BOOL::from(false),
+                BOOL::from(false),
+                PWSTR(std::ptr::null_mut()),
             )
         };
 
@@ -83,7 +83,7 @@ impl WaitAll for [Event] {
                 WaitForMultipleObjects(
                     self.len() as _,
                     self.as_ptr() as *const _,
-                    true.into(),
+                    BOOL::from(true),
                     timeout,
                 )
             }
@@ -92,7 +92,7 @@ impl WaitAll for [Event] {
                 WaitForMultipleObjects(
                     self.len() as _,
                     self.as_ptr() as *const _,
-                    true.into(),
+                    BOOL::from(true),
                     INFINITE,
                 )
             }
@@ -105,7 +105,7 @@ impl WaitAll for [Event] {
                 WaitForMultipleObjects(
                     self.len() as _,
                     self.as_ptr() as *const _,
-                    false.into(),
+                    BOOL::from(false),
                     timeout,
                 )
             }
@@ -114,7 +114,7 @@ impl WaitAll for [Event] {
                 WaitForMultipleObjects(
                     self.len() as _,
                     self.as_ptr() as *const _,
-                    false.into(),
+                    BOOL::from(false),
                     INFINITE,
                 )
             }

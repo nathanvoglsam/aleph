@@ -31,8 +31,9 @@ use crate::dx12::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
 use crate::raw::windows::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
-    D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
+    D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
+use crate::raw::windows::win32::dxgi::IDXGIAdapter1;
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
 use crate::utils::DynamicLoadCell;
 use crate::{
@@ -61,8 +62,9 @@ impl Device {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
             let mut device: Option<ID3D12Device4> = None;
+            let adapter: Option<IDXGIAdapter1> = adapter.map(|v| v.0.clone());
             create_fn(
-                adapter.map(|v| transmute_copy(&v.0)),
+                transmute_copy(&adapter),
                 minimum_feature_level.into(),
                 &ID3D12Device4::IID,
                 device.set_abi(),
@@ -200,7 +202,8 @@ impl Device {
     pub unsafe fn create_sampler(&self, sampler_desc: &SamplerDesc, dest: CPUDescriptorHandle) {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc = transmute(sampler_desc.clone());
-        self.0.CreateSampler(&desc, dest.into())
+        let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
+        self.0.CreateSampler(&desc, dest)
     }
 
     pub unsafe fn create_shader_resource_view(
@@ -212,8 +215,9 @@ impl Device {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc: D3D12_SHADER_RESOURCE_VIEW_DESC = srv_desc.clone().into();
         let p_desc = &desc as *const D3D12_SHADER_RESOURCE_VIEW_DESC;
+        let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
         self.0
-            .CreateShaderResourceView(&resource.0, p_desc as *const _, dest.into())
+            .CreateShaderResourceView(&resource.0, p_desc as *const _, dest)
     }
 
     pub unsafe fn create_render_target_view(
@@ -225,8 +229,9 @@ impl Device {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc: D3D12_RENDER_TARGET_VIEW_DESC = rtv_desc.clone().into();
         let p_desc = &desc as *const D3D12_RENDER_TARGET_VIEW_DESC;
+        let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
         self.0
-            .CreateRenderTargetView(&resource.0, p_desc as *const _, dest.into())
+            .CreateRenderTargetView(&resource.0, p_desc as *const _, dest)
     }
 }
 

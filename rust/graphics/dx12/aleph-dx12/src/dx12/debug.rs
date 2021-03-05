@@ -56,7 +56,7 @@ impl Debug {
 
     pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> crate::Result<()> {
         let casted = self.0.cast::<ID3D12Debug1>()?;
-        casted.SetEnableGPUBasedValidation(enable.into());
+        casted.SetEnableGPUBasedValidation(enable);
         Ok(())
     }
 
@@ -65,7 +65,7 @@ impl Debug {
         enable: bool,
     ) -> crate::Result<()> {
         let casted = self.0.cast::<ID3D12Debug1>()?;
-        casted.SetEnableSynchronizedCommandQueueValidation(enable.into());
+        casted.SetEnableSynchronizedCommandQueueValidation(enable);
         Ok(())
     }
 }

@@ -32,6 +32,7 @@ use raw::windows::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
 use raw::windows::win32::direct3d12::D3D12_SHADER_BYTECODE;
 use raw::windows::win32::system_services::GetProcAddress;
 use raw::windows::win32::system_services::LoadLibraryW;
+use raw::windows::win32::system_services::PWSTR;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -135,7 +136,7 @@ impl<T: Sized> DynamicLoadCell<T> {
         self.cell
             .get_or_try_init(|| {
                 // Attempt to load the library
-                let h_module = LoadLibraryW(self.lib_name.as_ptr());
+                let h_module = LoadLibraryW(PWSTR(self.lib_name.as_ptr() as *mut u16));
 
                 // If we fail to load the library emit an error
                 if h_module == 0 {
@@ -161,7 +162,10 @@ pub fn name_thread_as_main_thread() {
 
     unsafe {
         let handle = GetCurrentThread();
-        let _ = SetThreadDescription(handle, utf16_null!("AlephMainThread").as_ptr());
+        let _ = SetThreadDescription(
+            handle,
+            PWSTR(utf16_null!("AlephMainThread").as_ptr() as *mut u16),
+        );
     }
 }
 
@@ -284,7 +288,8 @@ macro_rules! object_impl {
     ($t:ident) => {
         impl $crate::D3D12Object for $t {
             unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::Result<()> {
-                self.0.SetName(name.as_ptr()).ok()
+                use $crate::raw::windows::win32::system_services::PWSTR;
+                self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
             }
         }
     };
