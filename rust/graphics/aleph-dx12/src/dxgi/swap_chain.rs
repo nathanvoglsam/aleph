@@ -93,7 +93,7 @@ impl SwapChain {
             None, None,
         ];
         queues.iter().enumerate().for_each(|(index, queue)| {
-            let lock = queue.get_shared();
+            let lock = queue.get_raw_shared();
             let ptr = lock.deref().clone();
             unpacked_queues[index] = transmute(ptr);
             locks[index] = Some(lock);

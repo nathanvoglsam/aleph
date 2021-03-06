@@ -27,6 +27,10 @@
 // SOFTWARE.
 //
 
+extern crate aleph_windows_raw as windows_raw;
+extern crate aleph_pix_raw as pix_raw;
+extern crate aleph_dx12 as dx12;
+
 mod colour;
 mod functions;
 mod scoped;
@@ -54,8 +58,5 @@ pub use functions::set_marker_cstr_on_list;
 pub use functions::set_marker_cstr_on_queue;
 
 pub use scoped::ScopedEvent;
+pub use scoped::RecordScopedEvent;
 
-pub(crate) use scoped::for_list;
-pub(crate) use scoped::for_list_cstr;
-pub(crate) use scoped::for_queue;
-pub(crate) use scoped::for_queue_cstr;

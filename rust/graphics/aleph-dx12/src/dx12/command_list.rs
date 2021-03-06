@@ -40,7 +40,7 @@ use crate::{
     Viewport,
 };
 use std::mem::{align_of, size_of};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use windows_raw::win32::direct3d12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
@@ -52,28 +52,15 @@ pub struct GraphicsCommandListRecorder<'a>(
     pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12GraphicsCommandList>,
 );
 
-#[cfg(feature = "pix")]
 impl<'a> GraphicsCommandListRecorder<'a> {
-    pub fn scoped_event(
-        &mut self,
-        colour: crate::pix::Colour,
-        text: &str,
-        f: impl FnOnce(&mut Self),
-    ) {
-        unsafe { crate::pix::for_list(self, colour, text, f) }
+    pub fn as_raw(&self) -> &ID3D12GraphicsCommandList {
+        self.0.deref()
     }
 
-    pub fn scoped_event_cstr(
-        &mut self,
-        colour: crate::pix::Colour,
-        text: &std::ffi::CStr,
-        f: impl FnOnce(&mut Self),
-    ) {
-        unsafe { crate::pix::for_list_cstr(self, colour, text, f) }
+    pub fn as_raw_mut(&mut self) -> &mut ID3D12GraphicsCommandList {
+        self.0.deref_mut()
     }
-}
 
-impl<'a> GraphicsCommandListRecorder<'a> {
     /// `ID3D12GraphicsCommandList::ClearState`
     pub unsafe fn clear_state<T: Into<PipelineState> + Clone>(&mut self, pipeline_state: &T) {
         self.0.ClearState(&pipeline_state.clone().into().0)

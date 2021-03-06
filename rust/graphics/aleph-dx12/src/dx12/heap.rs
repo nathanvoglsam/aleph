@@ -37,3 +37,4 @@ impl Heap {}
 
 crate::object_impl!(Heap);
 crate::device_child_impl!(Heap);
+crate::deref_impl!(Heap, ID3D12Heap);

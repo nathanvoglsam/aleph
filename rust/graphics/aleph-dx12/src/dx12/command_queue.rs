@@ -31,29 +31,9 @@ use crate::windows_raw::win32::direct3d12::ID3D12CommandQueue;
 use crate::windows_raw::win32::system_services::PWSTR;
 use crate::{D3D12DeviceChild, D3D12Object, Device, Fence, SubmissionBuilder};
 use std::sync::{Arc, RwLock};
+use std::ops::{Deref, DerefMut};
 
 pub struct CommandQueueRecorder<'a>(pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12CommandQueue>);
-
-#[cfg(feature = "pix")]
-impl<'a> CommandQueueRecorder<'a> {
-    pub fn scoped_event(
-        &mut self,
-        colour: crate::pix::Colour,
-        text: &str,
-        f: impl FnOnce(&mut Self),
-    ) {
-        unsafe { crate::pix::for_queue(self, colour, text, f) }
-    }
-
-    pub fn scoped_event_cstr(
-        &mut self,
-        colour: crate::pix::Colour,
-        text: &std::ffi::CStr,
-        f: impl FnOnce(&mut Self),
-    ) {
-        unsafe { crate::pix::for_queue_cstr(self, colour, text, f) }
-    }
-}
 
 impl<'a> CommandQueueRecorder<'a> {
     pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> crate::Result<()> {
@@ -64,6 +44,14 @@ impl<'a> CommandQueueRecorder<'a> {
         let lists = command_lists.lists();
         self.0.ExecuteCommandLists(lists.0, lists.1);
     }
+
+    pub fn as_raw(&self) -> &ID3D12CommandQueue {
+        self.0.deref()
+    }
+
+    pub fn as_raw_mut(&mut self) -> &mut ID3D12CommandQueue {
+        self.0.deref_mut()
+    }
 }
 
 #[derive(Clone)]
@@ -72,21 +60,21 @@ pub struct CommandQueue(pub(crate) Arc<RwLock<ID3D12CommandQueue>>);
 
 impl CommandQueue {
     pub fn record(&self) -> CommandQueueRecorder {
-        CommandQueueRecorder(self.get_exclusive())
+        CommandQueueRecorder(self.get_raw_exclusive())
     }
 
-    pub(crate) fn get_shared(&self) -> std::sync::RwLockReadGuard<ID3D12CommandQueue> {
+    pub fn get_raw_shared(&self) -> std::sync::RwLockReadGuard<ID3D12CommandQueue> {
         self.0.read().unwrap()
     }
 
-    pub(crate) fn get_exclusive(&self) -> std::sync::RwLockWriteGuard<ID3D12CommandQueue> {
+    pub fn get_raw_exclusive(&self) -> std::sync::RwLockWriteGuard<ID3D12CommandQueue> {
         self.0.write().unwrap()
     }
 }
 
 impl D3D12Object for CommandQueue {
     unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.get_shared()
+        self.get_raw_shared()
             .SetName(PWSTR(name.as_ptr() as *mut u16))
             .ok()
     }
@@ -97,7 +85,7 @@ impl D3D12DeviceChild for CommandQueue {
         use crate::{Abi, Interface};
         type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
-        self.get_shared()
+        self.get_raw_shared()
             .GetDevice(&D::IID, device.set_abi())
             .and_some(device)
             .map(|v| Device(v))

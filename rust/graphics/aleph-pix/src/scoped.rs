@@ -1,3 +1,4 @@
+
 //
 //
 // This file is a part of Aleph
@@ -28,8 +29,8 @@
 //
 
 use super::functions::*;
-use crate::pix::Colour;
-use crate::{CommandQueueRecorder, GraphicsCommandListRecorder};
+use crate::Colour;
+use dx12::{CommandQueueRecorder, GraphicsCommandListRecorder};
 use std::ffi::CStr;
 
 pub struct ScopedEvent();
@@ -56,46 +57,90 @@ impl Drop for ScopedEvent {
     }
 }
 
-pub(crate) unsafe fn for_queue<'a>(
+pub trait RecordScopedEvent {
+    fn scoped_event(
+        &mut self,
+        colour: crate::Colour,
+        text: &str,
+        f: impl FnOnce(&mut Self),
+    );
+
+    fn scoped_event_cstr(
+        &mut self,
+        colour: crate::Colour,
+        text: &std::ffi::CStr,
+        f: impl FnOnce(&mut Self),
+    );
+}
+
+impl<'a> RecordScopedEvent for CommandQueueRecorder<'a> {
+    fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
+        unsafe {
+            for_queue(self, colour, text, f)
+        }
+    }
+
+    fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
+        unsafe {
+            for_queue_cstr(self, colour, text, f)
+        }
+    }
+}
+
+impl<'a> RecordScopedEvent for GraphicsCommandListRecorder<'a> {
+    fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
+        unsafe {
+            for_list(self, colour, text, f)
+        }
+    }
+
+    fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
+        unsafe {
+            for_list_cstr(self, colour, text, f)
+        }
+    }
+}
+
+pub unsafe fn for_queue<'a>(
     queue: &mut CommandQueueRecorder<'a>,
     colour: Colour,
     text: &str,
     f: impl FnOnce(&mut CommandQueueRecorder<'a>),
 ) {
-    begin_event_on_queue(&mut queue.0, colour, text);
+    begin_event_on_queue(queue.as_raw_mut(), colour, text);
     f(queue);
-    end_event_on_queue(&mut queue.0);
+    end_event_on_queue(queue.as_raw_mut());
 }
 
-pub(crate) unsafe fn for_queue_cstr<'a>(
+pub unsafe fn for_queue_cstr<'a>(
     queue: &mut CommandQueueRecorder<'a>,
     colour: Colour,
     text: &CStr,
     f: impl FnOnce(&mut CommandQueueRecorder<'a>),
 ) {
-    begin_event_cstr_on_queue(&mut queue.0, colour, text);
+    begin_event_cstr_on_queue(queue.as_raw_mut(), colour, text);
     f(queue);
-    end_event_on_queue(&mut queue.0);
+    end_event_on_queue(queue.as_raw_mut());
 }
 
-pub(crate) unsafe fn for_list<'a>(
+pub unsafe fn for_list<'a>(
     list: &mut GraphicsCommandListRecorder<'a>,
     colour: Colour,
     text: &str,
     f: impl FnOnce(&mut GraphicsCommandListRecorder<'a>),
 ) {
-    begin_event_on_list(&mut list.0, colour, text);
+    begin_event_on_list(list.as_raw_mut(), colour, text);
     f(list);
-    end_event_on_list(&mut list.0);
+    end_event_on_list(list.as_raw_mut());
 }
 
-pub(crate) unsafe fn for_list_cstr<'a>(
+pub unsafe fn for_list_cstr<'a>(
     list: &mut GraphicsCommandListRecorder<'a>,
     colour: Colour,
     text: &CStr,
     f: impl FnOnce(&mut GraphicsCommandListRecorder<'a>),
 ) {
-    begin_event_cstr_on_list(&mut list.0, colour, text);
+    begin_event_cstr_on_list(list.as_raw_mut(), colour, text);
     f(list);
-    end_event_on_list(&mut list.0);
+    end_event_on_list(list.as_raw_mut());
 }

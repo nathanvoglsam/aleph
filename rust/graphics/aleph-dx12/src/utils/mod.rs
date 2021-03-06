@@ -309,3 +309,18 @@ macro_rules! object_impl {
         }
     };
 }
+
+#[macro_export]
+macro_rules! deref_impl {
+    ($t:ident, $d:ident) => {
+        impl $t {
+            pub fn as_raw(&self) -> & $d {
+                &self.0
+            }
+
+            pub fn as_raw_mut(&mut self) -> &mut $d {
+                &mut self.0
+            }
+        }
+    };
+}

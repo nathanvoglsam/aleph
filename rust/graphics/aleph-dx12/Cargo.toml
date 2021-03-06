@@ -45,10 +45,9 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [features]
-default = ["alloc", "dxc", "pix"]
+default = ["alloc", "dxc"]
 alloc = ["aleph-dx12-alloc-raw"]
 dxc = ["aleph-dxc-raw"]
-pix = ["aleph-pix-raw"]
 
 [dependencies.aleph-windows-raw]
 path = "../../raw/aleph-windows-raw"
@@ -61,11 +60,6 @@ optional = true
 
 [dependencies.aleph-dxc-raw]
 path = "../../raw/aleph-dxc-raw"
-version = "0.1"
-optional = true
-
-[dependencies.aleph-pix-raw]
-path = "../../raw/aleph-pix-raw"
 version = "0.1"
 optional = true
 

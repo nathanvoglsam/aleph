@@ -104,7 +104,7 @@ impl Factory {
         let swapchain = self
             .0
             .CreateSwapChainForHwnd(
-                queue.get_shared().deref(),
+                queue.get_raw_shared().deref(),
                 hwnd,
                 &desc,
                 std::ptr::null(),
@@ -125,7 +125,7 @@ impl Factory {
         let swapchain = self
             .0
             .CreateSwapChainForCoreWindow(
-                queue.get_shared().deref(),
+                queue.get_raw_shared().deref(),
                 core_window,
                 &desc,
                 None,

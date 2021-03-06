@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::dx12::pix::{Colour, ScopedEvent};
+use crate::pix::{Colour, ScopedEvent};
 use crate::dx12::FeatureLevel;
 use crate::dx12::{dxgi, D3D12Object};
 use crate::platform::{Platform, Window};

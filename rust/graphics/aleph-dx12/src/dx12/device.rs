@@ -236,3 +236,4 @@ impl Device {
 }
 
 crate::object_impl!(Device);
+crate::deref_impl!(Device, ID3D12Device4);

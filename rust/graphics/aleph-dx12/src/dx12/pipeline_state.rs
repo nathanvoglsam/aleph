@@ -35,6 +35,9 @@ pub struct PipelineState(pub(crate) ID3D12PipelineState);
 
 crate::object_impl!(PipelineState);
 crate::device_child_impl!(PipelineState);
+crate::deref_impl!(PipelineState, ID3D12PipelineState);
+
+
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -48,6 +51,7 @@ impl Into<PipelineState> for GraphicsPipelineState {
 
 crate::object_impl!(GraphicsPipelineState);
 crate::device_child_impl!(GraphicsPipelineState);
+crate::deref_impl!(GraphicsPipelineState, ID3D12PipelineState);
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -61,3 +65,4 @@ impl Into<PipelineState> for ComputePipelineState {
 
 crate::object_impl!(ComputePipelineState);
 crate::device_child_impl!(ComputePipelineState);
+crate::deref_impl!(ComputePipelineState, ID3D12PipelineState);

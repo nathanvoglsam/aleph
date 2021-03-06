@@ -29,6 +29,7 @@
 
 use crate::renderer::GlobalObjects;
 use dx12::{dxgi, D3D12Object};
+use pix::RecordScopedEvent;
 
 pub struct PerFrameObjects {
     pub vtx_buffer: dx12::alloc::Allocation,
@@ -184,7 +185,7 @@ impl PerFrameObjects {
         command_list: &mut dx12::GraphicsCommandListRecorder,
     ) {
         command_list.scoped_event(
-            dx12::pix::Colour::GREEN,
+            pix::Colour::GREEN,
             "Egui Texture Upload",
             |command_list| {
                 let staged_resource = self

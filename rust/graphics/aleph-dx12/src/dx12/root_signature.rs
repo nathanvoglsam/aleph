@@ -37,3 +37,4 @@ impl RootSignature {}
 
 crate::object_impl!(RootSignature);
 crate::device_child_impl!(RootSignature);
+crate::deref_impl!(RootSignature, ID3D12RootSignature);

@@ -29,30 +29,35 @@
 
 
 [package]
-name = "aleph-render"
+name = "aleph-pix"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine renderer"
+description = "The aleph-engine pix interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-render/"
+documentation = "https://docs.rs/aleph-pix/"
 readme = "README.md"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
+## TODO: keywords = ["engine", "graphics", "directx", "game"]
+## TODO: categories = ["game-engines"]
 edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-log = { path = "../../logging/aleph-log", version = "1" }
-aleph-dx12 = { path = "../aleph-dx12", version = "0.1" }
-aleph-pix = { path = "../aleph-pix", version = "0.1" }
-aleph-embedded-data = { path = "../../engine/aleph-embedded-data", version = "0.1" }
-aleph-macros = { path = "../../utils/aleph-macros", version = "1" }
-egui = "0.8"
-once_cell = "1"
+[dependencies.aleph-dx12]
+path = "../aleph-dx12"
+version = "0.1"
 
-[dependencies.ultraviolet]
-version = "0.7"
-features = ["f64"]
+[dependencies.aleph-windows-raw]
+path = "../../raw/aleph-windows-raw"
+version = "0.1"
+
+[dependencies.aleph-pix-raw]
+path = "../../raw/aleph-pix-raw"
+version = "0.1"
+
+## [dependencies.once_cell]
+## version = "1"
+##
+## [dependencies.utf16_lit]
+## version = "2"

@@ -134,3 +134,4 @@ impl Resource {
 
 crate::object_impl!(Resource);
 crate::device_child_impl!(Resource);
+crate::deref_impl!(Resource, ID3D12Resource);

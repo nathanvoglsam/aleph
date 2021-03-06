@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::pix::Colour;
-use aleph_pix_raw::*;
+use crate::Colour;
+use pix_raw::*;
 use std::ffi::{CStr, CString};
 use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
