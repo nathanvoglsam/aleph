@@ -51,21 +51,21 @@ dxc = ["aleph-dxc-raw"]
 pix = ["aleph-pix-raw"]
 
 [dependencies.aleph-windows-raw]
-path = "../../../raw/aleph-windows-raw"
+path = "../../raw/aleph-windows-raw"
 version = "0.1"
 
 [dependencies.aleph-dx12-alloc-raw]
-path = "../../../raw/aleph-dx12-alloc-raw"
+path = "../../raw/aleph-dx12-alloc-raw"
 version = "0.1"
 optional = true
 
 [dependencies.aleph-dxc-raw]
-path = "../../../raw/aleph-dxc-raw"
+path = "../../raw/aleph-dxc-raw"
 version = "0.1"
 optional = true
 
 [dependencies.aleph-pix-raw]
-path = "../../../raw/aleph-pix-raw"
+path = "../../raw/aleph-pix-raw"
 version = "0.1"
 optional = true
 
