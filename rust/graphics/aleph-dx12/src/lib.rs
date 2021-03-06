@@ -45,9 +45,6 @@ pub use dx12::*;
 
 mod utils;
 
-#[cfg(test)]
-mod tests;
-
 pub(crate) use windows_raw::Abi;
 pub(crate) use windows_raw::Guid;
 pub(crate) use windows_raw::IUnknown;
