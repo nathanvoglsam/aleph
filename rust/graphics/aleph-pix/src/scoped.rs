@@ -1,4 +1,3 @@
-
 //
 //
 // This file is a part of Aleph
@@ -58,12 +57,7 @@ impl Drop for ScopedEvent {
 }
 
 pub trait RecordScopedEvent {
-    fn scoped_event(
-        &mut self,
-        colour: crate::Colour,
-        text: &str,
-        f: impl FnOnce(&mut Self),
-    );
+    fn scoped_event(&mut self, colour: crate::Colour, text: &str, f: impl FnOnce(&mut Self));
 
     fn scoped_event_cstr(
         &mut self,
@@ -75,29 +69,21 @@ pub trait RecordScopedEvent {
 
 impl<'a> RecordScopedEvent for CommandQueueRecorder<'a> {
     fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
-        unsafe {
-            for_queue(self, colour, text, f)
-        }
+        unsafe { for_queue(self, colour, text, f) }
     }
 
     fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
-        unsafe {
-            for_queue_cstr(self, colour, text, f)
-        }
+        unsafe { for_queue_cstr(self, colour, text, f) }
     }
 }
 
 impl<'a> RecordScopedEvent for GraphicsCommandListRecorder<'a> {
     fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
-        unsafe {
-            for_list(self, colour, text, f)
-        }
+        unsafe { for_list(self, colour, text, f) }
     }
 
     fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
-        unsafe {
-            for_list_cstr(self, colour, text, f)
-        }
+        unsafe { for_list_cstr(self, colour, text, f) }
     }
 }
 

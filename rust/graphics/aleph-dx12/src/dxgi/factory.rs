@@ -28,7 +28,6 @@
 //
 
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
-use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::ID3D12Device4;
 use crate::windows_raw::win32::dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
@@ -41,6 +40,7 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
 use std::ops::Deref;
 use utf16_lit::utf16_null;
+use windows_raw::utils::DynamicLoadCell;
 use windows_raw::win32::winrt::IInspectable;
 
 type CreateFn =

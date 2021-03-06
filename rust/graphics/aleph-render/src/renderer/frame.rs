@@ -184,46 +184,42 @@ impl PerFrameObjects {
         &mut self,
         command_list: &mut dx12::GraphicsCommandListRecorder,
     ) {
-        command_list.scoped_event(
-            pix::Colour::GREEN,
-            "Egui Texture Upload",
-            |command_list| {
-                let staged_resource = self
-                    .font_staged_image
-                    .as_ref()
-                    .unwrap()
-                    .get_resource()
-                    .unwrap();
+        command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |command_list| {
+            let staged_resource = self
+                .font_staged_image
+                .as_ref()
+                .unwrap()
+                .get_resource()
+                .unwrap();
 
-                let dst = dx12::TextureCopyLocation::Subresource {
-                    resource: Some(staged_resource.clone()),
-                    subresource_index: 0,
-                };
-                let src = dx12::TextureCopyLocation::Placed {
-                    resource: Some(self.font_staging_resource.clone()),
-                    placed_footprint: dx12::PlacedSubresourceFootprint {
-                        offset: 0,
-                        footprint: dx12::SubresourceFootprint {
-                            format: dxgi::Format::R8Unorm,
-                            width: self.font_staged_size.0,
-                            height: self.font_staged_size.1,
-                            depth: 1,
-                            row_pitch: self.font_staged_size.0,
-                        },
+            let dst = dx12::TextureCopyLocation::Subresource {
+                resource: Some(staged_resource.clone()),
+                subresource_index: 0,
+            };
+            let src = dx12::TextureCopyLocation::Placed {
+                resource: Some(self.font_staging_resource.clone()),
+                placed_footprint: dx12::PlacedSubresourceFootprint {
+                    offset: 0,
+                    footprint: dx12::SubresourceFootprint {
+                        format: dxgi::Format::R8Unorm,
+                        width: self.font_staged_size.0,
+                        height: self.font_staged_size.1,
+                        depth: 1,
+                        row_pitch: self.font_staged_size.0,
                     },
-                };
-                command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
+                },
+            };
+            command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
 
-                let barrier = dx12::ResourceBarrier::Transition {
-                    flags: Default::default(),
-                    resource: Some(staged_resource),
-                    subresource: 0,
-                    state_before: dx12::ResourceStates::COPY_DEST,
-                    state_after: dx12::ResourceStates::PIXEL_SHADER_RESOURCE,
-                };
-                command_list.resource_barrier_single(&barrier);
-            },
-        );
+            let barrier = dx12::ResourceBarrier::Transition {
+                flags: Default::default(),
+                resource: Some(staged_resource),
+                subresource: 0,
+                state_before: dx12::ResourceStates::COPY_DEST,
+                state_after: dx12::ResourceStates::PIXEL_SHADER_RESOURCE,
+            };
+            command_list.resource_barrier_single(&barrier);
+        });
     }
 
     /// Allocates the font texture on GPU memory

@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use windows_raw::utils::DynamicLoadCell;
 use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
+use windows_raw::utils::DynamicLoadCell;
 
 static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
     DynamicLoadCell::new(&utf16_null!("dxil.dll"), "DxcCreateInstance\0");

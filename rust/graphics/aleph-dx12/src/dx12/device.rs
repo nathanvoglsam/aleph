@@ -29,7 +29,6 @@
 
 use crate::dx12::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
-use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
@@ -46,6 +45,7 @@ use crate::{Abi, Interface};
 use std::mem::{transmute, transmute_copy};
 use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
+use windows_raw::utils::DynamicLoadCell;
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");

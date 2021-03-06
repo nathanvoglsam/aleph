@@ -29,7 +29,6 @@
 
 use crate::dx12::resource_barrier::D3D12_RESOURCE_BARRIER;
 use crate::dx12::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
-use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use crate::windows_raw::win32::direct3d12::ID3D12GraphicsCommandList;
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
@@ -42,6 +41,7 @@ use crate::{
 use std::mem::{align_of, size_of};
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use windows_raw::win32::direct3d12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,

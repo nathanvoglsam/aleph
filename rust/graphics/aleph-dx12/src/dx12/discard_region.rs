@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use windows_raw::utils::optional_slice_to_num_ptr_pair;
 use crate::Rect;
+use windows_raw::utils::optional_slice_to_num_ptr_pair;
 use windows_raw::win32::direct3d12::D3D12_DISCARD_REGION;
 
 #[derive(Clone, Debug)]

@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::pix::{Colour, ScopedEvent};
 use crate::dx12::FeatureLevel;
 use crate::dx12::{dxgi, D3D12Object};
+use crate::pix::{Colour, ScopedEvent};
 use crate::platform::{Platform, Window};
 use app_info::AppInfo;
 use egui::PaintJobs;

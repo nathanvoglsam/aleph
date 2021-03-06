@@ -54,11 +54,11 @@ pub(crate) use windows_raw::IUnknown;
 pub(crate) use windows_raw::Interface;
 pub(crate) use windows_raw::BOOL;
 
+pub use windows_raw::initialize_mta;
+pub use windows_raw::initialize_sta;
 pub use windows_raw::utils::name_thread_as_main_thread;
 pub use windows_raw::utils::Bool;
 pub use windows_raw::utils::CStrFFI;
-pub use windows_raw::initialize_mta;
-pub use windows_raw::initialize_sta;
 pub use windows_raw::Error;
 pub use windows_raw::ErrorCode;
 pub use windows_raw::Result;

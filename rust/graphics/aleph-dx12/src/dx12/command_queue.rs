@@ -30,8 +30,8 @@
 use crate::windows_raw::win32::direct3d12::ID3D12CommandQueue;
 use crate::windows_raw::win32::system_services::PWSTR;
 use crate::{D3D12DeviceChild, D3D12Object, Device, Fence, SubmissionBuilder};
-use std::sync::{Arc, RwLock};
 use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, RwLock};
 
 pub struct CommandQueueRecorder<'a>(pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12CommandQueue>);
 
