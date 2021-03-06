@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12CommandAllocator;
+use crate::windows_raw::win32::direct3d12::ID3D12CommandAllocator;
 
 #[derive(Clone)]
 #[repr(transparent)]

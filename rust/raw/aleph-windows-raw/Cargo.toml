@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-dx12-raw"
+name = "aleph-windows-raw"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine dx12 interface"
+description = "The aleph-engine windows interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-dx12-raw/"
+documentation = "https://docs.rs/aleph-windows-raw/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "directx", "game"]
 ## TODO: categories = ["game-engines"]

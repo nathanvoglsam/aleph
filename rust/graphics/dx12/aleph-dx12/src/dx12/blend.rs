@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_BLEND;
+use windows_raw::win32::direct3d12::D3D12_BLEND;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

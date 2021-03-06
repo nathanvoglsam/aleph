@@ -28,16 +28,16 @@
 //
 
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
-use crate::raw::windows::win32::direct3d12::ID3D12Device4;
-use crate::raw::windows::win32::dxgi::{
+use crate::windows_raw::win32::direct3d12::ID3D12Device4;
+use crate::windows_raw::win32::dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
     DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
 };
-use crate::raw::windows::win32::windows_and_messaging::HWND;
+use crate::windows_raw::win32::windows_and_messaging::HWND;
 use crate::utils::DynamicLoadCell;
 use crate::{Abi, Interface};
 use crate::{CommandQueue, FeatureLevel};
-use raw::windows::win32::winrt::IInspectable;
+use windows_raw::win32::winrt::IInspectable;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
 use std::ops::Deref;

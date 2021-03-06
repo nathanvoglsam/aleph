@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12PipelineState;
+use crate::windows_raw::win32::direct3d12::ID3D12PipelineState;
 
 #[derive(Clone)]
 #[repr(transparent)]

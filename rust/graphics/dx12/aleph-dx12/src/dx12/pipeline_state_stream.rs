@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
+use crate::windows_raw::win32::direct3d12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
 

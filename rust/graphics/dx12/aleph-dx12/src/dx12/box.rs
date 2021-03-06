@@ -27,4 +27,4 @@
 // SOFTWARE.
 //
 
-pub type Box = raw::windows::win32::direct3d12::D3D12_BOX;
+pub type Box = windows_raw::win32::direct3d12::D3D12_BOX;

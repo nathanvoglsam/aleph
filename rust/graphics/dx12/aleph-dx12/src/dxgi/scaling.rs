@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::dxgi::DXGI_SCALING;
+use windows_raw::win32::dxgi::DXGI_SCALING;
 use std::convert::TryFrom;
 
 #[repr(i32)]

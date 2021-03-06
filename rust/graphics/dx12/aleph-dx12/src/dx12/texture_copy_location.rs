@@ -28,7 +28,7 @@
 //
 
 use crate::{PlacedSubresourceFootprint, Resource};
-use raw::windows::win32::direct3d12::{
+use windows_raw::win32::direct3d12::{
     ID3D12Resource, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE,
 };
 use std::mem::{transmute, ManuallyDrop};

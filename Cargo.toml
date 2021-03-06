@@ -55,9 +55,9 @@ members = [
     "rust/platform/aleph-platform",
     "rust/platform/aleph-platform-egui",
     "rust/raw/aleph-dx12-alloc-raw",
-    "rust/raw/aleph-dx12-raw",
     "rust/raw/aleph-dxc-raw",
     "rust/raw/aleph-pix-raw",
+    "rust/raw/aleph-windows-raw",
     "rust/utils/aleph-macros",
     "game/aleph-test",
 ]

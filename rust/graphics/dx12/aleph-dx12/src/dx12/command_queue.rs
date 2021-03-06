@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12CommandQueue;
-use crate::raw::windows::win32::system_services::PWSTR;
+use crate::windows_raw::win32::direct3d12::ID3D12CommandQueue;
+use crate::windows_raw::win32::system_services::PWSTR;
 use crate::{D3D12DeviceChild, D3D12Object, Device, Fence, SubmissionBuilder};
 use std::sync::{Arc, RwLock};
 
@@ -95,7 +95,7 @@ impl D3D12Object for CommandQueue {
 impl D3D12DeviceChild for CommandQueue {
     unsafe fn get_device(&self) -> crate::Result<Device> {
         use crate::{Abi, Interface};
-        type D = raw::windows::win32::direct3d12::ID3D12Device4;
+        type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_shared()
             .GetDevice(&D::IID, device.set_abi())

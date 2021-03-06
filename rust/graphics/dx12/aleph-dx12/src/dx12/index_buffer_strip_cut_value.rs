@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE;
+use windows_raw::win32::direct3d12::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

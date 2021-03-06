@@ -28,9 +28,9 @@
 //
 
 use crate::dx12::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as MyDesc;
-use crate::raw::windows::win32::direct3d11::ID3DBlob;
-use crate::raw::windows::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
-use crate::raw::windows::win32::direct3d12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
+use crate::windows_raw::win32::direct3d11::ID3DBlob;
+use crate::windows_raw::win32::direct3d12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
+use crate::windows_raw::win32::direct3d12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
 use crate::utils::DynamicLoadCell;
 use crate::{Abi, VersionedRootSignatureDesc};
 use utf16_lit::utf16_null;

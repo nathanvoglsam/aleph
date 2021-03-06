@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_PREDICATION_OP;
+use crate::windows_raw::win32::direct3d12::D3D12_PREDICATION_OP;
 
 /// Wrapper for `D3D12_PREDICATION_OP`
 #[repr(i32)]

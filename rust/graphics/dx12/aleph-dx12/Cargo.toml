@@ -50,8 +50,8 @@ alloc = ["aleph-dx12-alloc-raw"]
 dxc = ["aleph-dxc-raw"]
 pix = ["aleph-pix-raw"]
 
-[dependencies.aleph-dx12-raw]
-path = "../../../raw/aleph-dx12-raw"
+[dependencies.aleph-windows-raw]
+path = "../../../raw/aleph-windows-raw"
 version = "0.1"
 
 [dependencies.aleph-dx12-alloc-raw]

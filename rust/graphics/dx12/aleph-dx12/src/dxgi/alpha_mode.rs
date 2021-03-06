@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::dxgi::DXGI_ALPHA_MODE;
+use windows_raw::win32::dxgi::DXGI_ALPHA_MODE;
 use std::convert::TryFrom;
 
 #[repr(u32)]

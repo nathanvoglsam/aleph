@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d11::D3D_PRIMITIVE_TOPOLOGY;
+use windows_raw::win32::direct3d11::D3D_PRIMITIVE_TOPOLOGY;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

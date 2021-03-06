@@ -28,7 +28,7 @@
 //
 
 use crate::dx12::root_signature_desc::{D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1};
-use crate::raw::windows::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
+use crate::windows_raw::win32::direct3d12::D3D_ROOT_SIGNATURE_VERSION;
 use crate::{RootSignatureDesc, RootSignatureDesc1};
 use std::mem::ManuallyDrop;
 

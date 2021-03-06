@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_SHADER_VISIBILITY;
+use windows_raw::win32::direct3d12::D3D12_SHADER_VISIBILITY;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

@@ -29,7 +29,7 @@
 
 use crate::dx12::resource_barrier::D3D12_RESOURCE_BARRIER;
 use crate::dx12::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
-use crate::raw::windows::win32::direct3d12::ID3D12GraphicsCommandList;
+use crate::windows_raw::win32::direct3d12::ID3D12GraphicsCommandList;
 use crate::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
@@ -39,11 +39,11 @@ use crate::{
     TextureCopyLocation, TileCopyFlags, TileRegionSize, TiledResourceCoordinate, VertexBufferView,
     Viewport,
 };
-use raw::windows::win32::direct3d12::{
+use windows_raw::win32::direct3d12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
-use raw::windows::win32::system_services::PWSTR;
+use windows_raw::win32::system_services::PWSTR;
 use std::mem::{align_of, size_of};
 use std::ops::Deref;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
@@ -826,7 +826,7 @@ impl<'a> D3D12Object for GraphicsCommandListRecorder<'a> {
 impl<'a> D3D12DeviceChild for GraphicsCommandListRecorder<'a> {
     unsafe fn get_device(&self) -> crate::Result<Device> {
         use crate::{Abi, Interface};
-        type D = raw::windows::win32::direct3d12::ID3D12Device4;
+        type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.0
             .GetDevice(&D::IID, device.set_abi())
@@ -877,7 +877,7 @@ impl D3D12Object for GraphicsCommandList {
 impl D3D12DeviceChild for GraphicsCommandList {
     unsafe fn get_device(&self) -> crate::Result<Device> {
         use crate::{Abi, Interface};
-        type D = raw::windows::win32::direct3d12::ID3D12Device4;
+        type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_shared()
             .GetDevice(&D::IID, device.set_abi())

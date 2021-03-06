@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_DESCRIPTOR_RANGE_TYPE;
+use crate::windows_raw::win32::direct3d12::D3D12_DESCRIPTOR_RANGE_TYPE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

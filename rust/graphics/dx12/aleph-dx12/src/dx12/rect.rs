@@ -27,4 +27,4 @@
 // SOFTWARE.
 //
 
-pub type Rect = raw::windows::win32::display_devices::RECT;
+pub type Rect = windows_raw::win32::display_devices::RECT;

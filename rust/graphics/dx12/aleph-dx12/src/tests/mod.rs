@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_ROOT_CONSTANTS;
-use crate::raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR1;
-use crate::raw::windows::win32::direct3d12::D3D12_ROOT_DESCRIPTOR_TABLE1;
+use crate::windows_raw::win32::direct3d12::D3D12_ROOT_CONSTANTS;
+use crate::windows_raw::win32::direct3d12::D3D12_ROOT_DESCRIPTOR1;
+use crate::windows_raw::win32::direct3d12::D3D12_ROOT_DESCRIPTOR_TABLE1;
 use crate::RootParameter1;
 use crate::RootParameter1Type;
 use crate::RootSignatureBlob;

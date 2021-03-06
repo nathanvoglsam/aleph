@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_COMMAND_QUEUE_FLAGS;
+use windows_raw::win32::direct3d12::D3D12_COMMAND_QUEUE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct CommandQueueFlags(pub i32);

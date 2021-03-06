@@ -29,7 +29,7 @@
 
 use crate::utils::optional_slice_to_num_ptr_pair;
 use crate::Rect;
-use raw::windows::win32::direct3d12::D3D12_DISCARD_REGION;
+use windows_raw::win32::direct3d12::D3D12_DISCARD_REGION;
 
 #[derive(Clone, Debug)]
 #[repr(C)]

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_GPU_DESCRIPTOR_HANDLE;
+use crate::windows_raw::win32::direct3d12::D3D12_GPU_DESCRIPTOR_HANDLE;
 use std::convert::TryFrom;
 use std::num::NonZeroU64;
 

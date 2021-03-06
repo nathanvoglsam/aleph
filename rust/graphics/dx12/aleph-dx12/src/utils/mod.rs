@@ -28,11 +28,11 @@
 //
 
 use once_cell::sync::OnceCell;
-use raw::windows::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
-use raw::windows::win32::direct3d12::D3D12_SHADER_BYTECODE;
-//use raw::windows::win32::system_services::GetProcAddress;
-use raw::windows::win32::system_services::LoadLibraryW;
-use raw::windows::win32::system_services::PWSTR;
+use windows_raw::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
+use windows_raw::win32::direct3d12::D3D12_SHADER_BYTECODE;
+//use windows_raw::win32::system_services::GetProcAddress;
+use windows_raw::win32::system_services::LoadLibraryW;
+use windows_raw::win32::system_services::PWSTR;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -172,8 +172,8 @@ impl<T: Sized> DynamicLoadCell<T> {
 /// if it doesn't
 ///
 pub fn name_thread_as_main_thread() {
-    use raw::windows::win32::system_services::GetCurrentThread;
-    use raw::windows::win32::system_services::SetThreadDescription;
+    use windows_raw::win32::system_services::GetCurrentThread;
+    use windows_raw::win32::system_services::SetThreadDescription;
 
     unsafe {
         let handle = GetCurrentThread();
@@ -287,7 +287,7 @@ macro_rules! device_child_impl {
         impl $crate::D3D12DeviceChild for $t {
             unsafe fn get_device(&self) -> $crate::Result<$crate::Device> {
                 use $crate::{Abi, Interface};
-                type D = $crate::raw::windows::win32::direct3d12::ID3D12Device4;
+                type D = $crate::windows_raw::win32::direct3d12::ID3D12Device4;
                 let mut device: Option<D> = None;
                 self.0
                     .GetDevice(&D::IID, device.set_abi())
@@ -303,7 +303,7 @@ macro_rules! object_impl {
     ($t:ident) => {
         impl $crate::D3D12Object for $t {
             unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::Result<()> {
-                use $crate::raw::windows::win32::system_services::PWSTR;
+                use $crate::windows_raw::win32::system_services::PWSTR;
                 self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
             }
         }

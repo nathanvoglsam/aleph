@@ -28,7 +28,7 @@
 //
 
 extern crate aleph_dx12_alloc_raw as alloc_raw;
-extern crate aleph_dx12_raw as raw;
+extern crate aleph_windows_raw as windows_raw;
 extern crate aleph_dxc_raw as dxc_raw;
 
 #[cfg(feature = "pix")]
@@ -51,17 +51,17 @@ mod utils;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use raw::Abi;
-pub(crate) use raw::Guid;
-pub(crate) use raw::IUnknown;
-pub(crate) use raw::Interface;
-pub(crate) use raw::BOOL;
+pub(crate) use windows_raw::Abi;
+pub(crate) use windows_raw::Guid;
+pub(crate) use windows_raw::IUnknown;
+pub(crate) use windows_raw::Interface;
+pub(crate) use windows_raw::BOOL;
 
-pub use raw::initialize_mta;
-pub use raw::initialize_sta;
-pub use raw::Error;
-pub use raw::ErrorCode;
-pub use raw::Result;
+pub use windows_raw::initialize_mta;
+pub use windows_raw::initialize_sta;
+pub use windows_raw::Error;
+pub use windows_raw::ErrorCode;
+pub use windows_raw::Result;
 pub use utils::name_thread_as_main_thread;
 pub use utils::Bool;
 pub use utils::CStrFFI;

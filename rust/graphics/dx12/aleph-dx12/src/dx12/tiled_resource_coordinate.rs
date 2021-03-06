@@ -27,4 +27,4 @@
 // SOFTWARE.
 //
 
-pub type TiledResourceCoordinate = raw::windows::win32::direct3d12::D3D12_TILED_RESOURCE_COORDINATE;
+pub type TiledResourceCoordinate = windows_raw::win32::direct3d12::D3D12_TILED_RESOURCE_COORDINATE;

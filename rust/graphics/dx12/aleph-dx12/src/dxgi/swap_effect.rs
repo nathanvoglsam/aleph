@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::dxgi::DXGI_SWAP_EFFECT;
+use windows_raw::win32::dxgi::DXGI_SWAP_EFFECT;
 use std::convert::TryFrom;
 
 #[repr(i32)]

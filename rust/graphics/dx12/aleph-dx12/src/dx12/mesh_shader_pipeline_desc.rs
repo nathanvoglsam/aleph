@@ -28,13 +28,13 @@
 //
 
 use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
-use crate::raw::windows::win32::direct3d12::{
+use crate::windows_raw::win32::direct3d12::{
     ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
     D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     D3D12_RASTERIZER_DESC, D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT,
 };
-use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+use crate::windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 use std::mem::transmute;
 
 #[derive(Clone, Debug)]
@@ -133,12 +133,12 @@ impl MeshShaderPipelineStateDesc {
 
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
-    use crate::raw::windows::win32::direct3d12::{
+    use crate::windows_raw::win32::direct3d12::{
         D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
         D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
         D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     };
-    use crate::raw::windows::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use crate::windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
     use std::ffi::c_void;
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<*mut c_void>;

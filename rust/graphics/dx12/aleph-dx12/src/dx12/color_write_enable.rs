@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use raw::windows::win32::direct3d12::D3D12_COLOR_WRITE_ENABLE;
+use windows_raw::win32::direct3d12::D3D12_COLOR_WRITE_ENABLE;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct ColorWriteEnable(pub u8);

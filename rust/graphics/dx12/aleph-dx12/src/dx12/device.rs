@@ -28,12 +28,12 @@
 //
 
 use crate::dx12::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
-use crate::raw::windows::win32::direct3d12::{
+use crate::windows_raw::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_PIPELINE_STATE_STREAM_DESC, PFN_D3D12_CREATE_DEVICE,
 };
-use crate::raw::windows::win32::dxgi::IDXGIAdapter1;
+use crate::windows_raw::win32::dxgi::IDXGIAdapter1;
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
 use crate::utils::DynamicLoadCell;
 use crate::{

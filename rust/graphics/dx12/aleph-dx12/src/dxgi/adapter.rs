@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
+use crate::windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
 #[derive(Clone)]
 #[repr(transparent)]

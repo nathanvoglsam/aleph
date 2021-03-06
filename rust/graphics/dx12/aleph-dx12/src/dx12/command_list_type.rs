@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::D3D12_COMMAND_LIST_TYPE;
+use crate::windows_raw::win32::direct3d12::D3D12_COMMAND_LIST_TYPE;
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[repr(i32)]

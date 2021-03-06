@@ -28,8 +28,8 @@
 //
 
 use crate::{dxgi, DepthStencilValue};
-use raw::windows::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
-use raw::windows::win32::dxgi::DXGI_FORMAT;
+use windows_raw::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
+use windows_raw::win32::dxgi::DXGI_FORMAT;
 use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone, Debug)]

@@ -29,7 +29,7 @@
 
 use crate::pix::Colour;
 use aleph_pix_raw::*;
-use raw::windows::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
+use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 use std::ffi::{CStr, CString};
 
 pub unsafe fn begin_event(colour: Colour, text: &str) {

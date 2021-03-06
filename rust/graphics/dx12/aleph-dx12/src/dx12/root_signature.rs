@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::raw::windows::win32::direct3d12::ID3D12RootSignature;
+use crate::windows_raw::win32::direct3d12::ID3D12RootSignature;
 
 #[derive(Clone)]
 #[repr(transparent)]

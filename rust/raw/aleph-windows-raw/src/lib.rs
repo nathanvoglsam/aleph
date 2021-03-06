@@ -32,9 +32,9 @@ pub extern crate windows as windows_rs;
 #[cfg(target_os = "windows")]
 mod raw;
 
-pub use raw::*;
+pub use raw::windows::*;
 
-pub use crate::windows::win32::system_services::BOOL;
+pub use crate::win32::system_services::BOOL;
 pub use windows_rs::initialize_mta;
 pub use windows_rs::initialize_sta;
 pub use windows_rs::Abi;
