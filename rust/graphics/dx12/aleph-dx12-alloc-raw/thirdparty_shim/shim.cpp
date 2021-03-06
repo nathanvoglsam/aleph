@@ -2,7 +2,7 @@
 // Created by Nathan on 8/02/2021.
 //
 
-#include "../thirdparty/D3D12MemoryAllocator/src/D3D12MemAlloc.h"
+#include "D3D12MemAlloc.h"
 
 extern "C" {
 

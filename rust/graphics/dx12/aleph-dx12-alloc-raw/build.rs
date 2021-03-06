@@ -27,9 +27,14 @@
 // SOFTWARE.
 //
 
+use std::path::Path;
+
 fn main() {
+    let cpp_file = Path::new("../../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
+    let inc_dir = Path::new("../../../../submodules/D3D12MemoryAllocator/src");
     cc::Build::new()
-        .file("thirdparty/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp")
+        .file(cpp_file)
         .file("thirdparty_shim/shim.cpp")
+        .include(inc_dir)
         .compile("d3d12ma");
 }
