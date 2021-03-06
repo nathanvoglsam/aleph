@@ -162,11 +162,11 @@ impl Engine {
                 Self::log_gpu_info(&dxgi_adapter);
                 aleph_log::info!("");
 
-                let allocator_desc = dx12::alloc::AllocatorDesc::builder()
+                let allocator_desc = dx12_alloc::AllocatorDesc::builder()
                     .device(device.clone())
                     .adapter(dxgi_adapter.clone())
                     .build();
-                let allocator = dx12::alloc::Allocator::new(&allocator_desc).unwrap();
+                let allocator = dx12_alloc::Allocator::new(&allocator_desc).unwrap();
 
                 let desc = dx12::CommandQueueDesc::builder()
                     .queue_type(dx12::CommandListType::Direct)

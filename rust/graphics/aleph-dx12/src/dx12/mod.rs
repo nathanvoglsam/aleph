@@ -259,3 +259,24 @@ pub use tiled_resource_coordinate::TiledResourceCoordinate;
 pub use versioned_root_signature_desc::VersionedRootSignatureDesc;
 pub use vertex_buffer_view::VertexBufferView;
 pub use viewport::Viewport;
+
+pub mod redefined {
+    pub use super::clear_value::D3D12_CLEAR_VALUE;
+    pub use super::clear_value::D3D12_CLEAR_VALUE_VARIANT;
+    pub use super::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
+    pub use super::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC_VARIANT;
+    pub use super::resource_barrier::D3D12_RESOURCE_BARRIER;
+    pub use super::resource_barrier::D3D12_RESOURCE_BARRIER_VARIANT;
+    pub use super::root_parameter::D3D12_ROOT_PARAMETER;
+    pub use super::root_parameter::D3D12_ROOT_PARAMETER1;
+    pub use super::root_parameter::D3D12_ROOT_PARAMETER1_VARIANT;
+    pub use super::root_parameter::D3D12_ROOT_PARAMETER_VARIANT;
+    pub use super::root_signature_desc::D3D12_ROOT_SIGNATURE_DESC;
+    pub use super::root_signature_desc::D3D12_ROOT_SIGNATURE_DESC1;
+    pub use super::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
+    pub use super::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT;
+    pub use super::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
+    pub use super::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION_VARIANT;
+    pub use super::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC;
+    pub use super::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS;
+}

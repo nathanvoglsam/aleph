@@ -27,68 +27,81 @@
 // SOFTWARE.
 //
 
-use crate::alloc::AllocatorFlags;
-use crate::{dxgi, Device};
+use alloc_raw::D3D12MA_POOL_DESC;
+use dx12::{HeapFlags, HeapType};
+use std::mem::transmute;
 
-pub struct AllocatorDescBuilder {
-    inner: AllocatorDesc,
+pub struct PoolDescBuilder {
+    inner: PoolDesc,
 }
 
-impl AllocatorDescBuilder {
+impl PoolDescBuilder {
     pub fn new() -> Self {
         Self {
-            inner: AllocatorDesc::default(),
+            inner: PoolDesc::default(),
         }
     }
 
-    pub fn device(mut self, device: Device) -> Self {
-        self.inner.device = Some(device);
+    pub fn heap_type(mut self, heap_type: HeapType) -> Self {
+        self.inner.heap_type = heap_type;
         self
     }
 
-    pub fn adapter(mut self, adapter: dxgi::Adapter) -> Self {
-        self.inner.adapter = Some(adapter);
+    pub fn heap_flags(mut self, heap_flags: HeapFlags) -> Self {
+        self.inner.heap_flags |= heap_flags;
         self
     }
 
-    pub fn preferred_block_size(mut self, preferred_block_size: u64) -> Self {
-        self.inner.preferred_block_size = preferred_block_size;
+    pub fn block_size(mut self, block_size: u64) -> Self {
+        self.inner.block_size = block_size;
         self
     }
 
-    pub fn flags(mut self, flags: AllocatorFlags) -> Self {
-        self.inner.flags |= flags;
+    pub fn min_block_count(mut self, min_block_count: u32) -> Self {
+        self.inner.min_block_count = min_block_count;
         self
     }
 
-    pub fn build(self) -> AllocatorDesc {
+    pub fn max_block_count(mut self, max_block_count: u32) -> Self {
+        self.inner.max_block_count = max_block_count;
+        self
+    }
+
+    pub fn build(self) -> PoolDesc {
         self.inner
     }
 }
 
 #[repr(C)]
-pub struct AllocatorDesc {
-    pub flags: AllocatorFlags,
-    pub device: Option<Device>,
-    pub preferred_block_size: u64,
-    p_allocation_callbacks: *const u8, // D3D12MA_ALLOCATION_CALLBACKS
-    pub adapter: Option<dxgi::Adapter>,
+#[derive(Clone, Debug)]
+pub struct PoolDesc {
+    pub heap_type: HeapType,
+    pub heap_flags: HeapFlags,
+    pub block_size: u64,
+    pub min_block_count: u32,
+    pub max_block_count: u32,
 }
 
-impl AllocatorDesc {
-    pub fn builder() -> AllocatorDescBuilder {
-        AllocatorDescBuilder::new()
+impl PoolDesc {
+    pub fn builder() -> PoolDescBuilder {
+        PoolDescBuilder::new()
     }
 }
 
-impl Default for AllocatorDesc {
+impl Default for PoolDesc {
     fn default() -> Self {
         Self {
-            device: None,
-            adapter: None,
-            preferred_block_size: 0,
-            p_allocation_callbacks: std::ptr::null(),
-            flags: Default::default(),
+            heap_type: HeapType::Default,
+            heap_flags: HeapFlags::NONE,
+            block_size: 0,
+            min_block_count: 0,
+            max_block_count: 0,
         }
+    }
+}
+
+impl Into<D3D12MA_POOL_DESC> for PoolDesc {
+    fn into(self) -> D3D12MA_POOL_DESC {
+        unsafe { transmute(self) }
     }
 }

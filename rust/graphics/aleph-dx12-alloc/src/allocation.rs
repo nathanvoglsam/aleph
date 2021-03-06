@@ -27,22 +27,33 @@
 // SOFTWARE.
 //
 
-pub(crate) mod allocation;
-pub(crate) mod allocation_desc;
-pub(crate) mod allocator;
-pub(crate) mod allocator_desc;
-pub(crate) mod pool;
-pub(crate) mod pool_desc;
+use dx12::{Heap, Resource};
+use std::ffi::c_void;
+use std::mem::transmute;
+use std::ptr::NonNull;
+use std::sync::Arc;
 
-pub use allocation::Allocation;
-pub use allocation_desc::AllocationDesc;
-pub use allocation_desc::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator_desc::AllocatorDesc;
-pub use allocator_desc::AllocatorDescBuilder;
-pub use pool::Pool;
-pub use pool_desc::PoolDesc;
-pub use pool_desc::PoolDescBuilder;
+pub(crate) struct AllocationInner(pub(crate) NonNull<c_void>);
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+impl Drop for AllocationInner {
+    fn drop(&mut self) {
+        unsafe {
+            alloc_raw::D3D12MA_Allocation_Release(self.0.as_ptr());
+        }
+    }
+}
+
+#[repr(transparent)]
+pub struct Allocation(pub(crate) Arc<AllocationInner>);
+
+impl Allocation {
+    pub fn get_resource(&self) -> Option<Resource> {
+        unsafe {
+            alloc_raw::D3D12MA_Allocation_GetResource(self.0 .0.as_ptr()).map(|v| transmute(v))
+        }
+    }
+
+    pub fn get_heap(&self) -> Option<Heap> {
+        unsafe { alloc_raw::D3D12MA_Allocation_GetHeap(self.0 .0.as_ptr()).map(|v| transmute(v)) }
+    }
+}

@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::alloc::allocation::AllocationInner;
-use crate::alloc::pool::PoolInner;
-use crate::alloc::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
-use crate::dx12::clear_value::D3D12_CLEAR_VALUE;
-use crate::{ClearValue, ResourceDesc, ResourceStates};
+use crate::allocation::AllocationInner;
+use crate::pool::PoolInner;
+use crate::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
+use dx12::redefined::D3D12_CLEAR_VALUE;
+use dx12::{ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
 use std::mem::{align_of, size_of, transmute};
 use std::ptr::NonNull;
@@ -53,7 +53,7 @@ impl Drop for AllocatorInner {
 pub struct Allocator(pub(crate) Arc<AllocatorInner>);
 
 impl Allocator {
-    pub fn new(allocator_desc: &AllocatorDesc) -> crate::Result<Self> {
+    pub fn new(allocator_desc: &AllocatorDesc) -> dx12::Result<Self> {
         assert_eq!(
             size_of::<AllocatorDesc>(),
             size_of::<aleph_dx12_alloc_raw::D3D12MA_ALLOCATOR_DESC>()
@@ -88,7 +88,7 @@ impl Allocator {
         resource_desc: &ResourceDesc,
         initial_resource_state: ResourceStates,
         optimized_clear_value: Option<&ClearValue>,
-    ) -> crate::Result<Allocation> {
+    ) -> dx12::Result<Allocation> {
         unsafe {
             let alloc_desc = alloc_desc.into();
             let resource_desc = transmute(resource_desc.clone());
@@ -134,7 +134,7 @@ impl Allocator {
         }
     }
 
-    pub fn create_pool(&self, pool_desc: &PoolDesc) -> crate::Result<Pool> {
+    pub fn create_pool(&self, pool_desc: &PoolDesc) -> dx12::Result<Pool> {
         unsafe {
             let pool_desc = pool_desc.clone().into();
             let mut pool = std::ptr::null_mut();

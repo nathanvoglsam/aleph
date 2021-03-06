@@ -27,32 +27,26 @@
 // SOFTWARE.
 //
 
-use crate::{Heap, Resource};
-use std::ffi::c_void;
-use std::ptr::NonNull;
-use std::sync::Arc;
+extern crate aleph_dx12 as dx12;
+extern crate aleph_dx12_alloc_raw as alloc_raw;
+extern crate aleph_windows_raw as windows_raw;
 
-pub(crate) struct AllocationInner(pub(crate) NonNull<c_void>);
+mod allocation;
+mod allocation_desc;
+mod allocator;
+mod allocator_desc;
+mod pool;
+mod pool_desc;
 
-impl Drop for AllocationInner {
-    fn drop(&mut self) {
-        unsafe {
-            alloc_raw::D3D12MA_Allocation_Release(self.0.as_ptr());
-        }
-    }
-}
+pub use allocation::Allocation;
+pub use allocation_desc::AllocationDesc;
+pub use allocation_desc::AllocationDescBuilder;
+pub use allocator::Allocator;
+pub use allocator_desc::AllocatorDesc;
+pub use allocator_desc::AllocatorDescBuilder;
+pub use pool::Pool;
+pub use pool_desc::PoolDesc;
+pub use pool_desc::PoolDescBuilder;
 
-#[repr(transparent)]
-pub struct Allocation(pub(crate) Arc<AllocationInner>);
-
-impl Allocation {
-    pub fn get_resource(&self) -> Option<Resource> {
-        unsafe {
-            alloc_raw::D3D12MA_Allocation_GetResource(self.0 .0.as_ptr()).map(|v| Resource(v))
-        }
-    }
-
-    pub fn get_heap(&self) -> Option<Heap> {
-        unsafe { alloc_raw::D3D12MA_Allocation_GetHeap(self.0 .0.as_ptr()).map(|v| Heap(v)) }
-    }
-}
+pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
+pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;

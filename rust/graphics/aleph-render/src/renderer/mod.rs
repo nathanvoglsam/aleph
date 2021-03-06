@@ -43,7 +43,7 @@ pub struct EguiRenderer {
     device: dx12::Device,
 
     /// Memory allocator
-    allocator: dx12::alloc::Allocator,
+    allocator: dx12_alloc::Allocator,
 
     ///
     pixels_per_point: f32,
@@ -56,7 +56,7 @@ pub struct EguiRenderer {
 impl EguiRenderer {
     pub fn new(
         device: dx12::Device,
-        allocator: dx12::alloc::Allocator,
+        allocator: dx12_alloc::Allocator,
         buffers: &[dx12::Resource],
         swap_width: u32,
         swap_height: u32,

@@ -55,9 +55,3 @@ version = "0.1"
 [dependencies.aleph-pix-raw]
 path = "../../raw/aleph-pix-raw"
 version = "0.1"
-
-## [dependencies.once_cell]
-## version = "1"
-##
-## [dependencies.utf16_lit]
-## version = "2"

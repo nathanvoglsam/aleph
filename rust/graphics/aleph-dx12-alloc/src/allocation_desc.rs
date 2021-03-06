@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::alloc::{AllocationFlags, Pool};
+use crate::{AllocationFlags, Pool};
 use alloc_raw::D3D12MA_ALLOCATION_DESC;
 
 pub struct AllocationDescBuilder<'a> {
@@ -46,12 +46,12 @@ impl<'a> AllocationDescBuilder<'a> {
         self
     }
 
-    pub fn heap_type(mut self, heap_type: crate::HeapType) -> Self {
+    pub fn heap_type(mut self, heap_type: dx12::HeapType) -> Self {
         self.inner.heap_type = heap_type;
         self
     }
 
-    pub fn extra_heap_flags(mut self, extra_heap_flags: crate::HeapFlags) -> Self {
+    pub fn extra_heap_flags(mut self, extra_heap_flags: dx12::HeapFlags) -> Self {
         self.inner.extra_heap_flags |= extra_heap_flags;
         self
     }
@@ -68,8 +68,8 @@ impl<'a> AllocationDescBuilder<'a> {
 
 pub struct AllocationDesc<'a> {
     pub flags: AllocationFlags,
-    pub heap_type: crate::HeapType,
-    pub extra_heap_flags: crate::HeapFlags,
+    pub heap_type: dx12::HeapType,
+    pub extra_heap_flags: dx12::HeapFlags,
     pub pool: Option<&'a Pool>,
 }
 
@@ -83,8 +83,8 @@ impl<'a> Default for AllocationDesc<'a> {
     fn default() -> Self {
         Self {
             flags: AllocationFlags::NONE,
-            heap_type: crate::HeapType::Default,
-            extra_heap_flags: crate::HeapFlags::NONE,
+            heap_type: dx12::HeapType::Default,
+            extra_heap_flags: dx12::HeapFlags::NONE,
             pool: None,
         }
     }

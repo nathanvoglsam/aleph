@@ -32,16 +32,16 @@ use dx12::{dxgi, D3D12Object};
 use pix::RecordScopedEvent;
 
 pub struct PerFrameObjects {
-    pub vtx_buffer: dx12::alloc::Allocation,
-    pub idx_buffer: dx12::alloc::Allocation,
+    pub vtx_buffer: dx12_alloc::Allocation,
+    pub idx_buffer: dx12_alloc::Allocation,
 
     pub command_allocator: dx12::CommandAllocator,
 
-    pub font_staging_allocation: dx12::alloc::Allocation,
+    pub font_staging_allocation: dx12_alloc::Allocation,
     pub font_staging_resource: dx12::Resource,
 
-    pub font_staged_pool: dx12::alloc::Pool,
-    pub font_staged_image: Option<dx12::alloc::Allocation>,
+    pub font_staged_pool: dx12_alloc::Pool,
+    pub font_staged_image: Option<dx12_alloc::Allocation>,
     pub font_cpu_srv: dx12::CPUDescriptorHandle,
     pub font_gpu_srv: dx12::GPUDescriptorHandle,
     pub font_staged_size: (u32, u32),
@@ -51,11 +51,11 @@ pub struct PerFrameObjects {
 impl PerFrameObjects {
     pub fn new(
         device: &dx12::Device,
-        allocator: &dx12::alloc::Allocator,
+        allocator: &dx12_alloc::Allocator,
         global: &GlobalObjects,
         index: usize,
     ) -> Self {
-        let alloc_desc = dx12::alloc::AllocationDesc::builder()
+        let alloc_desc = dx12_alloc::AllocationDesc::builder()
             .heap_type(dx12::HeapType::Upload)
             .build();
         let vtx_buffer = {
@@ -144,7 +144,7 @@ impl PerFrameObjects {
     pub unsafe fn update_texture_data(
         &mut self,
         device: &dx12::Device,
-        allocator: &dx12::alloc::Allocator,
+        allocator: &dx12_alloc::Allocator,
         texture: &egui::Texture,
     ) -> bool {
         debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
@@ -225,10 +225,10 @@ impl PerFrameObjects {
     /// Allocates the font texture on GPU memory
     fn create_staged_resources(
         &mut self,
-        allocator: &dx12::alloc::Allocator,
+        allocator: &dx12_alloc::Allocator,
         dimensions: (u32, u32),
     ) {
-        let alloc_desc = dx12::alloc::AllocationDesc::builder()
+        let alloc_desc = dx12_alloc::AllocationDesc::builder()
             .heap_type(dx12::HeapType::Default)
             .pool(&self.font_staged_pool)
             .build();
@@ -281,12 +281,12 @@ impl PerFrameObjects {
     }
 
     unsafe fn create_font_staging_allocation(
-        allocator: &dx12::alloc::Allocator,
+        allocator: &dx12_alloc::Allocator,
         dimensions: (u32, u32),
-    ) -> dx12::alloc::Allocation {
+    ) -> dx12_alloc::Allocation {
         let size = dimensions.0 * dimensions.1;
 
-        let alloc_desc = dx12::alloc::AllocationDesc::builder()
+        let alloc_desc = dx12_alloc::AllocationDesc::builder()
             .heap_type(dx12::HeapType::Upload)
             .build();
         let resource_desc = dx12::ResourceDesc::builder()
@@ -301,12 +301,12 @@ impl PerFrameObjects {
     }
 
     unsafe fn create_staged_pool(
-        allocator: &dx12::alloc::Allocator,
+        allocator: &dx12_alloc::Allocator,
         dimensions: (u32, u32),
-    ) -> dx12::alloc::Pool {
+    ) -> dx12_alloc::Pool {
         let size = dimensions.0 * dimensions.1;
 
-        let pool_desc = dx12::alloc::PoolDesc::builder()
+        let pool_desc = dx12_alloc::PoolDesc::builder()
             .heap_type(dx12::HeapType::Default)
             .heap_flags(dx12::HeapFlags::ALLOW_ONLY_NON_RT_DS_TEXTURES)
             .block_size(size as _)

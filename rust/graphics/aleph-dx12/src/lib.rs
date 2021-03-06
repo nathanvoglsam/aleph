@@ -27,15 +27,11 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dx12_alloc_raw as alloc_raw;
 extern crate aleph_dxc_raw as dxc_raw;
 extern crate aleph_windows_raw as windows_raw;
 
 #[cfg(feature = "dxc")]
 pub mod dxc;
-
-#[cfg(feature = "alloc")]
-pub mod alloc;
 
 mod dx12;
 pub mod dxgi;

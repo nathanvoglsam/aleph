@@ -1,3 +1,3 @@
-# Aleph-DX12
+# Aleph-Pix
 
-The aleph-engine dx12 interface
+The aleph-engine pix interface
