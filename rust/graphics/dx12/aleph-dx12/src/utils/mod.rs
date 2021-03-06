@@ -31,14 +31,14 @@ use once_cell::sync::OnceCell;
 use windows_raw::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
 use windows_raw::win32::direct3d12::D3D12_SHADER_BYTECODE;
 //use windows_raw::win32::system_services::GetProcAddress;
-use windows_raw::win32::system_services::LoadLibraryW;
-use windows_raw::win32::system_services::PWSTR;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::os::raw::c_char;
 use utf16_lit::utf16_null;
+use windows_raw::win32::system_services::LoadLibraryW;
+use windows_raw::win32::system_services::PWSTR;
 
 // TODO: Fixme when windows-rs generates this correctly
 #[cfg(target_os = "windows")]

@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 use crate::utils::DynamicLoadCell;
+use crate::windows_raw::win32::dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 

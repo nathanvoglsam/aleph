@@ -895,11 +895,7 @@ impl IDxcIncludeHandler {
         p_filename: *const u16,
         pp_include_source: *mut ::std::option::Option<IDxcBlob>,
     ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).3)(
-            windows::Abi::abi(self),
-            p_filename,
-            pp_include_source,
-        )
+        (windows::Interface::vtable(self).3)(windows::Abi::abi(self), p_filename, pp_include_source)
     }
 }
 impl ::std::convert::From<IDxcIncludeHandler> for windows::IUnknown {
@@ -1628,9 +1624,7 @@ impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for IDxcCon
         windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>>
-    for &'a IDxcContainerBuilder
-{
+impl<'a> ::std::convert::Into<windows::Param<'a, windows::IUnknown>> for &'a IDxcContainerBuilder {
     fn into(self) -> windows::Param<'a, windows::IUnknown> {
         windows::Param::Owned(::std::convert::Into::<windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
@@ -2843,12 +2837,7 @@ impl IDxcUtils {
         iid: *const windows::Guid,
         ppv_reflection: *mut *mut ::std::ffi::c_void,
     ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).13)(
-            windows::Abi::abi(self),
-            p_data,
-            iid,
-            ppv_reflection,
-        )
+        (windows::Interface::vtable(self).13)(windows::Abi::abi(self), p_data, iid, ppv_reflection)
     }
     pub unsafe fn BuildArguments(
         &self,
@@ -3128,11 +3117,7 @@ impl IDxcVersionInfo2 {
         p_commit_count: *mut u32,
         p_commit_hash: *mut *mut i8,
     ) -> windows::ErrorCode {
-        (windows::Interface::vtable(self).5)(
-            windows::Abi::abi(self),
-            p_commit_count,
-            p_commit_hash,
-        )
+        (windows::Interface::vtable(self).5)(windows::Abi::abi(self), p_commit_count, p_commit_hash)
     }
 }
 impl ::std::convert::From<IDxcVersionInfo2> for windows::IUnknown {

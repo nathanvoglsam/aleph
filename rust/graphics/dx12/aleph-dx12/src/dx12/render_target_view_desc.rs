@@ -28,13 +28,13 @@
 //
 
 use crate::dxgi;
+use std::mem::{transmute, ManuallyDrop};
 use windows_raw::win32::direct3d12::{
     D3D12_BUFFER_RTV, D3D12_RTV_DIMENSION, D3D12_TEX1D_ARRAY_RTV, D3D12_TEX1D_RTV,
     D3D12_TEX2DMS_ARRAY_RTV, D3D12_TEX2DMS_RTV, D3D12_TEX2D_ARRAY_RTV, D3D12_TEX2D_RTV,
     D3D12_TEX3D_RTV,
 };
 use windows_raw::win32::dxgi::DXGI_FORMAT;
-use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone, Debug)]
 pub enum RenderTargetViewDesc {

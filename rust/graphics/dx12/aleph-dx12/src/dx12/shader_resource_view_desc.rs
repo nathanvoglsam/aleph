@@ -28,6 +28,7 @@
 //
 
 use crate::dxgi;
+use std::mem::{transmute, ManuallyDrop};
 use windows_raw::win32::direct3d12::{
     D3D12_BUFFER_SRV, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV, D3D12_SRV_DIMENSION,
     D3D12_TEX1D_ARRAY_SRV, D3D12_TEX1D_SRV, D3D12_TEX2DMS_ARRAY_SRV, D3D12_TEX2DMS_SRV,
@@ -35,7 +36,6 @@ use windows_raw::win32::direct3d12::{
     D3D12_TEXCUBE_SRV,
 };
 use windows_raw::win32::dxgi::DXGI_FORMAT;
-use std::mem::{transmute, ManuallyDrop};
 
 #[derive(Clone, Debug)]
 pub enum ShaderResourceViewDesc {

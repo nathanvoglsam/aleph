@@ -28,20 +28,20 @@
 //
 
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
+use crate::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::ID3D12Device4;
 use crate::windows_raw::win32::dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
     DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
 };
 use crate::windows_raw::win32::windows_and_messaging::HWND;
-use crate::utils::DynamicLoadCell;
 use crate::{Abi, Interface};
 use crate::{CommandQueue, FeatureLevel};
-use windows_raw::win32::winrt::IInspectable;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
 use std::ops::Deref;
 use utf16_lit::utf16_null;
+use windows_raw::win32::winrt::IInspectable;
 
 type CreateFn =
     extern "system" fn(u32, *const crate::Guid, *mut *mut ::std::ffi::c_void) -> crate::ErrorCode;

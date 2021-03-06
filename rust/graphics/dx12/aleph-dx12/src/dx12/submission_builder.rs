@@ -28,8 +28,8 @@
 //
 
 use crate::GraphicsCommandList;
-use windows_raw::win32::direct3d12::{ID3D12CommandList, ID3D12GraphicsCommandList};
 use std::ops::Deref;
+use windows_raw::win32::direct3d12::{ID3D12CommandList, ID3D12GraphicsCommandList};
 
 pub struct SubmissionBuilder<'a> {
     buffer: Vec<ID3D12CommandList>,

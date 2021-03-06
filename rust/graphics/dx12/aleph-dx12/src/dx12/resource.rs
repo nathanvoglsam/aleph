@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
 use crate::utils::optional_ref_to_ptr;
+use crate::windows_raw::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
 use crate::GPUDescriptorHandle;
 use std::num::NonZeroU64;
 use std::ops::Range;
