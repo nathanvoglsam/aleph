@@ -1,5 +1,5 @@
-[submodule "rust/platform/aleph-platform/thirdparty/SDL-mirror"]
-	path = rust/platform/aleph-platform/thirdparty/SDL-mirror
+[submodule "submodules/SDL-mirror"]
+	path = submodules/SDL-mirror
 	url = https://github.com/spurious/SDL-mirror.git
 [submodule "submodules/D3D12MemoryAllocator"]
 	path = submodules/D3D12MemoryAllocator
