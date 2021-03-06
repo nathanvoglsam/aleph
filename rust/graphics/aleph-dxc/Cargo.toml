@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-dx12"
+name = "aleph-dxc"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine dx12 interface"
+description = "The aleph-engine dxc interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-dx12/"
+documentation = "https://docs.rs/aleph-dxc/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "directx", "game"]
 ## TODO: categories = ["game-engines"]
@@ -44,14 +44,17 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[dependencies.aleph-dx12]
+path = "../aleph-dx12"
+version = "0.1"
+
 [dependencies.aleph-windows-raw]
 path = "../../raw/aleph-windows-raw"
 version = "0.1"
 
-[dependencies.raw-window-handle]
-git = "https://github.com/rust-windowing/raw-window-handle.git"
-branch = "master"
-version = "0.3"
+[dependencies.aleph-dxc-raw]
+path = "../../raw/aleph-dxc-raw"
+version = "0.1"
 
 [dependencies.utf16_lit]
 version = "2"

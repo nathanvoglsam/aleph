@@ -34,7 +34,6 @@ use crate::windows_raw::win32::dxgi::{
     DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
 };
 use crate::windows_raw::win32::windows_and_messaging::HWND;
-use crate::{Abi, Interface};
 use crate::{CommandQueue, FeatureLevel};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
@@ -42,9 +41,13 @@ use std::ops::Deref;
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
 use windows_raw::win32::winrt::IInspectable;
+use windows_raw::{Abi, Interface};
 
-type CreateFn =
-    extern "system" fn(u32, *const crate::Guid, *mut *mut ::std::ffi::c_void) -> crate::ErrorCode;
+type CreateFn = extern "system" fn(
+    u32,
+    *const windows_raw::Guid,
+    *mut *mut ::std::ffi::c_void,
+) -> crate::ErrorCode;
 
 static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");

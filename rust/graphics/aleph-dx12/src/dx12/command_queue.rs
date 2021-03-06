@@ -82,7 +82,7 @@ impl D3D12Object for CommandQueue {
 
 impl D3D12DeviceChild for CommandQueue {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use crate::{Abi, Interface};
+        use windows_raw::{Abi, Interface};
         type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_raw_shared()

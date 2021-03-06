@@ -27,6 +27,10 @@
 // SOFTWARE.
 //
 
+extern crate aleph_dx12 as dx12;
+extern crate aleph_dxc_raw as dxc_raw;
+extern crate aleph_windows_raw as windows_raw;
+
 mod compiler;
 mod validator;
 

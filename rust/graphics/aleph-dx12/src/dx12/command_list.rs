@@ -812,7 +812,7 @@ impl<'a> D3D12Object for GraphicsCommandListRecorder<'a> {
 
 impl<'a> D3D12DeviceChild for GraphicsCommandListRecorder<'a> {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use crate::{Abi, Interface};
+        use windows_raw::{Abi, Interface};
         type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.0
@@ -863,7 +863,7 @@ impl D3D12Object for GraphicsCommandList {
 
 impl D3D12DeviceChild for GraphicsCommandList {
     unsafe fn get_device(&self) -> crate::Result<Device> {
-        use crate::{Abi, Interface};
+        use windows_raw::{Abi, Interface};
         type D = windows_raw::win32::direct3d12::ID3D12Device4;
         let mut device: Option<D> = None;
         self.get_shared()

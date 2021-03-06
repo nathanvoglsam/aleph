@@ -41,11 +41,11 @@ use crate::{
     GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, RenderTargetViewDesc,
     Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
-use crate::{Abi, Interface};
 use std::mem::{transmute, transmute_copy};
 use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
+use windows_raw::{Abi, Interface};
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");

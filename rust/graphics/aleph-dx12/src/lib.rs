@@ -27,23 +27,13 @@
 // SOFTWARE.
 //
 
-extern crate aleph_dxc_raw as dxc_raw;
 extern crate aleph_windows_raw as windows_raw;
-
-#[cfg(feature = "dxc")]
-pub mod dxc;
 
 mod dx12;
 pub mod dxgi;
 mod utils;
 
 pub use dx12::*;
-
-pub(crate) use windows_raw::Abi;
-pub(crate) use windows_raw::Guid;
-pub(crate) use windows_raw::IUnknown;
-pub(crate) use windows_raw::Interface;
-pub(crate) use windows_raw::BOOL;
 
 pub use windows_raw::initialize_mta;
 pub use windows_raw::initialize_sta;

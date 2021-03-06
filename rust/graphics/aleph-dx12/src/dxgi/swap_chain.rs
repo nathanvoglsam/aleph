@@ -33,11 +33,11 @@ use crate::windows_raw::win32::dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
 use crate::CommandQueue;
-use crate::IUnknown;
-use crate::{Abi, Interface};
 use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::RwLockReadGuard;
+use windows_raw::IUnknown;
+use windows_raw::{Abi, Interface};
 
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 

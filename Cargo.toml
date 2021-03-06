@@ -47,6 +47,7 @@ members = [
     "rust/engine/aleph-engine",
     "rust/graphics/aleph-dx12",
     "rust/graphics/aleph-dx12-alloc",
+    "rust/graphics/aleph-dxc",
     "rust/graphics/aleph-pix",
     "rust/graphics/aleph-render",
     "rust/ktx/aleph-ktx",

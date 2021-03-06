@@ -27,33 +27,33 @@
 // SOFTWARE.
 //
 
-use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
+use windows_raw::{Abi, Interface};
 
 static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
-    DynamicLoadCell::new(&utf16_null!("dxil.dll"), "DxcCreateInstance\0");
+    DynamicLoadCell::new(&utf16_null!("dxcompiler.dll"), "DxcCreateInstance\0");
 
 #[derive(Clone, Debug)]
-pub enum DxcValidatorCreateError {
+pub enum DxcCompilerCreateError {
     FailedToLoadLibrary,
-    CreateCallFailed(windows_raw::Error),
+    CreateCallFailed(dx12::Error),
 }
 
 #[repr(transparent)]
-pub struct DxcValidator(pub(crate) dxc_raw::IDxcValidator);
+pub struct DxcCompiler(pub(crate) dxc_raw::IDxcCompiler);
 
-impl DxcValidator {
-    pub unsafe fn new() -> Result<Self, DxcValidatorCreateError> {
+impl DxcCompiler {
+    pub unsafe fn new() -> Result<Self, DxcCompilerCreateError> {
         let create_fn = CREATE_FN
             .get()
-            .ok_or(DxcValidatorCreateError::FailedToLoadLibrary)?;
-        let clsid = crate::Guid::from(dxc_raw::CLSID_DxcValidator);
-        let riid = &dxc_raw::IDxcValidator::IID;
-        let mut out: Option<dxc_raw::IDxcValidator> = None;
+            .ok_or(DxcCompilerCreateError::FailedToLoadLibrary)?;
+        let clsid = windows_raw::Guid::from(dxc_raw::CLSID_DxcCompiler);
+        let riid = &dxc_raw::IDxcCompiler::IID;
+        let mut out: Option<dxc_raw::IDxcCompiler> = None;
         create_fn(&clsid, riid, out.set_abi())
             .and_some(out)
             .map(|v| Self(v))
-            .map_err(|v| DxcValidatorCreateError::CreateCallFailed(v))
+            .map_err(|v| DxcCompilerCreateError::CreateCallFailed(v))
     }
 }
