@@ -37,13 +37,11 @@ pub mod dxc;
 #[cfg(feature = "alloc")]
 pub mod alloc;
 
-pub mod dxgi;
-
 mod dx12;
+pub mod dxgi;
+mod utils;
 
 pub use dx12::*;
-
-mod utils;
 
 pub(crate) use windows_raw::Abi;
 pub(crate) use windows_raw::Guid;
