@@ -5,10 +5,10 @@ rustflags = ["-C", "target-cpu=sandybridge"]
 [target.x86_64-pc-windows-msvc]
 rustflags = ["-C", "target-cpu=sandybridge"]
 
-[target.i686-pc-windows-gnu]
+[target.x86_64-uwp-windows-gnu]
 rustflags = ["-C", "target-cpu=sandybridge"]
 
-[target.i686-pc-windows-msvc]
+[target.x86_64-uwp-windows-msvc]
 rustflags = ["-C", "target-cpu=sandybridge"]
 
 ## Linux
