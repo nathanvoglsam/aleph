@@ -43,7 +43,7 @@ impl Default for CommandQueueFlags {
     }
 }
 
-crate::flags_bitwise_impl!(CommandQueueFlags);
+windows_raw::flags_bitwise_impl!(CommandQueueFlags);
 
 impl Into<D3D12_COMMAND_QUEUE_FLAGS> for CommandQueueFlags {
     fn into(self) -> D3D12_COMMAND_QUEUE_FLAGS {

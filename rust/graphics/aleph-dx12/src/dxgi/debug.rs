@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::utils::DynamicLoadCell;
+use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
@@ -116,7 +116,7 @@ impl Into<crate::Guid> for DebugID {
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct DebugRLOFlags(pub i32);
 
-crate::flags_bitwise_impl!(DebugRLOFlags);
+windows_raw::flags_bitwise_impl!(DebugRLOFlags);
 
 impl DebugRLOFlags {
     pub const NONE: Self = Self(0i32);

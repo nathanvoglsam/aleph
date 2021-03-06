@@ -29,7 +29,7 @@
 
 use crate::dx12::resource_barrier::D3D12_RESOURCE_BARRIER;
 use crate::dx12::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
-use crate::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
+use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use crate::windows_raw::win32::direct3d12::ID3D12GraphicsCommandList;
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,

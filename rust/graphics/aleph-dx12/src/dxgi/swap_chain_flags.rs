@@ -48,4 +48,4 @@ impl SwapChainFlags {
     pub const RESTRICTED_TO_ALL_HOLOGRAPHIC_DISPLAYS: Self = Self(4096);
 }
 
-crate::flags_bitwise_impl!(SwapChainFlags);
+windows_raw::flags_bitwise_impl!(SwapChainFlags);

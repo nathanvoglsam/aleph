@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::utils::optional_ref_to_ptr;
+use windows_raw::utils::optional_ref_to_ptr;
 use crate::windows_raw::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
 use crate::GPUDescriptorHandle;
 use std::num::NonZeroU64;
@@ -134,4 +134,4 @@ impl Resource {
 
 crate::object_impl!(Resource);
 crate::device_child_impl!(Resource);
-crate::deref_impl!(Resource, ID3D12Resource);
+windows_raw::deref_impl!(Resource, ID3D12Resource);

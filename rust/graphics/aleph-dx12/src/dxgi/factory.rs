@@ -28,7 +28,7 @@
 //
 
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
-use crate::utils::DynamicLoadCell;
+use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::ID3D12Device4;
 use crate::windows_raw::win32::dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,

@@ -44,7 +44,7 @@ impl Default for ResourceBarrierFlags {
     }
 }
 
-crate::flags_bitwise_impl!(ResourceBarrierFlags);
+windows_raw::flags_bitwise_impl!(ResourceBarrierFlags);
 
 impl Into<D3D12_RESOURCE_BARRIER_FLAGS> for ResourceBarrierFlags {
     fn into(self) -> D3D12_RESOURCE_BARRIER_FLAGS {

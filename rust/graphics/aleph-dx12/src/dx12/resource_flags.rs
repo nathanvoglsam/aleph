@@ -50,7 +50,7 @@ impl Default for ResourceFlags {
     }
 }
 
-crate::flags_bitwise_impl!(ResourceFlags);
+windows_raw::flags_bitwise_impl!(ResourceFlags);
 
 impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {
     fn into(self) -> D3D12_RESOURCE_FLAGS {

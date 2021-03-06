@@ -37,4 +37,4 @@ impl QueryHeap {}
 
 crate::object_impl!(QueryHeap);
 crate::device_child_impl!(QueryHeap);
-crate::deref_impl!(QueryHeap, ID3D12QueryHeap);
+windows_raw::deref_impl!(QueryHeap, ID3D12QueryHeap);

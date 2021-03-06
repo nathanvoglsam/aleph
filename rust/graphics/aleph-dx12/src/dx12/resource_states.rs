@@ -68,7 +68,7 @@ impl Default for ResourceStates {
     }
 }
 
-crate::flags_bitwise_impl!(ResourceStates);
+windows_raw::flags_bitwise_impl!(ResourceStates);
 
 impl Into<D3D12_RESOURCE_STATES> for ResourceStates {
     fn into(self) -> D3D12_RESOURCE_STATES {

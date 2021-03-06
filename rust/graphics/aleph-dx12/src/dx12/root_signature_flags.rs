@@ -52,7 +52,7 @@ impl Default for RootSignatureFlags {
     }
 }
 
-crate::flags_bitwise_impl!(RootSignatureFlags);
+windows_raw::flags_bitwise_impl!(RootSignatureFlags);
 
 impl Into<D3D12_ROOT_SIGNATURE_FLAGS> for RootSignatureFlags {
     fn into(self) -> D3D12_ROOT_SIGNATURE_FLAGS {

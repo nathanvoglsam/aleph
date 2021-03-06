@@ -37,4 +37,4 @@ impl CommandSignature {}
 
 crate::object_impl!(CommandSignature);
 crate::device_child_impl!(CommandSignature);
-crate::deref_impl!(CommandSignature, ID3D12CommandSignature);
+windows_raw::deref_impl!(CommandSignature, ID3D12CommandSignature);

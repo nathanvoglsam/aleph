@@ -262,7 +262,7 @@ impl Default for BufferSrvFlags {
     }
 }
 
-crate::flags_bitwise_impl!(BufferSrvFlags);
+windows_raw::flags_bitwise_impl!(BufferSrvFlags);
 
 pub type Tex1DSrv = D3D12_TEX1D_SRV;
 pub type Tex1DArraySrv = D3D12_TEX1D_ARRAY_SRV;

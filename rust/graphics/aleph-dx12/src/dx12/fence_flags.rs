@@ -45,7 +45,7 @@ impl Default for FenceFlags {
     }
 }
 
-crate::flags_bitwise_impl!(FenceFlags);
+windows_raw::flags_bitwise_impl!(FenceFlags);
 
 impl Into<D3D12_FENCE_FLAGS> for FenceFlags {
     fn into(self) -> D3D12_FENCE_FLAGS {

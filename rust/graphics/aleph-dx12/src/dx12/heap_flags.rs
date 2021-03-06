@@ -57,7 +57,7 @@ impl Default for HeapFlags {
     }
 }
 
-crate::flags_bitwise_impl!(HeapFlags);
+windows_raw::flags_bitwise_impl!(HeapFlags);
 
 impl Into<D3D12_HEAP_FLAGS> for HeapFlags {
     fn into(self) -> D3D12_HEAP_FLAGS {

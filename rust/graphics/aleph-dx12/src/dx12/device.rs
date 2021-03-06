@@ -29,7 +29,7 @@
 
 use crate::dx12::shader_resource_view_desc::D3D12_SHADER_RESOURCE_VIEW_DESC;
 use crate::render_target_view_desc::D3D12_RENDER_TARGET_VIEW_DESC;
-use crate::utils::DynamicLoadCell;
+use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
@@ -236,4 +236,4 @@ impl Device {
 }
 
 crate::object_impl!(Device);
-crate::deref_impl!(Device, ID3D12Device4);
+windows_raw::deref_impl!(Device, ID3D12Device4);

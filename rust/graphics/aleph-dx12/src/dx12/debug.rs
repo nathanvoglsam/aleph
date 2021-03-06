@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::utils::DynamicLoadCell;
+use windows_raw::utils::DynamicLoadCell;
 use crate::windows_raw::win32::direct3d12::{
     ID3D12Debug, ID3D12Debug1, PFN_D3D12_GET_DEBUG_INTERFACE,
 };

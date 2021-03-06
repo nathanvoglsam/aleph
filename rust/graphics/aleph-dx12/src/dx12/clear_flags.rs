@@ -48,7 +48,7 @@ impl Default for ClearFlags {
     }
 }
 
-crate::flags_bitwise_impl!(ClearFlags);
+windows_raw::flags_bitwise_impl!(ClearFlags);
 
 impl Into<D3D12_CLEAR_FLAGS> for ClearFlags {
     fn into(self) -> D3D12_CLEAR_FLAGS {

@@ -45,7 +45,7 @@ impl Default for TileCopyFlags {
     }
 }
 
-crate::flags_bitwise_impl!(TileCopyFlags);
+windows_raw::flags_bitwise_impl!(TileCopyFlags);
 
 impl Into<D3D12_TILE_COPY_FLAGS> for TileCopyFlags {
     fn into(self) -> D3D12_TILE_COPY_FLAGS {

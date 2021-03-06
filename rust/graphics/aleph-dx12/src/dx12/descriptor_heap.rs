@@ -58,4 +58,4 @@ impl DescriptorHeap {
 
 crate::object_impl!(DescriptorHeap);
 crate::device_child_impl!(DescriptorHeap);
-crate::deref_impl!(DescriptorHeap, ID3D12DescriptorHeap);
+windows_raw::deref_impl!(DescriptorHeap, ID3D12DescriptorHeap);

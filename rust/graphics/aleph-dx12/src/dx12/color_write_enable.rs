@@ -50,7 +50,7 @@ impl Default for ColorWriteEnable {
     }
 }
 
-crate::flags_bitwise_impl!(ColorWriteEnable);
+windows_raw::flags_bitwise_impl!(ColorWriteEnable);
 
 impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
     fn into(self) -> D3D12_COLOR_WRITE_ENABLE {

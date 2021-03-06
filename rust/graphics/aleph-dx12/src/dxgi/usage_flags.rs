@@ -41,4 +41,4 @@ impl UsageFlags {
     pub const UNORDERED_ACCESS: Self = Self(1024);
 }
 
-crate::flags_bitwise_impl!(UsageFlags);
+windows_raw::flags_bitwise_impl!(UsageFlags);

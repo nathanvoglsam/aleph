@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::utils::DynamicLoadCell;
+use windows_raw::utils::DynamicLoadCell;
 use crate::{Abi, Interface};
 use utf16_lit::utf16_null;
 

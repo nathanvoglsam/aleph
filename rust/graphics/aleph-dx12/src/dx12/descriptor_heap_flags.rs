@@ -43,7 +43,7 @@ impl Default for DescriptorHeapFlags {
     }
 }
 
-crate::flags_bitwise_impl!(DescriptorHeapFlags);
+windows_raw::flags_bitwise_impl!(DescriptorHeapFlags);
 
 impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
