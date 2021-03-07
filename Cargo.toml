@@ -61,6 +61,5 @@ members = [
     "rust/raw/aleph-dxc-raw",
     "rust/raw/aleph-pix-raw",
     "rust/raw/aleph-windows-raw",
-    "rust/utils/aleph-macros",
     "game/aleph-test",
 ]

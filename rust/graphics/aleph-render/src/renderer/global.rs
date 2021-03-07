@@ -140,7 +140,7 @@ impl GlobalObjects {
 
         let input_layout = [
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("POSITION").into(),
+                semantic_name: cstr::cstr!("POSITION").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
@@ -149,7 +149,7 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("TEXCOORD").into(),
+                semantic_name: cstr::cstr!("TEXCOORD").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
@@ -158,7 +158,7 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: macros::cstr!("COLOR").into(),
+                semantic_name: cstr::cstr!("COLOR").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R8G8B8A8Unorm,
                 input_slot: 0,

@@ -50,7 +50,7 @@ aleph-dx12 = { path = "../aleph-dx12", version = "0.1" }
 aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../aleph-pix", version = "0.1" }
 aleph-embedded-data = { path = "../../engine/aleph-embedded-data", version = "0.1" }
-aleph-macros = { path = "../../utils/aleph-macros", version = "1" }
+cstr = "0.2"
 egui = "0.8"
 once_cell = "1"
 

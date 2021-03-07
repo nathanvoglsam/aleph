@@ -17,9 +17,6 @@
     - Same as above
 - `aleph-target-build`
     - Same as above
-- `aleph-macros`
-    - Just an artifact of code deduplication where general purpose code will be re-used in multiple
-      places, but isn't enough to justify their own crates
 - `aleph-log`
     - Wrapper for `log` to ensure everything is on the same version
 - `aleph-logger`
