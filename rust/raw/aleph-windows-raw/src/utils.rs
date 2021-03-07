@@ -29,10 +29,11 @@
 
 use crate::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
 use crate::win32::direct3d12::D3D12_SHADER_BYTECODE;
-use once_cell::sync::OnceCell;
-//use windows_raw::win32::system_services::GetProcAddress;
+use crate::win32::system_services::GetProcAddress;
 use crate::win32::system_services::LoadLibraryW;
+use crate::win32::system_services::PSTR;
 use crate::win32::system_services::PWSTR;
+use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
@@ -40,19 +41,19 @@ use std::marker::PhantomData;
 use std::os::raw::c_char;
 use utf16_lit::utf16_null;
 
-// TODO: Fixme when windows-rs generates this correctly
-mod temp {
-    use std::ffi::c_void;
-    use std::ptr::NonNull;
-
-    #[link(name = "KERNEL32")]
-    extern "system" {
-        pub fn GetProcAddress(
-            h_module: isize,
-            lp_proc_name: *const i8,
-        ) -> ::std::option::Option<NonNull<c_void>>;
-    }
-}
+//// TODO: Fixme when windows-rs generates this correctly
+//mod temp {
+//    use std::ffi::c_void;
+//    use std::ptr::NonNull;
+//
+//    #[link(name = "KERNEL32")]
+//    extern "system" {
+//        pub fn GetProcAddress(
+//            h_module: isize,
+//            lp_proc_name: *const i8,
+//        ) -> ::std::option::Option<NonNull<c_void>>;
+//    }
+//}
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -158,7 +159,7 @@ impl<T: Sized> DynamicLoadCell<T> {
                 }
 
                 // Attempt to find the function pointer we're after
-                temp::GetProcAddress(h_module, self.fn_name.as_ptr() as *const _)
+                GetProcAddress(h_module, PSTR(self.fn_name.as_ptr() as *mut u8))
                     .ok_or(())
                     .map(|v| std::mem::transmute_copy::<_, T>(&v))
             })

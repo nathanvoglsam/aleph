@@ -374,6 +374,24 @@ pub unsafe fn LoadLibraryA<'a, T0__: ::windows::IntoParam<'a, PSTR>>(
     }
     LoadLibraryA(lp_lib_file_name.into_param().abi())
 }
+#[allow(non_camel_case_types)]
+pub type FARPROC = extern "system" fn() -> i32;
+pub unsafe fn GetProcAddress<'a, T1__: ::windows::IntoParam<'a, PSTR>>(
+    h_module: isize,
+    lp_proc_name: T1__,
+) -> ::std::option::Option<FARPROC> {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn GetProcAddress(
+            h_module: isize,
+            lp_proc_name: PSTR,
+        ) -> ::std::option::Option<FARPROC>;
+    }
+    GetProcAddress(
+        ::std::mem::transmute(h_module),
+        lp_proc_name.into_param().abi(),
+    )
+}
 pub unsafe fn GetCurrentThread() -> HANDLE {
     #[link(name = "KERNEL32")]
     extern "system" {

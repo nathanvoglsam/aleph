@@ -51,7 +51,7 @@ fn main() {
             INFINITE,
             LoadLibraryW,
             LoadLibraryA,
-            //GetProcAddress,
+            GetProcAddress,
             GetCurrentThread,
             SetThreadDescription,
         },

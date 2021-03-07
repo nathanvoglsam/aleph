@@ -261,7 +261,6 @@ impl PerFrameObjects {
             format: dxgi::Format::R8Unorm,
             component_mapping: 0x1688, // TODO: Need to warp the macros the C++ api uses
             texture_2d: dx12::Tex2DSrv {
-                // TODO: Fill this out
                 most_detailed_mip: 0,
                 mip_levels: 1,
                 plane_slice: 0,
