@@ -60,8 +60,3 @@
 - `aleph-engine`
     - The core driver for the engine. Haven't looked at this in ages, should re-evaluate
 - `aleph-render`
-- `aleph-render-graph`
-- `aleph-vulkan`
-- `aleph-vulkan-alloc`
-- `aleph-vulkan-alloc-sys`
-- `aleph-vulkan-core`

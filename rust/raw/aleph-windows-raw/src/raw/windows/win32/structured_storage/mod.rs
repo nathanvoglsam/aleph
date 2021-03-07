@@ -1,7 +1,7 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct STATSTG {
     pub pwcs_name: super::system_services::PWSTR,
     pub r#type: u32,
@@ -37,7 +37,7 @@ impl ::std::fmt::Debug for STATSTG {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("STATSTG")
             .field("pwcs_name", &format_args!("{:?}", self.pwcs_name))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("cb_size", &format_args!("{:?}", self.cb_size))
             .field("mtime", &format_args!("{:?}", self.mtime))
             .field("ctime", &format_args!("{:?}", self.ctime))
@@ -73,6 +73,7 @@ unsafe impl ::windows::Abi for STATSTG {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -198,6 +199,7 @@ impl ::std::ops::BitAnd for STREAM_SEEK {
     }
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,

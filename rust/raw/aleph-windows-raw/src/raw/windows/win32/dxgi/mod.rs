@@ -157,7 +157,7 @@ impl ::std::ops::BitAnd for DXGI_FORMAT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SAMPLE_DESC {
     pub count: u32,
     pub quality: u32,
@@ -272,7 +272,7 @@ pub unsafe fn DXGIGetDebugInterface1(
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -349,7 +349,7 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC1 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -484,7 +484,7 @@ unsafe impl ::windows::Abi for DXGI_COMPUTE_PREEMPTION_GRANULARITY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC2 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -621,7 +621,7 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG3 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC3 {
     pub description: [u16; 128usize],
     pub vendor_id: u32,
@@ -866,7 +866,7 @@ unsafe impl ::windows::Abi for DXGI_DEBUG_RLO_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC {
     pub flags: u32,
 }
@@ -894,7 +894,7 @@ unsafe impl ::windows::Abi for DXGI_DECODE_SWAP_CHAIN_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_DISPLAY_COLOR_SPACE {
     pub primary_coordinates: [f32; 16usize],
     pub white_points: [f32; 32usize],
@@ -987,7 +987,7 @@ unsafe impl ::windows::Abi for DXGI_FRAME_PRESENTATION_MODE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_FRAME_STATISTICS {
     pub present_count: u32,
     pub present_refresh_count: u32,
@@ -1039,7 +1039,7 @@ unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_FRAME_STATISTICS_MEDIA {
     pub present_count: u32,
     pub present_refresh_count: u32,
@@ -1105,7 +1105,7 @@ unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS_MEDIA {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RGB {
     pub red: f32,
     pub green: f32,
@@ -1141,7 +1141,7 @@ unsafe impl ::windows::Abi for DXGI_RGB {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_GAMMA_CONTROL {
     pub scale: DXGI_RGB,
     pub offset: DXGI_RGB,
@@ -2205,7 +2205,7 @@ unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
     pub scale_and_offset_supported: super::system_services::BOOL,
     pub max_converted_value: f32,
@@ -2382,7 +2382,7 @@ unsafe impl ::windows::Abi for DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10 {
     pub red_primary: [u16; 2usize],
     pub green_primary: [u16; 2usize],
@@ -2452,7 +2452,7 @@ unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS {
     pub data: [u8; 72usize],
 }
@@ -2571,7 +2571,7 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE_SEVERITY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_FILTER_DESC {
     pub num_categories: u32,
     pub p_category_list: *mut DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -2627,7 +2627,7 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_FILTER {
     pub allow_list: DXGI_INFO_QUEUE_FILTER_DESC,
     pub deny_list: DXGI_INFO_QUEUE_FILTER_DESC,
@@ -2660,7 +2660,7 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_MESSAGE {
     pub producer: ::windows::Guid,
     pub category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
@@ -2713,7 +2713,7 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE {
     pub code_counts: [u8; 16usize],
     pub code_values: [u8; 162usize],
@@ -2753,7 +2753,7 @@ unsafe impl ::windows::Abi for DXGI_JPEG_AC_HUFFMAN_TABLE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE {
     pub code_counts: [u8; 12usize],
     pub code_values: [u8; 12usize],
@@ -2786,7 +2786,7 @@ unsafe impl ::windows::Abi for DXGI_JPEG_DC_HUFFMAN_TABLE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE {
     pub elements: [u8; 64usize],
 }
@@ -2820,7 +2820,7 @@ unsafe impl ::windows::Abi for DXGI_JPEG_QUANTIZATION_TABLE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MAPPED_RECT {
     pub pitch: i32,
     pub p_bits: *mut u8,
@@ -2856,7 +2856,7 @@ pub const DXGI_MAP_READ: u32 = 1u32;
 pub const DXGI_MAP_WRITE: u32 = 2u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MATRIX_3X2_F {
     pub _11: f32,
     pub _12: f32,
@@ -2931,7 +2931,7 @@ unsafe impl ::windows::Abi for DXGI_MEMORY_SEGMENT_GROUP {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RATIONAL {
     pub numerator: u32,
     pub denominator: u32,
@@ -3015,7 +3015,7 @@ unsafe impl ::windows::Abi for DXGI_MODE_SCALING {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MODE_DESC {
     pub width: u32,
     pub height: u32,
@@ -3068,7 +3068,7 @@ unsafe impl ::windows::Abi for DXGI_MODE_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MODE_DESC1 {
     pub width: u32,
     pub height: u32,
@@ -3229,7 +3229,7 @@ unsafe impl ::windows::Abi for DXGI_OFFER_RESOURCE_PRIORITY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_DESC {
     pub mode_desc: DXGI_MODE_DESC,
     pub rotation: DXGI_MODE_ROTATION,
@@ -3293,7 +3293,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_FLAG {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_POINTER_POSITION {
     pub position: super::display_devices::POINT,
     pub visible: super::system_services::BOOL,
@@ -3326,7 +3326,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_POSITION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_FRAME_INFO {
     pub last_present_time: i64,
     pub last_mouse_update_time: i64,
@@ -3408,7 +3408,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_FRAME_INFO {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_MOVE_RECT {
     pub source_point: super::display_devices::POINT,
     pub destination_rect: super::display_devices::RECT,
@@ -3444,7 +3444,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_MOVE_RECT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     pub r#type: u32,
     pub width: u32,
@@ -3467,7 +3467,7 @@ impl ::std::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
 impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_SHAPE_INFO")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("width", &format_args!("{:?}", self.width))
             .field("height", &format_args!("{:?}", self.height))
             .field("pitch", &format_args!("{:?}", self.pitch))
@@ -3515,7 +3515,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC {
     pub device_name: [u16; 32usize],
     pub desktop_coordinates: super::display_devices::RECT,
@@ -3570,7 +3570,7 @@ unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC1 {
     pub device_name: [u16; 32usize],
     pub desktop_coordinates: super::display_devices::RECT,
@@ -3714,7 +3714,7 @@ pub const DXGI_PRESENT_DO_NOT_SEQUENCE: u32 = 2u32;
 pub const DXGI_PRESENT_DO_NOT_WAIT: u32 = 8u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_PRESENT_PARAMETERS {
     pub dirty_rects_count: u32,
     pub p_dirty_rects: *mut super::display_devices::RECT,
@@ -3768,7 +3768,7 @@ pub const DXGI_PRESENT_TEST: u32 = 1u32;
 pub const DXGI_PRESENT_USE_DURATION: u32 = 256u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_QUERY_VIDEO_MEMORY_INFO {
     pub budget: u64,
     pub current_usage: u64,
@@ -3871,7 +3871,7 @@ pub const DXGI_RESOURCE_PRIORITY_MINIMUM: u32 = 671088640u32;
 pub const DXGI_RESOURCE_PRIORITY_NORMAL: u32 = 2013265920u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RGBA {
     pub r: f32,
     pub g: f32,
@@ -3935,7 +3935,7 @@ unsafe impl ::windows::Abi for DXGI_SCALING {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SHARED_RESOURCE {
     pub handle: super::system_services::HANDLE,
 }
@@ -3965,7 +3965,7 @@ unsafe impl ::windows::Abi for DXGI_SHARED_RESOURCE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SURFACE_DESC {
     pub width: u32,
     pub height: u32,
@@ -4057,7 +4057,7 @@ unsafe impl ::windows::Abi for DXGI_SWAP_EFFECT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_DESC {
     pub buffer_desc: DXGI_MODE_DESC,
     pub sample_desc: DXGI_SAMPLE_DESC,
@@ -4115,7 +4115,7 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_DESC1 {
     pub width: u32,
     pub height: u32,
@@ -4220,7 +4220,7 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_FLAG {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     pub refresh_rate: DXGI_RATIONAL,
     pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
@@ -4271,6 +4271,7 @@ pub const DXGI_USAGE_SHADER_INPUT: u32 = 16u32;
 pub const DXGI_USAGE_SHARED: u32 = 128u32;
 pub const DXGI_USAGE_UNORDERED_ACCESS: u32 = 1024u32;
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4398,6 +4399,7 @@ pub struct IDXGIObject_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4563,6 +4565,7 @@ pub struct IDXGIDeviceSubObject_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4780,6 +4783,7 @@ pub struct IDXGISurface_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5086,6 +5090,7 @@ pub struct IDXGIOutput_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5277,6 +5282,7 @@ pub struct IDXGIAdapter_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5496,6 +5502,7 @@ pub struct IDXGIAdapter1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5751,6 +5758,7 @@ pub struct IDXGIAdapter2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6118,6 +6126,7 @@ pub struct IDXGIAdapter3_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6517,6 +6526,7 @@ pub struct IDXGIAdapter4_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6583,6 +6593,7 @@ pub struct IDXGIDebug_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6687,6 +6698,7 @@ pub struct IDXGIDebug1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6857,6 +6869,7 @@ pub struct IDXGIDecodeSwapChain_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7080,6 +7093,7 @@ pub struct IDXGIDevice_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7338,6 +7352,7 @@ pub struct IDXGIDevice1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7571,6 +7586,7 @@ pub struct IDXGIResource_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7909,6 +7925,7 @@ pub struct IDXGIDevice2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -8273,6 +8290,7 @@ pub struct IDXGIDevice3_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -8700,6 +8718,7 @@ pub struct IDXGIDevice4_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -8771,6 +8790,7 @@ pub struct IDXGIDisplayControl_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, enabled: super::system_services::BOOL),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -9112,6 +9132,7 @@ pub struct IDXGISwapChain_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -9344,6 +9365,7 @@ pub struct IDXGIFactory_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -9618,6 +9640,7 @@ pub struct IDXGIFactory1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -10109,6 +10132,7 @@ pub struct IDXGISwapChain1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -10613,6 +10637,7 @@ pub struct IDXGIFactory2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11143,6 +11168,7 @@ pub struct IDXGIFactory3_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11730,6 +11756,7 @@ pub struct IDXGIFactory4_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -12358,6 +12385,7 @@ pub struct IDXGIFactory5_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13030,6 +13058,7 @@ pub struct IDXGIFactory6_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13750,6 +13779,7 @@ pub struct IDXGIFactory7_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13868,6 +13898,7 @@ pub struct IDXGIFactoryMedia_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -14486,6 +14517,7 @@ pub struct IDXGIInfoQueue_abi(
     ) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -14692,6 +14724,7 @@ pub struct IDXGIKeyedMutex_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, key: u64) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -14948,6 +14981,7 @@ pub struct IDXGIOutputDuplication_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -15349,6 +15383,7 @@ pub struct IDXGIOutput1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -15776,6 +15811,7 @@ pub struct IDXGIOutput2_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16244,6 +16280,7 @@ pub struct IDXGIOutput3_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16755,6 +16792,7 @@ pub struct IDXGIOutput4_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -17317,6 +17355,7 @@ pub struct IDXGIOutput5_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -17924,6 +17963,7 @@ pub struct IDXGIOutput6_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18192,6 +18232,7 @@ pub struct IDXGISurface1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18501,6 +18542,7 @@ pub struct IDXGISurface2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18797,6 +18839,7 @@ pub struct IDXGIResource1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -19385,6 +19428,7 @@ pub struct IDXGISwapChain2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20059,6 +20103,7 @@ pub struct IDXGISwapChain3_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20774,6 +20819,7 @@ pub struct IDXGISwapChain4_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,

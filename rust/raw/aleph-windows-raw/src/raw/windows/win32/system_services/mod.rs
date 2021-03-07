@@ -143,7 +143,7 @@ impl<'a> ::windows::IntoParam<'a, BOOL> for bool {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HANDLE(pub isize);
 impl HANDLE {}
 impl ::std::default::Default for HANDLE {
@@ -167,7 +167,6 @@ impl ::std::cmp::Eq for HANDLE {}
 unsafe impl ::windows::Abi for HANDLE {
     type Abi = Self;
 }
-impl ::std::marker::Copy for HANDLE {}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(
@@ -218,7 +217,7 @@ impl<'a> ::windows::IntoParam<'a, PWSTR> for String {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct SECURITY_ATTRIBUTES {
     pub n_length: u32,
     pub lp_security_descriptor: *mut ::std::ffi::c_void,

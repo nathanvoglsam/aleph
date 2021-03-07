@@ -1,7 +1,7 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HSTRING(pub isize);
 impl HSTRING {}
 impl ::std::default::Default for HSTRING {
@@ -25,7 +25,6 @@ impl ::std::cmp::Eq for HSTRING {}
 unsafe impl ::windows::Abi for HSTRING {
     type Abi = Self;
 }
-impl ::std::marker::Copy for HSTRING {}
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -52,6 +51,7 @@ unsafe impl ::windows::Abi for TrustLevel {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,

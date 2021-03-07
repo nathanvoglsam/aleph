@@ -1,7 +1,7 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct RECT {
     pub left: i32,
     pub top: i32,
@@ -43,7 +43,7 @@ unsafe impl ::windows::Abi for RECT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct POINT {
     pub x: i32,
     pub y: i32,

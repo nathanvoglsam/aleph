@@ -1,5 +1,6 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,

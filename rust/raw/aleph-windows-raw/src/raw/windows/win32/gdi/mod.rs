@@ -1,7 +1,7 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HMONITOR(pub isize);
 impl HMONITOR {}
 impl ::std::default::Default for HMONITOR {
@@ -25,10 +25,9 @@ impl ::std::cmp::Eq for HMONITOR {}
 unsafe impl ::windows::Abi for HMONITOR {
     type Abi = Self;
 }
-impl ::std::marker::Copy for HMONITOR {}
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HDC(pub isize);
 impl HDC {}
 impl ::std::default::Default for HDC {
@@ -52,4 +51,3 @@ impl ::std::cmp::Eq for HDC {}
 unsafe impl ::windows::Abi for HDC {
     type Abi = Self;
 }
-impl ::std::marker::Copy for HDC {}

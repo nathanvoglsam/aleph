@@ -1,7 +1,7 @@
 #![allow(unused_variables, non_upper_case_globals, non_snake_case)]
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HWND(pub isize);
 impl HWND {}
 impl ::std::default::Default for HWND {
@@ -25,4 +25,3 @@ impl ::std::cmp::Eq for HWND {}
 unsafe impl ::windows::Abi for HWND {
     type Abi = Self;
 }
-impl ::std::marker::Copy for HWND {}

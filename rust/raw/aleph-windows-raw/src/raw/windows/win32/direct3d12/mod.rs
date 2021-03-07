@@ -46,7 +46,7 @@ pub unsafe fn D3D11On12CreateDevice<'a, T0__: ::windows::IntoParam<'a, ::windows
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D11_RESOURCE_FLAGS {
     pub bind_flags: u32,
     pub misc_flags: u32,
@@ -235,6 +235,208 @@ unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER_TYPE {
     :: std :: fmt :: Debug,
 )]
 #[repr(transparent)]
+pub struct D3D12_DESCRIPTOR_RANGE_TYPE(pub i32);
+impl D3D12_DESCRIPTOR_RANGE_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_DESCRIPTOR_RANGE_TYPE_SRV: Self = Self(0i32);
+    pub const D3D12_DESCRIPTOR_RANGE_TYPE_UAV: Self = Self(1i32);
+    pub const D3D12_DESCRIPTOR_RANGE_TYPE_CBV: Self = Self(2i32);
+    pub const D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: Self = Self(3i32);
+}
+impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_RANGE_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE_TYPE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DESCRIPTOR_RANGE {
+    pub range_type: D3D12_DESCRIPTOR_RANGE_TYPE,
+    pub num_descriptors: u32,
+    pub base_shader_register: u32,
+    pub register_space: u32,
+    pub offset_in_descriptors_from_table_start: u32,
+}
+impl D3D12_DESCRIPTOR_RANGE {}
+impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE {
+    fn default() -> Self {
+        Self {
+            range_type: ::std::default::Default::default(),
+            num_descriptors: 0,
+            base_shader_register: 0,
+            register_space: 0,
+            offset_in_descriptors_from_table_start: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_DESCRIPTOR_RANGE")
+            .field("range_type", &format_args!("{:?}", self.range_type))
+            .field(
+                "num_descriptors",
+                &format_args!("{:?}", self.num_descriptors),
+            )
+            .field(
+                "base_shader_register",
+                &format_args!("{:?}", self.base_shader_register),
+            )
+            .field("register_space", &format_args!("{:?}", self.register_space))
+            .field(
+                "offset_in_descriptors_from_table_start",
+                &format_args!("{:?}", self.offset_in_descriptors_from_table_start),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_RANGE {
+    fn eq(&self, other: &Self) -> bool {
+        self.range_type == other.range_type
+            && self.num_descriptors == other.num_descriptors
+            && self.base_shader_register == other.base_shader_register
+            && self.register_space == other.register_space
+            && self.offset_in_descriptors_from_table_start
+                == other.offset_in_descriptors_from_table_start
+    }
+}
+impl ::std::cmp::Eq for D3D12_DESCRIPTOR_RANGE {}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_DESCRIPTOR_TABLE {
+    pub num_descriptor_ranges: u32,
+    pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE,
+}
+impl D3D12_ROOT_DESCRIPTOR_TABLE {}
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE {
+    fn default() -> Self {
+        Self {
+            num_descriptor_ranges: 0,
+            p_descriptor_ranges: ::std::ptr::null_mut(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE")
+            .field(
+                "num_descriptor_ranges",
+                &format_args!("{:?}", self.num_descriptor_ranges),
+            )
+            .field(
+                "p_descriptor_ranges",
+                &format_args!("{:?}", self.p_descriptor_ranges),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR_TABLE {
+    fn eq(&self, other: &Self) -> bool {
+        self.num_descriptor_ranges == other.num_descriptor_ranges
+            && self.p_descriptor_ranges == other.p_descriptor_ranges
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR_TABLE {}
+unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_CONSTANTS {
+    pub shader_register: u32,
+    pub register_space: u32,
+    pub num32_bit_values: u32,
+}
+impl D3D12_ROOT_CONSTANTS {}
+impl ::std::default::Default for D3D12_ROOT_CONSTANTS {
+    fn default() -> Self {
+        Self {
+            shader_register: 0,
+            register_space: 0,
+            num32_bit_values: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_CONSTANTS {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_CONSTANTS")
+            .field(
+                "shader_register",
+                &format_args!("{:?}", self.shader_register),
+            )
+            .field("register_space", &format_args!("{:?}", self.register_space))
+            .field(
+                "num32_bit_values",
+                &format_args!("{:?}", self.num32_bit_values),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_CONSTANTS {
+    fn eq(&self, other: &Self) -> bool {
+        self.shader_register == other.shader_register
+            && self.register_space == other.register_space
+            && self.num32_bit_values == other.num32_bit_values
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_CONSTANTS {}
+unsafe impl ::windows::Abi for D3D12_ROOT_CONSTANTS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_DESCRIPTOR {
+    pub shader_register: u32,
+    pub register_space: u32,
+}
+impl D3D12_ROOT_DESCRIPTOR {}
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR {
+    fn default() -> Self {
+        Self {
+            shader_register: 0,
+            register_space: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR")
+            .field(
+                "shader_register",
+                &format_args!("{:?}", self.shader_register),
+            )
+            .field("register_space", &format_args!("{:?}", self.register_space))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR {
+    fn eq(&self, other: &Self) -> bool {
+        self.shader_register == other.shader_register && self.register_space == other.register_space
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR {}
+unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
 pub struct D3D12_SHADER_VISIBILITY(pub i32);
 impl D3D12_SHADER_VISIBILITY {
     #![allow(non_upper_case_globals)]
@@ -257,43 +459,26 @@ unsafe impl ::windows::Abi for D3D12_SHADER_VISIBILITY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_ROOT_PARAMETER {
     pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_ROOT_PARAMETER_0,
     pub shader_visibility: D3D12_SHADER_VISIBILITY,
 }
 impl D3D12_ROOT_PARAMETER {}
-impl ::std::default::Default for D3D12_ROOT_PARAMETER {
-    fn default() -> Self {
-        Self {
-            parameter_type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-            shader_visibility: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_PARAMETER")
-            .field("parameter_type", &format_args!("{:?}", self.parameter_type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .field(
-                "shader_visibility",
-                &format_args!("{:?}", self.shader_visibility),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_PARAMETER {
-    fn eq(&self, other: &Self) -> bool {
-        self.parameter_type == other.parameter_type
-            && self.anonymous == other.anonymous
-            && self.shader_visibility == other.shader_visibility
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_PARAMETER {}
 unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_ROOT_PARAMETER_0 {
+    pub descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE,
+    pub constants: D3D12_ROOT_CONSTANTS,
+    pub descriptor: D3D12_ROOT_DESCRIPTOR,
+}
+impl D3D12_ROOT_PARAMETER_0 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER_0 {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
@@ -438,7 +623,7 @@ unsafe impl ::windows::Abi for D3D12_STATIC_BORDER_COLOR {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STATIC_SAMPLER_DESC {
     pub filter: D3D12_FILTER,
     pub addressu: D3D12_TEXTURE_ADDRESS_MODE,
@@ -558,7 +743,7 @@ unsafe impl ::windows::Abi for D3D12_ROOT_SIGNATURE_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_ROOT_SIGNATURE_DESC {
     pub num_parameters: u32,
     pub p_parameters: *mut D3D12_ROOT_PARAMETER,
@@ -655,37 +840,298 @@ pub unsafe fn D3D12SerializeRootSignature(
         ::std::mem::transmute(pp_error_blob),
     )
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_DESCRIPTOR_RANGE_FLAGS(pub i32);
+impl D3D12_DESCRIPTOR_RANGE_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE: Self = Self(1i32);
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE: Self = Self(2i32);
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC: Self = Self(8i32);
+    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS: Self =
+        Self(65536i32);
+}
+impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_RANGE_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE_FLAGS {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-    pub version: D3D_ROOT_SIGNATURE_VERSION,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DESCRIPTOR_RANGE1 {
+    pub range_type: D3D12_DESCRIPTOR_RANGE_TYPE,
+    pub num_descriptors: u32,
+    pub base_shader_register: u32,
+    pub register_space: u32,
+    pub flags: D3D12_DESCRIPTOR_RANGE_FLAGS,
+    pub offset_in_descriptors_from_table_start: u32,
 }
-impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC {}
-impl ::std::default::Default for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl D3D12_DESCRIPTOR_RANGE1 {}
+impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE1 {
     fn default() -> Self {
         Self {
-            version: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
+            range_type: ::std::default::Default::default(),
+            num_descriptors: 0,
+            base_shader_register: 0,
+            register_space: 0,
+            flags: ::std::default::Default::default(),
+            offset_in_descriptors_from_table_start: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_VERSIONED_ROOT_SIGNATURE_DESC")
-            .field("version", &format_args!("{:?}", self.version))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
+        fmt.debug_struct("D3D12_DESCRIPTOR_RANGE1")
+            .field("range_type", &format_args!("{:?}", self.range_type))
+            .field(
+                "num_descriptors",
+                &format_args!("{:?}", self.num_descriptors),
+            )
+            .field(
+                "base_shader_register",
+                &format_args!("{:?}", self.base_shader_register),
+            )
+            .field("register_space", &format_args!("{:?}", self.register_space))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .field(
+                "offset_in_descriptors_from_table_start",
+                &format_args!("{:?}", self.offset_in_descriptors_from_table_start),
+            )
             .finish()
     }
 }
-impl ::std::cmp::PartialEq for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_RANGE1 {
     fn eq(&self, other: &Self) -> bool {
-        self.version == other.version && self.anonymous == other.anonymous
+        self.range_type == other.range_type
+            && self.num_descriptors == other.num_descriptors
+            && self.base_shader_register == other.base_shader_register
+            && self.register_space == other.register_space
+            && self.flags == other.flags
+            && self.offset_in_descriptors_from_table_start
+                == other.offset_in_descriptors_from_table_start
     }
 }
-impl ::std::cmp::Eq for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {}
+impl ::std::cmp::Eq for D3D12_DESCRIPTOR_RANGE1 {}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE1 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_DESCRIPTOR_TABLE1 {
+    pub num_descriptor_ranges: u32,
+    pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE1,
+}
+impl D3D12_ROOT_DESCRIPTOR_TABLE1 {}
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+    fn default() -> Self {
+        Self {
+            num_descriptor_ranges: 0,
+            p_descriptor_ranges: ::std::ptr::null_mut(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE1")
+            .field(
+                "num_descriptor_ranges",
+                &format_args!("{:?}", self.num_descriptor_ranges),
+            )
+            .field(
+                "p_descriptor_ranges",
+                &format_args!("{:?}", self.p_descriptor_ranges),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+    fn eq(&self, other: &Self) -> bool {
+        self.num_descriptor_ranges == other.num_descriptor_ranges
+            && self.p_descriptor_ranges == other.p_descriptor_ranges
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR_TABLE1 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE1 {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_ROOT_DESCRIPTOR_FLAGS(pub i32);
+impl D3D12_ROOT_DESCRIPTOR_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_ROOT_DESCRIPTOR_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE: Self = Self(2i32);
+    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
+    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC: Self = Self(8i32);
+}
+impl ::std::convert::From<i32> for D3D12_ROOT_DESCRIPTOR_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_DESCRIPTOR1 {
+    pub shader_register: u32,
+    pub register_space: u32,
+    pub flags: D3D12_ROOT_DESCRIPTOR_FLAGS,
+}
+impl D3D12_ROOT_DESCRIPTOR1 {}
+impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR1 {
+    fn default() -> Self {
+        Self {
+            shader_register: 0,
+            register_space: 0,
+            flags: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR1")
+            .field(
+                "shader_register",
+                &format_args!("{:?}", self.shader_register),
+            )
+            .field("register_space", &format_args!("{:?}", self.register_space))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR1 {
+    fn eq(&self, other: &Self) -> bool {
+        self.shader_register == other.shader_register
+            && self.register_space == other.register_space
+            && self.flags == other.flags
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR1 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR1 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_PARAMETER1 {
+    pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
+    pub anonymous: D3D12_ROOT_PARAMETER1_0,
+    pub shader_visibility: D3D12_SHADER_VISIBILITY,
+}
+impl D3D12_ROOT_PARAMETER1 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER1 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_ROOT_PARAMETER1_0 {
+    pub descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1,
+    pub constants: D3D12_ROOT_CONSTANTS,
+    pub descriptor: D3D12_ROOT_DESCRIPTOR1,
+}
+impl D3D12_ROOT_PARAMETER1_0 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER1_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_ROOT_SIGNATURE_DESC1 {
+    pub num_parameters: u32,
+    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
+    pub num_static_samplers: u32,
+    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
+    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
+}
+impl D3D12_ROOT_SIGNATURE_DESC1 {}
+impl ::std::default::Default for D3D12_ROOT_SIGNATURE_DESC1 {
+    fn default() -> Self {
+        Self {
+            num_parameters: 0,
+            p_parameters: ::std::ptr::null_mut(),
+            num_static_samplers: 0,
+            p_static_samplers: ::std::ptr::null_mut(),
+            flags: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_ROOT_SIGNATURE_DESC1")
+            .field("num_parameters", &format_args!("{:?}", self.num_parameters))
+            .field("p_parameters", &format_args!("{:?}", self.p_parameters))
+            .field(
+                "num_static_samplers",
+                &format_args!("{:?}", self.num_static_samplers),
+            )
+            .field(
+                "p_static_samplers",
+                &format_args!("{:?}", self.p_static_samplers),
+            )
+            .field("flags", &format_args!("{:?}", self.flags))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_ROOT_SIGNATURE_DESC1 {
+    fn eq(&self, other: &Self) -> bool {
+        self.num_parameters == other.num_parameters
+            && self.p_parameters == other.p_parameters
+            && self.num_static_samplers == other.num_static_samplers
+            && self.p_static_samplers == other.p_static_samplers
+            && self.flags == other.flags
+    }
+}
+impl ::std::cmp::Eq for D3D12_ROOT_SIGNATURE_DESC1 {}
+unsafe impl ::windows::Abi for D3D12_ROOT_SIGNATURE_DESC1 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+    pub version: D3D_ROOT_SIGNATURE_VERSION,
+    pub anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0,
+}
+impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+    pub desc_1_0: D3D12_ROOT_SIGNATURE_DESC,
+    pub desc_1_1: D3D12_ROOT_SIGNATURE_DESC1,
+}
+impl D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
     type Abi = Self;
 }
 pub unsafe fn D3D12SerializeVersionedRootSignature(
@@ -715,6 +1161,7 @@ pub const D3D12_ANISOTROPIC_FILTERING_BIT: u32 = 64u32;
 pub const D3D12_APPEND_ALIGNED_ELEMENT: u32 = 4294967295u32;
 pub const D3D12_ARRAY_AXIS_ADDRESS_RANGE_BIT_COUNT: u32 = 9u32;
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -836,6 +1283,7 @@ pub struct ID3D12Object_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -995,6 +1443,7 @@ pub struct ID3D12DeviceChild_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1176,6 +1625,7 @@ pub struct ID3D12Pageable_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1383,6 +1833,7 @@ pub struct ID3D12CommandAllocator_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1600,7 +2051,7 @@ pub struct ID3D12PipelineState_abi(
 );
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RANGE {
     pub begin: usize,
     pub end: usize,
@@ -1713,7 +2164,7 @@ unsafe impl ::windows::Abi for D3D12_RESOURCE_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RESOURCE_DESC {
     pub dimension: D3D12_RESOURCE_DIMENSION,
     pub alignment: u64,
@@ -1782,7 +2233,7 @@ unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BOX {
     pub left: u32,
     pub top: u32,
@@ -1909,7 +2360,7 @@ unsafe impl ::windows::Abi for D3D12_MEMORY_POOL {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_HEAP_PROPERTIES {
     pub r#type: D3D12_HEAP_TYPE,
     pub cpu_page_property: D3D12_CPU_PAGE_PROPERTY,
@@ -1932,7 +2383,7 @@ impl ::std::default::Default for D3D12_HEAP_PROPERTIES {
 impl ::std::fmt::Debug for D3D12_HEAP_PROPERTIES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_HEAP_PROPERTIES")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field(
                 "cpu_page_property",
                 &format_args!("{:?}", self.cpu_page_property),
@@ -2004,6 +2455,7 @@ unsafe impl ::windows::Abi for D3D12_HEAP_FLAGS {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2339,52 +2791,116 @@ unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEXTURE_COPY_LOCATION {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-    pub r#type: D3D12_TEXTURE_COPY_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_SUBRESOURCE_FOOTPRINT {
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub width: u32,
+    pub height: u32,
+    pub depth: u32,
+    pub row_pitch: u32,
 }
-impl D3D12_TEXTURE_COPY_LOCATION {}
-impl ::std::default::Default for D3D12_TEXTURE_COPY_LOCATION {
+impl D3D12_SUBRESOURCE_FOOTPRINT {}
+impl ::std::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
     fn default() -> Self {
         Self {
-            p_resource: ::std::default::Default::default(),
-            r#type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
+            format: ::std::default::Default::default(),
+            width: 0,
+            height: 0,
+            depth: 0,
+            row_pitch: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D12_TEXTURE_COPY_LOCATION {
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEXTURE_COPY_LOCATION")
-            .field("p_resource", &format_args!("{:?}", self.p_resource))
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
+        fmt.debug_struct("D3D12_SUBRESOURCE_FOOTPRINT")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("width", &format_args!("{:?}", self.width))
+            .field("height", &format_args!("{:?}", self.height))
+            .field("depth", &format_args!("{:?}", self.depth))
+            .field("row_pitch", &format_args!("{:?}", self.row_pitch))
             .finish()
     }
 }
-impl ::std::cmp::PartialEq for D3D12_TEXTURE_COPY_LOCATION {
+impl ::std::cmp::PartialEq for D3D12_SUBRESOURCE_FOOTPRINT {
     fn eq(&self, other: &Self) -> bool {
-        self.p_resource == other.p_resource
-            && self.r#type == other.r#type
-            && self.anonymous == other.anonymous
+        self.format == other.format
+            && self.width == other.width
+            && self.height == other.height
+            && self.depth == other.depth
+            && self.row_pitch == other.row_pitch
     }
 }
-impl ::std::cmp::Eq for D3D12_TEXTURE_COPY_LOCATION {}
+impl ::std::cmp::Eq for D3D12_SUBRESOURCE_FOOTPRINT {}
+unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_FOOTPRINT {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    pub offset: u64,
+    pub footprint: D3D12_SUBRESOURCE_FOOTPRINT,
+}
+impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
+impl ::std::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn default() -> Self {
+        Self {
+            offset: 0,
+            footprint: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_PLACED_SUBRESOURCE_FOOTPRINT")
+            .field("offset", &format_args!("{:?}", self.offset))
+            .field("footprint", &format_args!("{:?}", self.footprint))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn eq(&self, other: &Self) -> bool {
+        self.offset == other.offset && self.footprint == other.footprint
+    }
+}
+impl ::std::cmp::Eq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
+unsafe impl ::windows::Abi for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_TEXTURE_COPY_LOCATION {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+    pub r#type: D3D12_TEXTURE_COPY_TYPE,
+    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
+}
+impl D3D12_TEXTURE_COPY_LOCATION {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_TEXTURE_COPY_LOCATION_abi(
-    ::windows::RawPtr,
-    D3D12_TEXTURE_COPY_TYPE,
-    ::windows::NOT_YET_SUPPORTED_TYPE,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEXTURE_COPY_LOCATION_abi {
+    pub p_resource: ::windows::RawPtr,
+    pub r#type: D3D12_TEXTURE_COPY_TYPE,
+    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
+}
 unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION {
     type Abi = D3D12_TEXTURE_COPY_LOCATION_abi;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_TEXTURE_COPY_LOCATION_0 {
+    pub placed_footprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    pub subresource_index: u32,
+}
+impl D3D12_TEXTURE_COPY_LOCATION_0 {}
+unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TILED_RESOURCE_COORDINATE {
     pub x: u32,
     pub y: u32,
@@ -2426,7 +2942,7 @@ unsafe impl ::windows::Abi for D3D12_TILED_RESOURCE_COORDINATE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TILE_REGION_SIZE {
     pub num_tiles: u32,
     pub use_box: super::system_services::BOOL,
@@ -2498,7 +3014,7 @@ unsafe impl ::windows::Abi for D3D12_TILE_COPY_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_VIEWPORT {
     pub top_leftx: f32,
     pub top_lefty: f32,
@@ -2596,43 +3112,225 @@ impl ::std::convert::From<i32> for D3D12_RESOURCE_BARRIER_FLAGS {
 unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_FLAGS {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_STATES(pub i32);
+impl D3D12_RESOURCE_STATES {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_STATE_COMMON: Self = Self(0i32);
+    pub const D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER: Self = Self(1i32);
+    pub const D3D12_RESOURCE_STATE_INDEX_BUFFER: Self = Self(2i32);
+    pub const D3D12_RESOURCE_STATE_RENDER_TARGET: Self = Self(4i32);
+    pub const D3D12_RESOURCE_STATE_UNORDERED_ACCESS: Self = Self(8i32);
+    pub const D3D12_RESOURCE_STATE_DEPTH_WRITE: Self = Self(16i32);
+    pub const D3D12_RESOURCE_STATE_DEPTH_READ: Self = Self(32i32);
+    pub const D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE: Self = Self(64i32);
+    pub const D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE: Self = Self(128i32);
+    pub const D3D12_RESOURCE_STATE_STREAM_OUT: Self = Self(256i32);
+    pub const D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT: Self = Self(512i32);
+    pub const D3D12_RESOURCE_STATE_COPY_DEST: Self = Self(1024i32);
+    pub const D3D12_RESOURCE_STATE_COPY_SOURCE: Self = Self(2048i32);
+    pub const D3D12_RESOURCE_STATE_RESOLVE_DEST: Self = Self(4096i32);
+    pub const D3D12_RESOURCE_STATE_RESOLVE_SOURCE: Self = Self(8192i32);
+    pub const D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE: Self = Self(4194304i32);
+    pub const D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE: Self = Self(16777216i32);
+    pub const D3D12_RESOURCE_STATE_GENERIC_READ: Self = Self(2755i32);
+    pub const D3D12_RESOURCE_STATE_PRESENT: Self = Self(0i32);
+    pub const D3D12_RESOURCE_STATE_PREDICATION: Self = Self(512i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_READ: Self = Self(65536i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE: Self = Self(131072i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ: Self = Self(262144i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE: Self = Self(524288i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_READ: Self = Self(2097152i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE: Self = Self(8388608i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_STATES {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_STATES {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_BARRIER {
-    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
-    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+pub struct D3D12_RESOURCE_TRANSITION_BARRIER {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+    pub subresource: u32,
+    pub state_before: D3D12_RESOURCE_STATES,
+    pub state_after: D3D12_RESOURCE_STATES,
 }
-impl D3D12_RESOURCE_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_BARRIER {
+impl D3D12_RESOURCE_TRANSITION_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn default() -> Self {
         Self {
-            r#type: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
+            p_resource: ::std::default::Default::default(),
+            subresource: 0,
+            state_before: ::std::default::Default::default(),
+            state_after: ::std::default::Default::default(),
         }
     }
 }
-impl ::std::fmt::Debug for D3D12_RESOURCE_BARRIER {
+impl ::std::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_BARRIER")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
+        fmt.debug_struct("D3D12_RESOURCE_TRANSITION_BARRIER")
+            .field("p_resource", &format_args!("{:?}", self.p_resource))
+            .field("subresource", &format_args!("{:?}", self.subresource))
+            .field("state_before", &format_args!("{:?}", self.state_before))
+            .field("state_after", &format_args!("{:?}", self.state_after))
             .finish()
     }
 }
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_BARRIER {
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_TRANSITION_BARRIER {
     fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.flags == other.flags
-            && self.anonymous == other.anonymous
+        self.p_resource == other.p_resource
+            && self.subresource == other.subresource
+            && self.state_before == other.state_before
+            && self.state_after == other.state_after
     }
 }
-impl ::std::cmp::Eq for D3D12_RESOURCE_BARRIER {}
+impl ::std::cmp::Eq for D3D12_RESOURCE_TRANSITION_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_TRANSITION_BARRIER_abi {
+    pub p_resource: ::windows::RawPtr,
+    pub subresource: u32,
+    pub state_before: D3D12_RESOURCE_STATES,
+    pub state_after: D3D12_RESOURCE_STATES,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_TRANSITION_BARRIER {
+    type Abi = D3D12_RESOURCE_TRANSITION_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RESOURCE_ALIASING_BARRIER {
+    pub p_resource_before: ::std::option::Option<ID3D12Resource>,
+    pub p_resource_after: ::std::option::Option<ID3D12Resource>,
+}
+impl D3D12_RESOURCE_ALIASING_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn default() -> Self {
+        Self {
+            p_resource_before: ::std::default::Default::default(),
+            p_resource_after: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_ALIASING_BARRIER")
+            .field(
+                "p_resource_before",
+                &format_args!("{:?}", self.p_resource_before),
+            )
+            .field(
+                "p_resource_after",
+                &format_args!("{:?}", self.p_resource_after),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn eq(&self, other: &Self) -> bool {
+        self.p_resource_before == other.p_resource_before
+            && self.p_resource_after == other.p_resource_after
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_ALIASING_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_ALIASING_BARRIER_abi {
+    pub p_resource_before: ::windows::RawPtr,
+    pub p_resource_after: ::windows::RawPtr,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_ALIASING_BARRIER {
+    type Abi = D3D12_RESOURCE_ALIASING_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RESOURCE_UAV_BARRIER {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+}
+impl D3D12_RESOURCE_UAV_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_UAV_BARRIER {
+    fn default() -> Self {
+        Self {
+            p_resource: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_UAV_BARRIER")
+            .field("p_resource", &format_args!("{:?}", self.p_resource))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_UAV_BARRIER {
+    fn eq(&self, other: &Self) -> bool {
+        self.p_resource == other.p_resource
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_UAV_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_UAV_BARRIER_abi {
+    pub p_resource: ::windows::RawPtr,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_UAV_BARRIER {
+    type Abi = D3D12_RESOURCE_UAV_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_RESOURCE_BARRIER {
+    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
+    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
+    pub anonymous: D3D12_RESOURCE_BARRIER_0,
+}
+impl D3D12_RESOURCE_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_BARRIER_abi {
+    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
+    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
+    pub anonymous: D3D12_RESOURCE_BARRIER_0_abi,
+}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER {
-    type Abi = Self;
+    type Abi = D3D12_RESOURCE_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub union D3D12_RESOURCE_BARRIER_0 {
+    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
+    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
+    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
+}
+impl D3D12_RESOURCE_BARRIER_0 {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RESOURCE_BARRIER_0_abi {
+    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
+    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
+    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_0 {
+    type Abi = D3D12_RESOURCE_BARRIER_0_abi;
 }
 #[allow(non_camel_case_types)]
 #[derive(
@@ -2687,7 +3385,7 @@ unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DESCRIPTOR_HEAP_DESC {
     pub r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
     pub num_descriptors: u32,
@@ -2708,7 +3406,7 @@ impl ::std::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
 impl ::std::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_DESCRIPTOR_HEAP_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field(
                 "num_descriptors",
                 &format_args!("{:?}", self.num_descriptors),
@@ -2732,7 +3430,7 @@ unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_CPU_DESCRIPTOR_HANDLE {
     pub ptr: usize,
 }
@@ -2760,7 +3458,7 @@ unsafe impl ::windows::Abi for D3D12_CPU_DESCRIPTOR_HANDLE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_GPU_DESCRIPTOR_HANDLE {
     pub ptr: u64,
 }
@@ -2787,6 +3485,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_DESCRIPTOR_HANDLE {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3017,6 +3716,7 @@ pub struct ID3D12DescriptorHeap_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3199,7 +3899,7 @@ pub struct ID3D12RootSignature_abi(
 );
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INDEX_BUFFER_VIEW {
     pub buffer_location: u64,
     pub size_in_bytes: u32,
@@ -3240,7 +3940,7 @@ unsafe impl ::windows::Abi for D3D12_INDEX_BUFFER_VIEW {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_VERTEX_BUFFER_VIEW {
     pub buffer_location: u64,
     pub size_in_bytes: u32,
@@ -3284,7 +3984,7 @@ unsafe impl ::windows::Abi for D3D12_VERTEX_BUFFER_VIEW {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     pub buffer_location: u64,
     pub size_in_bytes: u64,
@@ -3352,7 +4052,7 @@ unsafe impl ::windows::Abi for D3D12_CLEAR_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DISCARD_REGION {
     pub num_rects: u32,
     pub p_rects: *mut super::display_devices::RECT,
@@ -3399,6 +4099,7 @@ unsafe impl ::windows::Abi for D3D12_DISCARD_REGION {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3657,6 +4358,7 @@ unsafe impl ::windows::Abi for D3D12_PREDICATION_OP {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3889,6 +4591,7 @@ unsafe impl ::windows::Abi for D3D12_COMMAND_LIST_TYPE {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4074,6 +4777,7 @@ pub struct ID3D12CommandList_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_COMMAND_LIST_TYPE,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5044,7 +5748,7 @@ pub struct ID3D12GraphicsCommandList_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -5231,7 +5935,7 @@ pub struct ID3D12GraphicsCommandList_abi(
 );
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_HEAP_DESC {
     pub size_in_bytes: u64,
     pub properties: D3D12_HEAP_PROPERTIES,
@@ -5272,6 +5976,7 @@ unsafe impl ::windows::Abi for D3D12_HEAP_DESC {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5531,6 +6236,7 @@ unsafe impl ::windows::Abi for D3D12_TILE_MAPPING_FLAGS {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5789,7 +6495,7 @@ unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_COMMAND_QUEUE_DESC {
     pub r#type: D3D12_COMMAND_LIST_TYPE,
     pub priority: i32,
@@ -5810,7 +6516,7 @@ impl ::std::default::Default for D3D12_COMMAND_QUEUE_DESC {
 impl ::std::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_COMMAND_QUEUE_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("priority", &format_args!("{:?}", self.priority))
             .field("flags", &format_args!("{:?}", self.flags))
             .field("node_mask", &format_args!("{:?}", self.node_mask))
@@ -5830,6 +6536,7 @@ unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_DESC {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6375,24 +7082,25 @@ impl ::std::cmp::PartialEq for D3D12_AUTO_BREADCRUMB_NODE {
 impl ::std::cmp::Eq for D3D12_AUTO_BREADCRUMB_NODE {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_AUTO_BREADCRUMB_NODE_abi(
-    *mut u8,
-    super::system_services::PWSTR,
-    *mut u8,
-    super::system_services::PWSTR,
-    ::windows::RawPtr,
-    ::windows::RawPtr,
-    u32,
-    *mut u32,
-    *mut D3D12_AUTO_BREADCRUMB_OP,
-    *mut D3D12_AUTO_BREADCRUMB_NODE_abi,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_AUTO_BREADCRUMB_NODE_abi {
+    pub p_command_list_debug_namea: *mut u8,
+    pub p_command_list_debug_namew: super::system_services::PWSTR,
+    pub p_command_queue_debug_namea: *mut u8,
+    pub p_command_queue_debug_namew: super::system_services::PWSTR,
+    pub p_command_list: ::windows::RawPtr,
+    pub p_command_queue: ::windows::RawPtr,
+    pub breadcrumb_count: u32,
+    pub p_last_breadcrumb_value: *mut u32,
+    pub p_command_history: *mut D3D12_AUTO_BREADCRUMB_OP,
+    pub p_next: *mut D3D12_AUTO_BREADCRUMB_NODE_abi,
+}
 unsafe impl ::windows::Abi for D3D12_AUTO_BREADCRUMB_NODE {
     type Abi = D3D12_AUTO_BREADCRUMB_NODE_abi;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_BREADCRUMB_CONTEXT {
     pub breadcrumb_index: u32,
     pub p_context_string: super::system_services::PWSTR,
@@ -6533,20 +7241,21 @@ impl ::std::cmp::PartialEq for D3D12_AUTO_BREADCRUMB_NODE1 {
 impl ::std::cmp::Eq for D3D12_AUTO_BREADCRUMB_NODE1 {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_AUTO_BREADCRUMB_NODE1_abi(
-    *mut u8,
-    super::system_services::PWSTR,
-    *mut u8,
-    super::system_services::PWSTR,
-    ::windows::RawPtr,
-    ::windows::RawPtr,
-    u32,
-    *mut u32,
-    *mut D3D12_AUTO_BREADCRUMB_OP,
-    *mut D3D12_AUTO_BREADCRUMB_NODE1_abi,
-    u32,
-    *mut D3D12_DRED_BREADCRUMB_CONTEXT,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_AUTO_BREADCRUMB_NODE1_abi {
+    pub p_command_list_debug_namea: *mut u8,
+    pub p_command_list_debug_namew: super::system_services::PWSTR,
+    pub p_command_queue_debug_namea: *mut u8,
+    pub p_command_queue_debug_namew: super::system_services::PWSTR,
+    pub p_command_list: ::windows::RawPtr,
+    pub p_command_queue: ::windows::RawPtr,
+    pub breadcrumb_count: u32,
+    pub p_last_breadcrumb_value: *mut u32,
+    pub p_command_history: *mut D3D12_AUTO_BREADCRUMB_OP,
+    pub p_next: *mut D3D12_AUTO_BREADCRUMB_NODE1_abi,
+    pub breadcrumb_contexts_count: u32,
+    pub p_breadcrumb_contexts: *mut D3D12_DRED_BREADCRUMB_CONTEXT,
+}
 unsafe impl ::windows::Abi for D3D12_AUTO_BREADCRUMB_NODE1 {
     type Abi = D3D12_AUTO_BREADCRUMB_NODE1_abi;
 }
@@ -6707,7 +7416,7 @@ unsafe impl ::windows::Abi for D3D12_LOGIC_OP {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RENDER_TARGET_BLEND_DESC {
     pub blend_enable: super::system_services::BOOL,
     pub logic_op_enable: super::system_services::BOOL,
@@ -6785,7 +7494,7 @@ unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_BLEND_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BLEND_DESC {
     pub alpha_to_coverage_enable: super::system_services::BOOL,
     pub independent_blend_enable: super::system_services::BOOL,
@@ -6838,7 +7547,7 @@ unsafe impl ::windows::Abi for D3D12_BLEND_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUFFER_RTV {
     pub first_element: u64,
     pub num_elements: u32,
@@ -6895,7 +7604,7 @@ unsafe impl ::windows::Abi for D3D12_BUFFER_SRV_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUFFER_SRV {
     pub first_element: u64,
     pub num_elements: u32,
@@ -6964,7 +7673,7 @@ unsafe impl ::windows::Abi for D3D12_BUFFER_UAV_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUFFER_UAV {
     pub first_element: u64,
     pub num_elements: u32,
@@ -7095,55 +7804,230 @@ impl ::std::convert::From<i32> for D3D12_ELEMENTS_LAYOUT {
 unsafe impl ::windows::Abi for D3D12_ELEMENTS_LAYOUT {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RAYTRACING_GEOMETRY_TYPE(pub i32);
+impl D3D12_RAYTRACING_GEOMETRY_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES: Self = Self(0i32);
+    pub const D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_RAYTRACING_GEOMETRY_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TYPE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RAYTRACING_GEOMETRY_FLAGS(pub i32);
+impl D3D12_RAYTRACING_GEOMETRY_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE: Self = Self(1i32);
+    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION: Self = Self(2i32);
+}
+impl ::std::convert::From<i32> for D3D12_RAYTRACING_GEOMETRY_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_FLAGS {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+    pub start_address: u64,
+    pub stride_in_bytes: u64,
+}
+impl D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
+impl ::std::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+    fn default() -> Self {
+        Self {
+            start_address: 0,
+            stride_in_bytes: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE")
+            .field("start_address", &format_args!("{:?}", self.start_address))
+            .field(
+                "stride_in_bytes",
+                &format_args!("{:?}", self.stride_in_bytes),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+    fn eq(&self, other: &Self) -> bool {
+        self.start_address == other.start_address && self.stride_in_bytes == other.stride_in_bytes
+    }
+}
+impl ::std::cmp::Eq for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
+unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+    pub transform3x4: u64,
+    pub index_format: super::dxgi::DXGI_FORMAT,
+    pub vertex_format: super::dxgi::DXGI_FORMAT,
+    pub index_count: u32,
+    pub vertex_count: u32,
+    pub index_buffer: u64,
+    pub vertex_buffer: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
+}
+impl D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+    fn default() -> Self {
+        Self {
+            transform3x4: 0,
+            index_format: ::std::default::Default::default(),
+            vertex_format: ::std::default::Default::default(),
+            index_count: 0,
+            vertex_count: 0,
+            index_buffer: 0,
+            vertex_buffer: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC")
+            .field("transform3x4", &format_args!("{:?}", self.transform3x4))
+            .field("index_format", &format_args!("{:?}", self.index_format))
+            .field("vertex_format", &format_args!("{:?}", self.vertex_format))
+            .field("index_count", &format_args!("{:?}", self.index_count))
+            .field("vertex_count", &format_args!("{:?}", self.vertex_count))
+            .field("index_buffer", &format_args!("{:?}", self.index_buffer))
+            .field("vertex_buffer", &format_args!("{:?}", self.vertex_buffer))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.transform3x4 == other.transform3x4
+            && self.index_format == other.index_format
+            && self.vertex_format == other.vertex_format
+            && self.index_count == other.index_count
+            && self.vertex_count == other.vertex_count
+            && self.index_buffer == other.index_buffer
+            && self.vertex_buffer == other.vertex_buffer
+    }
+}
+impl ::std::cmp::Eq for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+    pub aabb_count: u64,
+    pub aab_bs: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
+}
+impl D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
+impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+    fn default() -> Self {
+        Self {
+            aabb_count: 0,
+            aab_bs: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_AABBS_DESC")
+            .field("aabb_count", &format_args!("{:?}", self.aabb_count))
+            .field("aab_bs", &format_args!("{:?}", self.aab_bs))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.aabb_count == other.aabb_count && self.aab_bs == other.aab_bs
+    }
+}
+impl ::std::cmp::Eq for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RAYTRACING_GEOMETRY_DESC {
+    pub r#type: D3D12_RAYTRACING_GEOMETRY_TYPE,
+    pub flags: D3D12_RAYTRACING_GEOMETRY_FLAGS,
+    pub anonymous: D3D12_RAYTRACING_GEOMETRY_DESC_0,
+}
+impl D3D12_RAYTRACING_GEOMETRY_DESC {}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RAYTRACING_GEOMETRY_DESC_0 {
+    pub triangles: D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC,
+    pub aab_bs: D3D12_RAYTRACING_GEOMETRY_AABBS_DESC,
+}
+impl D3D12_RAYTRACING_GEOMETRY_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_DESC_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     pub r#type: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE,
     pub flags: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BUILD_FLAGS,
     pub num_descs: u32,
     pub descs_layout: D3D12_ELEMENTS_LAYOUT,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0,
 }
 impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {}
-impl ::std::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-            num_descs: 0,
-            descs_layout: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("num_descs", &format_args!("{:?}", self.num_descs))
-            .field("descs_layout", &format_args!("{:?}", self.descs_layout))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.flags == other.flags
-            && self.num_descs == other.num_descs
-            && self.descs_layout == other.descs_layout
-            && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {}
 unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
+    pub instance_descs: u64,
+    pub p_geometry_descs: *mut D3D12_RAYTRACING_GEOMETRY_DESC,
+    pub pp_geometry_descs: *mut *mut D3D12_RAYTRACING_GEOMETRY_DESC,
+}
+impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {}
+unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     pub dest_acceleration_structure_data: u64,
     pub inputs: D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_INPUTS,
@@ -7151,50 +8035,12 @@ pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     pub scratch_acceleration_structure_data: u64,
 }
 impl D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {}
-impl ::std::default::Default for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
-    fn default() -> Self {
-        Self {
-            dest_acceleration_structure_data: 0,
-            inputs: ::std::default::Default::default(),
-            source_acceleration_structure_data: 0,
-            scratch_acceleration_structure_data: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC")
-            .field(
-                "dest_acceleration_structure_data",
-                &format_args!("{:?}", self.dest_acceleration_structure_data),
-            )
-            .field("inputs", &format_args!("{:?}", self.inputs))
-            .field(
-                "source_acceleration_structure_data",
-                &format_args!("{:?}", self.source_acceleration_structure_data),
-            )
-            .field(
-                "scratch_acceleration_structure_data",
-                &format_args!("{:?}", self.scratch_acceleration_structure_data),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.dest_acceleration_structure_data == other.dest_acceleration_structure_data
-            && self.inputs == other.inputs
-            && self.source_acceleration_structure_data == other.source_acceleration_structure_data
-            && self.scratch_acceleration_structure_data == other.scratch_acceleration_structure_data
-    }
-}
-impl ::std::cmp::Eq for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {}
 unsafe impl ::windows::Abi for D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_DESC {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER {
     pub r#type: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_TYPE,
     pub num_descs: u32,
@@ -7215,7 +8061,7 @@ impl ::std::fmt::Debug
 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_BUILD_RAYTRACING_ACCELERATION_STRUCTURE_TOOLS_VISUALIZATION_HEADER")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("num_descs", &format_args!("{:?}", self.num_descs))
             .finish()
     }
@@ -7235,7 +8081,7 @@ unsafe impl ::windows::Abi
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_CACHED_PIPELINE_STATE {
     pub p_cached_blob: *mut ::std::ffi::c_void,
     pub cached_blob_size_in_bytes: usize,
@@ -7272,35 +8118,57 @@ unsafe impl ::windows::Abi for D3D12_CACHED_PIPELINE_STATE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_CLEAR_VALUE {
-    pub format: super::dxgi::DXGI_FORMAT,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DEPTH_STENCIL_VALUE {
+    pub depth: f32,
+    pub stencil: u8,
 }
-impl D3D12_CLEAR_VALUE {}
-impl ::std::default::Default for D3D12_CLEAR_VALUE {
+impl D3D12_DEPTH_STENCIL_VALUE {}
+impl ::std::default::Default for D3D12_DEPTH_STENCIL_VALUE {
     fn default() -> Self {
         Self {
-            format: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
+            depth: 0.0,
+            stencil: 0,
         }
     }
 }
-impl ::std::fmt::Debug for D3D12_CLEAR_VALUE {
+impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VALUE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_CLEAR_VALUE")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
+        fmt.debug_struct("D3D12_DEPTH_STENCIL_VALUE")
+            .field("depth", &format_args!("{:?}", self.depth))
+            .field("stencil", &format_args!("{:?}", self.stencil))
             .finish()
     }
 }
-impl ::std::cmp::PartialEq for D3D12_CLEAR_VALUE {
+impl ::std::cmp::PartialEq for D3D12_DEPTH_STENCIL_VALUE {
     fn eq(&self, other: &Self) -> bool {
-        self.format == other.format && self.anonymous == other.anonymous
+        self.depth == other.depth && self.stencil == other.stencil
     }
 }
-impl ::std::cmp::Eq for D3D12_CLEAR_VALUE {}
+impl ::std::cmp::Eq for D3D12_DEPTH_STENCIL_VALUE {}
+unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VALUE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_CLEAR_VALUE {
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub anonymous: D3D12_CLEAR_VALUE_0,
+}
+impl D3D12_CLEAR_VALUE {}
 unsafe impl ::windows::Abi for D3D12_CLEAR_VALUE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_CLEAR_VALUE_0 {
+    pub color: [f32; 4usize],
+    pub depth_stencil: D3D12_DEPTH_STENCIL_VALUE,
+}
+impl D3D12_CLEAR_VALUE_0 {}
+unsafe impl ::windows::Abi for D3D12_CLEAR_VALUE_0 {
     type Abi = Self;
 }
 pub const D3D12_CLIP_OR_CULL_DISTANCE_COUNT: u32 = 8u32;
@@ -7491,40 +8359,206 @@ unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INDIRECT_ARGUMENT_DESC {
     pub r#type: D3D12_INDIRECT_ARGUMENT_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_INDIRECT_ARGUMENT_DESC_0,
 }
 impl D3D12_INDIRECT_ARGUMENT_DESC {}
-impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_INDIRECT_ARGUMENT_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC {}
 unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_INDIRECT_ARGUMENT_DESC_0 {
+    pub vertex_buffer: D3D12_INDIRECT_ARGUMENT_DESC_0_4,
+    pub constant: D3D12_INDIRECT_ARGUMENT_DESC_0_1,
+    pub constant_buffer_view: D3D12_INDIRECT_ARGUMENT_DESC_0_0,
+    pub shader_resource_view: D3D12_INDIRECT_ARGUMENT_DESC_0_2,
+    pub unordered_access_view: D3D12_INDIRECT_ARGUMENT_DESC_0_3,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDIRECT_ARGUMENT_DESC_0_0 {
+    pub root_parameter_index: u32,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0_0 {}
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_0 {
+    fn default() -> Self {
+        Self {
+            root_parameter_index: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_0 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("_ConstantBufferView_e__Struct")
+            .field(
+                "root_parameter_index",
+                &format_args!("{:?}", self.root_parameter_index),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC_0_0 {
+    fn eq(&self, other: &Self) -> bool {
+        self.root_parameter_index == other.root_parameter_index
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC_0_0 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+    pub root_parameter_index: u32,
+    pub dest_offset_in32_bit_values: u32,
+    pub num32_bit_values_to_set: u32,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0_1 {}
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+    fn default() -> Self {
+        Self {
+            root_parameter_index: 0,
+            dest_offset_in32_bit_values: 0,
+            num32_bit_values_to_set: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("_Constant_e__Struct")
+            .field(
+                "root_parameter_index",
+                &format_args!("{:?}", self.root_parameter_index),
+            )
+            .field(
+                "dest_offset_in32_bit_values",
+                &format_args!("{:?}", self.dest_offset_in32_bit_values),
+            )
+            .field(
+                "num32_bit_values_to_set",
+                &format_args!("{:?}", self.num32_bit_values_to_set),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+    fn eq(&self, other: &Self) -> bool {
+        self.root_parameter_index == other.root_parameter_index
+            && self.dest_offset_in32_bit_values == other.dest_offset_in32_bit_values
+            && self.num32_bit_values_to_set == other.num32_bit_values_to_set
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_1 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDIRECT_ARGUMENT_DESC_0_2 {
+    pub root_parameter_index: u32,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0_2 {}
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_2 {
+    fn default() -> Self {
+        Self {
+            root_parameter_index: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_2 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("_ShaderResourceView_e__Struct")
+            .field(
+                "root_parameter_index",
+                &format_args!("{:?}", self.root_parameter_index),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC_0_2 {
+    fn eq(&self, other: &Self) -> bool {
+        self.root_parameter_index == other.root_parameter_index
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC_0_2 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_2 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDIRECT_ARGUMENT_DESC_0_3 {
+    pub root_parameter_index: u32,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0_3 {}
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_3 {
+    fn default() -> Self {
+        Self {
+            root_parameter_index: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_3 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("_UnorderedAccessView_e__Struct")
+            .field(
+                "root_parameter_index",
+                &format_args!("{:?}", self.root_parameter_index),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC_0_3 {
+    fn eq(&self, other: &Self) -> bool {
+        self.root_parameter_index == other.root_parameter_index
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC_0_3 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_3 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDIRECT_ARGUMENT_DESC_0_4 {
+    pub slot: u32,
+}
+impl D3D12_INDIRECT_ARGUMENT_DESC_0_4 {}
+impl ::std::default::Default for D3D12_INDIRECT_ARGUMENT_DESC_0_4 {
+    fn default() -> Self {
+        Self { slot: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDIRECT_ARGUMENT_DESC_0_4 {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("_VertexBuffer_e__Struct")
+            .field("slot", &format_args!("{:?}", self.slot))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDIRECT_ARGUMENT_DESC_0_4 {
+    fn eq(&self, other: &Self) -> bool {
+        self.slot == other.slot
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDIRECT_ARGUMENT_DESC_0_4 {}
+unsafe impl ::windows::Abi for D3D12_INDIRECT_ARGUMENT_DESC_0_4 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_COMMAND_SIGNATURE_DESC {
     pub byte_stride: u32,
     pub num_argument_descs: u32,
@@ -7607,7 +8641,7 @@ pub const D3D12_COMMONSHADER_TEXEL_OFFSET_MAX_NEGATIVE: i32 = -8i32;
 pub const D3D12_COMMONSHADER_TEXEL_OFFSET_MAX_POSITIVE: u32 = 7u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_BYTECODE {
     pub p_shader_bytecode: *mut ::std::ffi::c_void,
     pub bytecode_length: usize,
@@ -7717,13 +8751,14 @@ impl ::std::cmp::PartialEq for D3D12_COMPUTE_PIPELINE_STATE_DESC {
 impl ::std::cmp::Eq for D3D12_COMPUTE_PIPELINE_STATE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_COMPUTE_PIPELINE_STATE_DESC_abi(
-    ::windows::RawPtr,
-    D3D12_SHADER_BYTECODE,
-    u32,
-    D3D12_CACHED_PIPELINE_STATE,
-    D3D12_PIPELINE_STATE_FLAGS,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_COMPUTE_PIPELINE_STATE_DESC_abi {
+    pub p_root_signature: ::windows::RawPtr,
+    pub cs: D3D12_SHADER_BYTECODE,
+    pub node_mask: u32,
+    pub cached_pso: D3D12_CACHED_PIPELINE_STATE,
+    pub flags: D3D12_PIPELINE_STATE_FLAGS,
+}
 unsafe impl ::windows::Abi for D3D12_COMPUTE_PIPELINE_STATE_DESC {
     type Abi = D3D12_COMPUTE_PIPELINE_STATE_DESC_abi;
 }
@@ -7780,7 +8815,7 @@ unsafe impl ::windows::Abi for D3D12_CONSERVATIVE_RASTERIZATION_TIER {
 pub const D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT: u32 = 256u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_CONSTANT_BUFFER_VIEW_DESC {
     pub buffer_location: u64,
     pub size_in_bytes: u32,
@@ -7954,7 +8989,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEBUG_COMMAND_LIST_GPU_BASED_VALIDATION_SETTINGS {
     pub shader_patch_mode: D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE,
 }
@@ -8037,7 +9072,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_BASED_VALIDATION_PIPELINE_STATE_CREATE_
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS {
     pub max_messages_per_command_list: u32,
     pub default_shader_patch_mode: D3D12_GPU_BASED_VALIDATION_SHADER_PATCH_MODE,
@@ -8084,7 +9119,7 @@ unsafe impl ::windows::Abi for D3D12_DEBUG_DEVICE_GPU_BASED_VALIDATION_SETTINGS 
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEBUG_DEVICE_GPU_SLOWDOWN_PERFORMANCE_FACTOR {
     pub slowdown_factor: f32,
 }
@@ -8228,7 +9263,7 @@ unsafe impl ::windows::Abi for D3D12_STENCIL_OP {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEPTH_STENCILOP_DESC {
     pub stencil_fail_op: D3D12_STENCIL_OP,
     pub stencil_depth_fail_op: D3D12_STENCIL_OP,
@@ -8303,7 +9338,7 @@ unsafe impl ::windows::Abi for D3D12_DEPTH_WRITE_MASK {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEPTH_STENCIL_DESC {
     pub depth_enable: super::system_services::BOOL,
     pub depth_write_mask: D3D12_DEPTH_WRITE_MASK,
@@ -8370,7 +9405,7 @@ unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEPTH_STENCIL_DESC1 {
     pub depth_enable: super::system_services::BOOL,
     pub depth_write_mask: D3D12_DEPTH_WRITE_MASK,
@@ -8442,39 +9477,6 @@ impl ::std::cmp::Eq for D3D12_DEPTH_STENCIL_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_DESC1 {
     type Abi = Self;
 }
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_DEPTH_STENCIL_VALUE {
-    pub depth: f32,
-    pub stencil: u8,
-}
-impl D3D12_DEPTH_STENCIL_VALUE {}
-impl ::std::default::Default for D3D12_DEPTH_STENCIL_VALUE {
-    fn default() -> Self {
-        Self {
-            depth: 0.0,
-            stencil: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VALUE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DEPTH_STENCIL_VALUE")
-            .field("depth", &format_args!("{:?}", self.depth))
-            .field("stencil", &format_args!("{:?}", self.stencil))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DEPTH_STENCIL_VALUE {
-    fn eq(&self, other: &Self) -> bool {
-        self.depth == other.depth && self.stencil == other.stencil
-    }
-}
-impl ::std::cmp::Eq for D3D12_DEPTH_STENCIL_VALUE {}
-unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VALUE {
-    type Abi = Self;
-}
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -8531,215 +9533,237 @@ unsafe impl ::windows::Abi for D3D12_DSV_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_DSV {
+    pub mip_slice: u32,
+}
+impl D3D12_TEX1D_DSV {}
+impl ::std::default::Default for D3D12_TEX1D_DSV {
+    fn default() -> Self {
+        Self { mip_slice: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX1D_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX1D_DSV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX1D_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX1D_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_ARRAY_DSV {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX1D_ARRAY_DSV {}
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_DSV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX1D_ARRAY_DSV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_DSV {
+    pub mip_slice: u32,
+}
+impl D3D12_TEX2D_DSV {}
+impl ::std::default::Default for D3D12_TEX2D_DSV {
+    fn default() -> Self {
+        Self { mip_slice: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_DSV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_ARRAY_DSV {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX2D_ARRAY_DSV {}
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_DSV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_ARRAY_DSV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_DSV {
+    pub unused_field_nothing_to_define: u32,
+}
+impl D3D12_TEX2DMS_DSV {}
+impl ::std::default::Default for D3D12_TEX2DMS_DSV {
+    fn default() -> Self {
+        Self {
+            unused_field_nothing_to_define: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_DSV")
+            .field(
+                "unused_field_nothing_to_define",
+                &format_args!("{:?}", self.unused_field_nothing_to_define),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_ARRAY_DSV {
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX2DMS_ARRAY_DSV {}
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_DSV {
+    fn default() -> Self {
+        Self {
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_DSV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_DSV")
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_DSV {
+    fn eq(&self, other: &Self) -> bool {
+        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_DSV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_DSV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEPTH_STENCIL_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D12_DSV_DIMENSION,
     pub flags: D3D12_DSV_FLAGS,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_DEPTH_STENCIL_VIEW_DESC_0,
 }
 impl D3D12_DEPTH_STENCIL_VIEW_DESC {}
-impl ::std::default::Default for D3D12_DEPTH_STENCIL_VIEW_DESC {
-    fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            view_dimension: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DEPTH_STENCIL_VIEW_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DEPTH_STENCIL_VIEW_DESC")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DEPTH_STENCIL_VIEW_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.view_dimension == other.view_dimension
-            && self.flags == other.flags
-            && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_DEPTH_STENCIL_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VIEW_DESC {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_DESCRIPTOR_RANGE_TYPE(pub i32);
-impl D3D12_DESCRIPTOR_RANGE_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_DESCRIPTOR_RANGE_TYPE_SRV: Self = Self(0i32);
-    pub const D3D12_DESCRIPTOR_RANGE_TYPE_UAV: Self = Self(1i32);
-    pub const D3D12_DESCRIPTOR_RANGE_TYPE_CBV: Self = Self(2i32);
-    pub const D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER: Self = Self(3i32);
-}
-impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_RANGE_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE_TYPE {
-    type Abi = Self;
-}
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_DESCRIPTOR_RANGE {
-    pub range_type: D3D12_DESCRIPTOR_RANGE_TYPE,
-    pub num_descriptors: u32,
-    pub base_shader_register: u32,
-    pub register_space: u32,
-    pub offset_in_descriptors_from_table_start: u32,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+    pub texture1d: D3D12_TEX1D_DSV,
+    pub texture1d_array: D3D12_TEX1D_ARRAY_DSV,
+    pub texture2d: D3D12_TEX2D_DSV,
+    pub texture2d_array: D3D12_TEX2D_ARRAY_DSV,
+    pub texture2dms: D3D12_TEX2DMS_DSV,
+    pub texture2dms_array: D3D12_TEX2DMS_ARRAY_DSV,
 }
-impl D3D12_DESCRIPTOR_RANGE {}
-impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE {
-    fn default() -> Self {
-        Self {
-            range_type: ::std::default::Default::default(),
-            num_descriptors: 0,
-            base_shader_register: 0,
-            register_space: 0,
-            offset_in_descriptors_from_table_start: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DESCRIPTOR_RANGE")
-            .field("range_type", &format_args!("{:?}", self.range_type))
-            .field(
-                "num_descriptors",
-                &format_args!("{:?}", self.num_descriptors),
-            )
-            .field(
-                "base_shader_register",
-                &format_args!("{:?}", self.base_shader_register),
-            )
-            .field("register_space", &format_args!("{:?}", self.register_space))
-            .field(
-                "offset_in_descriptors_from_table_start",
-                &format_args!("{:?}", self.offset_in_descriptors_from_table_start),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_RANGE {
-    fn eq(&self, other: &Self) -> bool {
-        self.range_type == other.range_type
-            && self.num_descriptors == other.num_descriptors
-            && self.base_shader_register == other.base_shader_register
-            && self.register_space == other.register_space
-            && self.offset_in_descriptors_from_table_start
-                == other.offset_in_descriptors_from_table_start
-    }
-}
-impl ::std::cmp::Eq for D3D12_DESCRIPTOR_RANGE {}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_DESCRIPTOR_RANGE_FLAGS(pub i32);
-impl D3D12_DESCRIPTOR_RANGE_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE: Self = Self(1i32);
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE: Self = Self(2i32);
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC: Self = Self(8i32);
-    pub const D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS: Self =
-        Self(65536i32);
-}
-impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_RANGE_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_DESCRIPTOR_RANGE1 {
-    pub range_type: D3D12_DESCRIPTOR_RANGE_TYPE,
-    pub num_descriptors: u32,
-    pub base_shader_register: u32,
-    pub register_space: u32,
-    pub flags: D3D12_DESCRIPTOR_RANGE_FLAGS,
-    pub offset_in_descriptors_from_table_start: u32,
-}
-impl D3D12_DESCRIPTOR_RANGE1 {}
-impl ::std::default::Default for D3D12_DESCRIPTOR_RANGE1 {
-    fn default() -> Self {
-        Self {
-            range_type: ::std::default::Default::default(),
-            num_descriptors: 0,
-            base_shader_register: 0,
-            register_space: 0,
-            flags: ::std::default::Default::default(),
-            offset_in_descriptors_from_table_start: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DESCRIPTOR_RANGE1 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DESCRIPTOR_RANGE1")
-            .field("range_type", &format_args!("{:?}", self.range_type))
-            .field(
-                "num_descriptors",
-                &format_args!("{:?}", self.num_descriptors),
-            )
-            .field(
-                "base_shader_register",
-                &format_args!("{:?}", self.base_shader_register),
-            )
-            .field("register_space", &format_args!("{:?}", self.register_space))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field(
-                "offset_in_descriptors_from_table_start",
-                &format_args!("{:?}", self.offset_in_descriptors_from_table_start),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_RANGE1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.range_type == other.range_type
-            && self.num_descriptors == other.num_descriptors
-            && self.base_shader_register == other.base_shader_register
-            && self.register_space == other.register_space
-            && self.flags == other.flags
-            && self.offset_in_descriptors_from_table_start
-                == other.offset_in_descriptors_from_table_start
-    }
-}
-impl ::std::cmp::Eq for D3D12_DESCRIPTOR_RANGE1 {}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_RANGE1 {
+impl D3D12_DEPTH_STENCIL_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     type Abi = Self;
 }
 pub const D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND: u32 = 4294967295u32;
@@ -8770,7 +9794,7 @@ unsafe impl ::windows::Abi for D3D12_DRED_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA {
     pub flags: D3D12_DRED_FLAGS,
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE,
@@ -8807,7 +9831,7 @@ unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT {
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE,
 }
@@ -8889,7 +9913,7 @@ unsafe impl ::windows::Abi for D3D12_DRED_ALLOCATION_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_ALLOCATION_NODE {
     pub object_namea: *mut u8,
     pub object_namew: super::system_services::PWSTR,
@@ -8934,7 +9958,7 @@ unsafe impl ::windows::Abi for D3D12_DRED_ALLOCATION_NODE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_PAGE_FAULT_OUTPUT {
     pub page_fault_va: u64,
     pub p_head_existing_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE,
@@ -8978,7 +10002,7 @@ unsafe impl ::windows::Abi for D3D12_DRED_PAGE_FAULT_OUTPUT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
     pub device_removed_reason: ::windows::ErrorCode,
     pub auto_breadcrumbs_output: D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT,
@@ -9025,7 +10049,7 @@ unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA1 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 {
     pub p_head_auto_breadcrumb_node: *mut D3D12_AUTO_BREADCRUMB_NODE1,
 }
@@ -9104,19 +10128,20 @@ impl ::std::cmp::PartialEq for D3D12_DRED_ALLOCATION_NODE1 {
 impl ::std::cmp::Eq for D3D12_DRED_ALLOCATION_NODE1 {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_DRED_ALLOCATION_NODE1_abi(
-    *mut u8,
-    super::system_services::PWSTR,
-    D3D12_DRED_ALLOCATION_TYPE,
-    *mut D3D12_DRED_ALLOCATION_NODE1_abi,
-    ::windows::RawPtr,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DRED_ALLOCATION_NODE1_abi {
+    pub object_namea: *mut u8,
+    pub object_namew: super::system_services::PWSTR,
+    pub allocation_type: D3D12_DRED_ALLOCATION_TYPE,
+    pub p_next: *mut D3D12_DRED_ALLOCATION_NODE1_abi,
+    pub p_object: ::windows::RawPtr,
+}
 unsafe impl ::windows::Abi for D3D12_DRED_ALLOCATION_NODE1 {
     type Abi = D3D12_DRED_ALLOCATION_NODE1_abi;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRED_PAGE_FAULT_OUTPUT1 {
     pub page_fault_va: u64,
     pub p_head_existing_allocation_node: *mut D3D12_DRED_ALLOCATION_NODE1,
@@ -9160,7 +10185,7 @@ unsafe impl ::windows::Abi for D3D12_DRED_PAGE_FAULT_OUTPUT1 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
     pub device_removed_reason: ::windows::ErrorCode,
     pub auto_breadcrumbs_output: D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1,
@@ -9207,7 +10232,7 @@ unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DISPATCH_ARGUMENTS {
     pub thread_group_countx: u32,
     pub thread_group_county: u32,
@@ -9254,7 +10279,7 @@ unsafe impl ::windows::Abi for D3D12_DISPATCH_ARGUMENTS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DISPATCH_MESH_ARGUMENTS {
     pub thread_group_countx: u32,
     pub thread_group_county: u32,
@@ -9301,7 +10326,7 @@ unsafe impl ::windows::Abi for D3D12_DISPATCH_MESH_ARGUMENTS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
     pub start_address: u64,
     pub size_in_bytes: u64,
@@ -9334,7 +10359,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_RANGE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
     pub start_address: u64,
     pub size_in_bytes: u64,
@@ -9375,7 +10400,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DISPATCH_RAYS_DESC {
     pub ray_generation_shader_record: D3D12_GPU_VIRTUAL_ADDRESS_RANGE,
     pub miss_shader_table: D3D12_GPU_VIRTUAL_ADDRESS_RANGE_AND_STRIDE,
@@ -9441,7 +10466,7 @@ unsafe impl ::windows::Abi for D3D12_DISPATCH_RAYS_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRAW_ARGUMENTS {
     pub vertex_count_per_instance: u32,
     pub instance_count: u32,
@@ -9492,7 +10517,7 @@ unsafe impl ::windows::Abi for D3D12_DRAW_ARGUMENTS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DRAW_INDEXED_ARGUMENTS {
     pub index_count_per_instance: u32,
     pub instance_count: u32,
@@ -9676,7 +10701,7 @@ unsafe impl ::windows::Abi for D3D12_EXPORT_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_EXPORT_DESC {
     pub name: super::system_services::PWSTR,
     pub export_to_rename: super::system_services::PWSTR,
@@ -9717,7 +10742,7 @@ unsafe impl ::windows::Abi for D3D12_EXPORT_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DXIL_LIBRARY_DESC {
     pub dxil_library: D3D12_SHADER_BYTECODE,
     pub num_exports: u32,
@@ -9755,7 +10780,7 @@ unsafe impl ::windows::Abi for D3D12_DXIL_LIBRARY_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     pub subobject_to_associate: super::system_services::PWSTR,
     pub num_exports: u32,
@@ -9795,6 +10820,7 @@ unsafe impl ::windows::Abi for D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -10037,7 +11063,12 @@ impl ::std::cmp::PartialEq for D3D12_EXISTING_COLLECTION_DESC {
 impl ::std::cmp::Eq for D3D12_EXISTING_COLLECTION_DESC {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_EXISTING_COLLECTION_DESC_abi(::windows::RawPtr, u32, *mut D3D12_EXPORT_DESC);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_EXISTING_COLLECTION_DESC_abi {
+    pub p_existing_collection: ::windows::RawPtr,
+    pub num_exports: u32,
+    pub p_exports: *mut D3D12_EXPORT_DESC,
+}
 unsafe impl ::windows::Abi for D3D12_EXISTING_COLLECTION_DESC {
     type Abi = D3D12_EXISTING_COLLECTION_DESC_abi;
 }
@@ -10091,7 +11122,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_ARCHITECTURE {
     pub node_index: u32,
     pub tile_based_renderer: super::system_services::BOOL,
@@ -10139,7 +11170,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_ARCHITECTURE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_ARCHITECTURE1 {
     pub node_index: u32,
     pub tile_based_renderer: super::system_services::BOOL,
@@ -10191,7 +11222,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_ARCHITECTURE1 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
     pub command_list_type: D3D12_COMMAND_LIST_TYPE,
     pub priority: u32,
@@ -10235,7 +11266,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_COMMAND_QUEUE_PRIORITY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_CROSS_NODE {
     pub sharing_tier: D3D12_CROSS_NODE_SHARING_TIER,
     pub atomic_shader_instructions: super::system_services::BOOL,
@@ -10373,7 +11404,7 @@ unsafe impl ::windows::Abi for D3D12_RESOURCE_HEAP_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS {
     pub double_precision_float_shader_ops: super::system_services::BOOL,
     pub output_merger_logic_op: super::system_services::BOOL,
@@ -10414,7 +11445,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS1 {
     pub wave_ops: super::system_services::BOOL,
     pub wave_lane_count_min: u32,
@@ -10504,7 +11535,7 @@ unsafe impl ::windows::Abi for D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS2 {
     pub depth_bounds_test_supported: super::system_services::BOOL,
     pub programmable_sample_positions_tier: D3D12_PROGRAMMABLE_SAMPLE_POSITIONS_TIER,
@@ -10570,7 +11601,7 @@ unsafe impl ::windows::Abi for D3D12_VIEW_INSTANCING_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS3 {
     pub copy_queue_timestamp_queries_supported: super::system_services::BOOL,
     pub casting_fully_typed_format_supported: super::system_services::BOOL,
@@ -10658,7 +11689,7 @@ unsafe impl ::windows::Abi for D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS4 {
     pub msaa64kb_aligned_texture_supported: super::system_services::BOOL,
     pub shared_resource_compatibility_tier: D3D12_SHARED_RESOURCE_COMPATIBILITY_TIER,
@@ -10755,7 +11786,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS5 {
     pub srv_only_tiled_resource_tier3: super::system_services::BOOL,
     pub render_passes_tier: D3D12_RENDER_PASS_TIER,
@@ -10827,7 +11858,7 @@ unsafe impl ::windows::Abi for D3D12_VARIABLE_SHADING_RATE_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS6 {
     pub additional_shading_rates_supported: super::system_services::BOOL,
     pub per_primitive_shading_rate_supported_with_viewport_indexing: super::system_services::BOOL,
@@ -10942,7 +11973,7 @@ unsafe impl ::windows::Abi for D3D12_SAMPLER_FEEDBACK_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
     pub mesh_shader_tier: D3D12_MESH_SHADER_TIER,
     pub sampler_feedback_tier: D3D12_SAMPLER_FEEDBACK_TIER,
@@ -10982,7 +12013,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_D3D12_OPTIONS7 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_EXISTING_HEAPS {
     pub supported: super::system_services::BOOL,
 }
@@ -11012,7 +12043,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_EXISTING_HEAPS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_FEATURE_LEVELS {
     pub num_feature_levels: u32,
     pub p_feature_levels_requested: *mut super::direct3d11::D3D_FEATURE_LEVEL,
@@ -11059,7 +12090,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_FEATURE_LEVELS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_FORMAT_INFO {
     pub format: super::dxgi::DXGI_FORMAT,
     pub plane_count: u8,
@@ -11179,7 +12210,7 @@ unsafe impl ::windows::Abi for D3D12_FORMAT_SUPPORT2 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_FORMAT_SUPPORT {
     pub format: super::dxgi::DXGI_FORMAT,
     pub support1: D3D12_FORMAT_SUPPORT1,
@@ -11217,7 +12248,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_FORMAT_SUPPORT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT {
     pub max_gpu_virtual_address_bits_per_resource: u32,
     pub max_gpu_virtual_address_bits_per_process: u32,
@@ -11283,7 +12314,7 @@ unsafe impl ::windows::Abi for D3D12_MULTISAMPLE_QUALITY_LEVEL_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS {
     pub format: super::dxgi::DXGI_FORMAT,
     pub sample_count: u32,
@@ -11352,7 +12383,7 @@ unsafe impl ::windows::Abi for D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUPPORT {
     pub node_index: u32,
     pub support: D3D12_PROTECTED_RESOURCE_SESSION_SUPPORT_FLAGS,
@@ -11385,7 +12416,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_SUP
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPES {
     pub node_index: u32,
     pub count: u32,
@@ -11423,7 +12454,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYP
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYPE_COUNT {
     pub node_index: u32,
     pub count: u32,
@@ -11456,7 +12487,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_PROTECTED_RESOURCE_SESSION_TYP
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_QUERY_META_COMMAND {
     pub command_id: ::windows::Guid,
     pub node_mask: u32,
@@ -11518,7 +12549,7 @@ unsafe impl ::windows::Abi for D3D12_FEATURE_DATA_QUERY_META_COMMAND {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_ROOT_SIGNATURE {
     pub highest_version: D3D_ROOT_SIGNATURE_VERSION,
 }
@@ -11575,7 +12606,7 @@ unsafe impl ::windows::Abi for D3D12_HEAP_SERIALIZATION_TIER {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_SERIALIZATION {
     pub node_index: u32,
     pub heap_serialization_tier: D3D12_HEAP_SERIALIZATION_TIER,
@@ -11639,7 +12670,7 @@ unsafe impl ::windows::Abi for D3D12_SHADER_CACHE_SUPPORT_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_SHADER_CACHE {
     pub support_flags: D3D12_SHADER_CACHE_SUPPORT_FLAGS,
 }
@@ -11699,7 +12730,7 @@ unsafe impl ::windows::Abi for D3D_SHADER_MODEL {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FEATURE_DATA_SHADER_MODEL {
     pub highest_shader_model: D3D_SHADER_MODEL,
 }
@@ -11848,7 +12879,7 @@ pub const D3D12_FTOU_INSTRUCTION_MAX_INPUT: f32 = 4294967300f32;
 pub const D3D12_FTOU_INSTRUCTION_MIN_INPUT: f32 = 0f32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_FUNCTION_DESC {
     pub version: u32,
     pub creator: super::system_services::PSTR,
@@ -12114,7 +13145,10 @@ impl ::std::cmp::PartialEq for D3D12_GLOBAL_ROOT_SIGNATURE {
 impl ::std::cmp::Eq for D3D12_GLOBAL_ROOT_SIGNATURE {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_GLOBAL_ROOT_SIGNATURE_abi(::windows::RawPtr);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_GLOBAL_ROOT_SIGNATURE_abi {
+    pub p_global_root_signature: ::windows::RawPtr,
+}
 unsafe impl ::windows::Abi for D3D12_GLOBAL_ROOT_SIGNATURE {
     type Abi = D3D12_GLOBAL_ROOT_SIGNATURE_abi;
 }
@@ -12144,43 +13178,7 @@ unsafe impl ::windows::Abi for D3D12_GPU_BASED_VALIDATION_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
-    pub start_address: u64,
-    pub stride_in_bytes: u64,
-}
-impl D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
-impl ::std::default::Default for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
-    fn default() -> Self {
-        Self {
-            start_address: 0,
-            stride_in_bytes: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE")
-            .field("start_address", &format_args!("{:?}", self.start_address))
-            .field(
-                "stride_in_bytes",
-                &format_args!("{:?}", self.stride_in_bytes),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
-    fn eq(&self, other: &Self) -> bool {
-        self.start_address == other.start_address && self.stride_in_bytes == other.stride_in_bytes
-    }
-}
-impl ::std::cmp::Eq for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {}
-unsafe impl ::windows::Abi for D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SO_DECLARATION_ENTRY {
     pub stream: u32,
     pub semantic_name: super::system_services::PSTR,
@@ -12236,7 +13234,7 @@ unsafe impl ::windows::Abi for D3D12_SO_DECLARATION_ENTRY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STREAM_OUTPUT_DESC {
     pub p_so_declaration: *mut D3D12_SO_DECLARATION_ENTRY,
     pub num_entries: u32,
@@ -12291,7 +13289,7 @@ unsafe impl ::windows::Abi for D3D12_STREAM_OUTPUT_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RASTERIZER_DESC {
     pub fill_mode: D3D12_FILL_MODE,
     pub cull_mode: D3D12_CULL_MODE,
@@ -12409,7 +13407,7 @@ unsafe impl ::windows::Abi for D3D12_INPUT_CLASSIFICATION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INPUT_ELEMENT_DESC {
     pub semantic_name: super::system_services::PSTR,
     pub semantic_index: u32,
@@ -12472,7 +13470,7 @@ unsafe impl ::windows::Abi for D3D12_INPUT_ELEMENT_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INPUT_LAYOUT_DESC {
     pub p_input_element_descs: *mut D3D12_INPUT_ELEMENT_DESC,
     pub num_elements: u32,
@@ -12695,29 +13693,30 @@ impl ::std::cmp::PartialEq for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
 impl ::std::cmp::Eq for D3D12_GRAPHICS_PIPELINE_STATE_DESC {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi(
-    ::windows::RawPtr,
-    D3D12_SHADER_BYTECODE,
-    D3D12_SHADER_BYTECODE,
-    D3D12_SHADER_BYTECODE,
-    D3D12_SHADER_BYTECODE,
-    D3D12_SHADER_BYTECODE,
-    D3D12_STREAM_OUTPUT_DESC,
-    D3D12_BLEND_DESC,
-    u32,
-    D3D12_RASTERIZER_DESC,
-    D3D12_DEPTH_STENCIL_DESC,
-    D3D12_INPUT_LAYOUT_DESC,
-    D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
-    D3D12_PRIMITIVE_TOPOLOGY_TYPE,
-    u32,
-    [super::dxgi::DXGI_FORMAT; 8usize],
-    super::dxgi::DXGI_FORMAT,
-    super::dxgi::DXGI_SAMPLE_DESC,
-    u32,
-    D3D12_CACHED_PIPELINE_STATE,
-    D3D12_PIPELINE_STATE_FLAGS,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi {
+    pub p_root_signature: ::windows::RawPtr,
+    pub vs: D3D12_SHADER_BYTECODE,
+    pub ps: D3D12_SHADER_BYTECODE,
+    pub ds: D3D12_SHADER_BYTECODE,
+    pub hs: D3D12_SHADER_BYTECODE,
+    pub gs: D3D12_SHADER_BYTECODE,
+    pub stream_output: D3D12_STREAM_OUTPUT_DESC,
+    pub blend_state: D3D12_BLEND_DESC,
+    pub sample_mask: u32,
+    pub rasterizer_state: D3D12_RASTERIZER_DESC,
+    pub depth_stencil_state: D3D12_DEPTH_STENCIL_DESC,
+    pub input_layout: D3D12_INPUT_LAYOUT_DESC,
+    pub ib_strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
+    pub primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
+    pub num_render_targets: u32,
+    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8usize],
+    pub dsv_format: super::dxgi::DXGI_FORMAT,
+    pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
+    pub node_mask: u32,
+    pub cached_pso: D3D12_CACHED_PIPELINE_STATE,
+    pub flags: D3D12_PIPELINE_STATE_FLAGS,
+}
 unsafe impl ::windows::Abi for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     type Abi = D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi;
 }
@@ -12809,7 +13808,7 @@ unsafe impl ::windows::Abi for D3D12_HIT_GROUP_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_HIT_GROUP_DESC {
     pub hit_group_export: super::system_services::PWSTR,
     pub r#type: D3D12_HIT_GROUP_TYPE,
@@ -12836,7 +13835,7 @@ impl ::std::fmt::Debug for D3D12_HIT_GROUP_DESC {
                 "hit_group_export",
                 &format_args!("{:?}", self.hit_group_export),
             )
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field(
                 "any_hit_shader_import",
                 &format_args!("{:?}", self.any_hit_shader_import),
@@ -14025,7 +15024,7 @@ unsafe impl ::windows::Abi for D3D12_MESSAGE_ID {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INFO_QUEUE_FILTER_DESC {
     pub num_categories: u32,
     pub p_category_list: *mut D3D12_MESSAGE_CATEGORY,
@@ -14081,7 +15080,7 @@ unsafe impl ::windows::Abi for D3D12_INFO_QUEUE_FILTER_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_INFO_QUEUE_FILTER {
     pub allow_list: D3D12_INFO_QUEUE_FILTER_DESC,
     pub deny_list: D3D12_INFO_QUEUE_FILTER_DESC,
@@ -14118,7 +15117,7 @@ pub const D3D12_KEEP_RENDER_TARGETS_AND_DEPTH_STENCIL: u32 = 4294967295u32;
 pub const D3D12_KEEP_UNORDERED_ACCESS_VIEWS: u32 = 4294967295u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_LIBRARY_DESC {
     pub creator: super::system_services::PSTR,
     pub flags: u32,
@@ -14211,7 +15210,10 @@ impl ::std::cmp::PartialEq for D3D12_LOCAL_ROOT_SIGNATURE {
 impl ::std::cmp::Eq for D3D12_LOCAL_ROOT_SIGNATURE {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_LOCAL_ROOT_SIGNATURE_abi(::windows::RawPtr);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_LOCAL_ROOT_SIGNATURE_abi {
+    pub p_local_root_signature: ::windows::RawPtr,
+}
 unsafe impl ::windows::Abi for D3D12_LOCAL_ROOT_SIGNATURE {
     type Abi = D3D12_LOCAL_ROOT_SIGNATURE_abi;
 }
@@ -14257,7 +15259,7 @@ unsafe impl ::windows::Abi for D3D12_MEASUREMENTS_ACTION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_MEMCPY_DEST {
     pub p_data: *mut ::std::ffi::c_void,
     pub row_pitch: usize,
@@ -14295,7 +15297,7 @@ unsafe impl ::windows::Abi for D3D12_MEMCPY_DEST {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_MESSAGE {
     pub category: D3D12_MESSAGE_CATEGORY,
     pub severity: D3D12_MESSAGE_SEVERITY,
@@ -14344,7 +15346,7 @@ unsafe impl ::windows::Abi for D3D12_MESSAGE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_META_COMMAND_DESC {
     pub id: ::windows::Guid,
     pub name: super::system_services::PWSTR,
@@ -14443,57 +15445,9 @@ impl ::std::convert::From<i32> for D3D12_META_COMMAND_PARAMETER_FLAGS {
 unsafe impl ::windows::Abi for D3D12_META_COMMAND_PARAMETER_FLAGS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_STATES(pub i32);
-impl D3D12_RESOURCE_STATES {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_STATE_COMMON: Self = Self(0i32);
-    pub const D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER: Self = Self(1i32);
-    pub const D3D12_RESOURCE_STATE_INDEX_BUFFER: Self = Self(2i32);
-    pub const D3D12_RESOURCE_STATE_RENDER_TARGET: Self = Self(4i32);
-    pub const D3D12_RESOURCE_STATE_UNORDERED_ACCESS: Self = Self(8i32);
-    pub const D3D12_RESOURCE_STATE_DEPTH_WRITE: Self = Self(16i32);
-    pub const D3D12_RESOURCE_STATE_DEPTH_READ: Self = Self(32i32);
-    pub const D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE: Self = Self(64i32);
-    pub const D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE: Self = Self(128i32);
-    pub const D3D12_RESOURCE_STATE_STREAM_OUT: Self = Self(256i32);
-    pub const D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT: Self = Self(512i32);
-    pub const D3D12_RESOURCE_STATE_COPY_DEST: Self = Self(1024i32);
-    pub const D3D12_RESOURCE_STATE_COPY_SOURCE: Self = Self(2048i32);
-    pub const D3D12_RESOURCE_STATE_RESOLVE_DEST: Self = Self(4096i32);
-    pub const D3D12_RESOURCE_STATE_RESOLVE_SOURCE: Self = Self(8192i32);
-    pub const D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE: Self = Self(4194304i32);
-    pub const D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE: Self = Self(16777216i32);
-    pub const D3D12_RESOURCE_STATE_GENERIC_READ: Self = Self(2755i32);
-    pub const D3D12_RESOURCE_STATE_PRESENT: Self = Self(0i32);
-    pub const D3D12_RESOURCE_STATE_PREDICATION: Self = Self(512i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_READ: Self = Self(65536i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE: Self = Self(131072i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ: Self = Self(262144i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE: Self = Self(524288i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_READ: Self = Self(2097152i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE: Self = Self(8388608i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_STATES {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_STATES {
-    type Abi = Self;
-}
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_META_COMMAND_PARAMETER_DESC {
     pub name: super::system_services::PWSTR,
     pub r#type: D3D12_META_COMMAND_PARAMETER_TYPE,
@@ -14517,7 +15471,7 @@ impl ::std::fmt::Debug for D3D12_META_COMMAND_PARAMETER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_META_COMMAND_PARAMETER_DESC")
             .field("name", &format_args!("{:?}", self.name))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("flags", &format_args!("{:?}", self.flags))
             .field(
                 "required_resource_state",
@@ -14580,7 +15534,7 @@ pub const D3D12_MIP_LOD_FRACTIONAL_BIT_COUNT: u32 = 8u32;
 pub const D3D12_MIP_LOD_RANGE_BIT_COUNT: u32 = 8u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_MIP_REGION {
     pub width: u32,
     pub height: u32,
@@ -14642,7 +15596,7 @@ unsafe impl ::windows::Abi for D3D12_MULTIPLE_FENCE_WAIT_FLAGS {
 pub const D3D12_MULTISAMPLE_ANTIALIAS_LINE_WIDTH: f32 = 1.4f32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_NODE_MASK {
     pub node_mask: u32,
 }
@@ -14673,7 +15627,7 @@ pub const D3D12_OS_RESERVED_REGISTER_SPACE_VALUES_END: u32 = 4294967295u32;
 pub const D3D12_OS_RESERVED_REGISTER_SPACE_VALUES_START: u32 = 4294967288u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_PACKED_MIP_INFO {
     pub num_standard_mips: u8,
     pub num_packed_mips: u8,
@@ -14729,7 +15683,7 @@ unsafe impl ::windows::Abi for D3D12_PACKED_MIP_INFO {
 pub const D3D12_PACKED_TILE: u32 = 4294967295u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_PARAMETER_DESC {
     pub name: super::system_services::PSTR,
     pub semantic_name: super::system_services::PSTR,
@@ -14768,7 +15722,7 @@ impl ::std::fmt::Debug for D3D12_PARAMETER_DESC {
         fmt.debug_struct("D3D12_PARAMETER_DESC")
             .field("name", &format_args!("{:?}", self.name))
             .field("semantic_name", &format_args!("{:?}", self.semantic_name))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("class", &format_args!("{:?}", self.class))
             .field("rows", &format_args!("{:?}", self.rows))
             .field("columns", &format_args!("{:?}", self.columns))
@@ -14818,7 +15772,7 @@ unsafe impl ::windows::Abi for D3D12_PARAMETER_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_PIPELINE_STATE_STREAM_DESC {
     pub size_in_bytes: usize,
     pub p_pipeline_state_subobject_stream: *mut ::std::ffi::c_void,
@@ -14902,85 +15856,6 @@ unsafe impl ::windows::Abi for D3D12_PIPELINE_STATE_SUBOBJECT_TYPE {
     type Abi = Self;
 }
 pub const D3D12_PIXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 15u32;
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_SUBRESOURCE_FOOTPRINT {
-    pub format: super::dxgi::DXGI_FORMAT,
-    pub width: u32,
-    pub height: u32,
-    pub depth: u32,
-    pub row_pitch: u32,
-}
-impl D3D12_SUBRESOURCE_FOOTPRINT {}
-impl ::std::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            width: 0,
-            height: 0,
-            depth: 0,
-            row_pitch: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_SUBRESOURCE_FOOTPRINT")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("depth", &format_args!("{:?}", self.depth))
-            .field("row_pitch", &format_args!("{:?}", self.row_pitch))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.width == other.width
-            && self.height == other.height
-            && self.depth == other.depth
-            && self.row_pitch == other.row_pitch
-    }
-}
-impl ::std::cmp::Eq for D3D12_SUBRESOURCE_FOOTPRINT {}
-unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_FOOTPRINT {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    pub offset: u64,
-    pub footprint: D3D12_SUBRESOURCE_FOOTPRINT,
-}
-impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
-impl ::std::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn default() -> Self {
-        Self {
-            offset: 0,
-            footprint: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_PLACED_SUBRESOURCE_FOOTPRINT")
-            .field("offset", &format_args!("{:?}", self.offset))
-            .field("footprint", &format_args!("{:?}", self.footprint))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn eq(&self, other: &Self) -> bool {
-        self.offset == other.offset && self.footprint == other.footprint
-    }
-}
-impl ::std::cmp::Eq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
-unsafe impl ::windows::Abi for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    type Abi = Self;
-}
 pub const D3D12_PRE_SCISSOR_PIXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 16u32;
 #[allow(non_camel_case_types)]
 #[derive(
@@ -15007,7 +15882,7 @@ unsafe impl ::windows::Abi for D3D12_PROTECTED_RESOURCE_SESSION_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC {
     pub node_mask: u32,
     pub flags: D3D12_PROTECTED_RESOURCE_SESSION_FLAGS,
@@ -15040,7 +15915,7 @@ unsafe impl ::windows::Abi for D3D12_PROTECTED_RESOURCE_SESSION_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_PROTECTED_RESOURCE_SESSION_DESC1 {
     pub node_mask: u32,
     pub flags: D3D12_PROTECTED_RESOURCE_SESSION_FLAGS,
@@ -15128,7 +16003,7 @@ pub const D3D12_PS_OUTPUT_REGISTER_COUNT: u32 = 8u32;
 pub const D3D12_PS_PIXEL_CENTER_FRACTIONAL_COMPONENT: f32 = 0.5f32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_QUERY_DATA_PIPELINE_STATISTICS {
     pub ia_vertices: u64,
     pub ia_primitives: u64,
@@ -15198,7 +16073,7 @@ unsafe impl ::windows::Abi for D3D12_QUERY_DATA_PIPELINE_STATISTICS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_QUERY_DATA_SO_STATISTICS {
     pub num_primitives_written: u64,
     pub primitives_storage_needed: u64,
@@ -15266,7 +16141,7 @@ unsafe impl ::windows::Abi for D3D12_QUERY_HEAP_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_QUERY_HEAP_DESC {
     pub r#type: D3D12_QUERY_HEAP_TYPE,
     pub count: u32,
@@ -15285,7 +16160,7 @@ impl ::std::default::Default for D3D12_QUERY_HEAP_DESC {
 impl ::std::fmt::Debug for D3D12_QUERY_HEAP_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_QUERY_HEAP_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("count", &format_args!("{:?}", self.count))
             .field("node_mask", &format_args!("{:?}", self.node_mask))
             .finish()
@@ -15304,7 +16179,7 @@ unsafe impl ::windows::Abi for D3D12_QUERY_HEAP_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RANGE_UINT64 {
     pub begin: u64,
     pub end: u64,
@@ -15335,7 +16210,7 @@ unsafe impl ::windows::Abi for D3D12_RANGE_UINT64 {
 pub const D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT: u32 = 16u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_AABB {
     pub minx: f32,
     pub miny: f32,
@@ -15415,7 +16290,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_COPY_MODE
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_COMPACTED_SIZE_DESC {
     pub compacted_size_in_bytes: u64,
 }
@@ -15458,7 +16333,7 @@ unsafe impl ::windows::Abi
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_CURRENT_SIZE_DESC {
     pub current_size_in_bytes: u64,
 }
@@ -15529,7 +16404,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_DESC {
     pub dest_buffer: u64,
     pub info_type: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TYPE,
@@ -15562,7 +16437,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_SERIALIZATION_DESC {
     pub serialized_size_in_bytes: u64,
     pub num_bottom_level_acceleration_structure_pointers: u64,
@@ -15616,7 +16491,7 @@ unsafe impl ::windows::Abi
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO_TOOLS_VISUALIZATION_DESC {
     pub decoded_size_in_bytes: u64,
 }
@@ -15662,7 +16537,7 @@ unsafe impl ::windows::Abi
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_INFO {
     pub result_data_max_size_in_bytes: u64,
     pub scratch_data_size_in_bytes: u64,
@@ -15709,7 +16584,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_PREBUILD_
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
     pub location: u64,
 }
@@ -15737,181 +16612,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
-    pub aabb_count: u64,
-    pub aab_bs: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
-}
-impl D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
-impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
-    fn default() -> Self {
-        Self {
-            aabb_count: 0,
-            aab_bs: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_AABBS_DESC")
-            .field("aabb_count", &format_args!("{:?}", self.aabb_count))
-            .field("aab_bs", &format_args!("{:?}", self.aab_bs))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.aabb_count == other.aabb_count && self.aab_bs == other.aab_bs
-    }
-}
-impl ::std::cmp::Eq for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {}
-unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_AABBS_DESC {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RAYTRACING_GEOMETRY_TYPE(pub i32);
-impl D3D12_RAYTRACING_GEOMETRY_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RAYTRACING_GEOMETRY_TYPE_TRIANGLES: Self = Self(0i32);
-    pub const D3D12_RAYTRACING_GEOMETRY_TYPE_PROCEDURAL_PRIMITIVE_AABBS: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_RAYTRACING_GEOMETRY_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TYPE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RAYTRACING_GEOMETRY_FLAGS(pub i32);
-impl D3D12_RAYTRACING_GEOMETRY_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_OPAQUE: Self = Self(1i32);
-    pub const D3D12_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION: Self = Self(2i32);
-}
-impl ::std::convert::From<i32> for D3D12_RAYTRACING_GEOMETRY_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RAYTRACING_GEOMETRY_DESC {
-    pub r#type: D3D12_RAYTRACING_GEOMETRY_TYPE,
-    pub flags: D3D12_RAYTRACING_GEOMETRY_FLAGS,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
-}
-impl D3D12_RAYTRACING_GEOMETRY_DESC {}
-impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_DESC {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RAYTRACING_GEOMETRY_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.flags == other.flags
-            && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_RAYTRACING_GEOMETRY_DESC {}
-unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
-    pub transform3x4: u64,
-    pub index_format: super::dxgi::DXGI_FORMAT,
-    pub vertex_format: super::dxgi::DXGI_FORMAT,
-    pub index_count: u32,
-    pub vertex_count: u32,
-    pub index_buffer: u64,
-    pub vertex_buffer: D3D12_GPU_VIRTUAL_ADDRESS_AND_STRIDE,
-}
-impl D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
-impl ::std::default::Default for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
-    fn default() -> Self {
-        Self {
-            transform3x4: 0,
-            index_format: ::std::default::Default::default(),
-            vertex_format: ::std::default::Default::default(),
-            index_count: 0,
-            vertex_count: 0,
-            index_buffer: 0,
-            vertex_buffer: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC")
-            .field("transform3x4", &format_args!("{:?}", self.transform3x4))
-            .field("index_format", &format_args!("{:?}", self.index_format))
-            .field("vertex_format", &format_args!("{:?}", self.vertex_format))
-            .field("index_count", &format_args!("{:?}", self.index_count))
-            .field("vertex_count", &format_args!("{:?}", self.vertex_count))
-            .field("index_buffer", &format_args!("{:?}", self.index_buffer))
-            .field("vertex_buffer", &format_args!("{:?}", self.vertex_buffer))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.transform3x4 == other.transform3x4
-            && self.index_format == other.index_format
-            && self.vertex_format == other.vertex_format
-            && self.index_count == other.index_count
-            && self.vertex_count == other.vertex_count
-            && self.index_buffer == other.index_buffer
-            && self.vertex_buffer == other.vertex_buffer
-    }
-}
-impl ::std::cmp::Eq for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {}
-unsafe impl ::windows::Abi for D3D12_RAYTRACING_GEOMETRY_TRIANGLES_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_INSTANCE_DESC {
     pub transform: [f32; 12usize],
     pub _bitfield1: u32,
@@ -15993,7 +16694,7 @@ pub const D3D12_RAYTRACING_MAX_RAY_GENERATION_SHADER_THREADS: u32 = 1073741824u3
 pub const D3D12_RAYTRACING_MAX_SHADER_RECORD_STRIDE: u32 = 4096u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_PIPELINE_CONFIG {
     pub max_trace_recursion_depth: u32,
 }
@@ -16051,7 +16752,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_PIPELINE_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_PIPELINE_CONFIG1 {
     pub max_trace_recursion_depth: u32,
     pub flags: D3D12_RAYTRACING_PIPELINE_FLAGS,
@@ -16088,7 +16789,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_PIPELINE_CONFIG1 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_SHADER_CONFIG {
     pub max_payload_size_in_bytes: u32,
     pub max_attribute_size_in_bytes: u32,
@@ -16190,65 +16891,33 @@ unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+    pub clear_value: D3D12_CLEAR_VALUE,
+}
+impl D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {}
+unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS {
     pub r#type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_RENDER_PASS_BEGINNING_ACCESS_0,
 }
 impl D3D12_RENDER_PASS_BEGINNING_ACCESS {}
-impl ::std::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_PASS_BEGINNING_ACCESS")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_BEGINNING_ACCESS {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_PASS_BEGINNING_ACCESS {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
-    pub clear_value: D3D12_CLEAR_VALUE,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+    pub clear: D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS,
 }
-impl D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {}
-impl ::std::default::Default for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
-    fn default() -> Self {
-        Self {
-            clear_value: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS")
-            .field("clear_value", &format_args!("{:?}", self.clear_value))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
-    fn eq(&self, other: &Self) -> bool {
-        self.clear_value == other.clear_value
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {}
-unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+impl D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {}
+unsafe impl ::windows::Abi for D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
@@ -16279,98 +16948,7 @@ unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RENDER_PASS_ENDING_ACCESS {
-    pub r#type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
-}
-impl D3D12_RENDER_PASS_ENDING_ACCESS {}
-impl ::std::default::Default for D3D12_RENDER_PASS_ENDING_ACCESS {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RENDER_PASS_ENDING_ACCESS {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_PASS_ENDING_ACCESS")
-            .field("type", &format_args!("{:?}", self.r#type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_ENDING_ACCESS {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_PASS_ENDING_ACCESS {}
-unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    pub cpu_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    pub depth_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
-    pub stencil_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
-    pub depth_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
-    pub stencil_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
-}
-impl D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {}
-impl ::std::default::Default for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    fn default() -> Self {
-        Self {
-            cpu_descriptor: ::std::default::Default::default(),
-            depth_beginning_access: ::std::default::Default::default(),
-            stencil_beginning_access: ::std::default::Default::default(),
-            depth_ending_access: ::std::default::Default::default(),
-            stencil_ending_access: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_PASS_DEPTH_STENCIL_DESC")
-            .field("cpu_descriptor", &format_args!("{:?}", self.cpu_descriptor))
-            .field(
-                "depth_beginning_access",
-                &format_args!("{:?}", self.depth_beginning_access),
-            )
-            .field(
-                "stencil_beginning_access",
-                &format_args!("{:?}", self.stencil_beginning_access),
-            )
-            .field(
-                "depth_ending_access",
-                &format_args!("{:?}", self.depth_ending_access),
-            )
-            .field(
-                "stencil_ending_access",
-                &format_args!("{:?}", self.stencil_ending_access),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.cpu_descriptor == other.cpu_descriptor
-            && self.depth_beginning_access == other.depth_beginning_access
-            && self.stencil_beginning_access == other.stencil_beginning_access
-            && self.depth_ending_access == other.depth_ending_access
-            && self.stencil_ending_access == other.stencil_ending_access
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {}
-unsafe impl ::windows::Abi for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS {
     pub src_subresource: u32,
     pub dst_subresource: u32,
@@ -16511,17 +17089,74 @@ impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETER
 impl ::std::cmp::Eq for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {}
 #[repr(C)]
 #[doc(hidden)]
-pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi(
-    ::windows::RawPtr,
-    ::windows::RawPtr,
-    u32,
-    *mut D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS,
-    super::dxgi::DXGI_FORMAT,
-    D3D12_RESOLVE_MODE,
-    super::system_services::BOOL,
-);
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi {
+    pub p_src_resource: ::windows::RawPtr,
+    pub p_dst_resource: ::windows::RawPtr,
+    pub subresource_count: u32,
+    pub p_subresource_parameters:
+        *mut D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_SUBRESOURCE_PARAMETERS,
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub resolve_mode: D3D12_RESOLVE_MODE,
+    pub preserve_resolve_source: super::system_services::BOOL,
+}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS {
     type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_RENDER_PASS_ENDING_ACCESS {
+    pub r#type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE,
+    pub anonymous: D3D12_RENDER_PASS_ENDING_ACCESS_0,
+}
+impl D3D12_RENDER_PASS_ENDING_ACCESS {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_PASS_ENDING_ACCESS_abi {
+    pub r#type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE,
+    pub anonymous: D3D12_RENDER_PASS_ENDING_ACCESS_0_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS {
+    type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub union D3D12_RENDER_PASS_ENDING_ACCESS_0 {
+    pub resolve: D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi,
+}
+impl D3D12_RENDER_PASS_ENDING_ACCESS_0 {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RENDER_PASS_ENDING_ACCESS_0_abi {
+    pub resolve: D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_0 {
+    type Abi = D3D12_RENDER_PASS_ENDING_ACCESS_0_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+    pub cpu_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    pub depth_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    pub stencil_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    pub depth_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
+    pub stencil_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
+}
+impl D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi {
+    pub cpu_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    pub depth_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    pub stencil_beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    pub depth_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS_abi,
+    pub stencil_ending_access: D3D12_RENDER_PASS_ENDING_ACCESS_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+    type Abi = D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi;
 }
 #[allow(non_camel_case_types)]
 #[derive(
@@ -16551,44 +17186,22 @@ unsafe impl ::windows::Abi for D3D12_RENDER_PASS_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
 pub struct D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     pub cpu_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
     pub beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
     pub ending_access: D3D12_RENDER_PASS_ENDING_ACCESS,
 }
 impl D3D12_RENDER_PASS_RENDER_TARGET_DESC {}
-impl ::std::default::Default for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-    fn default() -> Self {
-        Self {
-            cpu_descriptor: ::std::default::Default::default(),
-            beginning_access: ::std::default::Default::default(),
-            ending_access: ::std::default::Default::default(),
-        }
-    }
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi {
+    pub cpu_descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    pub beginning_access: D3D12_RENDER_PASS_BEGINNING_ACCESS,
+    pub ending_access: D3D12_RENDER_PASS_ENDING_ACCESS_abi,
 }
-impl ::std::fmt::Debug for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_PASS_RENDER_TARGET_DESC")
-            .field("cpu_descriptor", &format_args!("{:?}", self.cpu_descriptor))
-            .field(
-                "beginning_access",
-                &format_args!("{:?}", self.beginning_access),
-            )
-            .field("ending_access", &format_args!("{:?}", self.ending_access))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.cpu_descriptor == other.cpu_descriptor
-            && self.beginning_access == other.beginning_access
-            && self.ending_access == other.ending_access
-    }
-}
-impl ::std::cmp::Eq for D3D12_RENDER_PASS_RENDER_TARGET_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-    type Abi = Self;
+    type Abi = D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi;
 }
 #[allow(non_camel_case_types)]
 #[derive(
@@ -16623,40 +17236,285 @@ unsafe impl ::windows::Abi for D3D12_RTV_DIMENSION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RENDER_TARGET_VIEW_DESC {
-    pub format: super::dxgi::DXGI_FORMAT,
-    pub view_dimension: D3D12_RTV_DIMENSION,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_RTV {
+    pub mip_slice: u32,
 }
-impl D3D12_RENDER_TARGET_VIEW_DESC {}
-impl ::std::default::Default for D3D12_RENDER_TARGET_VIEW_DESC {
+impl D3D12_TEX1D_RTV {}
+impl ::std::default::Default for D3D12_TEX1D_RTV {
     fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            view_dimension: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
+        Self { mip_slice: 0 }
     }
 }
-impl ::std::fmt::Debug for D3D12_RENDER_TARGET_VIEW_DESC {
+impl ::std::fmt::Debug for D3D12_TEX1D_RTV {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RENDER_TARGET_VIEW_DESC")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
+        fmt.debug_struct("D3D12_TEX1D_RTV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
             .finish()
     }
 }
-impl ::std::cmp::PartialEq for D3D12_RENDER_TARGET_VIEW_DESC {
+impl ::std::cmp::PartialEq for D3D12_TEX1D_RTV {
     fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.view_dimension == other.view_dimension
-            && self.anonymous == other.anonymous
+        self.mip_slice == other.mip_slice
     }
 }
-impl ::std::cmp::Eq for D3D12_RENDER_TARGET_VIEW_DESC {}
+impl ::std::cmp::Eq for D3D12_TEX1D_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_ARRAY_RTV {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX1D_ARRAY_RTV {}
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_RTV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX1D_ARRAY_RTV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_RTV {
+    pub mip_slice: u32,
+    pub plane_slice: u32,
+}
+impl D3D12_TEX2D_RTV {}
+impl ::std::default::Default for D3D12_TEX2D_RTV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            plane_slice: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_RTV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice && self.plane_slice == other.plane_slice
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_ARRAY_RTV {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+    pub plane_slice: u32,
+}
+impl D3D12_TEX2D_ARRAY_RTV {}
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_RTV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            first_array_slice: 0,
+            array_size: 0,
+            plane_slice: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_ARRAY_RTV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+            && self.plane_slice == other.plane_slice
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_RTV {
+    pub unused_field_nothing_to_define: u32,
+}
+impl D3D12_TEX2DMS_RTV {}
+impl ::std::default::Default for D3D12_TEX2DMS_RTV {
+    fn default() -> Self {
+        Self {
+            unused_field_nothing_to_define: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_RTV")
+            .field(
+                "unused_field_nothing_to_define",
+                &format_args!("{:?}", self.unused_field_nothing_to_define),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_ARRAY_RTV {
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX2DMS_ARRAY_RTV {}
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_RTV {
+    fn default() -> Self {
+        Self {
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_RTV")
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX3D_RTV {
+    pub mip_slice: u32,
+    pub first_wslice: u32,
+    pub wsize: u32,
+}
+impl D3D12_TEX3D_RTV {}
+impl ::std::default::Default for D3D12_TEX3D_RTV {
+    fn default() -> Self {
+        Self {
+            mip_slice: 0,
+            first_wslice: 0,
+            wsize: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX3D_RTV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX3D_RTV")
+            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
+            .field("first_wslice", &format_args!("{:?}", self.first_wslice))
+            .field("wsize", &format_args!("{:?}", self.wsize))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX3D_RTV {
+    fn eq(&self, other: &Self) -> bool {
+        self.mip_slice == other.mip_slice
+            && self.first_wslice == other.first_wslice
+            && self.wsize == other.wsize
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX3D_RTV {}
+unsafe impl ::windows::Abi for D3D12_TEX3D_RTV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RENDER_TARGET_VIEW_DESC {
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub view_dimension: D3D12_RTV_DIMENSION,
+    pub anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0,
+}
+impl D3D12_RENDER_TARGET_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_VIEW_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RENDER_TARGET_VIEW_DESC_0 {
+    pub buffer: D3D12_BUFFER_RTV,
+    pub texture1d: D3D12_TEX1D_RTV,
+    pub texture1d_array: D3D12_TEX1D_ARRAY_RTV,
+    pub texture2d: D3D12_TEX2D_RTV,
+    pub texture2d_array: D3D12_TEX2D_ARRAY_RTV,
+    pub texture2dms: D3D12_TEX2DMS_RTV,
+    pub texture2dms_array: D3D12_TEX2DMS_ARRAY_RTV,
+    pub texture3d: D3D12_TEX3D_RTV,
+}
+impl D3D12_RENDER_TARGET_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_VIEW_DESC_0 {
     type Abi = Self;
 }
 pub const D3D12_REQ_BLEND_OBJECT_COUNT_PER_DEVICE: u32 = 4096u32;
@@ -16739,50 +17597,7 @@ unsafe impl ::windows::Abi for D3D12_RESIDENCY_PRIORITY {
 pub const D3D12_RESINFO_INSTRUCTION_MISSING_COMPONENT_RETVAL: u32 = 0u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_ALIASING_BARRIER {
-    pub p_resource_before: ::std::option::Option<ID3D12Resource>,
-    pub p_resource_after: ::std::option::Option<ID3D12Resource>,
-}
-impl D3D12_RESOURCE_ALIASING_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource_before: ::std::default::Default::default(),
-            p_resource_after: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_ALIASING_BARRIER")
-            .field(
-                "p_resource_before",
-                &format_args!("{:?}", self.p_resource_before),
-            )
-            .field(
-                "p_resource_after",
-                &format_args!("{:?}", self.p_resource_after),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource_before == other.p_resource_before
-            && self.p_resource_after == other.p_resource_after
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_ALIASING_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct D3D12_RESOURCE_ALIASING_BARRIER_abi(::windows::RawPtr, ::windows::RawPtr);
-unsafe impl ::windows::Abi for D3D12_RESOURCE_ALIASING_BARRIER {
-    type Abi = D3D12_RESOURCE_ALIASING_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RESOURCE_ALLOCATION_INFO {
     pub size_in_bytes: u64,
     pub alignment: u64,
@@ -16815,7 +17630,7 @@ unsafe impl ::windows::Abi for D3D12_RESOURCE_ALLOCATION_INFO {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RESOURCE_ALLOCATION_INFO1 {
     pub offset: u64,
     pub alignment: u64,
@@ -16854,7 +17669,7 @@ unsafe impl ::windows::Abi for D3D12_RESOURCE_ALLOCATION_INFO1 {
 pub const D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES: u32 = 4294967295u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RESOURCE_DESC1 {
     pub dimension: D3D12_RESOURCE_DIMENSION,
     pub alignment: u64,
@@ -16928,89 +17743,6 @@ impl ::std::cmp::Eq for D3D12_RESOURCE_DESC1 {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC1 {
     type Abi = Self;
 }
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_TRANSITION_BARRIER {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-    pub subresource: u32,
-    pub state_before: D3D12_RESOURCE_STATES,
-    pub state_after: D3D12_RESOURCE_STATES,
-}
-impl D3D12_RESOURCE_TRANSITION_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource: ::std::default::Default::default(),
-            subresource: 0,
-            state_before: ::std::default::Default::default(),
-            state_after: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_TRANSITION_BARRIER")
-            .field("p_resource", &format_args!("{:?}", self.p_resource))
-            .field("subresource", &format_args!("{:?}", self.subresource))
-            .field("state_before", &format_args!("{:?}", self.state_before))
-            .field("state_after", &format_args!("{:?}", self.state_after))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource == other.p_resource
-            && self.subresource == other.subresource
-            && self.state_before == other.state_before
-            && self.state_after == other.state_after
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_TRANSITION_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct D3D12_RESOURCE_TRANSITION_BARRIER_abi(
-    ::windows::RawPtr,
-    u32,
-    D3D12_RESOURCE_STATES,
-    D3D12_RESOURCE_STATES,
-);
-unsafe impl ::windows::Abi for D3D12_RESOURCE_TRANSITION_BARRIER {
-    type Abi = D3D12_RESOURCE_TRANSITION_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_UAV_BARRIER {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-}
-impl D3D12_RESOURCE_UAV_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_UAV_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_UAV_BARRIER")
-            .field("p_resource", &format_args!("{:?}", self.p_resource))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_UAV_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource == other.p_resource
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_UAV_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-pub struct D3D12_RESOURCE_UAV_BARRIER_abi(::windows::RawPtr);
-unsafe impl ::windows::Abi for D3D12_RESOURCE_UAV_BARRIER {
-    type Abi = D3D12_RESOURCE_UAV_BARRIER_abi;
-}
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -17037,330 +17769,10 @@ impl ::std::convert::From<i32> for D3D12_RLDO_FLAGS {
 unsafe impl ::windows::Abi for D3D12_RLDO_FLAGS {
     type Abi = Self;
 }
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_CONSTANTS {
-    pub shader_register: u32,
-    pub register_space: u32,
-    pub num32_bit_values: u32,
-}
-impl D3D12_ROOT_CONSTANTS {}
-impl ::std::default::Default for D3D12_ROOT_CONSTANTS {
-    fn default() -> Self {
-        Self {
-            shader_register: 0,
-            register_space: 0,
-            num32_bit_values: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_CONSTANTS {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_CONSTANTS")
-            .field(
-                "shader_register",
-                &format_args!("{:?}", self.shader_register),
-            )
-            .field("register_space", &format_args!("{:?}", self.register_space))
-            .field(
-                "num32_bit_values",
-                &format_args!("{:?}", self.num32_bit_values),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_CONSTANTS {
-    fn eq(&self, other: &Self) -> bool {
-        self.shader_register == other.shader_register
-            && self.register_space == other.register_space
-            && self.num32_bit_values == other.num32_bit_values
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_CONSTANTS {}
-unsafe impl ::windows::Abi for D3D12_ROOT_CONSTANTS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_DESCRIPTOR {
-    pub shader_register: u32,
-    pub register_space: u32,
-}
-impl D3D12_ROOT_DESCRIPTOR {}
-impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR {
-    fn default() -> Self {
-        Self {
-            shader_register: 0,
-            register_space: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR")
-            .field(
-                "shader_register",
-                &format_args!("{:?}", self.shader_register),
-            )
-            .field("register_space", &format_args!("{:?}", self.register_space))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR {
-    fn eq(&self, other: &Self) -> bool {
-        self.shader_register == other.shader_register && self.register_space == other.register_space
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR {}
-unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_ROOT_DESCRIPTOR_FLAGS(pub i32);
-impl D3D12_ROOT_DESCRIPTOR_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_ROOT_DESCRIPTOR_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_VOLATILE: Self = Self(2i32);
-    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
-    pub const D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC: Self = Self(8i32);
-}
-impl ::std::convert::From<i32> for D3D12_ROOT_DESCRIPTOR_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_DESCRIPTOR1 {
-    pub shader_register: u32,
-    pub register_space: u32,
-    pub flags: D3D12_ROOT_DESCRIPTOR_FLAGS,
-}
-impl D3D12_ROOT_DESCRIPTOR1 {}
-impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR1 {
-    fn default() -> Self {
-        Self {
-            shader_register: 0,
-            register_space: 0,
-            flags: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR1 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR1")
-            .field(
-                "shader_register",
-                &format_args!("{:?}", self.shader_register),
-            )
-            .field("register_space", &format_args!("{:?}", self.register_space))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.shader_register == other.shader_register
-            && self.register_space == other.register_space
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR1 {}
-unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR1 {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_DESCRIPTOR_TABLE {
-    pub num_descriptor_ranges: u32,
-    pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE,
-}
-impl D3D12_ROOT_DESCRIPTOR_TABLE {}
-impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE {
-    fn default() -> Self {
-        Self {
-            num_descriptor_ranges: 0,
-            p_descriptor_ranges: ::std::ptr::null_mut(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE")
-            .field(
-                "num_descriptor_ranges",
-                &format_args!("{:?}", self.num_descriptor_ranges),
-            )
-            .field(
-                "p_descriptor_ranges",
-                &format_args!("{:?}", self.p_descriptor_ranges),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR_TABLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_descriptor_ranges == other.num_descriptor_ranges
-            && self.p_descriptor_ranges == other.p_descriptor_ranges
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR_TABLE {}
-unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_DESCRIPTOR_TABLE1 {
-    pub num_descriptor_ranges: u32,
-    pub p_descriptor_ranges: *mut D3D12_DESCRIPTOR_RANGE1,
-}
-impl D3D12_ROOT_DESCRIPTOR_TABLE1 {}
-impl ::std::default::Default for D3D12_ROOT_DESCRIPTOR_TABLE1 {
-    fn default() -> Self {
-        Self {
-            num_descriptor_ranges: 0,
-            p_descriptor_ranges: ::std::ptr::null_mut(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_DESCRIPTOR_TABLE1 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_DESCRIPTOR_TABLE1")
-            .field(
-                "num_descriptor_ranges",
-                &format_args!("{:?}", self.num_descriptor_ranges),
-            )
-            .field(
-                "p_descriptor_ranges",
-                &format_args!("{:?}", self.p_descriptor_ranges),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_DESCRIPTOR_TABLE1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_descriptor_ranges == other.num_descriptor_ranges
-            && self.p_descriptor_ranges == other.p_descriptor_ranges
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_DESCRIPTOR_TABLE1 {}
-unsafe impl ::windows::Abi for D3D12_ROOT_DESCRIPTOR_TABLE1 {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_PARAMETER1 {
-    pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
-    pub shader_visibility: D3D12_SHADER_VISIBILITY,
-}
-impl D3D12_ROOT_PARAMETER1 {}
-impl ::std::default::Default for D3D12_ROOT_PARAMETER1 {
-    fn default() -> Self {
-        Self {
-            parameter_type: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-            shader_visibility: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_PARAMETER1 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_PARAMETER1")
-            .field("parameter_type", &format_args!("{:?}", self.parameter_type))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .field(
-                "shader_visibility",
-                &format_args!("{:?}", self.shader_visibility),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_PARAMETER1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.parameter_type == other.parameter_type
-            && self.anonymous == other.anonymous
-            && self.shader_visibility == other.shader_visibility
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_PARAMETER1 {}
-unsafe impl ::windows::Abi for D3D12_ROOT_PARAMETER1 {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_ROOT_SIGNATURE_DESC1 {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
-}
-impl D3D12_ROOT_SIGNATURE_DESC1 {}
-impl ::std::default::Default for D3D12_ROOT_SIGNATURE_DESC1 {
-    fn default() -> Self {
-        Self {
-            num_parameters: 0,
-            p_parameters: ::std::ptr::null_mut(),
-            num_static_samplers: 0,
-            p_static_samplers: ::std::ptr::null_mut(),
-            flags: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_ROOT_SIGNATURE_DESC1 {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_ROOT_SIGNATURE_DESC1")
-            .field("num_parameters", &format_args!("{:?}", self.num_parameters))
-            .field("p_parameters", &format_args!("{:?}", self.p_parameters))
-            .field(
-                "num_static_samplers",
-                &format_args!("{:?}", self.num_static_samplers),
-            )
-            .field(
-                "p_static_samplers",
-                &format_args!("{:?}", self.p_static_samplers),
-            )
-            .field("flags", &format_args!("{:?}", self.flags))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_ROOT_SIGNATURE_DESC1 {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_parameters == other.num_parameters
-            && self.p_parameters == other.p_parameters
-            && self.num_static_samplers == other.num_static_samplers
-            && self.p_static_samplers == other.p_static_samplers
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D12_ROOT_SIGNATURE_DESC1 {}
-unsafe impl ::windows::Abi for D3D12_ROOT_SIGNATURE_DESC1 {
-    type Abi = Self;
-}
 pub const D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT: u32 = 2u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RT_FORMAT_ARRAY {
     pub rt_formats: [super::dxgi::DXGI_FORMAT; 8usize],
     pub num_render_targets: u32,
@@ -17405,7 +17817,7 @@ unsafe impl ::windows::Abi for D3D12_RT_FORMAT_ARRAY {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SAMPLER_DESC {
     pub filter: D3D12_FILTER,
     pub addressu: D3D12_TEXTURE_ADDRESS_MODE,
@@ -17474,7 +17886,7 @@ unsafe impl ::windows::Abi for D3D12_SAMPLER_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SAMPLE_POSITION {
     pub x: i8,
     pub y: i8,
@@ -17504,7 +17916,7 @@ unsafe impl ::windows::Abi for D3D12_SAMPLE_POSITION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     pub driver_opaque_guid: ::windows::Guid,
     pub driver_opaque_versioning_data: [u8; 16usize],
@@ -17567,7 +17979,7 @@ unsafe impl ::windows::Abi for D3D12_SERIALIZED_DATA_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTURE_HEADER {
     pub driver_matching_identifier: D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER,
     pub serialized_size_in_bytes_including_header: u64,
@@ -17626,7 +18038,7 @@ unsafe impl ::windows::Abi for D3D12_SERIALIZED_RAYTRACING_ACCELERATION_STRUCTUR
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_BUFFER_DESC {
     pub name: super::system_services::PSTR,
     pub r#type: super::direct3d11::D3D_CBUFFER_TYPE,
@@ -17650,7 +18062,7 @@ impl ::std::fmt::Debug for D3D12_SHADER_BUFFER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_BUFFER_DESC")
             .field("name", &format_args!("{:?}", self.name))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("variables", &format_args!("{:?}", self.variables))
             .field("size", &format_args!("{:?}", self.size))
             .field("u_flags", &format_args!("{:?}", self.u_flags))
@@ -17703,7 +18115,7 @@ pub const D3D12_SHADER_COMPONENT_MAPPING_MASK: u32 = 7u32;
 pub const D3D12_SHADER_COMPONENT_MAPPING_SHIFT: u32 = 3u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_DESC {
     pub version: u32,
     pub creator: super::system_services::PSTR,
@@ -17981,7 +18393,7 @@ unsafe impl ::windows::Abi for D3D12_SHADER_DESC {
 pub const D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES: u32 = 32u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_INPUT_BIND_DESC {
     pub name: super::system_services::PSTR,
     pub r#type: super::direct3d11::D3D_SHADER_INPUT_TYPE,
@@ -18015,7 +18427,7 @@ impl ::std::fmt::Debug for D3D12_SHADER_INPUT_BIND_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_INPUT_BIND_DESC")
             .field("name", &format_args!("{:?}", self.name))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("bind_point", &format_args!("{:?}", self.bind_point))
             .field("bind_count", &format_args!("{:?}", self.bind_count))
             .field("u_flags", &format_args!("{:?}", self.u_flags))
@@ -18087,52 +18499,458 @@ unsafe impl ::windows::Abi for D3D12_SRV_DIMENSION {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEX1D_SRV {}
+impl ::std::default::Default for D3D12_TEX1D_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX1D_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX1D_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX1D_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX1D_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX1D_ARRAY_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEX1D_ARRAY_SRV {}
+impl ::std::default::Default for D3D12_TEX1D_ARRAY_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            first_array_slice: 0,
+            array_size: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX1D_ARRAY_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub plane_slice: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEX2D_SRV {}
+impl ::std::default::Default for D3D12_TEX2D_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            plane_slice: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.plane_slice == other.plane_slice
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2D_ARRAY_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+    pub plane_slice: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEX2D_ARRAY_SRV {}
+impl ::std::default::Default for D3D12_TEX2D_ARRAY_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            first_array_slice: 0,
+            array_size: 0,
+            plane_slice: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2D_ARRAY_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.first_array_slice == other.first_array_slice
+            && self.array_size == other.array_size
+            && self.plane_slice == other.plane_slice
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_SRV {
+    pub unused_field_nothing_to_define: u32,
+}
+impl D3D12_TEX2DMS_SRV {}
+impl ::std::default::Default for D3D12_TEX2DMS_SRV {
+    fn default() -> Self {
+        Self {
+            unused_field_nothing_to_define: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_SRV")
+            .field(
+                "unused_field_nothing_to_define",
+                &format_args!("{:?}", self.unused_field_nothing_to_define),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX2DMS_ARRAY_SRV {
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+impl D3D12_TEX2DMS_ARRAY_SRV {}
+impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_SRV {
+    fn default() -> Self {
+        Self {
+            first_array_slice: 0,
+            array_size: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_SRV")
+            .field(
+                "first_array_slice",
+                &format_args!("{:?}", self.first_array_slice),
+            )
+            .field("array_size", &format_args!("{:?}", self.array_size))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEX3D_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEX3D_SRV {}
+impl ::std::default::Default for D3D12_TEX3D_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEX3D_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEX3D_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEX3D_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEX3D_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEX3D_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEXCUBE_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEXCUBE_SRV {}
+impl ::std::default::Default for D3D12_TEXCUBE_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEXCUBE_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEXCUBE_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEXCUBE_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEXCUBE_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEXCUBE_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEXCUBE_ARRAY_SRV {
+    pub most_detailed_mip: u32,
+    pub mip_levels: u32,
+    pub first2d_array_face: u32,
+    pub num_cubes: u32,
+    pub resource_min_lod_clamp: f32,
+}
+impl D3D12_TEXCUBE_ARRAY_SRV {}
+impl ::std::default::Default for D3D12_TEXCUBE_ARRAY_SRV {
+    fn default() -> Self {
+        Self {
+            most_detailed_mip: 0,
+            mip_levels: 0,
+            first2d_array_face: 0,
+            num_cubes: 0,
+            resource_min_lod_clamp: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TEXCUBE_ARRAY_SRV {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TEXCUBE_ARRAY_SRV")
+            .field(
+                "most_detailed_mip",
+                &format_args!("{:?}", self.most_detailed_mip),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field(
+                "first2d_array_face",
+                &format_args!("{:?}", self.first2d_array_face),
+            )
+            .field("num_cubes", &format_args!("{:?}", self.num_cubes))
+            .field(
+                "resource_min_lod_clamp",
+                &format_args!("{:?}", self.resource_min_lod_clamp),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TEXCUBE_ARRAY_SRV {
+    fn eq(&self, other: &Self) -> bool {
+        self.most_detailed_mip == other.most_detailed_mip
+            && self.mip_levels == other.mip_levels
+            && self.first2d_array_face == other.first2d_array_face
+            && self.num_cubes == other.num_cubes
+            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
+    }
+}
+impl ::std::cmp::Eq for D3D12_TEXCUBE_ARRAY_SRV {}
+unsafe impl ::windows::Abi for D3D12_TEXCUBE_ARRAY_SRV {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_RESOURCE_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D12_SRV_DIMENSION,
     pub shader4_component_mapping: u32,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0,
 }
 impl D3D12_SHADER_RESOURCE_VIEW_DESC {}
-impl ::std::default::Default for D3D12_SHADER_RESOURCE_VIEW_DESC {
-    fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            view_dimension: ::std::default::Default::default(),
-            shader4_component_mapping: 0,
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_SHADER_RESOURCE_VIEW_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_SHADER_RESOURCE_VIEW_DESC")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
-            .field(
-                "shader4_component_mapping",
-                &format_args!("{:?}", self.shader4_component_mapping),
-            )
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_SHADER_RESOURCE_VIEW_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.view_dimension == other.view_dimension
-            && self.shader4_component_mapping == other.shader4_component_mapping
-            && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_SHADER_RESOURCE_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_SHADER_RESOURCE_VIEW_DESC {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+    pub buffer: D3D12_BUFFER_SRV,
+    pub texture1d: D3D12_TEX1D_SRV,
+    pub texture1d_array: D3D12_TEX1D_ARRAY_SRV,
+    pub texture2d: D3D12_TEX2D_SRV,
+    pub texture2d_array: D3D12_TEX2D_ARRAY_SRV,
+    pub texture2dms: D3D12_TEX2DMS_SRV,
+    pub texture2dms_array: D3D12_TEX2DMS_ARRAY_SRV,
+    pub texture3d: D3D12_TEX3D_SRV,
+    pub texture_cube: D3D12_TEXCUBE_SRV,
+    pub texture_cube_array: D3D12_TEXCUBE_ARRAY_SRV,
+    pub raytracing_acceleration_structure: D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV,
+}
+impl D3D12_SHADER_RESOURCE_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_TYPE_DESC {
     pub class: super::direct3d11::D3D_SHADER_VARIABLE_CLASS,
     pub r#type: super::direct3d11::D3D_SHADER_VARIABLE_TYPE,
@@ -18162,7 +18980,7 @@ impl ::std::fmt::Debug for D3D12_SHADER_TYPE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_SHADER_TYPE_DESC")
             .field("class", &format_args!("{:?}", self.class))
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("rows", &format_args!("{:?}", self.rows))
             .field("columns", &format_args!("{:?}", self.columns))
             .field("elements", &format_args!("{:?}", self.elements))
@@ -18190,7 +19008,7 @@ unsafe impl ::windows::Abi for D3D12_SHADER_TYPE_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SHADER_VARIABLE_DESC {
     pub name: super::system_services::PSTR,
     pub start_offset: u32,
@@ -18341,7 +19159,7 @@ pub const D3D12_SHIFT_INSTRUCTION_PAD_VALUE: u32 = 0u32;
 pub const D3D12_SHIFT_INSTRUCTION_SHIFT_VALUE_BIT_COUNT: u32 = 5u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SIGNATURE_PARAMETER_DESC {
     pub semantic_name: super::system_services::PSTR,
     pub semantic_index: u32,
@@ -18466,7 +19284,7 @@ unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STATE_OBJECT_CONFIG {
     pub flags: D3D12_STATE_OBJECT_FLAGS,
 }
@@ -18555,7 +19373,7 @@ unsafe impl ::windows::Abi for D3D12_STATE_SUBOBJECT_TYPE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STATE_SUBOBJECT {
     pub r#type: D3D12_STATE_SUBOBJECT_TYPE,
     pub p_desc: *mut ::std::ffi::c_void,
@@ -18572,7 +19390,7 @@ impl ::std::default::Default for D3D12_STATE_SUBOBJECT {
 impl ::std::fmt::Debug for D3D12_STATE_SUBOBJECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATE_SUBOBJECT")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("p_desc", &format_args!("{:?}", self.p_desc))
             .finish()
     }
@@ -18588,7 +19406,7 @@ unsafe impl ::windows::Abi for D3D12_STATE_SUBOBJECT {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_STATE_OBJECT_DESC {
     pub r#type: D3D12_STATE_OBJECT_TYPE,
     pub num_subobjects: u32,
@@ -18607,7 +19425,7 @@ impl ::std::default::Default for D3D12_STATE_OBJECT_DESC {
 impl ::std::fmt::Debug for D3D12_STATE_OBJECT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("D3D12_STATE_OBJECT_DESC")
-            .field("type", &format_args!("{:?}", self.r#type))
+            .field("r#type", &format_args!("{:?}", self.r#type))
             .field("num_subobjects", &format_args!("{:?}", self.num_subobjects))
             .field("p_subobjects", &format_args!("{:?}", self.p_subobjects))
             .finish()
@@ -18626,7 +19444,7 @@ unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_DESC {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
     pub p_subobject_to_associate: *mut D3D12_STATE_SUBOBJECT,
     pub num_exports: u32,
@@ -18668,7 +19486,7 @@ unsafe impl ::windows::Abi for D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION {
 pub const D3D12_SUBPIXEL_FRACTIONAL_BIT_COUNT: u32 = 8u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SUBRESOURCE_DATA {
     pub p_data: *mut ::std::ffi::c_void,
     pub row_pitch: isize,
@@ -18706,7 +19524,7 @@ unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_DATA {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SUBRESOURCE_INFO {
     pub offset: u64,
     pub row_pitch: u32,
@@ -18744,7 +19562,7 @@ unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_INFO {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SUBRESOURCE_RANGE_UINT64 {
     pub subresource: u32,
     pub range: D3D12_RANGE_UINT64,
@@ -18777,7 +19595,7 @@ unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_RANGE_UINT64 {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SUBRESOURCE_TILING {
     pub width_in_tiles: u32,
     pub height_in_tiles: u16,
@@ -18836,144 +19654,7 @@ pub const D3D12_TESSELLATOR_MIN_ISOLINE_DENSITY_TESSELLATION_FACTOR: u32 = 1u32;
 pub const D3D12_TESSELLATOR_MIN_ODD_TESSELLATION_FACTOR: u32 = 1u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_ARRAY_DSV {
-    pub mip_slice: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX1D_ARRAY_DSV {}
-impl ::std::default::Default for D3D12_TEX1D_ARRAY_DSV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_ARRAY_DSV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_ARRAY_RTV {
-    pub mip_slice: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX1D_ARRAY_RTV {}
-impl ::std::default::Default for D3D12_TEX1D_ARRAY_RTV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_ARRAY_RTV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_ARRAY_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEX1D_ARRAY_SRV {}
-impl ::std::default::Default for D3D12_TEX1D_ARRAY_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            first_array_slice: 0,
-            array_size: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_ARRAY_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_ARRAY_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_ARRAY_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TEX1D_ARRAY_UAV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -19014,107 +19695,7 @@ unsafe impl ::windows::Abi for D3D12_TEX1D_ARRAY_UAV {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_DSV {
-    pub mip_slice: u32,
-}
-impl D3D12_TEX1D_DSV {}
-impl ::std::default::Default for D3D12_TEX1D_DSV {
-    fn default() -> Self {
-        Self { mip_slice: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_DSV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_RTV {
-    pub mip_slice: u32,
-}
-impl D3D12_TEX1D_RTV {}
-impl ::std::default::Default for D3D12_TEX1D_RTV {
-    fn default() -> Self {
-        Self { mip_slice: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_RTV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX1D_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEX1D_SRV {}
-impl ::std::default::Default for D3D12_TEX1D_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX1D_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX1D_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX1D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX1D_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX1D_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TEX1D_UAV {
     pub mip_slice: u32,
 }
@@ -19142,359 +19723,7 @@ unsafe impl ::windows::Abi for D3D12_TEX1D_UAV {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_ARRAY_DSV {
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX2DMS_ARRAY_DSV {}
-impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_DSV {
-    fn default() -> Self {
-        Self {
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_DSV")
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_ARRAY_RTV {
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX2DMS_ARRAY_RTV {}
-impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_RTV {
-    fn default() -> Self {
-        Self {
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_RTV")
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_ARRAY_SRV {
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX2DMS_ARRAY_SRV {}
-impl ::std::default::Default for D3D12_TEX2DMS_ARRAY_SRV {
-    fn default() -> Self {
-        Self {
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_ARRAY_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_ARRAY_SRV")
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.first_array_slice == other.first_array_slice && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_ARRAY_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_ARRAY_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_DSV {
-    pub unused_field_nothing_to_define: u32,
-}
-impl D3D12_TEX2DMS_DSV {}
-impl ::std::default::Default for D3D12_TEX2DMS_DSV {
-    fn default() -> Self {
-        Self {
-            unused_field_nothing_to_define: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_DSV")
-            .field(
-                "unused_field_nothing_to_define",
-                &format_args!("{:?}", self.unused_field_nothing_to_define),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_RTV {
-    pub unused_field_nothing_to_define: u32,
-}
-impl D3D12_TEX2DMS_RTV {}
-impl ::std::default::Default for D3D12_TEX2DMS_RTV {
-    fn default() -> Self {
-        Self {
-            unused_field_nothing_to_define: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_RTV")
-            .field(
-                "unused_field_nothing_to_define",
-                &format_args!("{:?}", self.unused_field_nothing_to_define),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2DMS_SRV {
-    pub unused_field_nothing_to_define: u32,
-}
-impl D3D12_TEX2DMS_SRV {}
-impl ::std::default::Default for D3D12_TEX2DMS_SRV {
-    fn default() -> Self {
-        Self {
-            unused_field_nothing_to_define: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2DMS_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2DMS_SRV")
-            .field(
-                "unused_field_nothing_to_define",
-                &format_args!("{:?}", self.unused_field_nothing_to_define),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2DMS_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.unused_field_nothing_to_define == other.unused_field_nothing_to_define
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2DMS_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX2DMS_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_ARRAY_DSV {
-    pub mip_slice: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-}
-impl D3D12_TEX2D_ARRAY_DSV {}
-impl ::std::default::Default for D3D12_TEX2D_ARRAY_DSV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            first_array_slice: 0,
-            array_size: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_ARRAY_DSV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_ARRAY_RTV {
-    pub mip_slice: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-    pub plane_slice: u32,
-}
-impl D3D12_TEX2D_ARRAY_RTV {}
-impl ::std::default::Default for D3D12_TEX2D_ARRAY_RTV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            first_array_slice: 0,
-            array_size: 0,
-            plane_slice: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_ARRAY_RTV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-            && self.plane_slice == other.plane_slice
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_ARRAY_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub first_array_slice: u32,
-    pub array_size: u32,
-    pub plane_slice: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEX2D_ARRAY_SRV {}
-impl ::std::default::Default for D3D12_TEX2D_ARRAY_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            first_array_slice: 0,
-            array_size: 0,
-            plane_slice: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_ARRAY_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_ARRAY_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "first_array_slice",
-                &format_args!("{:?}", self.first_array_slice),
-            )
-            .field("array_size", &format_args!("{:?}", self.array_size))
-            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first_array_slice == other.first_array_slice
-            && self.array_size == other.array_size
-            && self.plane_slice == other.plane_slice
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_ARRAY_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TEX2D_ARRAY_UAV {
     pub mip_slice: u32,
     pub first_array_slice: u32,
@@ -19539,116 +19768,7 @@ unsafe impl ::windows::Abi for D3D12_TEX2D_ARRAY_UAV {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_DSV {
-    pub mip_slice: u32,
-}
-impl D3D12_TEX2D_DSV {}
-impl ::std::default::Default for D3D12_TEX2D_DSV {
-    fn default() -> Self {
-        Self { mip_slice: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_DSV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_DSV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_DSV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_DSV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_DSV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_RTV {
-    pub mip_slice: u32,
-    pub plane_slice: u32,
-}
-impl D3D12_TEX2D_RTV {}
-impl ::std::default::Default for D3D12_TEX2D_RTV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            plane_slice: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_RTV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice && self.plane_slice == other.plane_slice
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX2D_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub plane_slice: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEX2D_SRV {}
-impl ::std::default::Default for D3D12_TEX2D_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            plane_slice: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX2D_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX2D_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field("plane_slice", &format_args!("{:?}", self.plane_slice))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX2D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.plane_slice == other.plane_slice
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX2D_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX2D_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TEX2D_UAV {
     pub mip_slice: u32,
     pub plane_slice: u32,
@@ -19681,89 +19801,7 @@ unsafe impl ::windows::Abi for D3D12_TEX2D_UAV {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX3D_RTV {
-    pub mip_slice: u32,
-    pub first_wslice: u32,
-    pub wsize: u32,
-}
-impl D3D12_TEX3D_RTV {}
-impl ::std::default::Default for D3D12_TEX3D_RTV {
-    fn default() -> Self {
-        Self {
-            mip_slice: 0,
-            first_wslice: 0,
-            wsize: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX3D_RTV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX3D_RTV")
-            .field("mip_slice", &format_args!("{:?}", self.mip_slice))
-            .field("first_wslice", &format_args!("{:?}", self.first_wslice))
-            .field("wsize", &format_args!("{:?}", self.wsize))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX3D_RTV {
-    fn eq(&self, other: &Self) -> bool {
-        self.mip_slice == other.mip_slice
-            && self.first_wslice == other.first_wslice
-            && self.wsize == other.wsize
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX3D_RTV {}
-unsafe impl ::windows::Abi for D3D12_TEX3D_RTV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEX3D_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEX3D_SRV {}
-impl ::std::default::Default for D3D12_TEX3D_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEX3D_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEX3D_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEX3D_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEX3D_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEX3D_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TEX3D_UAV {
     pub mip_slice: u32,
     pub first_wslice: u32,
@@ -19799,112 +19837,13 @@ impl ::std::cmp::Eq for D3D12_TEX3D_UAV {}
 unsafe impl ::windows::Abi for D3D12_TEX3D_UAV {
     type Abi = Self;
 }
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEXCUBE_ARRAY_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub first2d_array_face: u32,
-    pub num_cubes: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEXCUBE_ARRAY_SRV {}
-impl ::std::default::Default for D3D12_TEXCUBE_ARRAY_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            first2d_array_face: 0,
-            num_cubes: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEXCUBE_ARRAY_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEXCUBE_ARRAY_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "first2d_array_face",
-                &format_args!("{:?}", self.first2d_array_face),
-            )
-            .field("num_cubes", &format_args!("{:?}", self.num_cubes))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEXCUBE_ARRAY_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.first2d_array_face == other.first2d_array_face
-            && self.num_cubes == other.num_cubes
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEXCUBE_ARRAY_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEXCUBE_ARRAY_SRV {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_TEXCUBE_SRV {
-    pub most_detailed_mip: u32,
-    pub mip_levels: u32,
-    pub resource_min_lod_clamp: f32,
-}
-impl D3D12_TEXCUBE_SRV {}
-impl ::std::default::Default for D3D12_TEXCUBE_SRV {
-    fn default() -> Self {
-        Self {
-            most_detailed_mip: 0,
-            mip_levels: 0,
-            resource_min_lod_clamp: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TEXCUBE_SRV {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TEXCUBE_SRV")
-            .field(
-                "most_detailed_mip",
-                &format_args!("{:?}", self.most_detailed_mip),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field(
-                "resource_min_lod_clamp",
-                &format_args!("{:?}", self.resource_min_lod_clamp),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TEXCUBE_SRV {
-    fn eq(&self, other: &Self) -> bool {
-        self.most_detailed_mip == other.most_detailed_mip
-            && self.mip_levels == other.mip_levels
-            && self.resource_min_lod_clamp == other.resource_min_lod_clamp
-    }
-}
-impl ::std::cmp::Eq for D3D12_TEXCUBE_SRV {}
-unsafe impl ::windows::Abi for D3D12_TEXCUBE_SRV {
-    type Abi = Self;
-}
 pub const D3D12_TEXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 16u32;
 pub const D3D12_TEXTURE_DATA_PITCH_ALIGNMENT: u32 = 256u32;
 pub const D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT: u32 = 512u32;
 pub const D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES: u32 = 65536u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_TILE_SHAPE {
     pub width_in_texels: u32,
     pub height_in_texels: u32,
@@ -19984,73 +19923,52 @@ pub const D3D12_UAV_SLOT_COUNT: u32 = 64u32;
 pub const D3D12_UNBOUND_MEMORY_ACCESS_RESULT: u32 = 0u32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_UNORDERED_ACCESS_VIEW_DESC {
     pub format: super::dxgi::DXGI_FORMAT,
     pub view_dimension: D3D12_UAV_DIMENSION,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0,
 }
 impl D3D12_UNORDERED_ACCESS_VIEW_DESC {}
-impl ::std::default::Default for D3D12_UNORDERED_ACCESS_VIEW_DESC {
-    fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            view_dimension: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_UNORDERED_ACCESS_VIEW_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_UNORDERED_ACCESS_VIEW_DESC")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("view_dimension", &format_args!("{:?}", self.view_dimension))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_UNORDERED_ACCESS_VIEW_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.view_dimension == other.view_dimension
-            && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_UNORDERED_ACCESS_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_UNORDERED_ACCESS_VIEW_DESC {
     type Abi = Self;
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+    pub buffer: D3D12_BUFFER_UAV,
+    pub texture1d: D3D12_TEX1D_UAV,
+    pub texture1d_array: D3D12_TEX1D_ARRAY_UAV,
+    pub texture2d: D3D12_TEX2D_UAV,
+    pub texture2d_array: D3D12_TEX2D_ARRAY_UAV,
+    pub texture3d: D3D12_TEX3D_UAV,
+}
+impl D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {}
+unsafe impl ::windows::Abi for D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
     pub version: D3D12_DRED_VERSION,
-    pub anonymous: ::windows::NOT_YET_SUPPORTED_TYPE,
+    pub anonymous: D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0,
 }
 impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {}
-impl ::std::default::Default for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
-    fn default() -> Self {
-        Self {
-            version: ::std::default::Default::default(),
-            anonymous: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA")
-            .field("version", &format_args!("{:?}", self.version))
-            .field("anonymous", &format_args!("{:?}", self.anonymous))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
-    fn eq(&self, other: &Self) -> bool {
-        self.version == other.version && self.anonymous == other.anonymous
-    }
-}
-impl ::std::cmp::Eq for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
+    pub dred_1_0: D3D12_DEVICE_REMOVED_EXTENDED_DATA,
+    pub dred_1_1: D3D12_DEVICE_REMOVED_EXTENDED_DATA1,
+    pub dred_1_2: D3D12_DEVICE_REMOVED_EXTENDED_DATA2,
+}
+impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {}
+unsafe impl ::windows::Abi for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     type Abi = Self;
 }
 pub const D3D12_VIDEO_DECODE_MAX_ARGUMENTS: u32 = 10u32;
@@ -20066,7 +19984,7 @@ pub const D3D12_VIEWPORT_BOUNDS_MAX: u32 = 32767u32;
 pub const D3D12_VIEWPORT_BOUNDS_MIN: i32 = -32768i32;
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_VIEW_INSTANCE_LOCATION {
     pub viewport_array_index: u32,
     pub render_target_array_index: u32,
@@ -20130,7 +20048,7 @@ unsafe impl ::windows::Abi for D3D12_VIEW_INSTANCING_FLAGS {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_VIEW_INSTANCING_DESC {
     pub view_instance_count: u32,
     pub p_view_instance_locations: *mut D3D12_VIEW_INSTANCE_LOCATION,
@@ -20210,7 +20128,7 @@ unsafe impl ::windows::Abi for D3D12_WRITEBUFFERIMMEDIATE_MODE {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     pub dest: u64,
     pub value: u32,
@@ -20239,6 +20157,7 @@ unsafe impl ::windows::Abi for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     type Abi = Self;
 }
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20353,6 +20272,7 @@ pub struct ID3D11On12Device_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20505,6 +20425,7 @@ pub struct ID3D11On12Device1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20730,6 +20651,7 @@ pub struct ID3D11On12Device2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20788,6 +20710,7 @@ pub struct ID3D12Debug_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20862,6 +20785,7 @@ pub struct ID3D12Debug1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, enable: super::system_services::BOOL),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -20923,6 +20847,7 @@ pub struct ID3D12Debug2_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, flags: D3D12_GPU_BASED_VALIDATION_FLAGS),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21030,6 +20955,7 @@ pub struct ID3D12Debug3_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, flags: D3D12_GPU_BASED_VALIDATION_FLAGS),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21113,6 +21039,7 @@ pub struct ID3D12DebugCommandList_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_DEBUG_FEATURE,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21220,6 +21147,7 @@ pub struct ID3D12DebugCommandList1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21367,6 +21295,7 @@ pub struct ID3D12DebugCommandList2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21436,6 +21365,7 @@ pub struct ID3D12DebugCommandQueue_abi(
     ) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21514,6 +21444,7 @@ pub struct ID3D12DebugDevice_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21616,6 +21547,7 @@ pub struct ID3D12DebugDevice1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -21754,6 +21686,7 @@ pub struct ID3D12DebugDevice2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -22680,6 +22613,7 @@ pub struct ID3D12Device_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut super::kernel::LUID),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -23701,6 +23635,7 @@ pub struct ID3D12Device1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -24763,6 +24698,7 @@ pub struct ID3D12Device2_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -25913,6 +25849,7 @@ pub struct ID3D12Device3_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -26114,6 +26051,7 @@ pub struct ID3D12ProtectedSession_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_PROTECTED_SESSION_STATUS,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -26347,6 +26285,7 @@ pub struct ID3D12ProtectedResourceSession_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -27682,6 +27621,7 @@ pub struct ID3D12Device4_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -27743,6 +27683,7 @@ pub struct ID3D12LifetimeOwner_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, new_state: D3D12_LIFETIME_STATE),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -29239,6 +29180,7 @@ pub struct ID3D12Device5_abi(
     ) -> D3D12_DRIVER_MATCHING_IDENTIFIER_STATUS,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -30782,6 +30724,7 @@ pub struct ID3D12Device6_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -32392,6 +32335,7 @@ pub struct ID3D12Device7_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34176,6 +34120,7 @@ pub struct ID3D12Device8_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34256,6 +34201,7 @@ pub struct ID3D12DeviceRemovedExtendedData_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34390,6 +34336,7 @@ pub struct ID3D12DeviceRemovedExtendedData1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34467,6 +34414,7 @@ pub struct ID3D12DeviceRemovedExtendedDataSettings_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, enablement: D3D12_DRED_ENABLEMENT),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34585,6 +34533,7 @@ pub struct ID3D12DeviceRemovedExtendedDataSettings1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, enablement: D3D12_DRED_ENABLEMENT),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34844,6 +34793,7 @@ pub struct ID3D12Fence1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_FENCE_FLAGS,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -34908,6 +34858,7 @@ pub struct ID3D12FunctionParameterReflection_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -35060,6 +35011,7 @@ pub struct ID3D12ShaderReflectionType_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -35139,6 +35091,7 @@ pub struct ID3D12ShaderReflectionVariable_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, u_array_index: u32) -> u32,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -35225,6 +35178,7 @@ pub struct ID3D12ShaderReflectionConstantBuffer_abi(
     ) -> ::windows::RawPtr,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -35367,6 +35321,7 @@ pub struct ID3D12FunctionReflection_abi(
     ) -> ::windows::RawPtr,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -36466,7 +36421,7 @@ pub struct ID3D12GraphicsCommandList1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -36692,6 +36647,7 @@ pub struct ID3D12GraphicsCommandList1_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, mask: u32),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -37828,7 +37784,7 @@ pub struct ID3D12GraphicsCommandList2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -38060,6 +38016,7 @@ pub struct ID3D12GraphicsCommandList2_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -39232,7 +39189,7 @@ pub struct ID3D12GraphicsCommandList3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -39468,6 +39425,7 @@ pub struct ID3D12GraphicsCommandList3_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -39687,6 +39645,7 @@ pub struct ID3D12MetaCommand_abi(
     ) -> u64,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -40981,7 +40940,7 @@ pub struct ID3D12GraphicsCommandList4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -41218,8 +41177,8 @@ pub struct ID3D12GraphicsCommandList4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_render_targets: u32,
-        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC,
-        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC,
+        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi,
+        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi,
         flags: D3D12_RENDER_PASS_FLAGS,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
@@ -41257,6 +41216,7 @@ pub struct ID3D12GraphicsCommandList4_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_desc: *const D3D12_DISPATCH_RAYS_DESC),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -42595,7 +42555,7 @@ pub struct ID3D12GraphicsCommandList5_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -42832,8 +42792,8 @@ pub struct ID3D12GraphicsCommandList5_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_render_targets: u32,
-        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC,
-        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC,
+        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi,
+        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi,
         flags: D3D12_RENDER_PASS_FLAGS,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
@@ -42877,6 +42837,7 @@ pub struct ID3D12GraphicsCommandList5_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, shading_rate_image: ::windows::RawPtr),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -44252,7 +44213,7 @@ pub struct ID3D12GraphicsCommandList6_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_barriers: u32,
-        p_barriers: *const D3D12_RESOURCE_BARRIER,
+        p_barriers: *const D3D12_RESOURCE_BARRIER_abi,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, p_command_list: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
@@ -44489,8 +44450,8 @@ pub struct ID3D12GraphicsCommandList6_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         num_render_targets: u32,
-        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC,
-        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC,
+        p_render_targets: *const D3D12_RENDER_PASS_RENDER_TARGET_DESC_abi,
+        p_depth_stencil: *const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC_abi,
         flags: D3D12_RENDER_PASS_FLAGS,
     ),
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
@@ -44540,6 +44501,7 @@ pub struct ID3D12GraphicsCommandList6_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -44787,6 +44749,7 @@ pub struct ID3D12Heap1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -45170,6 +45133,7 @@ pub struct ID3D12InfoQueue_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -45241,6 +45205,7 @@ pub struct ID3D12LibraryReflection_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, function_index: i32) -> ::windows::RawPtr,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -45435,6 +45400,7 @@ pub struct ID3D12LifetimeTracker_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -45706,6 +45672,7 @@ pub struct ID3D12PipelineLibrary_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -46024,6 +45991,7 @@ pub struct ID3D12PipelineLibrary1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -46291,6 +46259,7 @@ pub struct ID3D12ProtectedResourceSession1_abi(
     ),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -46639,6 +46608,7 @@ pub struct ID3D12Resource1_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47015,6 +46985,7 @@ pub struct ID3D12Resource2_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut D3D12_RESOURCE_DESC1),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47073,6 +47044,7 @@ pub struct ID3D12RootSignatureDeserializer_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> *mut D3D12_ROOT_SIGNATURE_DESC,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47317,6 +47289,7 @@ pub struct ID3D12ShaderReflection_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u64,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47424,6 +47397,7 @@ pub struct ID3D12SharingContract_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, guid: *const ::windows::Guid),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47521,6 +47495,7 @@ pub struct ID3D12StateObjectProperties_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr, pipeline_stack_size_in_bytes: u64),
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47623,6 +47598,7 @@ pub struct ID3D12SwapChainAssistant_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47694,6 +47670,7 @@ pub struct ID3D12Tools_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -47776,6 +47753,7 @@ pub struct ID3D12VersionedRootSignatureDeserializer_abi(
     ) -> *mut D3D12_VERSIONED_ROOT_SIGNATURE_DESC,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -48003,6 +47981,7 @@ pub struct IHolographicCameraInterop_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -48192,6 +48171,7 @@ pub struct IHolographicCameraRenderingParametersInterop_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -48419,6 +48399,7 @@ pub struct IHolographicQuadLayerInterop_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
+#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
