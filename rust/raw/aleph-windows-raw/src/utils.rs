@@ -41,20 +41,6 @@ use std::marker::PhantomData;
 use std::os::raw::c_char;
 use utf16_lit::utf16_null;
 
-//// TODO: Fixme when windows-rs generates this correctly
-//mod temp {
-//    use std::ffi::c_void;
-//    use std::ptr::NonNull;
-//
-//    #[link(name = "KERNEL32")]
-//    extern "system" {
-//        pub fn GetProcAddress(
-//            h_module: isize,
-//            lp_proc_name: *const i8,
-//        ) -> ::std::option::Option<NonNull<c_void>>;
-//    }
-//}
-
 #[repr(transparent)]
 #[derive(Copy, Clone)]
 pub struct CStrFFI<'a> {
