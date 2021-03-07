@@ -27,17 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::dx12::root_parameter::{D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1};
-use crate::windows_raw::win32::direct3d12::{
-    D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_SIGNATURE_FLAGS,
-    D3D12_STATIC_SAMPLER_DESC,
-};
 use crate::{
     RootParameter, RootParameter1, RootSignatureFlags, StaticSamplerDesc,
     VersionedRootSignatureDesc,
 };
 use std::marker::PhantomData;
 use std::mem::{align_of, size_of, transmute};
+use windows_raw::win32::direct3d12::{
+    D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1,
+    D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1, D3D12_STATIC_SAMPLER_DESC,
+};
 
 pub struct RootSignatureDescBuilder<'a> {
     parameters: Vec<D3D12_ROOT_PARAMETER>,
@@ -63,7 +62,7 @@ impl<'a> RootSignatureDescBuilder<'a> {
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER {
                 parameter_type: v.get_parameter_type(),
-                variant: v.get_variant(),
+                anonymous: v.get_variant(),
                 shader_visibility: v.get_shader_visibility(),
             })
             .collect();
@@ -140,7 +139,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER1 {
                 parameter_type: v.get_parameter_type(),
-                variant: v.get_variant(),
+                anonymous: v.get_variant(),
                 shader_visibility: v.get_shader_visibility(),
             })
             .collect();
@@ -229,26 +228,4 @@ impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc1<'a> {
     fn into(self) -> VersionedRootSignatureDesc<'a> {
         VersionedRootSignatureDesc::Desc1(self)
     }
-}
-
-#[derive(Clone, Debug)]
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
-}
-
-#[derive(Clone, Debug)]
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_SIGNATURE_DESC1 {
-    pub num_parameters: u32,
-    pub p_parameters: *mut D3D12_ROOT_PARAMETER1,
-    pub num_static_samplers: u32,
-    pub p_static_samplers: *mut D3D12_STATIC_SAMPLER_DESC,
-    pub flags: D3D12_ROOT_SIGNATURE_FLAGS,
 }

@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
 use std::convert::TryFrom;
 use std::num::NonZeroUsize;
+use windows_raw::win32::direct3d12::D3D12_CPU_DESCRIPTOR_HANDLE;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

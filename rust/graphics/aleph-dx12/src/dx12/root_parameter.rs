@@ -27,16 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::{
-    D3D12_ROOT_CONSTANTS, D3D12_ROOT_DESCRIPTOR, D3D12_ROOT_DESCRIPTOR1,
-    D3D12_ROOT_DESCRIPTOR_TABLE, D3D12_ROOT_DESCRIPTOR_TABLE1, D3D12_ROOT_PARAMETER_TYPE,
-    D3D12_SHADER_VISIBILITY,
-};
 use crate::{
     DescriptorRange, DescriptorRange1, RootConstants, RootDescriptor, RootDescriptor1,
     ShaderVisibility,
 };
-use std::mem::{transmute, ManuallyDrop};
+use std::mem::transmute_copy;
+use windows_raw::win32::direct3d12::{
+    D3D12_ROOT_DESCRIPTOR_TABLE, D3D12_ROOT_DESCRIPTOR_TABLE1, D3D12_ROOT_PARAMETER1_0,
+    D3D12_ROOT_PARAMETER_0, D3D12_ROOT_PARAMETER_TYPE, D3D12_SHADER_VISIBILITY,
+};
 
 #[derive(Clone, Debug, Hash)]
 pub enum RootParameter<'a> {
@@ -77,36 +76,36 @@ impl<'a> RootParameter<'a> {
         }
     }
 
-    pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER_VARIANT {
+    pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER_0 {
         match self {
             RootParameter::DescriptorTable { ranges, .. } => {
                 if ranges.is_empty() {
-                    D3D12_ROOT_PARAMETER_VARIANT {
-                        descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE {
+                    D3D12_ROOT_PARAMETER_0 {
+                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE {
                             num_descriptor_ranges: 0,
                             p_descriptor_ranges: std::ptr::null_mut(),
-                        }),
+                        },
                     }
                 } else {
-                    D3D12_ROOT_PARAMETER_VARIANT {
-                        descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE {
+                    D3D12_ROOT_PARAMETER_0 {
+                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE {
                             num_descriptor_ranges: ranges.len() as _,
                             p_descriptor_ranges: ranges.as_ptr() as *mut DescriptorRange as *mut _,
-                        }),
+                        },
                     }
                 }
             }
-            RootParameter::Constants { constants, .. } => D3D12_ROOT_PARAMETER_VARIANT {
-                constants: ManuallyDrop::new(unsafe { transmute(constants.clone()) }),
+            RootParameter::Constants { constants, .. } => D3D12_ROOT_PARAMETER_0 {
+                constants: unsafe { transmute_copy(constants) },
             },
-            RootParameter::CBV { cbv, .. } => D3D12_ROOT_PARAMETER_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(cbv.clone()) }),
+            RootParameter::CBV { cbv, .. } => D3D12_ROOT_PARAMETER_0 {
+                descriptor: unsafe { transmute_copy(cbv) },
             },
-            RootParameter::SRV { srv, .. } => D3D12_ROOT_PARAMETER_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(srv.clone()) }),
+            RootParameter::SRV { srv, .. } => D3D12_ROOT_PARAMETER_0 {
+                descriptor: unsafe { transmute_copy(srv) },
             },
-            RootParameter::UAV { uav, .. } => D3D12_ROOT_PARAMETER_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(uav.clone()) }),
+            RootParameter::UAV { uav, .. } => D3D12_ROOT_PARAMETER_0 {
+                descriptor: unsafe { transmute_copy(uav) },
             },
         }
     }
@@ -161,36 +160,36 @@ impl<'a> RootParameter1<'a> {
         }
     }
 
-    pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER1_VARIANT {
+    pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER1_0 {
         match self {
             RootParameter1::DescriptorTable { ranges, .. } => {
                 if ranges.is_empty() {
-                    D3D12_ROOT_PARAMETER1_VARIANT {
-                        descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                    D3D12_ROOT_PARAMETER1_0 {
+                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1 {
                             num_descriptor_ranges: 0,
                             p_descriptor_ranges: std::ptr::null_mut(),
-                        }),
+                        },
                     }
                 } else {
-                    D3D12_ROOT_PARAMETER1_VARIANT {
-                        descriptor_table: ManuallyDrop::new(D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                    D3D12_ROOT_PARAMETER1_0 {
+                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1 {
                             num_descriptor_ranges: ranges.len() as _,
                             p_descriptor_ranges: ranges.as_ptr() as *mut DescriptorRange1 as *mut _,
-                        }),
+                        },
                     }
                 }
             }
-            RootParameter1::Constants { constants, .. } => D3D12_ROOT_PARAMETER1_VARIANT {
-                constants: ManuallyDrop::new(unsafe { transmute(constants.clone()) }),
+            RootParameter1::Constants { constants, .. } => D3D12_ROOT_PARAMETER1_0 {
+                constants: unsafe { transmute_copy(constants) },
             },
-            RootParameter1::CBV { cbv, .. } => D3D12_ROOT_PARAMETER1_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(cbv.clone()) }),
+            RootParameter1::CBV { cbv, .. } => D3D12_ROOT_PARAMETER1_0 {
+                descriptor: unsafe { transmute_copy(cbv) },
             },
-            RootParameter1::SRV { srv, .. } => D3D12_ROOT_PARAMETER1_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(srv.clone()) }),
+            RootParameter1::SRV { srv, .. } => D3D12_ROOT_PARAMETER1_0 {
+                descriptor: unsafe { transmute_copy(srv) },
             },
-            RootParameter1::UAV { uav, .. } => D3D12_ROOT_PARAMETER1_VARIANT {
-                descriptor: ManuallyDrop::new(unsafe { transmute(uav.clone()) }),
+            RootParameter1::UAV { uav, .. } => D3D12_ROOT_PARAMETER1_0 {
+                descriptor: unsafe { transmute_copy(uav) },
             },
         }
     }
@@ -204,96 +203,4 @@ impl<'a> RootParameter1<'a> {
             RootParameter1::UAV { visibility, .. } => visibility.clone().into(),
         }
     }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_PARAMETER {
-    pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
-    pub variant: D3D12_ROOT_PARAMETER_VARIANT,
-    pub shader_visibility: D3D12_SHADER_VISIBILITY,
-}
-
-impl Drop for D3D12_ROOT_PARAMETER {
-    fn drop(&mut self) {
-        unsafe {
-            if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor_table)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
-            {
-                ManuallyDrop::drop(&mut self.variant.constants)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else {
-                unreachable!();
-            }
-        }
-    }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_ROOT_PARAMETER_VARIANT {
-    pub descriptor_table: ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE>,
-    pub constants: ManuallyDrop<D3D12_ROOT_CONSTANTS>,
-    pub descriptor: ManuallyDrop<D3D12_ROOT_DESCRIPTOR>,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_ROOT_PARAMETER1 {
-    pub parameter_type: D3D12_ROOT_PARAMETER_TYPE,
-    pub variant: D3D12_ROOT_PARAMETER1_VARIANT,
-    pub shader_visibility: D3D12_SHADER_VISIBILITY,
-}
-
-impl Drop for D3D12_ROOT_PARAMETER1 {
-    fn drop(&mut self) {
-        unsafe {
-            if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor_table)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
-            {
-                ManuallyDrop::drop(&mut self.variant.constants)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else if self.parameter_type
-                == D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV
-            {
-                ManuallyDrop::drop(&mut self.variant.descriptor)
-            } else {
-                unreachable!();
-            }
-        }
-    }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_ROOT_PARAMETER1_VARIANT {
-    pub descriptor_table: ManuallyDrop<D3D12_ROOT_DESCRIPTOR_TABLE1>,
-    pub constants: ManuallyDrop<D3D12_ROOT_CONSTANTS>,
-    pub descriptor: ManuallyDrop<D3D12_ROOT_DESCRIPTOR1>,
 }

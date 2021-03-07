@@ -28,14 +28,13 @@
 //
 
 use crate::dxgi;
-use std::mem::{transmute, ManuallyDrop};
+use std::mem::transmute;
 use windows_raw::win32::direct3d12::{
-    D3D12_BUFFER_SRV, D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV, D3D12_SRV_DIMENSION,
-    D3D12_TEX1D_ARRAY_SRV, D3D12_TEX1D_SRV, D3D12_TEX2DMS_ARRAY_SRV, D3D12_TEX2DMS_SRV,
-    D3D12_TEX2D_ARRAY_SRV, D3D12_TEX2D_SRV, D3D12_TEX3D_SRV, D3D12_TEXCUBE_ARRAY_SRV,
-    D3D12_TEXCUBE_SRV,
+    D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV, D3D12_SHADER_RESOURCE_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION, D3D12_TEX1D_ARRAY_SRV, D3D12_TEX1D_SRV,
+    D3D12_TEX2DMS_ARRAY_SRV, D3D12_TEX2DMS_SRV, D3D12_TEX2D_ARRAY_SRV, D3D12_TEX2D_SRV,
+    D3D12_TEX3D_SRV, D3D12_TEXCUBE_ARRAY_SRV, D3D12_TEXCUBE_SRV,
 };
-use windows_raw::win32::dxgi::DXGI_FORMAT;
 
 #[derive(Clone, Debug)]
 pub enum ShaderResourceViewDesc {
@@ -106,9 +105,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    buffer: ManuallyDrop::new(unsafe { transmute(buffer) }),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    buffer: unsafe { transmute(buffer) },
                 },
             },
             ShaderResourceViewDesc::Texture1D {
@@ -118,9 +117,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1D,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_1d: ManuallyDrop::new(texture_1d),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture1d: texture_1d,
                 },
             },
             ShaderResourceViewDesc::Texture1DArray {
@@ -130,9 +129,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_1d_array: ManuallyDrop::new(texture_1d_array),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture1d_array: texture_1d_array,
                 },
             },
             ShaderResourceViewDesc::Texture2D {
@@ -142,9 +141,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_2d: ManuallyDrop::new(texture_2d),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture2d: texture_2d,
                 },
             },
             ShaderResourceViewDesc::Texture2DArray {
@@ -154,9 +153,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_2d_array: ManuallyDrop::new(texture_2d_array),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture2d_array: texture_2d_array,
                 },
             },
             ShaderResourceViewDesc::Texture2DMS {
@@ -166,9 +165,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMS,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_2dms: ManuallyDrop::new(texture_2dms),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture2dms: texture_2dms,
                 },
             },
             ShaderResourceViewDesc::Texture2DMSArray {
@@ -178,9 +177,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_2dms_array: ManuallyDrop::new(texture_2dms_array),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture2dms_array: texture_2dms_array,
                 },
             },
             ShaderResourceViewDesc::Texture3D {
@@ -190,9 +189,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE3D,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_3d: ManuallyDrop::new(texture_3d),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    texture3d: texture_3d,
                 },
             },
             ShaderResourceViewDesc::TextureCube {
@@ -202,10 +201,8 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURECUBE,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_cube: ManuallyDrop::new(texture_cube),
-                },
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 { texture_cube },
             },
             ShaderResourceViewDesc::TextureCubeArray {
                 format,
@@ -214,10 +211,8 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    texture_cube_array: ManuallyDrop::new(texture_cube_array),
-                },
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 { texture_cube_array },
             },
             ShaderResourceViewDesc::RaytracingAccelerationStructure {
                 format,
@@ -227,11 +222,9 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 format: format.into(),
                 view_dimension:
                     D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
-                shader_4_component_mapping: component_mapping,
-                variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-                    raytracing_acceleration_structure: ManuallyDrop::new(
-                        raytracing_acceleration_structure,
-                    ),
+                shader4_component_mapping: component_mapping,
+                anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    raytracing_acceleration_structure,
                 },
             },
         }
@@ -274,29 +267,3 @@ pub type Tex3DSrv = D3D12_TEX3D_SRV;
 pub type TexCubeSrv = D3D12_TEXCUBE_SRV;
 pub type TexCubeArraySrv = D3D12_TEXCUBE_ARRAY_SRV;
 pub type RaytracingAccelerationStructureSrv = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV;
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_SHADER_RESOURCE_VIEW_DESC {
-    pub format: DXGI_FORMAT,
-    pub view_dimension: D3D12_SRV_DIMENSION,
-    pub shader_4_component_mapping: u32,
-    pub variant: D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_SHADER_RESOURCE_VIEW_DESC_VARIANT {
-    pub buffer: ManuallyDrop<D3D12_BUFFER_SRV>,
-    pub texture_1d: ManuallyDrop<D3D12_TEX1D_SRV>,
-    pub texture_1d_array: ManuallyDrop<D3D12_TEX1D_ARRAY_SRV>,
-    pub texture_2d: ManuallyDrop<D3D12_TEX2D_SRV>,
-    pub texture_2d_array: ManuallyDrop<D3D12_TEX2D_ARRAY_SRV>,
-    pub texture_2dms: ManuallyDrop<D3D12_TEX2DMS_SRV>,
-    pub texture_2dms_array: ManuallyDrop<D3D12_TEX2DMS_ARRAY_SRV>,
-    pub texture_3d: ManuallyDrop<D3D12_TEX3D_SRV>,
-    pub texture_cube: ManuallyDrop<D3D12_TEXCUBE_SRV>,
-    pub texture_cube_array: ManuallyDrop<D3D12_TEXCUBE_ARRAY_SRV>,
-    pub raytracing_acceleration_structure:
-        ManuallyDrop<D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV>,
-}

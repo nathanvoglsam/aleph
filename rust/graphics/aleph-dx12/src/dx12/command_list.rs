@@ -27,9 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::dx12::resource_barrier::D3D12_RESOURCE_BARRIER;
-use crate::dx12::texture_copy_location::D3D12_TEXTURE_COPY_LOCATION;
-use crate::windows_raw::win32::direct3d12::ID3D12GraphicsCommandList;
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
     D3D12DeviceChild, D3D12Object, DescriptorHeap, DescriptorHeapType, Device, DiscardRegion,
@@ -42,6 +39,9 @@ use std::mem::{align_of, size_of};
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
+use windows_raw::win32::direct3d12::{
+    ID3D12GraphicsCommandList, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
+};
 use windows_raw::win32::direct3d12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
@@ -252,11 +252,10 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 
     /// `ID3D12GraphicsCommandList::ResourceBarrier`
-    pub unsafe fn resource_barrier(&mut self, barriers: &[ResourceBarrier]) {
+    pub unsafe fn resource_barrier(&mut self, barriers: &[&ResourceBarrier]) {
         // Need to heap alloc to translate the type to something FFI compatible. Can't make the
         // wrapper FFI compatible without forcing very non-idiomatic and unsafe code on the user.
-        let barriers: Vec<D3D12_RESOURCE_BARRIER> =
-            barriers.iter().map(|v| v.clone().into()).collect();
+        let barriers: Vec<D3D12_RESOURCE_BARRIER> = barriers.iter().map(|v| v.get_raw()).collect();
         let num_barriers = barriers.len() as u32;
         let p_barriers = barriers.as_ptr();
         self.0.ResourceBarrier(num_barriers, p_barriers as *const _)
@@ -267,9 +266,8 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     /// Alternate version of `resource_barrier` that provides only a single resource barrier, but
     /// skips a heap allocation
     pub unsafe fn resource_barrier_single(&mut self, barrier: &ResourceBarrier) {
-        let barrier: D3D12_RESOURCE_BARRIER = barrier.clone().into();
-        let p_barriers = &barrier as *const D3D12_RESOURCE_BARRIER;
-        self.0.ResourceBarrier(1, p_barriers as *const _)
+        let barrier: D3D12_RESOURCE_BARRIER = barrier.get_raw();
+        self.0.ResourceBarrier(1, &barrier)
     }
 
     /// `ID3D12GraphicsCommandList::ExecuteBundle`

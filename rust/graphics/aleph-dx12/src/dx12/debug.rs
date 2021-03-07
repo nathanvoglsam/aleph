@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::{
-    ID3D12Debug, ID3D12Debug1, PFN_D3D12_GET_DEBUG_INTERFACE,
-};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
+use windows_raw::win32::direct3d12::{ID3D12Debug, ID3D12Debug1, PFN_D3D12_GET_DEBUG_INTERFACE};
 use windows_raw::{Abi, Interface};
 
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =

@@ -28,9 +28,9 @@
 //
 
 use crate::{PlacedSubresourceFootprint, Resource};
-use std::mem::{transmute, ManuallyDrop};
+use std::mem::transmute;
 use windows_raw::win32::direct3d12::{
-    ID3D12Resource, D3D12_PLACED_SUBRESOURCE_FOOTPRINT, D3D12_TEXTURE_COPY_TYPE,
+    D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE,
 };
 
 #[derive(Clone)]
@@ -63,8 +63,8 @@ impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
             } => D3D12_TEXTURE_COPY_LOCATION {
                 p_resource: resource.map(|v| v.0),
                 r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-                variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT {
-                    placed_footprint: ManuallyDrop::new(unsafe { transmute(placed_footprint) }),
+                anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    placed_footprint: unsafe { transmute(placed_footprint) },
                 },
             },
             TextureCopyLocation::Subresource {
@@ -73,23 +73,8 @@ impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
             } => D3D12_TEXTURE_COPY_LOCATION {
                 p_resource: resource.map(|v| v.0),
                 r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-                variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT { subresource_index },
+                anonymous: D3D12_TEXTURE_COPY_LOCATION_0 { subresource_index },
             },
         }
     }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_TEXTURE_COPY_LOCATION {
-    pub p_resource: Option<ID3D12Resource>,
-    pub r#type: D3D12_TEXTURE_COPY_TYPE,
-    pub variant: D3D12_TEXTURE_COPY_LOCATION_VARIANT,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_TEXTURE_COPY_LOCATION_VARIANT {
-    placed_footprint: ManuallyDrop<D3D12_PLACED_SUBRESOURCE_FOOTPRINT>,
-    subresource_index: u32,
 }

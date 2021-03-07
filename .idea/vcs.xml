@@ -4,5 +4,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rust/graphics/dx12/aleph-dx12-alloc-raw/thirdparty/D3D12MemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/rust/platform/aleph-platform/thirdparty/SDL-mirror" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/D3D12MemoryAllocator" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/SDL-mirror" vcs="Git" />
   </component>
 </project>

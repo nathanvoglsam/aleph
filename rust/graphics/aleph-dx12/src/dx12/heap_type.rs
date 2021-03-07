@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::D3D12_HEAP_TYPE;
+use windows_raw::win32::direct3d12::D3D12_HEAP_TYPE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::ID3D12Heap;
+use windows_raw::win32::direct3d12::ID3D12Heap;
 
 #[derive(Clone)]
 #[repr(transparent)]

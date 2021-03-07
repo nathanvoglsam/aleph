@@ -28,12 +28,6 @@
 //
 
 use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
-use crate::windows_raw::win32::direct3d12::{
-    D3D12_INPUT_ELEMENT_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
-    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_RT_FORMAT_ARRAY, D3D12_SO_DECLARATION_ENTRY,
-    D3D12_STREAM_OUTPUT_DESC,
-};
-use crate::windows_raw::win32::dxgi::DXGI_FORMAT;
 use crate::{
     dxgi, BlendDesc, DepthStencilDesc, IndexBufferStripCutValue, InputElementDesc,
     PrimitiveTopologyType, RasterizerDesc, RootSignature, StreamOutputDeclaration,
@@ -44,6 +38,12 @@ use std::marker::PhantomData;
 use std::mem::{align_of, size_of, transmute};
 use std::ops::Deref;
 use windows_raw::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
+use windows_raw::win32::direct3d12::{
+    D3D12_INPUT_ELEMENT_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_RT_FORMAT_ARRAY, D3D12_SO_DECLARATION_ENTRY,
+    D3D12_STREAM_OUTPUT_DESC,
+};
+use windows_raw::win32::dxgi::DXGI_FORMAT;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
     root_signature: Option<RootSignature>,
@@ -371,13 +371,13 @@ impl<'a> Deref for GraphicsPipelineStateStream<'a> {
 
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
-    use crate::windows_raw::win32::direct3d12::{
+    use windows_raw::win32::direct3d12::{
         ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE,
         D3D12_DEPTH_STENCIL_DESC, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC,
         D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
         D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE, D3D12_STREAM_OUTPUT_DESC,
     };
-    use crate::windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<Option<ID3D12RootSignature>>;
     pub(crate) type VertexShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;

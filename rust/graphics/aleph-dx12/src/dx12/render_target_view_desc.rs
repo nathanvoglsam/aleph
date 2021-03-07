@@ -28,13 +28,11 @@
 //
 
 use crate::dxgi;
-use std::mem::{transmute, ManuallyDrop};
 use windows_raw::win32::direct3d12::{
-    D3D12_BUFFER_RTV, D3D12_RTV_DIMENSION, D3D12_TEX1D_ARRAY_RTV, D3D12_TEX1D_RTV,
-    D3D12_TEX2DMS_ARRAY_RTV, D3D12_TEX2DMS_RTV, D3D12_TEX2D_ARRAY_RTV, D3D12_TEX2D_RTV,
-    D3D12_TEX3D_RTV,
+    D3D12_BUFFER_RTV, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0,
+    D3D12_RTV_DIMENSION, D3D12_TEX1D_ARRAY_RTV, D3D12_TEX1D_RTV, D3D12_TEX2DMS_ARRAY_RTV,
+    D3D12_TEX2DMS_RTV, D3D12_TEX2D_ARRAY_RTV, D3D12_TEX2D_RTV, D3D12_TEX3D_RTV,
 };
-use windows_raw::win32::dxgi::DXGI_FORMAT;
 
 #[derive(Clone, Debug)]
 pub enum RenderTargetViewDesc {
@@ -78,16 +76,14 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_BUFFER,
-                variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                    buffer: ManuallyDrop::new(unsafe { transmute(buffer) }),
-                },
+                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 { buffer },
             },
             RenderTargetViewDesc::Texture1D { format, texture_1d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
                     view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1D,
-                    variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                        texture_1d: ManuallyDrop::new(texture_1d),
+                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        texture1d: texture_1d,
                     },
                 }
             }
@@ -97,16 +93,16 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
-                variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                    texture_1d_array: ManuallyDrop::new(texture_1d_array),
+                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    texture1d_array: texture_1d_array,
                 },
             },
             RenderTargetViewDesc::Texture2D { format, texture_2d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
                     view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2D,
-                    variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                        texture_2d: ManuallyDrop::new(texture_2d),
+                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        texture2d: texture_2d,
                     },
                 }
             }
@@ -116,8 +112,8 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
-                variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                    texture_2d_array: ManuallyDrop::new(texture_2d_array),
+                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    texture2d_array: texture_2d_array,
                 },
             },
             RenderTargetViewDesc::Texture2DMS {
@@ -126,8 +122,8 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMS,
-                variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                    texture_2dms: ManuallyDrop::new(texture_2dms),
+                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    texture2dms: texture_2dms,
                 },
             },
             RenderTargetViewDesc::Texture2DMSArray {
@@ -136,16 +132,16 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 format: format.into(),
                 view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
-                variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                    texture_2dms_array: ManuallyDrop::new(texture_2dms_array),
+                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    texture2dms_array: texture_2dms_array,
                 },
             },
             RenderTargetViewDesc::Texture3D { format, texture_3d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     format: format.into(),
                     view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE3D,
-                    variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-                        texture_3d: ManuallyDrop::new(texture_3d),
+                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        texture3d: texture_3d,
                     },
                 }
             }
@@ -161,24 +157,3 @@ pub type Tex2DArrayRtv = D3D12_TEX2D_ARRAY_RTV;
 pub type Tex2DMSRtv = D3D12_TEX2DMS_RTV;
 pub type Tex2DMSArrayRtv = D3D12_TEX2DMS_ARRAY_RTV;
 pub type Tex3DRtv = D3D12_TEX3D_RTV;
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_RENDER_TARGET_VIEW_DESC {
-    pub format: DXGI_FORMAT,
-    pub view_dimension: D3D12_RTV_DIMENSION,
-    pub variant: D3D12_RENDER_TARGET_VIEW_DESC_VARIANT,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_RENDER_TARGET_VIEW_DESC_VARIANT {
-    pub buffer: ManuallyDrop<D3D12_BUFFER_RTV>,
-    pub texture_1d: ManuallyDrop<D3D12_TEX1D_RTV>,
-    pub texture_1d_array: ManuallyDrop<D3D12_TEX1D_ARRAY_RTV>,
-    pub texture_2d: ManuallyDrop<D3D12_TEX2D_RTV>,
-    pub texture_2d_array: ManuallyDrop<D3D12_TEX2D_ARRAY_RTV>,
-    pub texture_2dms: ManuallyDrop<D3D12_TEX2DMS_RTV>,
-    pub texture_2dms_array: ManuallyDrop<D3D12_TEX2DMS_ARRAY_RTV>,
-    pub texture_3d: ManuallyDrop<D3D12_TEX3D_RTV>,
-}

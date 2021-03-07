@@ -28,9 +28,8 @@
 //
 
 use crate::{dxgi, DepthStencilValue};
-use std::mem::{transmute, ManuallyDrop};
-use windows_raw::win32::direct3d12::D3D12_DEPTH_STENCIL_VALUE;
-use windows_raw::win32::dxgi::DXGI_FORMAT;
+use std::mem::transmute;
+use windows_raw::win32::direct3d12::{D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0};
 
 #[derive(Clone, Debug)]
 pub enum ClearValue {
@@ -60,7 +59,7 @@ impl Into<D3D12_CLEAR_VALUE> for ClearValue {
                 assert!(!format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
                     format: format.into(),
-                    variant: D3D12_CLEAR_VALUE_VARIANT { color },
+                    anonymous: D3D12_CLEAR_VALUE_0 { color },
                 }
             }
             ClearValue::Depth {
@@ -70,25 +69,11 @@ impl Into<D3D12_CLEAR_VALUE> for ClearValue {
                 assert!(format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
                     format: format.into(),
-                    variant: D3D12_CLEAR_VALUE_VARIANT {
-                        depth_stencil: ManuallyDrop::new(unsafe { transmute(depth_stencil) }),
+                    anonymous: D3D12_CLEAR_VALUE_0 {
+                        depth_stencil: unsafe { transmute(depth_stencil) },
                     },
                 }
             }
         }
     }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_CLEAR_VALUE {
-    format: DXGI_FORMAT,
-    variant: D3D12_CLEAR_VALUE_VARIANT,
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_CLEAR_VALUE_VARIANT {
-    color: [f32; 4],
-    depth_stencil: ManuallyDrop<D3D12_DEPTH_STENCIL_VALUE>,
 }

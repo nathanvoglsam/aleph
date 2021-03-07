@@ -28,14 +28,14 @@
 //
 
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
-use crate::windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
-use crate::windows_raw::win32::dxgi::{
-    IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
-};
 use crate::CommandQueue;
 use std::mem::transmute;
 use std::ops::Deref;
 use std::sync::RwLockReadGuard;
+use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
+use windows_raw::win32::dxgi::{
+    IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
+};
 use windows_raw::IUnknown;
 use windows_raw::{Abi, Interface};
 

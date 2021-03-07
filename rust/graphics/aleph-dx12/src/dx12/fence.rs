@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::ID3D12Fence;
 use crate::Event;
+use windows_raw::win32::direct3d12::ID3D12Fence;
 
 #[derive(Clone)]
 #[repr(transparent)]

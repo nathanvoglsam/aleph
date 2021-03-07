@@ -27,12 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::{
-    D3D12_RESOURCE_ALIASING_BARRIER, D3D12_RESOURCE_BARRIER_FLAGS, D3D12_RESOURCE_BARRIER_TYPE,
-    D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_UAV_BARRIER,
-};
 use crate::{Resource, ResourceBarrierFlags, ResourceStates};
-use std::mem::ManuallyDrop;
+use std::mem::transmute_copy;
+use windows_raw::win32::direct3d12::{
+    D3D12_RESOURCE_ALIASING_BARRIER_abi, D3D12_RESOURCE_TRANSITION_BARRIER_abi,
+    D3D12_RESOURCE_UAV_BARRIER_abi, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0,
+    D3D12_RESOURCE_BARRIER_TYPE,
+};
 
 #[derive(Clone)]
 pub enum ResourceBarrier {
@@ -54,8 +55,8 @@ pub enum ResourceBarrier {
     },
 }
 
-impl Into<D3D12_RESOURCE_BARRIER> for ResourceBarrier {
-    fn into(self) -> D3D12_RESOURCE_BARRIER {
+impl ResourceBarrier {
+    pub(crate) fn get_raw(&self) -> D3D12_RESOURCE_BARRIER {
         match self {
             ResourceBarrier::Transition {
                 flags,
@@ -65,14 +66,14 @@ impl Into<D3D12_RESOURCE_BARRIER> for ResourceBarrier {
                 state_after,
             } => D3D12_RESOURCE_BARRIER {
                 r#type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
-                flags: flags.into(),
-                variant: D3D12_RESOURCE_BARRIER_VARIANT {
-                    transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
-                        p_resource: resource.map(|v| v.0),
-                        subresource,
-                        state_before: state_before.into(),
-                        state_after: state_after.into(),
-                    }),
+                flags: flags.clone().into(),
+                anonymous: D3D12_RESOURCE_BARRIER_0 {
+                    transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi {
+                        p_resource: unsafe { transmute_copy(resource) },
+                        subresource: *subresource,
+                        state_before: state_before.clone().into(),
+                        state_after: state_after.clone().into(),
+                    },
                 },
             },
             ResourceBarrier::Aliasing {
@@ -81,57 +82,23 @@ impl Into<D3D12_RESOURCE_BARRIER> for ResourceBarrier {
                 resource_after,
             } => D3D12_RESOURCE_BARRIER {
                 r#type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_ALIASING,
-                flags: flags.into(),
-                variant: D3D12_RESOURCE_BARRIER_VARIANT {
-                    aliasing: ManuallyDrop::new(D3D12_RESOURCE_ALIASING_BARRIER {
-                        p_resource_before: resource_before.map(|v| v.0),
-                        p_resource_after: resource_after.map(|v| v.0),
-                    }),
+                flags: flags.clone().into(),
+                anonymous: D3D12_RESOURCE_BARRIER_0 {
+                    aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi {
+                        p_resource_before: unsafe { transmute_copy(resource_before) },
+                        p_resource_after: unsafe { transmute_copy(resource_after) },
+                    },
                 },
             },
             ResourceBarrier::UAV { flags, resource } => D3D12_RESOURCE_BARRIER {
                 r#type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,
-                flags: flags.into(),
-                variant: D3D12_RESOURCE_BARRIER_VARIANT {
-                    uav: ManuallyDrop::new(D3D12_RESOURCE_UAV_BARRIER {
-                        p_resource: resource.map(|v| v.0),
-                    }),
+                flags: flags.clone().into(),
+                anonymous: D3D12_RESOURCE_BARRIER_0 {
+                    uav: D3D12_RESOURCE_UAV_BARRIER_abi {
+                        p_resource: unsafe { transmute_copy(resource) },
+                    },
                 },
             },
         }
     }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub struct D3D12_RESOURCE_BARRIER {
-    r#type: D3D12_RESOURCE_BARRIER_TYPE,
-    flags: D3D12_RESOURCE_BARRIER_FLAGS,
-    variant: D3D12_RESOURCE_BARRIER_VARIANT,
-}
-
-impl Drop for D3D12_RESOURCE_BARRIER {
-    fn drop(&mut self) {
-        unsafe {
-            if self.r#type == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION {
-                ManuallyDrop::drop(&mut self.variant.transition);
-            } else if self.r#type
-                == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_ALIASING
-            {
-                ManuallyDrop::drop(&mut self.variant.aliasing);
-            } else if self.r#type == D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV {
-                ManuallyDrop::drop(&mut self.variant.uav);
-            } else {
-                unreachable!("All possible types of D3D12_RESOURCE_BARRIER_TYPE enumerated");
-            }
-        }
-    }
-}
-
-#[repr(C)]
-#[allow(non_camel_case_types)]
-pub union D3D12_RESOURCE_BARRIER_VARIANT {
-    transition: ManuallyDrop<D3D12_RESOURCE_TRANSITION_BARRIER>,
-    aliasing: ManuallyDrop<D3D12_RESOURCE_ALIASING_BARRIER>,
-    uav: ManuallyDrop<D3D12_RESOURCE_UAV_BARRIER>,
 }

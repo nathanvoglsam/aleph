@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_TYPE;
+use windows_raw::win32::direct3d12::D3D12_DESCRIPTOR_HEAP_TYPE;
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[repr(i32)]

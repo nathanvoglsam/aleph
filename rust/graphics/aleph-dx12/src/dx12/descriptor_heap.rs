@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d12::ID3D12DescriptorHeap;
 use crate::{CPUDescriptorHandle, DescriptorHeapDesc, GPUDescriptorHandle};
 use std::convert::TryFrom;
 use std::mem::transmute;
+use windows_raw::win32::direct3d12::ID3D12DescriptorHeap;
 
 #[derive(Clone)]
 #[repr(transparent)]

@@ -30,12 +30,12 @@
 use crate::allocation::AllocationInner;
 use crate::pool::PoolInner;
 use crate::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
-use dx12::redefined::D3D12_CLEAR_VALUE;
 use dx12::{ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
 use std::mem::{align_of, size_of, transmute};
 use std::ptr::NonNull;
 use std::sync::Arc;
+use windows_raw::win32::direct3d12::D3D12_CLEAR_VALUE;
 
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);

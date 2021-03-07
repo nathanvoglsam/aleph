@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::system_services::{
+use windows_raw::win32::system_services::{
     CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, INFINITE, PWSTR,
 };
-use crate::windows_raw::win32::windows_programming::CloseHandle;
+use windows_raw::win32::windows_programming::CloseHandle;
 
 #[repr(transparent)]
 pub struct Event(pub(crate) HANDLE);

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::windows_raw::win32::direct3d11::D3D_FEATURE_LEVEL;
+use windows_raw::win32::direct3d11::D3D_FEATURE_LEVEL;
 
 /// Maps to `D3D_FEATURE_LEVEL`
 ///
