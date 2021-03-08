@@ -41,8 +41,6 @@ members = [
     "rust/build/aleph-target-build",
     "rust/config/aleph-app-info",
     "rust/config/aleph-settings",
-    "rust/interface/aleph-rust-codegen",
-    "rust/interface/aleph-rust-parser",
     "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",
     "rust/graphics/aleph-dx12",
