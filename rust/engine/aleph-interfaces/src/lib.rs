@@ -29,11 +29,11 @@
 
 pub extern crate aleph_any as any;
 
-use any::IAny;
+use any::*;
 use raw_window_handle::TrustedWindowHandle;
 
 pub trait IWindowProvider: IAny {
-    fn get_window(&self) -> Option<&dyn IWindow>;
+    fn get_window(&self) -> Option<AnyRef<dyn IWindow>>;
 }
 
 pub trait IWindow: IAny {
