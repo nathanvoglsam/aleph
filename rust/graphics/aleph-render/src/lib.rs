@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-extern crate cstr;
 extern crate aleph_dx12 as dx12;
 extern crate aleph_dx12_alloc as dx12_alloc;
 extern crate aleph_embedded_data as embedded_data;
 extern crate aleph_pix as pix;
+extern crate cstr;
 
 mod renderer;
 
