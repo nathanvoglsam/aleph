@@ -27,39 +27,21 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
 
-[workspace]
+[package]
+name = "aleph-any"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "Aleph's interface infrastructure"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-interface/"
+readme = "README.md"
+## TODO: keywords = ["engine", "graphics", "vulkan", "game"]
+## TODO: categories = ["game-engines"]
+edition = "2018"
 
-members = [
-    "rust/build/aleph-compile",
-    "rust/build/aleph-target",
-    "rust/build/aleph-target-build",
-    "rust/config/aleph-app-info",
-    "rust/config/aleph-settings",
-    "rust/engine/aleph-any",
-    "rust/engine/aleph-embedded-data",
-    "rust/engine/aleph-engine",
-    "rust/engine/aleph-interfaces",
-    "rust/graphics/aleph-dx12",
-    "rust/graphics/aleph-dx12-alloc",
-    "rust/graphics/aleph-dxc",
-    "rust/graphics/aleph-pix",
-    "rust/graphics/aleph-render",
-    "rust/ktx/aleph-ktx",
-    "rust/ktx/aleph-vk-format",
-    "rust/logging/aleph-log",
-    "rust/logging/aleph-logger",
-    "rust/platform/aleph-cpu-info",
-    "rust/platform/aleph-platform",
-    "rust/platform/aleph-platform-egui",
-    "rust/raw/aleph-dx12-alloc-raw",
-    "rust/raw/aleph-dxc-raw",
-    "rust/raw/aleph-pix-raw",
-    "rust/raw/aleph-windows-raw",
-    "game/aleph-test",
-]
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]

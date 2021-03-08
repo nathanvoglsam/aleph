@@ -113,6 +113,8 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/raw/aleph-windows-raw/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-dx12-alloc/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/graphics/aleph-dxc/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-any/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-interfaces/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />
