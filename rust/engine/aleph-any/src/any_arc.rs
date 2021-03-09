@@ -87,7 +87,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
             // Lookup whether the underlying object implements the requested interface
             if let Some(casted) = self.inner().object.__query_interface(TypeId::of::<Into>()) {
                 // Increment the ref count
-                let _sink = self.inner().count.fetch_add(1, Ordering::Relaxed);
+                self.inner().count.fetch_add(1, Ordering::Relaxed);
 
                 // We build a trait object with a potentially null vtable and use some pointer copy
                 // wizardry to allow this to work for sized and unsized types
@@ -140,7 +140,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
 
 impl<T: IAny + ?Sized> Clone for AnyArc<T> {
     fn clone(&self) -> Self {
-        let _ = self.inner().count.fetch_add(1, Ordering::Relaxed);
+        self.inner().count.fetch_add(1, Ordering::Relaxed);
         Self { inner: self.inner }
     }
 }
@@ -152,7 +152,7 @@ impl<T: IAny + ?Sized> Drop for AnyArc<T> {
             // being dropped, so we should Drop the object and free the memory.
             if self.inner().count.fetch_sub(1, Ordering::Release) == 1 {
                 // Atomic synchronization stuff I stole from std::arc::Arc
-                let _sink = self.inner().count.load(Ordering::Acquire);
+                self.inner().count.load(Ordering::Acquire);
 
                 ManuallyDrop::drop(&mut self.inner_mut().object);
 
