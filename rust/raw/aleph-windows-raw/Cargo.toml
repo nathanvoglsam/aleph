@@ -52,15 +52,11 @@ version = "1"
 version = "2"
 
 [dependencies]
-##windows = "0.2"
-##windows = { path = "../../../../../windows-rs", version = "0.4" }
-##windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "master" }
+##windows = { path = "../../../../windows-rs", version = "0.4" }
 windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation-2" }
 
 [build-dependencies]
-##windows = "0.2"
-##windows = { path = "../../../../../windows-rs", version = "0.4" }
-##windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "master" }
+##windows = { path = "../../../../windows-rs", version = "0.4" }
 windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation-2" }
 
 [build-dependencies.syn]
