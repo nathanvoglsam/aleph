@@ -48,12 +48,12 @@ pub const CLSID_DxcOptimizer: &'static str = "ae2cd79f-cc22-453f-9b6b-b124e7a520
 pub const CLSID_DxcValidator: &'static str = "8ca3e215-f728-4cf3-8cdd-88af917587a1";
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: marker :: Copy,
-:: std :: clone :: Clone,
-:: std :: default :: Default,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
 )]
 #[repr(transparent)]
 pub struct DXC_OUT_KIND(pub i32);
@@ -206,10 +206,10 @@ pub const DxcVersionInfoFlags_None: u32 = 0u32;
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcBlob(::windows::IUnknown);
 impl IDxcBlob {}
@@ -264,10 +264,10 @@ pub struct IDxcBlob_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcBlobEncoding(::windows::IUnknown);
 impl IDxcBlobEncoding {}
@@ -360,10 +360,10 @@ pub struct IDxcBlobEncoding_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcOperationResult(::windows::IUnknown);
 impl IDxcOperationResult {}
@@ -446,10 +446,10 @@ pub struct IDxcOperationResult_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcAssembler(::windows::IUnknown);
 impl IDxcAssembler {}
@@ -512,10 +512,10 @@ pub struct IDxcAssembler_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcBlobUtf16(::windows::IUnknown);
 impl IDxcBlobUtf16 {}
@@ -638,10 +638,10 @@ pub struct IDxcBlobUtf16_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcBlobUtf8(::windows::IUnknown);
 impl IDxcBlobUtf8 {}
@@ -764,10 +764,10 @@ pub struct IDxcBlobUtf8_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcIncludeHandler(::windows::IUnknown);
 impl IDxcIncludeHandler {}
@@ -830,10 +830,10 @@ pub struct IDxcIncludeHandler_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcCompiler(::windows::IUnknown);
 impl IDxcCompiler {}
@@ -978,10 +978,10 @@ pub struct IDxcCompiler_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcCompiler2(::windows::IUnknown);
 impl IDxcCompiler2 {}
@@ -1198,10 +1198,10 @@ pub struct IDxcCompiler2_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcCompiler3(::windows::IUnknown);
 impl IDxcCompiler3 {}
@@ -1295,10 +1295,10 @@ pub struct IDxcCompiler3_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcCompilerArgs(::windows::IUnknown);
 impl IDxcCompilerArgs {}
@@ -1401,10 +1401,10 @@ pub struct IDxcCompilerArgs_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcContainerBuilder(::windows::IUnknown);
 impl IDxcContainerBuilder {}
@@ -1500,10 +1500,10 @@ pub struct IDxcContainerBuilder_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcContainerReflection(::windows::IUnknown);
 impl IDxcContainerReflection {}
@@ -1632,10 +1632,10 @@ pub struct IDxcContainerReflection_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcExtraOutputs(::windows::IUnknown);
 impl IDxcExtraOutputs {}
@@ -1711,10 +1711,10 @@ pub struct IDxcExtraOutputs_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcLibrary(::windows::IUnknown);
 impl IDxcLibrary {}
@@ -1724,7 +1724,10 @@ unsafe impl ::windows::Interface for IDxcLibrary {
 }
 #[allow(non_snake_case)]
 impl IDxcLibrary {
-    pub unsafe fn SetMalloc<'a, T0__: ::windows::IntoParam<'a, windows_raw::win32::com::IMalloc>>(
+    pub unsafe fn SetMalloc<
+        'a,
+        T0__: ::windows::IntoParam<'a, windows_raw::win32::com::IMalloc>,
+    >(
         &self,
         p_malloc: T0__,
     ) -> ::windows::ErrorCode {
@@ -1945,10 +1948,10 @@ pub struct IDxcLibrary_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcLinker(::windows::IUnknown);
 impl IDxcLinker {}
@@ -2042,10 +2045,10 @@ pub struct IDxcLinker_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcOptimizerPass(::windows::IUnknown);
 impl IDxcOptimizerPass {}
@@ -2154,10 +2157,10 @@ pub struct IDxcOptimizerPass_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcOptimizer(::windows::IUnknown);
 impl IDxcOptimizer {}
@@ -2255,10 +2258,10 @@ pub struct IDxcOptimizer_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcResult(::windows::IUnknown);
 impl IDxcResult {}
@@ -2292,7 +2295,10 @@ impl IDxcResult {
             ::std::mem::transmute(pp_errors),
         )
     }
-    pub unsafe fn HasOutput(&self, dxc_out_kind: DXC_OUT_KIND) -> windows_raw::win32::system_services::BOOL {
+    pub unsafe fn HasOutput(
+        &self,
+        dxc_out_kind: DXC_OUT_KIND,
+    ) -> windows_raw::win32::system_services::BOOL {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(dxc_out_kind),
@@ -2410,10 +2416,10 @@ pub struct IDxcResult_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcUtils(::windows::IUnknown);
 impl IDxcUtils {}
@@ -2725,10 +2731,10 @@ pub struct IDxcUtils_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcValidator(::windows::IUnknown);
 impl IDxcValidator {}
@@ -2794,10 +2800,10 @@ pub struct IDxcValidator_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcVersionInfo(::windows::IUnknown);
 impl IDxcVersionInfo {}
@@ -2866,10 +2872,10 @@ pub struct IDxcVersionInfo_abi(
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
-:: std :: cmp :: PartialEq,
-:: std :: cmp :: Eq,
-:: std :: clone :: Clone,
-:: std :: fmt :: Debug,
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
 )]
 pub struct IDxcVersionInfo2(::windows::IUnknown);
 impl IDxcVersionInfo2 {}
