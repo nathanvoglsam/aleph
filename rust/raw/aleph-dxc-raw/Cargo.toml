@@ -44,6 +44,10 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[dependencies]
+##windows = { path = "../../../../windows-rs", version = "0.4" }
+windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation-2" }
+
 [dependencies.aleph-windows-raw]
 path = "../aleph-windows-raw"
 version = "0.1"
