@@ -85,12 +85,12 @@ pub fn arc_test_1() {
     test_other.test_fn_other();
     assert_eq!(counter.load(Ordering::Relaxed), 12);
 
-    assert!(test.get_mut().is_none());
+    assert!(AnyArc::get_mut(&mut test).is_none());
 
     drop(test);
     assert_eq!(counter.load(Ordering::Relaxed), 12);
 
-    assert!(test_other.get_mut().is_some());
+    assert!(AnyArc::get_mut(&mut test_other).is_some());
 
     drop(test_other);
     assert_eq!(counter.load(Ordering::Relaxed), 32);

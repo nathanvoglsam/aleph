@@ -78,6 +78,7 @@ pub use any::AsIAny;
 pub use any::IAny;
 pub use any::TraitObject;
 pub use any_arc::AnyArc;
+pub use any_arc::AnyWeak;
 pub use any_ref::AnyRef;
 
 /// This macro is used for implementing IAny for a concrete type. This will correctly generate the

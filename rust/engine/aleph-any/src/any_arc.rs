@@ -29,135 +29,137 @@
 
 use crate::{IAny, TraitObject};
 use std::any::TypeId;
-use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::ptr::NonNull;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
+use std::sync::{Arc, Weak};
 
-/// Internal struct for creating the heap storage for the object behind the refcount
-struct AnyArcInner<T: IAny + ?Sized> {
-    /// The reference count
-    count: AtomicUsize,
-
-    /// The object we're storing. The outermost refcount decides when we drop this so we wrap it in
-    /// ManuallyDrop so we just use `Box's` drop function to free the memory
-    object: ManuallyDrop<T>,
-}
-
-/// Represents a custom `Arc` like smart pointer that allows for easy ref counted access to the same
-/// object through multiple interfaces.
-pub struct AnyArc<T: IAny + ?Sized> {
-    inner: NonNull<AnyArcInner<T>>,
-}
+///
+/// AnyArc is a wrapper around [`std::sync::Arc`] that enables the ability to cast
+/// `AnyArc<Trait> -> AnyArc<AnotherTrait>` so long as the underlying object supports both traits.
+///
+#[derive(Clone)]
+#[repr(transparent)]
+pub struct AnyArc<T: IAny + ?Sized>(Arc<T>);
 
 impl<T: IAny + Sized> AnyArc<T> {
+    ///
     /// Takes the given concrete type and wraps it in an `AnyArc`
     ///
     /// `T` must be sized in this case as we're making a concrete heap allocation
     pub fn new(v: T) -> AnyArc<T> {
-        let inner: Box<_> = Box::new(AnyArcInner {
-            count: AtomicUsize::new(1),
-            object: ManuallyDrop::new(v),
-        });
-        let inner = Box::leak(inner);
-
-        AnyArc::<T> {
-            inner: inner.into(),
-        }
+        AnyArc::<T>(Arc::new(v))
     }
 }
 
 impl<T: IAny + ?Sized> AnyArc<T> {
-    pub fn get_mut(&mut self) -> Option<&mut T> {
-        // If there is only a single reference to the underlying object then it is safe to hand out
-        // a mutable reference to the underlying object.
-        //
-        // By requiring mutable access to the `AnyArc` container we prevent any more references
-        // being created until the mutable borrow ends making this safe to do.
-        if self.inner().count.load(Ordering::Relaxed) == 1 {
-            Some(&mut self.inner_mut().object)
-        } else {
-            None
-        }
+    ///
+    /// Creates a new [`AnyWeak`] pointer to this allocation.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Arc`'s `downgrade`
+    ///
+    pub fn downgrade(this: &Self) -> AnyWeak<T> {
+        AnyWeak(Arc::downgrade(&this.0))
     }
 
+    ///
+    /// Gets the number of [`AnyWeak`] pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the weak count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Arc`'s `weak_count`
+    ///
+    #[inline]
+    pub fn weak_count(this: &Self) -> usize {
+        Arc::weak_count(&this.0)
+    }
+
+    ///
+    /// Gets the number of strong (`AnyArc`) pointers to this allocation.
+    ///
+    /// # Safety
+    ///
+    /// This method by itself is safe, but using it correctly requires extra care.
+    /// Another thread can change the strong count at any time,
+    /// including potentially between calling this method and acting on the result.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Arc`'s `strong_count`
+    ///
+    pub fn strong_count(this: &Self) -> usize {
+        Arc::strong_count(&this.0)
+    }
+
+    ///
+    /// Returns a mutable reference into the given `AnyArc`, if there are
+    /// no other `AnyArc` or [`AnyWeak`] pointers to the same allocation.
+    ///
+    /// Returns [`None`] otherwise, because it is not safe to
+    /// mutate a shared value.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Arc`'s `get_mut`
+    ///
+    pub fn get_mut(this: &mut Self) -> Option<&mut T> {
+        Arc::get_mut(&mut this.0)
+    }
+
+    ///
+    /// Returns another `AnyArc` to the underlying object but with the `Into` interface. This
+    /// function enables casting from one trait object type to another.
+    ///
+    /// Returns [`None`] if the underlying object does not implement the requested interface.
+    ///
     pub fn query_interface<Into: IAny + ?Sized>(&self) -> Option<AnyArc<Into>> {
         unsafe {
             // Lookup whether the underlying object implements the requested interface
-            if let Some(casted) = self.inner().object.__query_interface(TypeId::of::<Into>()) {
-                // Increment the ref count
-                self.inner().count.fetch_add(1, Ordering::Relaxed);
+            if let Some(casted) = self.0.__query_interface(TypeId::of::<Into>()) {
+                // Clone the internal Arc
+                let cloned = self.0.clone();
+
+                // We need to do some pointer casting stuff to get the pointer to the control block
+                // without using transmute
+                let cloned_ptr = &cloned as *const Arc<T> as *const *mut ();
+                let cloned_ptr = cloned_ptr.read();
 
                 // We build a trait object with a potentially null vtable and use some pointer copy
-                // wizardry to allow this to work for sized and unsized types
-                let arc_trait_object = TraitObject::<'static> {
-                    data: self.inner.cast(),
+                let queried_trait_object = TraitObject::<'static> {
+                    data: NonNull::new_unchecked(cloned_ptr),
                     vtable: casted.vtable,
                     phantom: Default::default(),
                 };
 
                 // We reinterpret the pointer to our unpacked `TraitObject` as a pointer to an
-                // `AnyArc`.
+                // `Arc`.
                 //
-                // When `T` is unsized then size_of `AnyArc<T>` is 16 bytes (2 * usize).
+                // When `T` is unsized then size_of `Arc<T>` is 16 bytes (2 * usize).
                 //
-                // When `T` is sized then size_of `AnyArc<T>` is 8 bytes (single pointer).
+                // When `T` is sized then size_of `Arc<T>` is 8 bytes (single pointer).
                 //
-                // `AnyArc<T>` has the same layout as `AnyRef<T>` so we can use the same pointer
+                // `Arc<T>` has the same layout as `AnyRef<T>` so we can use the same pointer
                 // casting trick to transmute to either the sized or unsized versions.
                 //
                 // We just need to do a C style pointer cast to reinterpret rather than using
                 // transmute
-                let out_ptr = &arc_trait_object as *const TraitObject as *const AnyArc<Into>;
+                let out_ptr = &queried_trait_object as *const TraitObject as *const Arc<Into>;
+                let out = AnyArc(out_ptr.read());
+
+                // Forget our original clone so we don't decrement the ref counter
+                std::mem::forget(cloned);
 
                 // Now we can just read out the reinterpreted data
-                Some(out_ptr.read())
+                Some(out)
             } else {
                 None
-            }
-        }
-    }
-
-    fn inner(&self) -> &AnyArcInner<T> {
-        // This unsafety is ok because while this arc is alive we're guaranteed
-        // that the inner pointer is valid. Furthermore, we know that the
-        // `ArcInner` structure itself is `Sync` because the inner data is
-        // `Sync` as well, so we're ok loaning out an immutable pointer to these
-        // contents.
-        unsafe { self.inner.as_ref() }
-    }
-
-    fn inner_mut(&mut self) -> &mut AnyArcInner<T> {
-        // This unsafety is ok because while this arc is alive we're guaranteed
-        // that the inner pointer is valid. Furthermore, we know that the
-        // `ArcInner` structure itself is `Sync` because the inner data is
-        // `Sync` as well, so we're ok loaning out an immutable pointer to these
-        // contents.
-        unsafe { self.inner.as_mut() }
-    }
-}
-
-impl<T: IAny + ?Sized> Clone for AnyArc<T> {
-    fn clone(&self) -> Self {
-        self.inner().count.fetch_add(1, Ordering::Relaxed);
-        Self { inner: self.inner }
-    }
-}
-
-impl<T: IAny + ?Sized> Drop for AnyArc<T> {
-    fn drop(&mut self) {
-        unsafe {
-            // If this yields 1 that means the last `AnyArc` that points to the underlying object is
-            // being dropped, so we should Drop the object and free the memory.
-            if self.inner().count.fetch_sub(1, Ordering::Release) == 1 {
-                // Atomic synchronization stuff I stole from std::arc::Arc
-                self.inner().count.load(Ordering::Acquire);
-
-                ManuallyDrop::drop(&mut self.inner_mut().object);
-
-                // "un-leak" the box and drop it to free the memory
-                drop(Box::from_raw(self.inner.as_ptr()))
             }
         }
     }
@@ -167,6 +169,54 @@ impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &self.inner().object
+        &self.0
+    }
+}
+
+#[derive(Clone)]
+pub struct AnyWeak<T: IAny + ?Sized>(Weak<T>);
+
+impl<T: IAny + ?Sized> AnyWeak<T> {
+    ///
+    /// Attempts to upgrade the `AnyWeak` pointer to an [`AnyArc`], delaying
+    /// dropping of the inner value if successful.
+    ///
+    /// Returns [`None`] if the inner value has since been dropped.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Weak`'s `upgrade`
+    ///
+    pub fn upgrade(&self) -> Option<AnyArc<T>> {
+        self.0.upgrade().map(|v| AnyArc(v))
+    }
+
+    ///
+    /// Gets the number of strong (`Arc`) pointers pointing to this allocation.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Weak`'s `strong_count`
+    ///
+    pub fn strong_count(&self) -> usize {
+        self.0.strong_count()
+    }
+
+    ///
+    /// Gets an approximation of the number of `Weak` pointers pointing to this
+    /// allocation.
+    ///
+    /// # Accuracy
+    ///
+    /// Due to implementation details, the returned value can be off by 1 in
+    /// either direction when other threads are manipulating any `Arc`s or
+    /// `Weak`s pointing to the same allocation.
+    ///
+    /// # Info
+    ///
+    /// This is just a wrapper around `std::sync::Weak`'s `weak_count`
+    ///
+    pub fn weak_count(&self) -> usize {
+        self.0.weak_count()
     }
 }
