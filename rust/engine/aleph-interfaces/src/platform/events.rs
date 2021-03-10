@@ -53,7 +53,7 @@ pub trait IEventsProvider: IAny {
 /// device's event queue.
 ///
 pub trait IEvents: IAny {
-    fn get(&self) -> Box<dyn IEventsLock>;
+    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a>;
 }
 
 ///
@@ -62,7 +62,7 @@ pub trait IEvents: IAny {
 /// Some implementations may need to lock a mutex or read/write lock to provide access to the list
 /// safely so this interface is passed to wrap the lock guard
 ///
-pub trait IEventsLock: IAny {
+pub trait IEventsLock {
     fn events(&self) -> &[Event];
 }
 
