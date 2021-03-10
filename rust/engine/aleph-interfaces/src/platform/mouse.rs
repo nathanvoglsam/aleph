@@ -85,7 +85,7 @@ pub trait IMouse: IAny {
     /// This will probably lock an RwLock so trying to hold on to this between frames will likely
     /// deadlock the engine.
     ///
-    fn events(&self) -> Box<dyn IMouseEventsLock>;
+    fn events<'a>(&'a self) -> Box<dyn IMouseEventsLock + 'a>;
 }
 
 ///
@@ -94,7 +94,7 @@ pub trait IMouse: IAny {
 /// Some implementations may need to lock a mutex or read/write lock to provide access to the list
 /// safely so this interface is passed to wrap the lock guard
 ///
-pub trait IMouseEventsLock: IAny {
+pub trait IMouseEventsLock {
     fn events(&self) -> &[MouseEvent];
 }
 

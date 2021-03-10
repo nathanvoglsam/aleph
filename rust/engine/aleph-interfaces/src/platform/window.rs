@@ -210,7 +210,7 @@ pub trait IWindow: IAny {
     /// This will probably lock an RwLock so trying to hold on to this between frames will likely
     /// deadlock the engine.
     ///
-    fn events(&self) -> Box<dyn IWindowEventsLock>;
+    fn events<'a>(&'a self) -> Box<dyn IWindowEventsLock + 'a>;
 
     ///
     /// Returns the window's raw handle for constructing a graphics context
@@ -224,6 +224,6 @@ pub trait IWindow: IAny {
 /// Some implementations may need to lock a mutex or read/write lock to provide access to the list
 /// safely so this interface is passed to wrap the lock guard
 ///
-pub trait IWindowEventsLock: IAny {
+pub trait IWindowEventsLock {
     fn events(&self) -> &[WindowEvent];
 }

@@ -60,7 +60,7 @@ pub trait IKeyboard: IAny {
     /// This will likely lock an RwLock so trying to hold on to this between frames will deadlock
     /// the engine.
     ///
-    fn get_state(&self) -> Box<dyn IKeyboardStateLock>;
+    fn get_state<'a>(&'a self) -> Box<dyn IKeyboardStateLock + 'a>;
 
     ///
     /// Get read only access to this frame's list of mouse events.
@@ -70,7 +70,7 @@ pub trait IKeyboard: IAny {
     /// This will likely lock an RwLock so trying to hold on to this between frames will deadlock
     /// the engine.
     ///
-    fn events(&self) -> Box<dyn IKeyboardEventsLock>;
+    fn events<'a>(&'a self) -> Box<dyn IKeyboardEventsLock + 'a>;
 }
 
 ///
@@ -79,7 +79,7 @@ pub trait IKeyboard: IAny {
 /// Some implementations may need to lock a mutex or read/write lock to provide access to the list
 /// safely so this interface is passed to wrap the lock guard
 ///
-pub trait IKeyboardEventsLock: IAny {
+pub trait IKeyboardEventsLock {
     fn events(&self) -> &[KeyboardEvent];
 }
 
