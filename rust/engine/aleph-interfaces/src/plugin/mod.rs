@@ -39,15 +39,17 @@ use std::any::TypeId;
 ///
 /// An `IPlugin` has the following lifecycle:
 ///
-/// - A concrete `IPlugin` implementation is constructed by someone and given to the plugin registry
-///   to take ownership of.
+/// - A concrete `IPlugin` implementation is constructed by someone. This must be done before the
+///   plugin registry itself is created as the full set of plugins to register needs to be finalized
+///   before a plugin registry can be constructed.
 ///
 /// - The plugin registry will, at some point during initialization, call `IPlugin::register`
 ///   exactly once so a plugin can declare its execution dependencies and to declare which abstract
 ///   interfaces the plugin provides.
 ///
-/// - The plugin registry will call `IPlugin::get_implementation` exactly once so that it can
-///   collect the list of implementation objects that the plugin provides.
+/// - The plugin registry will, after calling `IPlugin::register` and during initialization, call
+///   `IPlugin::get_implementation` exactly once so that it can collect the list of implementation
+///   objects that the plugin provides.
 ///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
