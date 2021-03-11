@@ -30,3 +30,4 @@
 pub extern crate aleph_any as any;
 
 pub mod platform;
+pub mod plugin;
