@@ -47,12 +47,6 @@ pub trait IPlugin: IAny {
 /// The interface used by plugins to manipulate their initialization and execution order
 ///
 pub trait IPluginRegistrar {
-    /// Reduce the priority by the given amount
-    fn reduce_init_priority(&mut self, amount: u32);
-
-    /// Reduce the priority by the given amount
-    fn reduce_exit_priority(&mut self, amount: u32);
-
     /// Object safe implementation of `requires_for_init`
     fn __must_init_after(&mut self, requires: TypeId);
 
