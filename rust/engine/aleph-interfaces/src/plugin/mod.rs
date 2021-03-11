@@ -46,14 +46,14 @@ use std::any::TypeId;
 ///   exactly once so a plugin can declare its execution dependencies and to declare which abstract
 ///   interfaces the plugin provides.
 ///
+/// - The plugin registry will call `IPlugin::get_implementation` exactly once so that it can
+///   collect the list of implementation objects that the plugin provides.
+///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
 ///
 /// - `IPlugin::on_init` will be called exactly once, respecting the dependencies declared in the
 ///   registration phase.
-///
-/// - The plugin registry will call `IPlugin::get_implementation` exactly once after initialization
-///   so that it can collect the implementation object from the plugin.
 ///
 /// - The engine now moves into the main loop. `IPlugin::on_update` will be called exactly once
 ///   *per iteration* of the main loop. Once again, any declared execution dependencies will be
@@ -83,10 +83,14 @@ pub trait IPlugin: IAny {
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     fn on_exit(&mut self);
 
-    /// Will be called by the plugin registry to retrieve the object that implements the requested
-    /// interface
-    fn get_implementation(&self, implementation: TypeId) -> AnyArc<dyn IAny>;
+    /// Will be called by the plugin registry to retrieve the list of all implemented
+    fn get_implementations<'a>(&'a self) -> Box<dyn IImplementationList + 'a>;
 }
+
+///
+/// A trait used by `IPlugin::get_implementations` that is used to abstract
+///
+pub trait IImplementationList: Iterator<Item = (TypeId, AnyArc<dyn IAny>)> {}
 
 ///
 /// The interface used by plugins to manipulate their initialization and execution order.
@@ -129,9 +133,6 @@ pub trait IPluginRegistrar {
 
     /// Object safe implementation of `must_update_after`. See wrapper for more info.
     fn __must_update_after(&mut self, requires: TypeId);
-
-    /// Object safe implementation of `provides_implementation`. See wrapper for more info.
-    fn __provides_implementation(&mut self, implements: TypeId);
 }
 
 impl dyn IPluginRegistrar {
@@ -151,10 +152,5 @@ impl dyn IPluginRegistrar {
     /// its own update function execute.
     pub fn must_update_after<T: IAny>(&mut self) {
         self.__must_update_after(TypeId::of::<T>())
-    }
-
-    /// Declares that the plugin can provide an object that implements the given interface
-    pub fn provides_implementation<T: IAny>(&mut self) {
-        self.__provides_implementation(TypeId::of::<T>())
     }
 }
