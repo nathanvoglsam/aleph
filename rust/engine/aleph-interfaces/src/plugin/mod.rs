@@ -48,7 +48,7 @@ use std::any::TypeId;
 ///   interfaces the plugin provides.
 ///
 /// - The plugin registry will, after calling `IPlugin::register` and during initialization, call
-///   `IPlugin::get_implementation` exactly once so that it can collect the list of implementation
+///   `IPlugin::get_implementations` exactly once so that it can collect the list of implementation
 ///   objects that the plugin provides.
 ///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
@@ -85,14 +85,14 @@ pub trait IPlugin: IAny {
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     fn on_exit(&mut self);
 
-    /// Will be called by the plugin registry to retrieve the list of all implemented
+    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
     fn get_implementations<'a>(&'a self) -> Box<dyn IImplementationList + 'a>;
 }
 
 ///
 /// A trait used by `IPlugin::get_implementations` that is used to abstract
 ///
-pub trait IImplementationList: Iterator<Item = (TypeId, AnyArc<dyn IAny>)> {}
+pub trait IImplementationList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
 
 ///
 /// The interface used by plugins to manipulate their initialization and execution order.
