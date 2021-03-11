@@ -31,6 +31,7 @@ use crate::{IAny, TraitObject};
 use core::any::TypeId;
 use core::mem::size_of;
 use core::ops::Deref;
+use std::ops::DerefMut;
 
 /// A wrapper type for a shared reference to something that implements IAny. This is the preferred
 /// way of using an interface. There is very little reason to have a bare trait object for an
@@ -85,6 +86,68 @@ impl<'a, T: IAny + ?Sized> Deref for AnyRef<'a, T> {
 
 impl<'a, T: IAny + ?Sized> From<&'a T> for AnyRef<'a, T> {
     fn from(v: &'a T) -> Self {
+        Self::new(v)
+    }
+}
+
+/// A wrapper type for a shared reference to something that implements IAny. This is the preferred
+/// way of using an interface. There is very little reason to have a bare trait object for an
+/// interface as you lose access to the `query_interface` wrapper
+///
+/// This allows adding wrapper functions that will correctly autocomplete
+#[repr(transparent)]
+pub struct AnyMut<'a, T: IAny + ?Sized> {
+    inner: &'a mut T,
+}
+
+impl<'a, T: IAny + ?Sized> AnyMut<'a, T> {
+    /// Function for converting a bare `IAny` trait object into an `AnyRef` wrapper
+    pub fn new(inner: &'a mut T) -> Self {
+        Self { inner }
+    }
+
+    /// Unpack the `AnyMut` into the underlying reference
+    pub fn into_bare(this: Self) -> &'a mut T {
+        this.inner
+    }
+
+    /// Generic wrapper function over the bare implementation of `__query_interface` that makes
+    /// using it safe and simple.
+    pub fn query_interface<Into: IAny + ?Sized>(self) -> Option<AnyMut<'a, Into>> {
+        // Assert that trait object is the size of two pointers. Compiles to nothing
+        assert_eq!(size_of::<TraitObject>(), size_of::<usize>() * 2);
+
+        // Assert that the null pointer NonNull is correctly triggering size optimization. Compiles
+        // to nothing
+        assert_eq!(size_of::<Option<TraitObject>>(), size_of::<TraitObject>());
+
+        unsafe {
+            if let Some(obj) = self.__query_interface(TypeId::of::<Into>()) {
+                let any_ref = (&obj as *const TraitObject as *const &mut Into).read();
+                Some(AnyMut::new(any_ref))
+            } else {
+                None
+            }
+        }
+    }
+}
+
+impl<'a, T: IAny + ?Sized> Deref for AnyMut<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner
+    }
+}
+
+impl<'a, T: IAny + ?Sized> DerefMut for AnyMut<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.inner
+    }
+}
+
+impl<'a, T: IAny + ?Sized> From<&'a mut T> for AnyMut<'a, T> {
+    fn from(v: &'a mut T) -> Self {
         Self::new(v)
     }
 }

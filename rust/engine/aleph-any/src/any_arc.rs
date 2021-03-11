@@ -53,6 +53,26 @@ impl<T: IAny + Sized> AnyArc<T> {
 
 impl<T: IAny + ?Sized> AnyArc<T> {
     ///
+    /// Construct an `AnyArc` from a `std::sync::Arc`.
+    ///
+    /// Useful for when you want to get access to the `query_interface` wrapper with a standard
+    /// `Arc`.
+    ///
+    pub fn from_arc(arc: Arc<T>) -> Self {
+        Self(arc)
+    }
+
+    ///
+    /// Unwraps the given `AnyArc` to the underlying `Arc` inside.
+    ///
+    /// Useful for when you want to access to things `Arc` provides like `CoerceUnsized` which isn't
+    /// stabilized yet and so can't be implemented on `AnyArc` yet.
+    ///
+    pub fn into_arc(this: Self) -> Arc<T> {
+        this.0
+    }
+
+    ///
     /// Creates a new [`AnyWeak`] pointer to this allocation.
     ///
     /// # Info
@@ -169,7 +189,7 @@ impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        self.0.deref()
     }
 }
 
