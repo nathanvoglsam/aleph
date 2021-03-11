@@ -139,7 +139,8 @@ pub trait IPluginRegistrar {
 
 impl dyn IPluginRegistrar {
     /// Declares that the plugin depends on the existence of another plugin given by the type
-    /// parameter.
+    /// parameter. This can be used to declare that one plugin requires another plugin, or another
+    /// interface to exist without specifying any execution dependencies.
     pub fn depends_on<T: IAny>(&mut self) {
         self.__depends_on(TypeId::of::<T>())
     }
