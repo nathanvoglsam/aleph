@@ -195,8 +195,8 @@ pub struct MouseWheelEvent {
 ///
 #[derive(Clone, Debug)]
 pub struct MouseState {
-    pos: (i32, i32),
-    buttons: u32,
+    pub pos: (i32, i32),
+    pub buttons: u32,
 }
 
 impl MouseState {

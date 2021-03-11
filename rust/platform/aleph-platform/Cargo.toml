@@ -45,6 +45,7 @@ edition = "2018"
 aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1" }
 aleph-log = { path = "../../logging/aleph-log", version = "1" }
 aleph-settings = { path = "../../config/aleph-settings", version = "0.1" }
+aleph-interfaces = { path = "../../engine/aleph-interfaces", version = "0.1" }
 once_cell = "1"
 parking_lot = "0.10"
 

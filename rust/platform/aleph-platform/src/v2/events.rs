@@ -27,43 +27,31 @@
 // SOFTWARE.
 //
 
-mod clipboard;
-mod events;
-mod keyboard;
-mod mouse;
-mod window;
+use interfaces::any::declare_interfaces;
+use interfaces::platform::{Event, IEvents, IEventsLock};
+use parking_lot::{RwLock, RwLockReadGuard};
 
-pub use clipboard::IClipboard;
-pub use clipboard::IClipboardProvider;
-pub use events::Event;
-pub use events::IEvents;
-pub use events::IEventsLock;
-pub use events::IEventsProvider;
-pub use keyboard::IKeyboard;
-pub use keyboard::IKeyboardEventsLock;
-pub use keyboard::IKeyboardProvider;
-pub use keyboard::IKeyboardStateLock;
-pub use keyboard::KeyCode;
-pub use keyboard::KeyDownEvent;
-pub use keyboard::KeyMod;
-pub use keyboard::KeyUpEvent;
-pub use keyboard::KeyboardEvent;
-pub use keyboard::ScanCode;
-pub use keyboard::TextInputEvent;
-pub use mouse::Cursor;
-pub use mouse::IMouse;
-pub use mouse::IMouseEventsLock;
-pub use mouse::IMouseProvider;
-pub use mouse::MouseButton;
-pub use mouse::MouseButtonDownEvent;
-pub use mouse::MouseButtonUpEvent;
-pub use mouse::MouseEvent;
-pub use mouse::MouseMotionEvent;
-pub use mouse::MouseState;
-pub use mouse::MouseWheelDirection;
-pub use mouse::MouseWheelEvent;
-pub use raw_window_handle::*;
-pub use window::IWindow;
-pub use window::IWindowEventsLock;
-pub use window::IWindowProvider;
-pub use window::WindowEvent;
+///
+/// The struct that provides the context for, and implements, `IEvents`
+///
+pub struct EventsImpl(pub RwLock<Vec<Event>>);
+
+declare_interfaces!(EventsImpl, [IEvents]);
+
+impl IEvents for EventsImpl {
+    fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a> {
+        let lock = EventsLockImpl(self.0.read());
+        Box::new(lock)
+    }
+}
+
+///
+/// Wrapper around RwLockReadGuard and implementation of `IEventsLock`
+///
+pub struct EventsLockImpl<'a>(pub RwLockReadGuard<'a, Vec<Event>>);
+
+impl<'a> IEventsLock for EventsLockImpl<'a> {
+    fn events(&self) -> &[Event] {
+        self.0.as_slice()
+    }
+}
