@@ -47,7 +47,7 @@ pub trait IPlugin: IAny {
 /// The interface used by plugins to manipulate their initialization and execution order
 ///
 pub trait IPluginRegistrar {
-    /// Object safe implementation of `requires_for_init`
+    /// Object safe implementation of `must_init_after`
     fn __must_init_after(&mut self, requires: TypeId);
 
     /// Object safe implementation of `must_update_after`
