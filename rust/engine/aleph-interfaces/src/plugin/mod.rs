@@ -48,14 +48,22 @@ use std::any::TypeId;
 ///   interfaces the plugin provides.
 ///
 /// - The plugin registry will, after calling `IPlugin::register` and during initialization, call
-///   `IPlugin::get_implementations` exactly once so that it can collect the list of implementation
-///   objects that the plugin provides.
+///   `IPlugin::provided_interfaces` exactly once so that it can collect the list of interfaces the
+///   plugin provides.
 ///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
 ///
 /// - `IPlugin::on_init` will be called exactly once, respecting the dependencies declared in the
 ///   registration phase.
+///
+/// - Directly after `IPlugin::on_init` is called, and before another plugin's `on_init` function is
+///   called, `IPlugin::get_interfaces` will be called. The `get_interfaces` function is very
+///   similar to `IPlugin::provided_interfaces`, it provides the same list of interfaces, just
+///   paired with the object that actually implements the interface.
+///
+///   This introduces some repetition but allows for a plugin to have completed initialization
+///   before handing out its implementations.
 ///
 /// - The engine now moves into the main loop. `IPlugin::on_update` will be called exactly once
 ///   *per iteration* of the main loop. Once again, any declared execution dependencies will be
@@ -75,24 +83,34 @@ pub trait IPlugin: IAny {
     /// dependencies
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar);
 
+    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
+    fn provided_interfaces<'a>(&'a self) -> Box<dyn IProvidedInterfacesList + 'a>;
+
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
     fn on_init(&mut self);
+
+    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
+    fn get_interfaces<'a>(&'a self) -> Box<dyn IInterfacesList + 'a>;
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
     fn on_update(&mut self);
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     fn on_exit(&mut self);
-
-    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
-    fn get_implementations<'a>(&'a self) -> Box<dyn IImplementationList + 'a>;
 }
 
 ///
-/// A trait used by `IPlugin::get_implementations` that is used to abstract
+/// A trait used by `IPlugin::get_interfaces` that is used to abstract an iterator over the list of
+/// provided interfaces, paired with the object that implements the interface.
 ///
-pub trait IImplementationList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+pub trait IInterfacesList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+
+///
+/// A trait used by `IPlugin::provided_interfaces` that is used to abstract an iterator over the
+/// list of provided interfaces
+///
+pub trait IProvidedInterfacesList: Iterator<Item = TypeId> {}
 
 ///
 /// The interface used by plugins to manipulate their initialization and execution order.
