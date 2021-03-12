@@ -48,6 +48,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1" }
 aleph-cpu-info = { path = "../../platform/aleph-cpu-info", version = "1" }
 aleph-embedded-data = { path = "../aleph-embedded-data", version = "0.1" }
+aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../../logging/aleph-log", version = "1" }
 aleph-logger = { path = "../../logging/aleph-logger", version = "0.1" }
 aleph-platform = { path = "../../platform/aleph-platform", version = "0.1" }

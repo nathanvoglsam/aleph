@@ -27,35 +27,31 @@
 // SOFTWARE.
 //
 
-// =================================================================================================
-// Crate Imports
-// =================================================================================================
+use crate::interfaces::plugin::IPluginRegistrar;
+use std::any::TypeId;
+use std::collections::HashSet;
 
-// Re-export useful crates
-pub extern crate aleph_app_info as app_info;
-pub extern crate aleph_interfaces as interfaces;
-pub extern crate aleph_log as log;
-pub extern crate aleph_platform as platform;
-pub extern crate egui;
-pub extern crate rayon;
+pub struct PluginRegistrar {
+    pub depends_on_list: HashSet<TypeId>,
+    pub provided_interfaces: HashSet<TypeId>,
+    pub init_after_list: HashSet<TypeId>,
+    pub update_after_list: HashSet<TypeId>,
+}
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc as dx12_alloc;
-extern crate aleph_pix as pix;
-extern crate aleph_render as render;
+impl IPluginRegistrar for PluginRegistrar {
+    fn __depends_on(&mut self, dependency: TypeId) {
+        self.depends_on_list.insert(dependency);
+    }
 
-// =================================================================================================
-// Modules
-// =================================================================================================
+    fn __provides_interface(&mut self, provides: TypeId) {
+        self.provided_interfaces.insert(provides);
+    }
 
-mod app_logic;
-mod engine;
-mod frame_rate;
-mod plugin_registry;
-mod thread_pools;
+    fn __must_init_after(&mut self, requires: TypeId) {
+        self.init_after_list.insert(requires);
+    }
 
-pub use self::app_logic::AppLogic;
-pub use self::engine::Engine;
-pub use self::frame_rate::FrameRate;
-pub use plugin_registry::PluginRegistry;
-pub use plugin_registry::PluginRegistryBuilder;
+    fn __must_update_after(&mut self, requires: TypeId) {
+        self.update_after_list.insert(requires);
+    }
+}
