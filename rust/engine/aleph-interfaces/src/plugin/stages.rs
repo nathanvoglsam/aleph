@@ -64,7 +64,7 @@ macro_rules! implement_stage_plugin {
             fn get_description(&self) -> $crate::plugin::PluginDescription {
                 $crate::plugin::PluginDescription {
                     name: stringify!($ty).to_string(),
-                    description: "A dummy plugin implementation used for ordering other plugins".to_string(),
+                    description: "Execution ordering dummy plugin".to_string(),
                     major_version: 1,
                     minor_version: 0,
                     patch_version: 0
