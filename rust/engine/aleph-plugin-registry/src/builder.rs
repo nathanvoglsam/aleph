@@ -28,6 +28,7 @@
 //
 
 use crate::interfaces::plugin::IPlugin;
+use crate::interfaces::plugin::stages;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
@@ -46,7 +47,13 @@ impl PluginRegistryBuilder {
     /// Construct a new builder
     pub fn new() -> Self {
         Self {
-            plugins: Vec::new(),
+            plugins: vec![
+                Box::new(stages::InputCollectionStage::default()),
+                Box::new(stages::PreUpdateStage::default()),
+                Box::new(stages::UpdateStage::default()),
+                Box::new(stages::PostUpdateStage::default()),
+                Box::new(stages::RenderStage::default()),
+            ],
         }
     }
 

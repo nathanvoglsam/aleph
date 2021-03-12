@@ -104,6 +104,7 @@ macro_rules! implement_stage_plugin {
 /// A dummy implementation of `IRenderStage` that does nothing but can be inserted into the plugin
 /// registry to allow for ordering other plugins
 ///
+#[derive(Default)]
 pub struct RenderStage();
 
 implement_stage_plugin!(
@@ -121,6 +122,7 @@ implement_stage_plugin!(
 /// A dummy implementation of `IPostUpdateStage` that does nothing but can be inserted into the
 /// plugin registry to allow for ordering other plugins
 ///
+#[derive(Default)]
 pub struct PostUpdateStage();
 
 implement_stage_plugin!(
@@ -133,6 +135,7 @@ implement_stage_plugin!(
 /// A dummy implementation of `IUpdateStage` that does nothing but can be inserted into the plugin
 /// registry to allow for ordering other plugins
 ///
+#[derive(Default)]
 pub struct UpdateStage();
 
 implement_stage_plugin!(
@@ -145,6 +148,7 @@ implement_stage_plugin!(
 /// A dummy implementation of `IPreUpdateStage` that does nothing but can be inserted into the
 /// plugin registry to allow for ordering other plugins
 ///
+#[derive(Default)]
 pub struct PreUpdateStage();
 
 implement_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]);
@@ -153,6 +157,7 @@ implement_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]
 /// A dummy implementation of `IInputCollectionStage` that does nothing but can be inserted into the
 /// plugin registry to allow for ordering other plugins
 ///
+#[derive(Default)]
 pub struct InputCollectionStage();
 
 implement_stage_plugin!(InputCollectionStage, IInputCollectionStage, []);
