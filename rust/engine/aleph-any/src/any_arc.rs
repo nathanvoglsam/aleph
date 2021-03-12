@@ -245,7 +245,6 @@ impl<T: IAny + ?Sized> AnyWeak<T> {
     }
 }
 
-
 impl<T: IAny + ?Sized> Clone for AnyWeak<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())
