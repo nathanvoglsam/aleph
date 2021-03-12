@@ -47,20 +47,15 @@ use std::any::TypeId;
 ///   exactly once so a plugin can declare its execution dependencies and to declare which abstract
 ///   interfaces the plugin provides.
 ///
-/// - The plugin registry will, after calling `IPlugin::register` and during initialization, call
-///   `IPlugin::provided_interfaces` exactly once so that it can collect the list of interfaces the
-///   plugin provides.
-///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
 ///
 /// - `IPlugin::on_init` will be called exactly once, respecting the dependencies declared in the
-///   registration phase.
+///   registration phase. The `on_init` function will return the list of provided interfaces paired
+///   with the object that actually implements the interface.
 ///
 /// - Directly after `IPlugin::on_init` is called, and before another plugin's `on_init` function is
-///   called, `IPlugin::get_interfaces` will be called. The `get_interfaces` function is very
-///   similar to `IPlugin::provided_interfaces`, it provides the same list of interfaces, just
-///   paired with the object that actually implements the interface.
+///   called, `IPlugin::get_interfaces` will be called. The `get_interfaces` function provides
 ///
 ///   This introduces some repetition but allows for a plugin to have completed initialization
 ///   before handing out its implementations.
@@ -87,15 +82,9 @@ pub trait IPlugin: IAny {
     /// dependencies
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar);
 
-    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
-    fn provided_interfaces<'a>(&'a self) -> Box<dyn IProvidedInterfacesList + 'a>;
-
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
-    fn on_init(&mut self);
-
-    /// Will be called by the plugin registry to retrieve the list of all implemented interfaces
-    fn get_interfaces<'a>(&'a self) -> Box<dyn IInterfacesList + 'a>;
+    fn on_init(&mut self) -> Box<dyn IInitResponse>;
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
     fn on_update(&mut self);
@@ -104,6 +93,9 @@ pub trait IPlugin: IAny {
     fn on_exit(&mut self);
 }
 
+///
+/// A plugin description
+///
 #[derive(Clone, Debug)]
 pub struct PluginDescription {
     pub name: String,
@@ -114,16 +106,21 @@ pub struct PluginDescription {
 }
 
 ///
-/// A trait used by `IPlugin::get_interfaces` that is used to abstract an iterator over the list of
-/// provided interfaces, paired with the object that implements the interface.
+/// A generic wrapper over the response expected from a plugin for the `on_init` function.
 ///
-pub trait IInterfacesList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+/// Rather than using a concrete type for the response we use an interface to allow for updating
+/// the response format in the future without changing the plugin interface.
+///
+pub trait IInitResponse {
+    /// Take the interfaces iterator from the init response
+    fn interfaces(&mut self) -> Box<dyn IInterfacesList>;
+}
 
 ///
-/// A trait used by `IPlugin::provided_interfaces` that is used to abstract an iterator over the
-/// list of provided interfaces
+/// A generic iterator interface that is used by the plugin initialization process to get the
+/// provided interfaces from a plugin
 ///
-pub trait IProvidedInterfacesList: Iterator<Item = TypeId> {}
+pub trait IInterfacesList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
 
 ///
 /// The interface used by plugins to manipulate their initialization and execution order.
@@ -161,6 +158,9 @@ pub trait IPluginRegistrar {
     /// Object safe implementation of `depends_on`. See wrapper for more info.
     fn __depends_on(&mut self, dependency: TypeId);
 
+    /// Object safe implementation of `provides_interface`. See wrapper for more info.
+    fn __provides_interface(&mut self, provides: TypeId);
+
     /// Object safe implementation of `must_init_after`. See wrapper for more info.
     fn __must_init_after(&mut self, requires: TypeId);
 
@@ -174,6 +174,12 @@ impl dyn IPluginRegistrar {
     /// interface to exist without specifying any execution dependencies.
     pub fn depends_on<T: IAny>(&mut self) {
         self.__depends_on(TypeId::of::<T>())
+    }
+
+    /// Declares that the plugin will provide an object that implements the interface given by the
+    /// `T` type parameter.
+    pub fn provides_interface<T: IAny>(&mut self) {
+        self.__provides_interface(TypeId::of::<T>())
     }
 
     /// Declares that the plugin's init function can only execute *after* the given plugin has had
