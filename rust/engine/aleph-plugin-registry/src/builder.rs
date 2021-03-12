@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::IPlugin;
 use crate::interfaces::plugin::stages;
+use crate::interfaces::plugin::IPlugin;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
@@ -53,6 +53,8 @@ impl PluginRegistryBuilder {
                 Box::new(stages::UpdateStage::default()),
                 Box::new(stages::PostUpdateStage::default()),
                 Box::new(stages::RenderStage::default()),
+                Box::new(stages::CoreInitStage::default()),
+                Box::new(stages::MainInitStage::default()),
             ],
         }
     }

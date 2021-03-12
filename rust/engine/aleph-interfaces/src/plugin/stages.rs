@@ -33,6 +33,77 @@ use std::any::TypeId;
 use std::sync::Arc;
 
 ///
+/// Represents the update execution stage that occurs after `ICoreInitStage`
+///
+pub trait IMainInitStage: IAny {}
+
+///
+/// Represents the init execution stage that occurs first
+///
+pub trait ICoreInitStage: IAny {}
+
+macro_rules! implement_init_stage_plugin {
+    ($ty:ident, $stage_interface:ident, [ $( $runs_after: ident ),* ]) => {
+        #[allow(bare_trait_objects)]
+        impl $crate::plugin::IPlugin for $ty {
+            fn get_description(&self) -> $crate::plugin::PluginDescription {
+                $crate::plugin::PluginDescription {
+                    name: stringify!($ty).to_string(),
+                    description: "Execution ordering dummy plugin".to_string(),
+                    major_version: 1,
+                    minor_version: 0,
+                    patch_version: 0
+                }
+            }
+
+            fn register(&mut self, registrar: &mut dyn $crate::plugin::IPluginRegistrar) {
+                $(
+                    registrar.depends_on::<$runs_after>();
+                    registrar.must_init_after::<$runs_after>();
+                )*
+                registrar.provides_interface::<$stage_interface>();
+            }
+
+            fn on_init(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) -> Box<dyn $crate::plugin::IInitResponse> {
+                let id = TypeId::of::<dyn $stage_interface>();
+                let object: Arc<dyn IAny + Send + Sync> = Arc::new(Self());
+                let object = AnyArc::from_arc(object);
+
+                let stages = vec![(id, object)];
+
+                Box::new(stages)
+            }
+
+            fn on_update(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) {}
+
+            fn on_exit(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) {}
+        }
+
+        impl $stage_interface for $ty {}
+
+        any::declare_interfaces!($ty, [IPlugin, $stage_interface]);
+    };
+}
+
+///
+/// A dummy implementation of `IMainInitStage` that does nothing but can be inserted into the plugin
+/// registry to allow for ordering other plugins
+///
+#[derive(Default)]
+pub struct MainInitStage();
+
+implement_init_stage_plugin!(MainInitStage, IMainInitStage, [ICoreInitStage]);
+
+///
+/// A dummy implementation of `ICoreInitStage` that does nothing but can be inserted into the plugin
+/// registry to allow for ordering other plugins
+///
+#[derive(Default)]
+pub struct CoreInitStage();
+
+implement_init_stage_plugin!(CoreInitStage, ICoreInitStage, []);
+
+///
 /// Represents the update execution stage that occurs after `IPostUpdateStage`
 ///
 pub trait IRenderStage: IAny {}
@@ -57,7 +128,7 @@ pub trait IPreUpdateStage: IAny {}
 ///
 pub trait IInputCollectionStage: IAny {}
 
-macro_rules! implement_stage_plugin {
+macro_rules! implement_update_stage_plugin {
     ($ty:ident, $stage_interface:ident, [ $( $runs_after: ident ),* ]) => {
         #[allow(bare_trait_objects)]
         impl $crate::plugin::IPlugin for $ty {
@@ -107,7 +178,7 @@ macro_rules! implement_stage_plugin {
 #[derive(Default)]
 pub struct RenderStage();
 
-implement_stage_plugin!(
+implement_update_stage_plugin!(
     RenderStage,
     IRenderStage,
     [
@@ -125,7 +196,7 @@ implement_stage_plugin!(
 #[derive(Default)]
 pub struct PostUpdateStage();
 
-implement_stage_plugin!(
+implement_update_stage_plugin!(
     PostUpdateStage,
     IPostUpdateStage,
     [IInputCollectionStage, IPreUpdateStage, IUpdateStage]
@@ -138,7 +209,7 @@ implement_stage_plugin!(
 #[derive(Default)]
 pub struct UpdateStage();
 
-implement_stage_plugin!(
+implement_update_stage_plugin!(
     UpdateStage,
     IUpdateStage,
     [IInputCollectionStage, IPreUpdateStage]
@@ -151,7 +222,7 @@ implement_stage_plugin!(
 #[derive(Default)]
 pub struct PreUpdateStage();
 
-implement_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]);
+implement_update_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]);
 
 ///
 /// A dummy implementation of `IInputCollectionStage` that does nothing but can be inserted into the
@@ -160,4 +231,4 @@ implement_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]
 #[derive(Default)]
 pub struct InputCollectionStage();
 
-implement_stage_plugin!(InputCollectionStage, IInputCollectionStage, []);
+implement_update_stage_plugin!(InputCollectionStage, IInputCollectionStage, []);
