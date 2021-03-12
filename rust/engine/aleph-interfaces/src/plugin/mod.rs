@@ -122,10 +122,27 @@ pub trait IInitResponse {
 }
 
 ///
+/// A helper implementation that can save manually implementing `IInitResponse`
+///
+impl IInitResponse for Vec<(TypeId, AnyArc<dyn IAny + Send + Sync>)> {
+    fn interfaces(&mut self) -> Option<Box<dyn IInterfaceIterator>> {
+        let take = std::mem::take(self);
+        if take.is_empty() {
+            None
+        } else {
+            let iter = take.into_iter();
+            Some(Box::new(iter))
+        }
+    }
+}
+
+///
 /// A generic iterator interface that is used by the plugin initialization process to get the
 /// provided interfaces from a plugin
 ///
 pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+
+impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)>> IInterfaceIterator for T {}
 
 ///
 /// An abstract interface over any potential concrete implementation of an accessor into the plugin

@@ -39,8 +39,8 @@ pub extern crate aleph_plugin_registry as plugin_registry;
 pub extern crate egui;
 pub extern crate rayon;
 
-pub use plugin_registry::interfaces;
 pub use plugin_registry::any;
+pub use plugin_registry::interfaces;
 
 extern crate aleph_dx12 as dx12;
 extern crate aleph_dx12_alloc as dx12_alloc;
