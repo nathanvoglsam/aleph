@@ -84,13 +84,13 @@ pub trait IPlugin: IAny {
 
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
-    fn on_init(&mut self) -> Box<dyn IInitResponse>;
+    fn on_init(&mut self, interfaces: &dyn IInterfaces) -> Box<dyn IInitResponse>;
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
-    fn on_update(&mut self);
+    fn on_update(&mut self, interfaces: &dyn IInterfaces);
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
-    fn on_exit(&mut self);
+    fn on_exit(&mut self, interfaces: &dyn IInterfaces);
 }
 
 ///
@@ -117,14 +117,32 @@ pub trait IInitResponse {
     /// This function must yield a non `None` value *at least* once. It may continue to return a
     /// non `None` value after the first call, but such behavior is not required and *should not*
     /// be relied on.
-    fn interfaces(&mut self) -> Option<Box<dyn IInterfacesList>>;
+    fn interfaces(&mut self) -> Option<Box<dyn IInterfaceIterator>>;
 }
 
 ///
 /// A generic iterator interface that is used by the plugin initialization process to get the
 /// provided interfaces from a plugin
 ///
-pub trait IInterfacesList: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+
+///
+/// An abstract interface over any potential concrete implementation of an accessor into the plugin
+/// registry's set of interfaces.
+///
+pub trait IInterfaces {
+    /// Object safe implementation of `get_interface`. See wrapper for more info.
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
+}
+
+impl dyn IInterfaces {
+    /// Get a reference counted handle to the interface with the type given by the `T` type
+    /// parameter.
+    pub fn get_interface<T: IAny>(&mut self) -> Option<AnyArc<T>> {
+        self.__get_interface(TypeId::of::<T>())
+            .map(|v| v.query_interface::<T>().unwrap())
+    }
+}
 
 ///
 /// The interface used by plugins to manipulate their initialization and execution order.
