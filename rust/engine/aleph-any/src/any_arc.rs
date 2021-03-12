@@ -37,7 +37,6 @@ use std::sync::{Arc, Weak};
 /// AnyArc is a wrapper around [`std::sync::Arc`] that enables the ability to cast
 /// `AnyArc<Trait> -> AnyArc<AnotherTrait>` so long as the underlying object supports both traits.
 ///
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct AnyArc<T: IAny + ?Sized>(Arc<T>);
 
@@ -185,6 +184,12 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     }
 }
 
+impl<T: IAny + ?Sized> Clone for AnyArc<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
 impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     type Target = T;
 
@@ -193,7 +198,6 @@ impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     }
 }
 
-#[derive(Clone)]
 pub struct AnyWeak<T: IAny + ?Sized>(Weak<T>);
 
 impl<T: IAny + ?Sized> AnyWeak<T> {
@@ -238,5 +242,12 @@ impl<T: IAny + ?Sized> AnyWeak<T> {
     ///
     pub fn weak_count(&self) -> usize {
         self.0.weak_count()
+    }
+}
+
+
+impl<T: IAny + ?Sized> Clone for AnyWeak<T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
