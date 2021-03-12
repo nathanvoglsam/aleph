@@ -112,8 +112,12 @@ pub struct PluginDescription {
 /// the response format in the future without changing the plugin interface.
 ///
 pub trait IInitResponse {
-    /// Take the interfaces iterator from the init response
-    fn interfaces(&mut self) -> Box<dyn IInterfacesList>;
+    /// Take the interfaces iterator from the init response.
+    ///
+    /// This function must yield a non `None` value *at least* once. It may continue to return a
+    /// non `None` value after the first call, but such behavior is not required and *should not*
+    /// be relied on.
+    fn interfaces(&mut self) -> Option<Box<dyn IInterfacesList>>;
 }
 
 ///
