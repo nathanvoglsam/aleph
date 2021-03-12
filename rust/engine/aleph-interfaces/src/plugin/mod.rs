@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+pub mod stages;
+
 use crate::any::AnyArc;
 use any::IAny;
 use std::any::TypeId;
@@ -202,7 +204,7 @@ impl IInterfaces for HashMap<TypeId, AnyArc<dyn IAny + Send + Sync>> {
 /// dependency that is generic over arbitrary plugins that provide an abstract interface
 /// (i.e `IWindowProvider`) implementation.
 ///
-pub trait IPluginRegistrar {
+pub trait IPluginRegistrar: 'static {
     /// Object safe implementation of `depends_on`. See wrapper for more info.
     fn __depends_on(&mut self, dependency: TypeId);
 
@@ -220,25 +222,25 @@ impl dyn IPluginRegistrar {
     /// Declares that the plugin depends on the existence of another plugin given by the type
     /// parameter. This can be used to declare that one plugin requires another plugin, or another
     /// interface to exist without specifying any execution dependencies.
-    pub fn depends_on<T: IAny>(&mut self) {
+    pub fn depends_on<T: IAny + ?Sized>(&mut self) {
         self.__depends_on(TypeId::of::<T>())
     }
 
     /// Declares that the plugin will provide an object that implements the interface given by the
     /// `T` type parameter.
-    pub fn provides_interface<T: IAny>(&mut self) {
+    pub fn provides_interface<T: IAny + ?Sized>(&mut self) {
         self.__provides_interface(TypeId::of::<T>())
     }
 
     /// Declares that the plugin's init function can only execute *after* the given plugin has had
     /// its own init function execute.
-    pub fn must_init_after<T: IAny>(&mut self) {
+    pub fn must_init_after<T: IAny + ?Sized>(&mut self) {
         self.__must_init_after(TypeId::of::<T>())
     }
 
     /// Declares that the plugin's update function can only execute *after* the given plugin has had
     /// its own update function execute.
-    pub fn must_update_after<T: IAny>(&mut self) {
+    pub fn must_update_after<T: IAny + ?Sized>(&mut self) {
         self.__must_update_after(TypeId::of::<T>())
     }
 }
