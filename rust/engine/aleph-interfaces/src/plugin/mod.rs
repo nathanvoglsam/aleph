@@ -79,6 +79,10 @@ use std::any::TypeId;
 ///   destroyed.
 ///
 pub trait IPlugin: IAny {
+    /// This function can be called at any time to retrieve a description of the plugin. This will
+    /// be used for logging and debug info
+    fn get_description(&self) -> PluginDescription;
+
     /// Called by the plugin registry exactly once so that a plugin can register its execution
     /// dependencies
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar);
@@ -98,6 +102,15 @@ pub trait IPlugin: IAny {
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     fn on_exit(&mut self);
+}
+
+#[derive(Clone, Debug)]
+pub struct PluginDescription {
+    pub name: String,
+    pub description: String,
+    pub major_version: u32,
+    pub minor_version: u32,
+    pub patch_version: u32,
 }
 
 ///
