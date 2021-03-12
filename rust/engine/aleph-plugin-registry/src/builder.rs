@@ -28,7 +28,7 @@
 //
 
 use crate::interfaces::plugin::IPlugin;
-use crate::plugin_registry::registrar::PluginRegistrar;
+use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
 use std::cell::Cell;

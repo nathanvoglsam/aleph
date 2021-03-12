@@ -33,11 +33,14 @@
 
 // Re-export useful crates
 pub extern crate aleph_app_info as app_info;
-pub extern crate aleph_interfaces as interfaces;
 pub extern crate aleph_log as log;
 pub extern crate aleph_platform as platform;
+pub extern crate aleph_plugin_registry as plugin_registry;
 pub extern crate egui;
 pub extern crate rayon;
+
+pub use plugin_registry::interfaces;
+pub use plugin_registry::any;
 
 extern crate aleph_dx12 as dx12;
 extern crate aleph_dx12_alloc as dx12_alloc;
@@ -51,11 +54,8 @@ extern crate aleph_render as render;
 mod app_logic;
 mod engine;
 mod frame_rate;
-mod plugin_registry;
 mod thread_pools;
 
 pub use self::app_logic::AppLogic;
 pub use self::engine::Engine;
 pub use self::frame_rate::FrameRate;
-pub use plugin_registry::PluginRegistry;
-pub use plugin_registry::PluginRegistryBuilder;

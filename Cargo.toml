@@ -45,6 +45,7 @@ members = [
     "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",
     "rust/engine/aleph-interfaces",
+    "rust/engine/aleph-plugin-registry",
     "rust/graphics/aleph-dx12",
     "rust/graphics/aleph-dx12-alloc",
     "rust/graphics/aleph-dxc",

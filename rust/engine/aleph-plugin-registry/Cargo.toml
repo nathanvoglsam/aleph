@@ -29,37 +29,21 @@
 
 
 [package]
-name = "aleph-engine"
+name = "aleph-plugin-registry"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "A Rust and Vulkan powered 3D game engine"
+description = "The core driver for Aleph's plugin system"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-engine/"
+documentation = "https://docs.rs/aleph-plugin-registry/"
 readme = "README.md"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
+## keywords = ["engine", "graphics", "vulkan", "game"]
+## categories = ["game-engines"]
 edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-app-info = { path = "../../config/aleph-app-info", version = "0.1" }
-aleph-cpu-info = { path = "../../platform/aleph-cpu-info", version = "1" }
-aleph-embedded-data = { path = "../aleph-embedded-data", version = "0.1" }
-aleph-plugin-registry = { path = "../aleph-plugin-registry", version = "0.1" }
 aleph-log = { path = "../../logging/aleph-log", version = "1" }
-aleph-logger = { path = "../../logging/aleph-logger", version = "0.1" }
-aleph-platform = { path = "../../platform/aleph-platform", version = "0.1" }
-aleph-platform-egui = { path = "../../platform/aleph-platform-egui", version = "0.1" }
-aleph-settings = { path = "../../config/aleph-settings", version = "0.1" }
-aleph-dx12 = { path = "../../graphics/aleph-dx12", version = "0.1" }
-aleph-dx12-alloc = { path = "../../graphics/aleph-dx12-alloc", version = "0.1" }
-aleph-pix = { path = "../../graphics/aleph-pix", version = "0.1" }
-aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
-aleph-target = { path = "../../build/aleph-target", version = "2" }
-egui = "0.8"
-clap = "2"
-rayon = "1"
-once_cell = "1"
+aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }

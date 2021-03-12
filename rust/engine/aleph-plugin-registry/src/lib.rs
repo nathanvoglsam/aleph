@@ -27,6 +27,11 @@
 // SOFTWARE.
 //
 
+pub extern crate aleph_interfaces as interfaces;
+extern crate aleph_log as log;
+
+pub use interfaces::any;
+
 mod builder;
 mod registrar;
 
