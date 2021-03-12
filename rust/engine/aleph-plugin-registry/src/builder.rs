@@ -47,15 +47,7 @@ impl PluginRegistryBuilder {
     /// Construct a new builder
     pub fn new() -> Self {
         Self {
-            plugins: vec![
-                Box::new(stages::InputCollectionStage::default()),
-                Box::new(stages::PreUpdateStage::default()),
-                Box::new(stages::UpdateStage::default()),
-                Box::new(stages::PostUpdateStage::default()),
-                Box::new(stages::RenderStage::default()),
-                Box::new(stages::CoreInitStage::default()),
-                Box::new(stages::MainInitStage::default()),
-            ],
+            plugins: stages::default_stages(),
         }
     }
 

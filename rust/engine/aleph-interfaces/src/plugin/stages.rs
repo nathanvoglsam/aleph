@@ -90,7 +90,7 @@ macro_rules! implement_init_stage_plugin {
 /// registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct MainInitStage();
+struct MainInitStage();
 
 implement_init_stage_plugin!(MainInitStage, IMainInitStage, [ICoreInitStage]);
 
@@ -99,7 +99,7 @@ implement_init_stage_plugin!(MainInitStage, IMainInitStage, [ICoreInitStage]);
 /// registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct CoreInitStage();
+struct CoreInitStage();
 
 implement_init_stage_plugin!(CoreInitStage, ICoreInitStage, []);
 
@@ -176,7 +176,7 @@ macro_rules! implement_update_stage_plugin {
 /// registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct RenderStage();
+struct RenderStage();
 
 implement_update_stage_plugin!(
     RenderStage,
@@ -194,7 +194,7 @@ implement_update_stage_plugin!(
 /// plugin registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct PostUpdateStage();
+struct PostUpdateStage();
 
 implement_update_stage_plugin!(
     PostUpdateStage,
@@ -207,7 +207,7 @@ implement_update_stage_plugin!(
 /// registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct UpdateStage();
+struct UpdateStage();
 
 implement_update_stage_plugin!(
     UpdateStage,
@@ -220,7 +220,7 @@ implement_update_stage_plugin!(
 /// plugin registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct PreUpdateStage();
+struct PreUpdateStage();
 
 implement_update_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectionStage]);
 
@@ -229,6 +229,22 @@ implement_update_stage_plugin!(PreUpdateStage, IPreUpdateStage, [IInputCollectio
 /// plugin registry to allow for ordering other plugins
 ///
 #[derive(Default)]
-pub struct InputCollectionStage();
+struct InputCollectionStage();
 
 implement_update_stage_plugin!(InputCollectionStage, IInputCollectionStage, []);
+
+///
+/// A function that provides an array prefilled with implementations of all the stages declared in
+/// this module.
+///
+pub fn default_stages() -> Vec<Box<dyn IPlugin>> {
+    vec![
+        Box::new(InputCollectionStage::default()),
+        Box::new(PreUpdateStage::default()),
+        Box::new(UpdateStage::default()),
+        Box::new(PostUpdateStage::default()),
+        Box::new(RenderStage::default()),
+        Box::new(CoreInitStage::default()),
+        Box::new(MainInitStage::default()),
+    ]
+}
