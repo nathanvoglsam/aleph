@@ -58,6 +58,7 @@ members = [
     "rust/platform/aleph-cpu-info",
     "rust/platform/aleph-platform",
     "rust/platform/aleph-platform-egui",
+    "rust/platform/aleph-platform-sdl2",
     "rust/raw/aleph-dx12-alloc-raw",
     "rust/raw/aleph-dxc-raw",
     "rust/raw/aleph-pix-raw",

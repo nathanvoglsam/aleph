@@ -143,7 +143,7 @@ impl WindowImpl {
         let display_mode = window.display_mode().unwrap();
 
         let window_state = WindowState {
-            title: "".to_string(),
+            title: title.to_string(),
             current_width: DEFAULT_WIDTH,
             current_height: DEFAULT_HEIGHT,
             drawable_width: drawable_size.0,

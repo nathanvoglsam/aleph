@@ -29,8 +29,6 @@
 
 extern crate aleph_interfaces as interfaces;
 
-mod v2;
-
 mod clipboard;
 mod events;
 mod frame_timer;
