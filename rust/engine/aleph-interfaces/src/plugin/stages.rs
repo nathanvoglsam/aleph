@@ -66,7 +66,7 @@ macro_rules! implement_init_stage_plugin {
 
             fn on_init(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) -> Box<dyn $crate::plugin::IInitResponse> {
                 let id = TypeId::of::<dyn $stage_interface>();
-                let object: Arc<dyn IAny + Send + Sync> = Arc::new(Self());
+                let object: Arc<dyn $crate::any::ISendSyncAny> = Arc::new(Self());
                 let object = AnyArc::from_arc(object);
 
                 let stages = vec![(id, object)];
@@ -152,7 +152,7 @@ macro_rules! implement_update_stage_plugin {
 
             fn on_init(&mut self, _interfaces: &dyn crate::plugin::IInterfaces) -> Box<dyn crate::plugin::IInitResponse> {
                 let id = TypeId::of::<dyn $stage_interface>();
-                let object: Arc<dyn IAny + Send + Sync> = Arc::new(Self());
+                let object: Arc<dyn $crate::any::ISendSyncAny> = Arc::new(Self());
                 let object = AnyArc::from_arc(object);
 
                 let stages = vec![(id, object)];

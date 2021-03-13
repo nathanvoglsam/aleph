@@ -37,7 +37,7 @@ mod registrar;
 
 pub use builder::PluginRegistryBuilder;
 
-use crate::interfaces::any::{AnyArc, IAny};
+use crate::interfaces::any::{AnyArc, ISendSyncAny};
 use crate::interfaces::plugin::IPlugin;
 use std::any::TypeId;
 use std::cell::Cell;
@@ -52,7 +52,7 @@ pub struct PluginRegistry {
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: Arc<HashMap<TypeId, AnyArc<dyn IAny + Send + Sync>>>,
+    interfaces: Arc<HashMap<TypeId, AnyArc<dyn ISendSyncAny>>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,

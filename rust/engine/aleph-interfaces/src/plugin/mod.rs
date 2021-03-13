@@ -30,7 +30,7 @@
 pub mod stages;
 
 use crate::any::AnyArc;
-use any::IAny;
+use any::{ISendSyncAny, IAny};
 use std::any::TypeId;
 use std::collections::HashMap;
 
@@ -126,7 +126,7 @@ pub trait IInitResponse {
 ///
 /// A helper implementation that can save manually implementing `IInitResponse`
 ///
-impl IInitResponse for Vec<(TypeId, AnyArc<dyn IAny + Send + Sync>)> {
+impl IInitResponse for Vec<(TypeId, AnyArc<dyn ISendSyncAny>)> {
     fn interfaces(&mut self) -> Option<Box<dyn IInterfaceIterator>> {
         let take = std::mem::take(self);
         if take.is_empty() {
@@ -142,9 +142,9 @@ impl IInitResponse for Vec<(TypeId, AnyArc<dyn IAny + Send + Sync>)> {
 /// A generic iterator interface that is used by the plugin initialization process to get the
 /// provided interfaces from a plugin
 ///
-pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)> {}
+pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)> {}
 
-impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)>> IInterfaceIterator for T {}
+impl<T: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)>> IInterfaceIterator for T {}
 
 ///
 /// An abstract interface over any potential concrete implementation of an accessor into the plugin
@@ -152,13 +152,13 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny + Send + Sync>)>> IInterfaceIte
 ///
 pub trait IInterfaces {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny + Send + Sync>>;
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>>;
 }
 
 impl dyn IInterfaces {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
-    pub fn get_interface<T: IAny + Send + Sync>(&mut self) -> Option<AnyArc<T>> {
+    pub fn get_interface<T: ISendSyncAny>(&mut self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }
@@ -166,8 +166,8 @@ impl dyn IInterfaces {
 
 /// A wrapper implementation to save writing a wrapper type to implement this trait on a hashmap
 /// outside of this crate
-impl IInterfaces for HashMap<TypeId, AnyArc<dyn IAny + Send + Sync>> {
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny + Send + Sync>> {
+impl IInterfaces for HashMap<TypeId, AnyArc<dyn ISendSyncAny>> {
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>> {
         self.get(&interface).cloned()
     }
 }

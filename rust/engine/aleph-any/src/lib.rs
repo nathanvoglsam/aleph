@@ -76,6 +76,8 @@ mod tests;
 
 pub use any::AsIAny;
 pub use any::IAny;
+pub use any::ISendSyncAny;
+pub use any::ISendAny;
 pub use any::TraitObject;
 pub use any_arc::AnyArc;
 pub use any_arc::AnyWeak;

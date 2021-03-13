@@ -77,6 +77,20 @@ pub trait IAny: 'static {
 }
 
 ///
+/// A wrapper trait over `IAny` which can be used instead of `IAny + Send + Sync`
+///
+pub trait ISendSyncAny: IAny {}
+
+impl<T: IAny + Send + Sync> ISendSyncAny for T {}
+
+///
+/// A wrapper trait over `IAny` which can be used instead of `IAny + Send`
+///
+pub trait ISendAny: IAny {}
+
+impl<T: IAny + Send> ISendAny for T {}
+
+///
 /// Trait for converting from something that implements IAny into an `AnyRef<dyn IAny>`
 ///
 pub trait AsIAny: IAny {
