@@ -123,6 +123,9 @@ macro_rules! declare_interfaces (
                         return Some(::core::mem::transmute(self as &$iface));
                     }
                     )*
+                    if target == ::core::any::TypeId::of::<$crate::IAny>() {
+                        return Some(::core::mem::transmute(self as &$crate::IAny));
+                    }
                 }
                 unsafe {
                     if target == ::core::any::TypeId::of::<$typ>() {
