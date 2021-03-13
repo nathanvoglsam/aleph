@@ -310,7 +310,7 @@ impl PlatformSDL2 {
             match event {
                 sdl2::event::Event::Quit { .. } => {
                     aleph_log::info!("Quit Event Received");
-                    //quit_fn();
+                    // quit_fn(); // TODO: need to expose this somehow
                 }
                 sdl2::event::Event::Window { win_event, .. } => {
                     window.process_window_event(

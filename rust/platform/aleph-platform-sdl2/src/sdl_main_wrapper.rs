@@ -119,7 +119,7 @@ mod uwp {
         // we can continue
         SwitchToFiber(ctx.sdl_fiber.as_ptr());
 
-        // We nolonger need the other fiber so we destroy it.
+        // We no longer need the other fiber so we destroy it.
         DeleteFiber(ctx.sdl_fiber.as_ptr());
 
         // Undo ConvertThreadToFiberEx
