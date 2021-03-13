@@ -419,3 +419,65 @@ pub unsafe fn SetThreadDescription<
         lp_thread_description.into_param().abi(),
     )
 }
+pub unsafe fn ConvertThreadToFiberEx(
+    lp_parameter: *mut ::std::ffi::c_void,
+    dw_flags: u32,
+) -> *mut ::std::ffi::c_void {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn ConvertThreadToFiberEx(
+            lp_parameter: *mut ::std::ffi::c_void,
+            dw_flags: u32,
+        ) -> *mut ::std::ffi::c_void;
+    }
+    ConvertThreadToFiberEx(
+        ::std::mem::transmute(lp_parameter),
+        ::std::mem::transmute(dw_flags),
+    )
+}
+pub unsafe fn CreateFiberEx(
+    dw_stack_commit_size: usize,
+    dw_stack_reserve_size: usize,
+    dw_flags: u32,
+    lp_start_address: ::std::option::Option<super::windows_programming::LPFIBER_START_ROUTINE>,
+    lp_parameter: *mut ::std::ffi::c_void,
+) -> *mut ::std::ffi::c_void {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn CreateFiberEx(
+            dw_stack_commit_size: usize,
+            dw_stack_reserve_size: usize,
+            dw_flags: u32,
+            lp_start_address: ::windows::RawPtr,
+            lp_parameter: *mut ::std::ffi::c_void,
+        ) -> *mut ::std::ffi::c_void;
+    }
+    CreateFiberEx(
+        ::std::mem::transmute(dw_stack_commit_size),
+        ::std::mem::transmute(dw_stack_reserve_size),
+        ::std::mem::transmute(dw_flags),
+        ::std::mem::transmute(lp_start_address),
+        ::std::mem::transmute(lp_parameter),
+    )
+}
+pub unsafe fn DeleteFiber(lp_fiber: *mut ::std::ffi::c_void) {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn DeleteFiber(lp_fiber: *mut ::std::ffi::c_void);
+    }
+    DeleteFiber(::std::mem::transmute(lp_fiber))
+}
+pub unsafe fn ConvertFiberToThread() -> BOOL {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn ConvertFiberToThread() -> BOOL;
+    }
+    ConvertFiberToThread()
+}
+pub unsafe fn SwitchToFiber(lp_fiber: *mut ::std::ffi::c_void) {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn SwitchToFiber(lp_fiber: *mut ::std::ffi::c_void);
+    }
+    SwitchToFiber(::std::mem::transmute(lp_fiber))
+}

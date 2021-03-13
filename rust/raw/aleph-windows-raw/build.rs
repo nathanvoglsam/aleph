@@ -54,6 +54,11 @@ fn main() {
             GetProcAddress,
             GetCurrentThread,
             SetThreadDescription,
+            ConvertThreadToFiberEx,
+            CreateFiberEx,
+            DeleteFiber,
+            ConvertFiberToThread,
+            SwitchToFiber
         },
         windows::win32::structured_storage::{
             STATSTG,
