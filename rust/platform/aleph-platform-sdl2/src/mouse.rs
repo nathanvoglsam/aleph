@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
     Cursor, Event, IMouse, IMouseEventsLock, MouseButton, MouseButtonDownEvent, MouseButtonUpEvent,
     MouseEvent, MouseMotionEvent, MouseState, MouseWheelDirection, MouseWheelEvent,
@@ -67,16 +67,17 @@ pub struct MouseImpl {
 declare_interfaces!(MouseImpl, [IMouse]);
 
 impl MouseImpl {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(cursors: HashMap<Cursor, sdl2::mouse::Cursor>) -> AnyArc<Self> {
+        let out = Self {
             state: RwLock::new(MouseState {
                 pos: (0, 0),
                 buttons: 0,
             }),
             events: RwLock::new(Vec::new()),
             requests: Mutex::new(Vec::new()),
-            cursors: Default::default(),
-        }
+            cursors,
+        };
+        AnyArc::new(out)
     }
 
     ///
@@ -112,6 +113,7 @@ impl MouseImpl {
     /// Internal function for handling the events produced by the OS
     ///
     pub fn process_mouse_event(
+        &self,
         mouse_events: &mut Vec<MouseEvent>,
         all_events: &mut Vec<Event>,
         event: sdl2::event::Event,

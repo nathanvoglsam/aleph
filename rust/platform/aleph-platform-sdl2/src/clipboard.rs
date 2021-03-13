@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::IClipboard;
 use std::ffi::{c_void, CStr, CString};
 
@@ -37,6 +37,12 @@ use std::ffi::{c_void, CStr, CString};
 pub struct ClipboardImpl();
 
 declare_interfaces!(ClipboardImpl, [IClipboard]);
+
+impl ClipboardImpl {
+    pub fn new() -> AnyArc<Self> {
+        AnyArc::new(Self())
+    }
+}
 
 impl IClipboard for ClipboardImpl {
     fn get(&self) -> Option<String> {

@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use interfaces::any::AnyArc;
 use interfaces::platform::IFrameTimer;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -38,14 +39,15 @@ pub struct FrameTimerImpl {
 }
 
 impl FrameTimerImpl {
-    pub fn new(timer: &sdl2::TimerSubsystem) -> Self {
+    pub fn new(timer: &sdl2::TimerSubsystem) -> AnyArc<Self> {
         aleph_log::trace!("Initializing the Frame Timer");
-        Self {
+        let out = Self {
             freq: AtomicU64::new(timer.performance_frequency()),
             first: AtomicU64::new(timer.performance_counter()),
             last: AtomicU64::new(timer.performance_counter()),
             current: AtomicU64::new(timer.performance_counter() + 1),
-        }
+        };
+        AnyArc::new(out)
     }
 
     pub fn update(&self, timer: &sdl2::TimerSubsystem) {

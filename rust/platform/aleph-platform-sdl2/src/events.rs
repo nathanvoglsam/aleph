@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{Event, IEvents, IEventsLock};
 use parking_lot::{RwLock, RwLockReadGuard};
 
@@ -42,6 +42,13 @@ impl IEvents for EventsImpl {
     fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a> {
         let lock = EventsLockImpl(self.0.read());
         Box::new(lock)
+    }
+}
+
+impl EventsImpl {
+    pub fn new() -> AnyArc<Self> {
+        let out = Self(RwLock::new(Vec::new()));
+        AnyArc::new(out)
     }
 }
 

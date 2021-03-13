@@ -27,7 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::clipboard::ClipboardImpl;
+use crate::events::EventsImpl;
 use crate::frame_timer::FrameTimerImpl;
+use crate::keyboard::KeyboardImpl;
+use crate::mouse::MouseImpl;
+use crate::window::WindowImpl;
 use interfaces::any::AnyArc;
 use interfaces::platform::{
     IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
@@ -36,41 +41,55 @@ use interfaces::platform::{
 
 pub struct ProviderImpl {
     pub frame_timer: Option<AnyArc<FrameTimerImpl>>,
+    pub window: Option<AnyArc<WindowImpl>>,
+    pub mouse: Option<AnyArc<MouseImpl>>,
+    pub keyboard: Option<AnyArc<KeyboardImpl>>,
+    pub events: Option<AnyArc<EventsImpl>>,
+    pub clipboard: Option<AnyArc<ClipboardImpl>>,
 }
 
 impl IFrameTimerProvider for ProviderImpl {
     fn get_frame_timer(&self) -> Option<AnyArc<dyn IFrameTimer>> {
-        self.frame_timer.map(|v| v.query_interface()).flatten()
+        self.frame_timer
+            .as_ref()
+            .map(|v| v.query_interface())
+            .flatten()
     }
 }
 
 impl IWindowProvider for ProviderImpl {
     fn get_window(&self) -> Option<AnyArc<dyn IWindow>> {
-        unimplemented!()
+        self.window.as_ref().map(|v| v.query_interface()).flatten()
     }
 }
 
 impl IClipboardProvider for ProviderImpl {
     fn get_clipboard(&self) -> Option<AnyArc<dyn IClipboard>> {
-        unimplemented!()
+        self.clipboard
+            .as_ref()
+            .map(|v| v.query_interface())
+            .flatten()
     }
 }
 
 impl IKeyboardProvider for ProviderImpl {
     fn get_keyboard(&self) -> Option<AnyArc<dyn IKeyboard>> {
-        unimplemented!()
+        self.keyboard
+            .as_ref()
+            .map(|v| v.query_interface())
+            .flatten()
     }
 }
 
 impl IMouseProvider for ProviderImpl {
     fn get_mouse(&self) -> Option<AnyArc<dyn IMouse>> {
-        unimplemented!()
+        self.mouse.as_ref().map(|v| v.query_interface()).flatten()
     }
 }
 
 impl IEventsProvider for ProviderImpl {
     fn get_events(&self) -> Option<AnyArc<dyn IEvents>> {
-        unimplemented!()
+        self.events.as_ref().map(|v| v.query_interface()).flatten()
     }
 }
 

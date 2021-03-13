@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
     Event, HasRawWindowHandle, IWindow, IWindowEventsLock, RawWindowHandle, TrustedWindowHandle,
     WindowEvent,
@@ -128,7 +128,7 @@ impl WindowImpl {
         video_ctx: &sdl2::VideoSubsystem,
         title: &str,
         //window_settings: &WindowSettings,
-    ) -> (Self, sdl2::video::Window) {
+    ) -> (AnyArc<Self>, sdl2::video::Window) {
         const DEFAULT_WIDTH: u32 = 1600;
         const DEFAULT_HEIGHT: u32 = 900;
 
@@ -165,7 +165,7 @@ impl WindowImpl {
 
         window.raise();
 
-        (out, window)
+        (AnyArc::new(out), window)
     }
 
     ///
