@@ -58,11 +58,14 @@ pub struct PlatformSDL2 {
     sdl_mouse_util: Option<sdl2::mouse::MouseUtil>,
     sdl_timer: Option<sdl2::TimerSubsystem>,
     sdl_window: Option<sdl2::video::Window>,
+    sdl_main_ctx: crate::sdl_main_wrapper::MainCtx,
     provider: AnyArc<ProviderImpl>,
 }
 
 impl PlatformSDL2 {
     pub fn new() -> Self {
+        let sdl_main_ctx = unsafe { crate::sdl_main_wrapper::run_sdl_main() };
+
         Self {
             _sdl: None,
             _sdl_video: None,
@@ -71,6 +74,7 @@ impl PlatformSDL2 {
             sdl_mouse_util: None,
             sdl_timer: None,
             sdl_window: None,
+            sdl_main_ctx,
             provider: AnyArc::new(ProviderImpl {
                 frame_timer: None,
                 window: None,
@@ -80,6 +84,20 @@ impl PlatformSDL2 {
                 clipboard: None,
             }),
         }
+    }
+}
+
+impl Drop for PlatformSDL2 {
+    fn drop(&mut self) {
+        self._sdl = None;
+        self._sdl_video = None;
+        self._sdl_event = None;
+        self.sdl_event_pump = None;
+        self.sdl_mouse_util = None;
+        self.sdl_timer = None;
+        self.sdl_window = None;
+
+        unsafe { crate::sdl_main_wrapper::run_sdl_exit(&self.sdl_main_ctx) }
     }
 }
 

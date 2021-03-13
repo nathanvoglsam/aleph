@@ -28,6 +28,7 @@
 //
 
 extern crate aleph_interfaces as interfaces;
+extern crate aleph_windows_raw as windows_raw;
 
 mod clipboard;
 mod events;
@@ -36,6 +37,7 @@ mod keyboard;
 mod mouse;
 mod platform;
 mod provider;
+mod sdl_main_wrapper;
 mod window;
 
 pub use platform::PlatformSDL2;
