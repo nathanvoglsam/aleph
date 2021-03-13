@@ -30,7 +30,7 @@
 use crate::any::{AnyArc, IAny};
 
 pub trait IFrameTimerProvider: IAny {
-    fn get_frame_timer(&self) -> AnyArc<dyn IFrameTimer>;
+    fn get_frame_timer(&self) -> Option<AnyArc<dyn IFrameTimer>>;
 }
 
 pub trait IFrameTimer: IAny {

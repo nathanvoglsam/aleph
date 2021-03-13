@@ -30,7 +30,7 @@
 pub mod stages;
 
 use crate::any::AnyArc;
-use any::{ISendSyncAny, IAny};
+use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
 use std::collections::HashMap;
 
