@@ -61,6 +61,28 @@ pub struct PlatformSDL2 {
     provider: AnyArc<ProviderImpl>,
 }
 
+impl PlatformSDL2 {
+    pub fn new() -> Self {
+        Self {
+            _sdl: None,
+            _sdl_video: None,
+            _sdl_event: None,
+            sdl_event_pump: None,
+            sdl_mouse_util: None,
+            sdl_timer: None,
+            sdl_window: None,
+            provider: AnyArc::new(ProviderImpl {
+                frame_timer: None,
+                window: None,
+                mouse: None,
+                keyboard: None,
+                events: None,
+                clipboard: None,
+            }),
+        }
+    }
+}
+
 impl IPlugin for PlatformSDL2 {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
