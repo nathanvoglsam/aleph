@@ -28,6 +28,7 @@
 //
 
 mod adapter;
+mod adapter_desc;
 mod alpha_mode;
 mod debug;
 mod factory;
@@ -41,6 +42,7 @@ mod swap_effect;
 mod usage_flags;
 
 pub use adapter::Adapter;
+pub use adapter_desc::AdapterDesc;
 pub use alpha_mode::AlphaMode;
 pub use debug::Debug;
 pub use debug::DebugID;

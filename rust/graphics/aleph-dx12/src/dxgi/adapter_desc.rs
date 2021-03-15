@@ -27,18 +27,33 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
-use crate::dxgi::AdapterDesc;
+use windows_raw::win32::kernel::LUID;
 
+#[repr(C)]
 #[derive(Clone)]
-#[repr(transparent)]
-pub struct Adapter(pub(crate) IDXGIAdapter1);
+pub struct AdapterDesc {
+    pub description: [u16; 128usize],
+    pub vendor_id: u32,
+    pub device_id: u32,
+    pub sub_sys_id: u32,
+    pub revision: u32,
+    pub dedicated_video_memory: usize,
+    pub dedicated_system_memory: usize,
+    pub shared_system_memory: usize,
+    adapter_luid: LUID,
+    flags: u32,
+}
 
-impl Adapter {
-    pub fn get_adapter_desc(&self) -> crate::Result<AdapterDesc> {
-        unsafe {
-            let mut desc = DXGI_ADAPTER_DESC1::default();
-            self.0.GetDesc1(&mut desc).ok().map(|_| std::mem::transmute(desc))
+impl AdapterDesc {
+    pub fn vendor_id_string(&self) -> Option<&'static str> {
+        if self.vendor_id == 0x10DE {
+            Some("NVIDIA")
+        } else if self.vendor_id == 0x1002 {
+            Some("AMD")
+        } else if self.vendor_id == 0x8086 {
+            Some("INTEL")
+        } else {
+            None
         }
     }
 }
