@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-platform-sdl2"
+name = "aleph-sdl2"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "The windowing and input implementation for aleph, based on SDL2"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-platform-sdl2/"
+documentation = "https://docs.rs/aleph-sdl2/"
 readme = "README.md"
 ## TODO: keywords = ["macro", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
