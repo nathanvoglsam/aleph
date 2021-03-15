@@ -32,7 +32,6 @@ pub mod stages;
 use crate::any::AnyArc;
 use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
-use std::collections::HashMap;
 
 ///
 /// The interface that must be implemented by any engine plugin.
@@ -87,13 +86,13 @@ pub trait IPlugin: IAny {
 
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
-    fn on_init(&mut self, interfaces: &dyn IInterfaces) -> Box<dyn IInitResponse>;
+    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse>;
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
-    fn on_update(&mut self, interfaces: &dyn IInterfaces);
+    fn on_update(&mut self, registry: &dyn IRegistryAccessor);
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
-    fn on_exit(&mut self, interfaces: &dyn IInterfaces);
+    fn on_exit(&mut self, registry: &dyn IRegistryAccessor);
 }
 
 ///
@@ -148,27 +147,25 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)>> IInterfaceIterator 
 
 ///
 /// An abstract interface over any potential concrete implementation of an accessor into the plugin
-/// registry's set of interfaces.
+/// registry. This can be used to retrieve interface implementations, request the main loop exit,
+/// etc.
 ///
-pub trait IInterfaces {
+pub trait IRegistryAccessor {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>>;
+
+    /// Used by a plugin to tell the registry it should exit the main loop and quit.
+    ///
+    /// This function has no effect during the `on_init` or `on_exit` functions.
+    fn queue_quit(&self);
 }
 
-impl dyn IInterfaces {
+impl dyn IRegistryAccessor {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
     pub fn get_interface<T: ISendSyncAny>(&mut self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
-    }
-}
-
-/// A wrapper implementation to save writing a wrapper type to implement this trait on a hashmap
-/// outside of this crate
-impl IInterfaces for HashMap<TypeId, AnyArc<dyn ISendSyncAny>> {
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>> {
-        self.get(&interface).cloned()
     }
 }
 

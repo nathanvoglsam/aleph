@@ -42,7 +42,7 @@ use interfaces::platform::{
 use interfaces::plugin::stages::IInputCollectionStage;
 use interfaces::plugin::stages::IMainInitStage;
 use interfaces::plugin::{
-    IInitResponse, IInterfaces, IPlugin, IPluginRegistrar, PluginDescription,
+    IInitResponse, IRegistryAccessor, IPlugin, IPluginRegistrar, PluginDescription,
 };
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;
@@ -123,7 +123,7 @@ impl IPlugin for PlatformSDL2 {
         registrar.must_update_after::<dyn IInputCollectionStage>()
     }
 
-    fn on_init(&mut self, _interfaces: &dyn IInterfaces) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, _interfaces: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 
@@ -206,7 +206,7 @@ impl IPlugin for PlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_update(&mut self, _interfaces: &dyn IInterfaces) {
+    fn on_update(&mut self, _interfaces: &dyn IRegistryAccessor) {
         let timer = self.sdl_timer.take().unwrap();
         self.frame_timer().unwrap().update(&timer);
         self.sdl_timer = Some(timer);
@@ -215,52 +215,12 @@ impl IPlugin for PlatformSDL2 {
         self.handle_events();
     }
 
-    fn on_exit(&mut self, _interfaces: &dyn IInterfaces) {
+    fn on_exit(&mut self, _interfaces: &dyn IRegistryAccessor) {
         unimplemented!()
     }
 }
 
 impl PlatformSDL2 {
-    fn window_state(&self) -> RwLockWriteGuard<WindowState> {
-        self.provider.window.as_ref().unwrap().state.write()
-    }
-
-    fn window_events(&self) -> RwLockWriteGuard<Vec<WindowEvent>> {
-        self.provider.window.as_ref().unwrap().events.write()
-    }
-
-    fn keyboard_state(&self) -> RwLockWriteGuard<KeyboardState> {
-        self.provider.keyboard.as_ref().unwrap().state.write()
-    }
-
-    fn keyboard_events(&self) -> RwLockWriteGuard<Vec<KeyboardEvent>> {
-        self.provider.keyboard.as_ref().unwrap().events.write()
-    }
-
-    fn mouse_events(&self) -> RwLockWriteGuard<Vec<MouseEvent>> {
-        self.provider.mouse.as_ref().unwrap().events.write()
-    }
-
-    fn all_events(&self) -> RwLockWriteGuard<Vec<Event>> {
-        self.provider.events.as_ref().unwrap().0.write()
-    }
-
-    fn mouse(&self) -> Option<&MouseImpl> {
-        self.provider.mouse.as_ref().map(|v| v.deref())
-    }
-
-    fn window(&self) -> Option<&WindowImpl> {
-        self.provider.window.as_ref().map(|v| v.deref())
-    }
-
-    fn keyboard(&self) -> Option<&KeyboardImpl> {
-        self.provider.keyboard.as_ref().map(|v| v.deref())
-    }
-
-    fn frame_timer(&self) -> Option<&FrameTimerImpl> {
-        self.provider.frame_timer.as_ref().map(|v| v.deref())
-    }
-
     fn handle_requests(&mut self) {
         let mut window = self.sdl_window.take().unwrap();
         let mouse_utils = self.sdl_mouse_util.take().unwrap();
@@ -374,6 +334,48 @@ impl PlatformSDL2 {
 
         self.sdl_event_pump = Some(event_pump);
         self.sdl_window = Some(sdl_window);
+    }
+}
+
+impl PlatformSDL2 {
+    fn window_state(&self) -> RwLockWriteGuard<WindowState> {
+        self.provider.window.as_ref().unwrap().state.write()
+    }
+
+    fn window_events(&self) -> RwLockWriteGuard<Vec<WindowEvent>> {
+        self.provider.window.as_ref().unwrap().events.write()
+    }
+
+    fn keyboard_state(&self) -> RwLockWriteGuard<KeyboardState> {
+        self.provider.keyboard.as_ref().unwrap().state.write()
+    }
+
+    fn keyboard_events(&self) -> RwLockWriteGuard<Vec<KeyboardEvent>> {
+        self.provider.keyboard.as_ref().unwrap().events.write()
+    }
+
+    fn mouse_events(&self) -> RwLockWriteGuard<Vec<MouseEvent>> {
+        self.provider.mouse.as_ref().unwrap().events.write()
+    }
+
+    fn all_events(&self) -> RwLockWriteGuard<Vec<Event>> {
+        self.provider.events.as_ref().unwrap().0.write()
+    }
+
+    fn mouse(&self) -> Option<&MouseImpl> {
+        self.provider.mouse.as_ref().map(|v| v.deref())
+    }
+
+    fn window(&self) -> Option<&WindowImpl> {
+        self.provider.window.as_ref().map(|v| v.deref())
+    }
+
+    fn keyboard(&self) -> Option<&KeyboardImpl> {
+        self.provider.keyboard.as_ref().map(|v| v.deref())
+    }
+
+    fn frame_timer(&self) -> Option<&FrameTimerImpl> {
+        self.provider.frame_timer.as_ref().map(|v| v.deref())
     }
 }
 

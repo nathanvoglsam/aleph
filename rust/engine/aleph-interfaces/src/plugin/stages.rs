@@ -64,7 +64,7 @@ macro_rules! implement_init_stage_plugin {
                 registrar.provides_interface::<$stage_interface>();
             }
 
-            fn on_init(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) -> Box<dyn $crate::plugin::IInitResponse> {
+            fn on_init(&mut self, _interfaces: &dyn $crate::plugin::IRegistryAccessor) -> Box<dyn $crate::plugin::IInitResponse> {
                 let id = TypeId::of::<dyn $stage_interface>();
                 let object: Arc<dyn $crate::any::ISendSyncAny> = Arc::new(Self());
                 let object = AnyArc::from_arc(object);
@@ -74,9 +74,9 @@ macro_rules! implement_init_stage_plugin {
                 Box::new(stages)
             }
 
-            fn on_update(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) {}
+            fn on_update(&mut self, _interfaces: &dyn $crate::plugin::IRegistryAccessor) {}
 
-            fn on_exit(&mut self, _interfaces: &dyn $crate::plugin::IInterfaces) {}
+            fn on_exit(&mut self, _interfaces: &dyn $crate::plugin::IRegistryAccessor) {}
         }
 
         impl $stage_interface for $ty {}
@@ -150,7 +150,7 @@ macro_rules! implement_update_stage_plugin {
                 registrar.provides_interface::<$stage_interface>();
             }
 
-            fn on_init(&mut self, _interfaces: &dyn crate::plugin::IInterfaces) -> Box<dyn crate::plugin::IInitResponse> {
+            fn on_init(&mut self, _interfaces: &dyn crate::plugin::IRegistryAccessor) -> Box<dyn crate::plugin::IInitResponse> {
                 let id = TypeId::of::<dyn $stage_interface>();
                 let object: Arc<dyn $crate::any::ISendSyncAny> = Arc::new(Self());
                 let object = AnyArc::from_arc(object);
@@ -160,9 +160,9 @@ macro_rules! implement_update_stage_plugin {
                 Box::new(stages)
             }
 
-            fn on_update(&mut self, _interfaces: &dyn crate::plugin::IInterfaces) {}
+            fn on_update(&mut self, _interfaces: &dyn crate::plugin::IRegistryAccessor) {}
 
-            fn on_exit(&mut self, _interfaces: &dyn crate::plugin::IInterfaces) {}
+            fn on_exit(&mut self, _interfaces: &dyn crate::plugin::IRegistryAccessor) {}
         }
 
         impl $stage_interface for $ty {}

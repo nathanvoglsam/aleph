@@ -38,21 +38,19 @@ mod registrar;
 pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, ISendSyncAny};
-use crate::interfaces::plugin::IPlugin;
+use crate::interfaces::plugin::{IPlugin, IRegistryAccessor};
 use std::any::TypeId;
-use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
-use std::ops::Deref;
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 pub struct PluginRegistry {
     /// This stores plugins that can only be invoked directly from the main thread
-    plugins: Cell<Vec<Box<dyn IPlugin>>>,
+    plugins: Vec<Box<dyn IPlugin>>,
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: Arc<HashMap<TypeId, AnyArc<dyn ISendSyncAny>>>,
+    interfaces: HashMap<TypeId, AnyArc<dyn ISendSyncAny>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,
@@ -67,8 +65,11 @@ pub struct PluginRegistry {
 impl PluginRegistry {
     /// Internal function that drives the initialization of all the plugins
     pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<HashSet<TypeId>>) {
-        let mut plugins = self.plugins.take();
-        let interfaces = Arc::get_mut(&mut self.interfaces).unwrap();
+        let mut plugins = std::mem::take(&mut self.plugins);
+        let mut accessor = RegistryAccessor {
+            interfaces: std::mem::take(&mut self.interfaces),
+            should_quit: AtomicBool::new(false),
+        };
 
         self.init_order.iter().cloned().for_each(|index| {
             // Take the set out of the list
@@ -85,7 +86,7 @@ impl PluginRegistry {
                 description.patch_version
             );
 
-            let mut response = plugin.on_init(interfaces);
+            let mut response = plugin.on_init(&accessor);
             response.interfaces().unwrap().for_each(|(id, object)| {
                 if !provided.remove(&id) {
                     let description = plugin.get_description();
@@ -100,7 +101,7 @@ impl PluginRegistry {
                     panic!("{}", &message);
                 }
 
-                if interfaces.insert(id, object).is_some() {
+                if accessor.interfaces.insert(id, object).is_some() {
                     let description = plugin.get_description();
                     let message = format!(
                         "Plugin [{} - {}.{}.{}] provided an interface provided by another plugin",
@@ -128,7 +129,8 @@ impl PluginRegistry {
             }
         });
 
-        self.plugins.set(plugins);
+        self.plugins = plugins;
+        self.interfaces = accessor.interfaces;
     }
 
     /// This function is used to call the `on_update` function for each plugin.
@@ -136,19 +138,28 @@ impl PluginRegistry {
     /// This function will be used by the engine implementation and should be called exactly once
     /// per iteration of the main loop.
     pub fn update_plugins(&mut self) {
-        let mut plugins = self.plugins.take();
+        let mut plugins = std::mem::take(&mut self.plugins);
+        let accessor = RegistryAccessor {
+            interfaces: std::mem::take(&mut self.interfaces),
+            should_quit: AtomicBool::new(false),
+        };
 
         self.update_order.iter().cloned().for_each(|v| {
-            plugins[v].on_update(self.interfaces.deref());
+            plugins[v].on_update(&accessor);
         });
 
-        self.plugins.set(plugins);
+        self.plugins = plugins;
+        self.interfaces = accessor.interfaces;
     }
 }
 
 impl Drop for PluginRegistry {
     fn drop(&mut self) {
-        let mut plugins = self.plugins.take();
+        let mut plugins = std::mem::take(&mut self.plugins);
+        let accessor = RegistryAccessor {
+            interfaces: std::mem::take(&mut self.interfaces),
+            should_quit: AtomicBool::new(false),
+        };
 
         self.exit_order.iter().cloned().for_each(|v| {
             let plugin = &mut plugins[v];
@@ -163,9 +174,25 @@ impl Drop for PluginRegistry {
                 description.patch_version
             );
 
-            plugin.on_exit(self.interfaces.deref());
+            plugin.on_exit(&accessor);
         });
 
-        self.plugins.set(plugins);
+        self.plugins = plugins;
+        self.interfaces = accessor.interfaces;
+    }
+}
+
+struct RegistryAccessor {
+    interfaces: HashMap<TypeId, AnyArc<dyn ISendSyncAny>>,
+    should_quit: AtomicBool,
+}
+
+impl IRegistryAccessor for RegistryAccessor {
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>> {
+        self.interfaces.get(&interface).cloned()
+    }
+
+    fn queue_quit(&self) {
+        self.should_quit.store(true, Ordering::Relaxed);
     }
 }

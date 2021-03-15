@@ -32,9 +32,7 @@ use crate::interfaces::plugin::IPlugin;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
-use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
 
 ///
 ///
@@ -121,8 +119,8 @@ impl PluginRegistryBuilder {
 
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
-            plugins: Cell::new(self.plugins),
-            interfaces: Arc::new(HashMap::new()),
+            plugins: self.plugins,
+            interfaces: HashMap::new(),
             init_order,
             update_order,
             exit_order,
