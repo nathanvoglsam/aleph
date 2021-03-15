@@ -39,10 +39,9 @@ use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
-use interfaces::plugin::stages::IInputCollectionStage;
-use interfaces::plugin::stages::IMainInitStage;
+use interfaces::plugin::stages::{IInputCollectionStage, IMainInitStage, InitStage, UpdateStage_};
 use interfaces::plugin::{
-    IInitResponse, IRegistryAccessor, IPlugin, IPluginRegistrar, PluginDescription,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;
@@ -120,7 +119,9 @@ impl IPlugin for PlatformSDL2 {
         registrar.provides_interface::<dyn IMouseProvider>();
         registrar.provides_interface::<dyn IEventsProvider>();
         registrar.must_init_after::<dyn IMainInitStage>();
-        registrar.must_update_after::<dyn IInputCollectionStage>()
+        registrar.must_update_after::<dyn IInputCollectionStage>();
+        registrar.init_stage(InitStage::Core);
+        registrar.update_stage(UpdateStage_::InputCollection);
     }
 
     fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

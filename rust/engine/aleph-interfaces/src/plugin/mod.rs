@@ -30,6 +30,7 @@
 pub mod stages;
 
 use crate::any::AnyArc;
+use crate::plugin::stages::{InitStage, UpdateStage_};
 use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
 
@@ -213,6 +214,16 @@ pub trait IPluginRegistrar: 'static {
 
     /// Object safe implementation of `must_update_after`. See wrapper for more info.
     fn __must_update_after(&mut self, requires: TypeId);
+
+    /// Register the execution stage this plugin's `on_init` should be called in.
+    ///
+    /// Default init stage is `InitStage::Main`
+    fn init_stage(&mut self, stage: InitStage);
+
+    /// Register the execution stage this plugin's `on_update` should be called in.
+    ///
+    /// Default update stage is `UpdateStage::Update`
+    fn update_stage(&mut self, stage: UpdateStage_);
 }
 
 impl dyn IPluginRegistrar {

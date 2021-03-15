@@ -28,6 +28,7 @@
 //
 
 use crate::interfaces::plugin::stages;
+use crate::interfaces::plugin::stages::{InitStage, UpdateStage_};
 use crate::interfaces::plugin::IPlugin;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
@@ -63,6 +64,8 @@ impl PluginRegistryBuilder {
             provided_interfaces: Default::default(),
             init_after_list: Default::default(),
             update_after_list: Default::default(),
+            init_stage: InitStage::Main,
+            update_stage: UpdateStage_::Update,
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
@@ -134,6 +137,7 @@ impl PluginRegistryBuilder {
     }
 }
 
+// TODO: Explicit execution stages system for more reliable execution ordering
 fn build_execution_order(
     mut unscheduled: HashSet<usize>,
     plugins: &[Box<dyn IPlugin>],
@@ -145,6 +149,9 @@ fn build_execution_order(
 
     // Set to keep track of what has been executed
     let mut executed = HashSet::new();
+
+    // Set to keep track of what was executed over the course of a single scheduler iteration
+    let mut newly_executed = HashSet::new();
 
     while !unscheduled.is_empty() {
         // Store how many plugins have been scheduled before attempting the next scheduling round
@@ -158,10 +165,10 @@ fn build_execution_order(
             // set. We can then mark it to be removed from the unscheduled set.
             if executed.is_superset(&dependencies[*v]) {
                 // Insert the plugin's concrete type id into the executed set
-                executed.insert(plugins[*v].type_id());
+                newly_executed.insert(plugins[*v].type_id());
 
                 // Insert the type id for all interfaces that the plugin implements
-                executed.extend(implementations[*v].iter());
+                newly_executed.extend(implementations[*v].iter());
 
                 // Schedule the plugin
                 order.push(*v);
@@ -170,6 +177,12 @@ fn build_execution_order(
                 true
             }
         });
+
+        // Merge the newly_executed set into executed ready to be used next iteration
+        executed.extend(newly_executed.iter());
+
+        // Clear the newly executed set to ready for next iteration
+        newly_executed.clear();
 
         // If the `already_scheduled_count` does not change over the course of an iteration it means
         // there are execution dependencies that can not be satisfied. This is an error condition
@@ -187,7 +200,6 @@ fn build_execution_order(
                     description.patch_version
                 );
             }
-            log::error!("");
             panic!("A plugin has been registered with unsatisfiable execution dependencies");
         }
     }
