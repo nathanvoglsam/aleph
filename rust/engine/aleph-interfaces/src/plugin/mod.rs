@@ -157,7 +157,7 @@ pub trait IRegistryAccessor {
     /// Used by a plugin to tell the registry it should exit the main loop and quit.
     ///
     /// This function has no effect during the `on_init` or `on_exit` functions.
-    fn queue_quit(&self);
+    fn request_quit(&self);
 }
 
 impl dyn IRegistryAccessor {

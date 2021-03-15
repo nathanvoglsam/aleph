@@ -123,7 +123,7 @@ impl IPlugin for PlatformSDL2 {
         registrar.must_update_after::<dyn IInputCollectionStage>()
     }
 
-    fn on_init(&mut self, _interfaces: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 
@@ -206,22 +206,22 @@ impl IPlugin for PlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_update(&mut self, _interfaces: &dyn IRegistryAccessor) {
+    fn on_update(&mut self, registry: &dyn IRegistryAccessor) {
         let timer = self.sdl_timer.take().unwrap();
         self.frame_timer().unwrap().update(&timer);
         self.sdl_timer = Some(timer);
 
-        self.handle_requests();
-        self.handle_events();
+        self.handle_requests(registry);
+        self.handle_events(registry);
     }
 
-    fn on_exit(&mut self, _interfaces: &dyn IRegistryAccessor) {
+    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
         unimplemented!()
     }
 }
 
 impl PlatformSDL2 {
-    fn handle_requests(&mut self) {
+    fn handle_requests(&mut self, _registry: &dyn IRegistryAccessor) {
         let mut window = self.sdl_window.take().unwrap();
         let mouse_utils = self.sdl_mouse_util.take().unwrap();
         let mut window_state = self.window_state();
@@ -238,7 +238,7 @@ impl PlatformSDL2 {
         self.sdl_window = Some(window);
     }
 
-    fn handle_events(&mut self) {
+    fn handle_events(&mut self, registry: &dyn IRegistryAccessor) {
         let mut event_pump = self.sdl_event_pump.take().unwrap();
         let mut sdl_window = self.sdl_window.take().unwrap();
 
@@ -270,7 +270,7 @@ impl PlatformSDL2 {
             match event {
                 sdl2::event::Event::Quit { .. } => {
                     aleph_log::info!("Quit Event Received");
-                    // quit_fn(); // TODO: need to expose this somehow
+                    registry.request_quit();
                 }
                 sdl2::event::Event::Window { win_event, .. } => {
                     window.process_window_event(

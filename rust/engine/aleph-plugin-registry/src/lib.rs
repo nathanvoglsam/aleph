@@ -195,7 +195,7 @@ impl IRegistryAccessor for RegistryAccessor {
         self.interfaces.get(&interface).cloned()
     }
 
-    fn queue_quit(&self) {
+    fn request_quit(&self) {
         self.should_quit.store(true, Ordering::Relaxed);
     }
 }
