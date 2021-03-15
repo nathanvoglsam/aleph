@@ -394,16 +394,8 @@ impl Engine {
     fn log_gpu_info(adapter: &dxgi::Adapter) {
         let info = adapter.get_adapter_desc().unwrap();
 
-        let gpu_vendor = if info.vendor_id == 0x10DE {
-            "NVIDIA"
-        } else if info.vendor_id == 0x1002 {
-            "AMD"
-        } else if info.vendor_id == 0x8086 {
-            "INTEL"
-        } else {
-            "Unknown"
-        };
-        let gpu_name = String::from_utf16(&info.description).unwrap();
+        let gpu_vendor = info.vendor_id_string().unwrap_or("Unknown");
+        let gpu_name = info.description_string().unwrap_or("Unknown".to_string());
         let dvmem = info.dedicated_video_memory / 1_000_000;
         let dsmem = info.dedicated_system_memory / 1_000_000;
         let ssmem = info.shared_system_memory / 1_000_000;

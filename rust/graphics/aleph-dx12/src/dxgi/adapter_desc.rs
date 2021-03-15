@@ -45,6 +45,11 @@ pub struct AdapterDesc {
 }
 
 impl AdapterDesc {
+    pub fn description_string(&self) -> Option<String> {
+        let sub_slice = self.description.split(|v| *v == 0).next()?;
+        String::from_utf16(sub_slice).ok()
+    }
+
     pub fn vendor_id_string(&self) -> Option<&'static str> {
         if self.vendor_id == 0x10DE {
             Some("NVIDIA")
