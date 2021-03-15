@@ -39,7 +39,7 @@ use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
-use interfaces::plugin::stages::{IInputCollectionStage, IMainInitStage, InitStage, UpdateStage_};
+use interfaces::plugin::stages::{InitStage, UpdateStage};
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -118,10 +118,8 @@ impl IPlugin for PlatformSDL2 {
         registrar.provides_interface::<dyn IKeyboardProvider>();
         registrar.provides_interface::<dyn IMouseProvider>();
         registrar.provides_interface::<dyn IEventsProvider>();
-        registrar.must_init_after::<dyn IMainInitStage>();
-        registrar.must_update_after::<dyn IInputCollectionStage>();
         registrar.init_stage(InitStage::Core);
-        registrar.update_stage(UpdateStage_::InputCollection);
+        registrar.update_stage(UpdateStage::InputCollection);
     }
 
     fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {

@@ -30,7 +30,7 @@
 pub mod stages;
 
 use crate::any::AnyArc;
-use crate::plugin::stages::{InitStage, UpdateStage_};
+use crate::plugin::stages::{InitStage, UpdateStage};
 use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
 
@@ -223,7 +223,7 @@ pub trait IPluginRegistrar: 'static {
     /// Register the execution stage this plugin's `on_update` should be called in.
     ///
     /// Default update stage is `UpdateStage::Update`
-    fn update_stage(&mut self, stage: UpdateStage_);
+    fn update_stage(&mut self, stage: UpdateStage);
 }
 
 impl dyn IPluginRegistrar {

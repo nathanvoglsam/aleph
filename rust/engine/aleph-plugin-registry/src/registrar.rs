@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages::{InitStage, UpdateStage_};
+use crate::interfaces::plugin::stages::{InitStage, UpdateStage};
 use crate::interfaces::plugin::IPluginRegistrar;
 use std::any::TypeId;
 use std::collections::HashSet;
@@ -38,7 +38,7 @@ pub struct PluginRegistrar {
     pub init_after_list: HashSet<TypeId>,
     pub update_after_list: HashSet<TypeId>,
     pub init_stage: InitStage,
-    pub update_stage: UpdateStage_,
+    pub update_stage: UpdateStage,
 }
 
 impl IPluginRegistrar for PluginRegistrar {
@@ -62,7 +62,7 @@ impl IPluginRegistrar for PluginRegistrar {
         self.init_stage = stage;
     }
 
-    fn update_stage(&mut self, stage: UpdateStage_) {
+    fn update_stage(&mut self, stage: UpdateStage) {
         self.update_stage = stage;
     }
 }

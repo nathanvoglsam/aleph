@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages;
-use crate::interfaces::plugin::stages::{InitStage, UpdateStage_};
+use crate::interfaces::plugin::stages::{InitStage, UpdateStage};
 use crate::interfaces::plugin::IPlugin;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
@@ -46,7 +45,7 @@ impl PluginRegistryBuilder {
     /// Construct a new builder
     pub fn new() -> Self {
         Self {
-            plugins: stages::default_stages(),
+            plugins: Vec::new(),
         }
     }
 
@@ -65,7 +64,7 @@ impl PluginRegistryBuilder {
             init_after_list: Default::default(),
             update_after_list: Default::default(),
             init_stage: InitStage::Main,
-            update_stage: UpdateStage_::Update,
+            update_stage: UpdateStage::Update,
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
@@ -96,7 +95,7 @@ impl PluginRegistryBuilder {
 
         // Arrays we use to count how many plugins of each stage have been scheduled
         let mut init_stage_counts = vec![0usize; InitStage::STAGE_COUNT];
-        let mut update_stage_counts = vec![0usize; UpdateStage_::STAGE_COUNT];
+        let mut update_stage_counts = vec![0usize; UpdateStage::STAGE_COUNT];
 
         // Count the number of plugins in each stage
         let iterator = init_stages
@@ -159,7 +158,6 @@ impl PluginRegistryBuilder {
     }
 }
 
-// TODO: Explicit execution stages system for more reliable execution ordering
 fn build_execution_order(
     mut unscheduled: HashSet<usize>,
     plugins: &[Box<dyn IPlugin>],
