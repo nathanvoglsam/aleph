@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 use crate::dxgi::AdapterDesc;
+use windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -38,7 +38,10 @@ impl Adapter {
     pub fn get_adapter_desc(&self) -> crate::Result<AdapterDesc> {
         unsafe {
             let mut desc = DXGI_ADAPTER_DESC1::default();
-            self.0.GetDesc1(&mut desc).ok().map(|_| std::mem::transmute(desc))
+            self.0
+                .GetDesc1(&mut desc)
+                .ok()
+                .map(|_| std::mem::transmute(desc))
         }
     }
 }
