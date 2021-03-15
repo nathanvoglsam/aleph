@@ -59,15 +59,12 @@ pub struct MouseImpl {
     /// The request queue that will be flushed and handled at the beginning of the frame after a
     /// request is made
     pub requests: Mutex<Vec<MouseRequest>>,
-
-    /// Maps our custom cursor enum to an SDL2 cursor
-    pub cursors: HashMap<Cursor, sdl2::mouse::Cursor>,
 }
 
 declare_interfaces!(MouseImpl, [IMouse]);
 
 impl MouseImpl {
-    pub fn new(cursors: HashMap<Cursor, sdl2::mouse::Cursor>) -> AnyArc<Self> {
+    pub fn new() -> AnyArc<Self> {
         let out = Self {
             state: RwLock::new(MouseState {
                 pos: (0, 0),
@@ -75,7 +72,6 @@ impl MouseImpl {
             }),
             events: RwLock::new(Vec::new()),
             requests: Mutex::new(Vec::new()),
-            cursors,
         };
         AnyArc::new(out)
     }
@@ -87,6 +83,7 @@ impl MouseImpl {
         &self,
         window: &sdl2::video::Window,
         mouse_utils: &sdl2::mouse::MouseUtil,
+        cursors: &HashMap<Cursor, sdl2::mouse::Cursor>,
     ) {
         for request in self.requests.lock().drain(..) {
             match request {
@@ -96,7 +93,7 @@ impl MouseImpl {
                     aleph_log::trace!("Moved mouse to : {}, {}", x, y);
                 }
                 MouseRequest::SetCursor(cursor) => {
-                    let cursor = self.cursors.get(&cursor).unwrap();
+                    let cursor = cursors.get(&cursor).unwrap();
                     cursor.set();
                 }
                 MouseRequest::ShowCursor => {

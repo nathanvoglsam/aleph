@@ -59,6 +59,7 @@ pub struct PlatformSDL2 {
     sdl_window: Option<sdl2::video::Window>,
     sdl_main_ctx: crate::sdl_main_wrapper::MainCtx,
     provider: AnyArc<ProviderImpl>,
+    cursors: HashMap<Cursor, sdl2::mouse::Cursor>,
 }
 
 impl PlatformSDL2 {
@@ -82,6 +83,7 @@ impl PlatformSDL2 {
                 events: None,
                 clipboard: None,
             }),
+            cursors: Default::default(),
         }
     }
 }
@@ -147,11 +149,11 @@ impl IPlugin for PlatformSDL2 {
             .expect("Failed to initialize SDL2 event pump");
 
         let sdl_mouse_util = sdl.mouse();
-        let cursors = init_cursor_map();
+        self.cursors = init_cursor_map();
 
         // Initialize all our implementations
         let frame_timer = FrameTimerImpl::new(&sdl_timer);
-        let mouse = MouseImpl::new(cursors);
+        let mouse = MouseImpl::new();
         let (window, sdl_window) = WindowImpl::new(&sdl_video, "test");
         let keyboard = KeyboardImpl::new();
         let events = EventsImpl::new();
@@ -227,7 +229,7 @@ impl PlatformSDL2 {
 
         self.mouse()
             .unwrap()
-            .process_mouse_requests(&window, &mouse_utils);
+            .process_mouse_requests(&window, &mouse_utils, &self.cursors);
         self.window()
             .unwrap()
             .process_window_requests(&mut window, &mut window_state);

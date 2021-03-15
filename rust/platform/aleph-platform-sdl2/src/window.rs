@@ -74,6 +74,9 @@ pub struct WindowState {
     pub handle: RawWindowHandle,
 }
 
+unsafe impl Send for WindowState {}
+unsafe impl Sync for WindowState {}
+
 ///
 /// Represents the set of possible state change requests the window can perform
 ///
