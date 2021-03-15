@@ -48,9 +48,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies.once_cell]
 version = "1"
 
-[dependencies.utf16_lit]
-version = "2"
-
 [dependencies]
 ##windows = { path = "../../../../windows-rs", version = "0.4" }
 windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation" }

@@ -34,6 +34,7 @@ pub mod utils;
 mod raw;
 
 pub use raw::windows::*;
+pub use utils::name_current_thread;
 pub use win32::system_services::BOOL;
 pub use windows_rs::initialize_mta;
 pub use windows_rs::initialize_sta;

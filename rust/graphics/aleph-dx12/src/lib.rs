@@ -35,9 +35,6 @@ mod utils;
 
 pub use dx12::*;
 
-pub use windows_raw::initialize_mta;
-pub use windows_raw::initialize_sta;
-pub use windows_raw::utils::name_thread_as_main_thread;
 pub use windows_raw::utils::Bool;
 pub use windows_raw::utils::CStrFFI;
 pub use windows_raw::Error;

@@ -38,7 +38,7 @@ pub fn init_long_thread_pool(num_threads: usize) {
         .start_handler(|_| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
-            dx12::initialize_mta().unwrap();
+            windows_raw::initialize_mta().unwrap();
         })
         .build()
         .expect("Failed to create long running thread pool");
@@ -56,7 +56,7 @@ pub fn init_short_thread_pool(num_threads: usize) {
         .start_handler(|_| {
             // Initialize COM with MTA
             #[cfg(target_os = "windows")]
-            dx12::initialize_mta().unwrap();
+            windows_raw::initialize_mta().unwrap();
         })
         .build()
         .expect("Failed to create short running thread pool");

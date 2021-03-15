@@ -39,7 +39,6 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::os::raw::c_char;
-use utf16_lit::utf16_null;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -154,20 +153,21 @@ impl<T: Sized> DynamicLoadCell<T> {
 }
 
 ///
-/// Utility function that tries to set the main thread's name to "AlephMainThread", silently failing
-/// if it doesn't
+/// Utility for setting the name of the current thread.
 ///
-pub fn name_thread_as_main_thread() {
+/// Useful for getting descriptive names in debuggers and profilers.
+///
+/// # SAFETY
+///
+/// `name` must be a null terminated wchar string. If the null terminator is missing the behavior is
+/// undefined.
+///
+pub unsafe fn name_current_thread(name: &[u16]) {
     use crate::win32::system_services::GetCurrentThread;
     use crate::win32::system_services::SetThreadDescription;
 
-    unsafe {
-        let handle = GetCurrentThread();
-        let _ = SetThreadDescription(
-            handle,
-            PWSTR(utf16_null!("AlephMainThread").as_ptr() as *mut u16),
-        );
-    }
+    let handle = GetCurrentThread();
+    let _ = SetThreadDescription(handle, PWSTR(name.as_ptr() as *mut u16));
 }
 
 pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {

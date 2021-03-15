@@ -46,6 +46,7 @@ extern crate aleph_dx12 as dx12;
 extern crate aleph_dx12_alloc as dx12_alloc;
 extern crate aleph_pix as pix;
 extern crate aleph_render as render;
+extern crate aleph_windows_raw as windows_raw;
 
 // =================================================================================================
 // Modules

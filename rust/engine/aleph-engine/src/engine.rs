@@ -36,6 +36,7 @@ use egui::PaintJobs;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, Ordering};
+use utf16_lit::utf16_null;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
@@ -57,10 +58,12 @@ impl Engine {
     pub fn start(app_info: AppInfo, mut app: impl crate::AppLogic) {
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
-        dx12::initialize_mta().unwrap();
+        windows_raw::initialize_mta().unwrap();
 
         #[cfg(target_os = "windows")]
-        dx12::name_thread_as_main_thread();
+        unsafe {
+            windows_raw::name_current_thread(&utf16_null!("MainThread"));
+        }
 
         // -----------------------------------------------------------------------------------------
         // Read Command Line Switches
