@@ -116,7 +116,8 @@
       <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-any/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-interfaces/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-plugin-registry/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/rust/platform/aleph-platform-sdl2/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-sdl2/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/rust/engine/aleph-egui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
       <excludeFolder url="file://$MODULE_DIR$/rust/engine/aleph-embedded-data/shaders/out" />
