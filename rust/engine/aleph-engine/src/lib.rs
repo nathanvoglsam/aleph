@@ -36,7 +36,7 @@ pub extern crate aleph_app_info as app_info;
 pub extern crate aleph_log as log;
 pub extern crate aleph_platform as platform;
 pub extern crate aleph_plugin_registry as plugin_registry;
-pub extern crate egui;
+pub extern crate aleph_egui as egui;
 pub extern crate rayon;
 
 pub use plugin_registry::any;
