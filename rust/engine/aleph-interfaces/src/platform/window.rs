@@ -57,7 +57,7 @@ pub enum WindowEvent {
 /// window, and should be able to give out an `AnyArc<IWindow>` to allow others to retrieve
 /// information about and manipulate the window.
 ///
-pub trait IWindowProvider: IAny {
+pub trait IWindowProvider: ISendSyncAny + 'static {
     ///
     /// Returns an `AnyArc` that holds a window interface.
     ///
@@ -73,7 +73,7 @@ pub trait IWindowProvider: IAny {
 /// This interface should be implemented as the interface to an OS window. Ideally access to an
 /// `IWindow` instance will be provided from an `IWindowProvider`.
 ///
-pub trait IWindow: IAny {
+pub trait IWindow: ISendSyncAny + 'static {
     ///
     /// Returns whether the window has been resized since the last time this function was called.
     ///

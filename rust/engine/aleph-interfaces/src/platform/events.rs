@@ -36,7 +36,7 @@ use any::*;
 /// destroying whatever is needed to access the system's event queue, and should be able to give out
 /// an `AnyArc<IEvents>` to allow others to interface with the events system.
 ///
-pub trait IEventsProvider: IAny {
+pub trait IEventsProvider: ISendSyncAny + 'static {
     ///
     /// Returns an `AnyArc` that holds an `IEvents` interface.
     ///
@@ -52,7 +52,7 @@ pub trait IEventsProvider: IAny {
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's event queue.
 ///
-pub trait IEvents: IAny {
+pub trait IEvents: ISendSyncAny + 'static {
     fn get<'a>(&'a self) -> Box<dyn IEventsLock + 'a>;
 }
 

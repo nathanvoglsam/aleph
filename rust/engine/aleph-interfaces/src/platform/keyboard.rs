@@ -35,7 +35,7 @@ use any::*;
 /// whatever is needed to access the system's keyboard, and should be able to give out an
 /// `AnyArc<IKeyboard>` to allow others to retrieve information about and manipulate the keyboard.
 ///
-pub trait IKeyboardProvider: IAny {
+pub trait IKeyboardProvider: ISendSyncAny + 'static {
     ///
     /// Returns an `AnyArc` that holds an `IKeyboard` interface.
     ///
@@ -51,7 +51,7 @@ pub trait IKeyboardProvider: IAny {
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's keyboard.
 ///
-pub trait IKeyboard: IAny {
+pub trait IKeyboard: ISendSyncAny + 'static {
     ///
     /// Get the current state of the mouse, last updated at the beginning of the frame
     ///
@@ -601,6 +601,12 @@ impl ScanCode {
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct KeyMod(pub u16);
+
+impl KeyMod {
+    pub fn contains(&self, other: KeyMod) -> bool {
+        (self.0 & other.0) == other.0
+    }
+}
 
 impl KeyMod {
     pub const NONE: Self = Self(0x0000);

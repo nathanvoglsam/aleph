@@ -151,7 +151,7 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)>> IInterfaceIterator 
 /// registry. This can be used to retrieve interface implementations, request the main loop exit,
 /// etc.
 ///
-pub trait IRegistryAccessor {
+pub trait IRegistryAccessor: 'static {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>>;
 
@@ -164,7 +164,7 @@ pub trait IRegistryAccessor {
 impl dyn IRegistryAccessor {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
-    pub fn get_interface<T: ISendSyncAny>(&self) -> Option<AnyArc<T>> {
+    pub fn get_interface<T: ISendSyncAny + ?Sized>(&self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }

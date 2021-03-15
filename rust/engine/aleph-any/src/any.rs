@@ -79,14 +79,14 @@ pub trait IAny: 'static {
 ///
 /// A wrapper trait over `IAny` which can be used instead of `IAny + Send + Sync`
 ///
-pub trait ISendSyncAny: IAny {}
+pub trait ISendSyncAny: IAny + 'static {}
 
 impl<T: IAny + Send + Sync> ISendSyncAny for T {}
 
 ///
 /// A wrapper trait over `IAny` which can be used instead of `IAny + Send`
 ///
-pub trait ISendAny: IAny {}
+pub trait ISendAny: IAny + 'static {}
 
 impl<T: IAny + Send> ISendAny for T {}
 
