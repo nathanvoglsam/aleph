@@ -164,7 +164,7 @@ pub trait IRegistryAccessor {
 impl dyn IRegistryAccessor {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
-    pub fn get_interface<T: ISendSyncAny>(&mut self) -> Option<AnyArc<T>> {
+    pub fn get_interface<T: ISendSyncAny>(&self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }
