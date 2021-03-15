@@ -133,20 +133,23 @@ impl PluginRegistry {
         self.interfaces = accessor.interfaces;
     }
 
-    /// This function is used to call the `on_update` function for each plugin.
     ///
-    /// This function will be used by the engine implementation and should be called exactly once
-    /// per iteration of the main loop.
-    pub fn update_plugins(&mut self) {
+    /// This function drives the main loop of the engine.
+    ///
+    /// This function will continuously loop, calling `on_update` for each plugin once per iteration
+    /// of its internal loop, until any one of the plugins requests the loop to terminate.
+    pub fn run(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
         let accessor = RegistryAccessor {
             interfaces: std::mem::take(&mut self.interfaces),
             should_quit: AtomicBool::new(false),
         };
 
-        self.update_order.iter().cloned().for_each(|v| {
-            plugins[v].on_update(&accessor);
-        });
+        while !accessor.should_quit.load(Ordering::Relaxed) {
+            self.update_order.iter().cloned().for_each(|v| {
+                plugins[v].on_update(&accessor);
+            });
+        }
 
         self.plugins = plugins;
         self.interfaces = accessor.interfaces;

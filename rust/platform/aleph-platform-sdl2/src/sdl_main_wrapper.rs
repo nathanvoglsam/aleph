@@ -129,6 +129,9 @@ mod uwp {
     }
 }
 
+#[cfg(target_vendor = "uwp")]
+pub use uwp::{run_sdl_exit, run_sdl_main, MainCtx};
+
 #[cfg(not(target_vendor = "uwp"))]
 mod pc {
     pub struct MainCtx();
@@ -141,6 +144,3 @@ mod pc {
 
 #[cfg(not(target_vendor = "uwp"))]
 pub use pc::{run_sdl_exit, run_sdl_main, MainCtx};
-
-#[cfg(target_vendor = "uwp")]
-pub use uwp::{run_sdl_exit, run_sdl_main, MainCtx};
