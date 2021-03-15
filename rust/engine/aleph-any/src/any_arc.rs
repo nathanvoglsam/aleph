@@ -184,6 +184,12 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     }
 }
 
+impl<T: IAny + Default> Default for AnyArc<T> {
+    fn default() -> Self {
+        Self(Arc::new(Default::default()))
+    }
+}
+
 impl<T: IAny + ?Sized> Clone for AnyArc<T> {
     fn clone(&self) -> Self {
         Self(self.0.clone())

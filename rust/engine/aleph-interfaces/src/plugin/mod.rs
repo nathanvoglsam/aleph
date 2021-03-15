@@ -87,13 +87,34 @@ pub trait IPlugin: IAny {
 
     /// Called by the engine runtime exactly once during the init phase so a plugin can initialize
     /// itself in regards to other plugins
-    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse>;
+    #[allow(unused_variables)]
+    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        Box::new(Vec::new())
+    }
+
+    ///
+    #[allow(unused_variables)]
+    fn on_input_collection(&mut self, registry: &dyn IRegistryAccessor) {}
+
+    ///
+    #[allow(unused_variables)]
+    fn on_pre_update(&mut self, registry: &dyn IRegistryAccessor) {}
 
     /// Called by the engine runtime exactly once *per iteration* of the main loop
-    fn on_update(&mut self, registry: &dyn IRegistryAccessor);
+    #[allow(unused_variables)]
+    fn on_update(&mut self, registry: &dyn IRegistryAccessor) {}
+
+    ///
+    #[allow(unused_variables)]
+    fn on_post_update(&mut self, registry: &dyn IRegistryAccessor) {}
+
+    ///
+    #[allow(unused_variables)]
+    fn on_render(&mut self, registry: &dyn IRegistryAccessor) {}
 
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
-    fn on_exit(&mut self, registry: &dyn IRegistryAccessor);
+    #[allow(unused_variables)]
+    fn on_exit(&mut self, registry: &dyn IRegistryAccessor) {}
 }
 
 ///
