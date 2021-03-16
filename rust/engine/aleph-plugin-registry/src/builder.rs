@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages::{InitStage, UpdateStage};
+use crate::interfaces::plugin::stages::UpdateStage;
 use crate::interfaces::plugin::IPlugin;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
@@ -62,18 +62,16 @@ impl PluginRegistryBuilder {
             depends_on_list: Default::default(),
             provided_interfaces: Default::default(),
             init_after_list: Default::default(),
-            update_after_list: Default::default(),
-            init_stage: InitStage::Main,
-            update_stage: UpdateStage::Update,
+            update_stage_dependencies: vec![HashSet::default(); UpdateStage::STAGE_COUNT],
+            update_stages: HashSet::new(),
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
         let mut dependencies: Vec<HashSet<TypeId>> = Vec::new();
         let mut init_dependencies: Vec<HashSet<TypeId>> = Vec::new();
-        let mut update_dependencies: Vec<HashSet<TypeId>> = Vec::new();
+        let mut update_dependencies: Vec<Vec<HashSet<TypeId>>> = Vec::new();
         let mut provided_interfaces: Vec<HashSet<TypeId>> = Vec::new();
-        let mut init_stages: Vec<usize> = Vec::new();
-        let mut update_stages: Vec<usize> = Vec::new();
+        let mut update_stages: Vec<HashSet<usize>> = Vec::new();
 
         // Iterate over each plugin and record its registration info
         self.plugins.iter_mut().for_each(|plugin| {
@@ -84,28 +82,13 @@ impl PluginRegistryBuilder {
             // building
             dependencies.push(std::mem::take(&mut registrar.depends_on_list));
             init_dependencies.push(std::mem::take(&mut registrar.init_after_list));
-            update_dependencies.push(std::mem::take(&mut registrar.update_after_list));
+            update_dependencies.push(std::mem::take(&mut registrar.update_stage_dependencies));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
-            init_stages.push(registrar.init_stage as usize);
-            update_stages.push(registrar.update_stage as usize);
+            update_stages.push(std::mem::take(&mut registrar.update_stages));
         });
 
         // Build a hash set populated with the number 0..n where n is the number of plugins.
         let unscheduled: HashSet<usize> = (0..self.plugins.len()).collect();
-
-        // Arrays we use to count how many plugins of each stage have been scheduled
-        let mut init_stage_counts = vec![0usize; InitStage::STAGE_COUNT];
-        let mut update_stage_counts = vec![0usize; UpdateStage::STAGE_COUNT];
-
-        // Count the number of plugins in each stage
-        let iterator = init_stages
-            .iter()
-            .cloned()
-            .zip(update_stages.iter().cloned());
-        for (init_stage, update_stage) in iterator {
-            init_stage_counts[init_stage] += 1;
-            update_stage_counts[update_stage] += 1;
-        }
 
         // Build the init execution order
         //
@@ -116,20 +99,13 @@ impl PluginRegistryBuilder {
             &self.plugins,
             &init_dependencies,
             &provided_interfaces,
-            &init_stages,
-            init_stage_counts,
         );
 
-        // Build the update execution order
-        //
-        // Just pass the set in as we don't need it anymore.
-        let update_order = build_execution_order(
-            unscheduled,
+        let update_orders = build_update_exec_orders(
             &self.plugins,
             &update_dependencies,
             &provided_interfaces,
             &update_stages,
-            update_stage_counts,
         );
 
         // Build the exit execution order
@@ -146,7 +122,7 @@ impl PluginRegistryBuilder {
             plugins: self.plugins,
             interfaces: HashMap::new(),
             init_order,
-            update_order,
+            update_orders,
             exit_order,
         };
 
@@ -158,13 +134,38 @@ impl PluginRegistryBuilder {
     }
 }
 
+fn build_update_exec_orders(
+    plugins: &[Box<dyn IPlugin>],
+    dependencies: &[Vec<HashSet<TypeId>>],
+    provided_implementations: &[HashSet<TypeId>],
+    update_stages: &[HashSet<usize>],
+) -> Vec<Vec<usize>> {
+    let mut output = Vec::new();
+
+    (0..UpdateStage::STAGE_COUNT).into_iter().for_each(|stage| {
+        let unscheduled: HashSet<usize> = plugins
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| update_stages[*index].contains(&stage))
+            .map(|v| v.0)
+            .collect();
+        let order = build_execution_order(
+            unscheduled,
+            plugins,
+            &dependencies[stage],
+            provided_implementations,
+        );
+        output.push(order);
+    });
+
+    output
+}
+
 fn build_execution_order(
     mut unscheduled: HashSet<usize>,
     plugins: &[Box<dyn IPlugin>],
     dependencies: &[HashSet<TypeId>],
     provided_implementations: &[HashSet<TypeId>],
-    stages: &[usize],
-    mut stage_counts: Vec<usize>,
 ) -> Vec<usize> {
     // Output list we build the order into
     let mut order = Vec::new();
@@ -175,27 +176,9 @@ fn build_execution_order(
     // Set to keep track of what was executed over the course of a single scheduler iteration
     let mut newly_executed = HashSet::new();
 
-    // Context for the current stage we're scheduling
-    let mut current_stage = 0;
-
     while !unscheduled.is_empty() {
         // Store how many plugins have been scheduled before attempting the next scheduling round
         let already_scheduled_count = order.len();
-
-        // If we've scheduled all plugins in the current stage, move to the next stage
-        if stage_counts[current_stage] == 0 {
-            current_stage += 1;
-
-            // If we've run out of stages then we have finished scheduling plugins and should exit
-            // the loop.
-            //
-            // Otherwise we restart our loop iteration
-            if current_stage >= stage_counts.len() {
-                break;
-            } else {
-                continue;
-            }
-        }
 
         unscheduled.retain(|v| {
             // If all of the the plugin's dependencies are in the executed set then we can execute
@@ -204,18 +187,12 @@ fn build_execution_order(
             // If we can execute the plugin we add its index to the order and add it to the executed
             // set. We can then mark it to be removed from the unscheduled set.
             let dependencies_satisfied = executed.is_superset(&dependencies[*v]);
-
-            // We also need to check if we're in the correct execution stage to schedule this plugin
-            let correct_stage = stages[*v] == current_stage;
-            if dependencies_satisfied && correct_stage {
+            if dependencies_satisfied {
                 // Insert the plugin's concrete type id into the executed set
                 newly_executed.insert(plugins[*v].type_id());
 
                 // Insert the type id for all interfaces that the plugin implements
                 newly_executed.extend(provided_implementations[*v].iter());
-
-                // Decrease the count of unscheduled plugins in the current stage
-                stage_counts[current_stage] -= 1;
 
                 // Schedule the plugin
                 order.push(*v);

@@ -85,8 +85,9 @@ impl IPlugin for EguiPlugin {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        // We want to update in the pre update stage
+        // We want to update in the pre update stage and post update stage
         registrar.update_stage(UpdateStage::PreUpdate);
+        registrar.update_stage(UpdateStage::PostUpdate);
 
         // We export two interfaces for interacting with egui
         registrar.provides_interface::<dyn IEguiContextProvider>();

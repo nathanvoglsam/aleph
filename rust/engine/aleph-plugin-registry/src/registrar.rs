@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages::{InitStage, UpdateStage};
+use crate::interfaces::plugin::stages::UpdateStage;
 use crate::interfaces::plugin::IPluginRegistrar;
 use std::any::TypeId;
 use std::collections::HashSet;
@@ -36,9 +36,8 @@ pub struct PluginRegistrar {
     pub depends_on_list: HashSet<TypeId>,
     pub provided_interfaces: HashSet<TypeId>,
     pub init_after_list: HashSet<TypeId>,
-    pub update_after_list: HashSet<TypeId>,
-    pub init_stage: InitStage,
-    pub update_stage: UpdateStage,
+    pub update_stage_dependencies: Vec<HashSet<TypeId>>,
+    pub update_stages: HashSet<usize>,
 }
 
 impl IPluginRegistrar for PluginRegistrar {
@@ -54,15 +53,14 @@ impl IPluginRegistrar for PluginRegistrar {
         self.init_after_list.insert(requires);
     }
 
-    fn __must_update_after(&mut self, requires: TypeId) {
-        self.update_after_list.insert(requires);
-    }
-
-    fn init_stage(&mut self, stage: InitStage) {
-        self.init_stage = stage;
+    fn __must_update_after(&mut self, stage: UpdateStage, requires: TypeId) {
+        if !self.update_stages.contains(&(stage as usize)) {
+            panic!("Declared execution dependency for stage plugin not declared to execute in");
+        }
+        self.update_stage_dependencies[stage as usize].insert(requires);
     }
 
     fn update_stage(&mut self, stage: UpdateStage) {
-        self.update_stage = stage;
+        self.update_stages.insert(stage as usize);
     }
 }

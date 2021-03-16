@@ -39,7 +39,7 @@ use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
-use interfaces::plugin::stages::{InitStage, UpdateStage};
+use interfaces::plugin::stages::UpdateStage;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -120,7 +120,6 @@ impl IPlugin for PlatformSDL2 {
         registrar.provides_interface::<dyn IKeyboardProvider>();
         registrar.provides_interface::<dyn IMouseProvider>();
         registrar.provides_interface::<dyn IEventsProvider>();
-        registrar.init_stage(InitStage::Core);
         registrar.update_stage(UpdateStage::InputCollection);
     }
 
@@ -207,7 +206,7 @@ impl IPlugin for PlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_update(&mut self, registry: &dyn IRegistryAccessor) {
+    fn on_input_collection(&mut self, registry: &dyn IRegistryAccessor) {
         let timer = self.sdl_timer.take().unwrap();
         self.frame_timer().unwrap().update(&timer);
         self.sdl_timer = Some(timer);

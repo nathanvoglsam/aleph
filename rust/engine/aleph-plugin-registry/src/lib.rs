@@ -56,7 +56,7 @@ pub struct PluginRegistry {
     init_order: Vec<usize>,
 
     /// The baked update execution sequence
-    update_order: Vec<usize>,
+    update_orders: Vec<Vec<usize>>,
 
     /// The baked exit execution sequence
     exit_order: Vec<usize>,
@@ -146,9 +146,14 @@ impl PluginRegistry {
         };
 
         while !accessor.should_quit.load(Ordering::Relaxed) {
-            self.update_order.iter().cloned().for_each(|v| {
-                plugins[v].on_update(&accessor);
-            });
+            self.update_orders
+                .iter()
+                .enumerate()
+                .for_each(|(stage, order)| {
+                    order.iter().cloned().for_each(|plugin_index| {
+                        plugins[plugin_index].update_driver(stage, &accessor);
+                    });
+                });
         }
 
         self.plugins = plugins;

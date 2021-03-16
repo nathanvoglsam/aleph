@@ -29,21 +29,6 @@
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 #[repr(u32)]
-pub enum InitStage {
-    /// Represents the first init stage
-    Core = 0,
-
-    /// Represents the second init stage that occurs after `InitStage::Core`
-    Main = 1,
-}
-
-impl InitStage {
-    /// The number of stages
-    pub const STAGE_COUNT: usize = 2;
-}
-
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-#[repr(u32)]
 pub enum UpdateStage {
     /// The first update stage. Semantically should be used by platform implementations for
     /// collecting input from the host.

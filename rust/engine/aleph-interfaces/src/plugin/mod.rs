@@ -30,7 +30,7 @@
 pub mod stages;
 
 use crate::any::AnyArc;
-use crate::plugin::stages::{InitStage, UpdateStage};
+use crate::plugin::stages::UpdateStage;
 use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
 
@@ -115,6 +115,25 @@ pub trait IPlugin: IAny {
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     #[allow(unused_variables)]
     fn on_exit(&mut self, registry: &dyn IRegistryAccessor) {}
+}
+
+impl dyn IPlugin {
+    pub fn update_driver(&mut self, stage: usize, registry: &dyn IRegistryAccessor) {
+        const INPUT_COLLECTION: usize = UpdateStage::InputCollection as usize;
+        const PRE_UPDATE: usize = UpdateStage::PreUpdate as usize;
+        const UPDATE: usize = UpdateStage::Update as usize;
+        const POST_UPDATE: usize = UpdateStage::PostUpdate as usize;
+        const RENDER: usize = UpdateStage::Render as usize;
+
+        match stage {
+            INPUT_COLLECTION => self.on_input_collection(registry),
+            PRE_UPDATE => self.on_input_collection(registry),
+            UPDATE => self.on_input_collection(registry),
+            POST_UPDATE => self.on_input_collection(registry),
+            RENDER => self.on_input_collection(registry),
+            _ => panic!("Invalid update stage"),
+        }
+    }
 }
 
 ///
@@ -234,16 +253,9 @@ pub trait IPluginRegistrar: 'static {
     fn __must_init_after(&mut self, requires: TypeId);
 
     /// Object safe implementation of `must_update_after`. See wrapper for more info.
-    fn __must_update_after(&mut self, requires: TypeId);
+    fn __must_update_after(&mut self, stage: UpdateStage, requires: TypeId);
 
-    /// Register the execution stage this plugin's `on_init` should be called in.
-    ///
-    /// Default init stage is `InitStage::Main`
-    fn init_stage(&mut self, stage: InitStage);
-
-    /// Register the execution stage this plugin's `on_update` should be called in.
-    ///
-    /// Default update stage is `UpdateStage::Update`
+    /// Register that the plugin should have an update function called for the given stage.
     fn update_stage(&mut self, stage: UpdateStage);
 }
 
@@ -269,7 +281,7 @@ impl dyn IPluginRegistrar {
 
     /// Declares that the plugin's update function can only execute *after* the given plugin has had
     /// its own update function execute.
-    pub fn must_update_after<T: IAny + ?Sized>(&mut self) {
-        self.__must_update_after(TypeId::of::<T>())
+    pub fn must_update_after<T: IAny + ?Sized>(&mut self, stage: UpdateStage) {
+        self.__must_update_after(stage, TypeId::of::<T>())
     }
 }
