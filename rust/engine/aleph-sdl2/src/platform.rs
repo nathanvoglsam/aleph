@@ -39,9 +39,8 @@ use interfaces::platform::{
     Cursor, Event, IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider,
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
-use interfaces::plugin::stages::UpdateStage;
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
 };
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;

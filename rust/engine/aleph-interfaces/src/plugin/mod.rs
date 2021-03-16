@@ -284,6 +284,9 @@ impl dyn IPluginRegistrar {
     }
 }
 
+///
+/// An enumeration of all the currently supported execution stages in the update loop
+///
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 #[repr(u32)]
 pub enum UpdateStage {
@@ -308,5 +311,6 @@ pub enum UpdateStage {
 }
 
 impl UpdateStage {
+    /// The number of distinct execution stages
     pub const STAGE_COUNT: usize = 5;
 }

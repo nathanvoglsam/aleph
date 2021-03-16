@@ -35,9 +35,8 @@ use interfaces::platform::{
     IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
     IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
 };
-use interfaces::plugin::stages::UpdateStage;
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
 };
 use std::any::TypeId;
 use std::ops::Deref;

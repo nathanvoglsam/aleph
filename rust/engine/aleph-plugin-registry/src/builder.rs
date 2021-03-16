@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages::UpdateStage;
-use crate::interfaces::plugin::IPlugin;
+use crate::interfaces::plugin::{IPlugin, UpdateStage};
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};

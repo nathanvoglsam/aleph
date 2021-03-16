@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::stages::UpdateStage;
-use crate::interfaces::plugin::IPluginRegistrar;
+use crate::interfaces::plugin::{IPluginRegistrar, UpdateStage};
 use std::any::TypeId;
 use std::collections::HashSet;
 
