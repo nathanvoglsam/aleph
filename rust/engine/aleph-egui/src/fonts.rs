@@ -27,16 +27,37 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
-pub extern crate egui;
+///
+/// Embedded bytes of CascadiaCode.ttf
+///
+pub fn cascadia_code() -> &'static [u8] {
+    include_bytes!("../fonts/CascadiaCode.ttf")
+}
 
-mod plugin;
-mod traits;
-mod utils;
-mod fonts;
+///
+/// Embedded bytes of emoji-icon-font.ttf
+///
+pub fn emoji_icon_font() -> &'static [u8] {
+    include_bytes!("../fonts/emoji-icon-font.ttf")
+}
 
-pub use plugin::EguiPlugin;
-pub use traits::IEguiContextProvider;
-pub use traits::IEguiRenderData;
+///
+/// Embedded bytes of JetBrainsMono-Regular.ttf
+///
+pub fn jetbrains_mono_regular() -> &'static [u8] {
+    include_bytes!("../fonts/JetBrainsMono-Regular.ttf")
+}
 
-pub use egui::*;
+///
+/// Embedded bytes of NotoEmoji-Regular.ttf
+///
+pub fn noto_emoji_regular() -> &'static [u8] {
+    include_bytes!("../fonts/NotoEmoji-Regular.ttf")
+}
+
+///
+/// Embedded bytes of NotoSans-Regular.ttf
+///
+pub fn noto_sans_regular() -> &'static [u8] {
+    include_bytes!("../fonts/NotoSans-Regular.ttf")
+}
