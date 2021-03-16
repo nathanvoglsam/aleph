@@ -29,6 +29,7 @@
 
 use crate::Event;
 use windows_raw::win32::direct3d12::ID3D12Fence;
+use windows_raw::win32::system_services::HANDLE;
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -40,6 +41,10 @@ impl Fence {
     }
 
     pub fn set_event_on_completion(&self, value: u64, event: &Event) -> crate::Result<()> {
-        unsafe { self.0.SetEventOnCompletion(value, event.0).ok() }
+        unsafe {
+            self.0
+                .SetEventOnCompletion(value, HANDLE(event.0.get()))
+                .ok()
+        }
     }
 }

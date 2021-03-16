@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
+use std::num::NonZeroIsize;
 use windows_raw::win32::system_services::{
     CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, INFINITE, PWSTR,
 };
 use windows_raw::win32::windows_programming::CloseHandle;
 
 #[repr(transparent)]
-pub struct Event(pub(crate) HANDLE);
+pub struct Event(pub(crate) NonZeroIsize);
 
 impl Event {
     pub fn new() -> Option<Self> {
@@ -46,18 +47,14 @@ impl Event {
             )
         };
 
-        if event.0 != 0 {
-            Some(Self(event))
-        } else {
-            None
-        }
+        NonZeroIsize::new(event.0).map(|v| Self(v))
     }
 
     pub fn wait(&self, timeout: Option<u32>) -> u32 {
         if let Some(timeout) = timeout {
-            unsafe { WaitForSingleObject(self.0.clone(), timeout) }
+            unsafe { WaitForSingleObject(HANDLE(self.0.get()), timeout) }
         } else {
-            unsafe { WaitForSingleObject(self.0.clone(), INFINITE) }
+            unsafe { WaitForSingleObject(HANDLE(self.0.get()), INFINITE) }
         }
     }
 }
@@ -65,7 +62,10 @@ impl Event {
 impl Drop for Event {
     fn drop(&mut self) {
         unsafe {
-            assert_ne!(CloseHandle(self.0.clone()), windows_raw::BOOL::from(false));
+            assert_ne!(
+                CloseHandle(HANDLE(self.0.get())),
+                windows_raw::BOOL::from(false)
+            );
         }
     }
 }
