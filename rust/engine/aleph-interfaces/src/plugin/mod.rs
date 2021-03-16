@@ -27,10 +27,7 @@
 // SOFTWARE.
 //
 
-pub mod stages;
-
 use crate::any::AnyArc;
-use crate::plugin::stages::UpdateStage;
 use any::{IAny, ISendSyncAny};
 use std::any::TypeId;
 
@@ -47,8 +44,8 @@ use std::any::TypeId;
 ///   before a plugin registry can be constructed.
 ///
 /// - The plugin registry will, at some point during initialization, call `IPlugin::register`
-///   exactly once so a plugin can declare its execution dependencies and to declare which abstract
-///   interfaces the plugin provides.
+///   exactly once so a plugin can declare its execution dependencies, which abstract interfaces the
+///   plugin provides, and which execution stages it would like to be updated in.
 ///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
@@ -57,15 +54,16 @@ use std::any::TypeId;
 ///   registration phase. The `on_init` function will return the list of provided interfaces paired
 ///   with the object that actually implements the interface.
 ///
-/// - Directly after `IPlugin::on_init` is called, and before another plugin's `on_init` function is
-///   called, `IPlugin::get_interfaces` will be called. The `get_interfaces` function provides
+/// - The engine now moves into the main loop. The plugin registry has computed an execution order
+///   for each stage, of which there are currently 5. The registry will use this order to call the
+///   appropriate function for each plugin that has declared it updates in that stage. The functions
+///   for each stage are as follows:
 ///
-///   This introduces some repetition but allows for a plugin to have completed initialization
-///   before handing out its implementations.
-///
-/// - The engine now moves into the main loop. `IPlugin::on_update` will be called exactly once
-///   *per iteration* of the main loop. Once again, any declared execution dependencies will be
-///   respected.
+///   - `IPlugin::on_input_collection`
+///   - `IPlugin::on_pre_update`
+///   - `IPlugin::on_update`
+///   - `IPlugin::on_post_update`
+///   - `IPlugin::on_render`
 ///
 /// - The engine will eventually exit the main loop. `IPlugin::on_exit` will be called exactly once
 ///   so that the plugin can destroy any resources that may require ordering against other plugins.
@@ -284,4 +282,31 @@ impl dyn IPluginRegistrar {
     pub fn must_update_after<T: IAny + ?Sized>(&mut self, stage: UpdateStage) {
         self.__must_update_after(stage, TypeId::of::<T>())
     }
+}
+
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+#[repr(u32)]
+pub enum UpdateStage {
+    /// The first update stage. Semantically should be used by platform implementations for
+    /// collecting input from the host.
+    InputCollection = 0,
+
+    /// The second update stage. Semantically should be used to run code before the bulk of gameplay
+    /// code will be run.
+    PreUpdate = 1,
+
+    /// The third update stage. Semantically should be used for implementing gameplay logic, like
+    /// player controllers, AI, etc.
+    Update = 2,
+
+    /// The fourth update stage. Semantically should be used for implementing logic that needs to
+    /// run immediately after gameplay logic, but before the rendering stage.
+    PostUpdate = 3,
+
+    /// The fifth update stage. Semantically should be used for implementing rendering logic.
+    Render = 4,
+}
+
+impl UpdateStage {
+    pub const STAGE_COUNT: usize = 5;
 }
