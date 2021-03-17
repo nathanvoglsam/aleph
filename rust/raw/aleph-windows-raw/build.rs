@@ -33,7 +33,7 @@ extern crate syn;
 
 #[cfg(target_os = "windows")]
 fn main() {
-    use syn::{ ItemMod, Visibility};
+    use syn::{ItemMod, Visibility};
 
     windows::build!(
         windows::win32::direct3d12::*,
