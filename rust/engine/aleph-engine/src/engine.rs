@@ -31,6 +31,8 @@ use crate::dx12::FeatureLevel;
 use crate::dx12::{dxgi, D3D12Object};
 use crate::pix::{Colour, ScopedEvent};
 use crate::platform::{Platform, Window};
+use crate::plugin_registry::interfaces::plugin::IPlugin;
+use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 use app_info::AppInfo;
 use egui::PaintJobs;
 use std::borrow::Cow;
@@ -40,13 +42,64 @@ use utf16_lit::utf16_null;
 
 static ENGINE_KEEP_RUNNING: AtomicBool = AtomicBool::new(true);
 
+pub struct EngineBuilder {
+    registry: PluginRegistryBuilder,
+}
+
+impl EngineBuilder {
+    pub fn new() -> Self {
+        // Initialize COM with MTA
+        #[cfg(target_os = "windows")]
+        windows_raw::initialize_mta().unwrap();
+
+        #[cfg(target_os = "windows")]
+        unsafe {
+            windows_raw::name_current_thread(&utf16_null!("MainThread"));
+        }
+
+        Self {
+            registry: PluginRegistry::builder(),
+        }
+    }
+
+    pub fn default_plugins(&mut self) -> &mut Self {
+        self.plugin(sdl2::PlatformSDL2::new());
+        self.plugin(egui::EguiPlugin::new());
+        self.plugin(render::RenderPlugin::new());
+        self
+    }
+
+    pub fn plugin(&mut self, plugin: impl IPlugin) -> &mut Self {
+        self.registry.plugin(plugin);
+        self
+    }
+
+    pub fn build(self) -> Engine {
+        Engine {
+            registry: self.registry.build(),
+        }
+    }
+}
+
 ///
 /// A "namespace" struct that wraps a bunch of global stace into a struct for aesthetic and
 /// convenience purposes.
 ///
 /// Also serves as the engine's entry point with the `start` function.
 ///
-pub struct Engine {}
+pub struct Engine {
+    registry: PluginRegistry,
+}
+
+impl Engine {
+    pub fn builder() -> EngineBuilder {
+        EngineBuilder::new()
+    }
+
+    pub fn run(mut self) {
+        self.registry.run()
+    }
+}
 
 impl Engine {
     ///

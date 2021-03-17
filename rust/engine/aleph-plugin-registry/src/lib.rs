@@ -63,6 +63,10 @@ pub struct PluginRegistry {
 }
 
 impl PluginRegistry {
+    pub fn builder() -> PluginRegistryBuilder {
+        PluginRegistryBuilder::new()
+    }
+
     /// Internal function that drives the initialization of all the plugins
     pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<HashSet<TypeId>>) {
         let mut plugins = std::mem::take(&mut self.plugins);
@@ -87,7 +91,7 @@ impl PluginRegistry {
             );
 
             let mut response = plugin.on_init(&accessor);
-            response.interfaces().unwrap().for_each(|(id, object)| {
+            response.interfaces().for_each(|(id, object)| {
                 if !provided.remove(&id) {
                     let description = plugin.get_description();
                     let message = format!(
@@ -146,14 +150,11 @@ impl PluginRegistry {
         };
 
         while !accessor.should_quit.load(Ordering::Relaxed) {
-            self.update_orders
-                .iter()
-                .enumerate()
-                .for_each(|(stage, order)| {
-                    order.iter().cloned().for_each(|plugin_index| {
-                        plugins[plugin_index].update_driver(stage, &accessor);
-                    });
-                });
+            for (stage, order) in self.update_orders.iter().enumerate() {
+                for plugin_index in order.iter().cloned() {
+                    plugins[plugin_index].update_driver(stage, &accessor);
+                }
+            }
         }
 
         self.plugins = plugins;

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{IAny, TraitObject};
+use crate::{IAny, ISendSyncAny, TraitObject};
 use std::any::TypeId;
 use std::ops::Deref;
 use std::ptr::NonNull;
@@ -47,6 +47,26 @@ impl<T: IAny + Sized> AnyArc<T> {
     /// `T` must be sized in this case as we're making a concrete heap allocation
     pub fn new(v: T) -> AnyArc<T> {
         AnyArc::<T>(Arc::new(v))
+    }
+
+    ///
+    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny` without going through
+    /// `query_interface`
+    ///
+    pub fn into_any(v: Self) -> AnyArc<dyn IAny> {
+        let inner: Arc<dyn IAny> = v.0;
+        AnyArc::from_arc(inner)
+    }
+}
+
+impl<T: ISendSyncAny + Sized> AnyArc<T> {
+    ///
+    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
+    /// through `query_interface`
+    ///
+    pub fn into_send_sync_any(v: Self) -> AnyArc<dyn ISendSyncAny> {
+        let inner: Arc<dyn ISendSyncAny> = v.0;
+        AnyArc::from_arc(inner)
     }
 }
 

@@ -125,10 +125,10 @@ impl dyn IPlugin {
 
         match stage {
             INPUT_COLLECTION => self.on_input_collection(registry),
-            PRE_UPDATE => self.on_input_collection(registry),
-            UPDATE => self.on_input_collection(registry),
-            POST_UPDATE => self.on_input_collection(registry),
-            RENDER => self.on_input_collection(registry),
+            PRE_UPDATE => self.on_pre_update(registry),
+            UPDATE => self.on_update(registry),
+            POST_UPDATE => self.on_post_update(registry),
+            RENDER => self.on_render(registry),
             _ => panic!("Invalid update stage"),
         }
     }
@@ -158,21 +158,17 @@ pub trait IInitResponse {
     /// This function must yield a non `None` value *at least* once. It may continue to return a
     /// non `None` value after the first call, but such behavior is not required and *should not*
     /// be relied on.
-    fn interfaces(&mut self) -> Option<Box<dyn IInterfaceIterator>>;
+    fn interfaces(&mut self) -> Box<dyn IInterfaceIterator>;
 }
 
 ///
 /// A helper implementation that can save manually implementing `IInitResponse`
 ///
 impl IInitResponse for Vec<(TypeId, AnyArc<dyn ISendSyncAny>)> {
-    fn interfaces(&mut self) -> Option<Box<dyn IInterfaceIterator>> {
+    fn interfaces(&mut self) -> Box<dyn IInterfaceIterator> {
         let take = std::mem::take(self);
-        if take.is_empty() {
-            None
-        } else {
-            let iter = take.into_iter();
-            Some(Box::new(iter))
-        }
+        let iter = take.into_iter();
+        Box::new(iter)
     }
 }
 

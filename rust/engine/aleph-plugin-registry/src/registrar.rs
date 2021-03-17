@@ -34,7 +34,7 @@ use std::collections::HashSet;
 pub struct PluginRegistrar {
     pub depends_on_list: HashSet<TypeId>,
     pub provided_interfaces: HashSet<TypeId>,
-    pub init_after_list: HashSet<TypeId>,
+    pub init_after_list: Vec<HashSet<TypeId>>,
     pub update_stage_dependencies: Vec<HashSet<TypeId>>,
     pub update_stages: HashSet<usize>,
 }
@@ -49,7 +49,7 @@ impl IPluginRegistrar for PluginRegistrar {
     }
 
     fn __must_init_after(&mut self, requires: TypeId) {
-        self.init_after_list.insert(requires);
+        self.init_after_list[0].insert(requires);
     }
 
     fn __must_update_after(&mut self, stage: UpdateStage, requires: TypeId) {

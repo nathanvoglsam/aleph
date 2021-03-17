@@ -61,6 +61,7 @@ aleph-render = { path = "../../graphics/aleph-render", version = "0.1" }
 aleph-target = { path = "../../build/aleph-target", version = "2" }
 aleph-windows-raw = { path = "../../raw/aleph-windows-raw", version = "0.1" }
 aleph-egui = { path = "../aleph-egui", version = "0.1" }
+aleph-sdl2 = { path = "../aleph-sdl2", version = "0.1" }
 utf16_lit = "2"
 egui = "0.8"
 clap = "2"

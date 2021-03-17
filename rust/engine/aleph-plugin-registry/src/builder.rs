@@ -60,14 +60,14 @@ impl PluginRegistryBuilder {
         let mut registrar = PluginRegistrar {
             depends_on_list: Default::default(),
             provided_interfaces: Default::default(),
-            init_after_list: Default::default(),
+            init_after_list: vec![HashSet::default(); 1],
             update_stage_dependencies: vec![HashSet::default(); UpdateStage::STAGE_COUNT],
             update_stages: HashSet::new(),
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
         let mut dependencies: Vec<HashSet<TypeId>> = Vec::new();
-        let mut init_dependencies: Vec<HashSet<TypeId>> = Vec::new();
+        let mut init_dependencies: Vec<Vec<HashSet<TypeId>>> = Vec::new();
         let mut update_dependencies: Vec<Vec<HashSet<TypeId>>> = Vec::new();
         let mut provided_interfaces: Vec<HashSet<TypeId>> = Vec::new();
         let mut update_stages: Vec<HashSet<usize>> = Vec::new();
@@ -80,8 +80,14 @@ impl PluginRegistryBuilder {
             // Take the dependency lists from the registrar and add them to the lists we're
             // building
             dependencies.push(std::mem::take(&mut registrar.depends_on_list));
-            init_dependencies.push(std::mem::take(&mut registrar.init_after_list));
-            update_dependencies.push(std::mem::take(&mut registrar.update_stage_dependencies));
+            init_dependencies.push(std::mem::replace(
+                &mut registrar.init_after_list,
+                vec![HashSet::default(); 1],
+            ));
+            update_dependencies.push(std::mem::replace(
+                &mut registrar.update_stage_dependencies,
+                vec![HashSet::default(); UpdateStage::STAGE_COUNT],
+            ));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
             update_stages.push(std::mem::take(&mut registrar.update_stages));
         });
@@ -98,6 +104,7 @@ impl PluginRegistryBuilder {
             &self.plugins,
             &init_dependencies,
             &provided_interfaces,
+            0,
         );
 
         let update_orders = build_update_exec_orders(
@@ -151,8 +158,9 @@ fn build_update_exec_orders(
         let order = build_execution_order(
             unscheduled,
             plugins,
-            &dependencies[stage],
+            &dependencies,
             provided_implementations,
+            stage,
         );
         output.push(order);
     });
@@ -163,8 +171,9 @@ fn build_update_exec_orders(
 fn build_execution_order(
     mut unscheduled: HashSet<usize>,
     plugins: &[Box<dyn IPlugin>],
-    dependencies: &[HashSet<TypeId>],
+    dependencies: &[Vec<HashSet<TypeId>>],
     provided_implementations: &[HashSet<TypeId>],
+    stage: usize,
 ) -> Vec<usize> {
     // Output list we build the order into
     let mut order = Vec::new();
@@ -185,7 +194,7 @@ fn build_execution_order(
             //
             // If we can execute the plugin we add its index to the order and add it to the executed
             // set. We can then mark it to be removed from the unscheduled set.
-            let dependencies_satisfied = executed.is_superset(&dependencies[*v]);
+            let dependencies_satisfied = executed.is_superset(&dependencies[*v][stage]);
             if dependencies_satisfied {
                 // Insert the plugin's concrete type id into the executed set
                 newly_executed.insert(plugins[*v].type_id());
