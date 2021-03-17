@@ -53,8 +53,10 @@ aleph-cpu-info = { path = "../aleph-cpu-info", version = "1" }
 aleph-target = { path = "../../build/aleph-target", version = "2" }
 aleph-windows-raw = { path = "../../raw/aleph-windows-raw", version = "0.1" }
 
-aleph-render = { path = "../plugins/aleph-render", version = "0.1" }
 aleph-egui = { path = "../plugins/aleph-egui", version = "0.1" }
 aleph-sdl2 = { path = "../plugins/aleph-sdl2", version = "0.1" }
+
+[target.'cfg(windows)'.dependencies]
+aleph-render = { path = "../plugins/aleph-render", version = "0.1" }
 
 utf16_lit = "2"

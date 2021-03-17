@@ -32,26 +32,26 @@ use std::io::{Cursor, Read};
 use std::path::Path;
 use zip::ZipArchive;
 
-const HEADER_1: &str = "Include/WinPixEventRuntime/pix3.h";
-const HEADER_1_NAME: &str = "pix3.h";
-const HEADER_2: &str = "Include/WinPixEventRuntime/pix3_win.h";
-const HEADER_2_NAME: &str = "pix3_win.h";
-const HEADER_3: &str = "Include/WinPixEventRuntime/PIXEvents.h";
-const HEADER_3_NAME: &str = "PIXEvents.h";
-const HEADER_4: &str = "Include/WinPixEventRuntime/PIXEventsCommon.h";
-const HEADER_4_NAME: &str = "PIXEventsCommon.h";
-
-const WIN32_DLL: &str = "bin/x64/WinPixEventRuntime.dll";
-const WIN32_LIB: &str = "bin/x64/WinPixEventRuntime.lib";
-const WINRT_DLL: &str = "bin/x64/WinPixEventRuntime_UAP.dll";
-const WINRT_LIB: &str = "bin/x64/WinPixEventRuntime_UAP.lib";
-
-const WIN32_DLL_NAME: &str = "WinPixEventRuntime.dll";
-const WIN32_LIB_NAME: &str = "WinPixEventRuntime.lib";
-const WINRT_DLL_NAME: &str = "WinPixEventRuntime_UAP.dll";
-const WINRT_LIB_NAME: &str = "WinPixEventRuntime_UAP.lib";
-
 fn main() {
+    const HEADER_1: &str = "Include/WinPixEventRuntime/pix3.h";
+    const HEADER_1_NAME: &str = "pix3.h";
+    const HEADER_2: &str = "Include/WinPixEventRuntime/pix3_win.h";
+    const HEADER_2_NAME: &str = "pix3_win.h";
+    const HEADER_3: &str = "Include/WinPixEventRuntime/PIXEvents.h";
+    const HEADER_3_NAME: &str = "PIXEvents.h";
+    const HEADER_4: &str = "Include/WinPixEventRuntime/PIXEventsCommon.h";
+    const HEADER_4_NAME: &str = "PIXEventsCommon.h";
+
+    const WIN32_DLL: &str = "bin/x64/WinPixEventRuntime.dll";
+    const WIN32_LIB: &str = "bin/x64/WinPixEventRuntime.lib";
+    const WINRT_DLL: &str = "bin/x64/WinPixEventRuntime_UAP.dll";
+    const WINRT_LIB: &str = "bin/x64/WinPixEventRuntime_UAP.lib";
+
+    const WIN32_DLL_NAME: &str = "WinPixEventRuntime.dll";
+    const WIN32_LIB_NAME: &str = "WinPixEventRuntime.lib";
+    const WINRT_DLL_NAME: &str = "WinPixEventRuntime_UAP.dll";
+    const WINRT_LIB_NAME: &str = "WinPixEventRuntime_UAP.lib";
+
     let out_dir = std::env::var("OUT_DIR").unwrap();
     let out_dir = Path::new(&out_dir);
 
@@ -68,7 +68,7 @@ fn main() {
     write_zip_file(&mut package, out_dir, WINRT_DLL, WINRT_DLL_NAME);
     write_zip_file(&mut package, out_dir, WINRT_LIB, WINRT_LIB_NAME);
 
-    if target_platform().is_gnu() {
+    if target_platform().is_gnu() || !target_platform().is_windows() {
         cc::Build::new()
             .cpp(true)
             .file("cpp/shim_noop.cpp")
@@ -85,12 +85,12 @@ fn main() {
     };
 
 
-    if aleph_target_build::build::target_platform().is_uwp() {
+    if target_platform().is_uwp() {
         let src = out_dir.join(WINRT_DLL_NAME);
         aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
         aleph_compile::copy_file_to_target_dir(&src).unwrap();
         println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime_UAP");
-    } else {
+    } else if target_platform().is_windows() {
         let src = out_dir.join(WIN32_DLL_NAME);
         aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
         aleph_compile::copy_file_to_target_dir(&src).unwrap();

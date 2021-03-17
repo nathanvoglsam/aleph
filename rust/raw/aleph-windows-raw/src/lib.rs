@@ -27,23 +27,34 @@
 // SOFTWARE.
 //
 
+#[cfg(target_os = "windows")]
 pub extern crate windows as windows_rs;
 
+#[cfg(target_os = "windows")]
 pub mod utils;
 
+#[cfg(target_os = "windows")]
 mod raw;
 
-pub use raw::windows::*;
-pub use utils::name_current_thread;
-pub use win32::system_services::BOOL;
-pub use windows_rs::initialize_mta;
-pub use windows_rs::initialize_sta;
-pub use windows_rs::Abi;
-pub use windows_rs::Error;
-pub use windows_rs::ErrorCode;
-pub use windows_rs::Guid;
-pub use windows_rs::IUnknown;
-pub use windows_rs::Interface;
-pub use windows_rs::Param;
-pub use windows_rs::RawPtr;
-pub use windows_rs::Result;
+#[cfg(target_os = "windows")]
+mod exports {
+    pub use super::raw::windows::*;
+    pub use super::utils::name_current_thread;
+    pub use super::win32::system_services::BOOL;
+    pub use super::windows_rs::initialize_mta;
+    pub use super::windows_rs::initialize_sta;
+    pub use super::windows_rs::Abi;
+    pub use super::windows_rs::Error;
+    pub use super::windows_rs::ErrorCode;
+    pub use super::windows_rs::Guid;
+    pub use super::windows_rs::IUnknown;
+    pub use super::windows_rs::Interface;
+    pub use super::windows_rs::Param;
+    pub use super::windows_rs::RawPtr;
+    pub use super::windows_rs::Result;
+}
+
+#[cfg(not(target_os = "windows"))]
+mod exports {}
+
+pub use exports::*;

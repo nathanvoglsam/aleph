@@ -27,15 +27,14 @@
 // SOFTWARE.
 //
 
-use aleph_target_build as target;
-
 use std::path::Path;
+use aleph_target_build::build::target_platform;
 
 fn main() {
     let cpp_file = Path::new("../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
     let inc_dir = Path::new("../../../submodules/D3D12MemoryAllocator/src");
 
-    if target::build::target_platform().is_gnu() {
+    if target_platform().is_windows() && target_platform().is_gnu() {
         cc::Build::new()
             .file(cpp_file)
             .file("thirdparty_shim/shim.cpp")
@@ -43,7 +42,7 @@ fn main() {
             .flag("-w")
             .include(inc_dir)
             .compile("d3d12ma");
-    } else {
+    } else if target_platform().is_msvc(){
         cc::Build::new()
             .file(cpp_file)
             .file("thirdparty_shim/shim.cpp")

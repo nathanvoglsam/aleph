@@ -30,7 +30,6 @@
 use crate::egui::EguiPlugin;
 use crate::plugin_registry::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
-use aleph_render::RenderPlugin;
 use aleph_sdl2::PlatformSDL2;
 use aleph_windows_raw::{initialize_mta, name_current_thread};
 use utf16_lit::utf16_null;
@@ -73,7 +72,10 @@ impl EngineBuilder {
     pub fn default_plugins(&mut self) -> &mut Self {
         self.plugin(PlatformSDL2::new());
         self.plugin(EguiPlugin::new());
-        self.plugin(RenderPlugin::new());
+
+        #[cfg(target_os = "windows")]
+        self.plugin(aleph_render::RenderPlugin::new());
+
         self
     }
 
