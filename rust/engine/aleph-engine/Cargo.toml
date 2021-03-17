@@ -50,7 +50,6 @@ aleph-log = { path = "../../logging/aleph-log", version = "1" }
 aleph-logger = { path = "../../logging/aleph-logger", version = "0.1" }
 
 aleph-cpu-info = { path = "../aleph-cpu-info", version = "1" }
-aleph-settings = { path = "../aleph-settings", version = "0.1" }
 aleph-target = { path = "../../build/aleph-target", version = "2" }
 aleph-windows-raw = { path = "../../raw/aleph-windows-raw", version = "0.1" }
 

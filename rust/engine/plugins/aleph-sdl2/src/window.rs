@@ -130,7 +130,6 @@ impl WindowImpl {
     pub fn new(
         video_ctx: &sdl2::VideoSubsystem,
         title: &str,
-        //window_settings: &WindowSettings,
     ) -> (AnyArc<Self>, sdl2::video::Window) {
         const DEFAULT_WIDTH: u32 = 1600;
         const DEFAULT_HEIGHT: u32 = 900;
