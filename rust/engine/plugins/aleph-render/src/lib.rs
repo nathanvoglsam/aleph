@@ -27,17 +27,35 @@
 // SOFTWARE.
 //
 
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12 as dx12;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12_alloc as dx12_alloc;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_egui as egui;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_embedded_data as embedded_data;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_interfaces as interfaces;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_log as log;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_pix as pix;
+
+#[cfg(target_os = "windows")]
 extern crate cstr;
 
+#[cfg(target_os = "windows")]
 mod plugin;
+
+#[cfg(target_os = "windows")]
 mod renderer;
 
+#[cfg(target_os = "windows")]
 pub use plugin::RenderPlugin;
-pub use renderer::EguiRenderer;
