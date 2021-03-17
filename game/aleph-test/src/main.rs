@@ -32,18 +32,14 @@
 extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
-use aleph::app_info::AppInfo;
-use aleph::egui;
 use aleph::egui::IEguiContextProvider;
+use aleph::plugin_registry::interfaces::any::AnyArc;
 use aleph::plugin_registry::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
 };
-use aleph::{Engine, FrameRate};
-use aleph::plugin_registry::interfaces::any::AnyArc;
+use aleph::Engine;
 
 struct AlephAppLogic {
-    _frame_timer: bool,
-    frame_times: FrameRate,
     demo_window: egui_demo_lib::DemoWindows,
     colour_test: egui_demo_lib::ColorTest,
     egui_provider: Option<AnyArc<dyn IEguiContextProvider>>,
@@ -52,8 +48,6 @@ struct AlephAppLogic {
 impl AlephAppLogic {
     pub fn new() -> Self {
         Self {
-            _frame_timer: true,
-            frame_times: FrameRate::new(),
             demo_window: Default::default(),
             colour_test: Default::default(),
             egui_provider: None,
@@ -91,8 +85,6 @@ impl IPlugin for AlephAppLogic {
     fn on_update(&mut self, _registry: &dyn IRegistryAccessor) {
         let egui_ctx = self.egui_provider.as_ref().unwrap().get_context();
 
-        self.frame_times.update();
-
         self.demo_window.ui(&egui_ctx);
 
         aleph::egui::Window::new("Colour Test")
@@ -112,34 +104,7 @@ impl IPlugin for AlephAppLogic {
     }
 }
 
-aleph::interfaces::any::declare_interfaces!(AlephAppLogic, [IPlugin]);
-
-impl aleph::AppLogic for AlephAppLogic {
-    fn on_init(&mut self) {}
-
-    fn on_update(&mut self, egui_ctx: &aleph::egui::CtxRef) {
-        self.frame_times.update();
-
-        self.demo_window.ui(egui_ctx);
-
-        aleph::egui::Window::new("Colour Test")
-            .collapsible(false)
-            .scroll(true)
-            .show(egui_ctx, |ui| {
-                let mut tex_allocator = None;
-                self.colour_test.ui(ui, &mut tex_allocator);
-            });
-
-        aleph::egui::Window::new("Settings")
-            .collapsible(false)
-            .scroll(true)
-            .show(egui_ctx, |ui| {
-                egui_ctx.settings_ui(ui);
-            });
-    }
-
-    fn on_exit(&mut self) {}
-}
+aleph::plugin_registry::interfaces::any::declare_interfaces!(AlephAppLogic, [IPlugin]);
 
 fn main() {
     let mut engine = Engine::builder();

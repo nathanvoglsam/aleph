@@ -32,32 +32,14 @@
 // =================================================================================================
 
 // Re-export useful crates
-pub extern crate aleph_app_info as app_info;
 pub extern crate aleph_egui as egui;
 pub extern crate aleph_log as log;
-pub extern crate aleph_platform as platform;
 pub extern crate aleph_plugin_registry as plugin_registry;
-pub extern crate rayon;
-
-pub use plugin_registry::any;
-pub use plugin_registry::interfaces;
-
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc as dx12_alloc;
-extern crate aleph_pix as pix;
-extern crate aleph_render as render;
-extern crate aleph_sdl2 as sdl2;
-extern crate aleph_windows_raw as windows_raw;
 
 // =================================================================================================
 // Modules
 // =================================================================================================
 
-mod app_logic;
 mod engine;
-mod frame_rate;
-mod thread_pools;
 
-pub use self::app_logic::AppLogic;
 pub use self::engine::Engine;
-pub use self::frame_rate::FrameRate;

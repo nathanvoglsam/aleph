@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use egui::{PaintJobs, RawInput, Output};
 use egui::paint::ClippedShape;
+use egui::{Output, PaintJobs, RawInput};
 use interfaces::any::ISendSyncAny;
+use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::ops::DerefMut;
 use std::sync::{Mutex, RwLock};
-use std::collections::BTreeMap;
-use std::borrow::Cow;
 
 ///
 /// This interface is used for getting an `egui::CtxRef`.

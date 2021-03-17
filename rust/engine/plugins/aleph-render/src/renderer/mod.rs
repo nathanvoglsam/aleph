@@ -39,6 +39,10 @@ use std::mem::transmute;
 pub(crate) use swap::SwapDependentObjects;
 
 pub struct EguiRenderer {
+    frames: Vec<PerFrameObjects>,
+    swap_dependent: Vec<SwapDependentObjects>,
+    global: GlobalObjects,
+
     /// Rendering device
     device: dx12::Device,
 
@@ -47,10 +51,6 @@ pub struct EguiRenderer {
 
     ///
     pixels_per_point: f32,
-
-    frames: Vec<PerFrameObjects>,
-    swap_dependent: Vec<SwapDependentObjects>,
-    global: GlobalObjects,
 }
 
 impl EguiRenderer {

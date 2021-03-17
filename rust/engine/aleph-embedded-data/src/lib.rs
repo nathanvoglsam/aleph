@@ -29,7 +29,6 @@
 
 pub extern crate gltf;
 
-pub mod fonts;
 pub mod shaders;
 
 mod cube_mesh;
