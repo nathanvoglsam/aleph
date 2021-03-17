@@ -68,18 +68,22 @@ fn main() {
     write_zip_file(&mut package, out_dir, WINRT_DLL, WINRT_DLL_NAME);
     write_zip_file(&mut package, out_dir, WINRT_LIB, WINRT_LIB_NAME);
 
-    let shim_file = if target_platform().is_gnu() {
-        "cpp/shim_noop.cpp"
+    if target_platform().is_gnu() {
+        cc::Build::new()
+            .cpp(true)
+            .file("cpp/shim_noop.cpp")
+            .flag("-w")
+            .include(out_dir)
+            .compile("winpix_shim");
+
     } else {
-        "cpp/shim.cpp"
+        cc::Build::new()
+            .cpp(true)
+            .file("cpp/shim.cpp")
+            .include(out_dir)
+            .compile("winpix_shim");
     };
 
-    cc::Build::new()
-        .cpp(true)
-        .file(shim_file)
-        .flag("-w")
-        .include(out_dir)
-        .compile("winpix_shim");
 
     if aleph_target_build::build::target_platform().is_uwp() {
         let src = out_dir.join(WINRT_DLL_NAME);
