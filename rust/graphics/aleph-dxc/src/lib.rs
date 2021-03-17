@@ -27,14 +27,30 @@
 // SOFTWARE.
 //
 
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12 as dx12;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_dxc_raw as dxc_raw;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_windows_raw as windows_raw;
 
+#[cfg(target_os = "windows")]
 mod compiler;
+
+#[cfg(target_os = "windows")]
 mod validator;
 
-pub use compiler::DxcCompiler;
-pub use compiler::DxcCompilerCreateError;
-pub use validator::DxcValidator;
-pub use validator::DxcValidatorCreateError;
+#[cfg(target_os = "windows")]
+mod exports {
+    pub use super::compiler::DxcCompiler;
+    pub use super::compiler::DxcCompilerCreateError;
+    pub use super::validator::DxcValidator;
+    pub use super::validator::DxcValidatorCreateError;
+}
+
+#[cfg(not(target_os = "windows"))]
+mod exports {}
+
+pub use exports::*;

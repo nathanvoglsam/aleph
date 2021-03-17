@@ -27,35 +27,53 @@
 // SOFTWARE.
 //
 
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12 as dx12;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_pix_raw as pix_raw;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_windows_raw as windows_raw;
 
+#[cfg(target_os = "windows")]
 mod colour;
+
+#[cfg(target_os = "windows")]
 mod functions;
+
+#[cfg(target_os = "windows")]
 mod scoped;
 
-pub use colour::Colour;
+#[cfg(target_os = "windows")]
+mod exports {
+    pub use super::colour::Colour;
 
-pub use functions::begin_event;
-pub use functions::begin_event_on_list;
-pub use functions::begin_event_on_queue;
+    pub use super::functions::begin_event;
+    pub use super::functions::begin_event_on_list;
+    pub use super::functions::begin_event_on_queue;
 
-pub use functions::begin_event_cstr;
-pub use functions::begin_event_cstr_on_list;
-pub use functions::begin_event_cstr_on_queue;
+    pub use super::functions::begin_event_cstr;
+    pub use super::functions::begin_event_cstr_on_list;
+    pub use super::functions::begin_event_cstr_on_queue;
 
-pub use functions::end_event;
-pub use functions::end_event_on_list;
-pub use functions::end_event_on_queue;
+    pub use super::functions::end_event;
+    pub use super::functions::end_event_on_list;
+    pub use super::functions::end_event_on_queue;
 
-pub use functions::set_marker;
-pub use functions::set_marker_on_list;
-pub use functions::set_marker_on_queue;
+    pub use super::functions::set_marker;
+    pub use super::functions::set_marker_on_list;
+    pub use super::functions::set_marker_on_queue;
 
-pub use functions::set_marker_cstr;
-pub use functions::set_marker_cstr_on_list;
-pub use functions::set_marker_cstr_on_queue;
+    pub use super::functions::set_marker_cstr;
+    pub use super::functions::set_marker_cstr_on_list;
+    pub use super::functions::set_marker_cstr_on_queue;
 
-pub use scoped::RecordScopedEvent;
-pub use scoped::ScopedEvent;
+    pub use super::scoped::RecordScopedEvent;
+    pub use super::scoped::ScopedEvent;
+}
+
+#[cfg(not(target_os = "windows"))]
+mod exports {}
+
+pub use exports::*;

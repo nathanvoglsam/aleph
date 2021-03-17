@@ -27,26 +27,50 @@
 // SOFTWARE.
 //
 
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12 as dx12;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_dx12_alloc_raw as alloc_raw;
+
+#[cfg(target_os = "windows")]
 extern crate aleph_windows_raw as windows_raw;
 
+#[cfg(target_os = "windows")]
 mod allocation;
+
+#[cfg(target_os = "windows")]
 mod allocation_desc;
+
+#[cfg(target_os = "windows")]
 mod allocator;
+
+#[cfg(target_os = "windows")]
 mod allocator_desc;
+
+#[cfg(target_os = "windows")]
 mod pool;
+
+#[cfg(target_os = "windows")]
 mod pool_desc;
 
-pub use allocation::Allocation;
-pub use allocation_desc::AllocationDesc;
-pub use allocation_desc::AllocationDescBuilder;
-pub use allocator::Allocator;
-pub use allocator_desc::AllocatorDesc;
-pub use allocator_desc::AllocatorDescBuilder;
-pub use pool::Pool;
-pub use pool_desc::PoolDesc;
-pub use pool_desc::PoolDescBuilder;
+#[cfg(target_os = "windows")]
+mod exports {
+    pub use super::allocation::Allocation;
+    pub use super::allocation_desc::AllocationDesc;
+    pub use super::allocation_desc::AllocationDescBuilder;
+    pub use super::allocator::Allocator;
+    pub use super::allocator_desc::AllocatorDesc;
+    pub use super::allocator_desc::AllocatorDescBuilder;
+    pub use super::pool::Pool;
+    pub use super::pool_desc::PoolDesc;
+    pub use super::pool_desc::PoolDescBuilder;
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+    pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
+    pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+}
+
+#[cfg(not(target_os = "windows"))]
+mod exports {}
+
+pub use exports::*;
