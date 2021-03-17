@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::EguiRenderer;
+use crate::renderer::EguiRenderer;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any;
 use interfaces::platform::*;
