@@ -161,7 +161,7 @@ pub struct KeyboardStateLockImpl<'a>(pub RwLockReadGuard<'a, KeyboardState>);
 
 impl<'a> IKeyboardStateLock for KeyboardStateLockImpl<'a> {
     fn key_code_down(&self, _key_code: KeyCode) -> bool {
-        unimplemented!()
+        false // TODO: implement me
     }
 
     fn scan_code_down(&self, scan_code: ScanCode) -> bool {

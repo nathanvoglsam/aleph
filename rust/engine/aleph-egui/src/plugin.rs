@@ -40,8 +40,6 @@ use interfaces::plugin::{
 };
 use std::any::TypeId;
 use std::ops::Deref;
-use std::borrow::Cow;
-use std::collections::BTreeMap;
 
 pub struct EguiPlugin {
     window: Option<AnyArc<dyn IWindow>>,
@@ -52,15 +50,12 @@ pub struct EguiPlugin {
     clipboard: Option<AnyArc<dyn IClipboard>>,
     render_data: AnyArc<EguiRenderData>,
     context_provider: AnyArc<EguiContextProvider>,
-    egui_ctx: egui::CtxRef,
 }
 
 impl EguiPlugin {
     pub fn new() -> Self {
         let render_data: AnyArc<EguiRenderData> = AnyArc::default();
         let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
-        let egui_ctx: egui::CtxRef = context_provider.get_context();
-        egui_ctx.set_fonts(egui_font_definitions(true));
         Self {
             window: None,
             mouse: None,
@@ -70,7 +65,6 @@ impl EguiPlugin {
             clipboard: None,
             render_data,
             context_provider,
-            egui_ctx,
         }
     }
 }
@@ -102,6 +96,13 @@ impl IPlugin for EguiPlugin {
         registrar.must_init_after::<dyn IFrameTimerProvider>();
         registrar.must_init_after::<dyn IEventsProvider>();
         registrar.must_init_after::<dyn IClipboardProvider>();
+
+        registrar.depends_on::<dyn IWindowProvider>();
+        registrar.depends_on::<dyn IMouseProvider>();
+        registrar.depends_on::<dyn IKeyboardProvider>();
+        registrar.depends_on::<dyn IFrameTimerProvider>();
+        registrar.depends_on::<dyn IEventsProvider>();
+        registrar.depends_on::<dyn IClipboardProvider>();
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
@@ -140,11 +141,11 @@ impl IPlugin for EguiPlugin {
         let response = vec![
             (
                 TypeId::of::<dyn IEguiContextProvider>(),
-                self.context_provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.context_provider.clone()),
             ),
             (
                 TypeId::of::<dyn IEguiRenderData>(),
-                self.render_data.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.render_data.clone()),
             ),
         ];
         Box::new(response)
@@ -158,15 +159,16 @@ impl IPlugin for EguiPlugin {
         let events = self.events.as_ref().unwrap().deref();
 
         let input = crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
-        self.egui_ctx.begin_frame(input);
+        self.context_provider.begin_frame(input);
     }
 
     fn on_post_update(&mut self, _registry: &dyn IRegistryAccessor) {
         let mouse = self.mouse.as_ref().unwrap().deref();
         let clipboard = self.clipboard.as_ref().unwrap().deref();
 
-        let (output, shapes) = self.egui_ctx.end_frame();
-        let jobs: PaintJobs = self.egui_ctx.tessellate(shapes);
+        let (output, shapes) = self.context_provider.end_frame();
+        let egui_ctx = self.context_provider.get_context();
+        let jobs: PaintJobs = egui_ctx.tessellate(shapes);
         crate::utils::process_egui_output(output, mouse, clipboard);
 
         self.render_data.put(jobs)
@@ -174,79 +176,3 @@ impl IPlugin for EguiPlugin {
 }
 
 interfaces::any::declare_interfaces!(EguiPlugin, [IPlugin]);
-
-fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
-    let mut font_data = BTreeMap::new();
-    let mut fonts_for_family = BTreeMap::new();
-
-    let jetbrains_mono_name = "JetbrainsMono";
-    let jetbrains_mono = crate::fonts::jetbrains_mono_regular();
-    let cascadia_code_name = "CascadiaCode";
-    let cascadia_code = crate::fonts::cascadia_code();
-    let noto_sans_name = "NotoSans-Regular";
-    let noto_sans = crate::fonts::noto_sans_regular();
-    let noto_emoji_name = "NotoEmoji-Regular";
-    let noto_emoji = crate::fonts::noto_emoji_regular();
-    let emoji_icons_name = "emoji-icon-font";
-    let emoji_icons = crate::fonts::emoji_icon_font();
-
-    let monospace_name = if jetbrains {
-        font_data.insert(
-            jetbrains_mono_name.to_owned(),
-            Cow::Borrowed(jetbrains_mono),
-        );
-        jetbrains_mono_name
-    } else {
-        font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
-        cascadia_code_name
-    };
-    font_data.insert(noto_sans_name.to_owned(), Cow::Borrowed(noto_sans));
-    font_data.insert(noto_emoji_name.to_owned(), Cow::Borrowed(noto_emoji));
-    font_data.insert(emoji_icons_name.to_owned(), Cow::Borrowed(emoji_icons));
-
-    fonts_for_family.insert(
-        egui::FontFamily::Monospace,
-        vec![
-            monospace_name.to_owned(),
-            noto_sans_name.to_owned(),
-            noto_emoji_name.to_owned(),
-            emoji_icons_name.to_owned(),
-        ],
-    );
-    fonts_for_family.insert(
-        egui::FontFamily::Proportional,
-        vec![
-            noto_sans_name.to_owned(),
-            noto_emoji_name.to_owned(),
-            emoji_icons_name.to_owned(),
-        ],
-    );
-
-    let mut family_and_size = BTreeMap::new();
-    family_and_size.insert(
-        egui::TextStyle::Small,
-        (egui::FontFamily::Proportional, 14.0),
-    );
-    family_and_size.insert(
-        egui::TextStyle::Body,
-        (egui::FontFamily::Proportional, 17.0),
-    );
-    family_and_size.insert(
-        egui::TextStyle::Button,
-        (egui::FontFamily::Proportional, 18.0),
-    );
-    family_and_size.insert(
-        egui::TextStyle::Heading,
-        (egui::FontFamily::Proportional, 22.0),
-    );
-    family_and_size.insert(
-        egui::TextStyle::Monospace,
-        (egui::FontFamily::Monospace, 14.0),
-    );
-
-    egui::FontDefinitions {
-        font_data,
-        fonts_for_family,
-        family_and_size,
-    }
-}

@@ -179,27 +179,27 @@ impl IPlugin for PlatformSDL2 {
         let response = vec![
             (
                 TypeId::of::<dyn IFrameTimerProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IWindowProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IClipboardProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IKeyboardProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IMouseProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IEventsProvider>(),
-                self.provider.query_interface().unwrap(),
+                AnyArc::into_send_sync_any(self.provider.clone()),
             ),
         ];
         Box::new(response)
@@ -212,10 +212,6 @@ impl IPlugin for PlatformSDL2 {
 
         self.handle_requests(registry);
         self.handle_events(registry);
-    }
-
-    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
-        unimplemented!()
     }
 }
 

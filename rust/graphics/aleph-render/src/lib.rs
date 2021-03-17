@@ -39,5 +39,5 @@ extern crate cstr;
 mod plugin;
 mod renderer;
 
-pub use renderer::EguiRenderer;
 pub use plugin::RenderPlugin;
+pub use renderer::EguiRenderer;

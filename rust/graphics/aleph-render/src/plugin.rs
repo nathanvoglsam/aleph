@@ -36,7 +36,7 @@ use interfaces::plugin::*;
 struct Data {
     window: any::AnyArc<dyn IWindow>,
     render_data: any::AnyArc<dyn egui::IEguiRenderData>,
-    egui_ctx: egui::CtxRef,
+    egui_provider: any::AnyArc<dyn egui::IEguiContextProvider>,
     device: dx12::Device,
     queue: dx12::CommandQueue,
     event: dx12::Event,
@@ -53,9 +53,7 @@ pub struct RenderPlugin {
 
 impl RenderPlugin {
     pub fn new() -> Self {
-        Self {
-            data: None
-        }
+        Self { data: None }
     }
 }
 
@@ -76,6 +74,8 @@ impl IPlugin for RenderPlugin {
 
         registrar.depends_on::<dyn egui::IEguiRenderData>();
         registrar.depends_on::<dyn egui::IEguiContextProvider>();
+        registrar.must_init_after::<dyn egui::IEguiRenderData>();
+        registrar.must_init_after::<dyn egui::IEguiContextProvider>();
 
         registrar.update_stage(UpdateStage::Render);
     }
@@ -95,7 +95,6 @@ impl IPlugin for RenderPlugin {
         let egui_provider = registry
             .get_interface::<dyn egui::IEguiContextProvider>()
             .unwrap();
-        let egui_ctx = egui_provider.get_context();
 
         log::trace!("Creating DXGIFactory");
         let mut dxgi_factory = dxgi::Factory::new(true).expect("Failed to create DXGI factory");
@@ -172,7 +171,7 @@ impl IPlugin for RenderPlugin {
         self.data = Some(Data {
             window,
             render_data,
-            egui_ctx,
+            egui_provider,
             device,
             queue,
             event,
@@ -188,6 +187,7 @@ impl IPlugin for RenderPlugin {
 
     fn on_render(&mut self, _registry: &dyn IRegistryAccessor) {
         let data = self.data.as_mut().unwrap();
+        let egui_ctx = data.egui_provider.get_context();
 
         data.fence.signal(0).unwrap();
         data.fence.set_event_on_completion(1, &data.event).unwrap();
@@ -220,7 +220,7 @@ impl IPlugin for RenderPlugin {
                 index as usize,
                 &command_list,
                 &data.buffers,
-                &data.egui_ctx,
+                &egui_ctx,
                 data.render_data.take(),
             );
 
