@@ -31,8 +31,6 @@ use crate::egui::EguiPlugin;
 use crate::plugin_registry::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 use aleph_sdl2::PlatformSDL2;
-use aleph_windows_raw::{initialize_mta, name_current_thread};
-use utf16_lit::utf16_null;
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,
@@ -42,11 +40,11 @@ impl EngineBuilder {
     pub fn new() -> Self {
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
-        initialize_mta().unwrap();
+        aleph_windows_raw::initialize_mta().unwrap();
 
         #[cfg(target_os = "windows")]
         unsafe {
-            name_current_thread(&utf16_null!("MainThread"));
+            aleph_windows_raw::name_current_thread(&utf16_lit::utf16_null!("MainThread"));
         }
 
         // First thing we do is initialize the log backend so everything can log from now on

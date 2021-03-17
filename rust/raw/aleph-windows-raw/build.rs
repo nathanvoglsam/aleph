@@ -31,14 +31,10 @@ extern crate proc_macro2;
 extern crate quote;
 extern crate syn;
 
-use quote::ToTokens;
-use std::io::Write;
-use std::path::{Path, PathBuf};
-use std::process::Stdio;
-use syn::{AttrStyle, Item, ItemMod, Visibility};
-
 #[cfg(target_os = "windows")]
 fn main() {
+    use syn::{ ItemMod, Visibility};
+
     windows::build!(
         windows::win32::direct3d12::*,
         windows::win32::dxgi::*,
@@ -104,12 +100,12 @@ fn main() {
 }
 
 #[cfg(target_os = "windows")]
-fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &ItemMod) {
+fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &syn::ItemMod) {
     // Add the module's name to the stack
     name_stack.push(module.ident.to_string());
 
     // Create the directory path
-    let mut path = PathBuf::from(output_dir);
+    let mut path = std::path::PathBuf::from(output_dir);
     for name in name_stack.iter() {
         path.push(name);
     }
@@ -124,10 +120,10 @@ fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &ItemMod
         content.1 = items
             .into_iter()
             .map(|v| match v {
-                Item::Mod(mut module) => {
+                syn::Item::Mod(mut module) => {
                     handle_module(&output_dir, name_stack.clone(), &module);
                     module.content = None;
-                    Item::Mod(module)
+                    syn::Item::Mod(module)
                 }
                 _ => v,
             })
@@ -141,10 +137,12 @@ fn handle_module(output_dir: &str, mut name_stack: Vec<String>, module: &ItemMod
 }
 
 #[cfg(target_os = "windows")]
-fn write_module_file<P: AsRef<Path>>(file: P, module: ItemMod) {
+fn write_module_file<P: AsRef<std::path::Path>>(file: P, module: syn::ItemMod) {
+    use quote::ToTokens;
+
     let mut attrs = module.attrs.clone();
     for attr in attrs.iter_mut() {
-        attr.style = AttrStyle::Inner(Default::default())
+        attr.style = syn::AttrStyle::Inner(Default::default())
     }
     let items = if let Some((_, items)) = module.content {
         items
@@ -165,6 +163,9 @@ fn write_module_file<P: AsRef<Path>>(file: P, module: ItemMod) {
 
 #[cfg(target_os = "windows")]
 fn rustfmt_string(text: &str) -> String {
+    use std::io::Write;
+    use std::process::Stdio;
+
     let mut proc = std::process::Command::new("rustfmt")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -195,7 +196,7 @@ fn transformation_output_dir_path() -> String {
 #[cfg(target_os = "windows")]
 fn delete_old_bindings() {
     let output_dir = transformation_output_dir_path();
-    let mut output_dir = PathBuf::from(output_dir);
+    let mut output_dir = std::path::PathBuf::from(output_dir);
     output_dir.push("raw");
 
     std::fs::remove_dir_all(output_dir).unwrap();
