@@ -103,7 +103,6 @@ pub trait IKeyboardStateLock {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(u32)]
 pub enum KeyCode {
-    Unknown = 0,
     Return = 13,
     Escape = 27,
     Backspace = 8,

@@ -75,7 +75,6 @@ fn main() {
             .flag("-w")
             .include(out_dir)
             .compile("winpix_shim");
-
     } else {
         cc::Build::new()
             .cpp(true)
@@ -83,7 +82,6 @@ fn main() {
             .include(out_dir)
             .compile("winpix_shim");
     };
-
 
     if target_platform().is_uwp() {
         let src = out_dir.join(WINRT_DLL_NAME);

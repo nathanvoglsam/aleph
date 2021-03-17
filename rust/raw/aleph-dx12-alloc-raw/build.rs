@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use std::path::Path;
 use aleph_target_build::build::target_platform;
+use std::path::Path;
 
 fn main() {
     let cpp_file = Path::new("../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
@@ -42,7 +42,7 @@ fn main() {
             .flag("-w")
             .include(inc_dir)
             .compile("d3d12ma");
-    } else if target_platform().is_msvc(){
+    } else if target_platform().is_msvc() {
         cc::Build::new()
             .file(cpp_file)
             .file("thirdparty_shim/shim.cpp")
