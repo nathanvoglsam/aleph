@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_target_build::build::target_platform;
 use std::io::{Cursor, Read};
 use std::path::Path;
 use zip::ZipArchive;
@@ -67,9 +68,16 @@ fn main() {
     write_zip_file(&mut package, out_dir, WINRT_DLL, WINRT_DLL_NAME);
     write_zip_file(&mut package, out_dir, WINRT_LIB, WINRT_LIB_NAME);
 
+    let shim_file = if target_platform().is_gnu() {
+        "cpp/shim_noop.cpp"
+    } else {
+        "cpp/shim.cpp"
+    };
+
     cc::Build::new()
         .cpp(true)
-        .file("cpp/shim.cpp")
+        .file(shim_file)
+        .flag("-w")
         .include(out_dir)
         .compile("winpix_shim");
 

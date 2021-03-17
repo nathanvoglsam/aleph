@@ -49,5 +49,9 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 path = "../aleph-windows-raw"
 version = "0.1"
 
+[build-dependencies.aleph-target-build]
+path = "../../build/aleph-target-build"
+version = "2"
+
 [build-dependencies.cc]
 version = "1"
