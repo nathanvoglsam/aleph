@@ -88,7 +88,7 @@ fn main() {
         aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
         aleph_compile::copy_file_to_target_dir(&src).unwrap();
         println!("cargo:rustc-link-lib=dylib=WinPixEventRuntime_UAP");
-    } else if target_platform().is_windows() {
+    } else if target_platform().is_windows() && target_platform().is_msvc() {
         let src = out_dir.join(WIN32_DLL_NAME);
         aleph_compile::copy_file_to_artifacts_dir(&src).unwrap();
         aleph_compile::copy_file_to_target_dir(&src).unwrap();
