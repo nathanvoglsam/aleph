@@ -8,7 +8,6 @@ jobs:
           setupSteps:
             - powershell: |
                 choco install ninja
-                choco install llvm
               displayName: Install Binary Dependencies
   - job: Linux
     pool:
@@ -18,8 +17,6 @@ jobs:
         parameters:
           setupSteps:
             - powershell: |
-                wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-                sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
                 sudo apt -y update -qq
-                sudo apt -y install -qq wget cmake libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar libllvm11 llvm-11 llvm-11-dev libclang-common-11-dev libclang-11-dev libffi-dev
+                sudo apt -y install -qq wget cmake libgtk-3-dev libsdl2-dev ninja-build libx11-dev libxext-dev libpulse-dev libasound2-dev curl p7zip-full p7zip-rar
               displayName: Install Dependencies
