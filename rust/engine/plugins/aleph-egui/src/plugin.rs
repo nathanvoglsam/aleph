@@ -141,11 +141,11 @@ impl IPlugin for EguiPlugin {
         let response = vec![
             (
                 TypeId::of::<dyn IEguiContextProvider>(),
-                AnyArc::into_send_sync_any(self.context_provider.clone()),
+                AnyArc::into_any(self.context_provider.clone()),
             ),
             (
                 TypeId::of::<dyn IEguiRenderData>(),
-                AnyArc::into_send_sync_any(self.render_data.clone()),
+                AnyArc::into_any(self.render_data.clone()),
             ),
         ];
         Box::new(response)

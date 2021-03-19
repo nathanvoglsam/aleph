@@ -37,7 +37,7 @@ mod registrar;
 
 pub use builder::PluginRegistryBuilder;
 
-use crate::interfaces::any::{AnyArc, ISendSyncAny};
+use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IRegistryAccessor};
 use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
@@ -50,7 +50,7 @@ pub struct PluginRegistry {
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: HashMap<TypeId, AnyArc<dyn ISendSyncAny>>,
+    interfaces: HashMap<TypeId, AnyArc<dyn IAny>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,
@@ -192,12 +192,12 @@ impl Drop for PluginRegistry {
 }
 
 struct RegistryAccessor {
-    interfaces: HashMap<TypeId, AnyArc<dyn ISendSyncAny>>,
+    interfaces: HashMap<TypeId, AnyArc<dyn IAny>>,
     should_quit: AtomicBool,
 }
 
 impl IRegistryAccessor for RegistryAccessor {
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>> {
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>> {
         self.interfaces.get(&interface).cloned()
     }
 

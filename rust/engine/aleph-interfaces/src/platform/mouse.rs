@@ -35,7 +35,7 @@ use any::*;
 /// is needed to access the system's mouse, and should be able to give out an `AnyArc<IMouse>` to
 /// allow others to retrieve information about and manipulate the mouse.
 ///
-pub trait IMouseProvider: ISendSyncAny + 'static {
+pub trait IMouseProvider: IAny + 'static {
     ///
     /// Returns an `AnyArc` that holds an `IMouse` interface.
     ///
@@ -51,7 +51,7 @@ pub trait IMouseProvider: ISendSyncAny + 'static {
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's mouse.
 ///
-pub trait IMouse: ISendSyncAny + 'static {
+pub trait IMouse: IAny + Send + Sync + 'static {
     ///
     /// Get the current state of the mouse, last updated at the beginning of the frame
     ///

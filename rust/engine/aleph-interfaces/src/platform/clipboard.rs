@@ -37,7 +37,7 @@ use std::ffi::{CStr, CString};
 /// an `AnyArc<IClipboard>` to allow others to retrieve information about and manipulate the
 /// clipboard.
 ///
-pub trait IClipboardProvider: ISendSyncAny + 'static {
+pub trait IClipboardProvider: IAny + 'static {
     ///
     /// Returns an `AnyArc` that holds an `IClipboard` interface.
     ///
@@ -53,7 +53,7 @@ pub trait IClipboardProvider: ISendSyncAny + 'static {
 /// This interface represents the API expected of something that gives the engine access to a
 /// device's clipboard.
 ///
-pub trait IClipboard: ISendSyncAny + 'static {
+pub trait IClipboard: IAny + Send + Sync + 'static {
     ///
     /// Gets the current clipboard text, if there is some.
     ///

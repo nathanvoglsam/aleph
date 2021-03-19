@@ -29,7 +29,8 @@
 
 use std::num::NonZeroIsize;
 use windows_raw::win32::system_services::{
-    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, PWSTR, WAIT_RETURN_CAUSE
+    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, PWSTR,
+    WAIT_RETURN_CAUSE,
 };
 use windows_raw::win32::windows_programming::CloseHandle;
 
@@ -58,7 +59,7 @@ impl SingleWaitResponse {
             0x00000080 => Ok(SingleWaitResponse::Abandoned),
             0x00000000 => Ok(SingleWaitResponse::Signaled),
             0x00000102 => Ok(SingleWaitResponse::Timeout),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 
@@ -86,7 +87,7 @@ impl MultipleWaitAllResponse {
             0x00000080 => Ok(MultipleWaitAllResponse::Abandoned),
             0x00000000 => Ok(MultipleWaitAllResponse::Signaled),
             0x00000102 => Ok(MultipleWaitAllResponse::Timeout),
-            _ => Err(())
+            _ => Err(()),
         }
     }
 

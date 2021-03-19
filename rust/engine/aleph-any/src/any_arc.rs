@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{IAny, ISendSyncAny, TraitObject};
+use crate::{IAny, TraitObject};
 use std::any::TypeId;
 use std::ops::Deref;
 use std::ptr::NonNull;
@@ -59,13 +59,24 @@ impl<T: IAny + Sized> AnyArc<T> {
     }
 }
 
-impl<T: ISendSyncAny + Sized> AnyArc<T> {
+impl<T: IAny + Send + Sized> AnyArc<T> {
     ///
     /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
     /// through `query_interface`
     ///
-    pub fn into_send_sync_any(v: Self) -> AnyArc<dyn ISendSyncAny> {
-        let inner: Arc<dyn ISendSyncAny> = v.0;
+    pub fn into_send_any(v: Self) -> AnyArc<dyn IAny + Send> {
+        let inner: Arc<dyn IAny + Send> = v.0;
+        AnyArc::from_arc(inner)
+    }
+}
+
+impl<T: IAny + Send + Sync + Sized> AnyArc<T> {
+    ///
+    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
+    /// through `query_interface`
+    ///
+    pub fn into_send_sync_any(v: Self) -> AnyArc<dyn IAny + Send + Sync> {
+        let inner: Arc<dyn IAny + Send + Sync> = v.0;
         AnyArc::from_arc(inner)
     }
 }

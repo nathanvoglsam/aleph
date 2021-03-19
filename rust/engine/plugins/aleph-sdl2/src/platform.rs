@@ -179,27 +179,27 @@ impl IPlugin for PlatformSDL2 {
         let response = vec![
             (
                 TypeId::of::<dyn IFrameTimerProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IWindowProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IClipboardProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IKeyboardProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IMouseProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
             (
                 TypeId::of::<dyn IEventsProvider>(),
-                AnyArc::into_send_sync_any(self.provider.clone()),
+                AnyArc::into_any(self.provider.clone()),
             ),
         ];
         Box::new(response)

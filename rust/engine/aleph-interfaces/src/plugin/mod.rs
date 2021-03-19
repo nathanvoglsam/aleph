@@ -28,7 +28,7 @@
 //
 
 use crate::any::AnyArc;
-use any::{IAny, ISendSyncAny};
+use any::IAny;
 use std::any::TypeId;
 
 ///
@@ -164,7 +164,7 @@ pub trait IInitResponse {
 ///
 /// A helper implementation that can save manually implementing `IInitResponse`
 ///
-impl IInitResponse for Vec<(TypeId, AnyArc<dyn ISendSyncAny>)> {
+impl IInitResponse for Vec<(TypeId, AnyArc<dyn IAny>)> {
     fn interfaces(&mut self) -> Box<dyn IInterfaceIterator> {
         let take = std::mem::take(self);
         let iter = take.into_iter();
@@ -176,9 +176,9 @@ impl IInitResponse for Vec<(TypeId, AnyArc<dyn ISendSyncAny>)> {
 /// A generic iterator interface that is used by the plugin initialization process to get the
 /// provided interfaces from a plugin
 ///
-pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)> {}
+pub trait IInterfaceIterator: Iterator<Item = (TypeId, AnyArc<dyn IAny>)> {}
 
-impl<T: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)>> IInterfaceIterator for T {}
+impl<T: Iterator<Item = (TypeId, AnyArc<dyn IAny>)>> IInterfaceIterator for T {}
 
 ///
 /// An abstract interface over any potential concrete implementation of an accessor into the plugin
@@ -187,7 +187,7 @@ impl<T: Iterator<Item = (TypeId, AnyArc<dyn ISendSyncAny>)>> IInterfaceIterator 
 ///
 pub trait IRegistryAccessor: 'static {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
-    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn ISendSyncAny>>;
+    fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
 
     /// Used by a plugin to tell the registry it should exit the main loop and quit.
     ///
@@ -198,7 +198,7 @@ pub trait IRegistryAccessor: 'static {
 impl dyn IRegistryAccessor {
     /// Get a reference counted handle to the interface with the type given by the `T` type
     /// parameter.
-    pub fn get_interface<T: ISendSyncAny + ?Sized>(&self) -> Option<AnyArc<T>> {
+    pub fn get_interface<T: IAny + ?Sized>(&self) -> Option<AnyArc<T>> {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }

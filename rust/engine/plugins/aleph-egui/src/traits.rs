@@ -29,7 +29,7 @@
 
 use egui::paint::ClippedShape;
 use egui::{Output, PaintJobs, RawInput};
-use interfaces::any::ISendSyncAny;
+use interfaces::any::IAny;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ops::DerefMut;
@@ -38,7 +38,7 @@ use std::sync::{Mutex, RwLock};
 ///
 /// This interface is used for getting an `egui::CtxRef`.
 ///
-pub trait IEguiContextProvider: ISendSyncAny {
+pub trait IEguiContextProvider: IAny {
     /// Gets a `egui::CtxRef` handle.
     fn get_context(&self) -> egui::CtxRef;
 }
@@ -83,7 +83,7 @@ interfaces::any::declare_interfaces!(EguiContextProvider, [IEguiContextProvider]
 /// A renderer can choose to support egui by checking for this interface, and using it to get the
 /// current frame's paint jobs.
 ///
-pub trait IEguiRenderData: ISendSyncAny {
+pub trait IEguiRenderData: IAny {
     /// Replace the old paint job data with the newly provided data.
     fn put(&self, data: PaintJobs);
 
