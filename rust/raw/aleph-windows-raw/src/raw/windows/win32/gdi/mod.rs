@@ -25,29 +25,3 @@ impl ::std::cmp::Eq for HMONITOR {}
 unsafe impl ::windows::Abi for HMONITOR {
     type Abi = Self;
 }
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct HDC(pub isize);
-impl HDC {}
-impl ::std::default::Default for HDC {
-    fn default() -> Self {
-        Self(0)
-    }
-}
-impl ::std::fmt::Debug for HDC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("HDC")
-            .field("value", &format_args!("{:?}", self.0))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for HDC {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl ::std::cmp::Eq for HDC {}
-unsafe impl ::windows::Abi for HDC {
-    type Abi = Self;
-}

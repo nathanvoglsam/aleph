@@ -180,7 +180,6 @@ pub unsafe fn D3D12EnableExperimentalFeatures(
         ::std::mem::transmute(p_configuration_struct_sizes),
     )
 }
-pub const D3D12ExperimentalShaderModels: &'static str = "76f5573e-f13a-40f5-b297-81ce9e18933f";
 pub unsafe fn D3D12GetDebugInterface(
     riid: *const ::windows::Guid,
     ppv_debug: *mut *mut ::std::ffi::c_void,
@@ -197,7 +196,6 @@ pub unsafe fn D3D12GetDebugInterface(
         ::std::mem::transmute(ppv_debug),
     )
 }
-pub const D3D12MetaCommand: &'static str = "c734c97e-8077-48c8-9fdc-d9d1dd31dd77";
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -1153,7 +1151,6 @@ pub unsafe fn D3D12SerializeVersionedRootSignature(
         ::std::mem::transmute(pp_error_blob),
     )
 }
-pub const D3D12TiledResourceTier4: &'static str = "c9c4725f-a81a-4f56-8c5b-c51039d694fb";
 pub const D3D12_16BIT_INDEX_STRIP_CUT_VALUE: u32 = 65535u32;
 pub const D3D12_32BIT_INDEX_STRIP_CUT_VALUE: u32 = 4294967295u32;
 pub const D3D12_8BIT_INDEX_STRIP_CUT_VALUE: u32 = 255u32;
@@ -1442,3154 +1439,6 @@ pub struct ID3D12DeviceChild_abi(
         ppv_device: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12Pageable(::windows::IUnknown);
-impl ID3D12Pageable {}
-unsafe impl ::windows::Interface for ID3D12Pageable {
-    type Vtable = ID3D12Pageable_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1676564731,
-        4712,
-        18485,
-        [134, 218, 240, 8, 206, 98, 240, 214],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12Pageable {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12Pageable> for ::windows::IUnknown {
-    fn from(value: ID3D12Pageable) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Pageable> for ::windows::IUnknown {
-    fn from(value: &ID3D12Pageable) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Pageable> for ID3D12DeviceChild {
-    fn from(value: ID3D12Pageable) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Pageable> for ID3D12DeviceChild {
-    fn from(value: &ID3D12Pageable) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Pageable> for ID3D12Object {
-    fn from(value: ID3D12Pageable) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Pageable> for ID3D12Object {
-    fn from(value: &ID3D12Pageable) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Pageable {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12Pageable_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12CommandAllocator(::windows::IUnknown);
-impl ID3D12CommandAllocator {}
-unsafe impl ::windows::Interface for ID3D12CommandAllocator {
-    type Vtable = ID3D12CommandAllocator_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1627578084,
-        44889,
-        19209,
-        [185, 153, 180, 77, 115, 240, 155, 36],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12CommandAllocator {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn Reset(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
-    }
-}
-impl ::std::convert::From<ID3D12CommandAllocator> for ::windows::IUnknown {
-    fn from(value: ID3D12CommandAllocator) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandAllocator> for ::windows::IUnknown {
-    fn from(value: &ID3D12CommandAllocator) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12Pageable {
-    fn from(value: ID3D12CommandAllocator) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12Pageable {
-    fn from(value: &ID3D12CommandAllocator) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12DeviceChild {
-    fn from(value: ID3D12CommandAllocator) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12DeviceChild {
-    fn from(value: &ID3D12CommandAllocator) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12Object {
-    fn from(value: ID3D12CommandAllocator) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12Object {
-    fn from(value: &ID3D12CommandAllocator) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12CommandAllocator {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12CommandAllocator_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12PipelineState(::windows::IUnknown);
-impl ID3D12PipelineState {}
-unsafe impl ::windows::Interface for ID3D12PipelineState {
-    type Vtable = ID3D12PipelineState_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1985622259,
-        63012,
-        19567,
-        [168, 40, 172, 233, 72, 98, 36, 69],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12PipelineState {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetCachedBlob(
-        &self,
-        pp_blob: *mut ::std::option::Option<super::direct3d11::ID3DBlob>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_blob),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12PipelineState> for ::windows::IUnknown {
-    fn from(value: ID3D12PipelineState) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12PipelineState> for ::windows::IUnknown {
-    fn from(value: &ID3D12PipelineState) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12PipelineState> for ID3D12Pageable {
-    fn from(value: ID3D12PipelineState) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12PipelineState> for ID3D12Pageable {
-    fn from(value: &ID3D12PipelineState) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12PipelineState> for ID3D12DeviceChild {
-    fn from(value: ID3D12PipelineState) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12PipelineState> for ID3D12DeviceChild {
-    fn from(value: &ID3D12PipelineState) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12PipelineState> for ID3D12Object {
-    fn from(value: ID3D12PipelineState) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12PipelineState> for ID3D12Object {
-    fn from(value: &ID3D12PipelineState) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12PipelineState {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12PipelineState_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_blob: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RANGE {
-    pub begin: usize,
-    pub end: usize,
-}
-impl D3D12_RANGE {}
-impl ::std::default::Default for D3D12_RANGE {
-    fn default() -> Self {
-        Self { begin: 0, end: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RANGE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RANGE")
-            .field("begin", &format_args!("{:?}", self.begin))
-            .field("end", &format_args!("{:?}", self.end))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RANGE {
-    fn eq(&self, other: &Self) -> bool {
-        self.begin == other.begin && self.end == other.end
-    }
-}
-impl ::std::cmp::Eq for D3D12_RANGE {}
-unsafe impl ::windows::Abi for D3D12_RANGE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_DIMENSION(pub i32);
-impl D3D12_RESOURCE_DIMENSION {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_DIMENSION_UNKNOWN: Self = Self(0i32);
-    pub const D3D12_RESOURCE_DIMENSION_BUFFER: Self = Self(1i32);
-    pub const D3D12_RESOURCE_DIMENSION_TEXTURE1D: Self = Self(2i32);
-    pub const D3D12_RESOURCE_DIMENSION_TEXTURE2D: Self = Self(3i32);
-    pub const D3D12_RESOURCE_DIMENSION_TEXTURE3D: Self = Self(4i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_DIMENSION {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_DIMENSION {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_TEXTURE_LAYOUT(pub i32);
-impl D3D12_TEXTURE_LAYOUT {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_TEXTURE_LAYOUT_UNKNOWN: Self = Self(0i32);
-    pub const D3D12_TEXTURE_LAYOUT_ROW_MAJOR: Self = Self(1i32);
-    pub const D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE: Self = Self(2i32);
-    pub const D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE: Self = Self(3i32);
-}
-impl ::std::convert::From<i32> for D3D12_TEXTURE_LAYOUT {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_TEXTURE_LAYOUT {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_FLAGS(pub i32);
-impl D3D12_RESOURCE_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET: Self = Self(1i32);
-    pub const D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL: Self = Self(2i32);
-    pub const D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS: Self = Self(4i32);
-    pub const D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE: Self = Self(8i32);
-    pub const D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER: Self = Self(16i32);
-    pub const D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS: Self = Self(32i32);
-    pub const D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RESOURCE_DESC {
-    pub dimension: D3D12_RESOURCE_DIMENSION,
-    pub alignment: u64,
-    pub width: u64,
-    pub height: u32,
-    pub depth_or_array_size: u16,
-    pub mip_levels: u16,
-    pub format: super::dxgi::DXGI_FORMAT,
-    pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
-    pub layout: D3D12_TEXTURE_LAYOUT,
-    pub flags: D3D12_RESOURCE_FLAGS,
-}
-impl D3D12_RESOURCE_DESC {}
-impl ::std::default::Default for D3D12_RESOURCE_DESC {
-    fn default() -> Self {
-        Self {
-            dimension: ::std::default::Default::default(),
-            alignment: 0,
-            width: 0,
-            height: 0,
-            depth_or_array_size: 0,
-            mip_levels: 0,
-            format: ::std::default::Default::default(),
-            sample_desc: ::std::default::Default::default(),
-            layout: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_DESC")
-            .field("dimension", &format_args!("{:?}", self.dimension))
-            .field("alignment", &format_args!("{:?}", self.alignment))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field(
-                "depth_or_array_size",
-                &format_args!("{:?}", self.depth_or_array_size),
-            )
-            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
-            .field("format", &format_args!("{:?}", self.format))
-            .field("sample_desc", &format_args!("{:?}", self.sample_desc))
-            .field("layout", &format_args!("{:?}", self.layout))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.dimension == other.dimension
-            && self.alignment == other.alignment
-            && self.width == other.width
-            && self.height == other.height
-            && self.depth_or_array_size == other.depth_or_array_size
-            && self.mip_levels == other.mip_levels
-            && self.format == other.format
-            && self.sample_desc == other.sample_desc
-            && self.layout == other.layout
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_DESC {}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_BOX {
-    pub left: u32,
-    pub top: u32,
-    pub front: u32,
-    pub right: u32,
-    pub bottom: u32,
-    pub back: u32,
-}
-impl D3D12_BOX {}
-impl ::std::default::Default for D3D12_BOX {
-    fn default() -> Self {
-        Self {
-            left: 0,
-            top: 0,
-            front: 0,
-            right: 0,
-            bottom: 0,
-            back: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_BOX {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_BOX")
-            .field("left", &format_args!("{:?}", self.left))
-            .field("top", &format_args!("{:?}", self.top))
-            .field("front", &format_args!("{:?}", self.front))
-            .field("right", &format_args!("{:?}", self.right))
-            .field("bottom", &format_args!("{:?}", self.bottom))
-            .field("back", &format_args!("{:?}", self.back))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_BOX {
-    fn eq(&self, other: &Self) -> bool {
-        self.left == other.left
-            && self.top == other.top
-            && self.front == other.front
-            && self.right == other.right
-            && self.bottom == other.bottom
-            && self.back == other.back
-    }
-}
-impl ::std::cmp::Eq for D3D12_BOX {}
-unsafe impl ::windows::Abi for D3D12_BOX {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_HEAP_TYPE(pub i32);
-impl D3D12_HEAP_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_HEAP_TYPE_DEFAULT: Self = Self(1i32);
-    pub const D3D12_HEAP_TYPE_UPLOAD: Self = Self(2i32);
-    pub const D3D12_HEAP_TYPE_READBACK: Self = Self(3i32);
-    pub const D3D12_HEAP_TYPE_CUSTOM: Self = Self(4i32);
-}
-impl ::std::convert::From<i32> for D3D12_HEAP_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_HEAP_TYPE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_CPU_PAGE_PROPERTY(pub i32);
-impl D3D12_CPU_PAGE_PROPERTY {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_CPU_PAGE_PROPERTY_UNKNOWN: Self = Self(0i32);
-    pub const D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE: Self = Self(1i32);
-    pub const D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE: Self = Self(2i32);
-    pub const D3D12_CPU_PAGE_PROPERTY_WRITE_BACK: Self = Self(3i32);
-}
-impl ::std::convert::From<i32> for D3D12_CPU_PAGE_PROPERTY {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_CPU_PAGE_PROPERTY {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_MEMORY_POOL(pub i32);
-impl D3D12_MEMORY_POOL {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_MEMORY_POOL_UNKNOWN: Self = Self(0i32);
-    pub const D3D12_MEMORY_POOL_L0: Self = Self(1i32);
-    pub const D3D12_MEMORY_POOL_L1: Self = Self(2i32);
-}
-impl ::std::convert::From<i32> for D3D12_MEMORY_POOL {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_MEMORY_POOL {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_HEAP_PROPERTIES {
-    pub r#type: D3D12_HEAP_TYPE,
-    pub cpu_page_property: D3D12_CPU_PAGE_PROPERTY,
-    pub memory_pool_preference: D3D12_MEMORY_POOL,
-    pub creation_node_mask: u32,
-    pub visible_node_mask: u32,
-}
-impl D3D12_HEAP_PROPERTIES {}
-impl ::std::default::Default for D3D12_HEAP_PROPERTIES {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            cpu_page_property: ::std::default::Default::default(),
-            memory_pool_preference: ::std::default::Default::default(),
-            creation_node_mask: 0,
-            visible_node_mask: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_HEAP_PROPERTIES {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_HEAP_PROPERTIES")
-            .field("r#type", &format_args!("{:?}", self.r#type))
-            .field(
-                "cpu_page_property",
-                &format_args!("{:?}", self.cpu_page_property),
-            )
-            .field(
-                "memory_pool_preference",
-                &format_args!("{:?}", self.memory_pool_preference),
-            )
-            .field(
-                "creation_node_mask",
-                &format_args!("{:?}", self.creation_node_mask),
-            )
-            .field(
-                "visible_node_mask",
-                &format_args!("{:?}", self.visible_node_mask),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_HEAP_PROPERTIES {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.cpu_page_property == other.cpu_page_property
-            && self.memory_pool_preference == other.memory_pool_preference
-            && self.creation_node_mask == other.creation_node_mask
-            && self.visible_node_mask == other.visible_node_mask
-    }
-}
-impl ::std::cmp::Eq for D3D12_HEAP_PROPERTIES {}
-unsafe impl ::windows::Abi for D3D12_HEAP_PROPERTIES {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_HEAP_FLAGS(pub i32);
-impl D3D12_HEAP_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_HEAP_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_HEAP_FLAG_SHARED: Self = Self(1i32);
-    pub const D3D12_HEAP_FLAG_DENY_BUFFERS: Self = Self(4i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_DISPLAY: Self = Self(8i32);
-    pub const D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER: Self = Self(32i32);
-    pub const D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES: Self = Self(64i32);
-    pub const D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES: Self = Self(128i32);
-    pub const D3D12_HEAP_FLAG_HARDWARE_PROTECTED: Self = Self(256i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH: Self = Self(512i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS: Self = Self(1024i32);
-    pub const D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT: Self = Self(2048i32);
-    pub const D3D12_HEAP_FLAG_CREATE_NOT_ZEROED: Self = Self(4096i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES: Self = Self(0i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS: Self = Self(192i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES: Self = Self(68i32);
-    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132i32);
-}
-impl ::std::convert::From<i32> for D3D12_HEAP_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_HEAP_FLAGS {
-    type Abi = Self;
-}
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12Resource(::windows::IUnknown);
-impl ID3D12Resource {}
-unsafe impl ::windows::Interface for ID3D12Resource {
-    type Vtable = ID3D12Resource_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1768178366,
-        42798,
-        16473,
-        [188, 121, 91, 92, 152, 4, 15, 173],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12Resource {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn Map(
-        &self,
-        subresource: u32,
-        p_read_range: *const D3D12_RANGE,
-        pp_data: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(subresource),
-            ::std::mem::transmute(p_read_range),
-            ::std::mem::transmute(pp_data),
-        )
-    }
-    pub unsafe fn Unmap(&self, subresource: u32, p_written_range: *const D3D12_RANGE) {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(subresource),
-            ::std::mem::transmute(p_written_range),
-        )
-    }
-    pub unsafe fn GetDesc(&self) -> D3D12_RESOURCE_DESC {
-        let mut result__: D3D12_RESOURCE_DESC = ::std::default::Default::default();
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
-    pub unsafe fn GetGPUVirtualAddress(&self) -> u64 {
-        (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn WriteToSubresource(
-        &self,
-        dst_subresource: u32,
-        p_dst_box: *const D3D12_BOX,
-        p_src_data: *const ::std::ffi::c_void,
-        src_row_pitch: u32,
-        src_depth_pitch: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(dst_subresource),
-            ::std::mem::transmute(p_dst_box),
-            ::std::mem::transmute(p_src_data),
-            ::std::mem::transmute(src_row_pitch),
-            ::std::mem::transmute(src_depth_pitch),
-        )
-    }
-    pub unsafe fn ReadFromSubresource(
-        &self,
-        p_dst_data: *mut ::std::ffi::c_void,
-        dst_row_pitch: u32,
-        dst_depth_pitch: u32,
-        src_subresource: u32,
-        p_src_box: *const D3D12_BOX,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_dst_data),
-            ::std::mem::transmute(dst_row_pitch),
-            ::std::mem::transmute(dst_depth_pitch),
-            ::std::mem::transmute(src_subresource),
-            ::std::mem::transmute(p_src_box),
-        )
-    }
-    pub unsafe fn GetHeapProperties(
-        &self,
-        p_heap_properties: *mut D3D12_HEAP_PROPERTIES,
-        p_heap_flags: *mut D3D12_HEAP_FLAGS,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).14)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_heap_properties),
-            ::std::mem::transmute(p_heap_flags),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12Resource> for ::windows::IUnknown {
-    fn from(value: ID3D12Resource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Resource> for ::windows::IUnknown {
-    fn from(value: &ID3D12Resource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Resource> for ID3D12Pageable {
-    fn from(value: ID3D12Resource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Resource> for ID3D12Pageable {
-    fn from(value: &ID3D12Resource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Resource> for ID3D12DeviceChild {
-    fn from(value: ID3D12Resource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Resource> for ID3D12DeviceChild {
-    fn from(value: &ID3D12Resource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Resource> for ID3D12Object {
-    fn from(value: ID3D12Resource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Resource> for ID3D12Object {
-    fn from(value: &ID3D12Resource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Resource {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12Resource_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        subresource: u32,
-        p_read_range: *const D3D12_RANGE,
-        pp_data: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        subresource: u32,
-        p_written_range: *const D3D12_RANGE,
-    ),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut D3D12_RESOURCE_DESC),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u64,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        dst_subresource: u32,
-        p_dst_box: *const D3D12_BOX,
-        p_src_data: *const ::std::ffi::c_void,
-        src_row_pitch: u32,
-        src_depth_pitch: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_dst_data: *mut ::std::ffi::c_void,
-        dst_row_pitch: u32,
-        dst_depth_pitch: u32,
-        src_subresource: u32,
-        p_src_box: *const D3D12_BOX,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_heap_properties: *mut D3D12_HEAP_PROPERTIES,
-        p_heap_flags: *mut D3D12_HEAP_FLAGS,
-    ) -> ::windows::ErrorCode,
-);
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_TEXTURE_COPY_TYPE(pub i32);
-impl D3D12_TEXTURE_COPY_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX: Self = Self(0i32);
-    pub const D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_TEXTURE_COPY_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_TYPE {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_SUBRESOURCE_FOOTPRINT {
-    pub format: super::dxgi::DXGI_FORMAT,
-    pub width: u32,
-    pub height: u32,
-    pub depth: u32,
-    pub row_pitch: u32,
-}
-impl D3D12_SUBRESOURCE_FOOTPRINT {}
-impl ::std::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn default() -> Self {
-        Self {
-            format: ::std::default::Default::default(),
-            width: 0,
-            height: 0,
-            depth: 0,
-            row_pitch: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_SUBRESOURCE_FOOTPRINT")
-            .field("format", &format_args!("{:?}", self.format))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("depth", &format_args!("{:?}", self.depth))
-            .field("row_pitch", &format_args!("{:?}", self.row_pitch))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_SUBRESOURCE_FOOTPRINT {
-    fn eq(&self, other: &Self) -> bool {
-        self.format == other.format
-            && self.width == other.width
-            && self.height == other.height
-            && self.depth == other.depth
-            && self.row_pitch == other.row_pitch
-    }
-}
-impl ::std::cmp::Eq for D3D12_SUBRESOURCE_FOOTPRINT {}
-unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_FOOTPRINT {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    pub offset: u64,
-    pub footprint: D3D12_SUBRESOURCE_FOOTPRINT,
-}
-impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
-impl ::std::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn default() -> Self {
-        Self {
-            offset: 0,
-            footprint: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_PLACED_SUBRESOURCE_FOOTPRINT")
-            .field("offset", &format_args!("{:?}", self.offset))
-            .field("footprint", &format_args!("{:?}", self.footprint))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    fn eq(&self, other: &Self) -> bool {
-        self.offset == other.offset && self.footprint == other.footprint
-    }
-}
-impl ::std::cmp::Eq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
-unsafe impl ::windows::Abi for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-pub struct D3D12_TEXTURE_COPY_LOCATION {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-    pub r#type: D3D12_TEXTURE_COPY_TYPE,
-    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
-}
-impl D3D12_TEXTURE_COPY_LOCATION {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_TEXTURE_COPY_LOCATION_abi {
-    pub p_resource: ::windows::RawPtr,
-    pub r#type: D3D12_TEXTURE_COPY_TYPE,
-    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
-}
-unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION {
-    type Abi = D3D12_TEXTURE_COPY_LOCATION_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub union D3D12_TEXTURE_COPY_LOCATION_0 {
-    pub placed_footprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
-    pub subresource_index: u32,
-}
-impl D3D12_TEXTURE_COPY_LOCATION_0 {}
-unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION_0 {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_TILED_RESOURCE_COORDINATE {
-    pub x: u32,
-    pub y: u32,
-    pub z: u32,
-    pub subresource: u32,
-}
-impl D3D12_TILED_RESOURCE_COORDINATE {}
-impl ::std::default::Default for D3D12_TILED_RESOURCE_COORDINATE {
-    fn default() -> Self {
-        Self {
-            x: 0,
-            y: 0,
-            z: 0,
-            subresource: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TILED_RESOURCE_COORDINATE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TILED_RESOURCE_COORDINATE")
-            .field("x", &format_args!("{:?}", self.x))
-            .field("y", &format_args!("{:?}", self.y))
-            .field("z", &format_args!("{:?}", self.z))
-            .field("subresource", &format_args!("{:?}", self.subresource))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TILED_RESOURCE_COORDINATE {
-    fn eq(&self, other: &Self) -> bool {
-        self.x == other.x
-            && self.y == other.y
-            && self.z == other.z
-            && self.subresource == other.subresource
-    }
-}
-impl ::std::cmp::Eq for D3D12_TILED_RESOURCE_COORDINATE {}
-unsafe impl ::windows::Abi for D3D12_TILED_RESOURCE_COORDINATE {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_TILE_REGION_SIZE {
-    pub num_tiles: u32,
-    pub use_box: super::system_services::BOOL,
-    pub width: u32,
-    pub height: u16,
-    pub depth: u16,
-}
-impl D3D12_TILE_REGION_SIZE {}
-impl ::std::default::Default for D3D12_TILE_REGION_SIZE {
-    fn default() -> Self {
-        Self {
-            num_tiles: 0,
-            use_box: ::std::default::Default::default(),
-            width: 0,
-            height: 0,
-            depth: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_TILE_REGION_SIZE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_TILE_REGION_SIZE")
-            .field("num_tiles", &format_args!("{:?}", self.num_tiles))
-            .field("use_box", &format_args!("{:?}", self.use_box))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("depth", &format_args!("{:?}", self.depth))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_TILE_REGION_SIZE {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_tiles == other.num_tiles
-            && self.use_box == other.use_box
-            && self.width == other.width
-            && self.height == other.height
-            && self.depth == other.depth
-    }
-}
-impl ::std::cmp::Eq for D3D12_TILE_REGION_SIZE {}
-unsafe impl ::windows::Abi for D3D12_TILE_REGION_SIZE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_TILE_COPY_FLAGS(pub i32);
-impl D3D12_TILE_COPY_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_TILE_COPY_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_TILE_COPY_FLAG_NO_HAZARD: Self = Self(1i32);
-    pub const D3D12_TILE_COPY_FLAG_LINEAR_BUFFER_TO_SWIZZLED_TILED_RESOURCE: Self = Self(2i32);
-    pub const D3D12_TILE_COPY_FLAG_SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4i32);
-}
-impl ::std::convert::From<i32> for D3D12_TILE_COPY_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_TILE_COPY_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_VIEWPORT {
-    pub top_leftx: f32,
-    pub top_lefty: f32,
-    pub width: f32,
-    pub height: f32,
-    pub min_depth: f32,
-    pub max_depth: f32,
-}
-impl D3D12_VIEWPORT {}
-impl ::std::default::Default for D3D12_VIEWPORT {
-    fn default() -> Self {
-        Self {
-            top_leftx: 0.0,
-            top_lefty: 0.0,
-            width: 0.0,
-            height: 0.0,
-            min_depth: 0.0,
-            max_depth: 0.0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_VIEWPORT {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_VIEWPORT")
-            .field("top_leftx", &format_args!("{:?}", self.top_leftx))
-            .field("top_lefty", &format_args!("{:?}", self.top_lefty))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("min_depth", &format_args!("{:?}", self.min_depth))
-            .field("max_depth", &format_args!("{:?}", self.max_depth))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_VIEWPORT {
-    fn eq(&self, other: &Self) -> bool {
-        self.top_leftx == other.top_leftx
-            && self.top_lefty == other.top_lefty
-            && self.width == other.width
-            && self.height == other.height
-            && self.min_depth == other.min_depth
-            && self.max_depth == other.max_depth
-    }
-}
-impl ::std::cmp::Eq for D3D12_VIEWPORT {}
-unsafe impl ::windows::Abi for D3D12_VIEWPORT {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_BARRIER_TYPE(pub i32);
-impl D3D12_RESOURCE_BARRIER_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_BARRIER_TYPE_TRANSITION: Self = Self(0i32);
-    pub const D3D12_RESOURCE_BARRIER_TYPE_ALIASING: Self = Self(1i32);
-    pub const D3D12_RESOURCE_BARRIER_TYPE_UAV: Self = Self(2i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_BARRIER_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_TYPE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_BARRIER_FLAGS(pub i32);
-impl D3D12_RESOURCE_BARRIER_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_BARRIER_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY: Self = Self(1i32);
-    pub const D3D12_RESOURCE_BARRIER_FLAG_END_ONLY: Self = Self(2i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_BARRIER_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_FLAGS {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_RESOURCE_STATES(pub i32);
-impl D3D12_RESOURCE_STATES {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_RESOURCE_STATE_COMMON: Self = Self(0i32);
-    pub const D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER: Self = Self(1i32);
-    pub const D3D12_RESOURCE_STATE_INDEX_BUFFER: Self = Self(2i32);
-    pub const D3D12_RESOURCE_STATE_RENDER_TARGET: Self = Self(4i32);
-    pub const D3D12_RESOURCE_STATE_UNORDERED_ACCESS: Self = Self(8i32);
-    pub const D3D12_RESOURCE_STATE_DEPTH_WRITE: Self = Self(16i32);
-    pub const D3D12_RESOURCE_STATE_DEPTH_READ: Self = Self(32i32);
-    pub const D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE: Self = Self(64i32);
-    pub const D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE: Self = Self(128i32);
-    pub const D3D12_RESOURCE_STATE_STREAM_OUT: Self = Self(256i32);
-    pub const D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT: Self = Self(512i32);
-    pub const D3D12_RESOURCE_STATE_COPY_DEST: Self = Self(1024i32);
-    pub const D3D12_RESOURCE_STATE_COPY_SOURCE: Self = Self(2048i32);
-    pub const D3D12_RESOURCE_STATE_RESOLVE_DEST: Self = Self(4096i32);
-    pub const D3D12_RESOURCE_STATE_RESOLVE_SOURCE: Self = Self(8192i32);
-    pub const D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE: Self = Self(4194304i32);
-    pub const D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE: Self = Self(16777216i32);
-    pub const D3D12_RESOURCE_STATE_GENERIC_READ: Self = Self(2755i32);
-    pub const D3D12_RESOURCE_STATE_PRESENT: Self = Self(0i32);
-    pub const D3D12_RESOURCE_STATE_PREDICATION: Self = Self(512i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_READ: Self = Self(65536i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE: Self = Self(131072i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ: Self = Self(262144i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE: Self = Self(524288i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_READ: Self = Self(2097152i32);
-    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE: Self = Self(8388608i32);
-}
-impl ::std::convert::From<i32> for D3D12_RESOURCE_STATES {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_STATES {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_TRANSITION_BARRIER {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-    pub subresource: u32,
-    pub state_before: D3D12_RESOURCE_STATES,
-    pub state_after: D3D12_RESOURCE_STATES,
-}
-impl D3D12_RESOURCE_TRANSITION_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource: ::std::default::Default::default(),
-            subresource: 0,
-            state_before: ::std::default::Default::default(),
-            state_after: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_TRANSITION_BARRIER")
-            .field("p_resource", &format_args!("{:?}", self.p_resource))
-            .field("subresource", &format_args!("{:?}", self.subresource))
-            .field("state_before", &format_args!("{:?}", self.state_before))
-            .field("state_after", &format_args!("{:?}", self.state_after))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_TRANSITION_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource == other.p_resource
-            && self.subresource == other.subresource
-            && self.state_before == other.state_before
-            && self.state_after == other.state_after
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_TRANSITION_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RESOURCE_TRANSITION_BARRIER_abi {
-    pub p_resource: ::windows::RawPtr,
-    pub subresource: u32,
-    pub state_before: D3D12_RESOURCE_STATES,
-    pub state_after: D3D12_RESOURCE_STATES,
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_TRANSITION_BARRIER {
-    type Abi = D3D12_RESOURCE_TRANSITION_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_ALIASING_BARRIER {
-    pub p_resource_before: ::std::option::Option<ID3D12Resource>,
-    pub p_resource_after: ::std::option::Option<ID3D12Resource>,
-}
-impl D3D12_RESOURCE_ALIASING_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource_before: ::std::default::Default::default(),
-            p_resource_after: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_ALIASING_BARRIER")
-            .field(
-                "p_resource_before",
-                &format_args!("{:?}", self.p_resource_before),
-            )
-            .field(
-                "p_resource_after",
-                &format_args!("{:?}", self.p_resource_after),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_ALIASING_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource_before == other.p_resource_before
-            && self.p_resource_after == other.p_resource_after
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_ALIASING_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RESOURCE_ALIASING_BARRIER_abi {
-    pub p_resource_before: ::windows::RawPtr,
-    pub p_resource_after: ::windows::RawPtr,
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_ALIASING_BARRIER {
-    type Abi = D3D12_RESOURCE_ALIASING_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone)]
-pub struct D3D12_RESOURCE_UAV_BARRIER {
-    pub p_resource: ::std::option::Option<ID3D12Resource>,
-}
-impl D3D12_RESOURCE_UAV_BARRIER {}
-impl ::std::default::Default for D3D12_RESOURCE_UAV_BARRIER {
-    fn default() -> Self {
-        Self {
-            p_resource: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_RESOURCE_UAV_BARRIER")
-            .field("p_resource", &format_args!("{:?}", self.p_resource))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_RESOURCE_UAV_BARRIER {
-    fn eq(&self, other: &Self) -> bool {
-        self.p_resource == other.p_resource
-    }
-}
-impl ::std::cmp::Eq for D3D12_RESOURCE_UAV_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RESOURCE_UAV_BARRIER_abi {
-    pub p_resource: ::windows::RawPtr,
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_UAV_BARRIER {
-    type Abi = D3D12_RESOURCE_UAV_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-pub struct D3D12_RESOURCE_BARRIER {
-    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
-    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
-    pub anonymous: D3D12_RESOURCE_BARRIER_0,
-}
-impl D3D12_RESOURCE_BARRIER {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_RESOURCE_BARRIER_abi {
-    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
-    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
-    pub anonymous: D3D12_RESOURCE_BARRIER_0_abi,
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER {
-    type Abi = D3D12_RESOURCE_BARRIER_abi;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-pub union D3D12_RESOURCE_BARRIER_0 {
-    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
-    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
-    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
-}
-impl D3D12_RESOURCE_BARRIER_0 {}
-#[repr(C)]
-#[doc(hidden)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub union D3D12_RESOURCE_BARRIER_0_abi {
-    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
-    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
-    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
-}
-unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_0 {
-    type Abi = D3D12_RESOURCE_BARRIER_0_abi;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_DESCRIPTOR_HEAP_TYPE(pub i32);
-impl D3D12_DESCRIPTOR_HEAP_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: Self = Self(0i32);
-    pub const D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER: Self = Self(1i32);
-    pub const D3D12_DESCRIPTOR_HEAP_TYPE_RTV: Self = Self(2i32);
-    pub const D3D12_DESCRIPTOR_HEAP_TYPE_DSV: Self = Self(3i32);
-    pub const D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES: Self = Self(4i32);
-}
-impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_HEAP_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_TYPE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_DESCRIPTOR_HEAP_FLAGS(pub i32);
-impl D3D12_DESCRIPTOR_HEAP_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_DESCRIPTOR_HEAP_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_HEAP_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_DESCRIPTOR_HEAP_DESC {
-    pub r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
-    pub num_descriptors: u32,
-    pub flags: D3D12_DESCRIPTOR_HEAP_FLAGS,
-    pub node_mask: u32,
-}
-impl D3D12_DESCRIPTOR_HEAP_DESC {}
-impl ::std::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            num_descriptors: 0,
-            flags: ::std::default::Default::default(),
-            node_mask: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DESCRIPTOR_HEAP_DESC")
-            .field("r#type", &format_args!("{:?}", self.r#type))
-            .field(
-                "num_descriptors",
-                &format_args!("{:?}", self.num_descriptors),
-            )
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("node_mask", &format_args!("{:?}", self.node_mask))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_HEAP_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.num_descriptors == other.num_descriptors
-            && self.flags == other.flags
-            && self.node_mask == other.node_mask
-    }
-}
-impl ::std::cmp::Eq for D3D12_DESCRIPTOR_HEAP_DESC {}
-unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_DESC {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_CPU_DESCRIPTOR_HANDLE {
-    pub ptr: usize,
-}
-impl D3D12_CPU_DESCRIPTOR_HANDLE {}
-impl ::std::default::Default for D3D12_CPU_DESCRIPTOR_HANDLE {
-    fn default() -> Self {
-        Self { ptr: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_CPU_DESCRIPTOR_HANDLE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_CPU_DESCRIPTOR_HANDLE")
-            .field("ptr", &format_args!("{:?}", self.ptr))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_CPU_DESCRIPTOR_HANDLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.ptr == other.ptr
-    }
-}
-impl ::std::cmp::Eq for D3D12_CPU_DESCRIPTOR_HANDLE {}
-unsafe impl ::windows::Abi for D3D12_CPU_DESCRIPTOR_HANDLE {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_GPU_DESCRIPTOR_HANDLE {
-    pub ptr: u64,
-}
-impl D3D12_GPU_DESCRIPTOR_HANDLE {}
-impl ::std::default::Default for D3D12_GPU_DESCRIPTOR_HANDLE {
-    fn default() -> Self {
-        Self { ptr: 0 }
-    }
-}
-impl ::std::fmt::Debug for D3D12_GPU_DESCRIPTOR_HANDLE {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_GPU_DESCRIPTOR_HANDLE")
-            .field("ptr", &format_args!("{:?}", self.ptr))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_GPU_DESCRIPTOR_HANDLE {
-    fn eq(&self, other: &Self) -> bool {
-        self.ptr == other.ptr
-    }
-}
-impl ::std::cmp::Eq for D3D12_GPU_DESCRIPTOR_HANDLE {}
-unsafe impl ::windows::Abi for D3D12_GPU_DESCRIPTOR_HANDLE {
-    type Abi = Self;
-}
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12DescriptorHeap(::windows::IUnknown);
-impl ID3D12DescriptorHeap {}
-unsafe impl ::windows::Interface for ID3D12DescriptorHeap {
-    type Vtable = ID3D12DescriptorHeap_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2398832413,
-        24940,
-        20297,
-        [144, 247, 18, 123, 183, 99, 250, 81],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12DescriptorHeap {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetDesc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
-        let mut result__: D3D12_DESCRIPTOR_HEAP_DESC = ::std::default::Default::default();
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
-    pub unsafe fn GetCPUDescriptorHandleForHeapStart(&self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
-        let mut result__: D3D12_CPU_DESCRIPTOR_HANDLE = ::std::default::Default::default();
-        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
-    pub unsafe fn GetGPUDescriptorHandleForHeapStart(&self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
-        let mut result__: D3D12_GPU_DESCRIPTOR_HANDLE = ::std::default::Default::default();
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
-}
-impl ::std::convert::From<ID3D12DescriptorHeap> for ::windows::IUnknown {
-    fn from(value: ID3D12DescriptorHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12DescriptorHeap> for ::windows::IUnknown {
-    fn from(value: &ID3D12DescriptorHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12Pageable {
-    fn from(value: ID3D12DescriptorHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12Pageable {
-    fn from(value: &ID3D12DescriptorHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12DeviceChild {
-    fn from(value: ID3D12DescriptorHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12DeviceChild {
-    fn from(value: &ID3D12DescriptorHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12Object {
-    fn from(value: ID3D12DescriptorHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12Object {
-    fn from(value: &ID3D12DescriptorHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12DescriptorHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12DescriptorHeap_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        result__: *mut D3D12_DESCRIPTOR_HEAP_DESC,
-    ),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        result__: *mut D3D12_CPU_DESCRIPTOR_HANDLE,
-    ),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        result__: *mut D3D12_GPU_DESCRIPTOR_HANDLE,
-    ),
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12RootSignature(::windows::IUnknown);
-impl ID3D12RootSignature {}
-unsafe impl ::windows::Interface for ID3D12RootSignature {
-    type Vtable = ID3D12RootSignature_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3309988710,
-        29407,
-        20200,
-        [139, 229, 169, 70, 161, 66, 146, 20],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12RootSignature {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12RootSignature> for ::windows::IUnknown {
-    fn from(value: ID3D12RootSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12RootSignature> for ::windows::IUnknown {
-    fn from(value: &ID3D12RootSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12RootSignature> for ID3D12DeviceChild {
-    fn from(value: ID3D12RootSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12RootSignature> for ID3D12DeviceChild {
-    fn from(value: &ID3D12RootSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12RootSignature> for ID3D12Object {
-    fn from(value: ID3D12RootSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12RootSignature> for ID3D12Object {
-    fn from(value: &ID3D12RootSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12RootSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12RootSignature_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_INDEX_BUFFER_VIEW {
-    pub buffer_location: u64,
-    pub size_in_bytes: u32,
-    pub format: super::dxgi::DXGI_FORMAT,
-}
-impl D3D12_INDEX_BUFFER_VIEW {}
-impl ::std::default::Default for D3D12_INDEX_BUFFER_VIEW {
-    fn default() -> Self {
-        Self {
-            buffer_location: 0,
-            size_in_bytes: 0,
-            format: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_INDEX_BUFFER_VIEW {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_INDEX_BUFFER_VIEW")
-            .field(
-                "buffer_location",
-                &format_args!("{:?}", self.buffer_location),
-            )
-            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
-            .field("format", &format_args!("{:?}", self.format))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_INDEX_BUFFER_VIEW {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer_location == other.buffer_location
-            && self.size_in_bytes == other.size_in_bytes
-            && self.format == other.format
-    }
-}
-impl ::std::cmp::Eq for D3D12_INDEX_BUFFER_VIEW {}
-unsafe impl ::windows::Abi for D3D12_INDEX_BUFFER_VIEW {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_VERTEX_BUFFER_VIEW {
-    pub buffer_location: u64,
-    pub size_in_bytes: u32,
-    pub stride_in_bytes: u32,
-}
-impl D3D12_VERTEX_BUFFER_VIEW {}
-impl ::std::default::Default for D3D12_VERTEX_BUFFER_VIEW {
-    fn default() -> Self {
-        Self {
-            buffer_location: 0,
-            size_in_bytes: 0,
-            stride_in_bytes: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_VERTEX_BUFFER_VIEW {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_VERTEX_BUFFER_VIEW")
-            .field(
-                "buffer_location",
-                &format_args!("{:?}", self.buffer_location),
-            )
-            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
-            .field(
-                "stride_in_bytes",
-                &format_args!("{:?}", self.stride_in_bytes),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_VERTEX_BUFFER_VIEW {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer_location == other.buffer_location
-            && self.size_in_bytes == other.size_in_bytes
-            && self.stride_in_bytes == other.stride_in_bytes
-    }
-}
-impl ::std::cmp::Eq for D3D12_VERTEX_BUFFER_VIEW {}
-unsafe impl ::windows::Abi for D3D12_VERTEX_BUFFER_VIEW {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_STREAM_OUTPUT_BUFFER_VIEW {
-    pub buffer_location: u64,
-    pub size_in_bytes: u64,
-    pub buffer_filled_size_location: u64,
-}
-impl D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
-impl ::std::default::Default for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
-    fn default() -> Self {
-        Self {
-            buffer_location: 0,
-            size_in_bytes: 0,
-            buffer_filled_size_location: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_STREAM_OUTPUT_BUFFER_VIEW")
-            .field(
-                "buffer_location",
-                &format_args!("{:?}", self.buffer_location),
-            )
-            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
-            .field(
-                "buffer_filled_size_location",
-                &format_args!("{:?}", self.buffer_filled_size_location),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
-    fn eq(&self, other: &Self) -> bool {
-        self.buffer_location == other.buffer_location
-            && self.size_in_bytes == other.size_in_bytes
-            && self.buffer_filled_size_location == other.buffer_filled_size_location
-    }
-}
-impl ::std::cmp::Eq for D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
-unsafe impl ::windows::Abi for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_CLEAR_FLAGS(pub i32);
-impl D3D12_CLEAR_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_CLEAR_FLAG_DEPTH: Self = Self(1i32);
-    pub const D3D12_CLEAR_FLAG_STENCIL: Self = Self(2i32);
-}
-impl ::std::convert::From<i32> for D3D12_CLEAR_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_CLEAR_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_DISCARD_REGION {
-    pub num_rects: u32,
-    pub p_rects: *mut super::display_devices::RECT,
-    pub first_subresource: u32,
-    pub num_subresources: u32,
-}
-impl D3D12_DISCARD_REGION {}
-impl ::std::default::Default for D3D12_DISCARD_REGION {
-    fn default() -> Self {
-        Self {
-            num_rects: 0,
-            p_rects: ::std::ptr::null_mut(),
-            first_subresource: 0,
-            num_subresources: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_DISCARD_REGION {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_DISCARD_REGION")
-            .field("num_rects", &format_args!("{:?}", self.num_rects))
-            .field("p_rects", &format_args!("{:?}", self.p_rects))
-            .field(
-                "first_subresource",
-                &format_args!("{:?}", self.first_subresource),
-            )
-            .field(
-                "num_subresources",
-                &format_args!("{:?}", self.num_subresources),
-            )
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_DISCARD_REGION {
-    fn eq(&self, other: &Self) -> bool {
-        self.num_rects == other.num_rects
-            && self.p_rects == other.p_rects
-            && self.first_subresource == other.first_subresource
-            && self.num_subresources == other.num_subresources
-    }
-}
-impl ::std::cmp::Eq for D3D12_DISCARD_REGION {}
-unsafe impl ::windows::Abi for D3D12_DISCARD_REGION {
-    type Abi = Self;
-}
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12QueryHeap(::windows::IUnknown);
-impl ID3D12QueryHeap {}
-unsafe impl ::windows::Interface for ID3D12QueryHeap {
-    type Vtable = ID3D12QueryHeap_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        227956910,
-        60741,
-        18078,
-        [166, 29, 151, 14, 197, 131, 202, 180],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12QueryHeap {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12QueryHeap> for ::windows::IUnknown {
-    fn from(value: ID3D12QueryHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12QueryHeap> for ::windows::IUnknown {
-    fn from(value: &ID3D12QueryHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12QueryHeap> for ID3D12Pageable {
-    fn from(value: ID3D12QueryHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12Pageable {
-    fn from(value: &ID3D12QueryHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12QueryHeap> for ID3D12DeviceChild {
-    fn from(value: ID3D12QueryHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12DeviceChild {
-    fn from(value: &ID3D12QueryHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12QueryHeap> for ID3D12Object {
-    fn from(value: ID3D12QueryHeap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12Object {
-    fn from(value: &ID3D12QueryHeap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12QueryHeap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12QueryHeap_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_QUERY_TYPE(pub i32);
-impl D3D12_QUERY_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_QUERY_TYPE_OCCLUSION: Self = Self(0i32);
-    pub const D3D12_QUERY_TYPE_BINARY_OCCLUSION: Self = Self(1i32);
-    pub const D3D12_QUERY_TYPE_TIMESTAMP: Self = Self(2i32);
-    pub const D3D12_QUERY_TYPE_PIPELINE_STATISTICS: Self = Self(3i32);
-    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM0: Self = Self(4i32);
-    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM1: Self = Self(5i32);
-    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM2: Self = Self(6i32);
-    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM3: Self = Self(7i32);
-    pub const D3D12_QUERY_TYPE_VIDEO_DECODE_STATISTICS: Self = Self(8i32);
-}
-impl ::std::convert::From<i32> for D3D12_QUERY_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_QUERY_TYPE {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_PREDICATION_OP(pub i32);
-impl D3D12_PREDICATION_OP {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_PREDICATION_OP_EQUAL_ZERO: Self = Self(0i32);
-    pub const D3D12_PREDICATION_OP_NOT_EQUAL_ZERO: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_PREDICATION_OP {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_PREDICATION_OP {
-    type Abi = Self;
-}
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12CommandSignature(::windows::IUnknown);
-impl ID3D12CommandSignature {}
-unsafe impl ::windows::Interface for ID3D12CommandSignature {
-    type Vtable = ID3D12CommandSignature_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3278535036,
-        60544,
-        20234,
-        [137, 133, 167, 178, 71, 80, 130, 209],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12CommandSignature {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12CommandSignature> for ::windows::IUnknown {
-    fn from(value: ID3D12CommandSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandSignature> for ::windows::IUnknown {
-    fn from(value: &ID3D12CommandSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandSignature> for ID3D12Pageable {
-    fn from(value: ID3D12CommandSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12Pageable {
-    fn from(value: &ID3D12CommandSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandSignature> for ID3D12DeviceChild {
-    fn from(value: ID3D12CommandSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12DeviceChild {
-    fn from(value: &ID3D12CommandSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12CommandSignature> for ID3D12Object {
-    fn from(value: ID3D12CommandSignature) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12Object {
-    fn from(value: &ID3D12CommandSignature) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12CommandSignature {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12CommandSignature_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_COMMAND_LIST_TYPE(pub i32);
-impl D3D12_COMMAND_LIST_TYPE {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_COMMAND_LIST_TYPE_DIRECT: Self = Self(0i32);
-    pub const D3D12_COMMAND_LIST_TYPE_BUNDLE: Self = Self(1i32);
-    pub const D3D12_COMMAND_LIST_TYPE_COMPUTE: Self = Self(2i32);
-    pub const D3D12_COMMAND_LIST_TYPE_COPY: Self = Self(3i32);
-    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE: Self = Self(4i32);
-    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS: Self = Self(5i32);
-    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE: Self = Self(6i32);
-}
-impl ::std::convert::From<i32> for D3D12_COMMAND_LIST_TYPE {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_COMMAND_LIST_TYPE {
-    type Abi = Self;
-}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
@@ -5933,48 +2782,6 @@ pub struct ID3D12GraphicsCommandList_abi(
         count_buffer_offset: u64,
     ),
 );
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_HEAP_DESC {
-    pub size_in_bytes: u64,
-    pub properties: D3D12_HEAP_PROPERTIES,
-    pub alignment: u64,
-    pub flags: D3D12_HEAP_FLAGS,
-}
-impl D3D12_HEAP_DESC {}
-impl ::std::default::Default for D3D12_HEAP_DESC {
-    fn default() -> Self {
-        Self {
-            size_in_bytes: 0,
-            properties: ::std::default::Default::default(),
-            alignment: 0,
-            flags: ::std::default::Default::default(),
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_HEAP_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_HEAP_DESC")
-            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
-            .field("properties", &format_args!("{:?}", self.properties))
-            .field("alignment", &format_args!("{:?}", self.alignment))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_HEAP_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.size_in_bytes == other.size_in_bytes
-            && self.properties == other.properties
-            && self.alignment == other.alignment
-            && self.flags == other.flags
-    }
-}
-impl ::std::cmp::Eq for D3D12_HEAP_DESC {}
-unsafe impl ::windows::Abi for D3D12_HEAP_DESC {
-    type Abi = Self;
-}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
@@ -5983,19 +2790,19 @@ unsafe impl ::windows::Abi for D3D12_HEAP_DESC {
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct ID3D12Heap(::windows::IUnknown);
-impl ID3D12Heap {}
-unsafe impl ::windows::Interface for ID3D12Heap {
-    type Vtable = ID3D12Heap_abi;
+pub struct ID3D12Pageable(::windows::IUnknown);
+impl ID3D12Pageable {}
+unsafe impl ::windows::Interface for ID3D12Pageable {
+    type Vtable = ID3D12Pageable_abi;
     const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1799038210,
-        28241,
-        17843,
-        [144, 238, 152, 132, 38, 94, 141, 243],
+        1676564731,
+        4712,
+        18485,
+        [134, 218, 240, 8, 206, 98, 240, 214],
     );
 }
 #[allow(non_snake_case)]
-impl ID3D12Heap {
+impl ID3D12Pageable {
     pub unsafe fn GetPrivateData(
         &self,
         guid: *const ::windows::Guid,
@@ -6053,94 +2860,67 @@ impl ID3D12Heap {
             ::std::mem::transmute(ppv_device),
         )
     }
-    pub unsafe fn GetDesc(&self) -> D3D12_HEAP_DESC {
-        let mut result__: D3D12_HEAP_DESC = ::std::default::Default::default();
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
 }
-impl ::std::convert::From<ID3D12Heap> for ::windows::IUnknown {
-    fn from(value: ID3D12Heap) -> Self {
+impl ::std::convert::From<ID3D12Pageable> for ::windows::IUnknown {
+    fn from(value: ID3D12Pageable) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&ID3D12Heap> for ::windows::IUnknown {
-    fn from(value: &ID3D12Heap) -> Self {
+impl ::std::convert::From<&ID3D12Pageable> for ::windows::IUnknown {
+    fn from(value: &ID3D12Pageable) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<ID3D12Heap> for ID3D12Pageable {
-    fn from(value: ID3D12Heap) -> Self {
+impl ::std::convert::From<ID3D12Pageable> for ID3D12DeviceChild {
+    fn from(value: ID3D12Pageable) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&ID3D12Heap> for ID3D12Pageable {
-    fn from(value: &ID3D12Heap) -> Self {
+impl ::std::convert::From<&ID3D12Pageable> for ID3D12DeviceChild {
+    fn from(value: &ID3D12Pageable) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Heap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Heap {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Heap> for ID3D12DeviceChild {
-    fn from(value: ID3D12Heap) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Heap> for ID3D12DeviceChild {
-    fn from(value: &ID3D12Heap) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
         ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
         ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<ID3D12Heap> for ID3D12Object {
-    fn from(value: ID3D12Heap) -> Self {
+impl ::std::convert::From<ID3D12Pageable> for ID3D12Object {
+    fn from(value: ID3D12Pageable) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&ID3D12Heap> for ID3D12Object {
-    fn from(value: &ID3D12Heap) -> Self {
+impl ::std::convert::From<&ID3D12Pageable> for ID3D12Object {
+    fn from(value: &ID3D12Pageable) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
         ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Heap {
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Pageable {
     fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
         ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
             ::std::clone::Clone::clone(self),
@@ -6149,7 +2929,7 @@ impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Heap {
 }
 #[repr(C)]
 #[doc(hidden)]
-pub struct ID3D12Heap_abi(
+pub struct ID3D12Pageable_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         iid: &::windows::Guid,
@@ -6183,358 +2963,7 @@ pub struct ID3D12Heap_abi(
         riid: *const ::windows::Guid,
         ppv_device: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut D3D12_HEAP_DESC),
 );
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_TILE_RANGE_FLAGS(pub i32);
-impl D3D12_TILE_RANGE_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_TILE_RANGE_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_TILE_RANGE_FLAG_NULL: Self = Self(1i32);
-    pub const D3D12_TILE_RANGE_FLAG_SKIP: Self = Self(2i32);
-    pub const D3D12_TILE_RANGE_FLAG_REUSE_SINGLE_TILE: Self = Self(4i32);
-}
-impl ::std::convert::From<i32> for D3D12_TILE_RANGE_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_TILE_RANGE_FLAGS {
-    type Abi = Self;
-}
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_TILE_MAPPING_FLAGS(pub i32);
-impl D3D12_TILE_MAPPING_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_TILE_MAPPING_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_TILE_MAPPING_FLAG_NO_HAZARD: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_TILE_MAPPING_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_TILE_MAPPING_FLAGS {
-    type Abi = Self;
-}
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12Fence(::windows::IUnknown);
-impl ID3D12Fence {}
-unsafe impl ::windows::Interface for ID3D12Fence {
-    type Vtable = ID3D12Fence_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        175455695,
-        50392,
-        19345,
-        [173, 246, 190, 90, 96, 217, 90, 118],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12Fence {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetCompletedValue(&self) -> u64 {
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn SetEventOnCompletion<
-        'a,
-        T1__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
-    >(
-        &self,
-        value: u64,
-        h_event: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(value),
-            h_event.into_param().abi(),
-        )
-    }
-    pub unsafe fn Signal(&self, value: u64) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(value),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12Fence> for ::windows::IUnknown {
-    fn from(value: ID3D12Fence) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Fence> for ::windows::IUnknown {
-    fn from(value: &ID3D12Fence) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Fence> for ID3D12Pageable {
-    fn from(value: ID3D12Fence) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Fence> for ID3D12Pageable {
-    fn from(value: &ID3D12Fence) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Fence> for ID3D12DeviceChild {
-    fn from(value: ID3D12Fence) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Fence> for ID3D12DeviceChild {
-    fn from(value: &ID3D12Fence) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12Fence> for ID3D12Object {
-    fn from(value: ID3D12Fence) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12Fence> for ID3D12Object {
-    fn from(value: &ID3D12Fence) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Fence {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12Fence_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u64,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        value: u64,
-        h_event: super::system_services::HANDLE,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, value: u64) -> ::windows::ErrorCode,
-);
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct D3D12_COMMAND_QUEUE_FLAGS(pub i32);
-impl D3D12_COMMAND_QUEUE_FLAGS {
-    #![allow(non_upper_case_globals)]
-    pub const D3D12_COMMAND_QUEUE_FLAG_NONE: Self = Self(0i32);
-    pub const D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT: Self = Self(1i32);
-}
-impl ::std::convert::From<i32> for D3D12_COMMAND_QUEUE_FLAGS {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_FLAGS {
-    type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
-pub struct D3D12_COMMAND_QUEUE_DESC {
-    pub r#type: D3D12_COMMAND_LIST_TYPE,
-    pub priority: i32,
-    pub flags: D3D12_COMMAND_QUEUE_FLAGS,
-    pub node_mask: u32,
-}
-impl D3D12_COMMAND_QUEUE_DESC {}
-impl ::std::default::Default for D3D12_COMMAND_QUEUE_DESC {
-    fn default() -> Self {
-        Self {
-            r#type: ::std::default::Default::default(),
-            priority: 0,
-            flags: ::std::default::Default::default(),
-            node_mask: 0,
-        }
-    }
-}
-impl ::std::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
-    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        fmt.debug_struct("D3D12_COMMAND_QUEUE_DESC")
-            .field("r#type", &format_args!("{:?}", self.r#type))
-            .field("priority", &format_args!("{:?}", self.priority))
-            .field("flags", &format_args!("{:?}", self.flags))
-            .field("node_mask", &format_args!("{:?}", self.node_mask))
-            .finish()
-    }
-}
-impl ::std::cmp::PartialEq for D3D12_COMMAND_QUEUE_DESC {
-    fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.priority == other.priority
-            && self.flags == other.flags
-            && self.node_mask == other.node_mask
-    }
-}
-impl ::std::cmp::Eq for D3D12_COMMAND_QUEUE_DESC {}
-unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_DESC {
-    type Abi = Self;
-}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
@@ -7498,7 +3927,7 @@ unsafe impl ::windows::Abi for D3D12_RENDER_TARGET_BLEND_DESC {
 pub struct D3D12_BLEND_DESC {
     pub alpha_to_coverage_enable: super::system_services::BOOL,
     pub independent_blend_enable: super::system_services::BOOL,
-    pub render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8usize],
+    pub render_target: [D3D12_RENDER_TARGET_BLEND_DESC; 8],
 }
 impl D3D12_BLEND_DESC {}
 impl ::std::default::Default for D3D12_BLEND_DESC {
@@ -7506,16 +3935,7 @@ impl ::std::default::Default for D3D12_BLEND_DESC {
         Self {
             alpha_to_coverage_enable: ::std::default::Default::default(),
             independent_blend_enable: ::std::default::Default::default(),
-            render_target: [
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-            ],
+            render_target: [::std::default::Default::default(); 8],
         }
     }
 }
@@ -7543,6 +3963,56 @@ impl ::std::cmp::PartialEq for D3D12_BLEND_DESC {
 }
 impl ::std::cmp::Eq for D3D12_BLEND_DESC {}
 unsafe impl ::windows::Abi for D3D12_BLEND_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_BOX {
+    pub left: u32,
+    pub top: u32,
+    pub front: u32,
+    pub right: u32,
+    pub bottom: u32,
+    pub back: u32,
+}
+impl D3D12_BOX {}
+impl ::std::default::Default for D3D12_BOX {
+    fn default() -> Self {
+        Self {
+            left: 0,
+            top: 0,
+            front: 0,
+            right: 0,
+            bottom: 0,
+            back: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_BOX {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_BOX")
+            .field("left", &format_args!("{:?}", self.left))
+            .field("top", &format_args!("{:?}", self.top))
+            .field("front", &format_args!("{:?}", self.front))
+            .field("right", &format_args!("{:?}", self.right))
+            .field("bottom", &format_args!("{:?}", self.bottom))
+            .field("back", &format_args!("{:?}", self.back))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_BOX {
+    fn eq(&self, other: &Self) -> bool {
+        self.left == other.left
+            && self.top == other.top
+            && self.front == other.front
+            && self.right == other.right
+            && self.bottom == other.bottom
+            && self.back == other.back
+    }
+}
+impl ::std::cmp::Eq for D3D12_BOX {}
+unsafe impl ::windows::Abi for D3D12_BOX {
     type Abi = Self;
 }
 #[repr(C)]
@@ -8116,6 +4586,30 @@ impl ::std::cmp::Eq for D3D12_CACHED_PIPELINE_STATE {}
 unsafe impl ::windows::Abi for D3D12_CACHED_PIPELINE_STATE {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_CLEAR_FLAGS(pub i32);
+impl D3D12_CLEAR_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_CLEAR_FLAG_DEPTH: Self = Self(1i32);
+    pub const D3D12_CLEAR_FLAG_STENCIL: Self = Self(2i32);
+}
+impl ::std::convert::From<i32> for D3D12_CLEAR_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_CLEAR_FLAGS {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -8164,7 +4658,7 @@ unsafe impl ::windows::Abi for D3D12_CLEAR_VALUE {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub union D3D12_CLEAR_VALUE_0 {
-    pub color: [f32; 4usize],
+    pub color: [f32; 4],
     pub depth_stencil: D3D12_DEPTH_STENCIL_VALUE,
 }
 impl D3D12_CLEAR_VALUE_0 {}
@@ -8263,6 +4757,35 @@ unsafe impl ::windows::Abi for D3D12_COMMAND_LIST_SUPPORT_FLAGS {
     :: std :: fmt :: Debug,
 )]
 #[repr(transparent)]
+pub struct D3D12_COMMAND_LIST_TYPE(pub i32);
+impl D3D12_COMMAND_LIST_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_COMMAND_LIST_TYPE_DIRECT: Self = Self(0i32);
+    pub const D3D12_COMMAND_LIST_TYPE_BUNDLE: Self = Self(1i32);
+    pub const D3D12_COMMAND_LIST_TYPE_COMPUTE: Self = Self(2i32);
+    pub const D3D12_COMMAND_LIST_TYPE_COPY: Self = Self(3i32);
+    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE: Self = Self(4i32);
+    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS: Self = Self(5i32);
+    pub const D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE: Self = Self(6i32);
+}
+impl ::std::convert::From<i32> for D3D12_COMMAND_LIST_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_COMMAND_LIST_TYPE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
 pub struct D3D12_COMMAND_POOL_FLAGS(pub i32);
 impl D3D12_COMMAND_POOL_FLAGS {
     #![allow(non_upper_case_globals)]
@@ -8274,6 +4797,72 @@ impl ::std::convert::From<i32> for D3D12_COMMAND_POOL_FLAGS {
     }
 }
 unsafe impl ::windows::Abi for D3D12_COMMAND_POOL_FLAGS {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_COMMAND_QUEUE_FLAGS(pub i32);
+impl D3D12_COMMAND_QUEUE_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_COMMAND_QUEUE_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_COMMAND_QUEUE_FLAG_DISABLE_GPU_TIMEOUT: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_COMMAND_QUEUE_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_COMMAND_QUEUE_DESC {
+    pub r#type: D3D12_COMMAND_LIST_TYPE,
+    pub priority: i32,
+    pub flags: D3D12_COMMAND_QUEUE_FLAGS,
+    pub node_mask: u32,
+}
+impl D3D12_COMMAND_QUEUE_DESC {}
+impl ::std::default::Default for D3D12_COMMAND_QUEUE_DESC {
+    fn default() -> Self {
+        Self {
+            r#type: ::std::default::Default::default(),
+            priority: 0,
+            flags: ::std::default::Default::default(),
+            node_mask: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_COMMAND_QUEUE_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_COMMAND_QUEUE_DESC")
+            .field("r#type", &format_args!("{:?}", self.r#type))
+            .field("priority", &format_args!("{:?}", self.priority))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .field("node_mask", &format_args!("{:?}", self.node_mask))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_COMMAND_QUEUE_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.r#type == other.r#type
+            && self.priority == other.priority
+            && self.flags == other.flags
+            && self.node_mask == other.node_mask
+    }
+}
+impl ::std::cmp::Eq for D3D12_COMMAND_QUEUE_DESC {}
+unsafe impl ::windows::Abi for D3D12_COMMAND_QUEUE_DESC {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
@@ -8639,6 +5228,188 @@ pub const D3D12_COMMONSHADER_TEXCOORD_RANGE_REDUCTION_MAX: u32 = 10u32;
 pub const D3D12_COMMONSHADER_TEXCOORD_RANGE_REDUCTION_MIN: i32 = -10i32;
 pub const D3D12_COMMONSHADER_TEXEL_OFFSET_MAX_NEGATIVE: i32 = -8i32;
 pub const D3D12_COMMONSHADER_TEXEL_OFFSET_MAX_POSITIVE: u32 = 7u32;
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12RootSignature(::windows::IUnknown);
+impl ID3D12RootSignature {}
+unsafe impl ::windows::Interface for ID3D12RootSignature {
+    type Vtable = ID3D12RootSignature_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3309988710,
+        29407,
+        20200,
+        [139, 229, 169, 70, 161, 66, 146, 20],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12RootSignature {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12RootSignature> for ::windows::IUnknown {
+    fn from(value: ID3D12RootSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12RootSignature> for ::windows::IUnknown {
+    fn from(value: &ID3D12RootSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12RootSignature> for ID3D12DeviceChild {
+    fn from(value: ID3D12RootSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12RootSignature> for ID3D12DeviceChild {
+    fn from(value: &ID3D12RootSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12RootSignature> for ID3D12Object {
+    fn from(value: ID3D12RootSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12RootSignature> for ID3D12Object {
+    fn from(value: &ID3D12RootSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12RootSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12RootSignature_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+);
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -8847,6 +5618,60 @@ impl ::std::cmp::PartialEq for D3D12_CONSTANT_BUFFER_VIEW_DESC {
 }
 impl ::std::cmp::Eq for D3D12_CONSTANT_BUFFER_VIEW_DESC {}
 unsafe impl ::windows::Abi for D3D12_CONSTANT_BUFFER_VIEW_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_CPU_DESCRIPTOR_HANDLE {
+    pub ptr: usize,
+}
+impl D3D12_CPU_DESCRIPTOR_HANDLE {}
+impl ::std::default::Default for D3D12_CPU_DESCRIPTOR_HANDLE {
+    fn default() -> Self {
+        Self { ptr: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_CPU_DESCRIPTOR_HANDLE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_CPU_DESCRIPTOR_HANDLE")
+            .field("ptr", &format_args!("{:?}", self.ptr))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_CPU_DESCRIPTOR_HANDLE {
+    fn eq(&self, other: &Self) -> bool {
+        self.ptr == other.ptr
+    }
+}
+impl ::std::cmp::Eq for D3D12_CPU_DESCRIPTOR_HANDLE {}
+unsafe impl ::windows::Abi for D3D12_CPU_DESCRIPTOR_HANDLE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_CPU_PAGE_PROPERTY(pub i32);
+impl D3D12_CPU_PAGE_PROPERTY {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_CPU_PAGE_PROPERTY_UNKNOWN: Self = Self(0i32);
+    pub const D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE: Self = Self(1i32);
+    pub const D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE: Self = Self(2i32);
+    pub const D3D12_CPU_PAGE_PROPERTY_WRITE_BACK: Self = Self(3i32);
+}
+impl ::std::convert::From<i32> for D3D12_CPU_PAGE_PROPERTY {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_CPU_PAGE_PROPERTY {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
@@ -9207,7 +6032,7 @@ pub const D3D12_DEFAULT_BLEND_FACTOR_BLUE: f32 = 1f32;
 pub const D3D12_DEFAULT_BLEND_FACTOR_GREEN: f32 = 1f32;
 pub const D3D12_DEFAULT_BLEND_FACTOR_RED: f32 = 1f32;
 pub const D3D12_DEFAULT_BORDER_COLOR_COMPONENT: f32 = 0f32;
-pub const D3D12_DEFAULT_DEPTH_BIAS: i32 = 0i32;
+pub const D3D12_DEFAULT_DEPTH_BIAS: u32 = 0u32;
 pub const D3D12_DEFAULT_DEPTH_BIAS_CLAMP: f32 = 0f32;
 pub const D3D12_DEFAULT_MAX_ANISOTROPY: u32 = 16u32;
 pub const D3D12_DEFAULT_MIP_LOD_BIAS: f32 = 0f32;
@@ -9766,6 +6591,102 @@ impl D3D12_DEPTH_STENCIL_VIEW_DESC_0 {}
 unsafe impl ::windows::Abi for D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_DESCRIPTOR_HEAP_TYPE(pub i32);
+impl D3D12_DESCRIPTOR_HEAP_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV: Self = Self(0i32);
+    pub const D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER: Self = Self(1i32);
+    pub const D3D12_DESCRIPTOR_HEAP_TYPE_RTV: Self = Self(2i32);
+    pub const D3D12_DESCRIPTOR_HEAP_TYPE_DSV: Self = Self(3i32);
+    pub const D3D12_DESCRIPTOR_HEAP_TYPE_NUM_TYPES: Self = Self(4i32);
+}
+impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_HEAP_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_TYPE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_DESCRIPTOR_HEAP_FLAGS(pub i32);
+impl D3D12_DESCRIPTOR_HEAP_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_DESCRIPTOR_HEAP_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_DESCRIPTOR_HEAP_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DESCRIPTOR_HEAP_DESC {
+    pub r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
+    pub num_descriptors: u32,
+    pub flags: D3D12_DESCRIPTOR_HEAP_FLAGS,
+    pub node_mask: u32,
+}
+impl D3D12_DESCRIPTOR_HEAP_DESC {}
+impl ::std::default::Default for D3D12_DESCRIPTOR_HEAP_DESC {
+    fn default() -> Self {
+        Self {
+            r#type: ::std::default::Default::default(),
+            num_descriptors: 0,
+            flags: ::std::default::Default::default(),
+            node_mask: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_DESCRIPTOR_HEAP_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_DESCRIPTOR_HEAP_DESC")
+            .field("r#type", &format_args!("{:?}", self.r#type))
+            .field(
+                "num_descriptors",
+                &format_args!("{:?}", self.num_descriptors),
+            )
+            .field("flags", &format_args!("{:?}", self.flags))
+            .field("node_mask", &format_args!("{:?}", self.node_mask))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_DESCRIPTOR_HEAP_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.r#type == other.r#type
+            && self.num_descriptors == other.num_descriptors
+            && self.flags == other.flags
+            && self.node_mask == other.node_mask
+    }
+}
+impl ::std::cmp::Eq for D3D12_DESCRIPTOR_HEAP_DESC {}
+unsafe impl ::windows::Abi for D3D12_DESCRIPTOR_HEAP_DESC {
+    type Abi = Self;
+}
 pub const D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND: u32 = 4294967295u32;
 #[allow(non_camel_case_types)]
 #[derive(
@@ -10228,6 +7149,54 @@ impl ::std::cmp::PartialEq for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
 }
 impl ::std::cmp::Eq for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {}
 unsafe impl ::windows::Abi for D3D12_DEVICE_REMOVED_EXTENDED_DATA2 {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_DISCARD_REGION {
+    pub num_rects: u32,
+    pub p_rects: *mut super::display_devices::RECT,
+    pub first_subresource: u32,
+    pub num_subresources: u32,
+}
+impl D3D12_DISCARD_REGION {}
+impl ::std::default::Default for D3D12_DISCARD_REGION {
+    fn default() -> Self {
+        Self {
+            num_rects: 0,
+            p_rects: ::std::ptr::null_mut(),
+            first_subresource: 0,
+            num_subresources: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_DISCARD_REGION {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_DISCARD_REGION")
+            .field("num_rects", &format_args!("{:?}", self.num_rects))
+            .field("p_rects", &format_args!("{:?}", self.p_rects))
+            .field(
+                "first_subresource",
+                &format_args!("{:?}", self.first_subresource),
+            )
+            .field(
+                "num_subresources",
+                &format_args!("{:?}", self.num_subresources),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_DISCARD_REGION {
+    fn eq(&self, other: &Self) -> bool {
+        self.num_rects == other.num_rects
+            && self.p_rects == other.p_rects
+            && self.first_subresource == other.first_subresource
+            && self.num_subresources == other.num_subresources
+    }
+}
+impl ::std::cmp::Eq for D3D12_DISCARD_REGION {}
+unsafe impl ::windows::Abi for D3D12_DISCARD_REGION {
     type Abi = Self;
 }
 #[repr(C)]
@@ -12864,7 +9833,7 @@ unsafe impl ::windows::Abi for D3D12_FILTER_TYPE {
     type Abi = Self;
 }
 pub const D3D12_FILTER_TYPE_MASK: u32 = 3u32;
-pub const D3D12_FLOAT16_FUSED_TOLERANCE_IN_ULP: f32 = 0.6f32;
+pub const D3D12_FLOAT16_FUSED_TOLERANCE_IN_ULP: f64 = 0.6f64;
 pub const D3D12_FLOAT32_MAX: f32 = 340282350000000000000000000000000000000f32;
 pub const D3D12_FLOAT32_TO_INTEGER_TOLERANCE_IN_ULP: f32 = 0.6f32;
 pub const D3D12_FLOAT_TO_SRGB_EXPONENT_DENOMINATOR: f32 = 2.4f32;
@@ -13174,6 +10143,34 @@ impl ::std::convert::From<i32> for D3D12_GPU_BASED_VALIDATION_FLAGS {
     }
 }
 unsafe impl ::windows::Abi for D3D12_GPU_BASED_VALIDATION_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_GPU_DESCRIPTOR_HANDLE {
+    pub ptr: u64,
+}
+impl D3D12_GPU_DESCRIPTOR_HANDLE {}
+impl ::std::default::Default for D3D12_GPU_DESCRIPTOR_HANDLE {
+    fn default() -> Self {
+        Self { ptr: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_GPU_DESCRIPTOR_HANDLE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_GPU_DESCRIPTOR_HANDLE")
+            .field("ptr", &format_args!("{:?}", self.ptr))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_GPU_DESCRIPTOR_HANDLE {
+    fn eq(&self, other: &Self) -> bool {
+        self.ptr == other.ptr
+    }
+}
+impl ::std::cmp::Eq for D3D12_GPU_DESCRIPTOR_HANDLE {}
+unsafe impl ::windows::Abi for D3D12_GPU_DESCRIPTOR_HANDLE {
     type Abi = Self;
 }
 #[repr(C)]
@@ -13576,7 +10573,7 @@ pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC {
     pub ib_strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     pub primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     pub num_render_targets: u32,
-    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8usize],
+    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8],
     pub dsv_format: super::dxgi::DXGI_FORMAT,
     pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
     pub node_mask: u32,
@@ -13602,16 +10599,7 @@ impl ::std::default::Default for D3D12_GRAPHICS_PIPELINE_STATE_DESC {
             ib_strip_cut_value: ::std::default::Default::default(),
             primitive_topology_type: ::std::default::Default::default(),
             num_render_targets: 0,
-            rtv_formats: [
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-            ],
+            rtv_formats: [::std::default::Default::default(); 8],
             dsv_format: ::std::default::Default::default(),
             sample_desc: ::std::default::Default::default(),
             node_mask: 0,
@@ -13710,7 +10698,7 @@ pub struct D3D12_GRAPHICS_PIPELINE_STATE_DESC_abi {
     pub ib_strip_cut_value: D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
     pub primitive_topology_type: D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     pub num_render_targets: u32,
-    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8usize],
+    pub rtv_formats: [super::dxgi::DXGI_FORMAT; 8],
     pub dsv_format: super::dxgi::DXGI_FORMAT,
     pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
     pub node_mask: u32,
@@ -13782,6 +10770,195 @@ pub const D3D12_GS_OUTPUT_ELEMENTS: u32 = 32u32;
 pub const D3D12_GS_OUTPUT_REGISTER_COMPONENTS: u32 = 4u32;
 pub const D3D12_GS_OUTPUT_REGISTER_COMPONENT_BIT_COUNT: u32 = 32u32;
 pub const D3D12_GS_OUTPUT_REGISTER_COUNT: u32 = 32u32;
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_HEAP_TYPE(pub i32);
+impl D3D12_HEAP_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_HEAP_TYPE_DEFAULT: Self = Self(1i32);
+    pub const D3D12_HEAP_TYPE_UPLOAD: Self = Self(2i32);
+    pub const D3D12_HEAP_TYPE_READBACK: Self = Self(3i32);
+    pub const D3D12_HEAP_TYPE_CUSTOM: Self = Self(4i32);
+}
+impl ::std::convert::From<i32> for D3D12_HEAP_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_HEAP_TYPE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_MEMORY_POOL(pub i32);
+impl D3D12_MEMORY_POOL {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_MEMORY_POOL_UNKNOWN: Self = Self(0i32);
+    pub const D3D12_MEMORY_POOL_L0: Self = Self(1i32);
+    pub const D3D12_MEMORY_POOL_L1: Self = Self(2i32);
+}
+impl ::std::convert::From<i32> for D3D12_MEMORY_POOL {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_MEMORY_POOL {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_HEAP_PROPERTIES {
+    pub r#type: D3D12_HEAP_TYPE,
+    pub cpu_page_property: D3D12_CPU_PAGE_PROPERTY,
+    pub memory_pool_preference: D3D12_MEMORY_POOL,
+    pub creation_node_mask: u32,
+    pub visible_node_mask: u32,
+}
+impl D3D12_HEAP_PROPERTIES {}
+impl ::std::default::Default for D3D12_HEAP_PROPERTIES {
+    fn default() -> Self {
+        Self {
+            r#type: ::std::default::Default::default(),
+            cpu_page_property: ::std::default::Default::default(),
+            memory_pool_preference: ::std::default::Default::default(),
+            creation_node_mask: 0,
+            visible_node_mask: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_HEAP_PROPERTIES {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_HEAP_PROPERTIES")
+            .field("r#type", &format_args!("{:?}", self.r#type))
+            .field(
+                "cpu_page_property",
+                &format_args!("{:?}", self.cpu_page_property),
+            )
+            .field(
+                "memory_pool_preference",
+                &format_args!("{:?}", self.memory_pool_preference),
+            )
+            .field(
+                "creation_node_mask",
+                &format_args!("{:?}", self.creation_node_mask),
+            )
+            .field(
+                "visible_node_mask",
+                &format_args!("{:?}", self.visible_node_mask),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_HEAP_PROPERTIES {
+    fn eq(&self, other: &Self) -> bool {
+        self.r#type == other.r#type
+            && self.cpu_page_property == other.cpu_page_property
+            && self.memory_pool_preference == other.memory_pool_preference
+            && self.creation_node_mask == other.creation_node_mask
+            && self.visible_node_mask == other.visible_node_mask
+    }
+}
+impl ::std::cmp::Eq for D3D12_HEAP_PROPERTIES {}
+unsafe impl ::windows::Abi for D3D12_HEAP_PROPERTIES {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_HEAP_FLAGS(pub i32);
+impl D3D12_HEAP_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_HEAP_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_HEAP_FLAG_SHARED: Self = Self(1i32);
+    pub const D3D12_HEAP_FLAG_DENY_BUFFERS: Self = Self(4i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_DISPLAY: Self = Self(8i32);
+    pub const D3D12_HEAP_FLAG_SHARED_CROSS_ADAPTER: Self = Self(32i32);
+    pub const D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES: Self = Self(64i32);
+    pub const D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES: Self = Self(128i32);
+    pub const D3D12_HEAP_FLAG_HARDWARE_PROTECTED: Self = Self(256i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_WRITE_WATCH: Self = Self(512i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_SHADER_ATOMICS: Self = Self(1024i32);
+    pub const D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT: Self = Self(2048i32);
+    pub const D3D12_HEAP_FLAG_CREATE_NOT_ZEROED: Self = Self(4096i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES: Self = Self(0i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_BUFFERS: Self = Self(192i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_NON_RT_DS_TEXTURES: Self = Self(68i32);
+    pub const D3D12_HEAP_FLAG_ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132i32);
+}
+impl ::std::convert::From<i32> for D3D12_HEAP_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_HEAP_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_HEAP_DESC {
+    pub size_in_bytes: u64,
+    pub properties: D3D12_HEAP_PROPERTIES,
+    pub alignment: u64,
+    pub flags: D3D12_HEAP_FLAGS,
+}
+impl D3D12_HEAP_DESC {}
+impl ::std::default::Default for D3D12_HEAP_DESC {
+    fn default() -> Self {
+        Self {
+            size_in_bytes: 0,
+            properties: ::std::default::Default::default(),
+            alignment: 0,
+            flags: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_HEAP_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_HEAP_DESC")
+            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
+            .field("properties", &format_args!("{:?}", self.properties))
+            .field("alignment", &format_args!("{:?}", self.alignment))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_HEAP_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.size_in_bytes == other.size_in_bytes
+            && self.properties == other.properties
+            && self.alignment == other.alignment
+            && self.flags == other.flags
+    }
+}
+impl ::std::cmp::Eq for D3D12_HEAP_DESC {}
+unsafe impl ::windows::Abi for D3D12_HEAP_DESC {
+    type Abi = Self;
+}
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -13937,6 +11114,48 @@ pub const D3D12_IA_VERTEX_ID_BIT_COUNT: u32 = 32u32;
 pub const D3D12_IA_VERTEX_INPUT_RESOURCE_SLOT_COUNT: u32 = 32u32;
 pub const D3D12_IA_VERTEX_INPUT_STRUCTURE_ELEMENTS_COMPONENTS: u32 = 128u32;
 pub const D3D12_IA_VERTEX_INPUT_STRUCTURE_ELEMENT_COUNT: u32 = 32u32;
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_INDEX_BUFFER_VIEW {
+    pub buffer_location: u64,
+    pub size_in_bytes: u32,
+    pub format: super::dxgi::DXGI_FORMAT,
+}
+impl D3D12_INDEX_BUFFER_VIEW {}
+impl ::std::default::Default for D3D12_INDEX_BUFFER_VIEW {
+    fn default() -> Self {
+        Self {
+            buffer_location: 0,
+            size_in_bytes: 0,
+            format: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_INDEX_BUFFER_VIEW {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_INDEX_BUFFER_VIEW")
+            .field(
+                "buffer_location",
+                &format_args!("{:?}", self.buffer_location),
+            )
+            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
+            .field("format", &format_args!("{:?}", self.format))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_INDEX_BUFFER_VIEW {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer_location == other.buffer_location
+            && self.size_in_bytes == other.size_in_bytes
+            && self.format == other.format
+    }
+}
+impl ::std::cmp::Eq for D3D12_INDEX_BUFFER_VIEW {}
+unsafe impl ::windows::Abi for D3D12_INDEX_BUFFER_VIEW {
+    type Abi = Self;
+}
+pub const D3D12_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT: u32 = 1024u32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -15445,6 +12664,54 @@ impl ::std::convert::From<i32> for D3D12_META_COMMAND_PARAMETER_FLAGS {
 unsafe impl ::windows::Abi for D3D12_META_COMMAND_PARAMETER_FLAGS {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_STATES(pub i32);
+impl D3D12_RESOURCE_STATES {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_STATE_COMMON: Self = Self(0i32);
+    pub const D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER: Self = Self(1i32);
+    pub const D3D12_RESOURCE_STATE_INDEX_BUFFER: Self = Self(2i32);
+    pub const D3D12_RESOURCE_STATE_RENDER_TARGET: Self = Self(4i32);
+    pub const D3D12_RESOURCE_STATE_UNORDERED_ACCESS: Self = Self(8i32);
+    pub const D3D12_RESOURCE_STATE_DEPTH_WRITE: Self = Self(16i32);
+    pub const D3D12_RESOURCE_STATE_DEPTH_READ: Self = Self(32i32);
+    pub const D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE: Self = Self(64i32);
+    pub const D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE: Self = Self(128i32);
+    pub const D3D12_RESOURCE_STATE_STREAM_OUT: Self = Self(256i32);
+    pub const D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT: Self = Self(512i32);
+    pub const D3D12_RESOURCE_STATE_COPY_DEST: Self = Self(1024i32);
+    pub const D3D12_RESOURCE_STATE_COPY_SOURCE: Self = Self(2048i32);
+    pub const D3D12_RESOURCE_STATE_RESOLVE_DEST: Self = Self(4096i32);
+    pub const D3D12_RESOURCE_STATE_RESOLVE_SOURCE: Self = Self(8192i32);
+    pub const D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE: Self = Self(4194304i32);
+    pub const D3D12_RESOURCE_STATE_SHADING_RATE_SOURCE: Self = Self(16777216i32);
+    pub const D3D12_RESOURCE_STATE_GENERIC_READ: Self = Self(2755i32);
+    pub const D3D12_RESOURCE_STATE_PRESENT: Self = Self(0i32);
+    pub const D3D12_RESOURCE_STATE_PREDICATION: Self = Self(512i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_READ: Self = Self(65536i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_DECODE_WRITE: Self = Self(131072i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_READ: Self = Self(262144i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_PROCESS_WRITE: Self = Self(524288i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_READ: Self = Self(2097152i32);
+    pub const D3D12_RESOURCE_STATE_VIDEO_ENCODE_WRITE: Self = Self(8388608i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_STATES {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_STATES {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -15856,6 +13123,109 @@ unsafe impl ::windows::Abi for D3D12_PIPELINE_STATE_SUBOBJECT_TYPE {
     type Abi = Self;
 }
 pub const D3D12_PIXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 15u32;
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_SUBRESOURCE_FOOTPRINT {
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub width: u32,
+    pub height: u32,
+    pub depth: u32,
+    pub row_pitch: u32,
+}
+impl D3D12_SUBRESOURCE_FOOTPRINT {}
+impl ::std::default::Default for D3D12_SUBRESOURCE_FOOTPRINT {
+    fn default() -> Self {
+        Self {
+            format: ::std::default::Default::default(),
+            width: 0,
+            height: 0,
+            depth: 0,
+            row_pitch: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_SUBRESOURCE_FOOTPRINT {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_SUBRESOURCE_FOOTPRINT")
+            .field("format", &format_args!("{:?}", self.format))
+            .field("width", &format_args!("{:?}", self.width))
+            .field("height", &format_args!("{:?}", self.height))
+            .field("depth", &format_args!("{:?}", self.depth))
+            .field("row_pitch", &format_args!("{:?}", self.row_pitch))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_SUBRESOURCE_FOOTPRINT {
+    fn eq(&self, other: &Self) -> bool {
+        self.format == other.format
+            && self.width == other.width
+            && self.height == other.height
+            && self.depth == other.depth
+            && self.row_pitch == other.row_pitch
+    }
+}
+impl ::std::cmp::Eq for D3D12_SUBRESOURCE_FOOTPRINT {}
+unsafe impl ::windows::Abi for D3D12_SUBRESOURCE_FOOTPRINT {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    pub offset: u64,
+    pub footprint: D3D12_SUBRESOURCE_FOOTPRINT,
+}
+impl D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
+impl ::std::default::Default for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn default() -> Self {
+        Self {
+            offset: 0,
+            footprint: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_PLACED_SUBRESOURCE_FOOTPRINT")
+            .field("offset", &format_args!("{:?}", self.offset))
+            .field("footprint", &format_args!("{:?}", self.footprint))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    fn eq(&self, other: &Self) -> bool {
+        self.offset == other.offset && self.footprint == other.footprint
+    }
+}
+impl ::std::cmp::Eq for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {}
+unsafe impl ::windows::Abi for D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_PREDICATION_OP(pub i32);
+impl D3D12_PREDICATION_OP {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_PREDICATION_OP_EQUAL_ZERO: Self = Self(0i32);
+    pub const D3D12_PREDICATION_OP_NOT_EQUAL_ZERO: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_PREDICATION_OP {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_PREDICATION_OP {
+    type Abi = Self;
+}
 pub const D3D12_PRE_SCISSOR_PIXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 16u32;
 #[allow(non_camel_case_types)]
 #[derive(
@@ -16175,6 +13545,67 @@ impl ::std::cmp::PartialEq for D3D12_QUERY_HEAP_DESC {
 }
 impl ::std::cmp::Eq for D3D12_QUERY_HEAP_DESC {}
 unsafe impl ::windows::Abi for D3D12_QUERY_HEAP_DESC {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_QUERY_TYPE(pub i32);
+impl D3D12_QUERY_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_QUERY_TYPE_OCCLUSION: Self = Self(0i32);
+    pub const D3D12_QUERY_TYPE_BINARY_OCCLUSION: Self = Self(1i32);
+    pub const D3D12_QUERY_TYPE_TIMESTAMP: Self = Self(2i32);
+    pub const D3D12_QUERY_TYPE_PIPELINE_STATISTICS: Self = Self(3i32);
+    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM0: Self = Self(4i32);
+    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM1: Self = Self(5i32);
+    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM2: Self = Self(6i32);
+    pub const D3D12_QUERY_TYPE_SO_STATISTICS_STREAM3: Self = Self(7i32);
+    pub const D3D12_QUERY_TYPE_VIDEO_DECODE_STATISTICS: Self = Self(8i32);
+}
+impl ::std::convert::From<i32> for D3D12_QUERY_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_QUERY_TYPE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RANGE {
+    pub begin: usize,
+    pub end: usize,
+}
+impl D3D12_RANGE {}
+impl ::std::default::Default for D3D12_RANGE {
+    fn default() -> Self {
+        Self { begin: 0, end: 0 }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RANGE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RANGE")
+            .field("begin", &format_args!("{:?}", self.begin))
+            .field("end", &format_args!("{:?}", self.end))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RANGE {
+    fn eq(&self, other: &Self) -> bool {
+        self.begin == other.begin && self.end == other.end
+    }
+}
+impl ::std::cmp::Eq for D3D12_RANGE {}
+unsafe impl ::windows::Abi for D3D12_RANGE {
     type Abi = Self;
 }
 #[repr(C)]
@@ -16614,7 +14045,7 @@ unsafe impl ::windows::Abi for D3D12_RAYTRACING_ACCELERATION_STRUCTURE_SRV {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RAYTRACING_INSTANCE_DESC {
-    pub transform: [f32; 12usize],
+    pub transform: [f32; 12],
     pub _bitfield1: u32,
     pub _bitfield2: u32,
     pub acceleration_structure: u64,
@@ -16623,7 +14054,7 @@ impl D3D12_RAYTRACING_INSTANCE_DESC {}
 impl ::std::default::Default for D3D12_RAYTRACING_INSTANCE_DESC {
     fn default() -> Self {
         Self {
-            transform: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+            transform: [0.0; 12],
             _bitfield1: 0,
             _bitfield2: 0,
             acceleration_structure: 0,
@@ -16946,6 +14377,317 @@ impl ::std::convert::From<i32> for D3D12_RENDER_PASS_ENDING_ACCESS_TYPE {
 unsafe impl ::windows::Abi for D3D12_RENDER_PASS_ENDING_ACCESS_TYPE {
     type Abi = Self;
 }
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12Resource(::windows::IUnknown);
+impl ID3D12Resource {}
+unsafe impl ::windows::Interface for ID3D12Resource {
+    type Vtable = ID3D12Resource_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1768178366,
+        42798,
+        16473,
+        [188, 121, 91, 92, 152, 4, 15, 173],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12Resource {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn Map(
+        &self,
+        subresource: u32,
+        p_read_range: *const D3D12_RANGE,
+        pp_data: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(subresource),
+            ::std::mem::transmute(p_read_range),
+            ::std::mem::transmute(pp_data),
+        )
+    }
+    pub unsafe fn Unmap(&self, subresource: u32, p_written_range: *const D3D12_RANGE) {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(subresource),
+            ::std::mem::transmute(p_written_range),
+        )
+    }
+    pub unsafe fn GetDesc(&self) -> D3D12_RESOURCE_DESC {
+        let mut result__: D3D12_RESOURCE_DESC = ::std::default::Default::default();
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+    pub unsafe fn GetGPUVirtualAddress(&self) -> u64 {
+        (::windows::Interface::vtable(self).11)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn WriteToSubresource(
+        &self,
+        dst_subresource: u32,
+        p_dst_box: *const D3D12_BOX,
+        p_src_data: *const ::std::ffi::c_void,
+        src_row_pitch: u32,
+        src_depth_pitch: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(dst_subresource),
+            ::std::mem::transmute(p_dst_box),
+            ::std::mem::transmute(p_src_data),
+            ::std::mem::transmute(src_row_pitch),
+            ::std::mem::transmute(src_depth_pitch),
+        )
+    }
+    pub unsafe fn ReadFromSubresource(
+        &self,
+        p_dst_data: *mut ::std::ffi::c_void,
+        dst_row_pitch: u32,
+        dst_depth_pitch: u32,
+        src_subresource: u32,
+        p_src_box: *const D3D12_BOX,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_dst_data),
+            ::std::mem::transmute(dst_row_pitch),
+            ::std::mem::transmute(dst_depth_pitch),
+            ::std::mem::transmute(src_subresource),
+            ::std::mem::transmute(p_src_box),
+        )
+    }
+    pub unsafe fn GetHeapProperties(
+        &self,
+        p_heap_properties: *mut D3D12_HEAP_PROPERTIES,
+        p_heap_flags: *mut D3D12_HEAP_FLAGS,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).14)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_heap_properties),
+            ::std::mem::transmute(p_heap_flags),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12Resource> for ::windows::IUnknown {
+    fn from(value: ID3D12Resource) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Resource> for ::windows::IUnknown {
+    fn from(value: &ID3D12Resource) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Resource> for ID3D12Pageable {
+    fn from(value: ID3D12Resource) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Resource> for ID3D12Pageable {
+    fn from(value: &ID3D12Resource) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Resource> for ID3D12DeviceChild {
+    fn from(value: ID3D12Resource) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Resource> for ID3D12DeviceChild {
+    fn from(value: &ID3D12Resource) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Resource> for ID3D12Object {
+    fn from(value: ID3D12Resource) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Resource> for ID3D12Object {
+    fn from(value: &ID3D12Resource) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Resource {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12Resource_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        subresource: u32,
+        p_read_range: *const D3D12_RANGE,
+        pp_data: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        subresource: u32,
+        p_written_range: *const D3D12_RANGE,
+    ),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut D3D12_RESOURCE_DESC),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u64,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        dst_subresource: u32,
+        p_dst_box: *const D3D12_BOX,
+        p_src_data: *const ::std::ffi::c_void,
+        src_row_pitch: u32,
+        src_depth_pitch: u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_dst_data: *mut ::std::ffi::c_void,
+        dst_row_pitch: u32,
+        dst_depth_pitch: u32,
+        src_subresource: u32,
+        p_src_box: *const D3D12_BOX,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_heap_properties: *mut D3D12_HEAP_PROPERTIES,
+        p_heap_flags: *mut D3D12_HEAP_FLAGS,
+    ) -> ::windows::ErrorCode,
+);
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -17597,6 +15339,53 @@ unsafe impl ::windows::Abi for D3D12_RESIDENCY_PRIORITY {
 pub const D3D12_RESINFO_INSTRUCTION_MISSING_COMPONENT_RETVAL: u32 = 0u32;
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RESOURCE_ALIASING_BARRIER {
+    pub p_resource_before: ::std::option::Option<ID3D12Resource>,
+    pub p_resource_after: ::std::option::Option<ID3D12Resource>,
+}
+impl D3D12_RESOURCE_ALIASING_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn default() -> Self {
+        Self {
+            p_resource_before: ::std::default::Default::default(),
+            p_resource_after: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_ALIASING_BARRIER")
+            .field(
+                "p_resource_before",
+                &format_args!("{:?}", self.p_resource_before),
+            )
+            .field(
+                "p_resource_after",
+                &format_args!("{:?}", self.p_resource_after),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_ALIASING_BARRIER {
+    fn eq(&self, other: &Self) -> bool {
+        self.p_resource_before == other.p_resource_before
+            && self.p_resource_after == other.p_resource_after
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_ALIASING_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_ALIASING_BARRIER_abi {
+    pub p_resource_before: ::windows::RawPtr,
+    pub p_resource_after: ::windows::RawPtr,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_ALIASING_BARRIER {
+    type Abi = D3D12_RESOURCE_ALIASING_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RESOURCE_ALLOCATION_INFO {
     pub size_in_bytes: u64,
@@ -17666,7 +15455,334 @@ impl ::std::cmp::Eq for D3D12_RESOURCE_ALLOCATION_INFO1 {}
 unsafe impl ::windows::Abi for D3D12_RESOURCE_ALLOCATION_INFO1 {
     type Abi = Self;
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_BARRIER_TYPE(pub i32);
+impl D3D12_RESOURCE_BARRIER_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_BARRIER_TYPE_TRANSITION: Self = Self(0i32);
+    pub const D3D12_RESOURCE_BARRIER_TYPE_ALIASING: Self = Self(1i32);
+    pub const D3D12_RESOURCE_BARRIER_TYPE_UAV: Self = Self(2i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_BARRIER_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_TYPE {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_BARRIER_FLAGS(pub i32);
+impl D3D12_RESOURCE_BARRIER_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_BARRIER_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_RESOURCE_BARRIER_FLAG_BEGIN_ONLY: Self = Self(1i32);
+    pub const D3D12_RESOURCE_BARRIER_FLAG_END_ONLY: Self = Self(2i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_BARRIER_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RESOURCE_TRANSITION_BARRIER {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+    pub subresource: u32,
+    pub state_before: D3D12_RESOURCE_STATES,
+    pub state_after: D3D12_RESOURCE_STATES,
+}
+impl D3D12_RESOURCE_TRANSITION_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_TRANSITION_BARRIER {
+    fn default() -> Self {
+        Self {
+            p_resource: ::std::default::Default::default(),
+            subresource: 0,
+            state_before: ::std::default::Default::default(),
+            state_after: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_TRANSITION_BARRIER {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_TRANSITION_BARRIER")
+            .field("p_resource", &format_args!("{:?}", self.p_resource))
+            .field("subresource", &format_args!("{:?}", self.subresource))
+            .field("state_before", &format_args!("{:?}", self.state_before))
+            .field("state_after", &format_args!("{:?}", self.state_after))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_TRANSITION_BARRIER {
+    fn eq(&self, other: &Self) -> bool {
+        self.p_resource == other.p_resource
+            && self.subresource == other.subresource
+            && self.state_before == other.state_before
+            && self.state_after == other.state_after
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_TRANSITION_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_TRANSITION_BARRIER_abi {
+    pub p_resource: ::windows::RawPtr,
+    pub subresource: u32,
+    pub state_before: D3D12_RESOURCE_STATES,
+    pub state_after: D3D12_RESOURCE_STATES,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_TRANSITION_BARRIER {
+    type Abi = D3D12_RESOURCE_TRANSITION_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone)]
+pub struct D3D12_RESOURCE_UAV_BARRIER {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+}
+impl D3D12_RESOURCE_UAV_BARRIER {}
+impl ::std::default::Default for D3D12_RESOURCE_UAV_BARRIER {
+    fn default() -> Self {
+        Self {
+            p_resource: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_UAV_BARRIER {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_UAV_BARRIER")
+            .field("p_resource", &format_args!("{:?}", self.p_resource))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_UAV_BARRIER {
+    fn eq(&self, other: &Self) -> bool {
+        self.p_resource == other.p_resource
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_UAV_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_UAV_BARRIER_abi {
+    pub p_resource: ::windows::RawPtr,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_UAV_BARRIER {
+    type Abi = D3D12_RESOURCE_UAV_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_RESOURCE_BARRIER {
+    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
+    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
+    pub anonymous: D3D12_RESOURCE_BARRIER_0,
+}
+impl D3D12_RESOURCE_BARRIER {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_BARRIER_abi {
+    pub r#type: D3D12_RESOURCE_BARRIER_TYPE,
+    pub flags: D3D12_RESOURCE_BARRIER_FLAGS,
+    pub anonymous: D3D12_RESOURCE_BARRIER_0_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER {
+    type Abi = D3D12_RESOURCE_BARRIER_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub union D3D12_RESOURCE_BARRIER_0 {
+    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
+    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
+    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
+}
+impl D3D12_RESOURCE_BARRIER_0 {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_RESOURCE_BARRIER_0_abi {
+    pub transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi,
+    pub aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi,
+    pub uav: D3D12_RESOURCE_UAV_BARRIER_abi,
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_BARRIER_0 {
+    type Abi = D3D12_RESOURCE_BARRIER_0_abi;
+}
 pub const D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES: u32 = 4294967295u32;
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_DIMENSION(pub i32);
+impl D3D12_RESOURCE_DIMENSION {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_DIMENSION_UNKNOWN: Self = Self(0i32);
+    pub const D3D12_RESOURCE_DIMENSION_BUFFER: Self = Self(1i32);
+    pub const D3D12_RESOURCE_DIMENSION_TEXTURE1D: Self = Self(2i32);
+    pub const D3D12_RESOURCE_DIMENSION_TEXTURE2D: Self = Self(3i32);
+    pub const D3D12_RESOURCE_DIMENSION_TEXTURE3D: Self = Self(4i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_DIMENSION {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_DIMENSION {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_TEXTURE_LAYOUT(pub i32);
+impl D3D12_TEXTURE_LAYOUT {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_TEXTURE_LAYOUT_UNKNOWN: Self = Self(0i32);
+    pub const D3D12_TEXTURE_LAYOUT_ROW_MAJOR: Self = Self(1i32);
+    pub const D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE: Self = Self(2i32);
+    pub const D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE: Self = Self(3i32);
+}
+impl ::std::convert::From<i32> for D3D12_TEXTURE_LAYOUT {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_TEXTURE_LAYOUT {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_RESOURCE_FLAGS(pub i32);
+impl D3D12_RESOURCE_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_RESOURCE_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET: Self = Self(1i32);
+    pub const D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL: Self = Self(2i32);
+    pub const D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS: Self = Self(4i32);
+    pub const D3D12_RESOURCE_FLAG_DENY_SHADER_RESOURCE: Self = Self(8i32);
+    pub const D3D12_RESOURCE_FLAG_ALLOW_CROSS_ADAPTER: Self = Self(16i32);
+    pub const D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS: Self = Self(32i32);
+    pub const D3D12_RESOURCE_FLAG_VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64i32);
+}
+impl ::std::convert::From<i32> for D3D12_RESOURCE_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_RESOURCE_DESC {
+    pub dimension: D3D12_RESOURCE_DIMENSION,
+    pub alignment: u64,
+    pub width: u64,
+    pub height: u32,
+    pub depth_or_array_size: u16,
+    pub mip_levels: u16,
+    pub format: super::dxgi::DXGI_FORMAT,
+    pub sample_desc: super::dxgi::DXGI_SAMPLE_DESC,
+    pub layout: D3D12_TEXTURE_LAYOUT,
+    pub flags: D3D12_RESOURCE_FLAGS,
+}
+impl D3D12_RESOURCE_DESC {}
+impl ::std::default::Default for D3D12_RESOURCE_DESC {
+    fn default() -> Self {
+        Self {
+            dimension: ::std::default::Default::default(),
+            alignment: 0,
+            width: 0,
+            height: 0,
+            depth_or_array_size: 0,
+            mip_levels: 0,
+            format: ::std::default::Default::default(),
+            sample_desc: ::std::default::Default::default(),
+            layout: ::std::default::Default::default(),
+            flags: ::std::default::Default::default(),
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_RESOURCE_DESC {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_RESOURCE_DESC")
+            .field("dimension", &format_args!("{:?}", self.dimension))
+            .field("alignment", &format_args!("{:?}", self.alignment))
+            .field("width", &format_args!("{:?}", self.width))
+            .field("height", &format_args!("{:?}", self.height))
+            .field(
+                "depth_or_array_size",
+                &format_args!("{:?}", self.depth_or_array_size),
+            )
+            .field("mip_levels", &format_args!("{:?}", self.mip_levels))
+            .field("format", &format_args!("{:?}", self.format))
+            .field("sample_desc", &format_args!("{:?}", self.sample_desc))
+            .field("layout", &format_args!("{:?}", self.layout))
+            .field("flags", &format_args!("{:?}", self.flags))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_RESOURCE_DESC {
+    fn eq(&self, other: &Self) -> bool {
+        self.dimension == other.dimension
+            && self.alignment == other.alignment
+            && self.width == other.width
+            && self.height == other.height
+            && self.depth_or_array_size == other.depth_or_array_size
+            && self.mip_levels == other.mip_levels
+            && self.format == other.format
+            && self.sample_desc == other.sample_desc
+            && self.layout == other.layout
+            && self.flags == other.flags
+    }
+}
+impl ::std::cmp::Eq for D3D12_RESOURCE_DESC {}
+unsafe impl ::windows::Abi for D3D12_RESOURCE_DESC {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -17774,23 +15890,14 @@ pub const D3D12_RS_SET_SHADING_RATE_COMBINER_COUNT: u32 = 2u32;
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_RT_FORMAT_ARRAY {
-    pub rt_formats: [super::dxgi::DXGI_FORMAT; 8usize],
+    pub rt_formats: [super::dxgi::DXGI_FORMAT; 8],
     pub num_render_targets: u32,
 }
 impl D3D12_RT_FORMAT_ARRAY {}
 impl ::std::default::Default for D3D12_RT_FORMAT_ARRAY {
     fn default() -> Self {
         Self {
-            rt_formats: [
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-            ],
+            rt_formats: [::std::default::Default::default(); 8],
             num_render_targets: 0,
         }
     }
@@ -17826,7 +15933,7 @@ pub struct D3D12_SAMPLER_DESC {
     pub mip_lod_bias: f32,
     pub max_anisotropy: u32,
     pub comparison_func: D3D12_COMPARISON_FUNC,
-    pub border_color: [f32; 4usize],
+    pub border_color: [f32; 4],
     pub min_lod: f32,
     pub max_lod: f32,
 }
@@ -17841,7 +15948,7 @@ impl ::std::default::Default for D3D12_SAMPLER_DESC {
             mip_lod_bias: 0.0,
             max_anisotropy: 0,
             comparison_func: ::std::default::Default::default(),
-            border_color: [0.0, 0.0, 0.0, 0.0],
+            border_color: [0.0; 4],
             min_lod: 0.0,
             max_lod: 0.0,
         }
@@ -17919,14 +16026,14 @@ unsafe impl ::windows::Abi for D3D12_SAMPLE_POSITION {
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     pub driver_opaque_guid: ::windows::Guid,
-    pub driver_opaque_versioning_data: [u8; 16usize],
+    pub driver_opaque_versioning_data: [u8; 16],
 }
 impl D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {}
 impl ::std::default::Default for D3D12_SERIALIZED_DATA_DRIVER_MATCHING_IDENTIFIER {
     fn default() -> Self {
         Self {
             driver_opaque_guid: ::std::default::Default::default(),
-            driver_opaque_versioning_data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            driver_opaque_versioning_data: [0; 16],
         }
     }
 }
@@ -19238,7 +17345,7 @@ pub const D3D12_SO_STREAM_COUNT: u32 = 4u32;
 pub const D3D12_SPEC_DATE_DAY: u32 = 14u32;
 pub const D3D12_SPEC_DATE_MONTH: u32 = 11u32;
 pub const D3D12_SPEC_DATE_YEAR: u32 = 2014u32;
-pub const D3D12_SPEC_VERSION: f32 = 1.16f32;
+pub const D3D12_SPEC_VERSION: f64 = 1.16f64;
 pub const D3D12_SRGB_GAMMA: f32 = 2.2f32;
 pub const D3D12_SRGB_TO_FLOAT_DENOMINATOR_1: f32 = 12.92f32;
 pub const D3D12_SRGB_TO_FLOAT_DENOMINATOR_2: f32 = 1.055f32;
@@ -19440,6 +17547,50 @@ impl ::std::cmp::PartialEq for D3D12_STATE_OBJECT_DESC {
 }
 impl ::std::cmp::Eq for D3D12_STATE_OBJECT_DESC {}
 unsafe impl ::windows::Abi for D3D12_STATE_OBJECT_DESC {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+    pub buffer_location: u64,
+    pub size_in_bytes: u64,
+    pub buffer_filled_size_location: u64,
+}
+impl D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
+impl ::std::default::Default for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+    fn default() -> Self {
+        Self {
+            buffer_location: 0,
+            size_in_bytes: 0,
+            buffer_filled_size_location: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_STREAM_OUTPUT_BUFFER_VIEW")
+            .field(
+                "buffer_location",
+                &format_args!("{:?}", self.buffer_location),
+            )
+            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
+            .field(
+                "buffer_filled_size_location",
+                &format_args!("{:?}", self.buffer_filled_size_location),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer_location == other.buffer_location
+            && self.size_in_bytes == other.size_in_bytes
+            && self.buffer_filled_size_location == other.buffer_filled_size_location
+    }
+}
+impl ::std::cmp::Eq for D3D12_STREAM_OUTPUT_BUFFER_VIEW {}
+unsafe impl ::windows::Abi for D3D12_STREAM_OUTPUT_BUFFER_VIEW {
     type Abi = Self;
 }
 #[repr(C)]
@@ -19838,9 +17989,227 @@ unsafe impl ::windows::Abi for D3D12_TEX3D_UAV {
     type Abi = Self;
 }
 pub const D3D12_TEXEL_ADDRESS_RANGE_BIT_COUNT: u32 = 16u32;
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_TEXTURE_COPY_TYPE(pub i32);
+impl D3D12_TEXTURE_COPY_TYPE {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX: Self = Self(0i32);
+    pub const D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_TEXTURE_COPY_TYPE {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_TYPE {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+pub struct D3D12_TEXTURE_COPY_LOCATION {
+    pub p_resource: ::std::option::Option<ID3D12Resource>,
+    pub r#type: D3D12_TEXTURE_COPY_TYPE,
+    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
+}
+impl D3D12_TEXTURE_COPY_LOCATION {}
+#[repr(C)]
+#[doc(hidden)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TEXTURE_COPY_LOCATION_abi {
+    pub p_resource: ::windows::RawPtr,
+    pub r#type: D3D12_TEXTURE_COPY_TYPE,
+    pub anonymous: D3D12_TEXTURE_COPY_LOCATION_0,
+}
+unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION {
+    type Abi = D3D12_TEXTURE_COPY_LOCATION_abi;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub union D3D12_TEXTURE_COPY_LOCATION_0 {
+    pub placed_footprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    pub subresource_index: u32,
+}
+impl D3D12_TEXTURE_COPY_LOCATION_0 {}
+unsafe impl ::windows::Abi for D3D12_TEXTURE_COPY_LOCATION_0 {
+    type Abi = Self;
+}
 pub const D3D12_TEXTURE_DATA_PITCH_ALIGNMENT: u32 = 256u32;
 pub const D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT: u32 = 512u32;
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TILED_RESOURCE_COORDINATE {
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
+    pub subresource: u32,
+}
+impl D3D12_TILED_RESOURCE_COORDINATE {}
+impl ::std::default::Default for D3D12_TILED_RESOURCE_COORDINATE {
+    fn default() -> Self {
+        Self {
+            x: 0,
+            y: 0,
+            z: 0,
+            subresource: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TILED_RESOURCE_COORDINATE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TILED_RESOURCE_COORDINATE")
+            .field("x", &format_args!("{:?}", self.x))
+            .field("y", &format_args!("{:?}", self.y))
+            .field("z", &format_args!("{:?}", self.z))
+            .field("subresource", &format_args!("{:?}", self.subresource))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TILED_RESOURCE_COORDINATE {
+    fn eq(&self, other: &Self) -> bool {
+        self.x == other.x
+            && self.y == other.y
+            && self.z == other.z
+            && self.subresource == other.subresource
+    }
+}
+impl ::std::cmp::Eq for D3D12_TILED_RESOURCE_COORDINATE {}
+unsafe impl ::windows::Abi for D3D12_TILED_RESOURCE_COORDINATE {
+    type Abi = Self;
+}
 pub const D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES: u32 = 65536u32;
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_TILE_COPY_FLAGS(pub i32);
+impl D3D12_TILE_COPY_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_TILE_COPY_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_TILE_COPY_FLAG_NO_HAZARD: Self = Self(1i32);
+    pub const D3D12_TILE_COPY_FLAG_LINEAR_BUFFER_TO_SWIZZLED_TILED_RESOURCE: Self = Self(2i32);
+    pub const D3D12_TILE_COPY_FLAG_SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4i32);
+}
+impl ::std::convert::From<i32> for D3D12_TILE_COPY_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_TILE_COPY_FLAGS {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_TILE_MAPPING_FLAGS(pub i32);
+impl D3D12_TILE_MAPPING_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_TILE_MAPPING_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_TILE_MAPPING_FLAG_NO_HAZARD: Self = Self(1i32);
+}
+impl ::std::convert::From<i32> for D3D12_TILE_MAPPING_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_TILE_MAPPING_FLAGS {
+    type Abi = Self;
+}
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct D3D12_TILE_RANGE_FLAGS(pub i32);
+impl D3D12_TILE_RANGE_FLAGS {
+    #![allow(non_upper_case_globals)]
+    pub const D3D12_TILE_RANGE_FLAG_NONE: Self = Self(0i32);
+    pub const D3D12_TILE_RANGE_FLAG_NULL: Self = Self(1i32);
+    pub const D3D12_TILE_RANGE_FLAG_SKIP: Self = Self(2i32);
+    pub const D3D12_TILE_RANGE_FLAG_REUSE_SINGLE_TILE: Self = Self(4i32);
+}
+impl ::std::convert::From<i32> for D3D12_TILE_RANGE_FLAGS {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for D3D12_TILE_RANGE_FLAGS {
+    type Abi = Self;
+}
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_TILE_REGION_SIZE {
+    pub num_tiles: u32,
+    pub use_box: super::system_services::BOOL,
+    pub width: u32,
+    pub height: u16,
+    pub depth: u16,
+}
+impl D3D12_TILE_REGION_SIZE {}
+impl ::std::default::Default for D3D12_TILE_REGION_SIZE {
+    fn default() -> Self {
+        Self {
+            num_tiles: 0,
+            use_box: ::std::default::Default::default(),
+            width: 0,
+            height: 0,
+            depth: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_TILE_REGION_SIZE {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_TILE_REGION_SIZE")
+            .field("num_tiles", &format_args!("{:?}", self.num_tiles))
+            .field("use_box", &format_args!("{:?}", self.use_box))
+            .field("width", &format_args!("{:?}", self.width))
+            .field("height", &format_args!("{:?}", self.height))
+            .field("depth", &format_args!("{:?}", self.depth))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_TILE_REGION_SIZE {
+    fn eq(&self, other: &Self) -> bool {
+        self.num_tiles == other.num_tiles
+            && self.use_box == other.use_box
+            && self.width == other.width
+            && self.height == other.height
+            && self.depth == other.depth
+    }
+}
+impl ::std::cmp::Eq for D3D12_TILE_REGION_SIZE {}
+unsafe impl ::windows::Abi for D3D12_TILE_REGION_SIZE {
+    type Abi = Self;
+}
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -19971,6 +18340,50 @@ impl D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {}
 unsafe impl ::windows::Abi for D3D12_VERSIONED_DEVICE_REMOVED_EXTENDED_DATA_0 {
     type Abi = Self;
 }
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_VERTEX_BUFFER_VIEW {
+    pub buffer_location: u64,
+    pub size_in_bytes: u32,
+    pub stride_in_bytes: u32,
+}
+impl D3D12_VERTEX_BUFFER_VIEW {}
+impl ::std::default::Default for D3D12_VERTEX_BUFFER_VIEW {
+    fn default() -> Self {
+        Self {
+            buffer_location: 0,
+            size_in_bytes: 0,
+            stride_in_bytes: 0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_VERTEX_BUFFER_VIEW {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_VERTEX_BUFFER_VIEW")
+            .field(
+                "buffer_location",
+                &format_args!("{:?}", self.buffer_location),
+            )
+            .field("size_in_bytes", &format_args!("{:?}", self.size_in_bytes))
+            .field(
+                "stride_in_bytes",
+                &format_args!("{:?}", self.stride_in_bytes),
+            )
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_VERTEX_BUFFER_VIEW {
+    fn eq(&self, other: &Self) -> bool {
+        self.buffer_location == other.buffer_location
+            && self.size_in_bytes == other.size_in_bytes
+            && self.stride_in_bytes == other.stride_in_bytes
+    }
+}
+impl ::std::cmp::Eq for D3D12_VERTEX_BUFFER_VIEW {}
+unsafe impl ::windows::Abi for D3D12_VERTEX_BUFFER_VIEW {
+    type Abi = Self;
+}
 pub const D3D12_VIDEO_DECODE_MAX_ARGUMENTS: u32 = 10u32;
 pub const D3D12_VIDEO_DECODE_MAX_HISTOGRAM_COMPONENTS: u32 = 4u32;
 pub const D3D12_VIDEO_DECODE_MIN_BITSTREAM_OFFSET_ALIGNMENT: u32 = 256u32;
@@ -19978,6 +18391,56 @@ pub const D3D12_VIDEO_DECODE_MIN_HISTOGRAM_OFFSET_ALIGNMENT: u32 = 256u32;
 pub const D3D12_VIDEO_DECODE_STATUS_MACROBLOCKS_AFFECTED_UNKNOWN: u32 = 4294967295u32;
 pub const D3D12_VIDEO_PROCESS_MAX_FILTERS: u32 = 32u32;
 pub const D3D12_VIDEO_PROCESS_STEREO_VIEWS: u32 = 2u32;
+#[repr(C)]
+#[allow(non_snake_case)]
+#[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
+pub struct D3D12_VIEWPORT {
+    pub top_leftx: f32,
+    pub top_lefty: f32,
+    pub width: f32,
+    pub height: f32,
+    pub min_depth: f32,
+    pub max_depth: f32,
+}
+impl D3D12_VIEWPORT {}
+impl ::std::default::Default for D3D12_VIEWPORT {
+    fn default() -> Self {
+        Self {
+            top_leftx: 0.0,
+            top_lefty: 0.0,
+            width: 0.0,
+            height: 0.0,
+            min_depth: 0.0,
+            max_depth: 0.0,
+        }
+    }
+}
+impl ::std::fmt::Debug for D3D12_VIEWPORT {
+    fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fmt.debug_struct("D3D12_VIEWPORT")
+            .field("top_leftx", &format_args!("{:?}", self.top_leftx))
+            .field("top_lefty", &format_args!("{:?}", self.top_lefty))
+            .field("width", &format_args!("{:?}", self.width))
+            .field("height", &format_args!("{:?}", self.height))
+            .field("min_depth", &format_args!("{:?}", self.min_depth))
+            .field("max_depth", &format_args!("{:?}", self.max_depth))
+            .finish()
+    }
+}
+impl ::std::cmp::PartialEq for D3D12_VIEWPORT {
+    fn eq(&self, other: &Self) -> bool {
+        self.top_leftx == other.top_leftx
+            && self.top_lefty == other.top_lefty
+            && self.width == other.width
+            && self.height == other.height
+            && self.min_depth == other.min_depth
+            && self.max_depth == other.max_depth
+    }
+}
+impl ::std::cmp::Eq for D3D12_VIEWPORT {}
+unsafe impl ::windows::Abi for D3D12_VIEWPORT {
+    type Abi = Self;
+}
 pub const D3D12_VIEWPORT_AND_SCISSORRECT_MAX_INDEX: u32 = 15u32;
 pub const D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE: u32 = 16u32;
 pub const D3D12_VIEWPORT_BOUNDS_MAX: u32 = 32767u32;
@@ -20156,6 +18619,12 @@ impl ::std::cmp::Eq for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {}
 unsafe impl ::windows::Abi for D3D12_WRITEBUFFERIMMEDIATE_PARAMETER {
     type Abi = Self;
 }
+pub const D3D_SHADER_REQUIRES_INNER_COVERAGE: u32 = 1024u32;
+pub const D3D_SHADER_REQUIRES_ROVS: u32 = 4096u32;
+pub const D3D_SHADER_REQUIRES_STENCIL_REF: u32 = 512u32;
+pub const D3D_SHADER_REQUIRES_TYPED_UAV_LOAD_ADDITIONAL_FORMATS: u32 = 2048u32;
+pub const D3D_SHADER_REQUIRES_VIEWPORT_AND_RT_ARRAY_INDEX_FROM_ANY_SHADER_FEEDING_RASTERIZER: u32 =
+    8192u32;
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
@@ -20194,28 +18663,6 @@ impl ID3D11On12Device {
             ::std::mem::transmute(out_state),
             ::std::mem::transmute(riid),
             ::std::mem::transmute(pp_resource11),
-        )
-    }
-    pub unsafe fn ReleaseWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
-        )
-    }
-    pub unsafe fn AcquireWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
         )
     }
 }
@@ -20260,16 +18707,8 @@ pub struct ID3D11On12Device_abi(
         riid: *const ::windows::Guid,
         pp_resource11: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -20309,28 +18748,6 @@ impl ID3D11On12Device1 {
             ::std::mem::transmute(out_state),
             ::std::mem::transmute(riid),
             ::std::mem::transmute(pp_resource11),
-        )
-    }
-    pub unsafe fn ReleaseWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
-        )
-    }
-    pub unsafe fn AcquireWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
         )
     }
     pub unsafe fn GetD3D12Device(
@@ -20408,16 +18825,8 @@ pub struct ID3D11On12Device1_abi(
         riid: *const ::windows::Guid,
         pp_resource11: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
@@ -20464,28 +18873,6 @@ impl ID3D11On12Device2 {
             ::std::mem::transmute(pp_resource11),
         )
     }
-    pub unsafe fn ReleaseWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
-        )
-    }
-    pub unsafe fn AcquireWrappedResources(
-        &self,
-        pp_resources: *mut ::std::option::Option<super::direct3d11::ID3D11Resource>,
-        num_resources: u32,
-    ) {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(num_resources),
-        )
-    }
     pub unsafe fn GetD3D12Device(
         &self,
         riid: *const ::windows::Guid,
@@ -20495,43 +18882,6 @@ impl ID3D11On12Device2 {
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
             ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn UnwrapUnderlyingResource<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::direct3d11::ID3D11Resource>,
-        T1__: ::windows::IntoParam<'a, ID3D12CommandQueue>,
-    >(
-        &self,
-        p_resource11: T0__,
-        p_command_queue: T1__,
-        riid: *const ::windows::Guid,
-        ppv_resource12: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            p_resource11.into_param().abi(),
-            p_command_queue.into_param().abi(),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_resource12),
-        )
-    }
-    pub unsafe fn ReturnUnderlyingResource<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::direct3d11::ID3D11Resource>,
-    >(
-        &self,
-        p_resource11: T0__,
-        num_sync: u32,
-        p_signal_values: *mut u64,
-        pp_fences: *mut ::std::option::Option<ID3D12Fence>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            p_resource11.into_param().abi(),
-            ::std::mem::transmute(num_sync),
-            ::std::mem::transmute(p_signal_values),
-            ::std::mem::transmute(pp_fences),
         )
     }
 }
@@ -20620,34 +18970,426 @@ pub struct ID3D11On12Device2_abi(
         riid: *const ::windows::Guid,
         pp_resource11: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        num_resources: u32,
-    ),
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
         ppv_device: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12CommandAllocator(::windows::IUnknown);
+impl ID3D12CommandAllocator {}
+unsafe impl ::windows::Interface for ID3D12CommandAllocator {
+    type Vtable = ID3D12CommandAllocator_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1627578084,
+        44889,
+        19209,
+        [185, 153, 180, 77, 115, 240, 155, 36],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12CommandAllocator {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn Reset(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
+    }
+}
+impl ::std::convert::From<ID3D12CommandAllocator> for ::windows::IUnknown {
+    fn from(value: ID3D12CommandAllocator) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandAllocator> for ::windows::IUnknown {
+    fn from(value: &ID3D12CommandAllocator) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12Pageable {
+    fn from(value: ID3D12CommandAllocator) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12Pageable {
+    fn from(value: &ID3D12CommandAllocator) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12DeviceChild {
+    fn from(value: ID3D12CommandAllocator) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12DeviceChild {
+    fn from(value: &ID3D12CommandAllocator) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandAllocator> for ID3D12Object {
+    fn from(value: ID3D12CommandAllocator) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandAllocator> for ID3D12Object {
+    fn from(value: &ID3D12CommandAllocator) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12CommandAllocator {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12CommandAllocator_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_resource11: ::windows::RawPtr,
-        p_command_queue: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_resource12: *mut *mut ::std::ffi::c_void,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_resource11: ::windows::RawPtr,
-        num_sync: u32,
-        p_signal_values: *mut u64,
-        pp_fences: *mut ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12CommandSignature(::windows::IUnknown);
+impl ID3D12CommandSignature {}
+unsafe impl ::windows::Interface for ID3D12CommandSignature {
+    type Vtable = ID3D12CommandSignature_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3278535036,
+        60544,
+        20234,
+        [137, 133, 167, 178, 71, 80, 130, 209],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12CommandSignature {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12CommandSignature> for ::windows::IUnknown {
+    fn from(value: ID3D12CommandSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandSignature> for ::windows::IUnknown {
+    fn from(value: &ID3D12CommandSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandSignature> for ID3D12Pageable {
+    fn from(value: ID3D12CommandSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12Pageable {
+    fn from(value: &ID3D12CommandSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandSignature> for ID3D12DeviceChild {
+    fn from(value: ID3D12CommandSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12DeviceChild {
+    fn from(value: &ID3D12CommandSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12CommandSignature> for ID3D12Object {
+    fn from(value: ID3D12CommandSignature) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12CommandSignature> for ID3D12Object {
+    fn from(value: &ID3D12CommandSignature) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12CommandSignature {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12CommandSignature_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
@@ -21684,6 +20426,237 @@ pub struct ID3D12DebugDevice2_abi(
         p_data: *mut ::std::ffi::c_void,
         data_size: u32,
     ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12DescriptorHeap(::windows::IUnknown);
+impl ID3D12DescriptorHeap {}
+unsafe impl ::windows::Interface for ID3D12DescriptorHeap {
+    type Vtable = ID3D12DescriptorHeap_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        2398832413,
+        24940,
+        20297,
+        [144, 247, 18, 123, 183, 99, 250, 81],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12DescriptorHeap {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetDesc(&self) -> D3D12_DESCRIPTOR_HEAP_DESC {
+        let mut result__: D3D12_DESCRIPTOR_HEAP_DESC = ::std::default::Default::default();
+        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+    pub unsafe fn GetCPUDescriptorHandleForHeapStart(&self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+        let mut result__: D3D12_CPU_DESCRIPTOR_HANDLE = ::std::default::Default::default();
+        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+    pub unsafe fn GetGPUDescriptorHandleForHeapStart(&self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+        let mut result__: D3D12_GPU_DESCRIPTOR_HANDLE = ::std::default::Default::default();
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+}
+impl ::std::convert::From<ID3D12DescriptorHeap> for ::windows::IUnknown {
+    fn from(value: ID3D12DescriptorHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12DescriptorHeap> for ::windows::IUnknown {
+    fn from(value: &ID3D12DescriptorHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12Pageable {
+    fn from(value: ID3D12DescriptorHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12Pageable {
+    fn from(value: &ID3D12DescriptorHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12DeviceChild {
+    fn from(value: ID3D12DescriptorHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12DeviceChild {
+    fn from(value: &ID3D12DescriptorHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12DescriptorHeap> for ID3D12Object {
+    fn from(value: ID3D12DescriptorHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12DescriptorHeap> for ID3D12Object {
+    fn from(value: &ID3D12DescriptorHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12DescriptorHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12DescriptorHeap_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        result__: *mut D3D12_DESCRIPTOR_HEAP_DESC,
+    ),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        result__: *mut D3D12_CPU_DESCRIPTOR_HANDLE,
+    ),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        result__: *mut D3D12_GPU_DESCRIPTOR_HANDLE,
+    ),
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -25856,442 +24829,6 @@ pub struct ID3D12Device3_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct ID3D12ProtectedSession(::windows::IUnknown);
-impl ID3D12ProtectedSession {}
-unsafe impl ::windows::Interface for ID3D12ProtectedSession {
-    type Vtable = ID3D12ProtectedSession_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2706586904,
-        2753,
-        16516,
-        [133, 185, 137, 169, 97, 22, 128, 107],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12ProtectedSession {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetStatusFence(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_fence: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_fence),
-        )
-    }
-    pub unsafe fn GetSessionStatus(&self) -> D3D12_PROTECTED_SESSION_STATUS {
-        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedSession> for ::windows::IUnknown {
-    fn from(value: ID3D12ProtectedSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedSession> for ::windows::IUnknown {
-    fn from(value: &ID3D12ProtectedSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedSession> for ID3D12DeviceChild {
-    fn from(value: ID3D12ProtectedSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedSession> for ID3D12DeviceChild {
-    fn from(value: &ID3D12ProtectedSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedSession> for ID3D12Object {
-    fn from(value: ID3D12ProtectedSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedSession> for ID3D12Object {
-    fn from(value: &ID3D12ProtectedSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12ProtectedSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12ProtectedSession_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_fence: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_PROTECTED_SESSION_STATUS,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12ProtectedResourceSession(::windows::IUnknown);
-impl ID3D12ProtectedResourceSession {}
-unsafe impl ::windows::Interface for ID3D12ProtectedResourceSession {
-    type Vtable = ID3D12ProtectedResourceSession_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1826002676,
-        62089,
-        16588,
-        [128, 145, 90, 108, 10, 9, 156, 61],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12ProtectedResourceSession {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetStatusFence(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_fence: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_fence),
-        )
-    }
-    pub unsafe fn GetSessionStatus(&self) -> D3D12_PROTECTED_SESSION_STATUS {
-        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetDesc(&self) -> D3D12_PROTECTED_RESOURCE_SESSION_DESC {
-        let mut result__: D3D12_PROTECTED_RESOURCE_SESSION_DESC =
-            ::std::default::Default::default();
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
-        result__
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedResourceSession> for ::windows::IUnknown {
-    fn from(value: ID3D12ProtectedResourceSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ::windows::IUnknown {
-    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12ProtectedSession {
-    fn from(value: ID3D12ProtectedResourceSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12ProtectedSession {
-    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12ProtectedSession> for ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12ProtectedSession> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12ProtectedSession>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12ProtectedSession> for &'a ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12ProtectedSession> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12ProtectedSession>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12DeviceChild {
-    fn from(value: ID3D12ProtectedResourceSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12DeviceChild {
-    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12Object {
-    fn from(value: ID3D12ProtectedResourceSession) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12Object {
-    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12ProtectedResourceSession {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12ProtectedResourceSession_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_fence: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_PROTECTED_SESSION_STATUS,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        result__: *mut D3D12_PROTECTED_RESOURCE_SESSION_DESC,
-    ),
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
 pub struct ID3D12Device4(::windows::IUnknown);
 impl ID3D12Device4 {}
 unsafe impl ::windows::Interface for ID3D12Device4 {
@@ -27619,68 +26156,6 @@ pub struct ID3D12Device4_abi(
         p_resource_allocation_info1: *mut D3D12_RESOURCE_ALLOCATION_INFO1,
         result__: *mut D3D12_RESOURCE_ALLOCATION_INFO,
     ),
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12LifetimeOwner(::windows::IUnknown);
-impl ID3D12LifetimeOwner {}
-unsafe impl ::windows::Interface for ID3D12LifetimeOwner {
-    type Vtable = ID3D12LifetimeOwner_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3865554847,
-        52566,
-        20294,
-        [131, 206, 3, 46, 89, 93, 112, 168],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12LifetimeOwner {
-    pub unsafe fn LifetimeStateUpdated(&self, new_state: D3D12_LIFETIME_STATE) {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(new_state),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12LifetimeOwner> for ::windows::IUnknown {
-    fn from(value: ID3D12LifetimeOwner) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12LifetimeOwner> for ::windows::IUnknown {
-    fn from(value: &ID3D12LifetimeOwner) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12LifetimeOwner {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12LifetimeOwner {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12LifetimeOwner_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, new_state: D3D12_LIFETIME_STATE),
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -34540,6 +33015,240 @@ pub struct ID3D12DeviceRemovedExtendedDataSettings1_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct ID3D12Fence(::windows::IUnknown);
+impl ID3D12Fence {}
+unsafe impl ::windows::Interface for ID3D12Fence {
+    type Vtable = ID3D12Fence_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        175455695,
+        50392,
+        19345,
+        [173, 246, 190, 90, 96, 217, 90, 118],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12Fence {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetCompletedValue(&self) -> u64 {
+        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn SetEventOnCompletion<
+        'a,
+        T1__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+    >(
+        &self,
+        value: u64,
+        h_event: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(value),
+            h_event.into_param().abi(),
+        )
+    }
+    pub unsafe fn Signal(&self, value: u64) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(value),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12Fence> for ::windows::IUnknown {
+    fn from(value: ID3D12Fence) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Fence> for ::windows::IUnknown {
+    fn from(value: &ID3D12Fence) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Fence> for ID3D12Pageable {
+    fn from(value: ID3D12Fence) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Fence> for ID3D12Pageable {
+    fn from(value: &ID3D12Fence) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Fence> for ID3D12DeviceChild {
+    fn from(value: ID3D12Fence) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Fence> for ID3D12DeviceChild {
+    fn from(value: &ID3D12Fence) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Fence> for ID3D12Object {
+    fn from(value: ID3D12Fence) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Fence> for ID3D12Object {
+    fn from(value: &ID3D12Fence) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Fence {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12Fence_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u64,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        value: u64,
+        h_event: super::system_services::HANDLE,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, value: u64) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ID3D12Fence1(::windows::IUnknown);
 impl ID3D12Fence1 {}
 unsafe impl ::windows::Interface for ID3D12Fence1 {
@@ -34856,326 +33565,6 @@ pub struct ID3D12FunctionParameterReflection_abi(
         this: ::windows::RawPtr,
         p_desc: *mut D3D12_PARAMETER_DESC,
     ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12ShaderReflectionType(::windows::IUnknown);
-impl ID3D12ShaderReflectionType {}
-unsafe impl ::windows::Interface for ID3D12ShaderReflectionType {
-    type Vtable = ID3D12ShaderReflectionType_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3910386513,
-        30781,
-        18634,
-        [161, 209, 79, 48, 98, 132, 173, 86],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12ShaderReflectionType {
-    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_TYPE_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetMemberTypeByIndex(&self, index: u32) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(index),
-        )
-    }
-    pub unsafe fn GetMemberTypeByName<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::PSTR>,
-    >(
-        &self,
-        name: T0__,
-    ) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetMemberTypeName(&self, index: u32) -> super::system_services::PSTR {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(index),
-        )
-    }
-    pub unsafe fn IsEqual<'a, T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>>(
-        &self,
-        p_type: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(::windows::Abi::abi(self), p_type.into_param().abi())
-    }
-    pub unsafe fn GetSubType(&self) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetBaseClass(&self) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetNumInterfaces(&self) -> u32 {
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetInterfaceByIndex(&self, u_index: u32) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(u_index),
-        )
-    }
-    pub unsafe fn IsOfType<'a, T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>>(
-        &self,
-        p_type: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
-            ::windows::Abi::abi(self),
-            p_type.into_param().abi(),
-        )
-    }
-    pub unsafe fn ImplementsInterface<
-        'a,
-        T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>,
-    >(
-        &self,
-        p_base: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            p_base.into_param().abi(),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12ShaderReflectionType> for ::windows::IUnknown {
-    fn from(value: ID3D12ShaderReflectionType) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ShaderReflectionType> for ::windows::IUnknown {
-    fn from(value: &ID3D12ShaderReflectionType) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionType {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ShaderReflectionType {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12ShaderReflectionType_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut D3D12_SHADER_TYPE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, index: u32) -> ::windows::RawPtr,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PSTR,
-    ) -> ::windows::RawPtr,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        index: u32,
-    ) -> super::system_services::PSTR,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_type: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, u_index: u32) -> ::windows::RawPtr,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_type: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_base: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12ShaderReflectionVariable(::windows::IUnknown);
-impl ID3D12ShaderReflectionVariable {}
-unsafe impl ::windows::Interface for ID3D12ShaderReflectionVariable {
-    type Vtable = ID3D12ShaderReflectionVariable_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2201462950,
-        41494,
-        17482,
-        [178, 244, 49, 71, 51, 167, 58, 234],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12ShaderReflectionVariable {
-    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_VARIABLE_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetType(&self) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).4)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetBuffer(&self) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetInterfaceSlot(&self, u_array_index: u32) -> u32 {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(u_array_index),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12ShaderReflectionVariable> for ::windows::IUnknown {
-    fn from(value: ID3D12ShaderReflectionVariable) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ShaderReflectionVariable> for ::windows::IUnknown {
-    fn from(value: &ID3D12ShaderReflectionVariable) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionVariable {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ShaderReflectionVariable {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12ShaderReflectionVariable_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut D3D12_SHADER_VARIABLE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, u_array_index: u32) -> u32,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12ShaderReflectionConstantBuffer(::windows::IUnknown);
-impl ID3D12ShaderReflectionConstantBuffer {}
-unsafe impl ::windows::Interface for ID3D12ShaderReflectionConstantBuffer {
-    type Vtable = ID3D12ShaderReflectionConstantBuffer_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3314915508,
-        18611,
-        18537,
-        [185, 177, 177, 97, 139, 20, 168, 183],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12ShaderReflectionConstantBuffer {
-    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_BUFFER_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetVariableByIndex(&self, index: u32) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(index),
-        )
-    }
-    pub unsafe fn GetVariableByName<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::PSTR>,
-    >(
-        &self,
-        name: T0__,
-    ) -> ::windows::RawPtr {
-        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-}
-impl ::std::convert::From<ID3D12ShaderReflectionConstantBuffer> for ::windows::IUnknown {
-    fn from(value: ID3D12ShaderReflectionConstantBuffer) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12ShaderReflectionConstantBuffer> for ::windows::IUnknown {
-    fn from(value: &ID3D12ShaderReflectionConstantBuffer) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionConstantBuffer {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown>
-    for &'a ID3D12ShaderReflectionConstantBuffer
-{
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12ShaderReflectionConstantBuffer_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut D3D12_SHADER_BUFFER_DESC,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, index: u32) -> ::windows::RawPtr,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PSTR,
-    ) -> ::windows::RawPtr,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -39423,226 +37812,6 @@ pub struct ID3D12GraphicsCommandList3_abi(
         this: ::windows::RawPtr,
         p_protected_resource_session: ::windows::RawPtr,
     ),
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct ID3D12MetaCommand(::windows::IUnknown);
-impl ID3D12MetaCommand {}
-unsafe impl ::windows::Interface for ID3D12MetaCommand {
-    type Vtable = ID3D12MetaCommand_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3686288423,
-        14030,
-        20425,
-        [184, 1, 240, 72, 196, 106, 197, 112],
-    );
-}
-#[allow(non_snake_case)]
-impl ID3D12MetaCommand {
-    pub unsafe fn GetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateData(
-        &self,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        guid: *const ::windows::Guid,
-        p_data: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
-        )
-    }
-    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
-        &self,
-        name: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_device),
-        )
-    }
-    pub unsafe fn GetRequiredParameterResourceSize(
-        &self,
-        stage: D3D12_META_COMMAND_PARAMETER_STAGE,
-        parameter_index: u32,
-    ) -> u64 {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(stage),
-            ::std::mem::transmute(parameter_index),
-        )
-    }
-}
-impl ::std::convert::From<ID3D12MetaCommand> for ::windows::IUnknown {
-    fn from(value: ID3D12MetaCommand) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12MetaCommand> for ::windows::IUnknown {
-    fn from(value: &ID3D12MetaCommand) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12MetaCommand> for ID3D12Pageable {
-    fn from(value: ID3D12MetaCommand) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12Pageable {
-    fn from(value: &ID3D12MetaCommand) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12MetaCommand> for ID3D12DeviceChild {
-    fn from(value: ID3D12MetaCommand) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12DeviceChild {
-    fn from(value: &ID3D12MetaCommand) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<ID3D12MetaCommand> for ID3D12Object {
-    fn from(value: ID3D12MetaCommand) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12Object {
-    fn from(value: &ID3D12MetaCommand) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12MetaCommand {
-    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
-        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct ID3D12MetaCommand_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: super::system_services::PWSTR,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        ppv_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        stage: D3D12_META_COMMAND_PARAMETER_STAGE,
-        parameter_index: u32,
-    ) -> u64,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -44508,6 +42677,216 @@ pub struct ID3D12GraphicsCommandList6_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct ID3D12Heap(::windows::IUnknown);
+impl ID3D12Heap {}
+unsafe impl ::windows::Interface for ID3D12Heap {
+    type Vtable = ID3D12Heap_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1799038210,
+        28241,
+        17843,
+        [144, 238, 152, 132, 38, 94, 141, 243],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12Heap {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetDesc(&self) -> D3D12_HEAP_DESC {
+        let mut result__: D3D12_HEAP_DESC = ::std::default::Default::default();
+        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+}
+impl ::std::convert::From<ID3D12Heap> for ::windows::IUnknown {
+    fn from(value: ID3D12Heap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Heap> for ::windows::IUnknown {
+    fn from(value: &ID3D12Heap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Heap> for ID3D12Pageable {
+    fn from(value: ID3D12Heap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Heap> for ID3D12Pageable {
+    fn from(value: &ID3D12Heap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Heap> for ID3D12DeviceChild {
+    fn from(value: ID3D12Heap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Heap> for ID3D12DeviceChild {
+    fn from(value: &ID3D12Heap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12Heap> for ID3D12Object {
+    fn from(value: ID3D12Heap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12Heap> for ID3D12Object {
+    fn from(value: &ID3D12Heap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12Heap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12Heap_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, result__: *mut D3D12_HEAP_DESC),
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ID3D12Heap1(::windows::IUnknown);
 impl ID3D12Heap1 {}
 unsafe impl ::windows::Interface for ID3D12Heap1 {
@@ -45212,6 +43591,68 @@ pub struct ID3D12LibraryReflection_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct ID3D12LifetimeOwner(::windows::IUnknown);
+impl ID3D12LifetimeOwner {}
+unsafe impl ::windows::Interface for ID3D12LifetimeOwner {
+    type Vtable = ID3D12LifetimeOwner_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3865554847,
+        52566,
+        20294,
+        [131, 206, 3, 46, 89, 93, 112, 168],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12LifetimeOwner {
+    pub unsafe fn LifetimeStateUpdated(&self, new_state: D3D12_LIFETIME_STATE) {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(new_state),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12LifetimeOwner> for ::windows::IUnknown {
+    fn from(value: ID3D12LifetimeOwner) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12LifetimeOwner> for ::windows::IUnknown {
+    fn from(value: &ID3D12LifetimeOwner) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12LifetimeOwner {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12LifetimeOwner {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12LifetimeOwner_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, new_state: D3D12_LIFETIME_STATE),
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ID3D12LifetimeTracker(::windows::IUnknown);
 impl ID3D12LifetimeTracker {}
 unsafe impl ::windows::Interface for ID3D12LifetimeTracker {
@@ -45398,6 +43839,226 @@ pub struct ID3D12LifetimeTracker_abi(
         this: ::windows::RawPtr,
         p_object: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12MetaCommand(::windows::IUnknown);
+impl ID3D12MetaCommand {}
+unsafe impl ::windows::Interface for ID3D12MetaCommand {
+    type Vtable = ID3D12MetaCommand_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3686288423,
+        14030,
+        20425,
+        [184, 1, 240, 72, 196, 106, 197, 112],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12MetaCommand {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetRequiredParameterResourceSize(
+        &self,
+        stage: D3D12_META_COMMAND_PARAMETER_STAGE,
+        parameter_index: u32,
+    ) -> u64 {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(stage),
+            ::std::mem::transmute(parameter_index),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12MetaCommand> for ::windows::IUnknown {
+    fn from(value: ID3D12MetaCommand) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12MetaCommand> for ::windows::IUnknown {
+    fn from(value: &ID3D12MetaCommand) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12MetaCommand> for ID3D12Pageable {
+    fn from(value: ID3D12MetaCommand) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12Pageable {
+    fn from(value: &ID3D12MetaCommand) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12MetaCommand> for ID3D12DeviceChild {
+    fn from(value: ID3D12MetaCommand) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12DeviceChild {
+    fn from(value: &ID3D12MetaCommand) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12MetaCommand> for ID3D12Object {
+    fn from(value: ID3D12MetaCommand) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12MetaCommand> for ID3D12Object {
+    fn from(value: &ID3D12MetaCommand) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12MetaCommand {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12MetaCommand_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        stage: D3D12_META_COMMAND_PARAMETER_STAGE,
+        parameter_index: u32,
+    ) -> u64,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -45998,6 +44659,659 @@ pub struct ID3D12PipelineLibrary1_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct ID3D12PipelineState(::windows::IUnknown);
+impl ID3D12PipelineState {}
+unsafe impl ::windows::Interface for ID3D12PipelineState {
+    type Vtable = ID3D12PipelineState_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1985622259,
+        63012,
+        19567,
+        [168, 40, 172, 233, 72, 98, 36, 69],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12PipelineState {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetCachedBlob(
+        &self,
+        pp_blob: *mut ::std::option::Option<super::direct3d11::ID3DBlob>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pp_blob),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12PipelineState> for ::windows::IUnknown {
+    fn from(value: ID3D12PipelineState) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12PipelineState> for ::windows::IUnknown {
+    fn from(value: &ID3D12PipelineState) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12PipelineState> for ID3D12Pageable {
+    fn from(value: ID3D12PipelineState) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12PipelineState> for ID3D12Pageable {
+    fn from(value: &ID3D12PipelineState) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12PipelineState> for ID3D12DeviceChild {
+    fn from(value: ID3D12PipelineState) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12PipelineState> for ID3D12DeviceChild {
+    fn from(value: &ID3D12PipelineState) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12PipelineState> for ID3D12Object {
+    fn from(value: ID3D12PipelineState) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12PipelineState> for ID3D12Object {
+    fn from(value: &ID3D12PipelineState) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12PipelineState {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12PipelineState_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pp_blob: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12ProtectedSession(::windows::IUnknown);
+impl ID3D12ProtectedSession {}
+unsafe impl ::windows::Interface for ID3D12ProtectedSession {
+    type Vtable = ID3D12ProtectedSession_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        2706586904,
+        2753,
+        16516,
+        [133, 185, 137, 169, 97, 22, 128, 107],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12ProtectedSession {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetStatusFence(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_fence: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_fence),
+        )
+    }
+    pub unsafe fn GetSessionStatus(&self) -> D3D12_PROTECTED_SESSION_STATUS {
+        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedSession> for ::windows::IUnknown {
+    fn from(value: ID3D12ProtectedSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedSession> for ::windows::IUnknown {
+    fn from(value: &ID3D12ProtectedSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedSession> for ID3D12DeviceChild {
+    fn from(value: ID3D12ProtectedSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedSession> for ID3D12DeviceChild {
+    fn from(value: &ID3D12ProtectedSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedSession> for ID3D12Object {
+    fn from(value: ID3D12ProtectedSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedSession> for ID3D12Object {
+    fn from(value: &ID3D12ProtectedSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12ProtectedSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12ProtectedSession_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_fence: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_PROTECTED_SESSION_STATUS,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12ProtectedResourceSession(::windows::IUnknown);
+impl ID3D12ProtectedResourceSession {}
+unsafe impl ::windows::Interface for ID3D12ProtectedResourceSession {
+    type Vtable = ID3D12ProtectedResourceSession_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1826002676,
+        62089,
+        16588,
+        [128, 145, 90, 108, 10, 9, 156, 61],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12ProtectedResourceSession {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+    pub unsafe fn GetStatusFence(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_fence: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_fence),
+        )
+    }
+    pub unsafe fn GetSessionStatus(&self) -> D3D12_PROTECTED_SESSION_STATUS {
+        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetDesc(&self) -> D3D12_PROTECTED_RESOURCE_SESSION_DESC {
+        let mut result__: D3D12_PROTECTED_RESOURCE_SESSION_DESC =
+            ::std::default::Default::default();
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self), &mut result__);
+        result__
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedResourceSession> for ::windows::IUnknown {
+    fn from(value: ID3D12ProtectedResourceSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ::windows::IUnknown {
+    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12ProtectedSession {
+    fn from(value: ID3D12ProtectedResourceSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12ProtectedSession {
+    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12ProtectedSession> for ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12ProtectedSession> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12ProtectedSession>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12ProtectedSession> for &'a ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12ProtectedSession> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12ProtectedSession>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12DeviceChild {
+    fn from(value: ID3D12ProtectedResourceSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12DeviceChild {
+    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12ProtectedResourceSession> for ID3D12Object {
+    fn from(value: ID3D12ProtectedResourceSession) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ProtectedResourceSession> for ID3D12Object {
+    fn from(value: &ID3D12ProtectedResourceSession) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12ProtectedResourceSession {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12ProtectedResourceSession_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_fence: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D12_PROTECTED_SESSION_STATUS,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        result__: *mut D3D12_PROTECTED_RESOURCE_SESSION_DESC,
+    ),
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ID3D12ProtectedResourceSession1(::windows::IUnknown);
 impl ID3D12ProtectedResourceSession1 {}
 unsafe impl ::windows::Interface for ID3D12ProtectedResourceSession1 {
@@ -46257,6 +45571,210 @@ pub struct ID3D12ProtectedResourceSession1_abi(
         this: ::windows::RawPtr,
         result__: *mut D3D12_PROTECTED_RESOURCE_SESSION_DESC1,
     ),
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12QueryHeap(::windows::IUnknown);
+impl ID3D12QueryHeap {}
+unsafe impl ::windows::Interface for ID3D12QueryHeap {
+    type Vtable = ID3D12QueryHeap_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        227956910,
+        60741,
+        18078,
+        [166, 29, 151, 14, 197, 131, 202, 180],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12QueryHeap {
+    pub unsafe fn GetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateData(
+        &self,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        guid: *const ::windows::Guid,
+        p_data: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(guid),
+            p_data.into_param().abi(),
+        )
+    }
+    pub unsafe fn SetName<'a, T0__: ::windows::IntoParam<'a, super::system_services::PWSTR>>(
+        &self,
+        name: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(ppv_device),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12QueryHeap> for ::windows::IUnknown {
+    fn from(value: ID3D12QueryHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12QueryHeap> for ::windows::IUnknown {
+    fn from(value: &ID3D12QueryHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12QueryHeap> for ID3D12Pageable {
+    fn from(value: ID3D12QueryHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12Pageable {
+    fn from(value: &ID3D12QueryHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Pageable> for &'a ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Pageable> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Pageable>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12QueryHeap> for ID3D12DeviceChild {
+    fn from(value: ID3D12QueryHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12DeviceChild {
+    fn from(value: &ID3D12QueryHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12DeviceChild> for &'a ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12DeviceChild> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12DeviceChild>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<ID3D12QueryHeap> for ID3D12Object {
+    fn from(value: ID3D12QueryHeap) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12QueryHeap> for ID3D12Object {
+    fn from(value: &ID3D12QueryHeap) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ID3D12Object> for &'a ID3D12QueryHeap {
+    fn into_param(self) -> ::windows::Param<'a, ID3D12Object> {
+        ::windows::Param::Owned(::std::convert::Into::<ID3D12Object>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12QueryHeap_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        guid: *const ::windows::Guid,
+        p_data: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PWSTR,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        ppv_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -47296,6 +46814,326 @@ pub struct ID3D12ShaderReflection_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct ID3D12ShaderReflectionConstantBuffer(::windows::IUnknown);
+impl ID3D12ShaderReflectionConstantBuffer {}
+unsafe impl ::windows::Interface for ID3D12ShaderReflectionConstantBuffer {
+    type Vtable = ID3D12ShaderReflectionConstantBuffer_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3314915508,
+        18611,
+        18537,
+        [185, 177, 177, 97, 139, 20, 168, 183],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12ShaderReflectionConstantBuffer {
+    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_BUFFER_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn GetVariableByIndex(&self, index: u32) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(index),
+        )
+    }
+    pub unsafe fn GetVariableByName<
+        'a,
+        T0__: ::windows::IntoParam<'a, super::system_services::PSTR>,
+    >(
+        &self,
+        name: T0__,
+    ) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+}
+impl ::std::convert::From<ID3D12ShaderReflectionConstantBuffer> for ::windows::IUnknown {
+    fn from(value: ID3D12ShaderReflectionConstantBuffer) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ShaderReflectionConstantBuffer> for ::windows::IUnknown {
+    fn from(value: &ID3D12ShaderReflectionConstantBuffer) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionConstantBuffer {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown>
+    for &'a ID3D12ShaderReflectionConstantBuffer
+{
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12ShaderReflectionConstantBuffer_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut D3D12_SHADER_BUFFER_DESC,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, index: u32) -> ::windows::RawPtr,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PSTR,
+    ) -> ::windows::RawPtr,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12ShaderReflectionType(::windows::IUnknown);
+impl ID3D12ShaderReflectionType {}
+unsafe impl ::windows::Interface for ID3D12ShaderReflectionType {
+    type Vtable = ID3D12ShaderReflectionType_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3910386513,
+        30781,
+        18634,
+        [161, 209, 79, 48, 98, 132, 173, 86],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12ShaderReflectionType {
+    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_TYPE_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn GetMemberTypeByIndex(&self, index: u32) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(index),
+        )
+    }
+    pub unsafe fn GetMemberTypeByName<
+        'a,
+        T0__: ::windows::IntoParam<'a, super::system_services::PSTR>,
+    >(
+        &self,
+        name: T0__,
+    ) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self), name.into_param().abi())
+    }
+    pub unsafe fn GetMemberTypeName(&self, index: u32) -> super::system_services::PSTR {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(index),
+        )
+    }
+    pub unsafe fn IsEqual<'a, T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>>(
+        &self,
+        p_type: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(::windows::Abi::abi(self), p_type.into_param().abi())
+    }
+    pub unsafe fn GetSubType(&self) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).8)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetBaseClass(&self) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).9)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetNumInterfaces(&self) -> u32 {
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetInterfaceByIndex(&self, u_index: u32) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).11)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(u_index),
+        )
+    }
+    pub unsafe fn IsOfType<'a, T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>>(
+        &self,
+        p_type: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            p_type.into_param().abi(),
+        )
+    }
+    pub unsafe fn ImplementsInterface<
+        'a,
+        T0__: ::windows::IntoParam<'a, ID3D12ShaderReflectionType>,
+    >(
+        &self,
+        p_base: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            p_base.into_param().abi(),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12ShaderReflectionType> for ::windows::IUnknown {
+    fn from(value: ID3D12ShaderReflectionType) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ShaderReflectionType> for ::windows::IUnknown {
+    fn from(value: &ID3D12ShaderReflectionType) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionType {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ShaderReflectionType {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12ShaderReflectionType_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut D3D12_SHADER_TYPE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, index: u32) -> ::windows::RawPtr,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: super::system_services::PSTR,
+    ) -> ::windows::RawPtr,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        index: u32,
+    ) -> super::system_services::PSTR,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_type: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, u_index: u32) -> ::windows::RawPtr,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_type: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_base: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct ID3D12ShaderReflectionVariable(::windows::IUnknown);
+impl ID3D12ShaderReflectionVariable {}
+unsafe impl ::windows::Interface for ID3D12ShaderReflectionVariable {
+    type Vtable = ID3D12ShaderReflectionVariable_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        2201462950,
+        41494,
+        17482,
+        [178, 244, 49, 71, 51, 167, 58, 234],
+    );
+}
+#[allow(non_snake_case)]
+impl ID3D12ShaderReflectionVariable {
+    pub unsafe fn GetDesc(&self, p_desc: *mut D3D12_SHADER_VARIABLE_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn GetType(&self) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).4)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetBuffer(&self) -> ::windows::RawPtr {
+        (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetInterfaceSlot(&self, u_array_index: u32) -> u32 {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(u_array_index),
+        )
+    }
+}
+impl ::std::convert::From<ID3D12ShaderReflectionVariable> for ::windows::IUnknown {
+    fn from(value: ID3D12ShaderReflectionVariable) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&ID3D12ShaderReflectionVariable> for ::windows::IUnknown {
+    fn from(value: &ID3D12ShaderReflectionVariable) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for ID3D12ShaderReflectionVariable {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a ID3D12ShaderReflectionVariable {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct ID3D12ShaderReflectionVariable_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut D3D12_SHADER_VARIABLE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::RawPtr,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, u_array_index: u32) -> u32,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct ID3D12SharingContract(::windows::IUnknown);
 impl ID3D12SharingContract {}
 unsafe impl ::windows::Interface for ID3D12SharingContract {
@@ -47784,24 +47622,6 @@ impl IHolographicCameraInterop {
             ::std::mem::transmute(iids),
         )
     }
-    pub unsafe fn GetRuntimeClassName(
-        &self,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(class_name),
-        )
-    }
-    pub unsafe fn GetTrustLevel(
-        &self,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(trust_level),
-        )
-    }
     pub unsafe fn CreateDirect3D12BackBufferResource<
         'a,
         T0__: ::windows::IntoParam<'a, ID3D12Device>,
@@ -47943,14 +47763,8 @@ pub struct IHolographicCameraInterop_abi(
         iid_count: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         p_device: ::windows::RawPtr,
@@ -48010,24 +47824,6 @@ impl IHolographicCameraRenderingParametersInterop {
             ::windows::Abi::abi(self),
             ::std::mem::transmute(iid_count),
             ::std::mem::transmute(iids),
-        )
-    }
-    pub unsafe fn GetRuntimeClassName(
-        &self,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(class_name),
-        )
-    }
-    pub unsafe fn GetTrustLevel(
-        &self,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(trust_level),
         )
     }
     pub unsafe fn CommitDirect3D12Resource<
@@ -48146,14 +47942,8 @@ pub struct IHolographicCameraRenderingParametersInterop_abi(
         iid_count: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         p_color_resource_to_commit: ::windows::RawPtr,
@@ -48200,24 +47990,6 @@ impl IHolographicQuadLayerInterop {
             ::windows::Abi::abi(self),
             ::std::mem::transmute(iid_count),
             ::std::mem::transmute(iids),
-        )
-    }
-    pub unsafe fn GetRuntimeClassName(
-        &self,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(class_name),
-        )
-    }
-    pub unsafe fn GetTrustLevel(
-        &self,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(trust_level),
         )
     }
     pub unsafe fn CreateDirect3D12ContentBufferResource<
@@ -48361,14 +48133,8 @@ pub struct IHolographicQuadLayerInterop_abi(
         iid_count: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         p_device: ::windows::RawPtr,
@@ -48428,24 +48194,6 @@ impl IHolographicQuadLayerUpdateParametersInterop {
             ::windows::Abi::abi(self),
             ::std::mem::transmute(iid_count),
             ::std::mem::transmute(iids),
-        )
-    }
-    pub unsafe fn GetRuntimeClassName(
-        &self,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(class_name),
-        )
-    }
-    pub unsafe fn GetTrustLevel(
-        &self,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(trust_level),
         )
     }
     pub unsafe fn CommitDirect3D12Resource<
@@ -48539,14 +48287,8 @@ pub struct IHolographicQuadLayerUpdateParametersInterop_abi(
         iid_count: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        class_name: *mut super::winrt::HSTRING,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        trust_level: *mut super::winrt::TrustLevel,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         p_color_resource_to_commit: ::windows::RawPtr,
@@ -48554,6 +48296,7 @@ pub struct IHolographicQuadLayerUpdateParametersInterop_abi(
         color_resource_fence_signal_value: u64,
     ) -> ::windows::ErrorCode,
 );
+pub const LUID_DEFINED: u32 = 1u32;
 #[allow(non_camel_case_types)]
 pub type PFN_D3D11ON12_CREATE_DEVICE = extern "system" fn(
     param0: ::windows::RawPtr,

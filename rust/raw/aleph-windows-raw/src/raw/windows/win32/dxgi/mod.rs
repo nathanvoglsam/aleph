@@ -274,7 +274,7 @@ pub unsafe fn DXGIGetDebugInterface1(
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC {
-    pub description: [u16; 128usize],
+    pub description: [u16; 128],
     pub vendor_id: u32,
     pub device_id: u32,
     pub sub_sys_id: u32,
@@ -288,13 +288,7 @@ impl DXGI_ADAPTER_DESC {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC {
     fn default() -> Self {
         Self {
-            description: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
+            description: [0; 128],
             vendor_id: 0,
             device_id: 0,
             sub_sys_id: 0,
@@ -351,7 +345,7 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC1 {
-    pub description: [u16; 128usize],
+    pub description: [u16; 128],
     pub vendor_id: u32,
     pub device_id: u32,
     pub sub_sys_id: u32,
@@ -366,13 +360,7 @@ impl DXGI_ADAPTER_DESC1 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC1 {
     fn default() -> Self {
         Self {
-            description: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
+            description: [0; 128],
             vendor_id: 0,
             device_id: 0,
             sub_sys_id: 0,
@@ -486,7 +474,7 @@ unsafe impl ::windows::Abi for DXGI_COMPUTE_PREEMPTION_GRANULARITY {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC2 {
-    pub description: [u16; 128usize],
+    pub description: [u16; 128],
     pub vendor_id: u32,
     pub device_id: u32,
     pub sub_sys_id: u32,
@@ -503,13 +491,7 @@ impl DXGI_ADAPTER_DESC2 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC2 {
     fn default() -> Self {
         Self {
-            description: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
+            description: [0; 128],
             vendor_id: 0,
             device_id: 0,
             sub_sys_id: 0,
@@ -623,7 +605,7 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG3 {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC3 {
-    pub description: [u16; 128usize],
+    pub description: [u16; 128],
     pub vendor_id: u32,
     pub device_id: u32,
     pub sub_sys_id: u32,
@@ -640,13 +622,7 @@ impl DXGI_ADAPTER_DESC3 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC3 {
     fn default() -> Self {
         Self {
-            description: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
+            description: [0; 128],
             vendor_id: 0,
             device_id: 0,
             sub_sys_id: 0,
@@ -790,6 +766,7 @@ impl ::std::ops::BitAnd for DXGI_ALPHA_MODE {
         Self(self.0 & rhs.0)
     }
 }
+pub const DXGI_CENTER_MULTISAMPLE_QUALITY_PATTERN: u32 = 4294967294u32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -838,6 +815,13 @@ impl ::std::convert::From<i32> for DXGI_COLOR_SPACE_TYPE {
 unsafe impl ::windows::Abi for DXGI_COLOR_SPACE_TYPE {
     type Abi = Self;
 }
+pub const DXGI_CPU_ACCESS_DYNAMIC: u32 = 1u32;
+pub const DXGI_CPU_ACCESS_FIELD: u32 = 15u32;
+pub const DXGI_CPU_ACCESS_NONE: u32 = 0u32;
+pub const DXGI_CPU_ACCESS_READ_WRITE: u32 = 2u32;
+pub const DXGI_CPU_ACCESS_SCRATCH: u32 = 3u32;
+pub const DXGI_CREATE_FACTORY_DEBUG: u32 = 1u32;
+pub const DXGI_DEBUG_BINARY_VERSION: u32 = 1u32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -896,20 +880,15 @@ unsafe impl ::windows::Abi for DXGI_DECODE_SWAP_CHAIN_DESC {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_DISPLAY_COLOR_SPACE {
-    pub primary_coordinates: [f32; 16usize],
-    pub white_points: [f32; 32usize],
+    pub primary_coordinates: [f32; 16],
+    pub white_points: [f32; 32],
 }
 impl DXGI_DISPLAY_COLOR_SPACE {}
 impl ::std::default::Default for DXGI_DISPLAY_COLOR_SPACE {
     fn default() -> Self {
         Self {
-            primary_coordinates: [
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            ],
-            white_points: [
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            ],
+            primary_coordinates: [0.0; 16],
+            white_points: [0.0; 32],
         }
     }
 }
@@ -934,8 +913,42 @@ impl ::std::cmp::Eq for DXGI_DISPLAY_COLOR_SPACE {}
 unsafe impl ::windows::Abi for DXGI_DISPLAY_COLOR_SPACE {
     type Abi = Self;
 }
+pub const DXGI_ENUM_MODES_DISABLED_STEREO: u32 = 8u32;
 pub const DXGI_ENUM_MODES_INTERLACED: u32 = 1u32;
 pub const DXGI_ENUM_MODES_SCALING: u32 = 2u32;
+pub const DXGI_ENUM_MODES_STEREO: u32 = 4u32;
+pub const DXGI_ERROR_ACCESS_DENIED: i32 = -2005270485i32;
+pub const DXGI_ERROR_ACCESS_LOST: i32 = -2005270490i32;
+pub const DXGI_ERROR_ALREADY_EXISTS: i32 = -2005270474i32;
+pub const DXGI_ERROR_CACHE_CORRUPT: i32 = -2005270477i32;
+pub const DXGI_ERROR_CACHE_FULL: i32 = -2005270476i32;
+pub const DXGI_ERROR_CACHE_HASH_COLLISION: i32 = -2005270475i32;
+pub const DXGI_ERROR_CANNOT_PROTECT_CONTENT: i32 = -2005270486i32;
+pub const DXGI_ERROR_DEVICE_HUNG: i32 = -2005270522i32;
+pub const DXGI_ERROR_DEVICE_REMOVED: i32 = -2005270523i32;
+pub const DXGI_ERROR_DEVICE_RESET: i32 = -2005270521i32;
+pub const DXGI_ERROR_DRIVER_INTERNAL_ERROR: i32 = -2005270496i32;
+pub const DXGI_ERROR_DYNAMIC_CODE_POLICY_VIOLATION: i32 = -2005270479i32;
+pub const DXGI_ERROR_FRAME_STATISTICS_DISJOINT: i32 = -2005270517i32;
+pub const DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: i32 = -2005270516i32;
+pub const DXGI_ERROR_HW_PROTECTION_OUTOFMEMORY: i32 = -2005270480i32;
+pub const DXGI_ERROR_INVALID_CALL: i32 = -2005270527i32;
+pub const DXGI_ERROR_MODE_CHANGE_IN_PROGRESS: i32 = -2005270491i32;
+pub const DXGI_ERROR_MORE_DATA: i32 = -2005270525i32;
+pub const DXGI_ERROR_NAME_ALREADY_EXISTS: i32 = -2005270484i32;
+pub const DXGI_ERROR_NONEXCLUSIVE: i32 = -2005270495i32;
+pub const DXGI_ERROR_NON_COMPOSITED_UI: i32 = -2005270478i32;
+pub const DXGI_ERROR_NOT_CURRENT: i32 = -2005270482i32;
+pub const DXGI_ERROR_NOT_CURRENTLY_AVAILABLE: i32 = -2005270494i32;
+pub const DXGI_ERROR_NOT_FOUND: i32 = -2005270526i32;
+pub const DXGI_ERROR_REMOTE_CLIENT_DISCONNECTED: i32 = -2005270493i32;
+pub const DXGI_ERROR_REMOTE_OUTOFMEMORY: i32 = -2005270492i32;
+pub const DXGI_ERROR_RESTRICT_TO_OUTPUT_STALE: i32 = -2005270487i32;
+pub const DXGI_ERROR_SDK_COMPONENT_MISSING: i32 = -2005270483i32;
+pub const DXGI_ERROR_SESSION_DISCONNECTED: i32 = -2005270488i32;
+pub const DXGI_ERROR_UNSUPPORTED: i32 = -2005270524i32;
+pub const DXGI_ERROR_WAIT_TIMEOUT: i32 = -2005270489i32;
+pub const DXGI_ERROR_WAS_STILL_DRAWING: i32 = -2005270518i32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -959,6 +972,7 @@ impl ::std::convert::From<i32> for DXGI_FEATURE {
 unsafe impl ::windows::Abi for DXGI_FEATURE {
     type Abi = Self;
 }
+pub const DXGI_FORMAT_DEFINED: u32 = 1u32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -1145,7 +1159,7 @@ unsafe impl ::windows::Abi for DXGI_RGB {
 pub struct DXGI_GAMMA_CONTROL {
     pub scale: DXGI_RGB,
     pub offset: DXGI_RGB,
-    pub gamma_curve: [DXGI_RGB; 1025usize],
+    pub gamma_curve: [DXGI_RGB; 1025],
 }
 impl DXGI_GAMMA_CONTROL {}
 impl ::std::default::Default for DXGI_GAMMA_CONTROL {
@@ -1153,1033 +1167,7 @@ impl ::std::default::Default for DXGI_GAMMA_CONTROL {
         Self {
             scale: ::std::default::Default::default(),
             offset: ::std::default::Default::default(),
-            gamma_curve: [
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-                ::std::default::Default::default(),
-            ],
+            gamma_curve: [::std::default::Default::default(); 1025],
         }
     }
 }
@@ -2211,7 +1199,7 @@ pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
     pub max_converted_value: f32,
     pub min_converted_value: f32,
     pub num_gamma_control_points: u32,
-    pub control_point_positions: [f32; 1025usize],
+    pub control_point_positions: [f32; 1025],
 }
 impl DXGI_GAMMA_CONTROL_CAPABILITIES {}
 impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
@@ -2221,73 +1209,7 @@ impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
             max_converted_value: 0.0,
             min_converted_value: 0.0,
             num_gamma_control_points: 0,
-            control_point_positions: [
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0,
-            ],
+            control_point_positions: [0.0; 1025],
         }
     }
 }
@@ -2384,10 +1306,10 @@ unsafe impl ::windows::Abi for DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10 {
-    pub red_primary: [u16; 2usize],
-    pub green_primary: [u16; 2usize],
-    pub blue_primary: [u16; 2usize],
-    pub white_point: [u16; 2usize],
+    pub red_primary: [u16; 2],
+    pub green_primary: [u16; 2],
+    pub blue_primary: [u16; 2],
+    pub white_point: [u16; 2],
     pub max_mastering_luminance: u32,
     pub min_mastering_luminance: u32,
     pub max_content_light_level: u16,
@@ -2397,10 +1319,10 @@ impl DXGI_HDR_METADATA_HDR10 {}
 impl ::std::default::Default for DXGI_HDR_METADATA_HDR10 {
     fn default() -> Self {
         Self {
-            red_primary: [0, 0],
-            green_primary: [0, 0],
-            blue_primary: [0, 0],
-            white_point: [0, 0],
+            red_primary: [0; 2],
+            green_primary: [0; 2],
+            blue_primary: [0; 2],
+            white_point: [0; 2],
             max_mastering_luminance: 0,
             min_mastering_luminance: 0,
             max_content_light_level: 0,
@@ -2454,18 +1376,12 @@ unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10 {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS {
-    pub data: [u8; 72usize],
+    pub data: [u8; 72],
 }
 impl DXGI_HDR_METADATA_HDR10PLUS {}
 impl ::std::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
     fn default() -> Self {
-        Self {
-            data: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-        }
+        Self { data: [0; 72] }
     }
 }
 impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
@@ -2509,6 +1425,7 @@ impl ::std::convert::From<i32> for DXGI_HDR_METADATA_TYPE {
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_TYPE {
     type Abi = Self;
 }
+pub const DXGI_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT: u32 = 1024u32;
 #[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
@@ -2711,26 +1628,20 @@ impl ::std::cmp::Eq for DXGI_INFO_QUEUE_MESSAGE {}
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE {
     type Abi = Self;
 }
+pub const DXGI_INFO_QUEUE_MESSAGE_ID_STRING_FROM_APPLICATION: u32 = 0u32;
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE {
-    pub code_counts: [u8; 16usize],
-    pub code_values: [u8; 162usize],
+    pub code_counts: [u8; 16],
+    pub code_values: [u8; 162],
 }
 impl DXGI_JPEG_AC_HUFFMAN_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
-            code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            code_values: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            ],
+            code_counts: [0; 16],
+            code_values: [0; 162],
         }
     }
 }
@@ -2755,15 +1666,15 @@ unsafe impl ::windows::Abi for DXGI_JPEG_AC_HUFFMAN_TABLE {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE {
-    pub code_counts: [u8; 12usize],
-    pub code_values: [u8; 12usize],
+    pub code_counts: [u8; 12],
+    pub code_values: [u8; 12],
 }
 impl DXGI_JPEG_DC_HUFFMAN_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
-            code_counts: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            code_values: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            code_counts: [0; 12],
+            code_values: [0; 12],
         }
     }
 }
@@ -2788,18 +1699,12 @@ unsafe impl ::windows::Abi for DXGI_JPEG_DC_HUFFMAN_TABLE {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE {
-    pub elements: [u8; 64usize],
+    pub elements: [u8; 64],
 }
 impl DXGI_JPEG_QUANTIZATION_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
     fn default() -> Self {
-        Self {
-            elements: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0,
-            ],
-        }
+        Self { elements: [0; 64] }
     }
 }
 impl ::std::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
@@ -3517,7 +2422,7 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_TYPE {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC {
-    pub device_name: [u16; 32usize],
+    pub device_name: [u16; 32],
     pub desktop_coordinates: super::display_devices::RECT,
     pub attached_to_desktop: super::system_services::BOOL,
     pub rotation: DXGI_MODE_ROTATION,
@@ -3527,10 +2432,7 @@ impl DXGI_OUTPUT_DESC {}
 impl ::std::default::Default for DXGI_OUTPUT_DESC {
     fn default() -> Self {
         Self {
-            device_name: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0,
-            ],
+            device_name: [0; 32],
             desktop_coordinates: ::std::default::Default::default(),
             attached_to_desktop: ::std::default::Default::default(),
             rotation: ::std::default::Default::default(),
@@ -3572,17 +2474,17 @@ unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC {
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC1 {
-    pub device_name: [u16; 32usize],
+    pub device_name: [u16; 32],
     pub desktop_coordinates: super::display_devices::RECT,
     pub attached_to_desktop: super::system_services::BOOL,
     pub rotation: DXGI_MODE_ROTATION,
     pub monitor: super::gdi::HMONITOR,
     pub bits_per_color: u32,
     pub color_space: DXGI_COLOR_SPACE_TYPE,
-    pub red_primary: [f32; 2usize],
-    pub green_primary: [f32; 2usize],
-    pub blue_primary: [f32; 2usize],
-    pub white_point: [f32; 2usize],
+    pub red_primary: [f32; 2],
+    pub green_primary: [f32; 2],
+    pub blue_primary: [f32; 2],
+    pub white_point: [f32; 2],
     pub min_luminance: f32,
     pub max_luminance: f32,
     pub max_full_frame_luminance: f32,
@@ -3591,20 +2493,17 @@ impl DXGI_OUTPUT_DESC1 {}
 impl ::std::default::Default for DXGI_OUTPUT_DESC1 {
     fn default() -> Self {
         Self {
-            device_name: [
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0,
-            ],
+            device_name: [0; 32],
             desktop_coordinates: ::std::default::Default::default(),
             attached_to_desktop: ::std::default::Default::default(),
             rotation: ::std::default::Default::default(),
             monitor: ::std::default::Default::default(),
             bits_per_color: 0,
             color_space: ::std::default::Default::default(),
-            red_primary: [0.0, 0.0],
-            green_primary: [0.0, 0.0],
-            blue_primary: [0.0, 0.0],
-            white_point: [0.0, 0.0],
+            red_primary: [0.0; 2],
+            green_primary: [0.0; 2],
+            blue_primary: [0.0; 2],
+            white_point: [0.0; 2],
             min_luminance: 0.0,
             max_luminance: 0.0,
             max_full_frame_luminance: 0.0,
@@ -3963,6 +2862,9 @@ impl ::std::cmp::Eq for DXGI_SHARED_RESOURCE {}
 unsafe impl ::windows::Abi for DXGI_SHARED_RESOURCE {
     type Abi = Self;
 }
+pub const DXGI_SHARED_RESOURCE_READ: i32 = -2147483648i32;
+pub const DXGI_SHARED_RESOURCE_WRITE: u32 = 1u32;
+pub const DXGI_STANDARD_MULTISAMPLE_QUALITY_PATTERN: u32 = 4294967295u32;
 #[repr(C)]
 #[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
@@ -4396,697 +3298,6 @@ pub struct IDXGIObject_abi(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
         pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct IDXGIDeviceSubObject(::windows::IUnknown);
-impl IDXGIDeviceSubObject {}
-unsafe impl ::windows::Interface for IDXGIDeviceSubObject {
-    type Vtable = IDXGIDeviceSubObject_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1027474297,
-        63966,
-        19800,
-        [187, 108, 24, 214, 41, 146, 241, 166],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGIDeviceSubObject {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-}
-impl ::std::convert::From<IDXGIDeviceSubObject> for ::windows::IUnknown {
-    fn from(value: IDXGIDeviceSubObject) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIDeviceSubObject> for ::windows::IUnknown {
-    fn from(value: &IDXGIDeviceSubObject) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIDeviceSubObject {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIDeviceSubObject {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGIDeviceSubObject> for IDXGIObject {
-    fn from(value: IDXGIDeviceSubObject) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIDeviceSubObject> for IDXGIObject {
-    fn from(value: &IDXGIDeviceSubObject) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIDeviceSubObject {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIDeviceSubObject {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGIDeviceSubObject_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct IDXGISurface(::windows::IUnknown);
-impl IDXGISurface {}
-unsafe impl ::windows::Interface for IDXGISurface {
-    type Vtable = IDXGISurface_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        3405559148,
-        27331,
-        18569,
-        [191, 71, 158, 35, 187, 210, 96, 236],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGISurface {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn Map(
-        &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
-        )
-    }
-    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
-    }
-}
-impl ::std::convert::From<IDXGISurface> for ::windows::IUnknown {
-    fn from(value: IDXGISurface) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface> for ::windows::IUnknown {
-    fn from(value: &IDXGISurface) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface> for IDXGIDeviceSubObject {
-    fn from(value: IDXGISurface) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGISurface) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface> for IDXGIObject {
-    fn from(value: IDXGISurface) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface> for IDXGIObject {
-    fn from(value: &IDXGISurface) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGISurface_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct IDXGIOutput(::windows::IUnknown);
-impl IDXGIOutput {}
-unsafe impl ::windows::Interface for IDXGIOutput {
-    type Vtable = IDXGIOutput_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2919427803,
-        50997,
-        18064,
-        [141, 82, 90, 141, 194, 2, 19, 170],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGIOutput {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetDisplayModeList(
-        &self,
-        enum_format: DXGI_FORMAT,
-        flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
-            ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn FindClosestMatchingMode<
-        'a,
-        T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
-        )
-    }
-    pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn TakeOwnership<
-        'a,
-        T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
-    >(
-        &self,
-        p_device: T0__,
-        exclusive: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            exclusive.into_param().abi(),
-        )
-    }
-    pub unsafe fn ReleaseOwnership(&self) {
-        (::windows::Interface::vtable(self).12)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetGammaControlCapabilities(
-        &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
-        )
-    }
-    pub unsafe fn SetGammaControl(
-        &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).14)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
-        )
-    }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).15)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
-        )
-    }
-    pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
-        &self,
-        p_scanout_surface: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).16)(
-            ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
-        &self,
-        p_destination: T0__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).17)(
-            ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetFrameStatistics(
-        &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).18)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
-        )
-    }
-}
-impl ::std::convert::From<IDXGIOutput> for ::windows::IUnknown {
-    fn from(value: IDXGIOutput) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIOutput> for ::windows::IUnknown {
-    fn from(value: &IDXGIOutput) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIOutput {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIOutput {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGIOutput> for IDXGIObject {
-    fn from(value: IDXGIOutput) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIOutput> for IDXGIObject {
-    fn from(value: &IDXGIOutput) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIOutput {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIOutput {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGIOutput_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
-        flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
@@ -7359,240 +5570,6 @@ pub struct IDXGIDevice1_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct IDXGIResource(::windows::IUnknown);
-impl IDXGIResource {}
-unsafe impl ::windows::Interface for IDXGIResource {
-    type Vtable = IDXGIResource_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        56572596,
-        18478,
-        20048,
-        [180, 31, 138, 127, 139, 216, 150, 11],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGIResource {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-    pub unsafe fn GetSharedHandle(
-        &self,
-        p_shared_handle: *mut super::system_services::HANDLE,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_shared_handle),
-        )
-    }
-    pub unsafe fn GetUsage(&self, p_usage: *mut u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_usage),
-        )
-    }
-    pub unsafe fn SetEvictionPriority(&self, eviction_priority: u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(eviction_priority),
-        )
-    }
-    pub unsafe fn GetEvictionPriority(
-        &self,
-        p_eviction_priority: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_eviction_priority),
-        )
-    }
-}
-impl ::std::convert::From<IDXGIResource> for ::windows::IUnknown {
-    fn from(value: IDXGIResource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIResource> for ::windows::IUnknown {
-    fn from(value: &IDXGIResource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGIResource> for IDXGIDeviceSubObject {
-    fn from(value: IDXGIResource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIResource> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGIResource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGIResource> for IDXGIObject {
-    fn from(value: IDXGIResource) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGIResource> for IDXGIObject {
-    fn from(value: &IDXGIResource) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIResource {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGIResource_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_shared_handle: *mut super::system_services::HANDLE,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_usage: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        eviction_priority: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_eviction_priority: *mut u32,
-    ) -> ::windows::ErrorCode,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
 pub struct IDXGIDevice2(::windows::IUnknown);
 impl IDXGIDevice2 {}
 unsafe impl ::windows::Interface for IDXGIDevice2 {
@@ -8725,6 +6702,172 @@ pub struct IDXGIDevice4_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
+pub struct IDXGIDeviceSubObject(::windows::IUnknown);
+impl IDXGIDeviceSubObject {}
+unsafe impl ::windows::Interface for IDXGIDeviceSubObject {
+    type Vtable = IDXGIDeviceSubObject_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1027474297,
+        63966,
+        19800,
+        [187, 108, 24, 214, 41, 146, 241, 166],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGIDeviceSubObject {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+}
+impl ::std::convert::From<IDXGIDeviceSubObject> for ::windows::IUnknown {
+    fn from(value: IDXGIDeviceSubObject) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGIDeviceSubObject> for ::windows::IUnknown {
+    fn from(value: &IDXGIDeviceSubObject) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIDeviceSubObject {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIDeviceSubObject {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGIDeviceSubObject> for IDXGIObject {
+    fn from(value: IDXGIDeviceSubObject) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGIDeviceSubObject> for IDXGIObject {
+    fn from(value: &IDXGIDeviceSubObject) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIDeviceSubObject {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIDeviceSubObject {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGIDeviceSubObject_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
 pub struct IDXGIDisplayControl(::windows::IUnknown);
 impl IDXGIDisplayControl {}
 unsafe impl ::windows::Interface for IDXGIDisplayControl {
@@ -8788,348 +6931,6 @@ pub struct IDXGIDisplayControl_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, enabled: super::system_services::BOOL),
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct IDXGISwapChain(::windows::IUnknown);
-impl IDXGISwapChain {}
-unsafe impl ::windows::Interface for IDXGISwapChain {
-    type Vtable = IDXGISwapChain_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        822949536,
-        53991,
-        19466,
-        [170, 4, 106, 157, 35, 184, 136, 106],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGISwapChain {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(flags),
-        )
-    }
-    pub unsafe fn GetBuffer(
-        &self,
-        buffer: u32,
-        riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
-        )
-    }
-    pub unsafe fn SetFullscreenState<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
-        T1__: ::windows::IntoParam<'a, IDXGIOutput>,
-    >(
-        &self,
-        fullscreen: T0__,
-        p_target: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetFullscreenState(
-        &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
-        )
-    }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn ResizeBuffers(
-        &self,
-        buffer_count: u32,
-        width: u32,
-        height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
-            ::std::mem::transmute(width),
-            ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
-        )
-    }
-    pub unsafe fn ResizeTarget(
-        &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).14)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
-        )
-    }
-    pub unsafe fn GetContainingOutput(
-        &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).15)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
-        )
-    }
-    pub unsafe fn GetFrameStatistics(
-        &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).16)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
-        )
-    }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).17)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
-        )
-    }
-}
-impl ::std::convert::From<IDXGISwapChain> for ::windows::IUnknown {
-    fn from(value: IDXGISwapChain) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain> for ::windows::IUnknown {
-    fn from(value: &IDXGISwapChain) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISwapChain> for IDXGIDeviceSubObject {
-    fn from(value: IDXGISwapChain) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGISwapChain) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISwapChain> for IDXGIObject {
-    fn from(value: IDXGISwapChain) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain> for IDXGIObject {
-    fn from(value: &IDXGISwapChain) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISwapChain {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGISwapChain_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        sync_interval: u32,
-        flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        buffer: u32,
-        riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        buffer_count: u32,
-        width: u32,
-        height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -9638,498 +7439,6 @@ pub struct IDXGIFactory1_abi(
         pp_adapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-);
-#[repr(transparent)]
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: clone :: Clone,
-    :: std :: fmt :: Debug,
-)]
-pub struct IDXGISwapChain1(::windows::IUnknown);
-impl IDXGISwapChain1 {}
-unsafe impl ::windows::Interface for IDXGISwapChain1 {
-    type Vtable = IDXGISwapChain1_abi;
-    const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2030716407,
-        3394,
-        18550,
-        [152, 58, 10, 85, 207, 230, 244, 170],
-    );
-}
-#[allow(non_snake_case)]
-impl IDXGISwapChain1 {
-    pub unsafe fn SetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).3)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn SetPrivateDataInterface<
-        'a,
-        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-    >(
-        &self,
-        name: *const ::windows::Guid,
-        p_unknown: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).4)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetPrivateData(
-        &self,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
-        )
-    }
-    pub unsafe fn GetParent(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).6)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
-        )
-    }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(flags),
-        )
-    }
-    pub unsafe fn GetBuffer(
-        &self,
-        buffer: u32,
-        riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).9)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
-        )
-    }
-    pub unsafe fn SetFullscreenState<
-        'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
-        T1__: ::windows::IntoParam<'a, IDXGIOutput>,
-    >(
-        &self,
-        fullscreen: T0__,
-        p_target: T1__,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
-        )
-    }
-    pub unsafe fn GetFullscreenState(
-        &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).11)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
-        )
-    }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn ResizeBuffers(
-        &self,
-        buffer_count: u32,
-        width: u32,
-        height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
-            ::std::mem::transmute(width),
-            ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
-        )
-    }
-    pub unsafe fn ResizeTarget(
-        &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).14)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
-        )
-    }
-    pub unsafe fn GetContainingOutput(
-        &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).15)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
-        )
-    }
-    pub unsafe fn GetFrameStatistics(
-        &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).16)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
-        )
-    }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).17)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
-        )
-    }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).18)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetFullscreenDesc(
-        &self,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).19)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-        )
-    }
-    pub unsafe fn GetHwnd(
-        &self,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).20)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_hwnd),
-        )
-    }
-    pub unsafe fn GetCoreWindow(
-        &self,
-        refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).21)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(refiid),
-            ::std::mem::transmute(pp_unk),
-        )
-    }
-    pub unsafe fn Present1(
-        &self,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).22)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(present_flags),
-            ::std::mem::transmute(p_present_parameters),
-        )
-    }
-    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
-        (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetRestrictToOutput(
-        &self,
-        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).24)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_restrict_to_output),
-        )
-    }
-    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).25)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
-        )
-    }
-    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).26)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
-        )
-    }
-    pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).27)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(rotation),
-        )
-    }
-    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).28)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rotation),
-        )
-    }
-}
-impl ::std::convert::From<IDXGISwapChain1> for ::windows::IUnknown {
-    fn from(value: IDXGISwapChain1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain1> for ::windows::IUnknown {
-    fn from(value: &IDXGISwapChain1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
-        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISwapChain1> for IDXGISwapChain {
-    fn from(value: IDXGISwapChain1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain1> for IDXGISwapChain {
-    fn from(value: &IDXGISwapChain1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISwapChain> for IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISwapChain> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISwapChain>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISwapChain> for &'a IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISwapChain> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISwapChain>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISwapChain1> for IDXGIDeviceSubObject {
-    fn from(value: IDXGISwapChain1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain1> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGISwapChain1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISwapChain1> for IDXGIObject {
-    fn from(value: IDXGISwapChain1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISwapChain1> for IDXGIObject {
-    fn from(value: &IDXGISwapChain1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISwapChain1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-#[repr(C)]
-#[doc(hidden)]
-pub struct IDXGISwapChain1_abi(
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        iid: &::windows::Guid,
-        interface: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        sync_interval: u32,
-        flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        buffer: u32,
-        riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        buffer_count: u32,
-        width: u32,
-        height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pp_restrict_to_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *const DXGI_RGBA,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *mut DXGI_RGBA,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        rotation: DXGI_MODE_ROTATION,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_rotation: *mut DXGI_MODE_ROTATION,
-    ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -14731,19 +12040,19 @@ pub struct IDXGIKeyedMutex_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct IDXGIOutputDuplication(::windows::IUnknown);
-impl IDXGIOutputDuplication {}
-unsafe impl ::windows::Interface for IDXGIOutputDuplication {
-    type Vtable = IDXGIOutputDuplication_abi;
+pub struct IDXGIOutput(::windows::IUnknown);
+impl IDXGIOutput {}
+unsafe impl ::windows::Interface for IDXGIOutput {
+    type Vtable = IDXGIOutput_abi;
     const IID: ::windows::Guid = ::windows::Guid::from_values(
-        421329603,
-        41793,
-        18189,
-        [178, 110, 168, 100, 244, 40, 49, 156],
+        2919427803,
+        50997,
+        18064,
+        [141, 82, 90, 141, 194, 2, 19, 170],
     );
 }
 #[allow(non_snake_case)]
-impl IDXGIOutputDuplication {
+impl IDXGIOutput {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
@@ -14795,120 +12104,154 @@ impl IDXGIOutputDuplication {
             ::std::mem::transmute(pp_parent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTDUPL_DESC) {
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(p_desc),
         )
     }
-    pub unsafe fn AcquireNextFrame(
+    pub unsafe fn GetDisplayModeList(
         &self,
-        timeout_in_milliseconds: u32,
-        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
-        pp_desktop_resource: *mut ::std::option::Option<IDXGIResource>,
+        enum_format: DXGI_FORMAT,
+        flags: u32,
+        p_num_modes: *mut u32,
+        p_desc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(timeout_in_milliseconds),
-            ::std::mem::transmute(p_frame_info),
-            ::std::mem::transmute(pp_desktop_resource),
+            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(flags),
+            ::std::mem::transmute(p_num_modes),
+            ::std::mem::transmute(p_desc),
         )
     }
-    pub unsafe fn GetFrameDirtyRects(
+    pub unsafe fn FindClosestMatchingMode<
+        'a,
+        T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
         &self,
-        dirty_rects_buffer_size: u32,
-        p_dirty_rects_buffer: *mut super::display_devices::RECT,
-        p_dirty_rects_buffer_size_required: *mut u32,
+        p_mode_to_match: *const DXGI_MODE_DESC,
+        p_closest_match: *mut DXGI_MODE_DESC,
+        p_concerned_device: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dirty_rects_buffer_size),
-            ::std::mem::transmute(p_dirty_rects_buffer),
-            ::std::mem::transmute(p_dirty_rects_buffer_size_required),
+            ::std::mem::transmute(p_mode_to_match),
+            ::std::mem::transmute(p_closest_match),
+            p_concerned_device.into_param().abi(),
         )
     }
-    pub unsafe fn GetFrameMoveRects(
-        &self,
-        move_rects_buffer_size: u32,
-        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
-        p_move_rects_buffer_size_required: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(move_rects_buffer_size),
-            ::std::mem::transmute(p_move_rect_buffer),
-            ::std::mem::transmute(p_move_rects_buffer_size_required),
-        )
+    pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
     }
-    pub unsafe fn GetFramePointerShape(
+    pub unsafe fn TakeOwnership<
+        'a,
+        T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+    >(
         &self,
-        pointer_shape_buffer_size: u32,
-        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
-        p_pointer_shape_buffer_size_required: *mut u32,
-        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
+        p_device: T0__,
+        exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pointer_shape_buffer_size),
-            ::std::mem::transmute(p_pointer_shape_buffer),
-            ::std::mem::transmute(p_pointer_shape_buffer_size_required),
-            ::std::mem::transmute(p_pointer_shape_info),
+            p_device.into_param().abi(),
+            exclusive.into_param().abi(),
         )
     }
-    pub unsafe fn MapDesktopSurface(
+    pub unsafe fn ReleaseOwnership(&self) {
+        (::windows::Interface::vtable(self).12)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
+        (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
+            ::std::mem::transmute(p_gamma_caps),
         )
     }
-    pub unsafe fn UnMapDesktopSurface(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
+    pub unsafe fn SetGammaControl(
+        &self,
+        p_array: *const DXGI_GAMMA_CONTROL,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).14)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_array),
+        )
     }
-    pub unsafe fn ReleaseFrame(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
+    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).15)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_array),
+        )
+    }
+    pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
+        &self,
+        p_scanout_surface: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).16)(
+            ::windows::Abi::abi(self),
+            p_scanout_surface.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
+        &self,
+        p_destination: T0__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).17)(
+            ::windows::Abi::abi(self),
+            p_destination.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetFrameStatistics(
+        &self,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).18)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_stats),
+        )
     }
 }
-impl ::std::convert::From<IDXGIOutputDuplication> for ::windows::IUnknown {
-    fn from(value: IDXGIOutputDuplication) -> Self {
+impl ::std::convert::From<IDXGIOutput> for ::windows::IUnknown {
+    fn from(value: IDXGIOutput) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGIOutputDuplication> for ::windows::IUnknown {
-    fn from(value: &IDXGIOutputDuplication) -> Self {
+impl ::std::convert::From<&IDXGIOutput> for ::windows::IUnknown {
+    fn from(value: &IDXGIOutput) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIOutputDuplication {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIOutput {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIOutputDuplication {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIOutput {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<IDXGIOutputDuplication> for IDXGIObject {
-    fn from(value: IDXGIOutputDuplication) -> Self {
+impl ::std::convert::From<IDXGIOutput> for IDXGIObject {
+    fn from(value: IDXGIOutput) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGIOutputDuplication> for IDXGIObject {
-    fn from(value: &IDXGIOutputDuplication) -> Self {
+impl ::std::convert::From<&IDXGIOutput> for IDXGIObject {
+    fn from(value: &IDXGIOutput) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIOutputDuplication {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIOutput {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIOutputDuplication {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIOutput {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
             ::std::clone::Clone::clone(self),
@@ -14917,7 +12260,7 @@ impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIOutputDuplication {
 }
 #[repr(C)]
 #[doc(hidden)]
-pub struct IDXGIOutputDuplication_abi(
+pub struct IDXGIOutput_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         iid: &::windows::Guid,
@@ -14947,38 +12290,54 @@ pub struct IDXGIOutputDuplication_abi(
         riid: *const ::windows::Guid,
         pp_parent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, p_desc: *mut DXGI_OUTDUPL_DESC),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        timeout_in_milliseconds: u32,
-        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
-        pp_desktop_resource: *mut ::windows::RawPtr,
+        p_desc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        dirty_rects_buffer_size: u32,
-        p_dirty_rects_buffer: *mut super::display_devices::RECT,
-        p_dirty_rects_buffer_size_required: *mut u32,
+        enum_format: DXGI_FORMAT,
+        flags: u32,
+        p_num_modes: *mut u32,
+        p_desc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        move_rects_buffer_size: u32,
-        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
-        p_move_rects_buffer_size_required: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        pointer_shape_buffer_size: u32,
-        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
-        p_pointer_shape_buffer_size_required: *mut u32,
-        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        p_mode_to_match: *const DXGI_MODE_DESC,
+        p_closest_match: *mut DXGI_MODE_DESC,
+        p_concerned_device: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_device: ::windows::RawPtr,
+        exclusive: super::system_services::BOOL,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_array: *const DXGI_GAMMA_CONTROL,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_array: *mut DXGI_GAMMA_CONTROL,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_scanout_surface: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_destination: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -17970,19 +15329,19 @@ pub struct IDXGIOutput6_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct IDXGISurface1(::windows::IUnknown);
-impl IDXGISurface1 {}
-unsafe impl ::windows::Interface for IDXGISurface1 {
-    type Vtable = IDXGISurface1_abi;
+pub struct IDXGIOutputDuplication(::windows::IUnknown);
+impl IDXGIOutputDuplication {}
+unsafe impl ::windows::Interface for IDXGIOutputDuplication {
+    type Vtable = IDXGIOutputDuplication_abi;
     const IID: ::windows::Guid = ::windows::Guid::from_values(
-        1256599698,
-        25383,
-        19483,
-        [128, 174, 191, 225, 46, 163, 43, 134],
+        421329603,
+        41793,
+        18189,
+        [178, 110, 168, 100, 244, 40, 49, 156],
     );
 }
 #[allow(non_snake_case)]
-impl IDXGISurface1 {
+impl IDXGIOutputDuplication {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
@@ -18034,140 +15393,120 @@ impl IDXGISurface1 {
             ::std::mem::transmute(pp_parent),
         )
     }
-    pub unsafe fn GetDevice(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTDUPL_DESC) {
         (::windows::Interface::vtable(self).7)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
-        )
-    }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(p_desc),
         )
     }
-    pub unsafe fn Map(
+    pub unsafe fn AcquireNextFrame(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        timeout_in_milliseconds: u32,
+        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
+        pp_desktop_resource: *mut ::std::option::Option<IDXGIResource>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(timeout_in_milliseconds),
+            ::std::mem::transmute(p_frame_info),
+            ::std::mem::transmute(pp_desktop_resource),
+        )
+    }
+    pub unsafe fn GetFrameDirtyRects(
+        &self,
+        dirty_rects_buffer_size: u32,
+        p_dirty_rects_buffer: *mut super::display_devices::RECT,
+        p_dirty_rects_buffer_size_required: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
+            ::std::mem::transmute(dirty_rects_buffer_size),
+            ::std::mem::transmute(p_dirty_rects_buffer),
+            ::std::mem::transmute(p_dirty_rects_buffer_size_required),
         )
     }
-    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
-    }
-    pub unsafe fn GetDC<'a, T0__: ::windows::IntoParam<'a, super::system_services::BOOL>>(
+    pub unsafe fn GetFrameMoveRects(
         &self,
-        discard: T0__,
-        phdc: *mut super::gdi::HDC,
+        move_rects_buffer_size: u32,
+        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
+        p_move_rects_buffer_size_required: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(move_rects_buffer_size),
+            ::std::mem::transmute(p_move_rect_buffer),
+            ::std::mem::transmute(p_move_rects_buffer_size_required),
+        )
+    }
+    pub unsafe fn GetFramePointerShape(
+        &self,
+        pointer_shape_buffer_size: u32,
+        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
+        p_pointer_shape_buffer_size_required: *mut u32,
+        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            discard.into_param().abi(),
-            ::std::mem::transmute(phdc),
+            ::std::mem::transmute(pointer_shape_buffer_size),
+            ::std::mem::transmute(p_pointer_shape_buffer),
+            ::std::mem::transmute(p_pointer_shape_buffer_size_required),
+            ::std::mem::transmute(p_pointer_shape_info),
         )
     }
-    pub unsafe fn ReleaseDC(
+    pub unsafe fn MapDesktopSurface(
         &self,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_dirty_rect),
+            ::std::mem::transmute(p_locked_rect),
         )
     }
+    pub unsafe fn UnMapDesktopSurface(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn ReleaseFrame(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
+    }
 }
-impl ::std::convert::From<IDXGISurface1> for ::windows::IUnknown {
-    fn from(value: IDXGISurface1) -> Self {
+impl ::std::convert::From<IDXGIOutputDuplication> for ::windows::IUnknown {
+    fn from(value: IDXGIOutputDuplication) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGISurface1> for ::windows::IUnknown {
-    fn from(value: &IDXGISurface1) -> Self {
+impl ::std::convert::From<&IDXGIOutputDuplication> for ::windows::IUnknown {
+    fn from(value: &IDXGIOutputDuplication) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface1 {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIOutputDuplication {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface1 {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIOutputDuplication {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<IDXGISurface1> for IDXGISurface {
-    fn from(value: IDXGISurface1) -> Self {
+impl ::std::convert::From<IDXGIOutputDuplication> for IDXGIObject {
+    fn from(value: IDXGIOutputDuplication) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGISurface1> for IDXGISurface {
-    fn from(value: &IDXGISurface1) -> Self {
+impl ::std::convert::From<&IDXGIOutputDuplication> for IDXGIObject {
+    fn from(value: &IDXGIOutputDuplication) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGISurface> for IDXGISurface1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISurface> for &'a IDXGISurface1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface1> for IDXGIDeviceSubObject {
-    fn from(value: IDXGISurface1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface1> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGISurface1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface1 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface1> for IDXGIObject {
-    fn from(value: IDXGISurface1) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface1> for IDXGIObject {
-    fn from(value: &IDXGISurface1) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface1 {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIOutputDuplication {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface1 {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIOutputDuplication {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
             ::std::clone::Clone::clone(self),
@@ -18176,7 +15515,7 @@ impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface1 {
 }
 #[repr(C)]
 #[doc(hidden)]
-pub struct IDXGISurface1_abi(
+pub struct IDXGIOutputDuplication_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         iid: &::windows::Guid,
@@ -18206,30 +15545,38 @@ pub struct IDXGISurface1_abi(
         riid: *const ::windows::Guid,
         pp_parent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, p_desc: *mut DXGI_OUTDUPL_DESC),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        timeout_in_milliseconds: u32,
+        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
+        pp_desktop_resource: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
+        dirty_rects_buffer_size: u32,
+        p_dirty_rects_buffer: *mut super::display_devices::RECT,
+        p_dirty_rects_buffer_size_required: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        move_rects_buffer_size: u32,
+        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
+        p_move_rects_buffer_size_required: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pointer_shape_buffer_size: u32,
+        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
+        p_pointer_shape_buffer_size_required: *mut u32,
+        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        discard: super::system_services::BOOL,
-        phdc: *mut super::gdi::HDC,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_dirty_rect: *mut super::display_devices::RECT,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
@@ -18239,19 +15586,19 @@ pub struct IDXGISurface1_abi(
     :: std :: clone :: Clone,
     :: std :: fmt :: Debug,
 )]
-pub struct IDXGISurface2(::windows::IUnknown);
-impl IDXGISurface2 {}
-unsafe impl ::windows::Interface for IDXGISurface2 {
-    type Vtable = IDXGISurface2_abi;
+pub struct IDXGIResource(::windows::IUnknown);
+impl IDXGIResource {}
+unsafe impl ::windows::Interface for IDXGIResource {
+    type Vtable = IDXGIResource_abi;
     const IID: ::windows::Guid = ::windows::Guid::from_values(
-        2879690461,
-        46615,
-        19640,
-        [168, 102, 188, 68, 215, 235, 31, 162],
+        56572596,
+        18478,
+        20048,
+        [180, 31, 138, 127, 139, 216, 150, 11],
     );
 }
 #[allow(non_snake_case)]
-impl IDXGISurface2 {
+impl IDXGIResource {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
@@ -18314,164 +15661,97 @@ impl IDXGISurface2 {
             ::std::mem::transmute(pp_device),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetSharedHandle(
+        &self,
+        p_shared_handle: *mut super::system_services::HANDLE,
+    ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(p_shared_handle),
         )
     }
-    pub unsafe fn Map(
-        &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetUsage(&self, p_usage: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
+            ::std::mem::transmute(p_usage),
         )
     }
-    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
+    pub unsafe fn SetEvictionPriority(&self, eviction_priority: u32) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(eviction_priority),
+        )
     }
-    pub unsafe fn GetDC<'a, T0__: ::windows::IntoParam<'a, super::system_services::BOOL>>(
+    pub unsafe fn GetEvictionPriority(
         &self,
-        discard: T0__,
-        phdc: *mut super::gdi::HDC,
+        p_eviction_priority: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            discard.into_param().abi(),
-            ::std::mem::transmute(phdc),
-        )
-    }
-    pub unsafe fn ReleaseDC(
-        &self,
-        p_dirty_rect: *mut super::display_devices::RECT,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).12)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_dirty_rect),
-        )
-    }
-    pub unsafe fn GetResource(
-        &self,
-        riid: *const ::windows::Guid,
-        pp_parent_resource: *mut *mut ::std::ffi::c_void,
-        p_subresource_index: *mut u32,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).13)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent_resource),
-            ::std::mem::transmute(p_subresource_index),
+            ::std::mem::transmute(p_eviction_priority),
         )
     }
 }
-impl ::std::convert::From<IDXGISurface2> for ::windows::IUnknown {
-    fn from(value: IDXGISurface2) -> Self {
+impl ::std::convert::From<IDXGIResource> for ::windows::IUnknown {
+    fn from(value: IDXGIResource) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGISurface2> for ::windows::IUnknown {
-    fn from(value: &IDXGISurface2) -> Self {
+impl ::std::convert::From<&IDXGIResource> for ::windows::IUnknown {
+    fn from(value: &IDXGIResource) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
         ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<IDXGISurface2> for IDXGISurface1 {
-    fn from(value: IDXGISurface2) -> Self {
+impl ::std::convert::From<IDXGIResource> for IDXGIDeviceSubObject {
+    fn from(value: IDXGIResource) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGISurface2> for IDXGISurface1 {
-    fn from(value: &IDXGISurface2) -> Self {
+impl ::std::convert::From<&IDXGIResource> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGIResource) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGISurface1> for IDXGISurface2 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface1> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface1>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISurface1> for &'a IDXGISurface2 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface1> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface1>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface2> for IDXGISurface {
-    fn from(value: IDXGISurface2) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface2> for IDXGISurface {
-    fn from(value: &IDXGISurface2) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISurface> for IDXGISurface2 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(self))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGISurface> for &'a IDXGISurface2 {
-    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
-        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(
-            ::std::clone::Clone::clone(self),
-        ))
-    }
-}
-impl ::std::convert::From<IDXGISurface2> for IDXGIDeviceSubObject {
-    fn from(value: IDXGISurface2) -> Self {
-        unsafe { ::std::mem::transmute(value) }
-    }
-}
-impl ::std::convert::From<&IDXGISurface2> for IDXGIDeviceSubObject {
-    fn from(value: &IDXGISurface2) -> Self {
-        ::std::convert::From::from(::std::clone::Clone::clone(value))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
             ::std::clone::Clone::clone(self),
         ))
     }
 }
-impl ::std::convert::From<IDXGISurface2> for IDXGIObject {
-    fn from(value: IDXGISurface2) -> Self {
+impl ::std::convert::From<IDXGIResource> for IDXGIObject {
+    fn from(value: IDXGIResource) -> Self {
         unsafe { ::std::mem::transmute(value) }
     }
 }
-impl ::std::convert::From<&IDXGISurface2> for IDXGIObject {
-    fn from(value: &IDXGISurface2) -> Self {
+impl ::std::convert::From<&IDXGIResource> for IDXGIObject {
+    fn from(value: &IDXGIResource) -> Self {
         ::std::convert::From::from(::std::clone::Clone::clone(value))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
     }
 }
-impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface2 {
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGIResource {
     fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
         ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
             ::std::clone::Clone::clone(self),
@@ -18480,7 +15760,7 @@ impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface2 {
 }
 #[repr(C)]
 #[doc(hidden)]
-pub struct IDXGISurface2_abi(
+pub struct IDXGIResource_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         iid: &::windows::Guid,
@@ -18517,28 +15797,19 @@ pub struct IDXGISurface2_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
+        p_shared_handle: *mut super::system_services::HANDLE,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        discard: super::system_services::BOOL,
-        phdc: *mut super::gdi::HDC,
+        p_usage: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        eviction_priority: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        riid: *const ::windows::Guid,
-        pp_parent_resource: *mut *mut ::std::ffi::c_void,
-        p_subresource_index: *mut u32,
+        p_eviction_priority: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
@@ -18836,6 +16107,1607 @@ pub struct IDXGIResource1_abi(
         dw_access: u32,
         lp_name: super::system_services::PWSTR,
         p_handle: *mut super::system_services::HANDLE,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IDXGISurface(::windows::IUnknown);
+impl IDXGISurface {}
+unsafe impl ::windows::Interface for IDXGISurface {
+    type Vtable = IDXGISurface_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        3405559148,
+        27331,
+        18569,
+        [191, 71, 158, 35, 187, 210, 96, 236],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGISurface {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn Map(
+        &self,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_locked_rect),
+            ::std::mem::transmute(map_flags),
+        )
+    }
+    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
+    }
+}
+impl ::std::convert::From<IDXGISurface> for ::windows::IUnknown {
+    fn from(value: IDXGISurface) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface> for ::windows::IUnknown {
+    fn from(value: &IDXGISurface) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface> for IDXGIDeviceSubObject {
+    fn from(value: IDXGISurface) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGISurface) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface> for IDXGIObject {
+    fn from(value: IDXGISurface) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface> for IDXGIObject {
+    fn from(value: &IDXGISurface) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGISurface_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SURFACE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IDXGISurface1(::windows::IUnknown);
+impl IDXGISurface1 {}
+unsafe impl ::windows::Interface for IDXGISurface1 {
+    type Vtable = IDXGISurface1_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        1256599698,
+        25383,
+        19483,
+        [128, 174, 191, 225, 46, 163, 43, 134],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGISurface1 {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn Map(
+        &self,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_locked_rect),
+            ::std::mem::transmute(map_flags),
+        )
+    }
+    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn ReleaseDC(
+        &self,
+        p_dirty_rect: *mut super::display_devices::RECT,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_dirty_rect),
+        )
+    }
+}
+impl ::std::convert::From<IDXGISurface1> for ::windows::IUnknown {
+    fn from(value: IDXGISurface1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface1> for ::windows::IUnknown {
+    fn from(value: &IDXGISurface1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface1> for IDXGISurface {
+    fn from(value: IDXGISurface1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface1> for IDXGISurface {
+    fn from(value: &IDXGISurface1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface> for IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface> for &'a IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface1> for IDXGIDeviceSubObject {
+    fn from(value: IDXGISurface1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface1> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGISurface1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface1> for IDXGIObject {
+    fn from(value: IDXGISurface1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface1> for IDXGIObject {
+    fn from(value: &IDXGISurface1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGISurface1_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SURFACE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_dirty_rect: *mut super::display_devices::RECT,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IDXGISurface2(::windows::IUnknown);
+impl IDXGISurface2 {}
+unsafe impl ::windows::Interface for IDXGISurface2 {
+    type Vtable = IDXGISurface2_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        2879690461,
+        46615,
+        19640,
+        [168, 102, 188, 68, 215, 235, 31, 162],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGISurface2 {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn Map(
+        &self,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_locked_rect),
+            ::std::mem::transmute(map_flags),
+        )
+    }
+    pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn ReleaseDC(
+        &self,
+        p_dirty_rect: *mut super::display_devices::RECT,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_dirty_rect),
+        )
+    }
+    pub unsafe fn GetResource(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent_resource: *mut *mut ::std::ffi::c_void,
+        p_subresource_index: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent_resource),
+            ::std::mem::transmute(p_subresource_index),
+        )
+    }
+}
+impl ::std::convert::From<IDXGISurface2> for ::windows::IUnknown {
+    fn from(value: IDXGISurface2) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface2> for ::windows::IUnknown {
+    fn from(value: &IDXGISurface2) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface2> for IDXGISurface1 {
+    fn from(value: IDXGISurface2) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface2> for IDXGISurface1 {
+    fn from(value: &IDXGISurface2) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface1> for IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface1> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface1>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface1> for &'a IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface1> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface1>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface2> for IDXGISurface {
+    fn from(value: IDXGISurface2) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface2> for IDXGISurface {
+    fn from(value: &IDXGISurface2) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface> for IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISurface> for &'a IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISurface> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISurface>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface2> for IDXGIDeviceSubObject {
+    fn from(value: IDXGISurface2) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface2> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGISurface2) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISurface2> for IDXGIObject {
+    fn from(value: IDXGISurface2) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISurface2> for IDXGIObject {
+    fn from(value: &IDXGISurface2) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISurface2 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGISurface2_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SURFACE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        map_flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_dirty_rect: *mut super::display_devices::RECT,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent_resource: *mut *mut ::std::ffi::c_void,
+        p_subresource_index: *mut u32,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IDXGISwapChain(::windows::IUnknown);
+impl IDXGISwapChain {}
+unsafe impl ::windows::Interface for IDXGISwapChain {
+    type Vtable = IDXGISwapChain_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        822949536,
+        53991,
+        19466,
+        [170, 4, 106, 157, 35, 184, 136, 106],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGISwapChain {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(flags),
+        )
+    }
+    pub unsafe fn GetBuffer(
+        &self,
+        buffer: u32,
+        riid: *const ::windows::Guid,
+        pp_surface: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(buffer),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_surface),
+        )
+    }
+    pub unsafe fn SetFullscreenState<
+        'a,
+        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, IDXGIOutput>,
+    >(
+        &self,
+        fullscreen: T0__,
+        p_target: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            fullscreen.into_param().abi(),
+            p_target.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetFullscreenState(
+        &self,
+        p_fullscreen: *mut super::system_services::BOOL,
+        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).11)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_fullscreen),
+            ::std::mem::transmute(pp_target),
+        )
+    }
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn ResizeBuffers(
+        &self,
+        buffer_count: u32,
+        width: u32,
+        height: u32,
+        new_format: DXGI_FORMAT,
+        swap_chain_flags: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(width),
+            ::std::mem::transmute(height),
+            ::std::mem::transmute(new_format),
+            ::std::mem::transmute(swap_chain_flags),
+        )
+    }
+    pub unsafe fn ResizeTarget(
+        &self,
+        p_new_target_parameters: *const DXGI_MODE_DESC,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).14)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_new_target_parameters),
+        )
+    }
+    pub unsafe fn GetContainingOutput(
+        &self,
+        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).15)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pp_output),
+        )
+    }
+    pub unsafe fn GetFrameStatistics(
+        &self,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).16)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_stats),
+        )
+    }
+    pub unsafe fn GetLastPresentCount(
+        &self,
+        p_last_present_count: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).17)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_last_present_count),
+        )
+    }
+}
+impl ::std::convert::From<IDXGISwapChain> for ::windows::IUnknown {
+    fn from(value: IDXGISwapChain) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain> for ::windows::IUnknown {
+    fn from(value: &IDXGISwapChain) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISwapChain> for IDXGIDeviceSubObject {
+    fn from(value: IDXGISwapChain) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGISwapChain) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISwapChain> for IDXGIObject {
+    fn from(value: IDXGISwapChain) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain> for IDXGIObject {
+    fn from(value: &IDXGISwapChain) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISwapChain {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGISwapChain_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        sync_interval: u32,
+        flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        buffer: u32,
+        riid: *const ::windows::Guid,
+        pp_surface: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        fullscreen: super::system_services::BOOL,
+        p_target: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_fullscreen: *mut super::system_services::BOOL,
+        pp_target: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        buffer_count: u32,
+        width: u32,
+        height: u32,
+        new_format: DXGI_FORMAT,
+        swap_chain_flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_new_target_parameters: *const DXGI_MODE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pp_output: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_last_present_count: *mut u32,
+    ) -> ::windows::ErrorCode,
+);
+#[repr(transparent)]
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: clone :: Clone,
+    :: std :: fmt :: Debug,
+)]
+pub struct IDXGISwapChain1(::windows::IUnknown);
+impl IDXGISwapChain1 {}
+unsafe impl ::windows::Interface for IDXGISwapChain1 {
+    type Vtable = IDXGISwapChain1_abi;
+    const IID: ::windows::Guid = ::windows::Guid::from_values(
+        2030716407,
+        3394,
+        18550,
+        [152, 58, 10, 85, 207, 230, 244, 170],
+    );
+}
+#[allow(non_snake_case)]
+impl IDXGISwapChain1 {
+    pub unsafe fn SetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).3)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn SetPrivateDataInterface<
+        'a,
+        T1__: ::windows::IntoParam<'a, ::windows::IUnknown>,
+    >(
+        &self,
+        name: *const ::windows::Guid,
+        p_unknown: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).4)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            p_unknown.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetPrivateData(
+        &self,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).5)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(name),
+            ::std::mem::transmute(p_data_size),
+            ::std::mem::transmute(p_data),
+        )
+    }
+    pub unsafe fn GetParent(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).6)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_parent),
+        )
+    }
+    pub unsafe fn GetDevice(
+        &self,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).7)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_device),
+        )
+    }
+    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).8)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(flags),
+        )
+    }
+    pub unsafe fn GetBuffer(
+        &self,
+        buffer: u32,
+        riid: *const ::windows::Guid,
+        pp_surface: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).9)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(buffer),
+            ::std::mem::transmute(riid),
+            ::std::mem::transmute(pp_surface),
+        )
+    }
+    pub unsafe fn SetFullscreenState<
+        'a,
+        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, IDXGIOutput>,
+    >(
+        &self,
+        fullscreen: T0__,
+        p_target: T1__,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).10)(
+            ::windows::Abi::abi(self),
+            fullscreen.into_param().abi(),
+            p_target.into_param().abi(),
+        )
+    }
+    pub unsafe fn GetFullscreenState(
+        &self,
+        p_fullscreen: *mut super::system_services::BOOL,
+        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).11)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_fullscreen),
+            ::std::mem::transmute(pp_target),
+        )
+    }
+    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).12)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn ResizeBuffers(
+        &self,
+        buffer_count: u32,
+        width: u32,
+        height: u32,
+        new_format: DXGI_FORMAT,
+        swap_chain_flags: u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).13)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(width),
+            ::std::mem::transmute(height),
+            ::std::mem::transmute(new_format),
+            ::std::mem::transmute(swap_chain_flags),
+        )
+    }
+    pub unsafe fn ResizeTarget(
+        &self,
+        p_new_target_parameters: *const DXGI_MODE_DESC,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).14)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_new_target_parameters),
+        )
+    }
+    pub unsafe fn GetContainingOutput(
+        &self,
+        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).15)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pp_output),
+        )
+    }
+    pub unsafe fn GetFrameStatistics(
+        &self,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).16)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_stats),
+        )
+    }
+    pub unsafe fn GetLastPresentCount(
+        &self,
+        p_last_present_count: *mut u32,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).17)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_last_present_count),
+        )
+    }
+    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).18)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn GetFullscreenDesc(
+        &self,
+        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).19)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_desc),
+        )
+    }
+    pub unsafe fn GetHwnd(
+        &self,
+        p_hwnd: *mut super::windows_and_messaging::HWND,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).20)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_hwnd),
+        )
+    }
+    pub unsafe fn GetCoreWindow(
+        &self,
+        refiid: *const ::windows::Guid,
+        pp_unk: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).21)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(refiid),
+            ::std::mem::transmute(pp_unk),
+        )
+    }
+    pub unsafe fn Present1(
+        &self,
+        sync_interval: u32,
+        present_flags: u32,
+        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).22)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(present_flags),
+            ::std::mem::transmute(p_present_parameters),
+        )
+    }
+    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
+        (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
+    }
+    pub unsafe fn GetRestrictToOutput(
+        &self,
+        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
+    ) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).24)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(pp_restrict_to_output),
+        )
+    }
+    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).25)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_color),
+        )
+    }
+    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).26)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_color),
+        )
+    }
+    pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).27)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(rotation),
+        )
+    }
+    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+        (::windows::Interface::vtable(self).28)(
+            ::windows::Abi::abi(self),
+            ::std::mem::transmute(p_rotation),
+        )
+    }
+}
+impl ::std::convert::From<IDXGISwapChain1> for ::windows::IUnknown {
+    fn from(value: IDXGISwapChain1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain1> for ::windows::IUnknown {
+    fn from(value: &IDXGISwapChain1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, ::windows::IUnknown> for &'a IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, ::windows::IUnknown> {
+        ::windows::Param::Owned(::std::convert::Into::<::windows::IUnknown>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISwapChain1> for IDXGISwapChain {
+    fn from(value: IDXGISwapChain1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain1> for IDXGISwapChain {
+    fn from(value: &IDXGISwapChain1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISwapChain> for IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISwapChain> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISwapChain>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGISwapChain> for &'a IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGISwapChain> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGISwapChain>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISwapChain1> for IDXGIDeviceSubObject {
+    fn from(value: IDXGISwapChain1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain1> for IDXGIDeviceSubObject {
+    fn from(value: &IDXGISwapChain1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIDeviceSubObject> for &'a IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIDeviceSubObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIDeviceSubObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+impl ::std::convert::From<IDXGISwapChain1> for IDXGIObject {
+    fn from(value: IDXGISwapChain1) -> Self {
+        unsafe { ::std::mem::transmute(value) }
+    }
+}
+impl ::std::convert::From<&IDXGISwapChain1> for IDXGIObject {
+    fn from(value: &IDXGISwapChain1) -> Self {
+        ::std::convert::From::from(::std::clone::Clone::clone(value))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(self))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, IDXGIObject> for &'a IDXGISwapChain1 {
+    fn into_param(self) -> ::windows::Param<'a, IDXGIObject> {
+        ::windows::Param::Owned(::std::convert::Into::<IDXGIObject>::into(
+            ::std::clone::Clone::clone(self),
+        ))
+    }
+}
+#[repr(C)]
+#[doc(hidden)]
+pub struct IDXGISwapChain1_abi(
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        iid: &::windows::Guid,
+        interface: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        data_size: u32,
+        p_data: *const ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_unknown: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        name: *const ::windows::Guid,
+        p_data_size: *mut u32,
+        p_data: *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_parent: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        riid: *const ::windows::Guid,
+        pp_device: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        sync_interval: u32,
+        flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        buffer: u32,
+        riid: *const ::windows::Guid,
+        pp_surface: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        fullscreen: super::system_services::BOOL,
+        p_target: ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_fullscreen: *mut super::system_services::BOOL,
+        pp_target: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        buffer_count: u32,
+        width: u32,
+        height: u32,
+        new_format: DXGI_FORMAT,
+        swap_chain_flags: u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_new_target_parameters: *const DXGI_MODE_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pp_output: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_stats: *mut DXGI_FRAME_STATISTICS,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_last_present_count: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_hwnd: *mut super::windows_and_messaging::HWND,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        refiid: *const ::windows::Guid,
+        pp_unk: *mut *mut ::std::ffi::c_void,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        sync_interval: u32,
+        present_flags: u32,
+        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pp_restrict_to_output: *mut ::windows::RawPtr,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_color: *const DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_color: *mut DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        rotation: DXGI_MODE_ROTATION,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        p_rotation: *mut DXGI_MODE_ROTATION,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]

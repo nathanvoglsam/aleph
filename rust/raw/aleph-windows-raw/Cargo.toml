@@ -49,12 +49,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 version = "1"
 
 [dependencies]
-##windows = { path = "../../../../windows-rs", version = "0.4" }
-windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation" }
+windows = "0.5"
 
 [build-dependencies]
-##windows = { path = "../../../../windows-rs", version = "0.4" }
-windows = { git = "https://github.com/nathanvoglsam/windows-rs.git", branch = "array-generation" }
+windows = "0.5"
 
 [build-dependencies.syn]
 version = "1"

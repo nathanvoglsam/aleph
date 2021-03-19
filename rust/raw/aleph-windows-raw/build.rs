@@ -44,7 +44,6 @@ fn main() {
             WaitForSingleObject,
             WaitForMultipleObjects,
             ResetEvent,
-            INFINITE,
             LoadLibraryW,
             LoadLibraryA,
             GetProcAddress,

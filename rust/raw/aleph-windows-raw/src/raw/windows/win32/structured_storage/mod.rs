@@ -161,43 +161,6 @@ pub struct ISequentialStream_abi(
         pcb_written: *mut u32,
     ) -> ::windows::ErrorCode,
 );
-#[allow(non_camel_case_types)]
-#[derive(
-    :: std :: cmp :: PartialEq,
-    :: std :: cmp :: Eq,
-    :: std :: marker :: Copy,
-    :: std :: clone :: Clone,
-    :: std :: default :: Default,
-    :: std :: fmt :: Debug,
-)]
-#[repr(transparent)]
-pub struct STREAM_SEEK(pub u32);
-impl STREAM_SEEK {
-    #![allow(non_upper_case_globals)]
-    pub const STREAM_SEEK_SET: Self = Self(0u32);
-    pub const STREAM_SEEK_CUR: Self = Self(1u32);
-    pub const STREAM_SEEK_END: Self = Self(2u32);
-}
-impl ::std::convert::From<u32> for STREAM_SEEK {
-    fn from(value: u32) -> Self {
-        Self(value)
-    }
-}
-unsafe impl ::windows::Abi for STREAM_SEEK {
-    type Abi = Self;
-}
-impl ::std::ops::BitOr for STREAM_SEEK {
-    type Output = Self;
-    fn bitor(self, rhs: Self) -> Self {
-        Self(self.0 | rhs.0)
-    }
-}
-impl ::std::ops::BitAnd for STREAM_SEEK {
-    type Output = Self;
-    fn bitand(self, rhs: Self) -> Self {
-        Self(self.0 & rhs.0)
-    }
-}
 #[repr(transparent)]
 #[allow(non_camel_case_types)]
 #[derive(
@@ -239,19 +202,6 @@ impl IStream {
             ::std::mem::transmute(pv),
             ::std::mem::transmute(cb),
             ::std::mem::transmute(pcb_written),
-        )
-    }
-    pub unsafe fn Seek(
-        &self,
-        dlib_move: i64,
-        dw_origin: STREAM_SEEK,
-        plib_new_position: *mut u64,
-    ) -> ::windows::ErrorCode {
-        (::windows::Interface::vtable(self).5)(
-            ::windows::Abi::abi(self),
-            ::std::mem::transmute(dlib_move),
-            ::std::mem::transmute(dw_origin),
-            ::std::mem::transmute(plib_new_position),
         )
     }
     pub unsafe fn SetSize(&self, lib_new_size: u64) -> ::windows::ErrorCode {
@@ -390,12 +340,7 @@ pub struct IStream_abi(
         cb: u32,
         pcb_written: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        dlib_move: i64,
-        dw_origin: STREAM_SEEK,
-        plib_new_position: *mut u64,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         lib_new_size: u64,

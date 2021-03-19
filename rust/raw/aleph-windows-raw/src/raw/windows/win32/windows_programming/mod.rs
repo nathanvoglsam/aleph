@@ -40,7 +40,7 @@ unsafe impl ::windows::Abi for FILETIME {
     type Abi = Self;
 }
 #[allow(non_camel_case_types)]
-pub type LPFIBER_START_ROUTINE = extern "system" fn();
+pub type LPFIBER_START_ROUTINE = extern "system" fn(lp_fiber_parameter: *mut ::std::ffi::c_void);
 pub unsafe fn CloseHandle<'a, T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>>(
     h_object: T0__,
 ) -> super::system_services::BOOL {

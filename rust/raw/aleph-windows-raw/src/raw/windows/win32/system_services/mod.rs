@@ -4,20 +4,20 @@
 #[derive(
     :: std :: clone :: Clone, :: std :: marker :: Copy, :: std :: cmp :: Eq, :: std :: fmt :: Debug,
 )]
-pub struct PSTR(pub *mut u8);
-impl ::std::default::Default for PSTR {
+pub struct PWSTR(pub *mut u16);
+impl ::std::default::Default for PWSTR {
     fn default() -> Self {
         Self(::std::ptr::null_mut())
     }
 }
-impl ::std::cmp::PartialEq for PSTR {
+impl ::std::cmp::PartialEq for PWSTR {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
-unsafe impl ::windows::Abi for PSTR {
+unsafe impl ::windows::Abi for PWSTR {
     type Abi = Self;
-    fn drop_param<'a>(param: &mut ::windows::Param<'a, Self>) {
+    fn drop_param(param: &mut ::windows::Param<Self>) {
         if let ::windows::Param::Boxed(value) = param {
             if !value.0.is_null() {
                 unsafe {
@@ -27,22 +27,22 @@ unsafe impl ::windows::Abi for PSTR {
         }
     }
 }
-impl<'a> ::windows::IntoParam<'a, PSTR> for &'a str {
-    fn into_param(self) -> ::windows::Param<'a, PSTR> {
-        ::windows::Param::Boxed(PSTR(::std::boxed::Box::<[u8]>::into_raw(
-            self.bytes()
+impl<'a> ::windows::IntoParam<'a, PWSTR> for &'a str {
+    fn into_param(self) -> ::windows::Param<'a, PWSTR> {
+        ::windows::Param::Boxed(PWSTR(::std::boxed::Box::<[u16]>::into_raw(
+            self.encode_utf16()
                 .chain(::std::iter::once(0))
-                .collect::<std::vec::Vec<u8>>()
+                .collect::<std::vec::Vec<u16>>()
                 .into_boxed_slice(),
         ) as _))
     }
 }
-impl<'a> ::windows::IntoParam<'a, PSTR> for String {
-    fn into_param(self) -> ::windows::Param<'a, PSTR> {
-        ::windows::Param::Boxed(PSTR(::std::boxed::Box::<[u8]>::into_raw(
-            self.bytes()
+impl<'a> ::windows::IntoParam<'a, PWSTR> for String {
+    fn into_param(self) -> ::windows::Param<'a, PWSTR> {
+        ::windows::Param::Boxed(PWSTR(::std::boxed::Box::<[u16]>::into_raw(
+            self.encode_utf16()
                 .chain(::std::iter::once(0))
-                .collect::<std::vec::Vec<u8>>()
+                .collect::<std::vec::Vec<u16>>()
                 .into_boxed_slice(),
         ) as _))
     }
@@ -60,11 +60,7 @@ pub struct BOOL(pub i32);
 impl BOOL {
     #[inline]
     pub fn as_bool(self) -> bool {
-        if self.0 == 0 {
-            false
-        } else {
-            true
-        }
+        !(self.0 == 0)
     }
     #[inline]
     pub fn ok(self) -> ::windows::Result<()> {
@@ -143,6 +139,54 @@ impl<'a> ::windows::IntoParam<'a, BOOL> for bool {
 }
 #[repr(C)]
 #[allow(non_snake_case)]
+#[derive(
+    :: std :: clone :: Clone, :: std :: marker :: Copy, :: std :: cmp :: Eq, :: std :: fmt :: Debug,
+)]
+pub struct PSTR(pub *mut u8);
+impl ::std::default::Default for PSTR {
+    fn default() -> Self {
+        Self(::std::ptr::null_mut())
+    }
+}
+impl ::std::cmp::PartialEq for PSTR {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+unsafe impl ::windows::Abi for PSTR {
+    type Abi = Self;
+    fn drop_param(param: &mut ::windows::Param<Self>) {
+        if let ::windows::Param::Boxed(value) = param {
+            if !value.0.is_null() {
+                unsafe {
+                    ::std::boxed::Box::from_raw(value.0);
+                }
+            }
+        }
+    }
+}
+impl<'a> ::windows::IntoParam<'a, PSTR> for &'a str {
+    fn into_param(self) -> ::windows::Param<'a, PSTR> {
+        ::windows::Param::Boxed(PSTR(::std::boxed::Box::<[u8]>::into_raw(
+            self.bytes()
+                .chain(::std::iter::once(0))
+                .collect::<std::vec::Vec<u8>>()
+                .into_boxed_slice(),
+        ) as _))
+    }
+}
+impl<'a> ::windows::IntoParam<'a, PSTR> for String {
+    fn into_param(self) -> ::windows::Param<'a, PSTR> {
+        ::windows::Param::Boxed(PSTR(::std::boxed::Box::<[u8]>::into_raw(
+            self.bytes()
+                .chain(::std::iter::once(0))
+                .collect::<std::vec::Vec<u8>>()
+                .into_boxed_slice(),
+        ) as _))
+    }
+}
+#[repr(C)]
+#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HANDLE(pub isize);
 impl HANDLE {}
@@ -166,54 +210,6 @@ impl ::std::cmp::PartialEq for HANDLE {
 impl ::std::cmp::Eq for HANDLE {}
 unsafe impl ::windows::Abi for HANDLE {
     type Abi = Self;
-}
-#[repr(C)]
-#[allow(non_snake_case)]
-#[derive(
-    :: std :: clone :: Clone, :: std :: marker :: Copy, :: std :: cmp :: Eq, :: std :: fmt :: Debug,
-)]
-pub struct PWSTR(pub *mut u16);
-impl ::std::default::Default for PWSTR {
-    fn default() -> Self {
-        Self(::std::ptr::null_mut())
-    }
-}
-impl ::std::cmp::PartialEq for PWSTR {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-unsafe impl ::windows::Abi for PWSTR {
-    type Abi = Self;
-    fn drop_param<'a>(param: &mut ::windows::Param<'a, Self>) {
-        if let ::windows::Param::Boxed(value) = param {
-            if !value.0.is_null() {
-                unsafe {
-                    ::std::boxed::Box::from_raw(value.0);
-                }
-            }
-        }
-    }
-}
-impl<'a> ::windows::IntoParam<'a, PWSTR> for &'a str {
-    fn into_param(self) -> ::windows::Param<'a, PWSTR> {
-        ::windows::Param::Boxed(PWSTR(::std::boxed::Box::<[u16]>::into_raw(
-            self.encode_utf16()
-                .chain(::std::iter::once(0))
-                .collect::<std::vec::Vec<u16>>()
-                .into_boxed_slice(),
-        ) as _))
-    }
-}
-impl<'a> ::windows::IntoParam<'a, PWSTR> for String {
-    fn into_param(self) -> ::windows::Param<'a, PWSTR> {
-        ::windows::Param::Boxed(PWSTR(::std::boxed::Box::<[u16]>::into_raw(
-            self.encode_utf16()
-                .chain(::std::iter::once(0))
-                .collect::<std::vec::Vec<u16>>()
-                .into_boxed_slice(),
-        ) as _))
-    }
 }
 #[repr(C)]
 #[allow(non_snake_case)]
@@ -313,13 +309,53 @@ pub unsafe fn CreateEventW<
         lp_name.into_param().abi(),
     )
 }
+#[allow(non_camel_case_types)]
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct WAIT_RETURN_CAUSE(pub u32);
+impl WAIT_RETURN_CAUSE {
+    #![allow(non_upper_case_globals)]
+    pub const WAIT_OBJECT_0: Self = Self(0u32);
+    pub const WAIT_ABANDONED: Self = Self(128u32);
+    pub const WAIT_ABANDONED_0: Self = Self(128u32);
+    pub const WAIT_IO_COMPLETION: Self = Self(192u32);
+    pub const WAIT_TIMEOUT: Self = Self(258u32);
+    pub const WAIT_FAILED: Self = Self(4294967295u32);
+}
+impl ::std::convert::From<u32> for WAIT_RETURN_CAUSE {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for WAIT_RETURN_CAUSE {
+    type Abi = Self;
+}
+impl ::std::ops::BitOr for WAIT_RETURN_CAUSE {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+impl ::std::ops::BitAnd for WAIT_RETURN_CAUSE {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
 pub unsafe fn WaitForSingleObject<'a, T0__: ::windows::IntoParam<'a, HANDLE>>(
     h_handle: T0__,
     dw_milliseconds: u32,
-) -> u32 {
+) -> WAIT_RETURN_CAUSE {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn WaitForSingleObject(h_handle: HANDLE, dw_milliseconds: u32) -> u32;
+        pub fn WaitForSingleObject(h_handle: HANDLE, dw_milliseconds: u32) -> WAIT_RETURN_CAUSE;
     }
     WaitForSingleObject(
         h_handle.into_param().abi(),
@@ -331,7 +367,7 @@ pub unsafe fn WaitForMultipleObjects<'a, T2__: ::windows::IntoParam<'a, BOOL>>(
     lp_handles: *const HANDLE,
     b_wait_all: T2__,
     dw_milliseconds: u32,
-) -> u32 {
+) -> WAIT_RETURN_CAUSE {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn WaitForMultipleObjects(
@@ -339,7 +375,7 @@ pub unsafe fn WaitForMultipleObjects<'a, T2__: ::windows::IntoParam<'a, BOOL>>(
             lp_handles: *const HANDLE,
             b_wait_all: BOOL,
             dw_milliseconds: u32,
-        ) -> u32;
+        ) -> WAIT_RETURN_CAUSE;
     }
     WaitForMultipleObjects(
         ::std::mem::transmute(n_count),
@@ -355,7 +391,6 @@ pub unsafe fn ResetEvent<'a, T0__: ::windows::IntoParam<'a, HANDLE>>(h_event: T0
     }
     ResetEvent(h_event.into_param().abi())
 }
-pub const INFINITE: u32 = 4294967295u32;
 pub unsafe fn LoadLibraryW<'a, T0__: ::windows::IntoParam<'a, PWSTR>>(
     lp_lib_file_name: T0__,
 ) -> isize {

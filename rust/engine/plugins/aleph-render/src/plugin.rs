@@ -233,7 +233,7 @@ impl IPlugin for RenderPlugin {
             data.swap_chain.present(0, 0).unwrap();
 
             queue_recorder.signal(&data.fence, 1).unwrap();
-            data.event.wait(None);
+            data.event.wait(None).unwrap();
         }
     }
 }
