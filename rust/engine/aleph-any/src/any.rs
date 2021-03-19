@@ -1,11 +1,3 @@
-use crate::AnyRef;
-use core::any::TypeId;
-use core::marker::PhantomData;
-use core::ptr::NonNull;
-
-/// This struct is used for splitting a trait object (`&dyn SomeTrait`) into it's actual binary
-/// representation so we can hack on it.
-///
 //
 //
 // This file is a part of Aleph
@@ -34,6 +26,11 @@ use core::ptr::NonNull;
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+use core::any::TypeId;
+use core::marker::PhantomData;
+use core::mem::size_of;
+use core::ptr::NonNull;
 
 /// An end user of this crate should never have to interact with this type directly, but it needs
 /// to be public as it is part of the `__query_interface` interface.
@@ -76,9 +73,28 @@ pub trait IAny: 'static {
     }
 }
 
-///
-/// Trait for converting from something that implements IAny into an `AnyRef<dyn IAny>`
-///
-pub trait AsIAny: IAny {
-    fn as_interface(&self) -> AnyRef<dyn IAny>;
+pub trait QueryInterface: IAny {
+    /// Generic wrapper function over the bare implementation of `__query_interface` that makes
+    /// using it safe and simple.
+    fn query_interface<Into: IAny + ?Sized>(&self) -> Option<&Into>;
+}
+
+impl<T: IAny + ?Sized> QueryInterface for T {
+    fn query_interface<Into: IAny + ?Sized>(&self) -> Option<&Into> {
+        // Assert that trait object is the size of two pointers. Compiles to nothing
+        assert_eq!(size_of::<TraitObject>(), size_of::<usize>() * 2);
+
+        // Assert that the null pointer NonNull is correctly triggering size optimization. Compiles
+        // to nothing
+        assert_eq!(size_of::<Option<TraitObject>>(), size_of::<TraitObject>());
+
+        unsafe {
+            if let Some(obj) = self.__query_interface(TypeId::of::<Into>()) {
+                let any_ref = *(&obj as *const TraitObject as *const &Into);
+                Some(any_ref)
+            } else {
+                None
+            }
+        }
+    }
 }

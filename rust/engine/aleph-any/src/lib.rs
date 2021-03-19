@@ -55,11 +55,11 @@
 //!     }
 //! }
 //!
-//! pub fn to_concrete(interface: AnyRef<dyn IInterfaceB>) -> Option<&Concrete> {
-//!     interface.query_interface::<Concrete>().map(|v| v.into_bare())
+//! pub fn to_concrete(interface: &dyn IInterfaceB) -> Option<&Concrete> {
+//!     interface.query_interface::<Concrete>()
 //! }
 //!
-//! pub fn to_interface(interface: AnyRef<dyn IInterfaceB>) -> Option<AnyRef<dyn IInterfaceA>> {
+//! pub fn to_interface(interface: &dyn IInterfaceB) -> Option<&dyn IInterfaceA> {
 //!     interface.query_interface()
 //! }
 //!
@@ -69,18 +69,15 @@
 
 mod any;
 mod any_arc;
-mod any_ref;
 
 #[cfg(test)]
 mod tests;
 
-pub use any::AsIAny;
 pub use any::IAny;
+pub use any::QueryInterface;
 pub use any::TraitObject;
 pub use any_arc::AnyArc;
 pub use any_arc::AnyWeak;
-pub use any_ref::AnyMut;
-pub use any_ref::AnyRef;
 
 /// This macro is used for implementing IAny for a concrete type. This will correctly generate the
 /// required glue for casting to any of the provided interfaces that the concrete type implements.
@@ -138,11 +135,6 @@ macro_rules! declare_interfaces (
                         None
                     }
                 }
-            }
-        }
-        impl $crate::AsIAny for $typ {
-            fn as_interface(&self) -> $crate::AnyRef<dyn $crate::IAny> {
-                $crate::AnyRef::new(self)
             }
         }
     }
