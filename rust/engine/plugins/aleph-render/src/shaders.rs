@@ -30,6 +30,7 @@
 ///
 /// Gets the raw dxil bytes for the egui fragment shader
 ///
+#[allow(unused)]
 pub fn egui_frag_shader() -> &'static [u8] {
     include_bytes!("../shaders/compiled/egui/egui.frag.dxil")
 }
@@ -37,6 +38,7 @@ pub fn egui_frag_shader() -> &'static [u8] {
 ///
 /// Gets the raw dxil bytes for the egui vertex shader
 ///
+#[allow(unused)]
 pub fn egui_vert_shader() -> &'static [u8] {
     include_bytes!("../shaders/compiled/egui/egui.vert.dxil")
 }
@@ -44,6 +46,7 @@ pub fn egui_vert_shader() -> &'static [u8] {
 ///
 /// Gets the raw dxil bytes for the standard fragment shader
 ///
+#[allow(unused)]
 pub fn standard_frag_shader() -> &'static [u8] {
     include_bytes!("../shaders/compiled/standard/standard.frag.dxil")
 }
@@ -51,6 +54,7 @@ pub fn standard_frag_shader() -> &'static [u8] {
 ///
 /// Gets the raw dxil bytes for the standard vertex shader
 ///
+#[allow(unused)]
 pub fn standard_vert_shader() -> &'static [u8] {
     include_bytes!("../shaders/compiled/standard/standard.vert.dxil")
 }
@@ -58,6 +62,7 @@ pub fn standard_vert_shader() -> &'static [u8] {
 ///
 /// Gets the raw dxil bytes for the standard vertex shader
 ///
+//#[allow(unused)]
 //pub fn tonemapping_frag_shader() -> (&'static [u8], &'static [u32]) {
 //    include_bytes!("../shaders/compiled/postprocess/tonemapping.frag.dxil")
 //}
@@ -65,6 +70,7 @@ pub fn standard_vert_shader() -> &'static [u8] {
 ///
 /// Gets the raw dxil bytes for the standard vertex shader
 ///
+#[allow(unused)]
 pub fn fullscreen_quad_vert_shader() -> &'static [u8] {
     include_bytes!("../shaders/compiled/fullscreen_quad/fullscreen_quad.vert.dxil")
 }

@@ -45,16 +45,12 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-log = { path = "../../../logging/aleph-log", version = "1" }
+aleph-egui = { path = "../aleph-egui", version = "0.1" }
+aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
 aleph-dx12 = { path = "../../../graphics/aleph-dx12", version = "0.1" }
 aleph-dx12-alloc = { path = "../../../graphics/aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../../../graphics/aleph-pix", version = "0.1" }
-aleph-embedded-data = { path = "../../aleph-embedded-data", version = "0.1" }
-aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
-aleph-egui = { path = "../aleph-egui", version = "0.1" }
+aleph-log = { path = "../../../logging/aleph-log", version = "1" }
 cstr = "0.2"
 once_cell = "1"
-
-[dependencies.ultraviolet]
-version = "0.7"
-features = ["f64"]
+ultraviolet = {version = "0.7", features = ["f64"] }

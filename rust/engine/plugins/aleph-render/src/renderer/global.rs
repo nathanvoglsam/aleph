@@ -65,8 +65,8 @@ impl GlobalObjects {
         let pipeline_state = Self::create_pipeline_state(
             device,
             &root_signature,
-            embedded_data::shaders::egui_vert_shader(),
-            embedded_data::shaders::egui_frag_shader(),
+            crate::shaders::egui_vert_shader(),
+            crate::shaders::egui_frag_shader(),
         );
         pipeline_state
             .set_name("egui::GraphicsPipelineState")

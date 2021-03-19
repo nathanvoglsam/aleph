@@ -41,7 +41,6 @@ members = [
     "rust/build/aleph-target-build",
     "rust/engine/aleph-any",
     "rust/engine/plugins/aleph-egui",
-    "rust/engine/aleph-embedded-data",
     "rust/engine/aleph-engine",
     "rust/engine/aleph-interfaces",
     "rust/engine/plugins/aleph-sdl2",

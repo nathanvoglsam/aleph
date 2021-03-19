@@ -37,9 +37,6 @@ extern crate aleph_dx12_alloc as dx12_alloc;
 extern crate aleph_egui as egui;
 
 #[cfg(target_os = "windows")]
-extern crate aleph_embedded_data as embedded_data;
-
-#[cfg(target_os = "windows")]
 extern crate aleph_interfaces as interfaces;
 
 #[cfg(target_os = "windows")]
@@ -56,6 +53,9 @@ mod plugin;
 
 #[cfg(target_os = "windows")]
 mod renderer;
+
+#[cfg(target_os = "windows")]
+mod shaders;
 
 #[cfg(target_os = "windows")]
 pub use plugin::RenderPlugin;
