@@ -218,7 +218,7 @@ impl PerFrameObjects {
                 state_before: dx12::ResourceStates::COPY_DEST,
                 state_after: dx12::ResourceStates::PIXEL_SHADER_RESOURCE,
             };
-            command_list.resource_barrier_single(&barrier);
+            command_list.resource_barrier(&[barrier]);
         });
     }
 

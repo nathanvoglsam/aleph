@@ -150,7 +150,7 @@ impl EguiRenderer {
             state_before: dx12::ResourceStates::PRESENT,
             state_after: dx12::ResourceStates::RENDER_TARGET,
         };
-        command_list.resource_barrier_single(&barrier);
+        command_list.resource_barrier(&[barrier]);
 
         // Clear the render target
         command_list.clear_render_target_view(
@@ -209,7 +209,7 @@ impl EguiRenderer {
             state_before: dx12::ResourceStates::RENDER_TARGET,
             state_after: dx12::ResourceStates::PRESENT,
         };
-        command_list.resource_barrier_single(&barrier);
+        command_list.resource_barrier(&[barrier]);
 
         command_list.close().unwrap();
 

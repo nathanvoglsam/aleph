@@ -35,7 +35,7 @@ use crate::{
     TextureCopyLocation, TileCopyFlags, TileRegionSize, TiledResourceCoordinate, VertexBufferView,
     Viewport,
 };
-use std::mem::{align_of, size_of};
+use std::mem::{align_of, size_of, MaybeUninit};
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
@@ -252,22 +252,39 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 
     /// `ID3D12GraphicsCommandList::ResourceBarrier`
-    pub unsafe fn resource_barrier(&mut self, barriers: &[&ResourceBarrier]) {
-        // Need to heap alloc to translate the type to something FFI compatible. Can't make the
-        // wrapper FFI compatible without forcing very non-idiomatic and unsafe code on the user.
-        let barriers: Vec<D3D12_RESOURCE_BARRIER> = barriers.iter().map(|v| v.get_raw()).collect();
-        let num_barriers = barriers.len() as u32;
-        let p_barriers = barriers.as_ptr();
-        self.0.ResourceBarrier(num_barriers, p_barriers as *const _)
+    ///
+    /// Version of `resource_barrier` that can only take a number of barriers known at
+    /// compile time, but skips a heap allocation.
+    pub unsafe fn resource_barrier<const NUM: usize>(&mut self, barriers: &[ResourceBarrier; NUM]) {
+        const VAL: MaybeUninit<D3D12_RESOURCE_BARRIER> = MaybeUninit::uninit();
+        let mut list: [MaybeUninit<D3D12_RESOURCE_BARRIER>; NUM] = [VAL; NUM];
+
+        barriers.into_iter().enumerate().for_each(|(i, v)| {
+            list[i].as_mut_ptr().write(v.get_raw());
+        });
+
+        let p_barriers = list.as_ptr() as *const _;
+
+        self.0.ResourceBarrier(NUM as u32, p_barriers);
     }
 
     /// `ID3D12GraphicsCommandList::ResourceBarrier`
     ///
-    /// Alternate version of `resource_barrier` that provides only a single resource barrier, but
-    /// skips a heap allocation
-    pub unsafe fn resource_barrier_single(&mut self, barrier: &ResourceBarrier) {
-        let barrier: D3D12_RESOURCE_BARRIER = barrier.get_raw();
-        self.0.ResourceBarrier(1, &barrier)
+    /// Version of `resource_barrier` that can take an arbitrary number of barriers, including a
+    /// number of barriers not known at compile time.
+    ///
+    /// This has the side effect of requiring a heap allocation to allocate a buffer for the
+    /// translated resource barriers that get passed to the underlying api.
+    ///
+    /// Prefer `Self::resource_barrier` over this whenever possible
+    pub unsafe fn resource_barrier_dynamic(&mut self, barriers: &[ResourceBarrier]) {
+        // Need to heap alloc to translate the type to something FFI compatible. Can't make the
+        // wrapper FFI compatible without forcing very non-idiomatic and unsafe code on the user.
+        let barriers: Vec<D3D12_RESOURCE_BARRIER> =
+            barriers.into_iter().map(|v| v.get_raw()).collect();
+        let num_barriers = barriers.len() as u32;
+        let p_barriers = barriers.as_ptr();
+        self.0.ResourceBarrier(num_barriers, p_barriers)
     }
 
     /// `ID3D12GraphicsCommandList::ExecuteBundle`
