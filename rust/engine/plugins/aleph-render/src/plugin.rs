@@ -226,9 +226,7 @@ impl IPlugin for RenderPlugin {
 
             let mut queue_recorder = data.queue.record();
 
-            let mut submission_builder = dx12::SubmissionBuilder::new();
-            submission_builder.add(&command_list);
-            queue_recorder.execute_command_lists(&submission_builder);
+            queue_recorder.execute_command_lists(&[&command_list]);
 
             data.swap_chain.present(0, 0).unwrap();
 
