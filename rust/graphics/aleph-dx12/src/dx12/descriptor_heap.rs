@@ -32,7 +32,6 @@ use std::convert::TryFrom;
 use std::mem::transmute;
 use windows_raw::win32::direct3d12::ID3D12DescriptorHeap;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 
@@ -58,4 +57,5 @@ impl DescriptorHeap {
 
 crate::object_impl!(DescriptorHeap);
 crate::device_child_impl!(DescriptorHeap);
+crate::shared_object!(DescriptorHeap);
 windows_raw::deref_impl!(DescriptorHeap, ID3D12DescriptorHeap);

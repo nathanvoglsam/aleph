@@ -31,7 +31,6 @@ use crate::{Fence, GraphicsCommandList};
 use std::ffi::c_void;
 use windows_raw::win32::direct3d12::ID3D12CommandQueue;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
@@ -82,4 +81,5 @@ impl CommandQueue {
 
 crate::object_impl!(CommandQueue);
 crate::device_child_impl!(CommandQueue);
+crate::shared_object!(CommandQueue);
 windows_raw::deref_impl!(CommandQueue, ID3D12CommandQueue);

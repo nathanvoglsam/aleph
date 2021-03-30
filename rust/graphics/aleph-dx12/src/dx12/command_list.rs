@@ -47,8 +47,6 @@ use windows_raw::win32::direct3d12::{
 #[repr(transparent)]
 pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
-unsafe impl Send for GraphicsCommandList {}
-
 impl GraphicsCommandList {
     pub unsafe fn reset<T: Into<PipelineState> + Clone>(
         &mut self,
@@ -802,4 +800,5 @@ impl GraphicsCommandList {
 
 crate::object_impl!(GraphicsCommandList);
 crate::device_child_impl!(GraphicsCommandList);
+crate::owned_object!(GraphicsCommandList);
 windows_raw::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);

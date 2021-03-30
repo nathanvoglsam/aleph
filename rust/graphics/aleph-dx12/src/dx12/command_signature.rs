@@ -29,7 +29,6 @@
 
 use windows_raw::win32::direct3d12::ID3D12CommandSignature;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct CommandSignature(pub(crate) ID3D12CommandSignature);
 
@@ -37,4 +36,5 @@ impl CommandSignature {}
 
 crate::object_impl!(CommandSignature);
 crate::device_child_impl!(CommandSignature);
+crate::shared_object!(CommandSignature);
 windows_raw::deref_impl!(CommandSignature, ID3D12CommandSignature);

@@ -29,7 +29,6 @@
 
 use windows_raw::win32::direct3d12::ID3D12Heap;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct Heap(pub(crate) ID3D12Heap);
 
@@ -37,4 +36,5 @@ impl Heap {}
 
 crate::object_impl!(Heap);
 crate::device_child_impl!(Heap);
+crate::shared_object!(Heap);
 windows_raw::deref_impl!(Heap, ID3D12Heap);

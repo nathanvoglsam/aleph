@@ -30,7 +30,6 @@
 use crate::dxgi::AdapterDesc;
 use windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct Adapter(pub(crate) IDXGIAdapter1);
 
@@ -45,3 +44,5 @@ impl Adapter {
         }
     }
 }
+
+crate::shared_object!(Adapter);

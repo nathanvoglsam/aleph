@@ -42,7 +42,6 @@ pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_
         "D3D12SerializeVersionedRootSignature\0",
     );
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
@@ -59,3 +58,5 @@ impl RootSignatureBlob {
             .map(|v| RootSignatureBlob(v))
     }
 }
+
+crate::shared_object!(RootSignatureBlob);

@@ -37,6 +37,7 @@ use windows_raw::win32::dxgi::{
 use windows_raw::IUnknown;
 use windows_raw::{Abi, Interface};
 
+#[repr(transparent)]
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {

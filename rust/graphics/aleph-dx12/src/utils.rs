@@ -55,3 +55,23 @@ macro_rules! object_impl {
         }
     };
 }
+
+#[macro_export]
+macro_rules! owned_object {
+    ($t:ident) => {
+        unsafe impl Send for $t {}
+    };
+}
+
+#[macro_export]
+macro_rules! shared_object {
+    ($t:ident) => {
+        impl ::core::clone::Clone for $t {
+            fn clone(&self) -> Self {
+                Self(self.0.clone())
+            }
+        }
+        unsafe impl Send for $t {}
+        unsafe impl Sync for $t {}
+    };
+}

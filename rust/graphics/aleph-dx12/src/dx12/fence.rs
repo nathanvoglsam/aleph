@@ -31,7 +31,6 @@ use crate::Event;
 use windows_raw::win32::direct3d12::ID3D12Fence;
 use windows_raw::win32::system_services::HANDLE;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct Fence(pub(crate) ID3D12Fence);
 
@@ -48,3 +47,7 @@ impl Fence {
         }
     }
 }
+
+crate::object_impl!(Fence);
+crate::device_child_impl!(Fence);
+crate::shared_object!(Fence);

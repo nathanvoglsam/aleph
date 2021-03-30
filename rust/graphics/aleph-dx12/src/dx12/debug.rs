@@ -35,7 +35,6 @@ use windows_raw::{Abi, Interface};
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12GetDebugInterface\0");
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct Debug(pub(crate) ID3D12Debug);
 
@@ -67,3 +66,5 @@ impl Debug {
         Ok(())
     }
 }
+
+crate::owned_object!(Debug);

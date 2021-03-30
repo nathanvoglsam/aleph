@@ -29,7 +29,6 @@
 
 use windows_raw::win32::direct3d12::ID3D12RootSignature;
 
-#[derive(Clone)]
 #[repr(transparent)]
 pub struct RootSignature(pub(crate) ID3D12RootSignature);
 
@@ -37,4 +36,5 @@ impl RootSignature {}
 
 crate::object_impl!(RootSignature);
 crate::device_child_impl!(RootSignature);
+crate::shared_object!(RootSignature);
 windows_raw::deref_impl!(RootSignature, ID3D12RootSignature);
