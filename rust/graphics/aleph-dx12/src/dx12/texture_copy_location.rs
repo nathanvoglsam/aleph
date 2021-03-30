@@ -29,7 +29,7 @@
 
 use crate::{PlacedSubresourceFootprint, Resource};
 use std::mem::transmute;
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_TEXTURE_COPY_LOCATION, D3D12_TEXTURE_COPY_LOCATION_0, D3D12_TEXTURE_COPY_TYPE,
 };
 
@@ -61,19 +61,21 @@ impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
                 resource,
                 placed_footprint,
             } => D3D12_TEXTURE_COPY_LOCATION {
-                p_resource: resource.map(|v| v.0),
-                r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-                anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                    placed_footprint: unsafe { transmute(placed_footprint) },
+                pResource: resource.map(|v| v.0),
+                Type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    PlacedFootprint: unsafe { transmute(placed_footprint) },
                 },
             },
             TextureCopyLocation::Subresource {
                 resource,
                 subresource_index,
             } => D3D12_TEXTURE_COPY_LOCATION {
-                p_resource: resource.map(|v| v.0),
-                r#type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-                anonymous: D3D12_TEXTURE_COPY_LOCATION_0 { subresource_index },
+                pResource: resource.map(|v| v.0),
+                Type: D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+                Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                    SubresourceIndex: subresource_index,
+                },
             },
         }
     }

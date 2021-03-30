@@ -29,13 +29,13 @@
 
 use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
 use std::mem::transmute;
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
     D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     D3D12_RASTERIZER_DESC, D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT,
 };
-use windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+use windows_raw::Win32::Dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
 #[derive(Clone, Debug)]
 pub struct MeshShaderPipelineStateDesc {
@@ -101,8 +101,8 @@ impl MeshShaderPipelineStateDesc {
             render_targets: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
-                    rt_formats: self.rtv_formats,
-                    num_render_targets: self.num_render_targets,
+                    RTFormats: self.rtv_formats,
+                    NumRenderTargets: self.num_render_targets,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
@@ -134,12 +134,12 @@ impl MeshShaderPipelineStateDesc {
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
     use std::ffi::c_void;
-    use windows_raw::win32::direct3d12::{
+    use windows_raw::Win32::Direct3D12::{
         D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
         D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
         D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     };
-    use windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use windows_raw::Win32::Dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<*mut c_void>;
     pub(crate) type AmplificationShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;

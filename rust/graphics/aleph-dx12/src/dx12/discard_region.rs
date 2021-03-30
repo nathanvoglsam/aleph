@@ -29,7 +29,7 @@
 
 use crate::Rect;
 use windows_raw::utils::optional_slice_to_num_ptr_pair;
-use windows_raw::win32::direct3d12::D3D12_DISCARD_REGION;
+use windows_raw::Win32::Direct3D12::D3D12_DISCARD_REGION;
 
 #[derive(Clone, Debug)]
 #[repr(C)]
@@ -43,10 +43,10 @@ impl<'a> Into<D3D12_DISCARD_REGION> for DiscardRegion<'a> {
     fn into(self) -> D3D12_DISCARD_REGION {
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(self.rects);
         D3D12_DISCARD_REGION {
-            num_rects,
-            p_rects: p_rects as *mut _,
-            first_subresource: self.first_subresource,
-            num_subresources: self.num_subresources,
+            NumRects: num_rects,
+            pRects: p_rects as *mut _,
+            FirstSubresource: self.first_subresource,
+            NumSubresources: self.num_subresources,
         }
     }
 }

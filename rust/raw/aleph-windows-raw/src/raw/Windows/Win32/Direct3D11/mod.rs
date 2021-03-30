@@ -1,5 +1,12 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
-#[allow(non_camel_case_types)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11,7 +18,6 @@
 #[repr(transparent)]
 pub struct D3D_FEATURE_LEVEL(pub i32);
 impl D3D_FEATURE_LEVEL {
-    #![allow(non_upper_case_globals)]
     pub const D3D_FEATURE_LEVEL_1_0_CORE: Self = Self(4096i32);
     pub const D3D_FEATURE_LEVEL_9_1: Self = Self(37120i32);
     pub const D3D_FEATURE_LEVEL_9_2: Self = Self(37376i32);
@@ -32,7 +38,6 @@ unsafe impl ::windows::Abi for D3D_FEATURE_LEVEL {
     type Abi = Self;
 }
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -50,83 +55,82 @@ unsafe impl ::windows::Interface for ID3D11Device {
         [130, 83, 129, 157, 249, 187, 241, 64],
     );
 }
-#[allow(non_snake_case)]
 impl ID3D11Device {
     pub unsafe fn CreateDeferredContext(
         &self,
-        context_flags: u32,
-        pp_deferred_context: *mut ::std::option::Option<ID3D11DeviceContext>,
+        contextflags: u32,
+        ppdeferredcontext: *mut ::std::option::Option<ID3D11DeviceContext>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(context_flags),
-            ::std::mem::transmute(pp_deferred_context),
+            ::std::mem::transmute(contextflags),
+            ::std::mem::transmute(ppdeferredcontext),
         )
     }
     pub unsafe fn OpenSharedResource<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        returned_interface: *const ::windows::Guid,
-        pp_resource: *mut *mut ::std::ffi::c_void,
+        hresource: T0__,
+        returnedinterface: *const ::windows::Guid,
+        ppresource: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(returned_interface),
-            ::std::mem::transmute(pp_resource),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(returnedinterface),
+            ::std::mem::transmute(ppresource),
         )
     }
     pub unsafe fn CheckFormatSupport(
         &self,
-        format: super::dxgi::DXGI_FORMAT,
-        p_format_support: *mut u32,
+        format: super::Dxgi::DXGI_FORMAT,
+        pformatsupport: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).29)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(p_format_support),
+            ::std::mem::transmute(pformatsupport),
         )
     }
     pub unsafe fn CheckMultisampleQualityLevels(
         &self,
-        format: super::dxgi::DXGI_FORMAT,
-        sample_count: u32,
-        p_num_quality_levels: *mut u32,
+        format: super::Dxgi::DXGI_FORMAT,
+        samplecount: u32,
+        pnumqualitylevels: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(sample_count),
-            ::std::mem::transmute(p_num_quality_levels),
+            ::std::mem::transmute(samplecount),
+            ::std::mem::transmute(pnumqualitylevels),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).34)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).35)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -135,12 +139,12 @@ impl ID3D11Device {
     >(
         &self,
         guid: *const ::windows::Guid,
-        p_data: T1__,
+        pdata: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).36)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
+            pdata.into_param().abi(),
         )
     }
     pub unsafe fn GetFeatureLevel(&self) -> D3D_FEATURE_LEVEL {
@@ -154,17 +158,17 @@ impl ID3D11Device {
     }
     pub unsafe fn GetImmediateContext(
         &self,
-        pp_immediate_context: *mut ::std::option::Option<ID3D11DeviceContext>,
+        ppimmediatecontext: *mut ::std::option::Option<ID3D11DeviceContext>,
     ) {
         (::windows::Interface::vtable(self).40)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_immediate_context),
+            ::std::mem::transmute(ppimmediatecontext),
         )
     }
-    pub unsafe fn SetExceptionMode(&self, raise_flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetExceptionMode(&self, raiseflags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).41)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(raise_flags),
+            ::std::mem::transmute(raiseflags),
         )
     }
     pub unsafe fn GetExceptionMode(&self) -> u32 {
@@ -229,25 +233,25 @@ pub struct ID3D11Device_abi(
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        context_flags: u32,
-        pp_deferred_context: *mut ::windows::RawPtr,
+        contextflags: u32,
+        ppdeferredcontext: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        returned_interface: *const ::windows::Guid,
-        pp_resource: *mut *mut ::std::ffi::c_void,
+        hresource: super::SystemServices::HANDLE,
+        returnedinterface: *const ::windows::Guid,
+        ppresource: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        format: super::dxgi::DXGI_FORMAT,
-        p_format_support: *mut u32,
+        format: super::Dxgi::DXGI_FORMAT,
+        pformatsupport: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        format: super::dxgi::DXGI_FORMAT,
-        sample_count: u32,
-        p_num_quality_levels: *mut u32,
+        format: super::Dxgi::DXGI_FORMAT,
+        samplecount: u32,
+        pnumqualitylevels: *mut u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -255,32 +259,31 @@ pub struct ID3D11Device_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
+        pdata: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> D3D_FEATURE_LEVEL,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_immediate_context: *mut ::windows::RawPtr,
+        ppimmediatecontext: *mut ::windows::RawPtr,
     ),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, raise_flags: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, raiseflags: u32) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -298,38 +301,37 @@ unsafe impl ::windows::Interface for ID3D11DeviceChild {
         [188, 200, 68, 207, 176, 213, 222, 174],
     );
 }
-#[allow(non_snake_case)]
 impl ID3D11DeviceChild {
-    pub unsafe fn GetDevice(&self, pp_device: *mut ::std::option::Option<ID3D11Device>) {
+    pub unsafe fn GetDevice(&self, ppdevice: *mut ::std::option::Option<ID3D11Device>) {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -338,12 +340,12 @@ impl ID3D11DeviceChild {
     >(
         &self,
         guid: *const ::windows::Guid,
-        p_data: T1__,
+        pdata: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
+            pdata.into_param().abi(),
         )
     }
 }
@@ -379,27 +381,26 @@ pub struct ID3D11DeviceChild_abi(
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, pp_device: *mut ::windows::RawPtr),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, ppdevice: *mut ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
+        pdata: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -417,38 +418,37 @@ unsafe impl ::windows::Interface for ID3D11DeviceContext {
         [142, 175, 38, 248, 121, 97, 144, 218],
     );
 }
-#[allow(non_snake_case)]
 impl ID3D11DeviceContext {
-    pub unsafe fn GetDevice(&self, pp_device: *mut ::std::option::Option<ID3D11Device>) {
+    pub unsafe fn GetDevice(&self, ppdevice: *mut ::std::option::Option<ID3D11Device>) {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateData(
         &self,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -457,64 +457,64 @@ impl ID3D11DeviceContext {
     >(
         &self,
         guid: *const ::windows::Guid,
-        p_data: T1__,
+        pdata: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(guid),
-            p_data.into_param().abi(),
+            pdata.into_param().abi(),
         )
     }
     pub unsafe fn DrawIndexed(
         &self,
-        index_count: u32,
-        start_index_location: u32,
-        base_vertex_location: i32,
+        indexcount: u32,
+        startindexlocation: u32,
+        basevertexlocation: i32,
     ) {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(index_count),
-            ::std::mem::transmute(start_index_location),
-            ::std::mem::transmute(base_vertex_location),
+            ::std::mem::transmute(indexcount),
+            ::std::mem::transmute(startindexlocation),
+            ::std::mem::transmute(basevertexlocation),
         )
     }
-    pub unsafe fn Draw(&self, vertex_count: u32, start_vertex_location: u32) {
+    pub unsafe fn Draw(&self, vertexcount: u32, startvertexlocation: u32) {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(vertex_count),
-            ::std::mem::transmute(start_vertex_location),
+            ::std::mem::transmute(vertexcount),
+            ::std::mem::transmute(startvertexlocation),
         )
     }
     pub unsafe fn DrawIndexedInstanced(
         &self,
-        index_count_per_instance: u32,
-        instance_count: u32,
-        start_index_location: u32,
-        base_vertex_location: i32,
-        start_instance_location: u32,
+        indexcountperinstance: u32,
+        instancecount: u32,
+        startindexlocation: u32,
+        basevertexlocation: i32,
+        startinstancelocation: u32,
     ) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(index_count_per_instance),
-            ::std::mem::transmute(instance_count),
-            ::std::mem::transmute(start_index_location),
-            ::std::mem::transmute(base_vertex_location),
-            ::std::mem::transmute(start_instance_location),
+            ::std::mem::transmute(indexcountperinstance),
+            ::std::mem::transmute(instancecount),
+            ::std::mem::transmute(startindexlocation),
+            ::std::mem::transmute(basevertexlocation),
+            ::std::mem::transmute(startinstancelocation),
         )
     }
     pub unsafe fn DrawInstanced(
         &self,
-        vertex_count_per_instance: u32,
-        instance_count: u32,
-        start_vertex_location: u32,
-        start_instance_location: u32,
+        vertexcountperinstance: u32,
+        instancecount: u32,
+        startvertexlocation: u32,
+        startinstancelocation: u32,
     ) {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(vertex_count_per_instance),
-            ::std::mem::transmute(instance_count),
-            ::std::mem::transmute(start_vertex_location),
-            ::std::mem::transmute(start_instance_location),
+            ::std::mem::transmute(vertexcountperinstance),
+            ::std::mem::transmute(instancecount),
+            ::std::mem::transmute(startvertexlocation),
+            ::std::mem::transmute(startinstancelocation),
         )
     }
     pub unsafe fn IASetPrimitiveTopology(&self, topology: D3D_PRIMITIVE_TOPOLOGY) {
@@ -528,43 +528,43 @@ impl ID3D11DeviceContext {
     }
     pub unsafe fn Dispatch(
         &self,
-        thread_group_countx: u32,
-        thread_group_county: u32,
-        thread_group_countz: u32,
+        threadgroupcountx: u32,
+        threadgroupcounty: u32,
+        threadgroupcountz: u32,
     ) {
         (::windows::Interface::vtable(self).41)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(thread_group_countx),
-            ::std::mem::transmute(thread_group_county),
-            ::std::mem::transmute(thread_group_countz),
+            ::std::mem::transmute(threadgroupcountx),
+            ::std::mem::transmute(threadgroupcounty),
+            ::std::mem::transmute(threadgroupcountz),
         )
     }
     pub unsafe fn RSSetScissorRects(
         &self,
-        num_rects: u32,
-        p_rects: *const super::display_devices::RECT,
+        numrects: u32,
+        prects: *const super::DisplayDevices::RECT,
     ) {
         (::windows::Interface::vtable(self).45)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_rects),
-            ::std::mem::transmute(p_rects),
+            ::std::mem::transmute(numrects),
+            ::std::mem::transmute(prects),
         )
     }
-    pub unsafe fn IAGetPrimitiveTopology(&self, p_topology: *mut D3D_PRIMITIVE_TOPOLOGY) {
+    pub unsafe fn IAGetPrimitiveTopology(&self, ptopology: *mut D3D_PRIMITIVE_TOPOLOGY) {
         (::windows::Interface::vtable(self).83)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_topology),
+            ::std::mem::transmute(ptopology),
         )
     }
     pub unsafe fn RSGetScissorRects(
         &self,
-        p_num_rects: *mut u32,
-        p_rects: *mut super::display_devices::RECT,
+        pnumrects: *mut u32,
+        prects: *mut super::DisplayDevices::RECT,
     ) {
         (::windows::Interface::vtable(self).96)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_num_rects),
-            ::std::mem::transmute(p_rects),
+            ::std::mem::transmute(pnumrects),
+            ::std::mem::transmute(prects),
         )
     }
     pub unsafe fn ClearState(&self) {
@@ -631,23 +631,23 @@ pub struct ID3D11DeviceContext_abi(
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, pp_device: *mut ::windows::RawPtr),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, ppdevice: *mut ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         guid: *const ::windows::Guid,
-        p_data: ::windows::RawPtr,
+        pdata: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -656,14 +656,14 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        index_count: u32,
-        start_index_location: u32,
-        base_vertex_location: i32,
+        indexcount: u32,
+        startindexlocation: u32,
+        basevertexlocation: i32,
     ),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        vertex_count: u32,
-        start_vertex_location: u32,
+        vertexcount: u32,
+        startvertexlocation: u32,
     ),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -673,18 +673,18 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        index_count_per_instance: u32,
-        instance_count: u32,
-        start_index_location: u32,
-        base_vertex_location: i32,
-        start_instance_location: u32,
+        indexcountperinstance: u32,
+        instancecount: u32,
+        startindexlocation: u32,
+        basevertexlocation: i32,
+        startinstancelocation: u32,
     ),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        vertex_count_per_instance: u32,
-        instance_count: u32,
-        start_vertex_location: u32,
-        start_instance_location: u32,
+        vertexcountperinstance: u32,
+        instancecount: u32,
+        startvertexlocation: u32,
+        startinstancelocation: u32,
     ),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -707,17 +707,17 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        thread_group_countx: u32,
-        thread_group_county: u32,
-        thread_group_countz: u32,
+        threadgroupcountx: u32,
+        threadgroupcounty: u32,
+        threadgroupcountz: u32,
     ),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_rects: u32,
-        p_rects: *const super::display_devices::RECT,
+        numrects: u32,
+        prects: *const super::DisplayDevices::RECT,
     ),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -756,7 +756,7 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, p_topology: *mut D3D_PRIMITIVE_TOPOLOGY),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, ptopology: *mut D3D_PRIMITIVE_TOPOLOGY),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -771,8 +771,8 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_num_rects: *mut u32,
-        p_rects: *mut super::display_devices::RECT,
+        pnumrects: *mut u32,
+        prects: *mut super::DisplayDevices::RECT,
     ),
     pub unsafe extern "system" fn(),
     pub unsafe extern "system" fn(),
@@ -794,7 +794,6 @@ pub struct ID3D11DeviceContext_abi(
     pub unsafe extern "system" fn(),
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -808,7 +807,6 @@ unsafe impl ::windows::Interface for ID3DBlob {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(2342910728, 20885, 16610, [172, 88, 13, 152, 156, 58, 1, 2]);
 }
-#[allow(non_snake_case)]
 impl ID3DBlob {
     pub unsafe fn GetBufferPointer(&self) -> *mut ::std::ffi::c_void {
         (::windows::Interface::vtable(self).3)(::windows::Abi::abi(self))
@@ -852,7 +850,6 @@ pub struct ID3DBlob_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> *mut ::std::ffi::c_void,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> usize,
 );
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -864,7 +861,6 @@ pub struct ID3DBlob_abi(
 #[repr(transparent)]
 pub struct D3D_SHADER_VARIABLE_TYPE(pub i32);
 impl D3D_SHADER_VARIABLE_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_SVT_VOID: Self = Self(0i32);
     pub const D3D_SVT_BOOL: Self = Self(1i32);
     pub const D3D_SVT_INT: Self = Self(2i32);
@@ -985,7 +981,6 @@ impl ::std::convert::From<i32> for D3D_SHADER_VARIABLE_TYPE {
 unsafe impl ::windows::Abi for D3D_SHADER_VARIABLE_TYPE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -997,7 +992,6 @@ unsafe impl ::windows::Abi for D3D_SHADER_VARIABLE_TYPE {
 #[repr(transparent)]
 pub struct D3D_SHADER_VARIABLE_CLASS(pub i32);
 impl D3D_SHADER_VARIABLE_CLASS {
-    #![allow(non_upper_case_globals)]
     pub const D3D_SVC_SCALAR: Self = Self(0i32);
     pub const D3D_SVC_VECTOR: Self = Self(1i32);
     pub const D3D_SVC_MATRIX_ROWS: Self = Self(2i32);
@@ -1024,7 +1018,6 @@ impl ::std::convert::From<i32> for D3D_SHADER_VARIABLE_CLASS {
 unsafe impl ::windows::Abi for D3D_SHADER_VARIABLE_CLASS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1036,7 +1029,6 @@ unsafe impl ::windows::Abi for D3D_SHADER_VARIABLE_CLASS {
 #[repr(transparent)]
 pub struct D3D_INTERPOLATION_MODE(pub i32);
 impl D3D_INTERPOLATION_MODE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_INTERPOLATION_UNDEFINED: Self = Self(0i32);
     pub const D3D_INTERPOLATION_CONSTANT: Self = Self(1i32);
     pub const D3D_INTERPOLATION_LINEAR: Self = Self(2i32);
@@ -1054,7 +1046,6 @@ impl ::std::convert::From<i32> for D3D_INTERPOLATION_MODE {
 unsafe impl ::windows::Abi for D3D_INTERPOLATION_MODE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1066,7 +1057,6 @@ unsafe impl ::windows::Abi for D3D_INTERPOLATION_MODE {
 #[repr(transparent)]
 pub struct D3D_PARAMETER_FLAGS(pub i32);
 impl D3D_PARAMETER_FLAGS {
-    #![allow(non_upper_case_globals)]
     pub const D3D_PF_NONE: Self = Self(0i32);
     pub const D3D_PF_IN: Self = Self(1i32);
     pub const D3D_PF_OUT: Self = Self(2i32);
@@ -1080,7 +1070,6 @@ impl ::std::convert::From<i32> for D3D_PARAMETER_FLAGS {
 unsafe impl ::windows::Abi for D3D_PARAMETER_FLAGS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1092,7 +1081,6 @@ unsafe impl ::windows::Abi for D3D_PARAMETER_FLAGS {
 #[repr(transparent)]
 pub struct D3D_CBUFFER_TYPE(pub i32);
 impl D3D_CBUFFER_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_CT_CBUFFER: Self = Self(0i32);
     pub const D3D_CT_TBUFFER: Self = Self(1i32);
     pub const D3D_CT_INTERFACE_POINTERS: Self = Self(2i32);
@@ -1112,7 +1100,6 @@ impl ::std::convert::From<i32> for D3D_CBUFFER_TYPE {
 unsafe impl ::windows::Abi for D3D_CBUFFER_TYPE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1124,7 +1111,6 @@ unsafe impl ::windows::Abi for D3D_CBUFFER_TYPE {
 #[repr(transparent)]
 pub struct D3D_PRIMITIVE_TOPOLOGY(pub i32);
 impl D3D_PRIMITIVE_TOPOLOGY {
-    #![allow(non_upper_case_globals)]
     pub const D3D_PRIMITIVE_TOPOLOGY_UNDEFINED: Self = Self(0i32);
     pub const D3D_PRIMITIVE_TOPOLOGY_POINTLIST: Self = Self(1i32);
     pub const D3D_PRIMITIVE_TOPOLOGY_LINELIST: Self = Self(2i32);
@@ -1228,7 +1214,6 @@ impl ::std::convert::From<i32> for D3D_PRIMITIVE_TOPOLOGY {
 unsafe impl ::windows::Abi for D3D_PRIMITIVE_TOPOLOGY {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1240,7 +1225,6 @@ unsafe impl ::windows::Abi for D3D_PRIMITIVE_TOPOLOGY {
 #[repr(transparent)]
 pub struct D3D_PRIMITIVE(pub i32);
 impl D3D_PRIMITIVE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_PRIMITIVE_UNDEFINED: Self = Self(0i32);
     pub const D3D_PRIMITIVE_POINT: Self = Self(1i32);
     pub const D3D_PRIMITIVE_LINE: Self = Self(2i32);
@@ -1332,7 +1316,6 @@ impl ::std::convert::From<i32> for D3D_PRIMITIVE {
 unsafe impl ::windows::Abi for D3D_PRIMITIVE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1344,7 +1327,6 @@ unsafe impl ::windows::Abi for D3D_PRIMITIVE {
 #[repr(transparent)]
 pub struct D3D_TESSELLATOR_OUTPUT_PRIMITIVE(pub i32);
 impl D3D_TESSELLATOR_OUTPUT_PRIMITIVE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_TESSELLATOR_OUTPUT_UNDEFINED: Self = Self(0i32);
     pub const D3D_TESSELLATOR_OUTPUT_POINT: Self = Self(1i32);
     pub const D3D_TESSELLATOR_OUTPUT_LINE: Self = Self(2i32);
@@ -1364,7 +1346,6 @@ impl ::std::convert::From<i32> for D3D_TESSELLATOR_OUTPUT_PRIMITIVE {
 unsafe impl ::windows::Abi for D3D_TESSELLATOR_OUTPUT_PRIMITIVE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1376,7 +1357,6 @@ unsafe impl ::windows::Abi for D3D_TESSELLATOR_OUTPUT_PRIMITIVE {
 #[repr(transparent)]
 pub struct D3D_TESSELLATOR_PARTITIONING(pub i32);
 impl D3D_TESSELLATOR_PARTITIONING {
-    #![allow(non_upper_case_globals)]
     pub const D3D_TESSELLATOR_PARTITIONING_UNDEFINED: Self = Self(0i32);
     pub const D3D_TESSELLATOR_PARTITIONING_INTEGER: Self = Self(1i32);
     pub const D3D_TESSELLATOR_PARTITIONING_POW2: Self = Self(2i32);
@@ -1396,7 +1376,6 @@ impl ::std::convert::From<i32> for D3D_TESSELLATOR_PARTITIONING {
 unsafe impl ::windows::Abi for D3D_TESSELLATOR_PARTITIONING {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1408,7 +1387,6 @@ unsafe impl ::windows::Abi for D3D_TESSELLATOR_PARTITIONING {
 #[repr(transparent)]
 pub struct D3D_TESSELLATOR_DOMAIN(pub i32);
 impl D3D_TESSELLATOR_DOMAIN {
-    #![allow(non_upper_case_globals)]
     pub const D3D_TESSELLATOR_DOMAIN_UNDEFINED: Self = Self(0i32);
     pub const D3D_TESSELLATOR_DOMAIN_ISOLINE: Self = Self(1i32);
     pub const D3D_TESSELLATOR_DOMAIN_TRI: Self = Self(2i32);
@@ -1426,7 +1404,6 @@ impl ::std::convert::From<i32> for D3D_TESSELLATOR_DOMAIN {
 unsafe impl ::windows::Abi for D3D_TESSELLATOR_DOMAIN {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1438,7 +1415,6 @@ unsafe impl ::windows::Abi for D3D_TESSELLATOR_DOMAIN {
 #[repr(transparent)]
 pub struct D3D_SHADER_INPUT_TYPE(pub i32);
 impl D3D_SHADER_INPUT_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_SIT_CBUFFER: Self = Self(0i32);
     pub const D3D_SIT_TBUFFER: Self = Self(1i32);
     pub const D3D_SIT_TEXTURE: Self = Self(2i32);
@@ -1474,7 +1450,6 @@ impl ::std::convert::From<i32> for D3D_SHADER_INPUT_TYPE {
 unsafe impl ::windows::Abi for D3D_SHADER_INPUT_TYPE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1486,7 +1461,6 @@ unsafe impl ::windows::Abi for D3D_SHADER_INPUT_TYPE {
 #[repr(transparent)]
 pub struct D3D_RESOURCE_RETURN_TYPE(pub i32);
 impl D3D_RESOURCE_RETURN_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_RETURN_TYPE_UNORM: Self = Self(1i32);
     pub const D3D_RETURN_TYPE_SNORM: Self = Self(2i32);
     pub const D3D_RETURN_TYPE_SINT: Self = Self(3i32);
@@ -1518,7 +1492,6 @@ impl ::std::convert::From<i32> for D3D_RESOURCE_RETURN_TYPE {
 unsafe impl ::windows::Abi for D3D_RESOURCE_RETURN_TYPE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1530,7 +1503,6 @@ unsafe impl ::windows::Abi for D3D_RESOURCE_RETURN_TYPE {
 #[repr(transparent)]
 pub struct D3D_SRV_DIMENSION(pub i32);
 impl D3D_SRV_DIMENSION {
-    #![allow(non_upper_case_globals)]
     pub const D3D_SRV_DIMENSION_UNKNOWN: Self = Self(0i32);
     pub const D3D_SRV_DIMENSION_BUFFER: Self = Self(1i32);
     pub const D3D_SRV_DIMENSION_TEXTURE1D: Self = Self(2i32);
@@ -1585,7 +1557,6 @@ impl ::std::convert::From<i32> for D3D_SRV_DIMENSION {
 unsafe impl ::windows::Abi for D3D_SRV_DIMENSION {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1597,7 +1568,6 @@ unsafe impl ::windows::Abi for D3D_SRV_DIMENSION {
 #[repr(transparent)]
 pub struct D3D_NAME(pub i32);
 impl D3D_NAME {
-    #![allow(non_upper_case_globals)]
     pub const D3D_NAME_UNDEFINED: Self = Self(0i32);
     pub const D3D_NAME_POSITION: Self = Self(1i32);
     pub const D3D_NAME_CLIP_DISTANCE: Self = Self(2i32);
@@ -1661,7 +1631,6 @@ impl ::std::convert::From<i32> for D3D_NAME {
 unsafe impl ::windows::Abi for D3D_NAME {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1673,7 +1642,6 @@ unsafe impl ::windows::Abi for D3D_NAME {
 #[repr(transparent)]
 pub struct D3D_REGISTER_COMPONENT_TYPE(pub i32);
 impl D3D_REGISTER_COMPONENT_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const D3D_REGISTER_COMPONENT_UNKNOWN: Self = Self(0i32);
     pub const D3D_REGISTER_COMPONENT_UINT32: Self = Self(1i32);
     pub const D3D_REGISTER_COMPONENT_SINT32: Self = Self(2i32);
@@ -1691,7 +1659,6 @@ impl ::std::convert::From<i32> for D3D_REGISTER_COMPONENT_TYPE {
 unsafe impl ::windows::Abi for D3D_REGISTER_COMPONENT_TYPE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1703,7 +1670,6 @@ unsafe impl ::windows::Abi for D3D_REGISTER_COMPONENT_TYPE {
 #[repr(transparent)]
 pub struct D3D_MIN_PRECISION(pub i32);
 impl D3D_MIN_PRECISION {
-    #![allow(non_upper_case_globals)]
     pub const D3D_MIN_PRECISION_DEFAULT: Self = Self(0i32);
     pub const D3D_MIN_PRECISION_FLOAT_16: Self = Self(1i32);
     pub const D3D_MIN_PRECISION_FLOAT_2_8: Self = Self(2i32);

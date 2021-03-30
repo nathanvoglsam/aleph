@@ -38,12 +38,12 @@ use std::marker::PhantomData;
 use std::mem::{align_of, size_of, transmute};
 use std::ops::Deref;
 use windows_raw::utils::{blob_to_shader, optional_blob_to_cached_pso, optional_blob_to_shader};
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_INPUT_ELEMENT_DESC, D3D12_INPUT_LAYOUT_DESC, D3D12_PIPELINE_STATE_FLAGS,
     D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_RT_FORMAT_ARRAY, D3D12_SO_DECLARATION_ENTRY,
     D3D12_STREAM_OUTPUT_DESC,
 };
-use windows_raw::win32::dxgi::DXGI_FORMAT;
+use windows_raw::Win32::Dxgi::DXGI_FORMAT;
 
 pub struct GraphicsPipelineStateStreamBuilder<'a> {
     root_signature: Option<RootSignature>,
@@ -227,19 +227,19 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
 
         let stream_output = if let Some(stream_output) = self.stream_output {
             D3D12_STREAM_OUTPUT_DESC {
-                p_so_declaration: stream_output.0.as_ptr() as *mut _,
-                num_entries: stream_output.0.len() as _,
-                p_buffer_strides: stream_output.1.as_ptr() as *mut _,
-                num_strides: stream_output.1.len() as _,
-                rasterized_stream: stream_output.2,
+                pSODeclaration: stream_output.0.as_ptr() as *mut _,
+                NumEntries: stream_output.0.len() as _,
+                pBufferStrides: stream_output.1.as_ptr() as *mut _,
+                NumStrides: stream_output.1.len() as _,
+                RasterizedStream: stream_output.2,
             }
         } else {
             D3D12_STREAM_OUTPUT_DESC {
-                p_so_declaration: std::ptr::null_mut(),
-                num_entries: 0,
-                p_buffer_strides: std::ptr::null_mut(),
-                num_strides: 0,
-                rasterized_stream: 0,
+                pSODeclaration: std::ptr::null_mut(),
+                NumEntries: 0,
+                pBufferStrides: std::ptr::null_mut(),
+                NumStrides: 0,
+                RasterizedStream: 0,
             }
         };
 
@@ -291,8 +291,8 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             input_layout: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,
                 D3D12_INPUT_LAYOUT_DESC {
-                    p_input_element_descs: input_layout.as_ptr() as *mut _,
-                    num_elements: input_layout.len() as _,
+                    pInputElementDescs: input_layout.as_ptr() as *mut _,
+                    NumElements: input_layout.len() as _,
                 },
             ),
             strip_cut_value: PackedPipelineStateStreamObject::new(
@@ -306,8 +306,8 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             render_targets: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
-                    rt_formats,
-                    num_render_targets: self.rtv_formats.len() as _,
+                    RTFormats: rt_formats,
+                    NumRenderTargets: self.rtv_formats.len() as _,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
@@ -316,7 +316,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             ),
             sample_desc: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
-                self.sample_desc.clone().into(),
+                unsafe { transmute(self.sample_desc.clone()) },
             ),
             node_mask: PackedPipelineStateStreamObject::new(
                 T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
@@ -371,13 +371,13 @@ impl<'a> Deref for GraphicsPipelineStateStream<'a> {
 
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
-    use windows_raw::win32::direct3d12::{
+    use windows_raw::Win32::Direct3D12::{
         ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE,
         D3D12_DEPTH_STENCIL_DESC, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC,
         D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
         D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE, D3D12_STREAM_OUTPUT_DESC,
     };
-    use windows_raw::win32::dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use windows_raw::Win32::Dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<Option<ID3D12RootSignature>>;
     pub(crate) type VertexShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;

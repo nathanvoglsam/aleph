@@ -1,5 +1,12 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
-#[allow(non_camel_case_types)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11,7 +18,6 @@
 #[repr(transparent)]
 pub struct DXGI_FORMAT(pub u32);
 impl DXGI_FORMAT {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_FORMAT_UNKNOWN: Self = Self(0u32);
     pub const DXGI_FORMAT_R32G32B32A32_TYPELESS: Self = Self(1u32);
     pub const DXGI_FORMAT_R32G32B32A32_FLOAT: Self = Self(2u32);
@@ -155,33 +161,42 @@ impl ::std::ops::BitAnd for DXGI_FORMAT {
         Self(self.0 & rhs.0)
     }
 }
+impl ::std::ops::BitOrAssign for DXGI_FORMAT {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for DXGI_FORMAT {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SAMPLE_DESC {
-    pub count: u32,
-    pub quality: u32,
+    pub Count: u32,
+    pub Quality: u32,
 }
 impl DXGI_SAMPLE_DESC {}
 impl ::std::default::Default for DXGI_SAMPLE_DESC {
     fn default() -> Self {
         Self {
-            count: 0,
-            quality: 0,
+            Count: 0,
+            Quality: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SAMPLE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SAMPLE_DESC")
-            .field("count", &format_args!("{:?}", self.count))
-            .field("quality", &format_args!("{:?}", self.quality))
+            .field("Count", &format_args!("{:?}", self.Count))
+            .field("Quality", &format_args!("{:?}", self.Quality))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SAMPLE_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.count == other.count && self.quality == other.quality
+        self.Count == other.Count && self.Quality == other.Quality
     }
 }
 impl ::std::cmp::Eq for DXGI_SAMPLE_DESC {}
@@ -195,53 +210,53 @@ impl ::windows::RuntimeName for Apis {
 }
 pub unsafe fn CreateDXGIFactory(
     riid: *const ::windows::Guid,
-    pp_factory: *mut *mut ::std::ffi::c_void,
+    ppfactory: *mut *mut ::std::ffi::c_void,
 ) -> ::windows::ErrorCode {
     #[link(name = "dxgi")]
     extern "system" {
         pub fn CreateDXGIFactory(
             riid: *const ::windows::Guid,
-            pp_factory: *mut *mut ::std::ffi::c_void,
+            ppfactory: *mut *mut ::std::ffi::c_void,
         ) -> ::windows::ErrorCode;
     }
     CreateDXGIFactory(
         ::std::mem::transmute(riid),
-        ::std::mem::transmute(pp_factory),
+        ::std::mem::transmute(ppfactory),
     )
 }
 pub unsafe fn CreateDXGIFactory1(
     riid: *const ::windows::Guid,
-    pp_factory: *mut *mut ::std::ffi::c_void,
+    ppfactory: *mut *mut ::std::ffi::c_void,
 ) -> ::windows::ErrorCode {
     #[link(name = "dxgi")]
     extern "system" {
         pub fn CreateDXGIFactory1(
             riid: *const ::windows::Guid,
-            pp_factory: *mut *mut ::std::ffi::c_void,
+            ppfactory: *mut *mut ::std::ffi::c_void,
         ) -> ::windows::ErrorCode;
     }
     CreateDXGIFactory1(
         ::std::mem::transmute(riid),
-        ::std::mem::transmute(pp_factory),
+        ::std::mem::transmute(ppfactory),
     )
 }
 pub unsafe fn CreateDXGIFactory2(
     flags: u32,
     riid: *const ::windows::Guid,
-    pp_factory: *mut *mut ::std::ffi::c_void,
+    ppfactory: *mut *mut ::std::ffi::c_void,
 ) -> ::windows::ErrorCode {
     #[link(name = "dxgi")]
     extern "system" {
         pub fn CreateDXGIFactory2(
             flags: u32,
             riid: *const ::windows::Guid,
-            pp_factory: *mut *mut ::std::ffi::c_void,
+            ppfactory: *mut *mut ::std::ffi::c_void,
         ) -> ::windows::ErrorCode;
     }
     CreateDXGIFactory2(
         ::std::mem::transmute(flags),
         ::std::mem::transmute(riid),
-        ::std::mem::transmute(pp_factory),
+        ::std::mem::transmute(ppfactory),
     )
 }
 pub unsafe fn DXGIDeclareAdapterRemovalSupport() -> ::windows::ErrorCode {
@@ -254,87 +269,86 @@ pub unsafe fn DXGIDeclareAdapterRemovalSupport() -> ::windows::ErrorCode {
 pub unsafe fn DXGIGetDebugInterface1(
     flags: u32,
     riid: *const ::windows::Guid,
-    p_debug: *mut *mut ::std::ffi::c_void,
+    pdebug: *mut *mut ::std::ffi::c_void,
 ) -> ::windows::ErrorCode {
     #[link(name = "dxgi")]
     extern "system" {
         pub fn DXGIGetDebugInterface1(
             flags: u32,
             riid: *const ::windows::Guid,
-            p_debug: *mut *mut ::std::ffi::c_void,
+            pdebug: *mut *mut ::std::ffi::c_void,
         ) -> ::windows::ErrorCode;
     }
     DXGIGetDebugInterface1(
         ::std::mem::transmute(flags),
         ::std::mem::transmute(riid),
-        ::std::mem::transmute(p_debug),
+        ::std::mem::transmute(pdebug),
     )
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC {
-    pub description: [u16; 128],
-    pub vendor_id: u32,
-    pub device_id: u32,
-    pub sub_sys_id: u32,
-    pub revision: u32,
-    pub dedicated_video_memory: usize,
-    pub dedicated_system_memory: usize,
-    pub shared_system_memory: usize,
-    pub adapter_luid: super::kernel::LUID,
+    pub Description: [u16; 128],
+    pub VendorId: u32,
+    pub DeviceId: u32,
+    pub SubSysId: u32,
+    pub Revision: u32,
+    pub DedicatedVideoMemory: usize,
+    pub DedicatedSystemMemory: usize,
+    pub SharedSystemMemory: usize,
+    pub AdapterLuid: super::Kernel::LUID,
 }
 impl DXGI_ADAPTER_DESC {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC {
     fn default() -> Self {
         Self {
-            description: [0; 128],
-            vendor_id: 0,
-            device_id: 0,
-            sub_sys_id: 0,
-            revision: 0,
-            dedicated_video_memory: 0,
-            dedicated_system_memory: 0,
-            shared_system_memory: 0,
-            adapter_luid: ::std::default::Default::default(),
+            Description: [0; 128],
+            VendorId: 0,
+            DeviceId: 0,
+            SubSysId: 0,
+            Revision: 0,
+            DedicatedVideoMemory: 0,
+            DedicatedSystemMemory: 0,
+            SharedSystemMemory: 0,
+            AdapterLuid: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_ADAPTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC")
-            .field("description", &format_args!("{:?}", self.description))
-            .field("vendor_id", &format_args!("{:?}", self.vendor_id))
-            .field("device_id", &format_args!("{:?}", self.device_id))
-            .field("sub_sys_id", &format_args!("{:?}", self.sub_sys_id))
-            .field("revision", &format_args!("{:?}", self.revision))
+            .field("Description", &format_args!("{:?}", self.Description))
+            .field("VendorId", &format_args!("{:?}", self.VendorId))
+            .field("DeviceId", &format_args!("{:?}", self.DeviceId))
+            .field("SubSysId", &format_args!("{:?}", self.SubSysId))
+            .field("Revision", &format_args!("{:?}", self.Revision))
             .field(
-                "dedicated_video_memory",
-                &format_args!("{:?}", self.dedicated_video_memory),
+                "DedicatedVideoMemory",
+                &format_args!("{:?}", self.DedicatedVideoMemory),
             )
             .field(
-                "dedicated_system_memory",
-                &format_args!("{:?}", self.dedicated_system_memory),
+                "DedicatedSystemMemory",
+                &format_args!("{:?}", self.DedicatedSystemMemory),
             )
             .field(
-                "shared_system_memory",
-                &format_args!("{:?}", self.shared_system_memory),
+                "SharedSystemMemory",
+                &format_args!("{:?}", self.SharedSystemMemory),
             )
-            .field("adapter_luid", &format_args!("{:?}", self.adapter_luid))
+            .field("AdapterLuid", &format_args!("{:?}", self.AdapterLuid))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
+        self.Description == other.Description
+            && self.VendorId == other.VendorId
+            && self.DeviceId == other.DeviceId
+            && self.SubSysId == other.SubSysId
+            && self.Revision == other.Revision
+            && self.DedicatedVideoMemory == other.DedicatedVideoMemory
+            && self.DedicatedSystemMemory == other.DedicatedSystemMemory
+            && self.SharedSystemMemory == other.SharedSystemMemory
+            && self.AdapterLuid == other.AdapterLuid
     }
 }
 impl ::std::cmp::Eq for DXGI_ADAPTER_DESC {}
@@ -342,81 +356,79 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC1 {
-    pub description: [u16; 128],
-    pub vendor_id: u32,
-    pub device_id: u32,
-    pub sub_sys_id: u32,
-    pub revision: u32,
-    pub dedicated_video_memory: usize,
-    pub dedicated_system_memory: usize,
-    pub shared_system_memory: usize,
-    pub adapter_luid: super::kernel::LUID,
-    pub flags: u32,
+    pub Description: [u16; 128],
+    pub VendorId: u32,
+    pub DeviceId: u32,
+    pub SubSysId: u32,
+    pub Revision: u32,
+    pub DedicatedVideoMemory: usize,
+    pub DedicatedSystemMemory: usize,
+    pub SharedSystemMemory: usize,
+    pub AdapterLuid: super::Kernel::LUID,
+    pub Flags: u32,
 }
 impl DXGI_ADAPTER_DESC1 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC1 {
     fn default() -> Self {
         Self {
-            description: [0; 128],
-            vendor_id: 0,
-            device_id: 0,
-            sub_sys_id: 0,
-            revision: 0,
-            dedicated_video_memory: 0,
-            dedicated_system_memory: 0,
-            shared_system_memory: 0,
-            adapter_luid: ::std::default::Default::default(),
-            flags: 0,
+            Description: [0; 128],
+            VendorId: 0,
+            DeviceId: 0,
+            SubSysId: 0,
+            Revision: 0,
+            DedicatedVideoMemory: 0,
+            DedicatedSystemMemory: 0,
+            SharedSystemMemory: 0,
+            AdapterLuid: ::std::default::Default::default(),
+            Flags: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_ADAPTER_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC1")
-            .field("description", &format_args!("{:?}", self.description))
-            .field("vendor_id", &format_args!("{:?}", self.vendor_id))
-            .field("device_id", &format_args!("{:?}", self.device_id))
-            .field("sub_sys_id", &format_args!("{:?}", self.sub_sys_id))
-            .field("revision", &format_args!("{:?}", self.revision))
+            .field("Description", &format_args!("{:?}", self.Description))
+            .field("VendorId", &format_args!("{:?}", self.VendorId))
+            .field("DeviceId", &format_args!("{:?}", self.DeviceId))
+            .field("SubSysId", &format_args!("{:?}", self.SubSysId))
+            .field("Revision", &format_args!("{:?}", self.Revision))
             .field(
-                "dedicated_video_memory",
-                &format_args!("{:?}", self.dedicated_video_memory),
+                "DedicatedVideoMemory",
+                &format_args!("{:?}", self.DedicatedVideoMemory),
             )
             .field(
-                "dedicated_system_memory",
-                &format_args!("{:?}", self.dedicated_system_memory),
+                "DedicatedSystemMemory",
+                &format_args!("{:?}", self.DedicatedSystemMemory),
             )
             .field(
-                "shared_system_memory",
-                &format_args!("{:?}", self.shared_system_memory),
+                "SharedSystemMemory",
+                &format_args!("{:?}", self.SharedSystemMemory),
             )
-            .field("adapter_luid", &format_args!("{:?}", self.adapter_luid))
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("AdapterLuid", &format_args!("{:?}", self.AdapterLuid))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC1 {
     fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
+        self.Description == other.Description
+            && self.VendorId == other.VendorId
+            && self.DeviceId == other.DeviceId
+            && self.SubSysId == other.SubSysId
+            && self.Revision == other.Revision
+            && self.DedicatedVideoMemory == other.DedicatedVideoMemory
+            && self.DedicatedSystemMemory == other.DedicatedSystemMemory
+            && self.SharedSystemMemory == other.SharedSystemMemory
+            && self.AdapterLuid == other.AdapterLuid
+            && self.Flags == other.Flags
     }
 }
 impl ::std::cmp::Eq for DXGI_ADAPTER_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC1 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -428,7 +440,6 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC1 {
 #[repr(transparent)]
 pub struct DXGI_GRAPHICS_PREEMPTION_GRANULARITY(pub i32);
 impl DXGI_GRAPHICS_PREEMPTION_GRANULARITY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_GRAPHICS_PREEMPTION_DMA_BUFFER_BOUNDARY: Self = Self(0i32);
     pub const DXGI_GRAPHICS_PREEMPTION_PRIMITIVE_BOUNDARY: Self = Self(1i32);
     pub const DXGI_GRAPHICS_PREEMPTION_TRIANGLE_BOUNDARY: Self = Self(2i32);
@@ -443,7 +454,6 @@ impl ::std::convert::From<i32> for DXGI_GRAPHICS_PREEMPTION_GRANULARITY {
 unsafe impl ::windows::Abi for DXGI_GRAPHICS_PREEMPTION_GRANULARITY {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -455,7 +465,6 @@ unsafe impl ::windows::Abi for DXGI_GRAPHICS_PREEMPTION_GRANULARITY {
 #[repr(transparent)]
 pub struct DXGI_COMPUTE_PREEMPTION_GRANULARITY(pub i32);
 impl DXGI_COMPUTE_PREEMPTION_GRANULARITY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_COMPUTE_PREEMPTION_DMA_BUFFER_BOUNDARY: Self = Self(0i32);
     pub const DXGI_COMPUTE_PREEMPTION_DISPATCH_BOUNDARY: Self = Self(1i32);
     pub const DXGI_COMPUTE_PREEMPTION_THREAD_GROUP_BOUNDARY: Self = Self(2i32);
@@ -471,95 +480,93 @@ unsafe impl ::windows::Abi for DXGI_COMPUTE_PREEMPTION_GRANULARITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC2 {
-    pub description: [u16; 128],
-    pub vendor_id: u32,
-    pub device_id: u32,
-    pub sub_sys_id: u32,
-    pub revision: u32,
-    pub dedicated_video_memory: usize,
-    pub dedicated_system_memory: usize,
-    pub shared_system_memory: usize,
-    pub adapter_luid: super::kernel::LUID,
-    pub flags: u32,
-    pub graphics_preemption_granularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
-    pub compute_preemption_granularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
+    pub Description: [u16; 128],
+    pub VendorId: u32,
+    pub DeviceId: u32,
+    pub SubSysId: u32,
+    pub Revision: u32,
+    pub DedicatedVideoMemory: usize,
+    pub DedicatedSystemMemory: usize,
+    pub SharedSystemMemory: usize,
+    pub AdapterLuid: super::Kernel::LUID,
+    pub Flags: u32,
+    pub GraphicsPreemptionGranularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
+    pub ComputePreemptionGranularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
 }
 impl DXGI_ADAPTER_DESC2 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC2 {
     fn default() -> Self {
         Self {
-            description: [0; 128],
-            vendor_id: 0,
-            device_id: 0,
-            sub_sys_id: 0,
-            revision: 0,
-            dedicated_video_memory: 0,
-            dedicated_system_memory: 0,
-            shared_system_memory: 0,
-            adapter_luid: ::std::default::Default::default(),
-            flags: 0,
-            graphics_preemption_granularity: ::std::default::Default::default(),
-            compute_preemption_granularity: ::std::default::Default::default(),
+            Description: [0; 128],
+            VendorId: 0,
+            DeviceId: 0,
+            SubSysId: 0,
+            Revision: 0,
+            DedicatedVideoMemory: 0,
+            DedicatedSystemMemory: 0,
+            SharedSystemMemory: 0,
+            AdapterLuid: ::std::default::Default::default(),
+            Flags: 0,
+            GraphicsPreemptionGranularity: ::std::default::Default::default(),
+            ComputePreemptionGranularity: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_ADAPTER_DESC2 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC2")
-            .field("description", &format_args!("{:?}", self.description))
-            .field("vendor_id", &format_args!("{:?}", self.vendor_id))
-            .field("device_id", &format_args!("{:?}", self.device_id))
-            .field("sub_sys_id", &format_args!("{:?}", self.sub_sys_id))
-            .field("revision", &format_args!("{:?}", self.revision))
+            .field("Description", &format_args!("{:?}", self.Description))
+            .field("VendorId", &format_args!("{:?}", self.VendorId))
+            .field("DeviceId", &format_args!("{:?}", self.DeviceId))
+            .field("SubSysId", &format_args!("{:?}", self.SubSysId))
+            .field("Revision", &format_args!("{:?}", self.Revision))
             .field(
-                "dedicated_video_memory",
-                &format_args!("{:?}", self.dedicated_video_memory),
+                "DedicatedVideoMemory",
+                &format_args!("{:?}", self.DedicatedVideoMemory),
             )
             .field(
-                "dedicated_system_memory",
-                &format_args!("{:?}", self.dedicated_system_memory),
+                "DedicatedSystemMemory",
+                &format_args!("{:?}", self.DedicatedSystemMemory),
             )
             .field(
-                "shared_system_memory",
-                &format_args!("{:?}", self.shared_system_memory),
+                "SharedSystemMemory",
+                &format_args!("{:?}", self.SharedSystemMemory),
             )
-            .field("adapter_luid", &format_args!("{:?}", self.adapter_luid))
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("AdapterLuid", &format_args!("{:?}", self.AdapterLuid))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .field(
-                "graphics_preemption_granularity",
-                &format_args!("{:?}", self.graphics_preemption_granularity),
+                "GraphicsPreemptionGranularity",
+                &format_args!("{:?}", self.GraphicsPreemptionGranularity),
             )
             .field(
-                "compute_preemption_granularity",
-                &format_args!("{:?}", self.compute_preemption_granularity),
+                "ComputePreemptionGranularity",
+                &format_args!("{:?}", self.ComputePreemptionGranularity),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC2 {
     fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
-            && self.graphics_preemption_granularity == other.graphics_preemption_granularity
-            && self.compute_preemption_granularity == other.compute_preemption_granularity
+        self.Description == other.Description
+            && self.VendorId == other.VendorId
+            && self.DeviceId == other.DeviceId
+            && self.SubSysId == other.SubSysId
+            && self.Revision == other.Revision
+            && self.DedicatedVideoMemory == other.DedicatedVideoMemory
+            && self.DedicatedSystemMemory == other.DedicatedSystemMemory
+            && self.SharedSystemMemory == other.SharedSystemMemory
+            && self.AdapterLuid == other.AdapterLuid
+            && self.Flags == other.Flags
+            && self.GraphicsPreemptionGranularity == other.GraphicsPreemptionGranularity
+            && self.ComputePreemptionGranularity == other.ComputePreemptionGranularity
     }
 }
 impl ::std::cmp::Eq for DXGI_ADAPTER_DESC2 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC2 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -571,7 +578,6 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC2 {
 #[repr(transparent)]
 pub struct DXGI_ADAPTER_FLAG3(pub u32);
 impl DXGI_ADAPTER_FLAG3 {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_ADAPTER_FLAG3_NONE: Self = Self(0u32);
     pub const DXGI_ADAPTER_FLAG3_REMOTE: Self = Self(1u32);
     pub const DXGI_ADAPTER_FLAG3_SOFTWARE: Self = Self(2u32);
@@ -601,96 +607,104 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG3 {
         Self(self.0 & rhs.0)
     }
 }
+impl ::std::ops::BitOrAssign for DXGI_ADAPTER_FLAG3 {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for DXGI_ADAPTER_FLAG3 {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_ADAPTER_DESC3 {
-    pub description: [u16; 128],
-    pub vendor_id: u32,
-    pub device_id: u32,
-    pub sub_sys_id: u32,
-    pub revision: u32,
-    pub dedicated_video_memory: usize,
-    pub dedicated_system_memory: usize,
-    pub shared_system_memory: usize,
-    pub adapter_luid: super::kernel::LUID,
-    pub flags: DXGI_ADAPTER_FLAG3,
-    pub graphics_preemption_granularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
-    pub compute_preemption_granularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
+    pub Description: [u16; 128],
+    pub VendorId: u32,
+    pub DeviceId: u32,
+    pub SubSysId: u32,
+    pub Revision: u32,
+    pub DedicatedVideoMemory: usize,
+    pub DedicatedSystemMemory: usize,
+    pub SharedSystemMemory: usize,
+    pub AdapterLuid: super::Kernel::LUID,
+    pub Flags: DXGI_ADAPTER_FLAG3,
+    pub GraphicsPreemptionGranularity: DXGI_GRAPHICS_PREEMPTION_GRANULARITY,
+    pub ComputePreemptionGranularity: DXGI_COMPUTE_PREEMPTION_GRANULARITY,
 }
 impl DXGI_ADAPTER_DESC3 {}
 impl ::std::default::Default for DXGI_ADAPTER_DESC3 {
     fn default() -> Self {
         Self {
-            description: [0; 128],
-            vendor_id: 0,
-            device_id: 0,
-            sub_sys_id: 0,
-            revision: 0,
-            dedicated_video_memory: 0,
-            dedicated_system_memory: 0,
-            shared_system_memory: 0,
-            adapter_luid: ::std::default::Default::default(),
-            flags: ::std::default::Default::default(),
-            graphics_preemption_granularity: ::std::default::Default::default(),
-            compute_preemption_granularity: ::std::default::Default::default(),
+            Description: [0; 128],
+            VendorId: 0,
+            DeviceId: 0,
+            SubSysId: 0,
+            Revision: 0,
+            DedicatedVideoMemory: 0,
+            DedicatedSystemMemory: 0,
+            SharedSystemMemory: 0,
+            AdapterLuid: ::std::default::Default::default(),
+            Flags: ::std::default::Default::default(),
+            GraphicsPreemptionGranularity: ::std::default::Default::default(),
+            ComputePreemptionGranularity: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_ADAPTER_DESC3 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_ADAPTER_DESC3")
-            .field("description", &format_args!("{:?}", self.description))
-            .field("vendor_id", &format_args!("{:?}", self.vendor_id))
-            .field("device_id", &format_args!("{:?}", self.device_id))
-            .field("sub_sys_id", &format_args!("{:?}", self.sub_sys_id))
-            .field("revision", &format_args!("{:?}", self.revision))
+            .field("Description", &format_args!("{:?}", self.Description))
+            .field("VendorId", &format_args!("{:?}", self.VendorId))
+            .field("DeviceId", &format_args!("{:?}", self.DeviceId))
+            .field("SubSysId", &format_args!("{:?}", self.SubSysId))
+            .field("Revision", &format_args!("{:?}", self.Revision))
             .field(
-                "dedicated_video_memory",
-                &format_args!("{:?}", self.dedicated_video_memory),
+                "DedicatedVideoMemory",
+                &format_args!("{:?}", self.DedicatedVideoMemory),
             )
             .field(
-                "dedicated_system_memory",
-                &format_args!("{:?}", self.dedicated_system_memory),
+                "DedicatedSystemMemory",
+                &format_args!("{:?}", self.DedicatedSystemMemory),
             )
             .field(
-                "shared_system_memory",
-                &format_args!("{:?}", self.shared_system_memory),
+                "SharedSystemMemory",
+                &format_args!("{:?}", self.SharedSystemMemory),
             )
-            .field("adapter_luid", &format_args!("{:?}", self.adapter_luid))
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("AdapterLuid", &format_args!("{:?}", self.AdapterLuid))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .field(
-                "graphics_preemption_granularity",
-                &format_args!("{:?}", self.graphics_preemption_granularity),
+                "GraphicsPreemptionGranularity",
+                &format_args!("{:?}", self.GraphicsPreemptionGranularity),
             )
             .field(
-                "compute_preemption_granularity",
-                &format_args!("{:?}", self.compute_preemption_granularity),
+                "ComputePreemptionGranularity",
+                &format_args!("{:?}", self.ComputePreemptionGranularity),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_ADAPTER_DESC3 {
     fn eq(&self, other: &Self) -> bool {
-        self.description == other.description
-            && self.vendor_id == other.vendor_id
-            && self.device_id == other.device_id
-            && self.sub_sys_id == other.sub_sys_id
-            && self.revision == other.revision
-            && self.dedicated_video_memory == other.dedicated_video_memory
-            && self.dedicated_system_memory == other.dedicated_system_memory
-            && self.shared_system_memory == other.shared_system_memory
-            && self.adapter_luid == other.adapter_luid
-            && self.flags == other.flags
-            && self.graphics_preemption_granularity == other.graphics_preemption_granularity
-            && self.compute_preemption_granularity == other.compute_preemption_granularity
+        self.Description == other.Description
+            && self.VendorId == other.VendorId
+            && self.DeviceId == other.DeviceId
+            && self.SubSysId == other.SubSysId
+            && self.Revision == other.Revision
+            && self.DedicatedVideoMemory == other.DedicatedVideoMemory
+            && self.DedicatedSystemMemory == other.DedicatedSystemMemory
+            && self.SharedSystemMemory == other.SharedSystemMemory
+            && self.AdapterLuid == other.AdapterLuid
+            && self.Flags == other.Flags
+            && self.GraphicsPreemptionGranularity == other.GraphicsPreemptionGranularity
+            && self.ComputePreemptionGranularity == other.ComputePreemptionGranularity
     }
 }
 impl ::std::cmp::Eq for DXGI_ADAPTER_DESC3 {}
 unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC3 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -702,7 +716,6 @@ unsafe impl ::windows::Abi for DXGI_ADAPTER_DESC3 {
 #[repr(transparent)]
 pub struct DXGI_ADAPTER_FLAG(pub u32);
 impl DXGI_ADAPTER_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_ADAPTER_FLAG_NONE: Self = Self(0u32);
     pub const DXGI_ADAPTER_FLAG_REMOTE: Self = Self(1u32);
     pub const DXGI_ADAPTER_FLAG_SOFTWARE: Self = Self(2u32);
@@ -727,7 +740,16 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG {
         Self(self.0 & rhs.0)
     }
 }
-#[allow(non_camel_case_types)]
+impl ::std::ops::BitOrAssign for DXGI_ADAPTER_FLAG {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for DXGI_ADAPTER_FLAG {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -739,7 +761,6 @@ impl ::std::ops::BitAnd for DXGI_ADAPTER_FLAG {
 #[repr(transparent)]
 pub struct DXGI_ALPHA_MODE(pub u32);
 impl DXGI_ALPHA_MODE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_ALPHA_MODE_UNSPECIFIED: Self = Self(0u32);
     pub const DXGI_ALPHA_MODE_PREMULTIPLIED: Self = Self(1u32);
     pub const DXGI_ALPHA_MODE_STRAIGHT: Self = Self(2u32);
@@ -766,8 +787,17 @@ impl ::std::ops::BitAnd for DXGI_ALPHA_MODE {
         Self(self.0 & rhs.0)
     }
 }
+impl ::std::ops::BitOrAssign for DXGI_ALPHA_MODE {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for DXGI_ALPHA_MODE {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
 pub const DXGI_CENTER_MULTISAMPLE_QUALITY_PATTERN: u32 = 4294967294u32;
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -779,7 +809,6 @@ pub const DXGI_CENTER_MULTISAMPLE_QUALITY_PATTERN: u32 = 4294967294u32;
 #[repr(transparent)]
 pub struct DXGI_COLOR_SPACE_TYPE(pub i32);
 impl DXGI_COLOR_SPACE_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709: Self = Self(0i32);
     pub const DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709: Self = Self(1i32);
     pub const DXGI_COLOR_SPACE_RGB_STUDIO_G22_NONE_P709: Self = Self(2i32);
@@ -821,8 +850,23 @@ pub const DXGI_CPU_ACCESS_NONE: u32 = 0u32;
 pub const DXGI_CPU_ACCESS_READ_WRITE: u32 = 2u32;
 pub const DXGI_CPU_ACCESS_SCRATCH: u32 = 3u32;
 pub const DXGI_CREATE_FACTORY_DEBUG: u32 = 1u32;
+pub const DXGI_DEBUG_ALL: ::windows::Guid = ::windows::Guid::from_values(
+    3834307203,
+    55936,
+    18699,
+    [135, 230, 67, 233, 169, 207, 218, 8],
+);
+pub const DXGI_DEBUG_APP: ::windows::Guid =
+    ::windows::Guid::from_values(114126337, 16921, 20157, [135, 9, 39, 237, 35, 54, 12, 98]);
 pub const DXGI_DEBUG_BINARY_VERSION: u32 = 1u32;
-#[allow(non_camel_case_types)]
+pub const DXGI_DEBUG_DX: ::windows::Guid = ::windows::Guid::from_values(
+    902682620,
+    5042,
+    16925,
+    [165, 215, 126, 68, 81, 40, 125, 100],
+);
+pub const DXGI_DEBUG_DXGI: ::windows::Guid =
+    ::windows::Guid::from_values(634247844, 45510, 18401, [172, 62, 152, 135, 91, 90, 46, 42]);
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -834,7 +878,6 @@ pub const DXGI_DEBUG_BINARY_VERSION: u32 = 1u32;
 #[repr(transparent)]
 pub struct DXGI_DEBUG_RLO_FLAGS(pub i32);
 impl DXGI_DEBUG_RLO_FLAGS {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_DEBUG_RLO_SUMMARY: Self = Self(1i32);
     pub const DXGI_DEBUG_RLO_DETAIL: Self = Self(2i32);
     pub const DXGI_DEBUG_RLO_IGNORE_INTERNAL: Self = Self(4i32);
@@ -849,27 +892,26 @@ unsafe impl ::windows::Abi for DXGI_DEBUG_RLO_FLAGS {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_DECODE_SWAP_CHAIN_DESC {
-    pub flags: u32,
+    pub Flags: u32,
 }
 impl DXGI_DECODE_SWAP_CHAIN_DESC {}
 impl ::std::default::Default for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn default() -> Self {
-        Self { flags: 0 }
+        Self { Flags: 0 }
     }
 }
 impl ::std::fmt::Debug for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DECODE_SWAP_CHAIN_DESC")
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_DECODE_SWAP_CHAIN_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.flags == other.flags
+        self.Flags == other.Flags
     }
 }
 impl ::std::cmp::Eq for DXGI_DECODE_SWAP_CHAIN_DESC {}
@@ -877,18 +919,17 @@ unsafe impl ::windows::Abi for DXGI_DECODE_SWAP_CHAIN_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_DISPLAY_COLOR_SPACE {
-    pub primary_coordinates: [f32; 16],
-    pub white_points: [f32; 32],
+    pub PrimaryCoordinates: [f32; 16],
+    pub WhitePoints: [f32; 32],
 }
 impl DXGI_DISPLAY_COLOR_SPACE {}
 impl ::std::default::Default for DXGI_DISPLAY_COLOR_SPACE {
     fn default() -> Self {
         Self {
-            primary_coordinates: [0.0; 16],
-            white_points: [0.0; 32],
+            PrimaryCoordinates: [0.0; 16],
+            WhitePoints: [0.0; 32],
         }
     }
 }
@@ -896,17 +937,16 @@ impl ::std::fmt::Debug for DXGI_DISPLAY_COLOR_SPACE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_DISPLAY_COLOR_SPACE")
             .field(
-                "primary_coordinates",
-                &format_args!("{:?}", self.primary_coordinates),
+                "PrimaryCoordinates",
+                &format_args!("{:?}", self.PrimaryCoordinates),
             )
-            .field("white_points", &format_args!("{:?}", self.white_points))
+            .field("WhitePoints", &format_args!("{:?}", self.WhitePoints))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_DISPLAY_COLOR_SPACE {
     fn eq(&self, other: &Self) -> bool {
-        self.primary_coordinates == other.primary_coordinates
-            && self.white_points == other.white_points
+        self.PrimaryCoordinates == other.PrimaryCoordinates && self.WhitePoints == other.WhitePoints
     }
 }
 impl ::std::cmp::Eq for DXGI_DISPLAY_COLOR_SPACE {}
@@ -917,39 +957,59 @@ pub const DXGI_ENUM_MODES_DISABLED_STEREO: u32 = 8u32;
 pub const DXGI_ENUM_MODES_INTERLACED: u32 = 1u32;
 pub const DXGI_ENUM_MODES_SCALING: u32 = 2u32;
 pub const DXGI_ENUM_MODES_STEREO: u32 = 4u32;
-pub const DXGI_ERROR_ACCESS_DENIED: i32 = -2005270485i32;
-pub const DXGI_ERROR_ACCESS_LOST: i32 = -2005270490i32;
-pub const DXGI_ERROR_ALREADY_EXISTS: i32 = -2005270474i32;
-pub const DXGI_ERROR_CACHE_CORRUPT: i32 = -2005270477i32;
-pub const DXGI_ERROR_CACHE_FULL: i32 = -2005270476i32;
-pub const DXGI_ERROR_CACHE_HASH_COLLISION: i32 = -2005270475i32;
-pub const DXGI_ERROR_CANNOT_PROTECT_CONTENT: i32 = -2005270486i32;
-pub const DXGI_ERROR_DEVICE_HUNG: i32 = -2005270522i32;
-pub const DXGI_ERROR_DEVICE_REMOVED: i32 = -2005270523i32;
-pub const DXGI_ERROR_DEVICE_RESET: i32 = -2005270521i32;
-pub const DXGI_ERROR_DRIVER_INTERNAL_ERROR: i32 = -2005270496i32;
-pub const DXGI_ERROR_DYNAMIC_CODE_POLICY_VIOLATION: i32 = -2005270479i32;
-pub const DXGI_ERROR_FRAME_STATISTICS_DISJOINT: i32 = -2005270517i32;
-pub const DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: i32 = -2005270516i32;
-pub const DXGI_ERROR_HW_PROTECTION_OUTOFMEMORY: i32 = -2005270480i32;
-pub const DXGI_ERROR_INVALID_CALL: i32 = -2005270527i32;
-pub const DXGI_ERROR_MODE_CHANGE_IN_PROGRESS: i32 = -2005270491i32;
-pub const DXGI_ERROR_MORE_DATA: i32 = -2005270525i32;
-pub const DXGI_ERROR_NAME_ALREADY_EXISTS: i32 = -2005270484i32;
-pub const DXGI_ERROR_NONEXCLUSIVE: i32 = -2005270495i32;
-pub const DXGI_ERROR_NON_COMPOSITED_UI: i32 = -2005270478i32;
-pub const DXGI_ERROR_NOT_CURRENT: i32 = -2005270482i32;
-pub const DXGI_ERROR_NOT_CURRENTLY_AVAILABLE: i32 = -2005270494i32;
-pub const DXGI_ERROR_NOT_FOUND: i32 = -2005270526i32;
-pub const DXGI_ERROR_REMOTE_CLIENT_DISCONNECTED: i32 = -2005270493i32;
-pub const DXGI_ERROR_REMOTE_OUTOFMEMORY: i32 = -2005270492i32;
-pub const DXGI_ERROR_RESTRICT_TO_OUTPUT_STALE: i32 = -2005270487i32;
-pub const DXGI_ERROR_SDK_COMPONENT_MISSING: i32 = -2005270483i32;
-pub const DXGI_ERROR_SESSION_DISCONNECTED: i32 = -2005270488i32;
-pub const DXGI_ERROR_UNSUPPORTED: i32 = -2005270524i32;
-pub const DXGI_ERROR_WAIT_TIMEOUT: i32 = -2005270489i32;
-pub const DXGI_ERROR_WAS_STILL_DRAWING: i32 = -2005270518i32;
-#[allow(non_camel_case_types)]
+pub const DXGI_ERROR_ACCESS_DENIED: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270485i32 as _);
+pub const DXGI_ERROR_ACCESS_LOST: ::windows::ErrorCode = ::windows::ErrorCode(-2005270490i32 as _);
+pub const DXGI_ERROR_ALREADY_EXISTS: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270474i32 as _);
+pub const DXGI_ERROR_CACHE_CORRUPT: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270477i32 as _);
+pub const DXGI_ERROR_CACHE_FULL: ::windows::ErrorCode = ::windows::ErrorCode(-2005270476i32 as _);
+pub const DXGI_ERROR_CACHE_HASH_COLLISION: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270475i32 as _);
+pub const DXGI_ERROR_CANNOT_PROTECT_CONTENT: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270486i32 as _);
+pub const DXGI_ERROR_DEVICE_HUNG: ::windows::ErrorCode = ::windows::ErrorCode(-2005270522i32 as _);
+pub const DXGI_ERROR_DEVICE_REMOVED: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270523i32 as _);
+pub const DXGI_ERROR_DEVICE_RESET: ::windows::ErrorCode = ::windows::ErrorCode(-2005270521i32 as _);
+pub const DXGI_ERROR_DRIVER_INTERNAL_ERROR: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270496i32 as _);
+pub const DXGI_ERROR_DYNAMIC_CODE_POLICY_VIOLATION: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270479i32 as _);
+pub const DXGI_ERROR_FRAME_STATISTICS_DISJOINT: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270517i32 as _);
+pub const DXGI_ERROR_GRAPHICS_VIDPN_SOURCE_IN_USE: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270516i32 as _);
+pub const DXGI_ERROR_HW_PROTECTION_OUTOFMEMORY: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270480i32 as _);
+pub const DXGI_ERROR_INVALID_CALL: ::windows::ErrorCode = ::windows::ErrorCode(-2005270527i32 as _);
+pub const DXGI_ERROR_MODE_CHANGE_IN_PROGRESS: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270491i32 as _);
+pub const DXGI_ERROR_MORE_DATA: ::windows::ErrorCode = ::windows::ErrorCode(-2005270525i32 as _);
+pub const DXGI_ERROR_NAME_ALREADY_EXISTS: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270484i32 as _);
+pub const DXGI_ERROR_NONEXCLUSIVE: ::windows::ErrorCode = ::windows::ErrorCode(-2005270495i32 as _);
+pub const DXGI_ERROR_NON_COMPOSITED_UI: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270478i32 as _);
+pub const DXGI_ERROR_NOT_CURRENT: ::windows::ErrorCode = ::windows::ErrorCode(-2005270482i32 as _);
+pub const DXGI_ERROR_NOT_CURRENTLY_AVAILABLE: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270494i32 as _);
+pub const DXGI_ERROR_NOT_FOUND: ::windows::ErrorCode = ::windows::ErrorCode(-2005270526i32 as _);
+pub const DXGI_ERROR_REMOTE_CLIENT_DISCONNECTED: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270493i32 as _);
+pub const DXGI_ERROR_REMOTE_OUTOFMEMORY: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270492i32 as _);
+pub const DXGI_ERROR_RESTRICT_TO_OUTPUT_STALE: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270487i32 as _);
+pub const DXGI_ERROR_SDK_COMPONENT_MISSING: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270483i32 as _);
+pub const DXGI_ERROR_SESSION_DISCONNECTED: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270488i32 as _);
+pub const DXGI_ERROR_UNSUPPORTED: ::windows::ErrorCode = ::windows::ErrorCode(-2005270524i32 as _);
+pub const DXGI_ERROR_WAIT_TIMEOUT: ::windows::ErrorCode = ::windows::ErrorCode(-2005270489i32 as _);
+pub const DXGI_ERROR_WAS_STILL_DRAWING: ::windows::ErrorCode =
+    ::windows::ErrorCode(-2005270518i32 as _);
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -961,7 +1021,6 @@ pub const DXGI_ERROR_WAS_STILL_DRAWING: i32 = -2005270518i32;
 #[repr(transparent)]
 pub struct DXGI_FEATURE(pub i32);
 impl DXGI_FEATURE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_FEATURE_PRESENT_ALLOW_TEARING: Self = Self(0i32);
 }
 impl ::std::convert::From<i32> for DXGI_FEATURE {
@@ -973,7 +1032,6 @@ unsafe impl ::windows::Abi for DXGI_FEATURE {
     type Abi = Self;
 }
 pub const DXGI_FORMAT_DEFINED: u32 = 1u32;
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -985,7 +1043,6 @@ pub const DXGI_FORMAT_DEFINED: u32 = 1u32;
 #[repr(transparent)]
 pub struct DXGI_FRAME_PRESENTATION_MODE(pub i32);
 impl DXGI_FRAME_PRESENTATION_MODE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_FRAME_PRESENTATION_MODE_COMPOSED: Self = Self(0i32);
     pub const DXGI_FRAME_PRESENTATION_MODE_OVERLAY: Self = Self(1i32);
     pub const DXGI_FRAME_PRESENTATION_MODE_NONE: Self = Self(2i32);
@@ -1000,51 +1057,50 @@ unsafe impl ::windows::Abi for DXGI_FRAME_PRESENTATION_MODE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_FRAME_STATISTICS {
-    pub present_count: u32,
-    pub present_refresh_count: u32,
-    pub sync_refresh_count: u32,
-    pub sync_qpc_time: i64,
-    pub sync_gpu_time: i64,
+    pub PresentCount: u32,
+    pub PresentRefreshCount: u32,
+    pub SyncRefreshCount: u32,
+    pub SyncQPCTime: i64,
+    pub SyncGPUTime: i64,
 }
 impl DXGI_FRAME_STATISTICS {}
 impl ::std::default::Default for DXGI_FRAME_STATISTICS {
     fn default() -> Self {
         Self {
-            present_count: 0,
-            present_refresh_count: 0,
-            sync_refresh_count: 0,
-            sync_qpc_time: 0,
-            sync_gpu_time: 0,
+            PresentCount: 0,
+            PresentRefreshCount: 0,
+            SyncRefreshCount: 0,
+            SyncQPCTime: 0,
+            SyncGPUTime: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS")
-            .field("present_count", &format_args!("{:?}", self.present_count))
+            .field("PresentCount", &format_args!("{:?}", self.PresentCount))
             .field(
-                "present_refresh_count",
-                &format_args!("{:?}", self.present_refresh_count),
+                "PresentRefreshCount",
+                &format_args!("{:?}", self.PresentRefreshCount),
             )
             .field(
-                "sync_refresh_count",
-                &format_args!("{:?}", self.sync_refresh_count),
+                "SyncRefreshCount",
+                &format_args!("{:?}", self.SyncRefreshCount),
             )
-            .field("sync_qpc_time", &format_args!("{:?}", self.sync_qpc_time))
-            .field("sync_gpu_time", &format_args!("{:?}", self.sync_gpu_time))
+            .field("SyncQPCTime", &format_args!("{:?}", self.SyncQPCTime))
+            .field("SyncGPUTime", &format_args!("{:?}", self.SyncGPUTime))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_FRAME_STATISTICS {
     fn eq(&self, other: &Self) -> bool {
-        self.present_count == other.present_count
-            && self.present_refresh_count == other.present_refresh_count
-            && self.sync_refresh_count == other.sync_refresh_count
-            && self.sync_qpc_time == other.sync_qpc_time
-            && self.sync_gpu_time == other.sync_gpu_time
+        self.PresentCount == other.PresentCount
+            && self.PresentRefreshCount == other.PresentRefreshCount
+            && self.SyncRefreshCount == other.SyncRefreshCount
+            && self.SyncQPCTime == other.SyncQPCTime
+            && self.SyncGPUTime == other.SyncGPUTime
     }
 }
 impl ::std::cmp::Eq for DXGI_FRAME_STATISTICS {}
@@ -1052,65 +1108,64 @@ unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_FRAME_STATISTICS_MEDIA {
-    pub present_count: u32,
-    pub present_refresh_count: u32,
-    pub sync_refresh_count: u32,
-    pub sync_qpc_time: i64,
-    pub sync_gpu_time: i64,
-    pub composition_mode: DXGI_FRAME_PRESENTATION_MODE,
-    pub approved_present_duration: u32,
+    pub PresentCount: u32,
+    pub PresentRefreshCount: u32,
+    pub SyncRefreshCount: u32,
+    pub SyncQPCTime: i64,
+    pub SyncGPUTime: i64,
+    pub CompositionMode: DXGI_FRAME_PRESENTATION_MODE,
+    pub ApprovedPresentDuration: u32,
 }
 impl DXGI_FRAME_STATISTICS_MEDIA {}
 impl ::std::default::Default for DXGI_FRAME_STATISTICS_MEDIA {
     fn default() -> Self {
         Self {
-            present_count: 0,
-            present_refresh_count: 0,
-            sync_refresh_count: 0,
-            sync_qpc_time: 0,
-            sync_gpu_time: 0,
-            composition_mode: ::std::default::Default::default(),
-            approved_present_duration: 0,
+            PresentCount: 0,
+            PresentRefreshCount: 0,
+            SyncRefreshCount: 0,
+            SyncQPCTime: 0,
+            SyncGPUTime: 0,
+            CompositionMode: ::std::default::Default::default(),
+            ApprovedPresentDuration: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_FRAME_STATISTICS_MEDIA {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_FRAME_STATISTICS_MEDIA")
-            .field("present_count", &format_args!("{:?}", self.present_count))
+            .field("PresentCount", &format_args!("{:?}", self.PresentCount))
             .field(
-                "present_refresh_count",
-                &format_args!("{:?}", self.present_refresh_count),
+                "PresentRefreshCount",
+                &format_args!("{:?}", self.PresentRefreshCount),
             )
             .field(
-                "sync_refresh_count",
-                &format_args!("{:?}", self.sync_refresh_count),
+                "SyncRefreshCount",
+                &format_args!("{:?}", self.SyncRefreshCount),
             )
-            .field("sync_qpc_time", &format_args!("{:?}", self.sync_qpc_time))
-            .field("sync_gpu_time", &format_args!("{:?}", self.sync_gpu_time))
+            .field("SyncQPCTime", &format_args!("{:?}", self.SyncQPCTime))
+            .field("SyncGPUTime", &format_args!("{:?}", self.SyncGPUTime))
             .field(
-                "composition_mode",
-                &format_args!("{:?}", self.composition_mode),
+                "CompositionMode",
+                &format_args!("{:?}", self.CompositionMode),
             )
             .field(
-                "approved_present_duration",
-                &format_args!("{:?}", self.approved_present_duration),
+                "ApprovedPresentDuration",
+                &format_args!("{:?}", self.ApprovedPresentDuration),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_FRAME_STATISTICS_MEDIA {
     fn eq(&self, other: &Self) -> bool {
-        self.present_count == other.present_count
-            && self.present_refresh_count == other.present_refresh_count
-            && self.sync_refresh_count == other.sync_refresh_count
-            && self.sync_qpc_time == other.sync_qpc_time
-            && self.sync_gpu_time == other.sync_gpu_time
-            && self.composition_mode == other.composition_mode
-            && self.approved_present_duration == other.approved_present_duration
+        self.PresentCount == other.PresentCount
+            && self.PresentRefreshCount == other.PresentRefreshCount
+            && self.SyncRefreshCount == other.SyncRefreshCount
+            && self.SyncQPCTime == other.SyncQPCTime
+            && self.SyncGPUTime == other.SyncGPUTime
+            && self.CompositionMode == other.CompositionMode
+            && self.ApprovedPresentDuration == other.ApprovedPresentDuration
     }
 }
 impl ::std::cmp::Eq for DXGI_FRAME_STATISTICS_MEDIA {}
@@ -1118,35 +1173,34 @@ unsafe impl ::windows::Abi for DXGI_FRAME_STATISTICS_MEDIA {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RGB {
-    pub red: f32,
-    pub green: f32,
-    pub blue: f32,
+    pub Red: f32,
+    pub Green: f32,
+    pub Blue: f32,
 }
 impl DXGI_RGB {}
 impl ::std::default::Default for DXGI_RGB {
     fn default() -> Self {
         Self {
-            red: 0.0,
-            green: 0.0,
-            blue: 0.0,
+            Red: 0.0,
+            Green: 0.0,
+            Blue: 0.0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_RGB {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RGB")
-            .field("red", &format_args!("{:?}", self.red))
-            .field("green", &format_args!("{:?}", self.green))
-            .field("blue", &format_args!("{:?}", self.blue))
+            .field("Red", &format_args!("{:?}", self.Red))
+            .field("Green", &format_args!("{:?}", self.Green))
+            .field("Blue", &format_args!("{:?}", self.Blue))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_RGB {
     fn eq(&self, other: &Self) -> bool {
-        self.red == other.red && self.green == other.green && self.blue == other.blue
+        self.Red == other.Red && self.Green == other.Green && self.Blue == other.Blue
     }
 }
 impl ::std::cmp::Eq for DXGI_RGB {}
@@ -1154,37 +1208,36 @@ unsafe impl ::windows::Abi for DXGI_RGB {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_GAMMA_CONTROL {
-    pub scale: DXGI_RGB,
-    pub offset: DXGI_RGB,
-    pub gamma_curve: [DXGI_RGB; 1025],
+    pub Scale: DXGI_RGB,
+    pub Offset: DXGI_RGB,
+    pub GammaCurve: [DXGI_RGB; 1025],
 }
 impl DXGI_GAMMA_CONTROL {}
 impl ::std::default::Default for DXGI_GAMMA_CONTROL {
     fn default() -> Self {
         Self {
-            scale: ::std::default::Default::default(),
-            offset: ::std::default::Default::default(),
-            gamma_curve: [::std::default::Default::default(); 1025],
+            Scale: ::std::default::Default::default(),
+            Offset: ::std::default::Default::default(),
+            GammaCurve: [::std::default::Default::default(); 1025],
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL")
-            .field("scale", &format_args!("{:?}", self.scale))
-            .field("offset", &format_args!("{:?}", self.offset))
-            .field("gamma_curve", &format_args!("{:?}", self.gamma_curve))
+            .field("Scale", &format_args!("{:?}", self.Scale))
+            .field("Offset", &format_args!("{:?}", self.Offset))
+            .field("GammaCurve", &format_args!("{:?}", self.GammaCurve))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_GAMMA_CONTROL {
     fn eq(&self, other: &Self) -> bool {
-        self.scale == other.scale
-            && self.offset == other.offset
-            && self.gamma_curve == other.gamma_curve
+        self.Scale == other.Scale
+            && self.Offset == other.Offset
+            && self.GammaCurve == other.GammaCurve
     }
 }
 impl ::std::cmp::Eq for DXGI_GAMMA_CONTROL {}
@@ -1192,24 +1245,23 @@ unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_GAMMA_CONTROL_CAPABILITIES {
-    pub scale_and_offset_supported: super::system_services::BOOL,
-    pub max_converted_value: f32,
-    pub min_converted_value: f32,
-    pub num_gamma_control_points: u32,
-    pub control_point_positions: [f32; 1025],
+    pub ScaleAndOffsetSupported: super::SystemServices::BOOL,
+    pub MaxConvertedValue: f32,
+    pub MinConvertedValue: f32,
+    pub NumGammaControlPoints: u32,
+    pub ControlPointPositions: [f32; 1025],
 }
 impl DXGI_GAMMA_CONTROL_CAPABILITIES {}
 impl ::std::default::Default for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn default() -> Self {
         Self {
-            scale_and_offset_supported: ::std::default::Default::default(),
-            max_converted_value: 0.0,
-            min_converted_value: 0.0,
-            num_gamma_control_points: 0,
-            control_point_positions: [0.0; 1025],
+            ScaleAndOffsetSupported: ::std::default::Default::default(),
+            MaxConvertedValue: 0.0,
+            MinConvertedValue: 0.0,
+            NumGammaControlPoints: 0,
+            ControlPointPositions: [0.0; 1025],
         }
     }
 }
@@ -1217,42 +1269,41 @@ impl ::std::fmt::Debug for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_GAMMA_CONTROL_CAPABILITIES")
             .field(
-                "scale_and_offset_supported",
-                &format_args!("{:?}", self.scale_and_offset_supported),
+                "ScaleAndOffsetSupported",
+                &format_args!("{:?}", self.ScaleAndOffsetSupported),
             )
             .field(
-                "max_converted_value",
-                &format_args!("{:?}", self.max_converted_value),
+                "MaxConvertedValue",
+                &format_args!("{:?}", self.MaxConvertedValue),
             )
             .field(
-                "min_converted_value",
-                &format_args!("{:?}", self.min_converted_value),
+                "MinConvertedValue",
+                &format_args!("{:?}", self.MinConvertedValue),
             )
             .field(
-                "num_gamma_control_points",
-                &format_args!("{:?}", self.num_gamma_control_points),
+                "NumGammaControlPoints",
+                &format_args!("{:?}", self.NumGammaControlPoints),
             )
             .field(
-                "control_point_positions",
-                &format_args!("{:?}", self.control_point_positions),
+                "ControlPointPositions",
+                &format_args!("{:?}", self.ControlPointPositions),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_GAMMA_CONTROL_CAPABILITIES {
     fn eq(&self, other: &Self) -> bool {
-        self.scale_and_offset_supported == other.scale_and_offset_supported
-            && self.max_converted_value == other.max_converted_value
-            && self.min_converted_value == other.min_converted_value
-            && self.num_gamma_control_points == other.num_gamma_control_points
-            && self.control_point_positions == other.control_point_positions
+        self.ScaleAndOffsetSupported == other.ScaleAndOffsetSupported
+            && self.MaxConvertedValue == other.MaxConvertedValue
+            && self.MinConvertedValue == other.MinConvertedValue
+            && self.NumGammaControlPoints == other.NumGammaControlPoints
+            && self.ControlPointPositions == other.ControlPointPositions
     }
 }
 impl ::std::cmp::Eq for DXGI_GAMMA_CONTROL_CAPABILITIES {}
 unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL_CAPABILITIES {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1264,7 +1315,6 @@ unsafe impl ::windows::Abi for DXGI_GAMMA_CONTROL_CAPABILITIES {
 #[repr(transparent)]
 pub struct DXGI_GPU_PREFERENCE(pub i32);
 impl DXGI_GPU_PREFERENCE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_GPU_PREFERENCE_UNSPECIFIED: Self = Self(0i32);
     pub const DXGI_GPU_PREFERENCE_MINIMUM_POWER: Self = Self(1i32);
     pub const DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE: Self = Self(2i32);
@@ -1277,7 +1327,6 @@ impl ::std::convert::From<i32> for DXGI_GPU_PREFERENCE {
 unsafe impl ::windows::Abi for DXGI_GPU_PREFERENCE {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1289,7 +1338,6 @@ unsafe impl ::windows::Abi for DXGI_GPU_PREFERENCE {
 #[repr(transparent)]
 pub struct DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS(pub i32);
 impl DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_FULLSCREEN: Self = Self(1i32);
     pub const DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_WINDOWED: Self = Self(2i32);
     pub const DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAG_CURSOR_STRETCHED: Self = Self(4i32);
@@ -1303,69 +1351,68 @@ unsafe impl ::windows::Abi for DXGI_HARDWARE_COMPOSITION_SUPPORT_FLAGS {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10 {
-    pub red_primary: [u16; 2],
-    pub green_primary: [u16; 2],
-    pub blue_primary: [u16; 2],
-    pub white_point: [u16; 2],
-    pub max_mastering_luminance: u32,
-    pub min_mastering_luminance: u32,
-    pub max_content_light_level: u16,
-    pub max_frame_average_light_level: u16,
+    pub RedPrimary: [u16; 2],
+    pub GreenPrimary: [u16; 2],
+    pub BluePrimary: [u16; 2],
+    pub WhitePoint: [u16; 2],
+    pub MaxMasteringLuminance: u32,
+    pub MinMasteringLuminance: u32,
+    pub MaxContentLightLevel: u16,
+    pub MaxFrameAverageLightLevel: u16,
 }
 impl DXGI_HDR_METADATA_HDR10 {}
 impl ::std::default::Default for DXGI_HDR_METADATA_HDR10 {
     fn default() -> Self {
         Self {
-            red_primary: [0; 2],
-            green_primary: [0; 2],
-            blue_primary: [0; 2],
-            white_point: [0; 2],
-            max_mastering_luminance: 0,
-            min_mastering_luminance: 0,
-            max_content_light_level: 0,
-            max_frame_average_light_level: 0,
+            RedPrimary: [0; 2],
+            GreenPrimary: [0; 2],
+            BluePrimary: [0; 2],
+            WhitePoint: [0; 2],
+            MaxMasteringLuminance: 0,
+            MinMasteringLuminance: 0,
+            MaxContentLightLevel: 0,
+            MaxFrameAverageLightLevel: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10")
-            .field("red_primary", &format_args!("{:?}", self.red_primary))
-            .field("green_primary", &format_args!("{:?}", self.green_primary))
-            .field("blue_primary", &format_args!("{:?}", self.blue_primary))
-            .field("white_point", &format_args!("{:?}", self.white_point))
+            .field("RedPrimary", &format_args!("{:?}", self.RedPrimary))
+            .field("GreenPrimary", &format_args!("{:?}", self.GreenPrimary))
+            .field("BluePrimary", &format_args!("{:?}", self.BluePrimary))
+            .field("WhitePoint", &format_args!("{:?}", self.WhitePoint))
             .field(
-                "max_mastering_luminance",
-                &format_args!("{:?}", self.max_mastering_luminance),
+                "MaxMasteringLuminance",
+                &format_args!("{:?}", self.MaxMasteringLuminance),
             )
             .field(
-                "min_mastering_luminance",
-                &format_args!("{:?}", self.min_mastering_luminance),
+                "MinMasteringLuminance",
+                &format_args!("{:?}", self.MinMasteringLuminance),
             )
             .field(
-                "max_content_light_level",
-                &format_args!("{:?}", self.max_content_light_level),
+                "MaxContentLightLevel",
+                &format_args!("{:?}", self.MaxContentLightLevel),
             )
             .field(
-                "max_frame_average_light_level",
-                &format_args!("{:?}", self.max_frame_average_light_level),
+                "MaxFrameAverageLightLevel",
+                &format_args!("{:?}", self.MaxFrameAverageLightLevel),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_HDR_METADATA_HDR10 {
     fn eq(&self, other: &Self) -> bool {
-        self.red_primary == other.red_primary
-            && self.green_primary == other.green_primary
-            && self.blue_primary == other.blue_primary
-            && self.white_point == other.white_point
-            && self.max_mastering_luminance == other.max_mastering_luminance
-            && self.min_mastering_luminance == other.min_mastering_luminance
-            && self.max_content_light_level == other.max_content_light_level
-            && self.max_frame_average_light_level == other.max_frame_average_light_level
+        self.RedPrimary == other.RedPrimary
+            && self.GreenPrimary == other.GreenPrimary
+            && self.BluePrimary == other.BluePrimary
+            && self.WhitePoint == other.WhitePoint
+            && self.MaxMasteringLuminance == other.MaxMasteringLuminance
+            && self.MinMasteringLuminance == other.MinMasteringLuminance
+            && self.MaxContentLightLevel == other.MaxContentLightLevel
+            && self.MaxFrameAverageLightLevel == other.MaxFrameAverageLightLevel
     }
 }
 impl ::std::cmp::Eq for DXGI_HDR_METADATA_HDR10 {}
@@ -1373,34 +1420,32 @@ unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10 {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_HDR_METADATA_HDR10PLUS {
-    pub data: [u8; 72],
+    pub Data: [u8; 72],
 }
 impl DXGI_HDR_METADATA_HDR10PLUS {}
 impl ::std::default::Default for DXGI_HDR_METADATA_HDR10PLUS {
     fn default() -> Self {
-        Self { data: [0; 72] }
+        Self { Data: [0; 72] }
     }
 }
 impl ::std::fmt::Debug for DXGI_HDR_METADATA_HDR10PLUS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_HDR_METADATA_HDR10PLUS")
-            .field("data", &format_args!("{:?}", self.data))
+            .field("Data", &format_args!("{:?}", self.Data))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_HDR_METADATA_HDR10PLUS {
     fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
+        self.Data == other.Data
     }
 }
 impl ::std::cmp::Eq for DXGI_HDR_METADATA_HDR10PLUS {}
 unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10PLUS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1412,7 +1457,6 @@ unsafe impl ::windows::Abi for DXGI_HDR_METADATA_HDR10PLUS {
 #[repr(transparent)]
 pub struct DXGI_HDR_METADATA_TYPE(pub i32);
 impl DXGI_HDR_METADATA_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_HDR_METADATA_TYPE_NONE: Self = Self(0i32);
     pub const DXGI_HDR_METADATA_TYPE_HDR10: Self = Self(1i32);
     pub const DXGI_HDR_METADATA_TYPE_HDR10PLUS: Self = Self(2i32);
@@ -1426,7 +1470,6 @@ unsafe impl ::windows::Abi for DXGI_HDR_METADATA_TYPE {
     type Abi = Self;
 }
 pub const DXGI_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT: u32 = 1024u32;
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1438,7 +1481,6 @@ pub const DXGI_INFO_QUEUE_DEFAULT_MESSAGE_COUNT_LIMIT: u32 = 1024u32;
 #[repr(transparent)]
 pub struct DXGI_INFO_QUEUE_MESSAGE_CATEGORY(pub i32);
 impl DXGI_INFO_QUEUE_MESSAGE_CATEGORY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_INFO_QUEUE_MESSAGE_CATEGORY_UNKNOWN: Self = Self(0i32);
     pub const DXGI_INFO_QUEUE_MESSAGE_CATEGORY_MISCELLANEOUS: Self = Self(1i32);
     pub const DXGI_INFO_QUEUE_MESSAGE_CATEGORY_INITIALIZATION: Self = Self(2i32);
@@ -1459,7 +1501,6 @@ impl ::std::convert::From<i32> for DXGI_INFO_QUEUE_MESSAGE_CATEGORY {
 unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE_CATEGORY {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1471,7 +1512,6 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE_CATEGORY {
 #[repr(transparent)]
 pub struct DXGI_INFO_QUEUE_MESSAGE_SEVERITY(pub i32);
 impl DXGI_INFO_QUEUE_MESSAGE_SEVERITY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_INFO_QUEUE_MESSAGE_SEVERITY_CORRUPTION: Self = Self(0i32);
     pub const DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR: Self = Self(1i32);
     pub const DXGI_INFO_QUEUE_MESSAGE_SEVERITY_WARNING: Self = Self(2i32);
@@ -1487,55 +1527,48 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE_SEVERITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_FILTER_DESC {
-    pub num_categories: u32,
-    pub p_category_list: *mut DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-    pub num_severities: u32,
-    pub p_severity_list: *mut DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-    pub num_ids: u32,
-    pub p_id_list: *mut i32,
+    pub NumCategories: u32,
+    pub pCategoryList: *mut DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
+    pub NumSeverities: u32,
+    pub pSeverityList: *mut DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
+    pub NumIDs: u32,
+    pub pIDList: *mut i32,
 }
 impl DXGI_INFO_QUEUE_FILTER_DESC {}
 impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER_DESC {
     fn default() -> Self {
         Self {
-            num_categories: 0,
-            p_category_list: ::std::ptr::null_mut(),
-            num_severities: 0,
-            p_severity_list: ::std::ptr::null_mut(),
-            num_ids: 0,
-            p_id_list: ::std::ptr::null_mut(),
+            NumCategories: 0,
+            pCategoryList: ::std::ptr::null_mut(),
+            NumSeverities: 0,
+            pSeverityList: ::std::ptr::null_mut(),
+            NumIDs: 0,
+            pIDList: ::std::ptr::null_mut(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER_DESC")
-            .field("num_categories", &format_args!("{:?}", self.num_categories))
-            .field(
-                "p_category_list",
-                &format_args!("{:?}", self.p_category_list),
-            )
-            .field("num_severities", &format_args!("{:?}", self.num_severities))
-            .field(
-                "p_severity_list",
-                &format_args!("{:?}", self.p_severity_list),
-            )
-            .field("num_ids", &format_args!("{:?}", self.num_ids))
-            .field("p_id_list", &format_args!("{:?}", self.p_id_list))
+            .field("NumCategories", &format_args!("{:?}", self.NumCategories))
+            .field("pCategoryList", &format_args!("{:?}", self.pCategoryList))
+            .field("NumSeverities", &format_args!("{:?}", self.NumSeverities))
+            .field("pSeverityList", &format_args!("{:?}", self.pSeverityList))
+            .field("NumIDs", &format_args!("{:?}", self.NumIDs))
+            .field("pIDList", &format_args!("{:?}", self.pIDList))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_FILTER_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.num_categories == other.num_categories
-            && self.p_category_list == other.p_category_list
-            && self.num_severities == other.num_severities
-            && self.p_severity_list == other.p_severity_list
-            && self.num_ids == other.num_ids
-            && self.p_id_list == other.p_id_list
+        self.NumCategories == other.NumCategories
+            && self.pCategoryList == other.pCategoryList
+            && self.NumSeverities == other.NumSeverities
+            && self.pSeverityList == other.pSeverityList
+            && self.NumIDs == other.NumIDs
+            && self.pIDList == other.pIDList
     }
 }
 impl ::std::cmp::Eq for DXGI_INFO_QUEUE_FILTER_DESC {}
@@ -1543,32 +1576,31 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_FILTER {
-    pub allow_list: DXGI_INFO_QUEUE_FILTER_DESC,
-    pub deny_list: DXGI_INFO_QUEUE_FILTER_DESC,
+    pub AllowList: DXGI_INFO_QUEUE_FILTER_DESC,
+    pub DenyList: DXGI_INFO_QUEUE_FILTER_DESC,
 }
 impl DXGI_INFO_QUEUE_FILTER {}
 impl ::std::default::Default for DXGI_INFO_QUEUE_FILTER {
     fn default() -> Self {
         Self {
-            allow_list: ::std::default::Default::default(),
-            deny_list: ::std::default::Default::default(),
+            AllowList: ::std::default::Default::default(),
+            DenyList: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_INFO_QUEUE_FILTER {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_FILTER")
-            .field("allow_list", &format_args!("{:?}", self.allow_list))
-            .field("deny_list", &format_args!("{:?}", self.deny_list))
+            .field("AllowList", &format_args!("{:?}", self.AllowList))
+            .field("DenyList", &format_args!("{:?}", self.DenyList))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_FILTER {
     fn eq(&self, other: &Self) -> bool {
-        self.allow_list == other.allow_list && self.deny_list == other.deny_list
+        self.AllowList == other.AllowList && self.DenyList == other.DenyList
     }
 }
 impl ::std::cmp::Eq for DXGI_INFO_QUEUE_FILTER {}
@@ -1576,52 +1608,51 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_FILTER {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_INFO_QUEUE_MESSAGE {
-    pub producer: ::windows::Guid,
-    pub category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-    pub severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-    pub id: i32,
-    pub p_description: *mut u8,
-    pub description_byte_length: usize,
+    pub Producer: ::windows::Guid,
+    pub Category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
+    pub Severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
+    pub ID: i32,
+    pub pDescription: *mut u8,
+    pub DescriptionByteLength: usize,
 }
 impl DXGI_INFO_QUEUE_MESSAGE {}
 impl ::std::default::Default for DXGI_INFO_QUEUE_MESSAGE {
     fn default() -> Self {
         Self {
-            producer: ::std::default::Default::default(),
-            category: ::std::default::Default::default(),
-            severity: ::std::default::Default::default(),
-            id: 0,
-            p_description: ::std::ptr::null_mut(),
-            description_byte_length: 0,
+            Producer: ::std::default::Default::default(),
+            Category: ::std::default::Default::default(),
+            Severity: ::std::default::Default::default(),
+            ID: 0,
+            pDescription: ::std::ptr::null_mut(),
+            DescriptionByteLength: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_INFO_QUEUE_MESSAGE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_INFO_QUEUE_MESSAGE")
-            .field("producer", &format_args!("{:?}", self.producer))
-            .field("category", &format_args!("{:?}", self.category))
-            .field("severity", &format_args!("{:?}", self.severity))
-            .field("id", &format_args!("{:?}", self.id))
-            .field("p_description", &format_args!("{:?}", self.p_description))
+            .field("Producer", &format_args!("{:?}", self.Producer))
+            .field("Category", &format_args!("{:?}", self.Category))
+            .field("Severity", &format_args!("{:?}", self.Severity))
+            .field("ID", &format_args!("{:?}", self.ID))
+            .field("pDescription", &format_args!("{:?}", self.pDescription))
             .field(
-                "description_byte_length",
-                &format_args!("{:?}", self.description_byte_length),
+                "DescriptionByteLength",
+                &format_args!("{:?}", self.DescriptionByteLength),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_INFO_QUEUE_MESSAGE {
     fn eq(&self, other: &Self) -> bool {
-        self.producer == other.producer
-            && self.category == other.category
-            && self.severity == other.severity
-            && self.id == other.id
-            && self.p_description == other.p_description
-            && self.description_byte_length == other.description_byte_length
+        self.Producer == other.Producer
+            && self.Category == other.Category
+            && self.Severity == other.Severity
+            && self.ID == other.ID
+            && self.pDescription == other.pDescription
+            && self.DescriptionByteLength == other.DescriptionByteLength
     }
 }
 impl ::std::cmp::Eq for DXGI_INFO_QUEUE_MESSAGE {}
@@ -1630,32 +1661,31 @@ unsafe impl ::windows::Abi for DXGI_INFO_QUEUE_MESSAGE {
 }
 pub const DXGI_INFO_QUEUE_MESSAGE_ID_STRING_FROM_APPLICATION: u32 = 0u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_AC_HUFFMAN_TABLE {
-    pub code_counts: [u8; 16],
-    pub code_values: [u8; 162],
+    pub CodeCounts: [u8; 16],
+    pub CodeValues: [u8; 162],
 }
 impl DXGI_JPEG_AC_HUFFMAN_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
-            code_counts: [0; 16],
-            code_values: [0; 162],
+            CodeCounts: [0; 16],
+            CodeValues: [0; 162],
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_AC_HUFFMAN_TABLE")
-            .field("code_counts", &format_args!("{:?}", self.code_counts))
-            .field("code_values", &format_args!("{:?}", self.code_values))
+            .field("CodeCounts", &format_args!("{:?}", self.CodeCounts))
+            .field("CodeValues", &format_args!("{:?}", self.CodeValues))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_JPEG_AC_HUFFMAN_TABLE {
     fn eq(&self, other: &Self) -> bool {
-        self.code_counts == other.code_counts && self.code_values == other.code_values
+        self.CodeCounts == other.CodeCounts && self.CodeValues == other.CodeValues
     }
 }
 impl ::std::cmp::Eq for DXGI_JPEG_AC_HUFFMAN_TABLE {}
@@ -1663,32 +1693,31 @@ unsafe impl ::windows::Abi for DXGI_JPEG_AC_HUFFMAN_TABLE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_DC_HUFFMAN_TABLE {
-    pub code_counts: [u8; 12],
-    pub code_values: [u8; 12],
+    pub CodeCounts: [u8; 12],
+    pub CodeValues: [u8; 12],
 }
 impl DXGI_JPEG_DC_HUFFMAN_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn default() -> Self {
         Self {
-            code_counts: [0; 12],
-            code_values: [0; 12],
+            CodeCounts: [0; 12],
+            CodeValues: [0; 12],
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_DC_HUFFMAN_TABLE")
-            .field("code_counts", &format_args!("{:?}", self.code_counts))
-            .field("code_values", &format_args!("{:?}", self.code_values))
+            .field("CodeCounts", &format_args!("{:?}", self.CodeCounts))
+            .field("CodeValues", &format_args!("{:?}", self.CodeValues))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_JPEG_DC_HUFFMAN_TABLE {
     fn eq(&self, other: &Self) -> bool {
-        self.code_counts == other.code_counts && self.code_values == other.code_values
+        self.CodeCounts == other.CodeCounts && self.CodeValues == other.CodeValues
     }
 }
 impl ::std::cmp::Eq for DXGI_JPEG_DC_HUFFMAN_TABLE {}
@@ -1696,27 +1725,26 @@ unsafe impl ::windows::Abi for DXGI_JPEG_DC_HUFFMAN_TABLE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_JPEG_QUANTIZATION_TABLE {
-    pub elements: [u8; 64],
+    pub Elements: [u8; 64],
 }
 impl DXGI_JPEG_QUANTIZATION_TABLE {}
 impl ::std::default::Default for DXGI_JPEG_QUANTIZATION_TABLE {
     fn default() -> Self {
-        Self { elements: [0; 64] }
+        Self { Elements: [0; 64] }
     }
 }
 impl ::std::fmt::Debug for DXGI_JPEG_QUANTIZATION_TABLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_JPEG_QUANTIZATION_TABLE")
-            .field("elements", &format_args!("{:?}", self.elements))
+            .field("Elements", &format_args!("{:?}", self.Elements))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_JPEG_QUANTIZATION_TABLE {
     fn eq(&self, other: &Self) -> bool {
-        self.elements == other.elements
+        self.Elements == other.Elements
     }
 }
 impl ::std::cmp::Eq for DXGI_JPEG_QUANTIZATION_TABLE {}
@@ -1724,32 +1752,31 @@ unsafe impl ::windows::Abi for DXGI_JPEG_QUANTIZATION_TABLE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MAPPED_RECT {
-    pub pitch: i32,
-    pub p_bits: *mut u8,
+    pub Pitch: i32,
+    pub pBits: *mut u8,
 }
 impl DXGI_MAPPED_RECT {}
 impl ::std::default::Default for DXGI_MAPPED_RECT {
     fn default() -> Self {
         Self {
-            pitch: 0,
-            p_bits: ::std::ptr::null_mut(),
+            Pitch: 0,
+            pBits: ::std::ptr::null_mut(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_MAPPED_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MAPPED_RECT")
-            .field("pitch", &format_args!("{:?}", self.pitch))
-            .field("p_bits", &format_args!("{:?}", self.p_bits))
+            .field("Pitch", &format_args!("{:?}", self.Pitch))
+            .field("pBits", &format_args!("{:?}", self.pBits))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_MAPPED_RECT {
     fn eq(&self, other: &Self) -> bool {
-        self.pitch == other.pitch && self.p_bits == other.p_bits
+        self.Pitch == other.Pitch && self.pBits == other.pBits
     }
 }
 impl ::std::cmp::Eq for DXGI_MAPPED_RECT {}
@@ -1760,7 +1787,6 @@ pub const DXGI_MAP_DISCARD: u32 = 4u32;
 pub const DXGI_MAP_READ: u32 = 1u32;
 pub const DXGI_MAP_WRITE: u32 = 2u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MATRIX_3X2_F {
     pub _11: f32,
@@ -1810,7 +1836,6 @@ unsafe impl ::windows::Abi for DXGI_MATRIX_3X2_F {
     type Abi = Self;
 }
 pub const DXGI_MAX_SWAP_CHAIN_BUFFERS: u32 = 16u32;
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1822,7 +1847,6 @@ pub const DXGI_MAX_SWAP_CHAIN_BUFFERS: u32 = 16u32;
 #[repr(transparent)]
 pub struct DXGI_MEMORY_SEGMENT_GROUP(pub i32);
 impl DXGI_MEMORY_SEGMENT_GROUP {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_MEMORY_SEGMENT_GROUP_LOCAL: Self = Self(0i32);
     pub const DXGI_MEMORY_SEGMENT_GROUP_NON_LOCAL: Self = Self(1i32);
 }
@@ -1835,39 +1859,37 @@ unsafe impl ::windows::Abi for DXGI_MEMORY_SEGMENT_GROUP {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RATIONAL {
-    pub numerator: u32,
-    pub denominator: u32,
+    pub Numerator: u32,
+    pub Denominator: u32,
 }
 impl DXGI_RATIONAL {}
 impl ::std::default::Default for DXGI_RATIONAL {
     fn default() -> Self {
         Self {
-            numerator: 0,
-            denominator: 0,
+            Numerator: 0,
+            Denominator: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_RATIONAL {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_RATIONAL")
-            .field("numerator", &format_args!("{:?}", self.numerator))
-            .field("denominator", &format_args!("{:?}", self.denominator))
+            .field("Numerator", &format_args!("{:?}", self.Numerator))
+            .field("Denominator", &format_args!("{:?}", self.Denominator))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_RATIONAL {
     fn eq(&self, other: &Self) -> bool {
-        self.numerator == other.numerator && self.denominator == other.denominator
+        self.Numerator == other.Numerator && self.Denominator == other.Denominator
     }
 }
 impl ::std::cmp::Eq for DXGI_RATIONAL {}
 unsafe impl ::windows::Abi for DXGI_RATIONAL {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1879,7 +1901,6 @@ unsafe impl ::windows::Abi for DXGI_RATIONAL {
 #[repr(transparent)]
 pub struct DXGI_MODE_SCANLINE_ORDER(pub i32);
 impl DXGI_MODE_SCANLINE_ORDER {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED: Self = Self(0i32);
     pub const DXGI_MODE_SCANLINE_ORDER_PROGRESSIVE: Self = Self(1i32);
     pub const DXGI_MODE_SCANLINE_ORDER_UPPER_FIELD_FIRST: Self = Self(2i32);
@@ -1893,7 +1914,6 @@ impl ::std::convert::From<i32> for DXGI_MODE_SCANLINE_ORDER {
 unsafe impl ::windows::Abi for DXGI_MODE_SCANLINE_ORDER {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -1905,7 +1925,6 @@ unsafe impl ::windows::Abi for DXGI_MODE_SCANLINE_ORDER {
 #[repr(transparent)]
 pub struct DXGI_MODE_SCALING(pub i32);
 impl DXGI_MODE_SCALING {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_MODE_SCALING_UNSPECIFIED: Self = Self(0i32);
     pub const DXGI_MODE_SCALING_CENTERED: Self = Self(1i32);
     pub const DXGI_MODE_SCALING_STRETCHED: Self = Self(2i32);
@@ -1919,52 +1938,51 @@ unsafe impl ::windows::Abi for DXGI_MODE_SCALING {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MODE_DESC {
-    pub width: u32,
-    pub height: u32,
-    pub refresh_rate: DXGI_RATIONAL,
-    pub format: DXGI_FORMAT,
-    pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
-    pub scaling: DXGI_MODE_SCALING,
+    pub Width: u32,
+    pub Height: u32,
+    pub RefreshRate: DXGI_RATIONAL,
+    pub Format: DXGI_FORMAT,
+    pub ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER,
+    pub Scaling: DXGI_MODE_SCALING,
 }
 impl DXGI_MODE_DESC {}
 impl ::std::default::Default for DXGI_MODE_DESC {
     fn default() -> Self {
         Self {
-            width: 0,
-            height: 0,
-            refresh_rate: ::std::default::Default::default(),
-            format: ::std::default::Default::default(),
-            scanline_ordering: ::std::default::Default::default(),
-            scaling: ::std::default::Default::default(),
+            Width: 0,
+            Height: 0,
+            RefreshRate: ::std::default::Default::default(),
+            Format: ::std::default::Default::default(),
+            ScanlineOrdering: ::std::default::Default::default(),
+            Scaling: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_MODE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC")
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("refresh_rate", &format_args!("{:?}", self.refresh_rate))
-            .field("format", &format_args!("{:?}", self.format))
+            .field("Width", &format_args!("{:?}", self.Width))
+            .field("Height", &format_args!("{:?}", self.Height))
+            .field("RefreshRate", &format_args!("{:?}", self.RefreshRate))
+            .field("Format", &format_args!("{:?}", self.Format))
             .field(
-                "scanline_ordering",
-                &format_args!("{:?}", self.scanline_ordering),
+                "ScanlineOrdering",
+                &format_args!("{:?}", self.ScanlineOrdering),
             )
-            .field("scaling", &format_args!("{:?}", self.scaling))
+            .field("Scaling", &format_args!("{:?}", self.Scaling))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_MODE_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.refresh_rate == other.refresh_rate
-            && self.format == other.format
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
+        self.Width == other.Width
+            && self.Height == other.Height
+            && self.RefreshRate == other.RefreshRate
+            && self.Format == other.Format
+            && self.ScanlineOrdering == other.ScanlineOrdering
+            && self.Scaling == other.Scaling
     }
 }
 impl ::std::cmp::Eq for DXGI_MODE_DESC {}
@@ -1972,63 +1990,61 @@ unsafe impl ::windows::Abi for DXGI_MODE_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_MODE_DESC1 {
-    pub width: u32,
-    pub height: u32,
-    pub refresh_rate: DXGI_RATIONAL,
-    pub format: DXGI_FORMAT,
-    pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
-    pub scaling: DXGI_MODE_SCALING,
-    pub stereo: super::system_services::BOOL,
+    pub Width: u32,
+    pub Height: u32,
+    pub RefreshRate: DXGI_RATIONAL,
+    pub Format: DXGI_FORMAT,
+    pub ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER,
+    pub Scaling: DXGI_MODE_SCALING,
+    pub Stereo: super::SystemServices::BOOL,
 }
 impl DXGI_MODE_DESC1 {}
 impl ::std::default::Default for DXGI_MODE_DESC1 {
     fn default() -> Self {
         Self {
-            width: 0,
-            height: 0,
-            refresh_rate: ::std::default::Default::default(),
-            format: ::std::default::Default::default(),
-            scanline_ordering: ::std::default::Default::default(),
-            scaling: ::std::default::Default::default(),
-            stereo: ::std::default::Default::default(),
+            Width: 0,
+            Height: 0,
+            RefreshRate: ::std::default::Default::default(),
+            Format: ::std::default::Default::default(),
+            ScanlineOrdering: ::std::default::Default::default(),
+            Scaling: ::std::default::Default::default(),
+            Stereo: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_MODE_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_MODE_DESC1")
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("refresh_rate", &format_args!("{:?}", self.refresh_rate))
-            .field("format", &format_args!("{:?}", self.format))
+            .field("Width", &format_args!("{:?}", self.Width))
+            .field("Height", &format_args!("{:?}", self.Height))
+            .field("RefreshRate", &format_args!("{:?}", self.RefreshRate))
+            .field("Format", &format_args!("{:?}", self.Format))
             .field(
-                "scanline_ordering",
-                &format_args!("{:?}", self.scanline_ordering),
+                "ScanlineOrdering",
+                &format_args!("{:?}", self.ScanlineOrdering),
             )
-            .field("scaling", &format_args!("{:?}", self.scaling))
-            .field("stereo", &format_args!("{:?}", self.stereo))
+            .field("Scaling", &format_args!("{:?}", self.Scaling))
+            .field("Stereo", &format_args!("{:?}", self.Stereo))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_MODE_DESC1 {
     fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.refresh_rate == other.refresh_rate
-            && self.format == other.format
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
-            && self.stereo == other.stereo
+        self.Width == other.Width
+            && self.Height == other.Height
+            && self.RefreshRate == other.RefreshRate
+            && self.Format == other.Format
+            && self.ScanlineOrdering == other.ScanlineOrdering
+            && self.Scaling == other.Scaling
+            && self.Stereo == other.Stereo
     }
 }
 impl ::std::cmp::Eq for DXGI_MODE_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_MODE_DESC1 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2040,7 +2056,6 @@ unsafe impl ::windows::Abi for DXGI_MODE_DESC1 {
 #[repr(transparent)]
 pub struct DXGI_MODE_ROTATION(pub i32);
 impl DXGI_MODE_ROTATION {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_MODE_ROTATION_UNSPECIFIED: Self = Self(0i32);
     pub const DXGI_MODE_ROTATION_IDENTITY: Self = Self(1i32);
     pub const DXGI_MODE_ROTATION_ROTATE90: Self = Self(2i32);
@@ -2055,7 +2070,6 @@ impl ::std::convert::From<i32> for DXGI_MODE_ROTATION {
 unsafe impl ::windows::Abi for DXGI_MODE_ROTATION {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2067,7 +2081,6 @@ unsafe impl ::windows::Abi for DXGI_MODE_ROTATION {
 #[repr(transparent)]
 pub struct DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS(pub i32);
 impl DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAG_NOMINAL_RANGE: Self = Self(1i32);
     pub const DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAG_BT709: Self = Self(2i32);
     pub const DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAG_xvYCC: Self = Self(4i32);
@@ -2084,7 +2097,6 @@ pub const DXGI_MWA_NO_ALT_ENTER: u32 = 2u32;
 pub const DXGI_MWA_NO_PRINT_SCREEN: u32 = 4u32;
 pub const DXGI_MWA_NO_WINDOW_CHANGES: u32 = 1u32;
 pub const DXGI_MWA_VALID: u32 = 7u32;
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2096,7 +2108,6 @@ pub const DXGI_MWA_VALID: u32 = 7u32;
 #[repr(transparent)]
 pub struct DXGI_OFFER_RESOURCE_FLAGS(pub i32);
 impl DXGI_OFFER_RESOURCE_FLAGS {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OFFER_RESOURCE_FLAG_ALLOW_DECOMMIT: Self = Self(1i32);
 }
 impl ::std::convert::From<i32> for DXGI_OFFER_RESOURCE_FLAGS {
@@ -2107,7 +2118,6 @@ impl ::std::convert::From<i32> for DXGI_OFFER_RESOURCE_FLAGS {
 unsafe impl ::windows::Abi for DXGI_OFFER_RESOURCE_FLAGS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2119,7 +2129,6 @@ unsafe impl ::windows::Abi for DXGI_OFFER_RESOURCE_FLAGS {
 #[repr(transparent)]
 pub struct DXGI_OFFER_RESOURCE_PRIORITY(pub i32);
 impl DXGI_OFFER_RESOURCE_PRIORITY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OFFER_RESOURCE_PRIORITY_LOW: Self = Self(1i32);
     pub const DXGI_OFFER_RESOURCE_PRIORITY_NORMAL: Self = Self(2i32);
     pub const DXGI_OFFER_RESOURCE_PRIORITY_HIGH: Self = Self(3i32);
@@ -2133,47 +2142,45 @@ unsafe impl ::windows::Abi for DXGI_OFFER_RESOURCE_PRIORITY {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_DESC {
-    pub mode_desc: DXGI_MODE_DESC,
-    pub rotation: DXGI_MODE_ROTATION,
-    pub desktop_image_in_system_memory: super::system_services::BOOL,
+    pub ModeDesc: DXGI_MODE_DESC,
+    pub Rotation: DXGI_MODE_ROTATION,
+    pub DesktopImageInSystemMemory: super::SystemServices::BOOL,
 }
 impl DXGI_OUTDUPL_DESC {}
 impl ::std::default::Default for DXGI_OUTDUPL_DESC {
     fn default() -> Self {
         Self {
-            mode_desc: ::std::default::Default::default(),
-            rotation: ::std::default::Default::default(),
-            desktop_image_in_system_memory: ::std::default::Default::default(),
+            ModeDesc: ::std::default::Default::default(),
+            Rotation: ::std::default::Default::default(),
+            DesktopImageInSystemMemory: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTDUPL_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_DESC")
-            .field("mode_desc", &format_args!("{:?}", self.mode_desc))
-            .field("rotation", &format_args!("{:?}", self.rotation))
+            .field("ModeDesc", &format_args!("{:?}", self.ModeDesc))
+            .field("Rotation", &format_args!("{:?}", self.Rotation))
             .field(
-                "desktop_image_in_system_memory",
-                &format_args!("{:?}", self.desktop_image_in_system_memory),
+                "DesktopImageInSystemMemory",
+                &format_args!("{:?}", self.DesktopImageInSystemMemory),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTDUPL_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.mode_desc == other.mode_desc
-            && self.rotation == other.rotation
-            && self.desktop_image_in_system_memory == other.desktop_image_in_system_memory
+        self.ModeDesc == other.ModeDesc
+            && self.Rotation == other.Rotation
+            && self.DesktopImageInSystemMemory == other.DesktopImageInSystemMemory
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTDUPL_DESC {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_DESC {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2185,7 +2192,6 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_DESC {
 #[repr(transparent)]
 pub struct DXGI_OUTDUPL_FLAG(pub i32);
 impl DXGI_OUTDUPL_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OUTDUPL_COMPOSITED_UI_CAPTURE_ONLY: Self = Self(1i32);
 }
 impl ::std::convert::From<i32> for DXGI_OUTDUPL_FLAG {
@@ -2197,32 +2203,31 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_FLAG {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_POINTER_POSITION {
-    pub position: super::display_devices::POINT,
-    pub visible: super::system_services::BOOL,
+    pub Position: super::DisplayDevices::POINT,
+    pub Visible: super::SystemServices::BOOL,
 }
 impl DXGI_OUTDUPL_POINTER_POSITION {}
 impl ::std::default::Default for DXGI_OUTDUPL_POINTER_POSITION {
     fn default() -> Self {
         Self {
-            position: ::std::default::Default::default(),
-            visible: ::std::default::Default::default(),
+            Position: ::std::default::Default::default(),
+            Visible: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_POSITION {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_POSITION")
-            .field("position", &format_args!("{:?}", self.position))
-            .field("visible", &format_args!("{:?}", self.visible))
+            .field("Position", &format_args!("{:?}", self.Position))
+            .field("Visible", &format_args!("{:?}", self.Visible))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTDUPL_POINTER_POSITION {
     fn eq(&self, other: &Self) -> bool {
-        self.position == other.position && self.visible == other.visible
+        self.Position == other.Position && self.Visible == other.Visible
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTDUPL_POINTER_POSITION {}
@@ -2230,30 +2235,29 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_POSITION {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_FRAME_INFO {
-    pub last_present_time: i64,
-    pub last_mouse_update_time: i64,
-    pub accumulated_frames: u32,
-    pub rects_coalesced: super::system_services::BOOL,
-    pub protected_content_masked_out: super::system_services::BOOL,
-    pub pointer_position: DXGI_OUTDUPL_POINTER_POSITION,
-    pub total_metadata_buffer_size: u32,
-    pub pointer_shape_buffer_size: u32,
+    pub LastPresentTime: i64,
+    pub LastMouseUpdateTime: i64,
+    pub AccumulatedFrames: u32,
+    pub RectsCoalesced: super::SystemServices::BOOL,
+    pub ProtectedContentMaskedOut: super::SystemServices::BOOL,
+    pub PointerPosition: DXGI_OUTDUPL_POINTER_POSITION,
+    pub TotalMetadataBufferSize: u32,
+    pub PointerShapeBufferSize: u32,
 }
 impl DXGI_OUTDUPL_FRAME_INFO {}
 impl ::std::default::Default for DXGI_OUTDUPL_FRAME_INFO {
     fn default() -> Self {
         Self {
-            last_present_time: 0,
-            last_mouse_update_time: 0,
-            accumulated_frames: 0,
-            rects_coalesced: ::std::default::Default::default(),
-            protected_content_masked_out: ::std::default::Default::default(),
-            pointer_position: ::std::default::Default::default(),
-            total_metadata_buffer_size: 0,
-            pointer_shape_buffer_size: 0,
+            LastPresentTime: 0,
+            LastMouseUpdateTime: 0,
+            AccumulatedFrames: 0,
+            RectsCoalesced: ::std::default::Default::default(),
+            ProtectedContentMaskedOut: ::std::default::Default::default(),
+            PointerPosition: ::std::default::Default::default(),
+            TotalMetadataBufferSize: 0,
+            PointerShapeBufferSize: 0,
         }
     }
 }
@@ -2261,50 +2265,47 @@ impl ::std::fmt::Debug for DXGI_OUTDUPL_FRAME_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_FRAME_INFO")
             .field(
-                "last_present_time",
-                &format_args!("{:?}", self.last_present_time),
+                "LastPresentTime",
+                &format_args!("{:?}", self.LastPresentTime),
             )
             .field(
-                "last_mouse_update_time",
-                &format_args!("{:?}", self.last_mouse_update_time),
+                "LastMouseUpdateTime",
+                &format_args!("{:?}", self.LastMouseUpdateTime),
             )
             .field(
-                "accumulated_frames",
-                &format_args!("{:?}", self.accumulated_frames),
+                "AccumulatedFrames",
+                &format_args!("{:?}", self.AccumulatedFrames),
+            )
+            .field("RectsCoalesced", &format_args!("{:?}", self.RectsCoalesced))
+            .field(
+                "ProtectedContentMaskedOut",
+                &format_args!("{:?}", self.ProtectedContentMaskedOut),
             )
             .field(
-                "rects_coalesced",
-                &format_args!("{:?}", self.rects_coalesced),
+                "PointerPosition",
+                &format_args!("{:?}", self.PointerPosition),
             )
             .field(
-                "protected_content_masked_out",
-                &format_args!("{:?}", self.protected_content_masked_out),
+                "TotalMetadataBufferSize",
+                &format_args!("{:?}", self.TotalMetadataBufferSize),
             )
             .field(
-                "pointer_position",
-                &format_args!("{:?}", self.pointer_position),
-            )
-            .field(
-                "total_metadata_buffer_size",
-                &format_args!("{:?}", self.total_metadata_buffer_size),
-            )
-            .field(
-                "pointer_shape_buffer_size",
-                &format_args!("{:?}", self.pointer_shape_buffer_size),
+                "PointerShapeBufferSize",
+                &format_args!("{:?}", self.PointerShapeBufferSize),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTDUPL_FRAME_INFO {
     fn eq(&self, other: &Self) -> bool {
-        self.last_present_time == other.last_present_time
-            && self.last_mouse_update_time == other.last_mouse_update_time
-            && self.accumulated_frames == other.accumulated_frames
-            && self.rects_coalesced == other.rects_coalesced
-            && self.protected_content_masked_out == other.protected_content_masked_out
-            && self.pointer_position == other.pointer_position
-            && self.total_metadata_buffer_size == other.total_metadata_buffer_size
-            && self.pointer_shape_buffer_size == other.pointer_shape_buffer_size
+        self.LastPresentTime == other.LastPresentTime
+            && self.LastMouseUpdateTime == other.LastMouseUpdateTime
+            && self.AccumulatedFrames == other.AccumulatedFrames
+            && self.RectsCoalesced == other.RectsCoalesced
+            && self.ProtectedContentMaskedOut == other.ProtectedContentMaskedOut
+            && self.PointerPosition == other.PointerPosition
+            && self.TotalMetadataBufferSize == other.TotalMetadataBufferSize
+            && self.PointerShapeBufferSize == other.PointerShapeBufferSize
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTDUPL_FRAME_INFO {}
@@ -2312,35 +2313,34 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_FRAME_INFO {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_MOVE_RECT {
-    pub source_point: super::display_devices::POINT,
-    pub destination_rect: super::display_devices::RECT,
+    pub SourcePoint: super::DisplayDevices::POINT,
+    pub DestinationRect: super::DisplayDevices::RECT,
 }
 impl DXGI_OUTDUPL_MOVE_RECT {}
 impl ::std::default::Default for DXGI_OUTDUPL_MOVE_RECT {
     fn default() -> Self {
         Self {
-            source_point: ::std::default::Default::default(),
-            destination_rect: ::std::default::Default::default(),
+            SourcePoint: ::std::default::Default::default(),
+            DestinationRect: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTDUPL_MOVE_RECT {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_MOVE_RECT")
-            .field("source_point", &format_args!("{:?}", self.source_point))
+            .field("SourcePoint", &format_args!("{:?}", self.SourcePoint))
             .field(
-                "destination_rect",
-                &format_args!("{:?}", self.destination_rect),
+                "DestinationRect",
+                &format_args!("{:?}", self.DestinationRect),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTDUPL_MOVE_RECT {
     fn eq(&self, other: &Self) -> bool {
-        self.source_point == other.source_point && self.destination_rect == other.destination_rect
+        self.SourcePoint == other.SourcePoint && self.DestinationRect == other.DestinationRect
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTDUPL_MOVE_RECT {}
@@ -2348,52 +2348,50 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_MOVE_RECT {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_INFO {
-    pub r#type: u32,
-    pub width: u32,
-    pub height: u32,
-    pub pitch: u32,
-    pub hot_spot: super::display_devices::POINT,
+    pub Type: u32,
+    pub Width: u32,
+    pub Height: u32,
+    pub Pitch: u32,
+    pub HotSpot: super::DisplayDevices::POINT,
 }
 impl DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 impl ::std::default::Default for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn default() -> Self {
         Self {
-            r#type: 0,
-            width: 0,
-            height: 0,
-            pitch: 0,
-            hot_spot: ::std::default::Default::default(),
+            Type: 0,
+            Width: 0,
+            Height: 0,
+            Pitch: 0,
+            HotSpot: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTDUPL_POINTER_SHAPE_INFO")
-            .field("r#type", &format_args!("{:?}", self.r#type))
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("pitch", &format_args!("{:?}", self.pitch))
-            .field("hot_spot", &format_args!("{:?}", self.hot_spot))
+            .field("Type", &format_args!("{:?}", self.Type))
+            .field("Width", &format_args!("{:?}", self.Width))
+            .field("Height", &format_args!("{:?}", self.Height))
+            .field("Pitch", &format_args!("{:?}", self.Pitch))
+            .field("HotSpot", &format_args!("{:?}", self.HotSpot))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     fn eq(&self, other: &Self) -> bool {
-        self.r#type == other.r#type
-            && self.width == other.width
-            && self.height == other.height
-            && self.pitch == other.pitch
-            && self.hot_spot == other.hot_spot
+        self.Type == other.Type
+            && self.Width == other.Width
+            && self.Height == other.Height
+            && self.Pitch == other.Pitch
+            && self.HotSpot == other.HotSpot
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTDUPL_POINTER_SHAPE_INFO {}
 unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2405,7 +2403,6 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_INFO {
 #[repr(transparent)]
 pub struct DXGI_OUTDUPL_POINTER_SHAPE_TYPE(pub i32);
 impl DXGI_OUTDUPL_POINTER_SHAPE_TYPE {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MONOCHROME: Self = Self(1i32);
     pub const DXGI_OUTDUPL_POINTER_SHAPE_TYPE_COLOR: Self = Self(2i32);
     pub const DXGI_OUTDUPL_POINTER_SHAPE_TYPE_MASKED_COLOR: Self = Self(4i32);
@@ -2419,51 +2416,50 @@ unsafe impl ::windows::Abi for DXGI_OUTDUPL_POINTER_SHAPE_TYPE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC {
-    pub device_name: [u16; 32],
-    pub desktop_coordinates: super::display_devices::RECT,
-    pub attached_to_desktop: super::system_services::BOOL,
-    pub rotation: DXGI_MODE_ROTATION,
-    pub monitor: super::gdi::HMONITOR,
+    pub DeviceName: [u16; 32],
+    pub DesktopCoordinates: super::DisplayDevices::RECT,
+    pub AttachedToDesktop: super::SystemServices::BOOL,
+    pub Rotation: DXGI_MODE_ROTATION,
+    pub Monitor: super::Gdi::HMONITOR,
 }
 impl DXGI_OUTPUT_DESC {}
 impl ::std::default::Default for DXGI_OUTPUT_DESC {
     fn default() -> Self {
         Self {
-            device_name: [0; 32],
-            desktop_coordinates: ::std::default::Default::default(),
-            attached_to_desktop: ::std::default::Default::default(),
-            rotation: ::std::default::Default::default(),
-            monitor: ::std::default::Default::default(),
+            DeviceName: [0; 32],
+            DesktopCoordinates: ::std::default::Default::default(),
+            AttachedToDesktop: ::std::default::Default::default(),
+            Rotation: ::std::default::Default::default(),
+            Monitor: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTPUT_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC")
-            .field("device_name", &format_args!("{:?}", self.device_name))
+            .field("DeviceName", &format_args!("{:?}", self.DeviceName))
             .field(
-                "desktop_coordinates",
-                &format_args!("{:?}", self.desktop_coordinates),
+                "DesktopCoordinates",
+                &format_args!("{:?}", self.DesktopCoordinates),
             )
             .field(
-                "attached_to_desktop",
-                &format_args!("{:?}", self.attached_to_desktop),
+                "AttachedToDesktop",
+                &format_args!("{:?}", self.AttachedToDesktop),
             )
-            .field("rotation", &format_args!("{:?}", self.rotation))
-            .field("monitor", &format_args!("{:?}", self.monitor))
+            .field("Rotation", &format_args!("{:?}", self.Rotation))
+            .field("Monitor", &format_args!("{:?}", self.Monitor))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTPUT_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.device_name == other.device_name
-            && self.desktop_coordinates == other.desktop_coordinates
-            && self.attached_to_desktop == other.attached_to_desktop
-            && self.rotation == other.rotation
-            && self.monitor == other.monitor
+        self.DeviceName == other.DeviceName
+            && self.DesktopCoordinates == other.DesktopCoordinates
+            && self.AttachedToDesktop == other.AttachedToDesktop
+            && self.Rotation == other.Rotation
+            && self.Monitor == other.Monitor
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTPUT_DESC {}
@@ -2471,97 +2467,95 @@ unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_OUTPUT_DESC1 {
-    pub device_name: [u16; 32],
-    pub desktop_coordinates: super::display_devices::RECT,
-    pub attached_to_desktop: super::system_services::BOOL,
-    pub rotation: DXGI_MODE_ROTATION,
-    pub monitor: super::gdi::HMONITOR,
-    pub bits_per_color: u32,
-    pub color_space: DXGI_COLOR_SPACE_TYPE,
-    pub red_primary: [f32; 2],
-    pub green_primary: [f32; 2],
-    pub blue_primary: [f32; 2],
-    pub white_point: [f32; 2],
-    pub min_luminance: f32,
-    pub max_luminance: f32,
-    pub max_full_frame_luminance: f32,
+    pub DeviceName: [u16; 32],
+    pub DesktopCoordinates: super::DisplayDevices::RECT,
+    pub AttachedToDesktop: super::SystemServices::BOOL,
+    pub Rotation: DXGI_MODE_ROTATION,
+    pub Monitor: super::Gdi::HMONITOR,
+    pub BitsPerColor: u32,
+    pub ColorSpace: DXGI_COLOR_SPACE_TYPE,
+    pub RedPrimary: [f32; 2],
+    pub GreenPrimary: [f32; 2],
+    pub BluePrimary: [f32; 2],
+    pub WhitePoint: [f32; 2],
+    pub MinLuminance: f32,
+    pub MaxLuminance: f32,
+    pub MaxFullFrameLuminance: f32,
 }
 impl DXGI_OUTPUT_DESC1 {}
 impl ::std::default::Default for DXGI_OUTPUT_DESC1 {
     fn default() -> Self {
         Self {
-            device_name: [0; 32],
-            desktop_coordinates: ::std::default::Default::default(),
-            attached_to_desktop: ::std::default::Default::default(),
-            rotation: ::std::default::Default::default(),
-            monitor: ::std::default::Default::default(),
-            bits_per_color: 0,
-            color_space: ::std::default::Default::default(),
-            red_primary: [0.0; 2],
-            green_primary: [0.0; 2],
-            blue_primary: [0.0; 2],
-            white_point: [0.0; 2],
-            min_luminance: 0.0,
-            max_luminance: 0.0,
-            max_full_frame_luminance: 0.0,
+            DeviceName: [0; 32],
+            DesktopCoordinates: ::std::default::Default::default(),
+            AttachedToDesktop: ::std::default::Default::default(),
+            Rotation: ::std::default::Default::default(),
+            Monitor: ::std::default::Default::default(),
+            BitsPerColor: 0,
+            ColorSpace: ::std::default::Default::default(),
+            RedPrimary: [0.0; 2],
+            GreenPrimary: [0.0; 2],
+            BluePrimary: [0.0; 2],
+            WhitePoint: [0.0; 2],
+            MinLuminance: 0.0,
+            MaxLuminance: 0.0,
+            MaxFullFrameLuminance: 0.0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_OUTPUT_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_OUTPUT_DESC1")
-            .field("device_name", &format_args!("{:?}", self.device_name))
+            .field("DeviceName", &format_args!("{:?}", self.DeviceName))
             .field(
-                "desktop_coordinates",
-                &format_args!("{:?}", self.desktop_coordinates),
+                "DesktopCoordinates",
+                &format_args!("{:?}", self.DesktopCoordinates),
             )
             .field(
-                "attached_to_desktop",
-                &format_args!("{:?}", self.attached_to_desktop),
+                "AttachedToDesktop",
+                &format_args!("{:?}", self.AttachedToDesktop),
             )
-            .field("rotation", &format_args!("{:?}", self.rotation))
-            .field("monitor", &format_args!("{:?}", self.monitor))
-            .field("bits_per_color", &format_args!("{:?}", self.bits_per_color))
-            .field("color_space", &format_args!("{:?}", self.color_space))
-            .field("red_primary", &format_args!("{:?}", self.red_primary))
-            .field("green_primary", &format_args!("{:?}", self.green_primary))
-            .field("blue_primary", &format_args!("{:?}", self.blue_primary))
-            .field("white_point", &format_args!("{:?}", self.white_point))
-            .field("min_luminance", &format_args!("{:?}", self.min_luminance))
-            .field("max_luminance", &format_args!("{:?}", self.max_luminance))
+            .field("Rotation", &format_args!("{:?}", self.Rotation))
+            .field("Monitor", &format_args!("{:?}", self.Monitor))
+            .field("BitsPerColor", &format_args!("{:?}", self.BitsPerColor))
+            .field("ColorSpace", &format_args!("{:?}", self.ColorSpace))
+            .field("RedPrimary", &format_args!("{:?}", self.RedPrimary))
+            .field("GreenPrimary", &format_args!("{:?}", self.GreenPrimary))
+            .field("BluePrimary", &format_args!("{:?}", self.BluePrimary))
+            .field("WhitePoint", &format_args!("{:?}", self.WhitePoint))
+            .field("MinLuminance", &format_args!("{:?}", self.MinLuminance))
+            .field("MaxLuminance", &format_args!("{:?}", self.MaxLuminance))
             .field(
-                "max_full_frame_luminance",
-                &format_args!("{:?}", self.max_full_frame_luminance),
+                "MaxFullFrameLuminance",
+                &format_args!("{:?}", self.MaxFullFrameLuminance),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_OUTPUT_DESC1 {
     fn eq(&self, other: &Self) -> bool {
-        self.device_name == other.device_name
-            && self.desktop_coordinates == other.desktop_coordinates
-            && self.attached_to_desktop == other.attached_to_desktop
-            && self.rotation == other.rotation
-            && self.monitor == other.monitor
-            && self.bits_per_color == other.bits_per_color
-            && self.color_space == other.color_space
-            && self.red_primary == other.red_primary
-            && self.green_primary == other.green_primary
-            && self.blue_primary == other.blue_primary
-            && self.white_point == other.white_point
-            && self.min_luminance == other.min_luminance
-            && self.max_luminance == other.max_luminance
-            && self.max_full_frame_luminance == other.max_full_frame_luminance
+        self.DeviceName == other.DeviceName
+            && self.DesktopCoordinates == other.DesktopCoordinates
+            && self.AttachedToDesktop == other.AttachedToDesktop
+            && self.Rotation == other.Rotation
+            && self.Monitor == other.Monitor
+            && self.BitsPerColor == other.BitsPerColor
+            && self.ColorSpace == other.ColorSpace
+            && self.RedPrimary == other.RedPrimary
+            && self.GreenPrimary == other.GreenPrimary
+            && self.BluePrimary == other.BluePrimary
+            && self.WhitePoint == other.WhitePoint
+            && self.MinLuminance == other.MinLuminance
+            && self.MaxLuminance == other.MaxLuminance
+            && self.MaxFullFrameLuminance == other.MaxFullFrameLuminance
     }
 }
 impl ::std::cmp::Eq for DXGI_OUTPUT_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC1 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2573,7 +2567,6 @@ unsafe impl ::windows::Abi for DXGI_OUTPUT_DESC1 {
 #[repr(transparent)]
 pub struct DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG(pub i32);
 impl DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG_PRESENT: Self = Self(1i32);
 }
 impl ::std::convert::From<i32> for DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG {
@@ -2584,7 +2577,6 @@ impl ::std::convert::From<i32> for DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG {
 unsafe impl ::windows::Abi for DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2596,7 +2588,6 @@ unsafe impl ::windows::Abi for DXGI_OVERLAY_COLOR_SPACE_SUPPORT_FLAG {
 #[repr(transparent)]
 pub struct DXGI_OVERLAY_SUPPORT_FLAG(pub i32);
 impl DXGI_OVERLAY_SUPPORT_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_OVERLAY_SUPPORT_FLAG_DIRECT: Self = Self(1i32);
     pub const DXGI_OVERLAY_SUPPORT_FLAG_SCALING: Self = Self(2i32);
 }
@@ -2612,22 +2603,21 @@ pub const DXGI_PRESENT_ALLOW_TEARING: u32 = 512u32;
 pub const DXGI_PRESENT_DO_NOT_SEQUENCE: u32 = 2u32;
 pub const DXGI_PRESENT_DO_NOT_WAIT: u32 = 8u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_PRESENT_PARAMETERS {
-    pub dirty_rects_count: u32,
-    pub p_dirty_rects: *mut super::display_devices::RECT,
-    pub p_scroll_rect: *mut super::display_devices::RECT,
-    pub p_scroll_offset: *mut super::display_devices::POINT,
+    pub DirtyRectsCount: u32,
+    pub pDirtyRects: *mut super::DisplayDevices::RECT,
+    pub pScrollRect: *mut super::DisplayDevices::RECT,
+    pub pScrollOffset: *mut super::DisplayDevices::POINT,
 }
 impl DXGI_PRESENT_PARAMETERS {}
 impl ::std::default::Default for DXGI_PRESENT_PARAMETERS {
     fn default() -> Self {
         Self {
-            dirty_rects_count: 0,
-            p_dirty_rects: ::std::ptr::null_mut(),
-            p_scroll_rect: ::std::ptr::null_mut(),
-            p_scroll_offset: ::std::ptr::null_mut(),
+            DirtyRectsCount: 0,
+            pDirtyRects: ::std::ptr::null_mut(),
+            pScrollRect: ::std::ptr::null_mut(),
+            pScrollOffset: ::std::ptr::null_mut(),
         }
     }
 }
@@ -2635,24 +2625,21 @@ impl ::std::fmt::Debug for DXGI_PRESENT_PARAMETERS {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_PRESENT_PARAMETERS")
             .field(
-                "dirty_rects_count",
-                &format_args!("{:?}", self.dirty_rects_count),
+                "DirtyRectsCount",
+                &format_args!("{:?}", self.DirtyRectsCount),
             )
-            .field("p_dirty_rects", &format_args!("{:?}", self.p_dirty_rects))
-            .field("p_scroll_rect", &format_args!("{:?}", self.p_scroll_rect))
-            .field(
-                "p_scroll_offset",
-                &format_args!("{:?}", self.p_scroll_offset),
-            )
+            .field("pDirtyRects", &format_args!("{:?}", self.pDirtyRects))
+            .field("pScrollRect", &format_args!("{:?}", self.pScrollRect))
+            .field("pScrollOffset", &format_args!("{:?}", self.pScrollOffset))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_PRESENT_PARAMETERS {
     fn eq(&self, other: &Self) -> bool {
-        self.dirty_rects_count == other.dirty_rects_count
-            && self.p_dirty_rects == other.p_dirty_rects
-            && self.p_scroll_rect == other.p_scroll_rect
-            && self.p_scroll_offset == other.p_scroll_offset
+        self.DirtyRectsCount == other.DirtyRectsCount
+            && self.pDirtyRects == other.pDirtyRects
+            && self.pScrollRect == other.pScrollRect
+            && self.pScrollOffset == other.pScrollOffset
     }
 }
 impl ::std::cmp::Eq for DXGI_PRESENT_PARAMETERS {}
@@ -2666,54 +2653,52 @@ pub const DXGI_PRESENT_STEREO_TEMPORARY_MONO: u32 = 32u32;
 pub const DXGI_PRESENT_TEST: u32 = 1u32;
 pub const DXGI_PRESENT_USE_DURATION: u32 = 256u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_QUERY_VIDEO_MEMORY_INFO {
-    pub budget: u64,
-    pub current_usage: u64,
-    pub available_for_reservation: u64,
-    pub current_reservation: u64,
+    pub Budget: u64,
+    pub CurrentUsage: u64,
+    pub AvailableForReservation: u64,
+    pub CurrentReservation: u64,
 }
 impl DXGI_QUERY_VIDEO_MEMORY_INFO {}
 impl ::std::default::Default for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn default() -> Self {
         Self {
-            budget: 0,
-            current_usage: 0,
-            available_for_reservation: 0,
-            current_reservation: 0,
+            Budget: 0,
+            CurrentUsage: 0,
+            AvailableForReservation: 0,
+            CurrentReservation: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_QUERY_VIDEO_MEMORY_INFO")
-            .field("budget", &format_args!("{:?}", self.budget))
-            .field("current_usage", &format_args!("{:?}", self.current_usage))
+            .field("Budget", &format_args!("{:?}", self.Budget))
+            .field("CurrentUsage", &format_args!("{:?}", self.CurrentUsage))
             .field(
-                "available_for_reservation",
-                &format_args!("{:?}", self.available_for_reservation),
+                "AvailableForReservation",
+                &format_args!("{:?}", self.AvailableForReservation),
             )
             .field(
-                "current_reservation",
-                &format_args!("{:?}", self.current_reservation),
+                "CurrentReservation",
+                &format_args!("{:?}", self.CurrentReservation),
             )
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_QUERY_VIDEO_MEMORY_INFO {
     fn eq(&self, other: &Self) -> bool {
-        self.budget == other.budget
-            && self.current_usage == other.current_usage
-            && self.available_for_reservation == other.available_for_reservation
-            && self.current_reservation == other.current_reservation
+        self.Budget == other.Budget
+            && self.CurrentUsage == other.CurrentUsage
+            && self.AvailableForReservation == other.AvailableForReservation
+            && self.CurrentReservation == other.CurrentReservation
     }
 }
 impl ::std::cmp::Eq for DXGI_QUERY_VIDEO_MEMORY_INFO {}
 unsafe impl ::windows::Abi for DXGI_QUERY_VIDEO_MEMORY_INFO {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2725,7 +2710,6 @@ unsafe impl ::windows::Abi for DXGI_QUERY_VIDEO_MEMORY_INFO {
 #[repr(transparent)]
 pub struct DXGI_RECLAIM_RESOURCE_RESULTS(pub i32);
 impl DXGI_RECLAIM_RESOURCE_RESULTS {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_RECLAIM_RESOURCE_RESULT_OK: Self = Self(0i32);
     pub const DXGI_RECLAIM_RESOURCE_RESULT_DISCARDED: Self = Self(1i32);
     pub const DXGI_RECLAIM_RESOURCE_RESULT_NOT_COMMITTED: Self = Self(2i32);
@@ -2738,7 +2722,6 @@ impl ::std::convert::From<i32> for DXGI_RECLAIM_RESOURCE_RESULTS {
 unsafe impl ::windows::Abi for DXGI_RECLAIM_RESOURCE_RESULTS {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2750,7 +2733,6 @@ unsafe impl ::windows::Abi for DXGI_RECLAIM_RESOURCE_RESULTS {
 #[repr(transparent)]
 pub struct DXGI_RESIDENCY(pub i32);
 impl DXGI_RESIDENCY {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_RESIDENCY_FULLY_RESIDENT: Self = Self(1i32);
     pub const DXGI_RESIDENCY_RESIDENT_IN_SHARED_MEMORY: Self = Self(2i32);
     pub const DXGI_RESIDENCY_EVICTED_TO_DISK: Self = Self(3i32);
@@ -2769,7 +2751,6 @@ pub const DXGI_RESOURCE_PRIORITY_MAXIMUM: u32 = 3355443200u32;
 pub const DXGI_RESOURCE_PRIORITY_MINIMUM: u32 = 671088640u32;
 pub const DXGI_RESOURCE_PRIORITY_NORMAL: u32 = 2013265920u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_RGBA {
     pub r: f32,
@@ -2807,7 +2788,6 @@ impl ::std::cmp::Eq for DXGI_RGBA {}
 unsafe impl ::windows::Abi for DXGI_RGBA {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2819,7 +2799,6 @@ unsafe impl ::windows::Abi for DXGI_RGBA {
 #[repr(transparent)]
 pub struct DXGI_SCALING(pub i32);
 impl DXGI_SCALING {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_SCALING_STRETCH: Self = Self(0i32);
     pub const DXGI_SCALING_NONE: Self = Self(1i32);
     pub const DXGI_SCALING_ASPECT_RATIO_STRETCH: Self = Self(2i32);
@@ -2833,29 +2812,28 @@ unsafe impl ::windows::Abi for DXGI_SCALING {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SHARED_RESOURCE {
-    pub handle: super::system_services::HANDLE,
+    pub Handle: super::SystemServices::HANDLE,
 }
 impl DXGI_SHARED_RESOURCE {}
 impl ::std::default::Default for DXGI_SHARED_RESOURCE {
     fn default() -> Self {
         Self {
-            handle: ::std::default::Default::default(),
+            Handle: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SHARED_RESOURCE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SHARED_RESOURCE")
-            .field("handle", &format_args!("{:?}", self.handle))
+            .field("Handle", &format_args!("{:?}", self.Handle))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SHARED_RESOURCE {
     fn eq(&self, other: &Self) -> bool {
-        self.handle == other.handle
+        self.Handle == other.Handle
     }
 }
 impl ::std::cmp::Eq for DXGI_SHARED_RESOURCE {}
@@ -2866,48 +2844,46 @@ pub const DXGI_SHARED_RESOURCE_READ: i32 = -2147483648i32;
 pub const DXGI_SHARED_RESOURCE_WRITE: u32 = 1u32;
 pub const DXGI_STANDARD_MULTISAMPLE_QUALITY_PATTERN: u32 = 4294967295u32;
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SURFACE_DESC {
-    pub width: u32,
-    pub height: u32,
-    pub format: DXGI_FORMAT,
-    pub sample_desc: DXGI_SAMPLE_DESC,
+    pub Width: u32,
+    pub Height: u32,
+    pub Format: DXGI_FORMAT,
+    pub SampleDesc: DXGI_SAMPLE_DESC,
 }
 impl DXGI_SURFACE_DESC {}
 impl ::std::default::Default for DXGI_SURFACE_DESC {
     fn default() -> Self {
         Self {
-            width: 0,
-            height: 0,
-            format: ::std::default::Default::default(),
-            sample_desc: ::std::default::Default::default(),
+            Width: 0,
+            Height: 0,
+            Format: ::std::default::Default::default(),
+            SampleDesc: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SURFACE_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SURFACE_DESC")
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("format", &format_args!("{:?}", self.format))
-            .field("sample_desc", &format_args!("{:?}", self.sample_desc))
+            .field("Width", &format_args!("{:?}", self.Width))
+            .field("Height", &format_args!("{:?}", self.Height))
+            .field("Format", &format_args!("{:?}", self.Format))
+            .field("SampleDesc", &format_args!("{:?}", self.SampleDesc))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SURFACE_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.format == other.format
-            && self.sample_desc == other.sample_desc
+        self.Width == other.Width
+            && self.Height == other.Height
+            && self.Format == other.Format
+            && self.SampleDesc == other.SampleDesc
     }
 }
 impl ::std::cmp::Eq for DXGI_SURFACE_DESC {}
 unsafe impl ::windows::Abi for DXGI_SURFACE_DESC {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2919,7 +2895,6 @@ unsafe impl ::windows::Abi for DXGI_SURFACE_DESC {
 #[repr(transparent)]
 pub struct DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG(pub i32);
 impl DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_PRESENT: Self = Self(1i32);
     pub const DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG_OVERLAY_PRESENT: Self = Self(2i32);
 }
@@ -2931,7 +2906,6 @@ impl ::std::convert::From<i32> for DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG {
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -2943,7 +2917,6 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_COLOR_SPACE_SUPPORT_FLAG {
 #[repr(transparent)]
 pub struct DXGI_SWAP_EFFECT(pub i32);
 impl DXGI_SWAP_EFFECT {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_SWAP_EFFECT_DISCARD: Self = Self(0i32);
     pub const DXGI_SWAP_EFFECT_SEQUENTIAL: Self = Self(1i32);
     pub const DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL: Self = Self(3i32);
@@ -2958,57 +2931,56 @@ unsafe impl ::windows::Abi for DXGI_SWAP_EFFECT {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_DESC {
-    pub buffer_desc: DXGI_MODE_DESC,
-    pub sample_desc: DXGI_SAMPLE_DESC,
-    pub buffer_usage: u32,
-    pub buffer_count: u32,
-    pub output_window: super::windows_and_messaging::HWND,
-    pub windowed: super::system_services::BOOL,
-    pub swap_effect: DXGI_SWAP_EFFECT,
-    pub flags: u32,
+    pub BufferDesc: DXGI_MODE_DESC,
+    pub SampleDesc: DXGI_SAMPLE_DESC,
+    pub BufferUsage: u32,
+    pub BufferCount: u32,
+    pub OutputWindow: super::WindowsAndMessaging::HWND,
+    pub Windowed: super::SystemServices::BOOL,
+    pub SwapEffect: DXGI_SWAP_EFFECT,
+    pub Flags: u32,
 }
 impl DXGI_SWAP_CHAIN_DESC {}
 impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC {
     fn default() -> Self {
         Self {
-            buffer_desc: ::std::default::Default::default(),
-            sample_desc: ::std::default::Default::default(),
-            buffer_usage: 0,
-            buffer_count: 0,
-            output_window: ::std::default::Default::default(),
-            windowed: ::std::default::Default::default(),
-            swap_effect: ::std::default::Default::default(),
-            flags: 0,
+            BufferDesc: ::std::default::Default::default(),
+            SampleDesc: ::std::default::Default::default(),
+            BufferUsage: 0,
+            BufferCount: 0,
+            OutputWindow: ::std::default::Default::default(),
+            Windowed: ::std::default::Default::default(),
+            SwapEffect: ::std::default::Default::default(),
+            Flags: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC")
-            .field("buffer_desc", &format_args!("{:?}", self.buffer_desc))
-            .field("sample_desc", &format_args!("{:?}", self.sample_desc))
-            .field("buffer_usage", &format_args!("{:?}", self.buffer_usage))
-            .field("buffer_count", &format_args!("{:?}", self.buffer_count))
-            .field("output_window", &format_args!("{:?}", self.output_window))
-            .field("windowed", &format_args!("{:?}", self.windowed))
-            .field("swap_effect", &format_args!("{:?}", self.swap_effect))
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("BufferDesc", &format_args!("{:?}", self.BufferDesc))
+            .field("SampleDesc", &format_args!("{:?}", self.SampleDesc))
+            .field("BufferUsage", &format_args!("{:?}", self.BufferUsage))
+            .field("BufferCount", &format_args!("{:?}", self.BufferCount))
+            .field("OutputWindow", &format_args!("{:?}", self.OutputWindow))
+            .field("Windowed", &format_args!("{:?}", self.Windowed))
+            .field("SwapEffect", &format_args!("{:?}", self.SwapEffect))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.buffer_desc == other.buffer_desc
-            && self.sample_desc == other.sample_desc
-            && self.buffer_usage == other.buffer_usage
-            && self.buffer_count == other.buffer_count
-            && self.output_window == other.output_window
-            && self.windowed == other.windowed
-            && self.swap_effect == other.swap_effect
-            && self.flags == other.flags
+        self.BufferDesc == other.BufferDesc
+            && self.SampleDesc == other.SampleDesc
+            && self.BufferUsage == other.BufferUsage
+            && self.BufferCount == other.BufferCount
+            && self.OutputWindow == other.OutputWindow
+            && self.Windowed == other.Windowed
+            && self.SwapEffect == other.SwapEffect
+            && self.Flags == other.Flags
     }
 }
 impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_DESC {}
@@ -3016,76 +2988,74 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_DESC1 {
-    pub width: u32,
-    pub height: u32,
-    pub format: DXGI_FORMAT,
-    pub stereo: super::system_services::BOOL,
-    pub sample_desc: DXGI_SAMPLE_DESC,
-    pub buffer_usage: u32,
-    pub buffer_count: u32,
-    pub scaling: DXGI_SCALING,
-    pub swap_effect: DXGI_SWAP_EFFECT,
-    pub alpha_mode: DXGI_ALPHA_MODE,
-    pub flags: u32,
+    pub Width: u32,
+    pub Height: u32,
+    pub Format: DXGI_FORMAT,
+    pub Stereo: super::SystemServices::BOOL,
+    pub SampleDesc: DXGI_SAMPLE_DESC,
+    pub BufferUsage: u32,
+    pub BufferCount: u32,
+    pub Scaling: DXGI_SCALING,
+    pub SwapEffect: DXGI_SWAP_EFFECT,
+    pub AlphaMode: DXGI_ALPHA_MODE,
+    pub Flags: u32,
 }
 impl DXGI_SWAP_CHAIN_DESC1 {}
 impl ::std::default::Default for DXGI_SWAP_CHAIN_DESC1 {
     fn default() -> Self {
         Self {
-            width: 0,
-            height: 0,
-            format: ::std::default::Default::default(),
-            stereo: ::std::default::Default::default(),
-            sample_desc: ::std::default::Default::default(),
-            buffer_usage: 0,
-            buffer_count: 0,
-            scaling: ::std::default::Default::default(),
-            swap_effect: ::std::default::Default::default(),
-            alpha_mode: ::std::default::Default::default(),
-            flags: 0,
+            Width: 0,
+            Height: 0,
+            Format: ::std::default::Default::default(),
+            Stereo: ::std::default::Default::default(),
+            SampleDesc: ::std::default::Default::default(),
+            BufferUsage: 0,
+            BufferCount: 0,
+            Scaling: ::std::default::Default::default(),
+            SwapEffect: ::std::default::Default::default(),
+            AlphaMode: ::std::default::Default::default(),
+            Flags: 0,
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_DESC1 {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_DESC1")
-            .field("width", &format_args!("{:?}", self.width))
-            .field("height", &format_args!("{:?}", self.height))
-            .field("format", &format_args!("{:?}", self.format))
-            .field("stereo", &format_args!("{:?}", self.stereo))
-            .field("sample_desc", &format_args!("{:?}", self.sample_desc))
-            .field("buffer_usage", &format_args!("{:?}", self.buffer_usage))
-            .field("buffer_count", &format_args!("{:?}", self.buffer_count))
-            .field("scaling", &format_args!("{:?}", self.scaling))
-            .field("swap_effect", &format_args!("{:?}", self.swap_effect))
-            .field("alpha_mode", &format_args!("{:?}", self.alpha_mode))
-            .field("flags", &format_args!("{:?}", self.flags))
+            .field("Width", &format_args!("{:?}", self.Width))
+            .field("Height", &format_args!("{:?}", self.Height))
+            .field("Format", &format_args!("{:?}", self.Format))
+            .field("Stereo", &format_args!("{:?}", self.Stereo))
+            .field("SampleDesc", &format_args!("{:?}", self.SampleDesc))
+            .field("BufferUsage", &format_args!("{:?}", self.BufferUsage))
+            .field("BufferCount", &format_args!("{:?}", self.BufferCount))
+            .field("Scaling", &format_args!("{:?}", self.Scaling))
+            .field("SwapEffect", &format_args!("{:?}", self.SwapEffect))
+            .field("AlphaMode", &format_args!("{:?}", self.AlphaMode))
+            .field("Flags", &format_args!("{:?}", self.Flags))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_DESC1 {
     fn eq(&self, other: &Self) -> bool {
-        self.width == other.width
-            && self.height == other.height
-            && self.format == other.format
-            && self.stereo == other.stereo
-            && self.sample_desc == other.sample_desc
-            && self.buffer_usage == other.buffer_usage
-            && self.buffer_count == other.buffer_count
-            && self.scaling == other.scaling
-            && self.swap_effect == other.swap_effect
-            && self.alpha_mode == other.alpha_mode
-            && self.flags == other.flags
+        self.Width == other.Width
+            && self.Height == other.Height
+            && self.Format == other.Format
+            && self.Stereo == other.Stereo
+            && self.SampleDesc == other.SampleDesc
+            && self.BufferUsage == other.BufferUsage
+            && self.BufferCount == other.BufferCount
+            && self.Scaling == other.Scaling
+            && self.SwapEffect == other.SwapEffect
+            && self.AlphaMode == other.AlphaMode
+            && self.Flags == other.Flags
     }
 }
 impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_DESC1 {}
 unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC1 {
     type Abi = Self;
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3097,7 +3067,6 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_DESC1 {
 #[repr(transparent)]
 pub struct DXGI_SWAP_CHAIN_FLAG(pub i32);
 impl DXGI_SWAP_CHAIN_FLAG {
-    #![allow(non_upper_case_globals)]
     pub const DXGI_SWAP_CHAIN_FLAG_NONPREROTATED: Self = Self(1i32);
     pub const DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH: Self = Self(2i32);
     pub const DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE: Self = Self(4i32);
@@ -3121,44 +3090,43 @@ unsafe impl ::windows::Abi for DXGI_SWAP_CHAIN_FLAG {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
-    pub refresh_rate: DXGI_RATIONAL,
-    pub scanline_ordering: DXGI_MODE_SCANLINE_ORDER,
-    pub scaling: DXGI_MODE_SCALING,
-    pub windowed: super::system_services::BOOL,
+    pub RefreshRate: DXGI_RATIONAL,
+    pub ScanlineOrdering: DXGI_MODE_SCANLINE_ORDER,
+    pub Scaling: DXGI_MODE_SCALING,
+    pub Windowed: super::SystemServices::BOOL,
 }
 impl DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
 impl ::std::default::Default for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn default() -> Self {
         Self {
-            refresh_rate: ::std::default::Default::default(),
-            scanline_ordering: ::std::default::Default::default(),
-            scaling: ::std::default::Default::default(),
-            windowed: ::std::default::Default::default(),
+            RefreshRate: ::std::default::Default::default(),
+            ScanlineOrdering: ::std::default::Default::default(),
+            Scaling: ::std::default::Default::default(),
+            Windowed: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("DXGI_SWAP_CHAIN_FULLSCREEN_DESC")
-            .field("refresh_rate", &format_args!("{:?}", self.refresh_rate))
+            .field("RefreshRate", &format_args!("{:?}", self.RefreshRate))
             .field(
-                "scanline_ordering",
-                &format_args!("{:?}", self.scanline_ordering),
+                "ScanlineOrdering",
+                &format_args!("{:?}", self.ScanlineOrdering),
             )
-            .field("scaling", &format_args!("{:?}", self.scaling))
-            .field("windowed", &format_args!("{:?}", self.windowed))
+            .field("Scaling", &format_args!("{:?}", self.Scaling))
+            .field("Windowed", &format_args!("{:?}", self.Windowed))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {
     fn eq(&self, other: &Self) -> bool {
-        self.refresh_rate == other.refresh_rate
-            && self.scanline_ordering == other.scanline_ordering
-            && self.scaling == other.scaling
-            && self.windowed == other.windowed
+        self.RefreshRate == other.RefreshRate
+            && self.ScanlineOrdering == other.ScanlineOrdering
+            && self.Scaling == other.Scaling
+            && self.Windowed == other.Windowed
     }
 }
 impl ::std::cmp::Eq for DXGI_SWAP_CHAIN_FULLSCREEN_DESC {}
@@ -3173,7 +3141,6 @@ pub const DXGI_USAGE_SHADER_INPUT: u32 = 16u32;
 pub const DXGI_USAGE_SHARED: u32 = 128u32;
 pub const DXGI_USAGE_UNORDERED_ACCESS: u32 = 1024u32;
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3191,19 +3158,18 @@ unsafe impl ::windows::Interface for IDXGIObject {
         [155, 224, 40, 235, 67, 166, 122, 46],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIObject {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -3212,36 +3178,36 @@ impl IDXGIObject {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
 }
@@ -3280,28 +3246,27 @@ pub struct IDXGIObject_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3319,19 +3284,18 @@ unsafe impl ::windows::Interface for IDXGIAdapter {
         [189, 20, 151, 152, 232, 83, 77, 192],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIAdapter {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -3340,64 +3304,64 @@ impl IDXGIAdapter {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumOutputs(
         &self,
         output: u32,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(output),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn CheckInterfaceSupport(
         &self,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(interface_name),
-            ::std::mem::transmute(p_umd_version),
+            ::std::mem::transmute(interfacename),
+            ::std::mem::transmute(pumdversion),
         )
     }
 }
@@ -3458,42 +3422,41 @@ pub struct IDXGIAdapter_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         output: u32,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC,
+        pdesc: *mut DXGI_ADAPTER_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3507,19 +3470,18 @@ unsafe impl ::windows::Interface for IDXGIAdapter1 {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(688099169, 14393, 17958, [145, 253, 8, 104, 121, 1, 26, 5]);
 }
-#[allow(non_snake_case)]
 impl IDXGIAdapter1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -3528,70 +3490,70 @@ impl IDXGIAdapter1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumOutputs(
         &self,
         output: u32,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(output),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn CheckInterfaceSupport(
         &self,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(interface_name),
-            ::std::mem::transmute(p_umd_version),
+            ::std::mem::transmute(interfacename),
+            ::std::mem::transmute(pumdversion),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
 }
@@ -3674,46 +3636,45 @@ pub struct IDXGIAdapter1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         output: u32,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC,
+        pdesc: *mut DXGI_ADAPTER_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC1,
+        pdesc: *mut DXGI_ADAPTER_DESC1,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3731,19 +3692,18 @@ unsafe impl ::windows::Interface for IDXGIAdapter2 {
         [134, 68, 224, 95, 248, 229, 172, 181],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIAdapter2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -3752,76 +3712,76 @@ impl IDXGIAdapter2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumOutputs(
         &self,
         output: u32,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(output),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn CheckInterfaceSupport(
         &self,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(interface_name),
-            ::std::mem::transmute(p_umd_version),
+            ::std::mem::transmute(interfacename),
+            ::std::mem::transmute(pumdversion),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
-    pub unsafe fn GetDesc2(&self, p_desc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc2(&self, pdesc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
 }
@@ -3926,50 +3886,49 @@ pub struct IDXGIAdapter2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         output: u32,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC,
+        pdesc: *mut DXGI_ADAPTER_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC1,
+        pdesc: *mut DXGI_ADAPTER_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC2,
+        pdesc: *mut DXGI_ADAPTER_DESC2,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -3987,19 +3946,18 @@ unsafe impl ::windows::Interface for IDXGIAdapter3 {
         [167, 152, 128, 83, 206, 62, 147, 253],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIAdapter3 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -4008,142 +3966,142 @@ impl IDXGIAdapter3 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumOutputs(
         &self,
         output: u32,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(output),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn CheckInterfaceSupport(
         &self,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(interface_name),
-            ::std::mem::transmute(p_umd_version),
+            ::std::mem::transmute(interfacename),
+            ::std::mem::transmute(pumdversion),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
-    pub unsafe fn GetDesc2(&self, p_desc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc2(&self, pdesc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn RegisterHardwareContentProtectionTeardownStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterHardwareContentProtectionTeardownStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterHardwareContentProtectionTeardownStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn QueryVideoMemoryInfo(
         &self,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
-        p_video_memory_info: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
+        pvideomemoryinfo: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(node_index),
-            ::std::mem::transmute(memory_segment_group),
-            ::std::mem::transmute(p_video_memory_info),
+            ::std::mem::transmute(nodeindex),
+            ::std::mem::transmute(memorysegmentgroup),
+            ::std::mem::transmute(pvideomemoryinfo),
         )
     }
     pub unsafe fn SetVideoMemoryReservation(
         &self,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
         reservation: u64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(node_index),
-            ::std::mem::transmute(memory_segment_group),
+            ::std::mem::transmute(nodeindex),
+            ::std::mem::transmute(memorysegmentgroup),
             ::std::mem::transmute(reservation),
         )
     }
     pub unsafe fn RegisterVideoMemoryBudgetChangeNotificationEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterVideoMemoryBudgetChangeNotification(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterVideoMemoryBudgetChangeNotification(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
 }
@@ -4270,74 +4228,73 @@ pub struct IDXGIAdapter3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         output: u32,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC,
+        pdesc: *mut DXGI_ADAPTER_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC1,
+        pdesc: *mut DXGI_ADAPTER_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC2,
+        pdesc: *mut DXGI_ADAPTER_DESC2,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
-        p_video_memory_info: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
+        pvideomemoryinfo: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
         reservation: u64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4355,19 +4312,18 @@ unsafe impl ::windows::Interface for IDXGIAdapter4 {
         [168, 44, 175, 102, 191, 123, 210, 78],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIAdapter4 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -4376,148 +4332,148 @@ impl IDXGIAdapter4 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumOutputs(
         &self,
         output: u32,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(output),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_ADAPTER_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn CheckInterfaceSupport(
         &self,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(interface_name),
-            ::std::mem::transmute(p_umd_version),
+            ::std::mem::transmute(interfacename),
+            ::std::mem::transmute(pumdversion),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_ADAPTER_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
-    pub unsafe fn GetDesc2(&self, p_desc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc2(&self, pdesc: *mut DXGI_ADAPTER_DESC2) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn RegisterHardwareContentProtectionTeardownStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterHardwareContentProtectionTeardownStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterHardwareContentProtectionTeardownStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn QueryVideoMemoryInfo(
         &self,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
-        p_video_memory_info: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
+        pvideomemoryinfo: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(node_index),
-            ::std::mem::transmute(memory_segment_group),
-            ::std::mem::transmute(p_video_memory_info),
+            ::std::mem::transmute(nodeindex),
+            ::std::mem::transmute(memorysegmentgroup),
+            ::std::mem::transmute(pvideomemoryinfo),
         )
     }
     pub unsafe fn SetVideoMemoryReservation(
         &self,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
         reservation: u64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(node_index),
-            ::std::mem::transmute(memory_segment_group),
+            ::std::mem::transmute(nodeindex),
+            ::std::mem::transmute(memorysegmentgroup),
             ::std::mem::transmute(reservation),
         )
     }
     pub unsafe fn RegisterVideoMemoryBudgetChangeNotificationEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterVideoMemoryBudgetChangeNotification(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterVideoMemoryBudgetChangeNotification(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
-    pub unsafe fn GetDesc3(&self, p_desc: *mut DXGI_ADAPTER_DESC3) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc3(&self, pdesc: *mut DXGI_ADAPTER_DESC3) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
 }
@@ -4666,78 +4622,77 @@ pub struct IDXGIAdapter4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         output: u32,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC,
+        pdesc: *mut DXGI_ADAPTER_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        interface_name: *const ::windows::Guid,
-        p_umd_version: *mut i64,
+        interfacename: *const ::windows::Guid,
+        pumdversion: *mut i64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC1,
+        pdesc: *mut DXGI_ADAPTER_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC2,
+        pdesc: *mut DXGI_ADAPTER_DESC2,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
-        p_video_memory_info: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
+        pvideomemoryinfo: *mut DXGI_QUERY_VIDEO_MEMORY_INFO,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        node_index: u32,
-        memory_segment_group: DXGI_MEMORY_SEGMENT_GROUP,
+        nodeindex: u32,
+        memorysegmentgroup: DXGI_MEMORY_SEGMENT_GROUP,
         reservation: u64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_ADAPTER_DESC3,
+        pdesc: *mut DXGI_ADAPTER_DESC3,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4751,7 +4706,6 @@ unsafe impl ::windows::Interface for IDXGIDebug {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(295597138, 56990, 16638, [136, 6, 136, 249, 12, 18, 180, 65]);
 }
-#[allow(non_snake_case)]
 impl IDXGIDebug {
     pub unsafe fn ReportLiveObjects<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
@@ -4804,7 +4758,6 @@ pub struct IDXGIDebug_abi(
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4822,7 +4775,6 @@ unsafe impl ::windows::Interface for IDXGIDebug1 {
         [159, 77, 168, 196, 213, 138, 197, 80],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDebug1 {
     pub unsafe fn ReportLiveObjects<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
@@ -4841,7 +4793,7 @@ impl IDXGIDebug1 {
     pub unsafe fn DisableLeakTrackingForThread(&self) {
         (::windows::Interface::vtable(self).5)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsLeakTrackingEnabledForThread(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsLeakTrackingEnabledForThread(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).6)(::windows::Abi::abi(self))
     }
 }
@@ -4906,10 +4858,9 @@ pub struct IDXGIDebug1_abi(
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -4927,37 +4878,36 @@ unsafe impl ::windows::Interface for IDXGIDecodeSwapChain {
         [143, 216, 18, 234, 152, 5, 157, 24],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDecodeSwapChain {
     pub unsafe fn PresentBuffer(
         &self,
-        buffer_to_present: u32,
-        sync_interval: u32,
+        buffertopresent: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_to_present),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(buffertopresent),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn SetSourceRect(
         &self,
-        p_rect: *const super::display_devices::RECT,
+        prect: *const super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rect),
+            ::std::mem::transmute(prect),
         )
     }
     pub unsafe fn SetTargetRect(
         &self,
-        p_rect: *const super::display_devices::RECT,
+        prect: *const super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rect),
+            ::std::mem::transmute(prect),
         )
     }
     pub unsafe fn SetDestSize(&self, width: u32, height: u32) -> ::windows::ErrorCode {
@@ -4969,40 +4919,36 @@ impl IDXGIDecodeSwapChain {
     }
     pub unsafe fn GetSourceRect(
         &self,
-        p_rect: *mut super::display_devices::RECT,
+        prect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rect),
+            ::std::mem::transmute(prect),
         )
     }
     pub unsafe fn GetTargetRect(
         &self,
-        p_rect: *mut super::display_devices::RECT,
+        prect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rect),
+            ::std::mem::transmute(prect),
         )
     }
-    pub unsafe fn GetDestSize(
-        &self,
-        p_width: *mut u32,
-        p_height: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetDestSize(&self, pwidth: *mut u32, pheight: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_width),
-            ::std::mem::transmute(p_height),
+            ::std::mem::transmute(pwidth),
+            ::std::mem::transmute(pheight),
         )
     }
     pub unsafe fn SetColorSpace(
         &self,
-        color_space: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
+        colorspace: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(color_space),
+            ::std::mem::transmute(colorspace),
         )
     }
     pub unsafe fn GetColorSpace(&self) -> DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS {
@@ -5043,17 +4989,17 @@ pub struct IDXGIDecodeSwapChain_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_to_present: u32,
-        sync_interval: u32,
+        buffertopresent: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rect: *const super::display_devices::RECT,
+        prect: *const super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rect: *const super::display_devices::RECT,
+        prect: *const super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -5062,25 +5008,24 @@ pub struct IDXGIDecodeSwapChain_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rect: *mut super::display_devices::RECT,
+        prect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rect: *mut super::display_devices::RECT,
+        prect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        color_space: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
+        colorspace: DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> DXGI_MULTIPLANE_OVERLAY_YCbCr_FLAGS,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5098,19 +5043,18 @@ unsafe impl ::windows::Interface for IDXGIDevice {
         [140, 50, 136, 253, 95, 68, 200, 76],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDevice {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -5119,75 +5063,75 @@ impl IDXGIDevice {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetAdapter(
         &self,
-        p_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        padapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_adapter),
+            ::std::mem::transmute(padapter),
         )
     }
     pub unsafe fn CreateSurface(
         &self,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::std::option::Option<IDXGISurface>,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::std::option::Option<IDXGISurface>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(num_surfaces),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(numsurfaces),
             ::std::mem::transmute(usage),
-            ::std::mem::transmute(p_shared_resource),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(psharedresource),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn QueryResourceResidency(
         &self,
-        pp_resources: *mut ::std::option::Option<::windows::IUnknown>,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::std::option::Option<::windows::IUnknown>,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_residency_status),
-            ::std::mem::transmute(num_resources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presidencystatus),
+            ::std::mem::transmute(numresources),
         )
     }
     pub unsafe fn SetGPUThreadPriority(&self, priority: i32) -> ::windows::ErrorCode {
@@ -5196,10 +5140,10 @@ impl IDXGIDevice {
             ::std::mem::transmute(priority),
         )
     }
-    pub unsafe fn GetGPUThreadPriority(&self, p_priority: *mut i32) -> ::windows::ErrorCode {
+    pub unsafe fn GetGPUThreadPriority(&self, ppriority: *mut i32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_priority),
+            ::std::mem::transmute(ppriority),
         )
     }
 }
@@ -5260,51 +5204,50 @@ pub struct IDXGIDevice_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_adapter: *mut ::windows::RawPtr,
+        padapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::windows::RawPtr,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, priority: i32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_priority: *mut i32,
+        ppriority: *mut i32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5318,19 +5261,18 @@ unsafe impl ::windows::Interface for IDXGIDevice1 {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(2010879759, 25206, 18618, [186, 40, 7, 1, 67, 180, 57, 44]);
 }
-#[allow(non_snake_case)]
 impl IDXGIDevice1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -5339,75 +5281,75 @@ impl IDXGIDevice1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetAdapter(
         &self,
-        p_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        padapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_adapter),
+            ::std::mem::transmute(padapter),
         )
     }
     pub unsafe fn CreateSurface(
         &self,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::std::option::Option<IDXGISurface>,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::std::option::Option<IDXGISurface>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(num_surfaces),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(numsurfaces),
             ::std::mem::transmute(usage),
-            ::std::mem::transmute(p_shared_resource),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(psharedresource),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn QueryResourceResidency(
         &self,
-        pp_resources: *mut ::std::option::Option<::windows::IUnknown>,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::std::option::Option<::windows::IUnknown>,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_residency_status),
-            ::std::mem::transmute(num_resources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presidencystatus),
+            ::std::mem::transmute(numresources),
         )
     }
     pub unsafe fn SetGPUThreadPriority(&self, priority: i32) -> ::windows::ErrorCode {
@@ -5416,22 +5358,22 @@ impl IDXGIDevice1 {
             ::std::mem::transmute(priority),
         )
     }
-    pub unsafe fn GetGPUThreadPriority(&self, p_priority: *mut i32) -> ::windows::ErrorCode {
+    pub unsafe fn GetGPUThreadPriority(&self, ppriority: *mut i32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_priority),
+            ::std::mem::transmute(ppriority),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
 }
@@ -5514,56 +5456,55 @@ pub struct IDXGIDevice1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_adapter: *mut ::windows::RawPtr,
+        padapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::windows::RawPtr,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, priority: i32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_priority: *mut i32,
+        ppriority: *mut i32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5581,19 +5522,18 @@ unsafe impl ::windows::Interface for IDXGIDevice2 {
         [167, 144, 20, 72, 132, 180, 246, 169],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDevice2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -5602,75 +5542,75 @@ impl IDXGIDevice2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetAdapter(
         &self,
-        p_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        padapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_adapter),
+            ::std::mem::transmute(padapter),
         )
     }
     pub unsafe fn CreateSurface(
         &self,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::std::option::Option<IDXGISurface>,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::std::option::Option<IDXGISurface>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(num_surfaces),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(numsurfaces),
             ::std::mem::transmute(usage),
-            ::std::mem::transmute(p_shared_resource),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(psharedresource),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn QueryResourceResidency(
         &self,
-        pp_resources: *mut ::std::option::Option<::windows::IUnknown>,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::std::option::Option<::windows::IUnknown>,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_residency_status),
-            ::std::mem::transmute(num_resources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presidencystatus),
+            ::std::mem::transmute(numresources),
         )
     }
     pub unsafe fn SetGPUThreadPriority(&self, priority: i32) -> ::windows::ErrorCode {
@@ -5679,60 +5619,60 @@ impl IDXGIDevice2 {
             ::std::mem::transmute(priority),
         )
     }
-    pub unsafe fn GetGPUThreadPriority(&self, p_priority: *mut i32) -> ::windows::ErrorCode {
+    pub unsafe fn GetGPUThreadPriority(&self, ppriority: *mut i32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_priority),
+            ::std::mem::transmute(ppriority),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
     pub unsafe fn OfferResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
             ::std::mem::transmute(priority),
         )
     }
     pub unsafe fn ReclaimResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_discarded),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(pdiscarded),
         )
     }
     pub unsafe fn EnqueueSetEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
+        hevent: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
+            hevent.into_param().abi(),
         )
     }
 }
@@ -5837,72 +5777,71 @@ pub struct IDXGIDevice2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_adapter: *mut ::windows::RawPtr,
+        padapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::windows::RawPtr,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, priority: i32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_priority: *mut i32,
+        ppriority: *mut i32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
+        hevent: super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -5920,19 +5859,18 @@ unsafe impl ::windows::Interface for IDXGIDevice3 {
         [191, 24, 166, 211, 190, 218, 80, 35],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDevice3 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -5941,75 +5879,75 @@ impl IDXGIDevice3 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetAdapter(
         &self,
-        p_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        padapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_adapter),
+            ::std::mem::transmute(padapter),
         )
     }
     pub unsafe fn CreateSurface(
         &self,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::std::option::Option<IDXGISurface>,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::std::option::Option<IDXGISurface>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(num_surfaces),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(numsurfaces),
             ::std::mem::transmute(usage),
-            ::std::mem::transmute(p_shared_resource),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(psharedresource),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn QueryResourceResidency(
         &self,
-        pp_resources: *mut ::std::option::Option<::windows::IUnknown>,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::std::option::Option<::windows::IUnknown>,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_residency_status),
-            ::std::mem::transmute(num_resources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presidencystatus),
+            ::std::mem::transmute(numresources),
         )
     }
     pub unsafe fn SetGPUThreadPriority(&self, priority: i32) -> ::windows::ErrorCode {
@@ -6018,60 +5956,60 @@ impl IDXGIDevice3 {
             ::std::mem::transmute(priority),
         )
     }
-    pub unsafe fn GetGPUThreadPriority(&self, p_priority: *mut i32) -> ::windows::ErrorCode {
+    pub unsafe fn GetGPUThreadPriority(&self, ppriority: *mut i32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_priority),
+            ::std::mem::transmute(ppriority),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
     pub unsafe fn OfferResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
             ::std::mem::transmute(priority),
         )
     }
     pub unsafe fn ReclaimResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_discarded),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(pdiscarded),
         )
     }
     pub unsafe fn EnqueueSetEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
+        hevent: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
+            hevent.into_param().abi(),
         )
     }
     pub unsafe fn Trim(&self) {
@@ -6201,73 +6139,72 @@ pub struct IDXGIDevice3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_adapter: *mut ::windows::RawPtr,
+        padapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::windows::RawPtr,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, priority: i32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_priority: *mut i32,
+        ppriority: *mut i32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
+        hevent: super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6285,19 +6222,18 @@ unsafe impl ::windows::Interface for IDXGIDevice4 {
         [158, 230, 59, 118, 213, 150, 138, 16],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDevice4 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -6306,75 +6242,75 @@ impl IDXGIDevice4 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetAdapter(
         &self,
-        p_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        padapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_adapter),
+            ::std::mem::transmute(padapter),
         )
     }
     pub unsafe fn CreateSurface(
         &self,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::std::option::Option<IDXGISurface>,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::std::option::Option<IDXGISurface>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(num_surfaces),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(numsurfaces),
             ::std::mem::transmute(usage),
-            ::std::mem::transmute(p_shared_resource),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(psharedresource),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn QueryResourceResidency(
         &self,
-        pp_resources: *mut ::std::option::Option<::windows::IUnknown>,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::std::option::Option<::windows::IUnknown>,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_residency_status),
-            ::std::mem::transmute(num_resources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presidencystatus),
+            ::std::mem::transmute(numresources),
         )
     }
     pub unsafe fn SetGPUThreadPriority(&self, priority: i32) -> ::windows::ErrorCode {
@@ -6383,60 +6319,60 @@ impl IDXGIDevice4 {
             ::std::mem::transmute(priority),
         )
     }
-    pub unsafe fn GetGPUThreadPriority(&self, p_priority: *mut i32) -> ::windows::ErrorCode {
+    pub unsafe fn GetGPUThreadPriority(&self, ppriority: *mut i32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_priority),
+            ::std::mem::transmute(ppriority),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
     pub unsafe fn OfferResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
             ::std::mem::transmute(priority),
         )
     }
     pub unsafe fn ReclaimResources(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_discarded),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(pdiscarded),
         )
     }
     pub unsafe fn EnqueueSetEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
+        hevent: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
+            hevent.into_param().abi(),
         )
     }
     pub unsafe fn Trim(&self) {
@@ -6444,30 +6380,30 @@ impl IDXGIDevice4 {
     }
     pub unsafe fn OfferResources1(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
             ::std::mem::transmute(priority),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn ReclaimResources1(
         &self,
-        num_resources: u32,
-        pp_resources: *mut ::std::option::Option<IDXGIResource>,
-        p_results: *mut DXGI_RECLAIM_RESOURCE_RESULTS,
+        numresources: u32,
+        ppresources: *mut ::std::option::Option<IDXGIResource>,
+        presults: *mut DXGI_RECLAIM_RESOURCE_RESULTS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(num_resources),
-            ::std::mem::transmute(pp_resources),
-            ::std::mem::transmute(p_results),
+            ::std::mem::transmute(numresources),
+            ::std::mem::transmute(ppresources),
+            ::std::mem::transmute(presults),
         )
     }
 }
@@ -6616,86 +6552,85 @@ pub struct IDXGIDevice4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_adapter: *mut ::windows::RawPtr,
+        padapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *const DXGI_SURFACE_DESC,
-        num_surfaces: u32,
+        pdesc: *const DXGI_SURFACE_DESC,
+        numsurfaces: u32,
         usage: u32,
-        p_shared_resource: *const DXGI_SHARED_RESOURCE,
-        pp_surface: *mut ::windows::RawPtr,
+        psharedresource: *const DXGI_SHARED_RESOURCE,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_resources: *mut ::windows::RawPtr,
-        p_residency_status: *mut DXGI_RESIDENCY,
-        num_resources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presidencystatus: *mut DXGI_RESIDENCY,
+        numresources: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, priority: i32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_priority: *mut i32,
+        ppriority: *mut i32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
-        p_discarded: *mut super::system_services::BOOL,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        pdiscarded: *mut super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
+        hevent: super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
         priority: DXGI_OFFER_RESOURCE_PRIORITY,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        num_resources: u32,
-        pp_resources: *mut ::windows::RawPtr,
-        p_results: *mut DXGI_RECLAIM_RESOURCE_RESULTS,
+        numresources: u32,
+        ppresources: *mut ::windows::RawPtr,
+        presults: *mut DXGI_RECLAIM_RESOURCE_RESULTS,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6713,19 +6648,18 @@ unsafe impl ::windows::Interface for IDXGIDeviceSubObject {
         [187, 108, 24, 214, 41, 146, 241, 166],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDeviceSubObject {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -6734,47 +6668,47 @@ impl IDXGIDeviceSubObject {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
 }
@@ -6835,33 +6769,32 @@ pub struct IDXGIDeviceSubObject_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6879,14 +6812,13 @@ unsafe impl ::windows::Interface for IDXGIDisplayControl {
         [133, 74, 152, 170, 1, 56, 243, 12],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIDisplayControl {
-    pub unsafe fn IsStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).3)(::windows::Abi::abi(self))
     }
     pub unsafe fn SetStereoEnabled<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
         enabled: T0__,
@@ -6929,11 +6861,10 @@ pub struct IDXGIDisplayControl_abi(
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, enabled: super::system_services::BOOL),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, enabled: super::SystemServices::BOOL),
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -6951,19 +6882,18 @@ unsafe impl ::windows::Interface for IDXGIFactory {
         [178, 26, 201, 174, 50, 26, 227, 105],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -6972,94 +6902,94 @@ impl IDXGIFactory {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
 }
@@ -7120,53 +7050,52 @@ pub struct IDXGIFactory_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7184,19 +7113,18 @@ unsafe impl ::windows::Interface for IDXGIFactory1 {
         [168, 41, 37, 60, 131, 209, 179, 135],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -7205,108 +7133,108 @@ impl IDXGIFactory1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
 }
@@ -7389,59 +7317,58 @@ pub struct IDXGIFactory1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7459,19 +7386,18 @@ unsafe impl ::windows::Interface for IDXGIFactory2 {
         [135, 176, 54, 48, 250, 54, 166, 208],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -7480,135 +7406,135 @@ impl IDXGIFactory2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -7618,105 +7544,105 @@ impl IDXGIFactory2 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -7725,17 +7651,17 @@ impl IDXGIFactory2 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
 }
@@ -7840,113 +7766,112 @@ pub struct IDXGIFactory2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -7964,19 +7889,18 @@ unsafe impl ::windows::Interface for IDXGIFactory3 {
         [134, 202, 71, 170, 149, 184, 55, 189],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory3 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -7985,135 +7909,135 @@ impl IDXGIFactory3 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -8123,105 +8047,105 @@ impl IDXGIFactory3 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -8230,17 +8154,17 @@ impl IDXGIFactory3 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetCreationFlags(&self) -> u32 {
@@ -8370,114 +8294,113 @@ pub struct IDXGIFactory3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -8495,19 +8418,18 @@ unsafe impl ::windows::Interface for IDXGIFactory4 {
         [191, 12, 33, 202, 57, 229, 22, 138],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory4 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -8516,135 +8438,135 @@ impl IDXGIFactory4 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -8654,105 +8576,105 @@ impl IDXGIFactory4 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -8761,44 +8683,44 @@ impl IDXGIFactory4 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetCreationFlags(&self) -> u32 {
         (::windows::Interface::vtable(self).25)(::windows::Abi::abi(self))
     }
-    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::kernel::LUID>>(
+    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::Kernel::LUID>>(
         &self,
-        adapter_luid: T0__,
+        adapterluid: T0__,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            adapter_luid.into_param().abi(),
+            adapterluid.into_param().abi(),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn EnumWarpAdapter(
         &self,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
 }
@@ -8947,125 +8869,124 @@ pub struct IDXGIFactory4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        adapter_luid: super::kernel::LUID,
+        adapterluid: super::Kernel::LUID,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -9083,19 +9004,18 @@ unsafe impl ::windows::Interface for IDXGIFactory5 {
         [135, 253, 132, 205, 117, 248, 131, 141],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory5 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -9104,135 +9024,135 @@ impl IDXGIFactory5 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -9242,105 +9162,105 @@ impl IDXGIFactory5 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -9349,57 +9269,57 @@ impl IDXGIFactory5 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetCreationFlags(&self) -> u32 {
         (::windows::Interface::vtable(self).25)(::windows::Abi::abi(self))
     }
-    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::kernel::LUID>>(
+    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::Kernel::LUID>>(
         &self,
-        adapter_luid: T0__,
+        adapterluid: T0__,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            adapter_luid.into_param().abi(),
+            adapterluid.into_param().abi(),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn EnumWarpAdapter(
         &self,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn CheckFeatureSupport(
         &self,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(feature),
-            ::std::mem::transmute(p_feature_support_data),
-            ::std::mem::transmute(feature_support_data_size),
+            ::std::mem::transmute(pfeaturesupportdata),
+            ::std::mem::transmute(featuresupportdatasize),
         )
     }
 }
@@ -9570,131 +9490,130 @@ pub struct IDXGIFactory5_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        adapter_luid: super::kernel::LUID,
+        adapterluid: super::Kernel::LUID,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -9712,19 +9631,18 @@ unsafe impl ::windows::Interface for IDXGIFactory6 {
         [176, 60, 119, 144, 10, 10, 29, 23],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory6 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -9733,135 +9651,135 @@ impl IDXGIFactory6 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -9871,105 +9789,105 @@ impl IDXGIFactory6 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -9978,72 +9896,72 @@ impl IDXGIFactory6 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetCreationFlags(&self) -> u32 {
         (::windows::Interface::vtable(self).25)(::windows::Abi::abi(self))
     }
-    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::kernel::LUID>>(
+    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::Kernel::LUID>>(
         &self,
-        adapter_luid: T0__,
+        adapterluid: T0__,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            adapter_luid.into_param().abi(),
+            adapterluid.into_param().abi(),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn EnumWarpAdapter(
         &self,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn CheckFeatureSupport(
         &self,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(feature),
-            ::std::mem::transmute(p_feature_support_data),
-            ::std::mem::transmute(feature_support_data_size),
+            ::std::mem::transmute(pfeaturesupportdata),
+            ::std::mem::transmute(featuresupportdatasize),
         )
     }
     pub unsafe fn EnumAdapterByGpuPreference(
         &self,
         adapter: u32,
-        gpu_preference: DXGI_GPU_PREFERENCE,
+        gpupreference: DXGI_GPU_PREFERENCE,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).29)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(gpu_preference),
+            ::std::mem::transmute(gpupreference),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
 }
@@ -10236,138 +10154,137 @@ pub struct IDXGIFactory6_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        adapter_luid: super::kernel::LUID,
+        adapterluid: super::Kernel::LUID,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        gpu_preference: DXGI_GPU_PREFERENCE,
+        gpupreference: DXGI_GPU_PREFERENCE,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -10385,19 +10302,18 @@ unsafe impl ::windows::Interface for IDXGIFactory7 {
         [132, 193, 238, 154, 122, 251, 32, 168],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactory7 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -10406,135 +10322,135 @@ impl IDXGIFactory7 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn EnumAdapters(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn MakeWindowAssociation<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
+        windowhandle: T0__,
         flags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
+            windowhandle.into_param().abi(),
             ::std::mem::transmute(flags),
         )
     }
     pub unsafe fn GetWindowAssociation(
         &self,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_window_handle),
+            ::std::mem::transmute(pwindowhandle),
         )
     }
     pub unsafe fn CreateSwapChain<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain>,
+        pdevice: T0__,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSoftwareAdapter(
         &self,
         module: isize,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(module),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
     pub unsafe fn EnumAdapters1(
         &self,
         adapter: u32,
-        pp_adapter: *mut ::std::option::Option<IDXGIAdapter1>,
+        ppadapter: *mut ::std::option::Option<IDXGIAdapter1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(pp_adapter),
+            ::std::mem::transmute(ppadapter),
         )
     }
-    pub unsafe fn IsCurrent(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsCurrent(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).13)(::windows::Abi::abi(self))
     }
-    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsWindowedStereoEnabled(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).14)(::windows::Abi::abi(self))
     }
     pub unsafe fn CreateSwapChainForHwnd<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T1__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_wnd: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hwnd: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_wnd.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            ::std::mem::transmute(p_fullscreen_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hwnd.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            ::std::mem::transmute(pfullscreendesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateSwapChainForCoreWindow<
@@ -10544,105 +10460,105 @@ impl IDXGIFactory7 {
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_window: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pwindow: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            p_window.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            pwindow.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetSharedResourceAdapterLuid<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_resource: T0__,
-        p_luid: *mut super::kernel::LUID,
+        hresource: T0__,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            h_resource.into_param().abi(),
-            ::std::mem::transmute(p_luid),
+            hresource.into_param().abi(),
+            ::std::mem::transmute(pluid),
         )
     }
     pub unsafe fn RegisterStereoStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterStereoStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterStereoStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterStereoStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusWindow<
         'a,
-        T0__: ::windows::IntoParam<'a, super::windows_and_messaging::HWND>,
+        T0__: ::windows::IntoParam<'a, super::WindowsAndMessaging::HWND>,
     >(
         &self,
-        window_handle: T0__,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: T0__,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            window_handle.into_param().abi(),
-            ::std::mem::transmute(w_msg),
-            ::std::mem::transmute(pdw_cookie),
+            windowhandle.into_param().abi(),
+            ::std::mem::transmute(wmsg),
+            ::std::mem::transmute(pdwcookie),
         )
     }
     pub unsafe fn RegisterOcclusionStatusEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterOcclusionStatus(&self, dw_cookie: u32) {
+    pub unsafe fn UnregisterOcclusionStatus(&self, dwcookie: u32) {
         (::windows::Interface::vtable(self).23)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
     pub unsafe fn CreateSwapChainForComposition<
@@ -10651,92 +10567,92 @@ impl IDXGIFactory7 {
         T2__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T2__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T2__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn GetCreationFlags(&self) -> u32 {
         (::windows::Interface::vtable(self).25)(::windows::Abi::abi(self))
     }
-    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::kernel::LUID>>(
+    pub unsafe fn EnumAdapterByLuid<'a, T0__: ::windows::IntoParam<'a, super::Kernel::LUID>>(
         &self,
-        adapter_luid: T0__,
+        adapterluid: T0__,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            adapter_luid.into_param().abi(),
+            adapterluid.into_param().abi(),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn EnumWarpAdapter(
         &self,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn CheckFeatureSupport(
         &self,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(feature),
-            ::std::mem::transmute(p_feature_support_data),
-            ::std::mem::transmute(feature_support_data_size),
+            ::std::mem::transmute(pfeaturesupportdata),
+            ::std::mem::transmute(featuresupportdatasize),
         )
     }
     pub unsafe fn EnumAdapterByGpuPreference(
         &self,
         adapter: u32,
-        gpu_preference: DXGI_GPU_PREFERENCE,
+        gpupreference: DXGI_GPU_PREFERENCE,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).29)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(adapter),
-            ::std::mem::transmute(gpu_preference),
+            ::std::mem::transmute(gpupreference),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(ppv_adapter),
+            ::std::mem::transmute(ppvadapter),
         )
     }
     pub unsafe fn RegisterAdaptersChangedEvent<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
     >(
         &self,
-        h_event: T0__,
-        pdw_cookie: *mut u32,
+        hevent: T0__,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
-            h_event.into_param().abi(),
-            ::std::mem::transmute(pdw_cookie),
+            hevent.into_param().abi(),
+            ::std::mem::transmute(pdwcookie),
         )
     }
-    pub unsafe fn UnregisterAdaptersChangedEvent(&self, dw_cookie: u32) -> ::windows::ErrorCode {
+    pub unsafe fn UnregisterAdaptersChangedEvent(&self, dwcookie: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).31)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dw_cookie),
+            ::std::mem::transmute(dwcookie),
         )
     }
 }
@@ -10951,144 +10867,143 @@ pub struct IDXGIFactory7_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
+        windowhandle: super::WindowsAndMessaging::HWND,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_window_handle: *mut super::windows_and_messaging::HWND,
+        pwindowhandle: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         module: isize,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        pp_adapter: *mut ::windows::RawPtr,
+        ppadapter: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_wnd: super::windows_and_messaging::HWND,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_fullscreen_desc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_window: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hwnd: super::WindowsAndMessaging::HWND,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        pfullscreendesc: *const DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_resource: super::system_services::HANDLE,
-        p_luid: *mut super::kernel::LUID,
+        pdevice: ::windows::RawPtr,
+        pwindow: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        hresource: super::SystemServices::HANDLE,
+        pluid: *mut super::Kernel::LUID,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        window_handle: super::windows_and_messaging::HWND,
-        w_msg: u32,
-        pdw_cookie: *mut u32,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        windowhandle: super::WindowsAndMessaging::HWND,
+        wmsg: u32,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        adapter_luid: super::kernel::LUID,
+        adapterluid: super::Kernel::LUID,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         feature: DXGI_FEATURE,
-        p_feature_support_data: *mut ::std::ffi::c_void,
-        feature_support_data_size: u32,
+        pfeaturesupportdata: *mut ::std::ffi::c_void,
+        featuresupportdatasize: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         adapter: u32,
-        gpu_preference: DXGI_GPU_PREFERENCE,
+        gpupreference: DXGI_GPU_PREFERENCE,
         riid: *const ::windows::Guid,
-        ppv_adapter: *mut *mut ::std::ffi::c_void,
+        ppvadapter: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        h_event: super::system_services::HANDLE,
-        pdw_cookie: *mut u32,
+        hevent: super::SystemServices::HANDLE,
+        pdwcookie: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, dw_cookie: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, dwcookie: u32) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11106,53 +11021,52 @@ unsafe impl ::windows::Interface for IDXGIFactoryMedia {
         [162, 229, 250, 156, 132, 62, 28, 18],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIFactoryMedia {
     pub unsafe fn CreateSwapChainForCompositionSurfaceHandle<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
         T3__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_surface: T1__,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: T3__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGISwapChain1>,
+        pdevice: T0__,
+        hsurface: T1__,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: T3__,
+        ppswapchain: *mut ::std::option::Option<IDXGISwapChain1>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_surface.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hsurface.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
     pub unsafe fn CreateDecodeSwapChainForCompositionSurfaceHandle<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::HANDLE>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::HANDLE>,
         T3__: ::windows::IntoParam<'a, IDXGIResource>,
         T4__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
-        p_device: T0__,
-        h_surface: T1__,
-        p_desc: *mut DXGI_DECODE_SWAP_CHAIN_DESC,
-        p_yuv_decode_buffers: T3__,
-        p_restrict_to_output: T4__,
-        pp_swap_chain: *mut ::std::option::Option<IDXGIDecodeSwapChain>,
+        pdevice: T0__,
+        hsurface: T1__,
+        pdesc: *mut DXGI_DECODE_SWAP_CHAIN_DESC,
+        pyuvdecodebuffers: T3__,
+        prestricttooutput: T4__,
+        ppswapchain: *mut ::std::option::Option<IDXGIDecodeSwapChain>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            h_surface.into_param().abi(),
-            ::std::mem::transmute(p_desc),
-            p_yuv_decode_buffers.into_param().abi(),
-            p_restrict_to_output.into_param().abi(),
-            ::std::mem::transmute(pp_swap_chain),
+            pdevice.into_param().abi(),
+            hsurface.into_param().abi(),
+            ::std::mem::transmute(pdesc),
+            pyuvdecodebuffers.into_param().abi(),
+            prestricttooutput.into_param().abi(),
+            ::std::mem::transmute(ppswapchain),
         )
     }
 }
@@ -11190,24 +11104,23 @@ pub struct IDXGIFactoryMedia_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_surface: super::system_services::HANDLE,
-        p_desc: *const DXGI_SWAP_CHAIN_DESC1,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hsurface: super::SystemServices::HANDLE,
+        pdesc: *const DXGI_SWAP_CHAIN_DESC1,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        h_surface: super::system_services::HANDLE,
-        p_desc: *mut DXGI_DECODE_SWAP_CHAIN_DESC,
-        p_yuv_decode_buffers: ::windows::RawPtr,
-        p_restrict_to_output: ::windows::RawPtr,
-        pp_swap_chain: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        hsurface: super::SystemServices::HANDLE,
+        pdesc: *mut DXGI_DECODE_SWAP_CHAIN_DESC,
+        pyuvdecodebuffers: ::windows::RawPtr,
+        prestricttooutput: ::windows::RawPtr,
+        ppswapchain: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11225,17 +11138,16 @@ unsafe impl ::windows::Interface for IDXGIInfoQueue {
         [158, 130, 205, 85, 180, 73, 73, 206],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIInfoQueue {
     pub unsafe fn SetMessageCountLimit<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        message_count_limit: u64,
+        messagecountlimit: u64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(message_count_limit),
+            ::std::mem::transmute(messagecountlimit),
         )
     }
     pub unsafe fn ClearStoredMessages<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
@@ -11247,19 +11159,19 @@ impl IDXGIInfoQueue {
             producer.into_param().abi(),
         )
     }
-    pub unsafe fn GetMessageA<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
+    pub unsafe fn GetMessage<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        message_index: u64,
-        p_message: *mut DXGI_INFO_QUEUE_MESSAGE,
-        p_message_byte_length: *mut usize,
+        messageindex: u64,
+        pmessage: *mut DXGI_INFO_QUEUE_MESSAGE,
+        pmessagebytelength: *mut usize,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(message_index),
-            ::std::mem::transmute(p_message),
-            ::std::mem::transmute(p_message_byte_length),
+            ::std::mem::transmute(messageindex),
+            ::std::mem::transmute(pmessage),
+            ::std::mem::transmute(pmessagebytelength),
         )
     }
     pub unsafe fn GetNumStoredMessagesAllowedByRetrievalFilters<
@@ -11331,25 +11243,25 @@ impl IDXGIInfoQueue {
     pub unsafe fn AddStorageFilterEntries<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
+            ::std::mem::transmute(pfilter),
         )
     }
     pub unsafe fn GetStorageFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-        p_filter_byte_length: *mut usize,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilterbytelength: *mut usize,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
-            ::std::mem::transmute(p_filter_byte_length),
+            ::std::mem::transmute(pfilter),
+            ::std::mem::transmute(pfilterbytelength),
         )
     }
     pub unsafe fn ClearStorageFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
@@ -11391,12 +11303,12 @@ impl IDXGIInfoQueue {
     pub unsafe fn PushStorageFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
+            ::std::mem::transmute(pfilter),
         )
     }
     pub unsafe fn PopStorageFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
@@ -11420,25 +11332,25 @@ impl IDXGIInfoQueue {
     pub unsafe fn AddRetrievalFilterEntries<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
+            ::std::mem::transmute(pfilter),
         )
     }
     pub unsafe fn GetRetrievalFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-        p_filter_byte_length: *mut usize,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilterbytelength: *mut usize,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
-            ::std::mem::transmute(p_filter_byte_length),
+            ::std::mem::transmute(pfilter),
+            ::std::mem::transmute(pfilterbytelength),
         )
     }
     pub unsafe fn ClearRetrievalFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
@@ -11483,12 +11395,12 @@ impl IDXGIInfoQueue {
     pub unsafe fn PushRetrievalFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            ::std::mem::transmute(p_filter),
+            ::std::mem::transmute(pfilter),
         )
     }
     pub unsafe fn PopRetrievalFilter<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
@@ -11515,14 +11427,14 @@ impl IDXGIInfoQueue {
     pub unsafe fn AddMessage<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::Guid>,
-        T4__: ::windows::IntoParam<'a, super::system_services::PSTR>,
+        T4__: ::windows::IntoParam<'a, super::SystemServices::PSTR>,
     >(
         &self,
         producer: T0__,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
         id: i32,
-        p_description: T4__,
+        pdescription: T4__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
@@ -11530,79 +11442,79 @@ impl IDXGIInfoQueue {
             ::std::mem::transmute(category),
             ::std::mem::transmute(severity),
             ::std::mem::transmute(id),
-            p_description.into_param().abi(),
+            pdescription.into_param().abi(),
         )
     }
     pub unsafe fn AddApplicationMessage<
         'a,
-        T1__: ::windows::IntoParam<'a, super::system_services::PSTR>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::PSTR>,
     >(
         &self,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-        p_description: T1__,
+        pdescription: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).31)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(severity),
-            p_description.into_param().abi(),
+            pdescription.into_param().abi(),
         )
     }
     pub unsafe fn SetBreakOnCategory<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::Guid>,
-        T2__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T2__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
         producer: T0__,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-        b_enable: T2__,
+        benable: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).32)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
             ::std::mem::transmute(category),
-            b_enable.into_param().abi(),
+            benable.into_param().abi(),
         )
     }
     pub unsafe fn SetBreakOnSeverity<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::Guid>,
-        T2__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T2__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
         producer: T0__,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-        b_enable: T2__,
+        benable: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).33)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
             ::std::mem::transmute(severity),
-            b_enable.into_param().abi(),
+            benable.into_param().abi(),
         )
     }
     pub unsafe fn SetBreakOnID<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::Guid>,
-        T2__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T2__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
         producer: T0__,
         id: i32,
-        b_enable: T2__,
+        benable: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).34)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
             ::std::mem::transmute(id),
-            b_enable.into_param().abi(),
+            benable.into_param().abi(),
         )
     }
     pub unsafe fn GetBreakOnCategory<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-    ) -> super::system_services::BOOL {
+    ) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).35)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
@@ -11613,7 +11525,7 @@ impl IDXGIInfoQueue {
         &self,
         producer: T0__,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-    ) -> super::system_services::BOOL {
+    ) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).36)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
@@ -11624,7 +11536,7 @@ impl IDXGIInfoQueue {
         &self,
         producer: T0__,
         id: i32,
-    ) -> super::system_services::BOOL {
+    ) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).37)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
@@ -11634,22 +11546,22 @@ impl IDXGIInfoQueue {
     pub unsafe fn SetMuteDebugOutput<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::Guid>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
         producer: T0__,
-        b_mute: T1__,
+        bmute: T1__,
     ) {
         (::windows::Interface::vtable(self).38)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
-            b_mute.into_param().abi(),
+            bmute.into_param().abi(),
         )
     }
     pub unsafe fn GetMuteDebugOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::Guid>>(
         &self,
         producer: T0__,
-    ) -> super::system_services::BOOL {
+    ) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).39)(
             ::windows::Abi::abi(self),
             producer.into_param().abi(),
@@ -11691,15 +11603,15 @@ pub struct IDXGIInfoQueue_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        message_count_limit: u64,
+        messagecountlimit: u64,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        message_index: u64,
-        p_message: *mut DXGI_INFO_QUEUE_MESSAGE,
-        p_message_byte_length: *mut usize,
+        messageindex: u64,
+        pmessage: *mut DXGI_INFO_QUEUE_MESSAGE,
+        pmessagebytelength: *mut usize,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid) -> u64,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid) -> u64,
@@ -11710,44 +11622,13 @@ pub struct IDXGIInfoQueue_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-        p_filter_byte_length: *mut usize,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-    ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid) -> u32,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
-        p_filter_byte_length: *mut usize,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilterbytelength: *mut usize,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
     pub  unsafe extern "system" fn(
@@ -11765,68 +11646,98 @@ pub struct IDXGIInfoQueue_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        p_filter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
     pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+        pfilterbytelength: *mut usize,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
+        pfilter: *mut DXGI_INFO_QUEUE_FILTER,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, producer: ::windows::Guid) -> u32,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        producer: ::windows::Guid,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
         id: i32,
-        p_description: super::system_services::PSTR,
+        pdescription: super::SystemServices::PSTR,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-        p_description: super::system_services::PSTR,
+        pdescription: super::SystemServices::PSTR,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-        b_enable: super::system_services::BOOL,
+        benable: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-        b_enable: super::system_services::BOOL,
+        benable: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         id: i32,
-        b_enable: super::system_services::BOOL,
+        benable: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         category: DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
-    ) -> super::system_services::BOOL,
+    ) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         severity: DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
-    ) -> super::system_services::BOOL,
+    ) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
         id: i32,
-    ) -> super::system_services::BOOL,
+    ) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-        b_mute: super::system_services::BOOL,
+        bmute: super::SystemServices::BOOL,
     ),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         producer: ::windows::Guid,
-    ) -> super::system_services::BOOL,
+    ) -> super::SystemServices::BOOL,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -11844,19 +11755,18 @@ unsafe impl ::windows::Interface for IDXGIKeyedMutex {
         [129, 38, 37, 14, 52, 154, 248, 93],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIKeyedMutex {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -11865,54 +11775,54 @@ impl IDXGIKeyedMutex {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn AcquireSync(&self, key: u64, dw_milliseconds: u32) -> ::windows::ErrorCode {
+    pub unsafe fn AcquireSync(&self, key: u64, dwmilliseconds: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(key),
-            ::std::mem::transmute(dw_milliseconds),
+            ::std::mem::transmute(dwmilliseconds),
         )
     }
     pub unsafe fn ReleaseSync(&self, key: u64) -> ::windows::ErrorCode {
@@ -12001,39 +11911,38 @@ pub struct IDXGIKeyedMutex_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         key: u64,
-        dw_milliseconds: u32,
+        dwmilliseconds: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, key: u64) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -12051,19 +11960,18 @@ unsafe impl ::windows::Interface for IDXGIOutput {
         [141, 82, 90, 141, 194, 2, 19, 170],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -12072,57 +11980,57 @@ impl IDXGIOutput {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -12130,15 +12038,15 @@ impl IDXGIOutput {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -12147,15 +12055,15 @@ impl IDXGIOutput {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -12164,53 +12072,53 @@ impl IDXGIOutput {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
 }
@@ -12271,76 +12179,75 @@ pub struct IDXGIOutput_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -12358,19 +12265,18 @@ unsafe impl ::windows::Interface for IDXGIOutput1 {
         [163, 64, 166, 133, 34, 102, 102, 204],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -12379,57 +12285,57 @@ impl IDXGIOutput1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -12437,15 +12343,15 @@ impl IDXGIOutput1 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -12454,15 +12360,15 @@ impl IDXGIOutput1 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -12471,68 +12377,68 @@ impl IDXGIOutput1 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -12540,35 +12446,35 @@ impl IDXGIOutput1 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
 }
@@ -12651,98 +12557,97 @@ pub struct IDXGIOutput1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -12760,19 +12665,18 @@ unsafe impl ::windows::Interface for IDXGIOutput2 {
         [153, 177, 218, 150, 157, 226, 131, 100],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -12781,57 +12685,57 @@ impl IDXGIOutput2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -12839,15 +12743,15 @@ impl IDXGIOutput2 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -12856,15 +12760,15 @@ impl IDXGIOutput2 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -12873,68 +12777,68 @@ impl IDXGIOutput2 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -12942,38 +12846,38 @@ impl IDXGIOutput2 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn SupportsOverlays(&self) -> super::system_services::BOOL {
+    pub unsafe fn SupportsOverlays(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
 }
@@ -13078,99 +12982,98 @@ pub struct IDXGIOutput2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13188,19 +13091,18 @@ unsafe impl ::windows::Interface for IDXGIOutput3 {
         [168, 224, 91, 50, 247, 249, 155, 24],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput3 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -13209,57 +13111,57 @@ impl IDXGIOutput3 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -13267,15 +13169,15 @@ impl IDXGIOutput3 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -13284,15 +13186,15 @@ impl IDXGIOutput3 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -13301,68 +13203,68 @@ impl IDXGIOutput3 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -13370,51 +13272,51 @@ impl IDXGIOutput3 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn SupportsOverlays(&self) -> super::system_services::BOOL {
+    pub unsafe fn SupportsOverlays(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn CheckOverlaySupport<'a, T1__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: T1__,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: T1__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(enumformat),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
 }
@@ -13541,105 +13443,104 @@ pub struct IDXGIOutput3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13653,19 +13554,18 @@ unsafe impl ::windows::Interface for IDXGIOutput4 {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(3699231285, 8598, 16717, [159, 83, 97, 120, 132, 3, 42, 96]);
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput4 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -13674,57 +13574,57 @@ impl IDXGIOutput4 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -13732,15 +13632,15 @@ impl IDXGIOutput4 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -13749,15 +13649,15 @@ impl IDXGIOutput4 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -13766,68 +13666,68 @@ impl IDXGIOutput4 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -13835,51 +13735,51 @@ impl IDXGIOutput4 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn SupportsOverlays(&self) -> super::system_services::BOOL {
+    pub unsafe fn SupportsOverlays(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn CheckOverlaySupport<'a, T1__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: T1__,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: T1__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(enumformat),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
     pub unsafe fn CheckOverlayColorSpaceSupport<
@@ -13888,16 +13788,16 @@ impl IDXGIOutput4 {
     >(
         &self,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: T2__,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: T2__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(color_space),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(colorspace),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
 }
@@ -14046,112 +13946,111 @@ pub struct IDXGIOutput4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -14169,19 +14068,18 @@ unsafe impl ::windows::Interface for IDXGIOutput5 {
         [131, 60, 12, 66, 253, 40, 45, 152],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput5 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -14190,57 +14088,57 @@ impl IDXGIOutput5 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -14248,15 +14146,15 @@ impl IDXGIOutput5 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -14265,15 +14163,15 @@ impl IDXGIOutput5 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -14282,68 +14180,68 @@ impl IDXGIOutput5 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -14351,51 +14249,51 @@ impl IDXGIOutput5 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn SupportsOverlays(&self) -> super::system_services::BOOL {
+    pub unsafe fn SupportsOverlays(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn CheckOverlaySupport<'a, T1__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: T1__,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: T1__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(enumformat),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
     pub unsafe fn CheckOverlayColorSpaceSupport<
@@ -14404,33 +14302,33 @@ impl IDXGIOutput5 {
     >(
         &self,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: T2__,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: T2__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(color_space),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(colorspace),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
     pub unsafe fn DuplicateOutput1<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         flags: u32,
-        supported_formats_count: u32,
-        p_supported_formats: *const DXGI_FORMAT,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        supportedformatscount: u32,
+        psupportedformats: *const DXGI_FORMAT,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(supported_formats_count),
-            ::std::mem::transmute(p_supported_formats),
-            ::std::mem::transmute(pp_output_duplication),
+            ::std::mem::transmute(supportedformatscount),
+            ::std::mem::transmute(psupportedformats),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
 }
@@ -14601,120 +14499,119 @@ pub struct IDXGIOutput5_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
         flags: u32,
-        supported_formats_count: u32,
-        p_supported_formats: *const DXGI_FORMAT,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        supportedformatscount: u32,
+        psupportedformats: *const DXGI_FORMAT,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -14732,19 +14629,18 @@ unsafe impl ::windows::Interface for IDXGIOutput6 {
         [173, 215, 19, 127, 81, 63, 119, 161],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutput6 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -14753,57 +14649,57 @@ impl IDXGIOutput6 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTPUT_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetDisplayModeList(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode<
@@ -14811,15 +14707,15 @@ impl IDXGIOutput6 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn WaitForVBlank(&self) -> ::windows::ErrorCode {
@@ -14828,15 +14724,15 @@ impl IDXGIOutput6 {
     pub unsafe fn TakeOwnership<
         'a,
         T0__: ::windows::IntoParam<'a, ::windows::IUnknown>,
-        T1__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T1__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
     >(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         exclusive: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             exclusive.into_param().abi(),
         )
     }
@@ -14845,68 +14741,68 @@ impl IDXGIOutput6 {
     }
     pub unsafe fn GetGammaControlCapabilities(
         &self,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_gamma_caps),
+            ::std::mem::transmute(pgammacaps),
         )
     }
     pub unsafe fn SetGammaControl(
         &self,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
-    pub unsafe fn GetGammaControl(&self, p_array: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
+    pub unsafe fn GetGammaControl(&self, parray: *mut DXGI_GAMMA_CONTROL) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_array),
+            ::std::mem::transmute(parray),
         )
     }
     pub unsafe fn SetDisplaySurface<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_scanout_surface: T0__,
+        pscanoutsurface: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            p_scanout_surface.into_param().abi(),
+            pscanoutsurface.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData<'a, T0__: ::windows::IntoParam<'a, IDXGISurface>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn GetDisplayModeList1(
         &self,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
+            ::std::mem::transmute(enumformat),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(p_num_modes),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pnummodes),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn FindClosestMatchingMode1<
@@ -14914,51 +14810,51 @@ impl IDXGIOutput6 {
         T2__: ::windows::IntoParam<'a, ::windows::IUnknown>,
     >(
         &self,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: T2__,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: T2__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_mode_to_match),
-            ::std::mem::transmute(p_closest_match),
-            p_concerned_device.into_param().abi(),
+            ::std::mem::transmute(pmodetomatch),
+            ::std::mem::transmute(pclosestmatch),
+            pconcerneddevice.into_param().abi(),
         )
     }
     pub unsafe fn GetDisplaySurfaceData1<'a, T0__: ::windows::IntoParam<'a, IDXGIResource>>(
         &self,
-        p_destination: T0__,
+        pdestination: T0__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
-            p_destination.into_param().abi(),
+            pdestination.into_param().abi(),
         )
     }
     pub unsafe fn DuplicateOutput<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        pdevice: T0__,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
-            ::std::mem::transmute(pp_output_duplication),
+            pdevice.into_param().abi(),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn SupportsOverlays(&self) -> super::system_services::BOOL {
+    pub unsafe fn SupportsOverlays(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn CheckOverlaySupport<'a, T1__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: T1__,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: T1__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(enum_format),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(enumformat),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
     pub unsafe fn CheckOverlayColorSpaceSupport<
@@ -14967,48 +14863,45 @@ impl IDXGIOutput6 {
     >(
         &self,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: T2__,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: T2__,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(color_space),
-            p_concerned_device.into_param().abi(),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(colorspace),
+            pconcerneddevice.into_param().abi(),
+            ::std::mem::transmute(pflags),
         )
     }
     pub unsafe fn DuplicateOutput1<'a, T0__: ::windows::IntoParam<'a, ::windows::IUnknown>>(
         &self,
-        p_device: T0__,
+        pdevice: T0__,
         flags: u32,
-        supported_formats_count: u32,
-        p_supported_formats: *const DXGI_FORMAT,
-        pp_output_duplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
+        supportedformatscount: u32,
+        psupportedformats: *const DXGI_FORMAT,
+        ppoutputduplication: *mut ::std::option::Option<IDXGIOutputDuplication>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            p_device.into_param().abi(),
+            pdevice.into_param().abi(),
             ::std::mem::transmute(flags),
-            ::std::mem::transmute(supported_formats_count),
-            ::std::mem::transmute(p_supported_formats),
-            ::std::mem::transmute(pp_output_duplication),
+            ::std::mem::transmute(supportedformatscount),
+            ::std::mem::transmute(psupportedformats),
+            ::std::mem::transmute(ppoutputduplication),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_OUTPUT_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_OUTPUT_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).27)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
-    pub unsafe fn CheckHardwareCompositionSupport(
-        &self,
-        p_flags: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn CheckHardwareCompositionSupport(&self, pflags: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_flags),
+            ::std::mem::transmute(pflags),
         )
     }
 }
@@ -15201,128 +15094,124 @@ pub struct IDXGIOutput6_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC,
+        pdesc: *mut DXGI_OUTPUT_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC,
-        p_closest_match: *mut DXGI_MODE_DESC,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC,
+        pclosestmatch: *mut DXGI_MODE_DESC,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        exclusive: super::system_services::BOOL,
+        pdevice: ::windows::RawPtr,
+        exclusive: super::SystemServices::BOOL,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_gamma_caps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
+        pgammacaps: *mut DXGI_GAMMA_CONTROL_CAPABILITIES,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *const DXGI_GAMMA_CONTROL,
+        parray: *const DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_array: *mut DXGI_GAMMA_CONTROL,
+        parray: *mut DXGI_GAMMA_CONTROL,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_scanout_surface: ::windows::RawPtr,
+        pscanoutsurface: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
+        enumformat: DXGI_FORMAT,
         flags: u32,
-        p_num_modes: *mut u32,
-        p_desc: *mut DXGI_MODE_DESC1,
+        pnummodes: *mut u32,
+        pdesc: *mut DXGI_MODE_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_mode_to_match: *const DXGI_MODE_DESC1,
-        p_closest_match: *mut DXGI_MODE_DESC1,
-        p_concerned_device: ::windows::RawPtr,
+        pmodetomatch: *const DXGI_MODE_DESC1,
+        pclosestmatch: *mut DXGI_MODE_DESC1,
+        pconcerneddevice: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_destination: ::windows::RawPtr,
+        pdestination: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        enum_format: DXGI_FORMAT,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        enumformat: DXGI_FORMAT,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         format: DXGI_FORMAT,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_concerned_device: ::windows::RawPtr,
-        p_flags: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pconcerneddevice: ::windows::RawPtr,
+        pflags: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_device: ::windows::RawPtr,
+        pdevice: ::windows::RawPtr,
         flags: u32,
-        supported_formats_count: u32,
-        p_supported_formats: *const DXGI_FORMAT,
-        pp_output_duplication: *mut ::windows::RawPtr,
+        supportedformatscount: u32,
+        psupportedformats: *const DXGI_FORMAT,
+        ppoutputduplication: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_OUTPUT_DESC1,
+        pdesc: *mut DXGI_OUTPUT_DESC1,
     ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_flags: *mut u32,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, pflags: *mut u32) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -15340,19 +15229,18 @@ unsafe impl ::windows::Interface for IDXGIOutputDuplication {
         [178, 110, 168, 100, 244, 40, 49, 156],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIOutputDuplication {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -15361,105 +15249,105 @@ impl IDXGIOutputDuplication {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_OUTDUPL_DESC) {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_OUTDUPL_DESC) {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn AcquireNextFrame(
         &self,
-        timeout_in_milliseconds: u32,
-        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
-        pp_desktop_resource: *mut ::std::option::Option<IDXGIResource>,
+        timeoutinmilliseconds: u32,
+        pframeinfo: *mut DXGI_OUTDUPL_FRAME_INFO,
+        ppdesktopresource: *mut ::std::option::Option<IDXGIResource>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(timeout_in_milliseconds),
-            ::std::mem::transmute(p_frame_info),
-            ::std::mem::transmute(pp_desktop_resource),
+            ::std::mem::transmute(timeoutinmilliseconds),
+            ::std::mem::transmute(pframeinfo),
+            ::std::mem::transmute(ppdesktopresource),
         )
     }
     pub unsafe fn GetFrameDirtyRects(
         &self,
-        dirty_rects_buffer_size: u32,
-        p_dirty_rects_buffer: *mut super::display_devices::RECT,
-        p_dirty_rects_buffer_size_required: *mut u32,
+        dirtyrectsbuffersize: u32,
+        pdirtyrectsbuffer: *mut super::DisplayDevices::RECT,
+        pdirtyrectsbuffersizerequired: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(dirty_rects_buffer_size),
-            ::std::mem::transmute(p_dirty_rects_buffer),
-            ::std::mem::transmute(p_dirty_rects_buffer_size_required),
+            ::std::mem::transmute(dirtyrectsbuffersize),
+            ::std::mem::transmute(pdirtyrectsbuffer),
+            ::std::mem::transmute(pdirtyrectsbuffersizerequired),
         )
     }
     pub unsafe fn GetFrameMoveRects(
         &self,
-        move_rects_buffer_size: u32,
-        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
-        p_move_rects_buffer_size_required: *mut u32,
+        moverectsbuffersize: u32,
+        pmoverectbuffer: *mut DXGI_OUTDUPL_MOVE_RECT,
+        pmoverectsbuffersizerequired: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(move_rects_buffer_size),
-            ::std::mem::transmute(p_move_rect_buffer),
-            ::std::mem::transmute(p_move_rects_buffer_size_required),
+            ::std::mem::transmute(moverectsbuffersize),
+            ::std::mem::transmute(pmoverectbuffer),
+            ::std::mem::transmute(pmoverectsbuffersizerequired),
         )
     }
     pub unsafe fn GetFramePointerShape(
         &self,
-        pointer_shape_buffer_size: u32,
-        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
-        p_pointer_shape_buffer_size_required: *mut u32,
-        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
+        pointershapebuffersize: u32,
+        ppointershapebuffer: *mut ::std::ffi::c_void,
+        ppointershapebuffersizerequired: *mut u32,
+        ppointershapeinfo: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pointer_shape_buffer_size),
-            ::std::mem::transmute(p_pointer_shape_buffer),
-            ::std::mem::transmute(p_pointer_shape_buffer_size_required),
-            ::std::mem::transmute(p_pointer_shape_info),
+            ::std::mem::transmute(pointershapebuffersize),
+            ::std::mem::transmute(ppointershapebuffer),
+            ::std::mem::transmute(ppointershapebuffersizerequired),
+            ::std::mem::transmute(ppointershapeinfo),
         )
     }
     pub unsafe fn MapDesktopSurface(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        plockedrect: *mut DXGI_MAPPED_RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
+            ::std::mem::transmute(plockedrect),
         )
     }
     pub unsafe fn UnMapDesktopSurface(&self) -> ::windows::ErrorCode {
@@ -15526,60 +15414,59 @@ pub struct IDXGIOutputDuplication_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, p_desc: *mut DXGI_OUTDUPL_DESC),
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, pdesc: *mut DXGI_OUTDUPL_DESC),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        timeout_in_milliseconds: u32,
-        p_frame_info: *mut DXGI_OUTDUPL_FRAME_INFO,
-        pp_desktop_resource: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        dirty_rects_buffer_size: u32,
-        p_dirty_rects_buffer: *mut super::display_devices::RECT,
-        p_dirty_rects_buffer_size_required: *mut u32,
+        timeoutinmilliseconds: u32,
+        pframeinfo: *mut DXGI_OUTDUPL_FRAME_INFO,
+        ppdesktopresource: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        move_rects_buffer_size: u32,
-        p_move_rect_buffer: *mut DXGI_OUTDUPL_MOVE_RECT,
-        p_move_rects_buffer_size_required: *mut u32,
+        dirtyrectsbuffersize: u32,
+        pdirtyrectsbuffer: *mut super::DisplayDevices::RECT,
+        pdirtyrectsbuffersizerequired: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pointer_shape_buffer_size: u32,
-        p_pointer_shape_buffer: *mut ::std::ffi::c_void,
-        p_pointer_shape_buffer_size_required: *mut u32,
-        p_pointer_shape_info: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
+        moverectsbuffersize: u32,
+        pmoverectbuffer: *mut DXGI_OUTDUPL_MOVE_RECT,
+        pmoverectsbuffersizerequired: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
+        pointershapebuffersize: u32,
+        ppointershapebuffer: *mut ::std::ffi::c_void,
+        ppointershapebuffersizerequired: *mut u32,
+        ppointershapeinfo: *mut DXGI_OUTDUPL_POINTER_SHAPE_INFO,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        plockedrect: *mut DXGI_MAPPED_RECT,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -15597,19 +15484,18 @@ unsafe impl ::windows::Interface for IDXGIResource {
         [180, 31, 138, 127, 139, 216, 150, 11],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIResource {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -15618,77 +15504,74 @@ impl IDXGIResource {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
     pub unsafe fn GetSharedHandle(
         &self,
-        p_shared_handle: *mut super::system_services::HANDLE,
+        psharedhandle: *mut super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_shared_handle),
+            ::std::mem::transmute(psharedhandle),
         )
     }
-    pub unsafe fn GetUsage(&self, p_usage: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetUsage(&self, pusage: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_usage),
+            ::std::mem::transmute(pusage),
         )
     }
-    pub unsafe fn SetEvictionPriority(&self, eviction_priority: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetEvictionPriority(&self, evictionpriority: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(eviction_priority),
+            ::std::mem::transmute(evictionpriority),
         )
     }
-    pub unsafe fn GetEvictionPriority(
-        &self,
-        p_eviction_priority: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetEvictionPriority(&self, pevictionpriority: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_eviction_priority),
+            ::std::mem::transmute(pevictionpriority),
         )
     }
 }
@@ -15771,49 +15654,45 @@ pub struct IDXGIResource_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_shared_handle: *mut super::system_services::HANDLE,
+        psharedhandle: *mut super::SystemServices::HANDLE,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, pusage: *mut u32) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        evictionpriority: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_usage: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        eviction_priority: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_eviction_priority: *mut u32,
+        pevictionpriority: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -15831,19 +15710,18 @@ unsafe impl ::windows::Interface for IDXGIResource1 {
         [153, 142, 84, 254, 86, 126, 224, 193],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGIResource1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -15852,106 +15730,103 @@ impl IDXGIResource1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
     pub unsafe fn GetSharedHandle(
         &self,
-        p_shared_handle: *mut super::system_services::HANDLE,
+        psharedhandle: *mut super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_shared_handle),
+            ::std::mem::transmute(psharedhandle),
         )
     }
-    pub unsafe fn GetUsage(&self, p_usage: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetUsage(&self, pusage: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_usage),
+            ::std::mem::transmute(pusage),
         )
     }
-    pub unsafe fn SetEvictionPriority(&self, eviction_priority: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetEvictionPriority(&self, evictionpriority: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(eviction_priority),
+            ::std::mem::transmute(evictionpriority),
         )
     }
-    pub unsafe fn GetEvictionPriority(
-        &self,
-        p_eviction_priority: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetEvictionPriority(&self, pevictionpriority: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_eviction_priority),
+            ::std::mem::transmute(pevictionpriority),
         )
     }
     pub unsafe fn CreateSubresourceSurface(
         &self,
         index: u32,
-        pp_surface: *mut ::std::option::Option<IDXGISurface2>,
+        ppsurface: *mut ::std::option::Option<IDXGISurface2>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(index),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn CreateSharedHandle<
         'a,
-        T2__: ::windows::IntoParam<'a, super::system_services::PWSTR>,
+        T2__: ::windows::IntoParam<'a, super::SystemServices::PWSTR>,
     >(
         &self,
-        p_attributes: *const super::system_services::SECURITY_ATTRIBUTES,
-        dw_access: u32,
-        lp_name: T2__,
-        p_handle: *mut super::system_services::HANDLE,
+        pattributes: *const super::SystemServices::SECURITY_ATTRIBUTES,
+        dwaccess: u32,
+        lpname: T2__,
+        phandle: *mut super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_attributes),
-            ::std::mem::transmute(dw_access),
-            lp_name.into_param().abi(),
-            ::std::mem::transmute(p_handle),
+            ::std::mem::transmute(pattributes),
+            ::std::mem::transmute(dwaccess),
+            lpname.into_param().abi(),
+            ::std::mem::transmute(phandle),
         )
     }
 }
@@ -16056,61 +15931,57 @@ pub struct IDXGIResource1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_shared_handle: *mut super::system_services::HANDLE,
+        psharedhandle: *mut super::SystemServices::HANDLE,
+    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, pusage: *mut u32) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        evictionpriority: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_usage: *mut u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        eviction_priority: u32,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_eviction_priority: *mut u32,
+        pevictionpriority: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         index: u32,
-        pp_surface: *mut ::windows::RawPtr,
+        ppsurface: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_attributes: *const super::system_services::SECURITY_ATTRIBUTES,
-        dw_access: u32,
-        lp_name: super::system_services::PWSTR,
-        p_handle: *mut super::system_services::HANDLE,
+        pattributes: *const super::SystemServices::SECURITY_ATTRIBUTES,
+        dwaccess: u32,
+        lpname: super::SystemServices::PWSTR,
+        phandle: *mut super::SystemServices::HANDLE,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16128,19 +15999,18 @@ unsafe impl ::windows::Interface for IDXGISurface {
         [191, 71, 158, 35, 187, 210, 96, 236],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISurface {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -16149,64 +16019,64 @@ impl IDXGISurface {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn Map(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
+            ::std::mem::transmute(plockedrect),
+            ::std::mem::transmute(mapflags),
         )
     }
     pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
@@ -16292,43 +16162,42 @@ pub struct IDXGISurface_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
+        pdesc: *mut DXGI_SURFACE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16346,19 +16215,18 @@ unsafe impl ::windows::Interface for IDXGISurface1 {
         [128, 174, 191, 225, 46, 163, 43, 134],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISurface1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -16367,64 +16235,64 @@ impl IDXGISurface1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn Map(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
+            ::std::mem::transmute(plockedrect),
+            ::std::mem::transmute(mapflags),
         )
     }
     pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
@@ -16432,11 +16300,11 @@ impl IDXGISurface1 {
     }
     pub unsafe fn ReleaseDC(
         &self,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        pdirtyrect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_dirty_rect),
+            ::std::mem::transmute(pdirtyrect),
         )
     }
 }
@@ -16541,48 +16409,47 @@ pub struct IDXGISurface1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
+        pdesc: *mut DXGI_SURFACE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        pdirtyrect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16600,19 +16467,18 @@ unsafe impl ::windows::Interface for IDXGISurface2 {
         [168, 102, 188, 68, 215, 235, 31, 162],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISurface2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -16621,64 +16487,64 @@ impl IDXGISurface2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SURFACE_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn Map(
         &self,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_locked_rect),
-            ::std::mem::transmute(map_flags),
+            ::std::mem::transmute(plockedrect),
+            ::std::mem::transmute(mapflags),
         )
     }
     pub unsafe fn Unmap(&self) -> ::windows::ErrorCode {
@@ -16686,24 +16552,24 @@ impl IDXGISurface2 {
     }
     pub unsafe fn ReleaseDC(
         &self,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        pdirtyrect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_dirty_rect),
+            ::std::mem::transmute(pdirtyrect),
         )
     }
     pub unsafe fn GetResource(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent_resource: *mut *mut ::std::ffi::c_void,
-        p_subresource_index: *mut u32,
+        ppparentresource: *mut *mut ::std::ffi::c_void,
+        psubresourceindex: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent_resource),
-            ::std::mem::transmute(p_subresource_index),
+            ::std::mem::transmute(ppparentresource),
+            ::std::mem::transmute(psubresourceindex),
         )
     }
 }
@@ -16830,54 +16696,53 @@ pub struct IDXGISurface2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SURFACE_DESC,
+        pdesc: *mut DXGI_SURFACE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_locked_rect: *mut DXGI_MAPPED_RECT,
-        map_flags: u32,
+        plockedrect: *mut DXGI_MAPPED_RECT,
+        mapflags: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_dirty_rect: *mut super::display_devices::RECT,
+        pdirtyrect: *mut super::DisplayDevices::RECT,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent_resource: *mut *mut ::std::ffi::c_void,
-        p_subresource_index: *mut u32,
+        ppparentresource: *mut *mut ::std::ffi::c_void,
+        psubresourceindex: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -16895,19 +16760,18 @@ unsafe impl ::windows::Interface for IDXGISwapChain {
         [170, 4, 106, 157, 35, 184, 136, 106],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChain {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -16916,53 +16780,53 @@ impl IDXGISwapChain {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Present(&self, syncinterval: u32, flags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
@@ -16970,98 +16834,95 @@ impl IDXGISwapChain {
         &self,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(buffer),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn SetFullscreenState<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
         T1__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
         fullscreen: T0__,
-        p_target: T1__,
+        ptarget: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
             fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
+            ptarget.into_param().abi(),
         )
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
+            ::std::mem::transmute(pfullscreen),
+            ::std::mem::transmute(pptarget),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn ResizeBuffers(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
+            ::std::mem::transmute(newformat),
+            ::std::mem::transmute(swapchainflags),
         )
     }
     pub unsafe fn ResizeTarget(
         &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
+            ::std::mem::transmute(pnewtargetparameters),
         )
     }
     pub unsafe fn GetContainingOutput(
         &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetLastPresentCount(&self, plastpresentcount: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
+            ::std::mem::transmute(plastpresentcount),
         )
     }
 }
@@ -17144,82 +17005,81 @@ pub struct IDXGISwapChain_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
+        fullscreen: super::SystemServices::BOOL,
+        ptarget: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
+        plastpresentcount: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -17237,19 +17097,18 @@ unsafe impl ::windows::Interface for IDXGISwapChain1 {
         [152, 58, 10, 85, 207, 230, 244, 170],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChain1 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -17258,53 +17117,53 @@ impl IDXGISwapChain1 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Present(&self, syncinterval: u32, flags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
@@ -17312,170 +17171,167 @@ impl IDXGISwapChain1 {
         &self,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(buffer),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn SetFullscreenState<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
         T1__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
         fullscreen: T0__,
-        p_target: T1__,
+        ptarget: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
             fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
+            ptarget.into_param().abi(),
         )
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
+            ::std::mem::transmute(pfullscreen),
+            ::std::mem::transmute(pptarget),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn ResizeBuffers(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
+            ::std::mem::transmute(newformat),
+            ::std::mem::transmute(swapchainflags),
         )
     }
     pub unsafe fn ResizeTarget(
         &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
+            ::std::mem::transmute(pnewtargetparameters),
         )
     }
     pub unsafe fn GetContainingOutput(
         &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetLastPresentCount(&self, plastpresentcount: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
+            ::std::mem::transmute(plastpresentcount),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetFullscreenDesc(
         &self,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetHwnd(
         &self,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_hwnd),
+            ::std::mem::transmute(phwnd),
         )
     }
     pub unsafe fn GetCoreWindow(
         &self,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(refiid),
-            ::std::mem::transmute(pp_unk),
+            ::std::mem::transmute(ppunk),
         )
     }
     pub unsafe fn Present1(
         &self,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(present_flags),
-            ::std::mem::transmute(p_present_parameters),
+            ::std::mem::transmute(syncinterval),
+            ::std::mem::transmute(presentflags),
+            ::std::mem::transmute(ppresentparameters),
         )
     }
-    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn GetRestrictToOutput(
         &self,
-        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
+        pprestricttooutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_restrict_to_output),
+            ::std::mem::transmute(pprestricttooutput),
         )
     }
-    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn SetBackgroundColor(&self, pcolor: *const DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
-    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn GetBackgroundColor(&self, pcolor: *mut DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
     pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
@@ -17484,10 +17340,10 @@ impl IDXGISwapChain1 {
             ::std::mem::transmute(rotation),
         )
     }
-    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+    pub unsafe fn GetRotation(&self, protation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rotation),
+            ::std::mem::transmute(protation),
         )
     }
 }
@@ -17592,114 +17448,114 @@ pub struct IDXGISwapChain1_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
+        fullscreen: super::SystemServices::BOOL,
+        ptarget: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
+        plastpresentcount: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_restrict_to_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *const DXGI_RGBA,
+        pprestricttooutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_color: *mut DXGI_RGBA,
+        pcolor: *const DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pcolor: *mut DXGI_RGBA,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -17707,11 +17563,10 @@ pub struct IDXGISwapChain1_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rotation: *mut DXGI_MODE_ROTATION,
+        protation: *mut DXGI_MODE_ROTATION,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -17729,19 +17584,18 @@ unsafe impl ::windows::Interface for IDXGISwapChain2 {
         [179, 49, 121, 89, 159, 185, 141, 231],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChain2 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -17750,53 +17604,53 @@ impl IDXGISwapChain2 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Present(&self, syncinterval: u32, flags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
@@ -17804,170 +17658,167 @@ impl IDXGISwapChain2 {
         &self,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(buffer),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn SetFullscreenState<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
         T1__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
         fullscreen: T0__,
-        p_target: T1__,
+        ptarget: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
             fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
+            ptarget.into_param().abi(),
         )
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
+            ::std::mem::transmute(pfullscreen),
+            ::std::mem::transmute(pptarget),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn ResizeBuffers(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
+            ::std::mem::transmute(newformat),
+            ::std::mem::transmute(swapchainflags),
         )
     }
     pub unsafe fn ResizeTarget(
         &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
+            ::std::mem::transmute(pnewtargetparameters),
         )
     }
     pub unsafe fn GetContainingOutput(
         &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetLastPresentCount(&self, plastpresentcount: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
+            ::std::mem::transmute(plastpresentcount),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetFullscreenDesc(
         &self,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetHwnd(
         &self,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_hwnd),
+            ::std::mem::transmute(phwnd),
         )
     }
     pub unsafe fn GetCoreWindow(
         &self,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(refiid),
-            ::std::mem::transmute(pp_unk),
+            ::std::mem::transmute(ppunk),
         )
     }
     pub unsafe fn Present1(
         &self,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(present_flags),
-            ::std::mem::transmute(p_present_parameters),
+            ::std::mem::transmute(syncinterval),
+            ::std::mem::transmute(presentflags),
+            ::std::mem::transmute(ppresentparameters),
         )
     }
-    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn GetRestrictToOutput(
         &self,
-        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
+        pprestricttooutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_restrict_to_output),
+            ::std::mem::transmute(pprestricttooutput),
         )
     }
-    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn SetBackgroundColor(&self, pcolor: *const DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
-    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn GetBackgroundColor(&self, pcolor: *mut DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
     pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
@@ -17976,10 +17827,10 @@ impl IDXGISwapChain2 {
             ::std::mem::transmute(rotation),
         )
     }
-    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+    pub unsafe fn GetRotation(&self, protation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rotation),
+            ::std::mem::transmute(protation),
         )
     }
     pub unsafe fn SetSourceSize(&self, width: u32, height: u32) -> ::windows::ErrorCode {
@@ -17991,46 +17842,46 @@ impl IDXGISwapChain2 {
     }
     pub unsafe fn GetSourceSize(
         &self,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_width),
-            ::std::mem::transmute(p_height),
+            ::std::mem::transmute(pwidth),
+            ::std::mem::transmute(pheight),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).31)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).32)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
-    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::system_services::HANDLE {
+    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::SystemServices::HANDLE {
         (::windows::Interface::vtable(self).33)(::windows::Abi::abi(self))
     }
     pub unsafe fn SetMatrixTransform(
         &self,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).34)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
     pub unsafe fn GetMatrixTransform(
         &self,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).35)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
 }
@@ -18157,114 +18008,114 @@ pub struct IDXGISwapChain2_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
+        fullscreen: super::SystemServices::BOOL,
+        ptarget: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
+        plastpresentcount: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_restrict_to_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *const DXGI_RGBA,
+        pprestricttooutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_color: *mut DXGI_RGBA,
+        pcolor: *const DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pcolor: *mut DXGI_RGBA,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -18272,7 +18123,7 @@ pub struct IDXGISwapChain2_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rotation: *mut DXGI_MODE_ROTATION,
+        protation: *mut DXGI_MODE_ROTATION,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -18281,26 +18132,25 @@ pub struct IDXGISwapChain2_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::HANDLE,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::HANDLE,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18318,19 +18168,18 @@ unsafe impl ::windows::Interface for IDXGISwapChain3 {
         [178, 54, 125, 160, 23, 14, 218, 177],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChain3 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -18339,53 +18188,53 @@ impl IDXGISwapChain3 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Present(&self, syncinterval: u32, flags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
@@ -18393,170 +18242,167 @@ impl IDXGISwapChain3 {
         &self,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(buffer),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn SetFullscreenState<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
         T1__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
         fullscreen: T0__,
-        p_target: T1__,
+        ptarget: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
             fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
+            ptarget.into_param().abi(),
         )
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
+            ::std::mem::transmute(pfullscreen),
+            ::std::mem::transmute(pptarget),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn ResizeBuffers(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
+            ::std::mem::transmute(newformat),
+            ::std::mem::transmute(swapchainflags),
         )
     }
     pub unsafe fn ResizeTarget(
         &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
+            ::std::mem::transmute(pnewtargetparameters),
         )
     }
     pub unsafe fn GetContainingOutput(
         &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetLastPresentCount(&self, plastpresentcount: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
+            ::std::mem::transmute(plastpresentcount),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetFullscreenDesc(
         &self,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetHwnd(
         &self,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_hwnd),
+            ::std::mem::transmute(phwnd),
         )
     }
     pub unsafe fn GetCoreWindow(
         &self,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(refiid),
-            ::std::mem::transmute(pp_unk),
+            ::std::mem::transmute(ppunk),
         )
     }
     pub unsafe fn Present1(
         &self,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(present_flags),
-            ::std::mem::transmute(p_present_parameters),
+            ::std::mem::transmute(syncinterval),
+            ::std::mem::transmute(presentflags),
+            ::std::mem::transmute(ppresentparameters),
         )
     }
-    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn GetRestrictToOutput(
         &self,
-        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
+        pprestricttooutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_restrict_to_output),
+            ::std::mem::transmute(pprestricttooutput),
         )
     }
-    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn SetBackgroundColor(&self, pcolor: *const DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
-    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn GetBackgroundColor(&self, pcolor: *mut DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
     pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
@@ -18565,10 +18411,10 @@ impl IDXGISwapChain3 {
             ::std::mem::transmute(rotation),
         )
     }
-    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+    pub unsafe fn GetRotation(&self, protation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rotation),
+            ::std::mem::transmute(protation),
         )
     }
     pub unsafe fn SetSourceSize(&self, width: u32, height: u32) -> ::windows::ErrorCode {
@@ -18580,46 +18426,46 @@ impl IDXGISwapChain3 {
     }
     pub unsafe fn GetSourceSize(
         &self,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_width),
-            ::std::mem::transmute(p_height),
+            ::std::mem::transmute(pwidth),
+            ::std::mem::transmute(pheight),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).31)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).32)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
-    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::system_services::HANDLE {
+    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::SystemServices::HANDLE {
         (::windows::Interface::vtable(self).33)(::windows::Abi::abi(self))
     }
     pub unsafe fn SetMatrixTransform(
         &self,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).34)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
     pub unsafe fn GetMatrixTransform(
         &self,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).35)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
     pub unsafe fn GetCurrentBackBufferIndex(&self) -> u32 {
@@ -18627,43 +18473,40 @@ impl IDXGISwapChain3 {
     }
     pub unsafe fn CheckColorSpaceSupport(
         &self,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_color_space_support: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pcolorspacesupport: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).37)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(color_space),
-            ::std::mem::transmute(p_color_space_support),
+            ::std::mem::transmute(colorspace),
+            ::std::mem::transmute(pcolorspacesupport),
         )
     }
-    pub unsafe fn SetColorSpace1(
-        &self,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn SetColorSpace1(&self, colorspace: DXGI_COLOR_SPACE_TYPE) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).38)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(color_space),
+            ::std::mem::transmute(colorspace),
         )
     }
     pub unsafe fn ResizeBuffers1(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
         format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-        p_creation_node_mask: *const u32,
-        pp_present_queue: *mut ::std::option::Option<::windows::IUnknown>,
+        swapchainflags: u32,
+        pcreationnodemask: *const u32,
+        pppresentqueue: *mut ::std::option::Option<::windows::IUnknown>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).39)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(swap_chain_flags),
-            ::std::mem::transmute(p_creation_node_mask),
-            ::std::mem::transmute(pp_present_queue),
+            ::std::mem::transmute(swapchainflags),
+            ::std::mem::transmute(pcreationnodemask),
+            ::std::mem::transmute(pppresentqueue),
         )
     }
 }
@@ -18812,114 +18655,114 @@ pub struct IDXGISwapChain3_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
+        fullscreen: super::SystemServices::BOOL,
+        ptarget: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
+        plastpresentcount: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_restrict_to_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *const DXGI_RGBA,
+        pprestricttooutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_color: *mut DXGI_RGBA,
+        pcolor: *const DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pcolor: *mut DXGI_RGBA,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -18927,7 +18770,7 @@ pub struct IDXGISwapChain3_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rotation: *mut DXGI_MODE_ROTATION,
+        protation: *mut DXGI_MODE_ROTATION,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -18936,46 +18779,45 @@ pub struct IDXGISwapChain3_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::HANDLE,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::HANDLE,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_color_space_support: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pcolorspacesupport: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        color_space: DXGI_COLOR_SPACE_TYPE,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
         format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-        p_creation_node_mask: *const u32,
-        pp_present_queue: *mut ::windows::RawPtr,
+        swapchainflags: u32,
+        pcreationnodemask: *const u32,
+        pppresentqueue: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18993,19 +18835,18 @@ unsafe impl ::windows::Interface for IDXGISwapChain4 {
         [177, 244, 61, 188, 182, 69, 47, 251],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChain4 {
     pub unsafe fn SetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(datasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn SetPrivateDataInterface<
@@ -19014,53 +18855,53 @@ impl IDXGISwapChain4 {
     >(
         &self,
         name: *const ::windows::Guid,
-        p_unknown: T1__,
+        punknown: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            p_unknown.into_param().abi(),
+            punknown.into_param().abi(),
         )
     }
     pub unsafe fn GetPrivateData(
         &self,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(name),
-            ::std::mem::transmute(p_data_size),
-            ::std::mem::transmute(p_data),
+            ::std::mem::transmute(pdatasize),
+            ::std::mem::transmute(pdata),
         )
     }
     pub unsafe fn GetParent(
         &self,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_parent),
+            ::std::mem::transmute(ppparent),
         )
     }
     pub unsafe fn GetDevice(
         &self,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_device),
+            ::std::mem::transmute(ppdevice),
         )
     }
-    pub unsafe fn Present(&self, sync_interval: u32, flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Present(&self, syncinterval: u32, flags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
+            ::std::mem::transmute(syncinterval),
             ::std::mem::transmute(flags),
         )
     }
@@ -19068,170 +18909,167 @@ impl IDXGISwapChain4 {
         &self,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).9)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(buffer),
             ::std::mem::transmute(riid),
-            ::std::mem::transmute(pp_surface),
+            ::std::mem::transmute(ppsurface),
         )
     }
     pub unsafe fn SetFullscreenState<
         'a,
-        T0__: ::windows::IntoParam<'a, super::system_services::BOOL>,
+        T0__: ::windows::IntoParam<'a, super::SystemServices::BOOL>,
         T1__: ::windows::IntoParam<'a, IDXGIOutput>,
     >(
         &self,
         fullscreen: T0__,
-        p_target: T1__,
+        ptarget: T1__,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
             fullscreen.into_param().abi(),
-            p_target.into_param().abi(),
+            ptarget.into_param().abi(),
         )
     }
     pub unsafe fn GetFullscreenState(
         &self,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::std::option::Option<IDXGIOutput>,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_fullscreen),
-            ::std::mem::transmute(pp_target),
+            ::std::mem::transmute(pfullscreen),
+            ::std::mem::transmute(pptarget),
         )
     }
-    pub unsafe fn GetDesc(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn ResizeBuffers(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).13)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
-            ::std::mem::transmute(new_format),
-            ::std::mem::transmute(swap_chain_flags),
+            ::std::mem::transmute(newformat),
+            ::std::mem::transmute(swapchainflags),
         )
     }
     pub unsafe fn ResizeTarget(
         &self,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).14)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_new_target_parameters),
+            ::std::mem::transmute(pnewtargetparameters),
         )
     }
     pub unsafe fn GetContainingOutput(
         &self,
-        pp_output: *mut ::std::option::Option<IDXGIOutput>,
+        ppoutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).15)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_output),
+            ::std::mem::transmute(ppoutput),
         )
     }
     pub unsafe fn GetFrameStatistics(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).16)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
-    pub unsafe fn GetLastPresentCount(
-        &self,
-        p_last_present_count: *mut u32,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn GetLastPresentCount(&self, plastpresentcount: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).17)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_last_present_count),
+            ::std::mem::transmute(plastpresentcount),
         )
     }
-    pub unsafe fn GetDesc1(&self, p_desc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
+    pub unsafe fn GetDesc1(&self, pdesc: *mut DXGI_SWAP_CHAIN_DESC1) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).18)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetFullscreenDesc(
         &self,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).19)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_desc),
+            ::std::mem::transmute(pdesc),
         )
     }
     pub unsafe fn GetHwnd(
         &self,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).20)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_hwnd),
+            ::std::mem::transmute(phwnd),
         )
     }
     pub unsafe fn GetCoreWindow(
         &self,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).21)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(refiid),
-            ::std::mem::transmute(pp_unk),
+            ::std::mem::transmute(ppunk),
         )
     }
     pub unsafe fn Present1(
         &self,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).22)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(sync_interval),
-            ::std::mem::transmute(present_flags),
-            ::std::mem::transmute(p_present_parameters),
+            ::std::mem::transmute(syncinterval),
+            ::std::mem::transmute(presentflags),
+            ::std::mem::transmute(ppresentparameters),
         )
     }
-    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::system_services::BOOL {
+    pub unsafe fn IsTemporaryMonoSupported(&self) -> super::SystemServices::BOOL {
         (::windows::Interface::vtable(self).23)(::windows::Abi::abi(self))
     }
     pub unsafe fn GetRestrictToOutput(
         &self,
-        pp_restrict_to_output: *mut ::std::option::Option<IDXGIOutput>,
+        pprestricttooutput: *mut ::std::option::Option<IDXGIOutput>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).24)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(pp_restrict_to_output),
+            ::std::mem::transmute(pprestricttooutput),
         )
     }
-    pub unsafe fn SetBackgroundColor(&self, p_color: *const DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn SetBackgroundColor(&self, pcolor: *const DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).25)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
-    pub unsafe fn GetBackgroundColor(&self, p_color: *mut DXGI_RGBA) -> ::windows::ErrorCode {
+    pub unsafe fn GetBackgroundColor(&self, pcolor: *mut DXGI_RGBA) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).26)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_color),
+            ::std::mem::transmute(pcolor),
         )
     }
     pub unsafe fn SetRotation(&self, rotation: DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
@@ -19240,10 +19078,10 @@ impl IDXGISwapChain4 {
             ::std::mem::transmute(rotation),
         )
     }
-    pub unsafe fn GetRotation(&self, p_rotation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
+    pub unsafe fn GetRotation(&self, protation: *mut DXGI_MODE_ROTATION) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).28)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_rotation),
+            ::std::mem::transmute(protation),
         )
     }
     pub unsafe fn SetSourceSize(&self, width: u32, height: u32) -> ::windows::ErrorCode {
@@ -19255,46 +19093,46 @@ impl IDXGISwapChain4 {
     }
     pub unsafe fn GetSourceSize(
         &self,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).30)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_width),
-            ::std::mem::transmute(p_height),
+            ::std::mem::transmute(pwidth),
+            ::std::mem::transmute(pheight),
         )
     }
-    pub unsafe fn SetMaximumFrameLatency(&self, max_latency: u32) -> ::windows::ErrorCode {
+    pub unsafe fn SetMaximumFrameLatency(&self, maxlatency: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).31)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(max_latency),
+            ::std::mem::transmute(maxlatency),
         )
     }
-    pub unsafe fn GetMaximumFrameLatency(&self, p_max_latency: *mut u32) -> ::windows::ErrorCode {
+    pub unsafe fn GetMaximumFrameLatency(&self, pmaxlatency: *mut u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).32)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_max_latency),
+            ::std::mem::transmute(pmaxlatency),
         )
     }
-    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::system_services::HANDLE {
+    pub unsafe fn GetFrameLatencyWaitableObject(&self) -> super::SystemServices::HANDLE {
         (::windows::Interface::vtable(self).33)(::windows::Abi::abi(self))
     }
     pub unsafe fn SetMatrixTransform(
         &self,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).34)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
     pub unsafe fn GetMatrixTransform(
         &self,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).35)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_matrix),
+            ::std::mem::transmute(pmatrix),
         )
     }
     pub unsafe fn GetCurrentBackBufferIndex(&self) -> u32 {
@@ -19302,56 +19140,53 @@ impl IDXGISwapChain4 {
     }
     pub unsafe fn CheckColorSpaceSupport(
         &self,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_color_space_support: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pcolorspacesupport: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).37)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(color_space),
-            ::std::mem::transmute(p_color_space_support),
+            ::std::mem::transmute(colorspace),
+            ::std::mem::transmute(pcolorspacesupport),
         )
     }
-    pub unsafe fn SetColorSpace1(
-        &self,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-    ) -> ::windows::ErrorCode {
+    pub unsafe fn SetColorSpace1(&self, colorspace: DXGI_COLOR_SPACE_TYPE) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).38)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(color_space),
+            ::std::mem::transmute(colorspace),
         )
     }
     pub unsafe fn ResizeBuffers1(
         &self,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
         format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-        p_creation_node_mask: *const u32,
-        pp_present_queue: *mut ::std::option::Option<::windows::IUnknown>,
+        swapchainflags: u32,
+        pcreationnodemask: *const u32,
+        pppresentqueue: *mut ::std::option::Option<::windows::IUnknown>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).39)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(buffer_count),
+            ::std::mem::transmute(buffercount),
             ::std::mem::transmute(width),
             ::std::mem::transmute(height),
             ::std::mem::transmute(format),
-            ::std::mem::transmute(swap_chain_flags),
-            ::std::mem::transmute(p_creation_node_mask),
-            ::std::mem::transmute(pp_present_queue),
+            ::std::mem::transmute(swapchainflags),
+            ::std::mem::transmute(pcreationnodemask),
+            ::std::mem::transmute(pppresentqueue),
         )
     }
     pub unsafe fn SetHDRMetaData(
         &self,
         r#type: DXGI_HDR_METADATA_TYPE,
         size: u32,
-        p_meta_data: *mut ::std::ffi::c_void,
+        pmetadata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).40)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(r#type),
             ::std::mem::transmute(size),
-            ::std::mem::transmute(p_meta_data),
+            ::std::mem::transmute(pmetadata),
         )
     }
 }
@@ -19522,114 +19357,114 @@ pub struct IDXGISwapChain4_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        data_size: u32,
-        p_data: *const ::std::ffi::c_void,
+        datasize: u32,
+        pdata: *const ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_unknown: ::windows::RawPtr,
+        punknown: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         name: *const ::windows::Guid,
-        p_data_size: *mut u32,
-        p_data: *mut ::std::ffi::c_void,
+        pdatasize: *mut u32,
+        pdata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_parent: *mut *mut ::std::ffi::c_void,
+        ppparent: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         riid: *const ::windows::Guid,
-        pp_device: *mut *mut ::std::ffi::c_void,
+        ppdevice: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
+        syncinterval: u32,
         flags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         buffer: u32,
         riid: *const ::windows::Guid,
-        pp_surface: *mut *mut ::std::ffi::c_void,
+        ppsurface: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        fullscreen: super::system_services::BOOL,
-        p_target: ::windows::RawPtr,
+        fullscreen: super::SystemServices::BOOL,
+        ptarget: ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_fullscreen: *mut super::system_services::BOOL,
-        pp_target: *mut ::windows::RawPtr,
+        pfullscreen: *mut super::SystemServices::BOOL,
+        pptarget: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
-        new_format: DXGI_FORMAT,
-        swap_chain_flags: u32,
+        newformat: DXGI_FORMAT,
+        swapchainflags: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_new_target_parameters: *const DXGI_MODE_DESC,
+        pnewtargetparameters: *const DXGI_MODE_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_output: *mut ::windows::RawPtr,
+        ppoutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS,
+        pstats: *mut DXGI_FRAME_STATISTICS,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_last_present_count: *mut u32,
+        plastpresentcount: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_DESC1,
+        pdesc: *mut DXGI_SWAP_CHAIN_DESC1,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_desc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
+        pdesc: *mut DXGI_SWAP_CHAIN_FULLSCREEN_DESC,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_hwnd: *mut super::windows_and_messaging::HWND,
+        phwnd: *mut super::WindowsAndMessaging::HWND,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         refiid: *const ::windows::Guid,
-        pp_unk: *mut *mut ::std::ffi::c_void,
+        ppunk: *mut *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        sync_interval: u32,
-        present_flags: u32,
-        p_present_parameters: *const DXGI_PRESENT_PARAMETERS,
+        syncinterval: u32,
+        presentflags: u32,
+        ppresentparameters: *const DXGI_PRESENT_PARAMETERS,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::BOOL,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        pp_restrict_to_output: *mut ::windows::RawPtr,
-    ) -> ::windows::ErrorCode,
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        p_color: *const DXGI_RGBA,
+        pprestricttooutput: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_color: *mut DXGI_RGBA,
+        pcolor: *const DXGI_RGBA,
+    ) -> ::windows::ErrorCode,
+    pub  unsafe extern "system" fn(
+        this: ::windows::RawPtr,
+        pcolor: *mut DXGI_RGBA,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -19637,7 +19472,7 @@ pub struct IDXGISwapChain4_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_rotation: *mut DXGI_MODE_ROTATION,
+        protation: *mut DXGI_MODE_ROTATION,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
@@ -19646,52 +19481,51 @@ pub struct IDXGISwapChain4_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_width: *mut u32,
-        p_height: *mut u32,
+        pwidth: *mut u32,
+        pheight: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr, max_latency: u32) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, maxlatency: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_max_latency: *mut u32,
+        pmaxlatency: *mut u32,
     ) -> ::windows::ErrorCode,
-    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::system_services::HANDLE,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr) -> super::SystemServices::HANDLE,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *const DXGI_MATRIX_3X2_F,
+        pmatrix: *const DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_matrix: *mut DXGI_MATRIX_3X2_F,
+        pmatrix: *mut DXGI_MATRIX_3X2_F,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        color_space: DXGI_COLOR_SPACE_TYPE,
-        p_color_space_support: *mut u32,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
+        pcolorspacesupport: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        color_space: DXGI_COLOR_SPACE_TYPE,
+        colorspace: DXGI_COLOR_SPACE_TYPE,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        buffer_count: u32,
+        buffercount: u32,
         width: u32,
         height: u32,
         format: DXGI_FORMAT,
-        swap_chain_flags: u32,
-        p_creation_node_mask: *const u32,
-        pp_present_queue: *mut ::windows::RawPtr,
+        swapchainflags: u32,
+        pcreationnodemask: *const u32,
+        pppresentqueue: *mut ::windows::RawPtr,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         r#type: DXGI_HDR_METADATA_TYPE,
         size: u32,
-        p_meta_data: *mut ::std::ffi::c_void,
+        pmetadata: *mut ::std::ffi::c_void,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -19709,15 +19543,14 @@ unsafe impl ::windows::Interface for IDXGISwapChainMedia {
         [189, 101, 37, 191, 178, 100, 189, 132],
     );
 }
-#[allow(non_snake_case)]
 impl IDXGISwapChainMedia {
     pub unsafe fn GetFrameStatisticsMedia(
         &self,
-        p_stats: *mut DXGI_FRAME_STATISTICS_MEDIA,
+        pstats: *mut DXGI_FRAME_STATISTICS_MEDIA,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_stats),
+            ::std::mem::transmute(pstats),
         )
     }
     pub unsafe fn SetPresentDuration(&self, duration: u32) -> ::windows::ErrorCode {
@@ -19728,15 +19561,15 @@ impl IDXGISwapChainMedia {
     }
     pub unsafe fn CheckPresentDurationSupport(
         &self,
-        desired_present_duration: u32,
-        p_closest_smaller_present_duration: *mut u32,
-        p_closest_larger_present_duration: *mut u32,
+        desiredpresentduration: u32,
+        pclosestsmallerpresentduration: *mut u32,
+        pclosestlargerpresentduration: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(desired_present_duration),
-            ::std::mem::transmute(p_closest_smaller_present_duration),
-            ::std::mem::transmute(p_closest_larger_present_duration),
+            ::std::mem::transmute(desiredpresentduration),
+            ::std::mem::transmute(pclosestsmallerpresentduration),
+            ::std::mem::transmute(pclosestlargerpresentduration),
         )
     }
 }
@@ -19774,13 +19607,13 @@ pub struct IDXGISwapChainMedia_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_stats: *mut DXGI_FRAME_STATISTICS_MEDIA,
+        pstats: *mut DXGI_FRAME_STATISTICS_MEDIA,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr, duration: u32) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        desired_present_duration: u32,
-        p_closest_smaller_present_duration: *mut u32,
-        p_closest_larger_present_duration: *mut u32,
+        desiredpresentduration: u32,
+        pclosestsmallerpresentduration: *mut u32,
+        pclosestlargerpresentduration: *mut u32,
     ) -> ::windows::ErrorCode,
 );

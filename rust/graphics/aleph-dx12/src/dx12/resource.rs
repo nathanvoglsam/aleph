@@ -32,7 +32,7 @@ use std::num::NonZeroU64;
 use std::ops::Range;
 use std::ptr::NonNull;
 use windows_raw::utils::optional_ref_to_ptr;
-use windows_raw::win32::direct3d12::{ID3D12Resource, D3D12_RANGE};
+use windows_raw::Win32::Direct3D12::{ID3D12Resource, D3D12_RANGE};
 
 #[repr(transparent)]
 pub struct Resource(pub(crate) ID3D12Resource);
@@ -59,7 +59,7 @@ impl Resource {
             self.0
                 .WriteToSubresource(
                     dst_subresource,
-                    dst_box,
+                    dst_box as *const _,
                     src_data.as_ptr() as *const _,
                     src_row_pitch,
                     src_depth_pitch,
@@ -85,7 +85,7 @@ impl Resource {
                     dst_row_pitch,
                     dst_depth_pitch,
                     src_subresource,
-                    src_box,
+                    src_box as *const _,
                 )
                 .ok()
         }
@@ -100,8 +100,8 @@ impl Resource {
             let mut out = std::ptr::null_mut();
             if let Some(read_range) = read_range {
                 let read_range = D3D12_RANGE {
-                    begin: read_range.start,
-                    end: read_range.end,
+                    Begin: read_range.start,
+                    End: read_range.end,
                 };
                 self.0
                     .Map(subresource, &read_range, &mut out)
@@ -120,8 +120,8 @@ impl Resource {
         unsafe {
             if let Some(written_range) = written_range {
                 let written_range = D3D12_RANGE {
-                    begin: written_range.start,
-                    end: written_range.end,
+                    Begin: written_range.start,
+                    End: written_range.end,
                 };
                 self.0.Unmap(subresource, &written_range)
             } else {

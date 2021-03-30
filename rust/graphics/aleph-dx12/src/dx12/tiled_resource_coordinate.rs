@@ -27,4 +27,11 @@
 // SOFTWARE.
 //
 
-pub type TiledResourceCoordinate = windows_raw::win32::direct3d12::D3D12_TILED_RESOURCE_COORDINATE;
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct TiledResourceCoordinate {
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
+    pub subresource: u32,
+}

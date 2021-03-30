@@ -1,6 +1,13 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -18,16 +25,15 @@ unsafe impl ::windows::Interface for IInspectable {
         [156, 90, 215, 170, 101, 16, 30, 144],
     );
 }
-#[allow(non_snake_case)]
 impl IInspectable {
     pub unsafe fn GetIids(
         &self,
-        iid_count: *mut u32,
+        iidcount: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(iid_count),
+            ::std::mem::transmute(iidcount),
             ::std::mem::transmute(iids),
         )
     }
@@ -66,7 +72,7 @@ pub struct IInspectable_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> u32,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        iid_count: *mut u32,
+        iidcount: *mut u32,
         iids: *mut *mut ::windows::Guid,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),

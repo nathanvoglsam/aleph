@@ -1,34 +1,41 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct STATSTG {
-    pub pwcs_name: super::system_services::PWSTR,
+    pub pwcsName: super::SystemServices::PWSTR,
     pub r#type: u32,
-    pub cb_size: u64,
-    pub mtime: super::windows_programming::FILETIME,
-    pub ctime: super::windows_programming::FILETIME,
-    pub atime: super::windows_programming::FILETIME,
-    pub grf_mode: u32,
-    pub grf_locks_supported: u32,
+    pub cbSize: u64,
+    pub mtime: super::WindowsProgramming::FILETIME,
+    pub ctime: super::WindowsProgramming::FILETIME,
+    pub atime: super::WindowsProgramming::FILETIME,
+    pub grfMode: u32,
+    pub grfLocksSupported: u32,
     pub clsid: ::windows::Guid,
-    pub grf_state_bits: u32,
+    pub grfStateBits: u32,
     pub reserved: u32,
 }
 impl STATSTG {}
 impl ::std::default::Default for STATSTG {
     fn default() -> Self {
         Self {
-            pwcs_name: ::std::default::Default::default(),
+            pwcsName: ::std::default::Default::default(),
             r#type: 0,
-            cb_size: 0,
+            cbSize: 0,
             mtime: ::std::default::Default::default(),
             ctime: ::std::default::Default::default(),
             atime: ::std::default::Default::default(),
-            grf_mode: 0,
-            grf_locks_supported: 0,
+            grfMode: 0,
+            grfLocksSupported: 0,
             clsid: ::std::default::Default::default(),
-            grf_state_bits: 0,
+            grfStateBits: 0,
             reserved: 0,
         }
     }
@@ -36,35 +43,35 @@ impl ::std::default::Default for STATSTG {
 impl ::std::fmt::Debug for STATSTG {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("STATSTG")
-            .field("pwcs_name", &format_args!("{:?}", self.pwcs_name))
+            .field("pwcsName", &format_args!("{:?}", self.pwcsName))
             .field("r#type", &format_args!("{:?}", self.r#type))
-            .field("cb_size", &format_args!("{:?}", self.cb_size))
+            .field("cbSize", &format_args!("{:?}", self.cbSize))
             .field("mtime", &format_args!("{:?}", self.mtime))
             .field("ctime", &format_args!("{:?}", self.ctime))
             .field("atime", &format_args!("{:?}", self.atime))
-            .field("grf_mode", &format_args!("{:?}", self.grf_mode))
+            .field("grfMode", &format_args!("{:?}", self.grfMode))
             .field(
-                "grf_locks_supported",
-                &format_args!("{:?}", self.grf_locks_supported),
+                "grfLocksSupported",
+                &format_args!("{:?}", self.grfLocksSupported),
             )
             .field("clsid", &format_args!("{:?}", self.clsid))
-            .field("grf_state_bits", &format_args!("{:?}", self.grf_state_bits))
+            .field("grfStateBits", &format_args!("{:?}", self.grfStateBits))
             .field("reserved", &format_args!("{:?}", self.reserved))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for STATSTG {
     fn eq(&self, other: &Self) -> bool {
-        self.pwcs_name == other.pwcs_name
+        self.pwcsName == other.pwcsName
             && self.r#type == other.r#type
-            && self.cb_size == other.cb_size
+            && self.cbSize == other.cbSize
             && self.mtime == other.mtime
             && self.ctime == other.ctime
             && self.atime == other.atime
-            && self.grf_mode == other.grf_mode
-            && self.grf_locks_supported == other.grf_locks_supported
+            && self.grfMode == other.grfMode
+            && self.grfLocksSupported == other.grfLocksSupported
             && self.clsid == other.clsid
-            && self.grf_state_bits == other.grf_state_bits
+            && self.grfStateBits == other.grfStateBits
             && self.reserved == other.reserved
     }
 }
@@ -73,7 +80,6 @@ unsafe impl ::windows::Abi for STATSTG {
     type Abi = Self;
 }
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -87,32 +93,31 @@ unsafe impl ::windows::Interface for ISequentialStream {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(208878128, 10780, 4558, [173, 229, 0, 170, 0, 68, 119, 61]);
 }
-#[allow(non_snake_case)]
 impl ISequentialStream {
     pub unsafe fn Read(
         &self,
         pv: *mut ::std::ffi::c_void,
         cb: u32,
-        pcb_read: *mut u32,
+        pcbread: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(pv),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(pcb_read),
+            ::std::mem::transmute(pcbread),
         )
     }
     pub unsafe fn Write(
         &self,
         pv: *const ::std::ffi::c_void,
         cb: u32,
-        pcb_written: *mut u32,
+        pcbwritten: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(pv),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(pcb_written),
+            ::std::mem::transmute(pcbwritten),
         )
     }
 }
@@ -152,17 +157,16 @@ pub struct ISequentialStream_abi(
         this: ::windows::RawPtr,
         pv: *mut ::std::ffi::c_void,
         cb: u32,
-        pcb_read: *mut u32,
+        pcbread: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         pv: *const ::std::ffi::c_void,
         cb: u32,
-        pcb_written: *mut u32,
+        pcbwritten: *mut u32,
     ) -> ::windows::ErrorCode,
 );
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -176,59 +180,58 @@ unsafe impl ::windows::Interface for IStream {
     const IID: ::windows::Guid =
         ::windows::Guid::from_values(12, 0, 0, [192, 0, 0, 0, 0, 0, 0, 70]);
 }
-#[allow(non_snake_case)]
 impl IStream {
     pub unsafe fn Read(
         &self,
         pv: *mut ::std::ffi::c_void,
         cb: u32,
-        pcb_read: *mut u32,
+        pcbread: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).3)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(pv),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(pcb_read),
+            ::std::mem::transmute(pcbread),
         )
     }
     pub unsafe fn Write(
         &self,
         pv: *const ::std::ffi::c_void,
         cb: u32,
-        pcb_written: *mut u32,
+        pcbwritten: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).4)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(pv),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(pcb_written),
+            ::std::mem::transmute(pcbwritten),
         )
     }
-    pub unsafe fn SetSize(&self, lib_new_size: u64) -> ::windows::ErrorCode {
+    pub unsafe fn SetSize(&self, libnewsize: u64) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(lib_new_size),
+            ::std::mem::transmute(libnewsize),
         )
     }
     pub unsafe fn CopyTo<'a, T0__: ::windows::IntoParam<'a, IStream>>(
         &self,
         pstm: T0__,
         cb: u64,
-        pcb_read: *mut u64,
-        pcb_written: *mut u64,
+        pcbread: *mut u64,
+        pcbwritten: *mut u64,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).7)(
             ::windows::Abi::abi(self),
             pstm.into_param().abi(),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(pcb_read),
-            ::std::mem::transmute(pcb_written),
+            ::std::mem::transmute(pcbread),
+            ::std::mem::transmute(pcbwritten),
         )
     }
-    pub unsafe fn Commit(&self, grf_commit_flags: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Commit(&self, grfcommitflags: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(grf_commit_flags),
+            ::std::mem::transmute(grfcommitflags),
         )
     }
     pub unsafe fn Revert(&self) -> ::windows::ErrorCode {
@@ -236,35 +239,35 @@ impl IStream {
     }
     pub unsafe fn LockRegion(
         &self,
-        lib_offset: u64,
+        liboffset: u64,
         cb: u64,
-        dw_lock_type: u32,
+        dwlocktype: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(lib_offset),
+            ::std::mem::transmute(liboffset),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(dw_lock_type),
+            ::std::mem::transmute(dwlocktype),
         )
     }
     pub unsafe fn UnlockRegion(
         &self,
-        lib_offset: u64,
+        liboffset: u64,
         cb: u64,
-        dw_lock_type: u32,
+        dwlocktype: u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).11)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(lib_offset),
+            ::std::mem::transmute(liboffset),
             ::std::mem::transmute(cb),
-            ::std::mem::transmute(dw_lock_type),
+            ::std::mem::transmute(dwlocktype),
         )
     }
-    pub unsafe fn Stat(&self, pstatstg: *mut STATSTG, grf_stat_flag: u32) -> ::windows::ErrorCode {
+    pub unsafe fn Stat(&self, pstatstg: *mut STATSTG, grfstatflag: u32) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).12)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(pstatstg),
-            ::std::mem::transmute(grf_stat_flag),
+            ::std::mem::transmute(grfstatflag),
         )
     }
     pub unsafe fn Clone(&self, ppstm: *mut ::std::option::Option<IStream>) -> ::windows::ErrorCode {
@@ -332,47 +335,44 @@ pub struct IStream_abi(
         this: ::windows::RawPtr,
         pv: *mut ::std::ffi::c_void,
         cb: u32,
-        pcb_read: *mut u32,
+        pcbread: *mut u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         pv: *const ::std::ffi::c_void,
         cb: u32,
-        pcb_written: *mut u32,
+        pcbwritten: *mut u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(),
-    pub  unsafe extern "system" fn(
-        this: ::windows::RawPtr,
-        lib_new_size: u64,
-    ) -> ::windows::ErrorCode,
+    pub unsafe extern "system" fn(this: ::windows::RawPtr, libnewsize: u64) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         pstm: ::windows::RawPtr,
         cb: u64,
-        pcb_read: *mut u64,
-        pcb_written: *mut u64,
+        pcbread: *mut u64,
+        pcbwritten: *mut u64,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        grf_commit_flags: u32,
+        grfcommitflags: u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        lib_offset: u64,
+        liboffset: u64,
         cb: u64,
-        dw_lock_type: u32,
+        dwlocktype: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        lib_offset: u64,
+        liboffset: u64,
         cb: u64,
-        dw_lock_type: u32,
+        dwlocktype: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         pstatstg: *mut STATSTG,
-        grf_stat_flag: u32,
+        grfstatflag: u32,
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,

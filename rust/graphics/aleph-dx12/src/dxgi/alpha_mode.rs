@@ -28,7 +28,7 @@
 //
 
 use std::convert::TryFrom;
-use windows_raw::win32::dxgi::DXGI_ALPHA_MODE;
+use windows_raw::Win32::Dxgi::DXGI_ALPHA_MODE;
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

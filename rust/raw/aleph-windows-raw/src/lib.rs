@@ -38,9 +38,8 @@ mod raw;
 
 #[cfg(target_os = "windows")]
 mod exports {
-    pub use super::raw::windows::*;
+    pub use super::raw::Windows::*;
     pub use super::utils::name_current_thread;
-    pub use super::win32::system_services::BOOL;
     pub use super::windows_rs::initialize_mta;
     pub use super::windows_rs::initialize_sta;
     pub use super::windows_rs::Abi;
@@ -52,6 +51,7 @@ mod exports {
     pub use super::windows_rs::Param;
     pub use super::windows_rs::RawPtr;
     pub use super::windows_rs::Result;
+    pub use super::Win32::SystemServices::BOOL;
 }
 
 #[cfg(not(target_os = "windows"))]

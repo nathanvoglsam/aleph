@@ -30,15 +30,15 @@
 #![allow(non_camel_case_types)]
 
 use std::ffi::c_void;
-use windows_raw::win32::direct3d12::{
+use windows_raw::ErrorCode;
+use windows_raw::Guid;
+use windows_raw::Win32::Direct3D12::{
     ID3D12Device, ID3D12Heap, ID3D12ProtectedResourceSession, ID3D12Resource, D3D12_CLEAR_VALUE,
     D3D12_FEATURE_DATA_D3D12_OPTIONS, D3D12_HEAP_FLAGS, D3D12_HEAP_TYPE,
     D3D12_RESOURCE_ALLOCATION_INFO, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DESC1,
     D3D12_RESOURCE_STATES,
 };
-use windows_raw::win32::dxgi::IDXGIAdapter;
-use windows_raw::ErrorCode;
-use windows_raw::Guid;
+use windows_raw::Win32::Dxgi::IDXGIAdapter;
 use windows_raw::BOOL;
 
 macro_rules! flags_bitwise_impl {

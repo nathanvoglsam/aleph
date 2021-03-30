@@ -1,6 +1,13 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(
     :: std :: clone :: Clone, :: std :: marker :: Copy, :: std :: cmp :: Eq, :: std :: fmt :: Debug,
 )]
@@ -48,7 +55,6 @@ impl<'a> ::windows::IntoParam<'a, PWSTR> for String {
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(
     :: std :: clone :: Clone,
     :: std :: marker :: Copy,
@@ -138,7 +144,6 @@ impl<'a> ::windows::IntoParam<'a, BOOL> for bool {
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(
     :: std :: clone :: Clone, :: std :: marker :: Copy, :: std :: cmp :: Eq, :: std :: fmt :: Debug,
 )]
@@ -186,7 +191,6 @@ impl<'a> ::windows::IntoParam<'a, PSTR> for String {
     }
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HANDLE(pub isize);
 impl HANDLE {}
@@ -198,7 +202,7 @@ impl ::std::default::Default for HANDLE {
 impl ::std::fmt::Debug for HANDLE {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("HANDLE")
-            .field("value", &format_args!("{:?}", self.0))
+            .field("Value", &format_args!("{:?}", self.0))
             .finish()
     }
 }
@@ -212,43 +216,39 @@ unsafe impl ::windows::Abi for HANDLE {
     type Abi = Self;
 }
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct SECURITY_ATTRIBUTES {
-    pub n_length: u32,
-    pub lp_security_descriptor: *mut ::std::ffi::c_void,
-    pub b_inherit_handle: BOOL,
+    pub nLength: u32,
+    pub lpSecurityDescriptor: *mut ::std::ffi::c_void,
+    pub bInheritHandle: BOOL,
 }
 impl SECURITY_ATTRIBUTES {}
 impl ::std::default::Default for SECURITY_ATTRIBUTES {
     fn default() -> Self {
         Self {
-            n_length: 0,
-            lp_security_descriptor: ::std::ptr::null_mut(),
-            b_inherit_handle: ::std::default::Default::default(),
+            nLength: 0,
+            lpSecurityDescriptor: ::std::ptr::null_mut(),
+            bInheritHandle: ::std::default::Default::default(),
         }
     }
 }
 impl ::std::fmt::Debug for SECURITY_ATTRIBUTES {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("SECURITY_ATTRIBUTES")
-            .field("n_length", &format_args!("{:?}", self.n_length))
+            .field("nLength", &format_args!("{:?}", self.nLength))
             .field(
-                "lp_security_descriptor",
-                &format_args!("{:?}", self.lp_security_descriptor),
+                "lpSecurityDescriptor",
+                &format_args!("{:?}", self.lpSecurityDescriptor),
             )
-            .field(
-                "b_inherit_handle",
-                &format_args!("{:?}", self.b_inherit_handle),
-            )
+            .field("bInheritHandle", &format_args!("{:?}", self.bInheritHandle))
             .finish()
     }
 }
 impl ::std::cmp::PartialEq for SECURITY_ATTRIBUTES {
     fn eq(&self, other: &Self) -> bool {
-        self.n_length == other.n_length
-            && self.lp_security_descriptor == other.lp_security_descriptor
-            && self.b_inherit_handle == other.b_inherit_handle
+        self.nLength == other.nLength
+            && self.lpSecurityDescriptor == other.lpSecurityDescriptor
+            && self.bInheritHandle == other.bInheritHandle
     }
 }
 impl ::std::cmp::Eq for SECURITY_ATTRIBUTES {}
@@ -261,25 +261,25 @@ pub unsafe fn CreateEventA<
     T2__: ::windows::IntoParam<'a, BOOL>,
     T3__: ::windows::IntoParam<'a, PSTR>,
 >(
-    lp_event_attributes: *mut SECURITY_ATTRIBUTES,
-    b_manual_reset: T1__,
-    b_initial_state: T2__,
-    lp_name: T3__,
+    lpeventattributes: *mut SECURITY_ATTRIBUTES,
+    bmanualreset: T1__,
+    binitialstate: T2__,
+    lpname: T3__,
 ) -> HANDLE {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn CreateEventA(
-            lp_event_attributes: *mut SECURITY_ATTRIBUTES,
-            b_manual_reset: BOOL,
-            b_initial_state: BOOL,
-            lp_name: PSTR,
+            lpeventattributes: *mut SECURITY_ATTRIBUTES,
+            bmanualreset: BOOL,
+            binitialstate: BOOL,
+            lpname: PSTR,
         ) -> HANDLE;
     }
     CreateEventA(
-        ::std::mem::transmute(lp_event_attributes),
-        b_manual_reset.into_param().abi(),
-        b_initial_state.into_param().abi(),
-        lp_name.into_param().abi(),
+        ::std::mem::transmute(lpeventattributes),
+        bmanualreset.into_param().abi(),
+        binitialstate.into_param().abi(),
+        lpname.into_param().abi(),
     )
 }
 pub unsafe fn CreateEventW<
@@ -288,28 +288,27 @@ pub unsafe fn CreateEventW<
     T2__: ::windows::IntoParam<'a, BOOL>,
     T3__: ::windows::IntoParam<'a, PWSTR>,
 >(
-    lp_event_attributes: *mut SECURITY_ATTRIBUTES,
-    b_manual_reset: T1__,
-    b_initial_state: T2__,
-    lp_name: T3__,
+    lpeventattributes: *mut SECURITY_ATTRIBUTES,
+    bmanualreset: T1__,
+    binitialstate: T2__,
+    lpname: T3__,
 ) -> HANDLE {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn CreateEventW(
-            lp_event_attributes: *mut SECURITY_ATTRIBUTES,
-            b_manual_reset: BOOL,
-            b_initial_state: BOOL,
-            lp_name: PWSTR,
+            lpeventattributes: *mut SECURITY_ATTRIBUTES,
+            bmanualreset: BOOL,
+            binitialstate: BOOL,
+            lpname: PWSTR,
         ) -> HANDLE;
     }
     CreateEventW(
-        ::std::mem::transmute(lp_event_attributes),
-        b_manual_reset.into_param().abi(),
-        b_initial_state.into_param().abi(),
-        lp_name.into_param().abi(),
+        ::std::mem::transmute(lpeventattributes),
+        bmanualreset.into_param().abi(),
+        binitialstate.into_param().abi(),
+        lpname.into_param().abi(),
     )
 }
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -321,7 +320,6 @@ pub unsafe fn CreateEventW<
 #[repr(transparent)]
 pub struct WAIT_RETURN_CAUSE(pub u32);
 impl WAIT_RETURN_CAUSE {
-    #![allow(non_upper_case_globals)]
     pub const WAIT_OBJECT_0: Self = Self(0u32);
     pub const WAIT_ABANDONED: Self = Self(128u32);
     pub const WAIT_ABANDONED_0: Self = Self(128u32);
@@ -349,82 +347,86 @@ impl ::std::ops::BitAnd for WAIT_RETURN_CAUSE {
         Self(self.0 & rhs.0)
     }
 }
+impl ::std::ops::BitOrAssign for WAIT_RETURN_CAUSE {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for WAIT_RETURN_CAUSE {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
 pub unsafe fn WaitForSingleObject<'a, T0__: ::windows::IntoParam<'a, HANDLE>>(
-    h_handle: T0__,
-    dw_milliseconds: u32,
+    hhandle: T0__,
+    dwmilliseconds: u32,
 ) -> WAIT_RETURN_CAUSE {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn WaitForSingleObject(h_handle: HANDLE, dw_milliseconds: u32) -> WAIT_RETURN_CAUSE;
+        pub fn WaitForSingleObject(hhandle: HANDLE, dwmilliseconds: u32) -> WAIT_RETURN_CAUSE;
     }
     WaitForSingleObject(
-        h_handle.into_param().abi(),
-        ::std::mem::transmute(dw_milliseconds),
+        hhandle.into_param().abi(),
+        ::std::mem::transmute(dwmilliseconds),
     )
 }
 pub unsafe fn WaitForMultipleObjects<'a, T2__: ::windows::IntoParam<'a, BOOL>>(
-    n_count: u32,
-    lp_handles: *const HANDLE,
-    b_wait_all: T2__,
-    dw_milliseconds: u32,
+    ncount: u32,
+    lphandles: *const HANDLE,
+    bwaitall: T2__,
+    dwmilliseconds: u32,
 ) -> WAIT_RETURN_CAUSE {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn WaitForMultipleObjects(
-            n_count: u32,
-            lp_handles: *const HANDLE,
-            b_wait_all: BOOL,
-            dw_milliseconds: u32,
+            ncount: u32,
+            lphandles: *const HANDLE,
+            bwaitall: BOOL,
+            dwmilliseconds: u32,
         ) -> WAIT_RETURN_CAUSE;
     }
     WaitForMultipleObjects(
-        ::std::mem::transmute(n_count),
-        ::std::mem::transmute(lp_handles),
-        b_wait_all.into_param().abi(),
-        ::std::mem::transmute(dw_milliseconds),
+        ::std::mem::transmute(ncount),
+        ::std::mem::transmute(lphandles),
+        bwaitall.into_param().abi(),
+        ::std::mem::transmute(dwmilliseconds),
     )
 }
-pub unsafe fn ResetEvent<'a, T0__: ::windows::IntoParam<'a, HANDLE>>(h_event: T0__) -> BOOL {
+pub unsafe fn ResetEvent<'a, T0__: ::windows::IntoParam<'a, HANDLE>>(hevent: T0__) -> BOOL {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn ResetEvent(h_event: HANDLE) -> BOOL;
+        pub fn ResetEvent(hevent: HANDLE) -> BOOL;
     }
-    ResetEvent(h_event.into_param().abi())
+    ResetEvent(hevent.into_param().abi())
 }
 pub unsafe fn LoadLibraryW<'a, T0__: ::windows::IntoParam<'a, PWSTR>>(
-    lp_lib_file_name: T0__,
+    lplibfilename: T0__,
 ) -> isize {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn LoadLibraryW(lp_lib_file_name: PWSTR) -> isize;
+        pub fn LoadLibraryW(lplibfilename: PWSTR) -> isize;
     }
-    LoadLibraryW(lp_lib_file_name.into_param().abi())
+    LoadLibraryW(lplibfilename.into_param().abi())
 }
-pub unsafe fn LoadLibraryA<'a, T0__: ::windows::IntoParam<'a, PSTR>>(
-    lp_lib_file_name: T0__,
-) -> isize {
+pub unsafe fn LoadLibraryA<'a, T0__: ::windows::IntoParam<'a, PSTR>>(lplibfilename: T0__) -> isize {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn LoadLibraryA(lp_lib_file_name: PSTR) -> isize;
+        pub fn LoadLibraryA(lplibfilename: PSTR) -> isize;
     }
-    LoadLibraryA(lp_lib_file_name.into_param().abi())
+    LoadLibraryA(lplibfilename.into_param().abi())
 }
-#[allow(non_camel_case_types)]
-pub type FARPROC = extern "system" fn() -> i32;
+pub type FARPROC = extern "system" fn() -> isize;
 pub unsafe fn GetProcAddress<'a, T1__: ::windows::IntoParam<'a, PSTR>>(
-    h_module: isize,
-    lp_proc_name: T1__,
+    hmodule: isize,
+    lpprocname: T1__,
 ) -> ::std::option::Option<FARPROC> {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn GetProcAddress(
-            h_module: isize,
-            lp_proc_name: PSTR,
-        ) -> ::std::option::Option<FARPROC>;
+        pub fn GetProcAddress(hmodule: isize, lpprocname: PSTR) -> ::std::option::Option<FARPROC>;
     }
     GetProcAddress(
-        ::std::mem::transmute(h_module),
-        lp_proc_name.into_param().abi(),
+        ::std::mem::transmute(hmodule),
+        lpprocname.into_param().abi(),
     )
 }
 pub unsafe fn GetCurrentThread() -> HANDLE {
@@ -439,68 +441,68 @@ pub unsafe fn SetThreadDescription<
     T0__: ::windows::IntoParam<'a, HANDLE>,
     T1__: ::windows::IntoParam<'a, PWSTR>,
 >(
-    h_thread: T0__,
-    lp_thread_description: T1__,
+    hthread: T0__,
+    lpthreaddescription: T1__,
 ) -> ::windows::ErrorCode {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn SetThreadDescription(
-            h_thread: HANDLE,
-            lp_thread_description: PWSTR,
+            hthread: HANDLE,
+            lpthreaddescription: PWSTR,
         ) -> ::windows::ErrorCode;
     }
     SetThreadDescription(
-        h_thread.into_param().abi(),
-        lp_thread_description.into_param().abi(),
+        hthread.into_param().abi(),
+        lpthreaddescription.into_param().abi(),
     )
 }
 pub unsafe fn ConvertThreadToFiberEx(
-    lp_parameter: *mut ::std::ffi::c_void,
-    dw_flags: u32,
+    lpparameter: *mut ::std::ffi::c_void,
+    dwflags: u32,
 ) -> *mut ::std::ffi::c_void {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn ConvertThreadToFiberEx(
-            lp_parameter: *mut ::std::ffi::c_void,
-            dw_flags: u32,
+            lpparameter: *mut ::std::ffi::c_void,
+            dwflags: u32,
         ) -> *mut ::std::ffi::c_void;
     }
     ConvertThreadToFiberEx(
-        ::std::mem::transmute(lp_parameter),
-        ::std::mem::transmute(dw_flags),
+        ::std::mem::transmute(lpparameter),
+        ::std::mem::transmute(dwflags),
     )
 }
 pub unsafe fn CreateFiberEx(
-    dw_stack_commit_size: usize,
-    dw_stack_reserve_size: usize,
-    dw_flags: u32,
-    lp_start_address: ::std::option::Option<super::windows_programming::LPFIBER_START_ROUTINE>,
-    lp_parameter: *mut ::std::ffi::c_void,
+    dwstackcommitsize: usize,
+    dwstackreservesize: usize,
+    dwflags: u32,
+    lpstartaddress: ::std::option::Option<super::WindowsProgramming::LPFIBER_START_ROUTINE>,
+    lpparameter: *mut ::std::ffi::c_void,
 ) -> *mut ::std::ffi::c_void {
     #[link(name = "KERNEL32")]
     extern "system" {
         pub fn CreateFiberEx(
-            dw_stack_commit_size: usize,
-            dw_stack_reserve_size: usize,
-            dw_flags: u32,
-            lp_start_address: ::windows::RawPtr,
-            lp_parameter: *mut ::std::ffi::c_void,
+            dwstackcommitsize: usize,
+            dwstackreservesize: usize,
+            dwflags: u32,
+            lpstartaddress: ::windows::RawPtr,
+            lpparameter: *mut ::std::ffi::c_void,
         ) -> *mut ::std::ffi::c_void;
     }
     CreateFiberEx(
-        ::std::mem::transmute(dw_stack_commit_size),
-        ::std::mem::transmute(dw_stack_reserve_size),
-        ::std::mem::transmute(dw_flags),
-        ::std::mem::transmute(lp_start_address),
-        ::std::mem::transmute(lp_parameter),
+        ::std::mem::transmute(dwstackcommitsize),
+        ::std::mem::transmute(dwstackreservesize),
+        ::std::mem::transmute(dwflags),
+        ::std::mem::transmute(lpstartaddress),
+        ::std::mem::transmute(lpparameter),
     )
 }
-pub unsafe fn DeleteFiber(lp_fiber: *mut ::std::ffi::c_void) {
+pub unsafe fn DeleteFiber(lpfiber: *mut ::std::ffi::c_void) {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn DeleteFiber(lp_fiber: *mut ::std::ffi::c_void);
+        pub fn DeleteFiber(lpfiber: *mut ::std::ffi::c_void);
     }
-    DeleteFiber(::std::mem::transmute(lp_fiber))
+    DeleteFiber(::std::mem::transmute(lpfiber))
 }
 pub unsafe fn ConvertFiberToThread() -> BOOL {
     #[link(name = "KERNEL32")]
@@ -509,10 +511,10 @@ pub unsafe fn ConvertFiberToThread() -> BOOL {
     }
     ConvertFiberToThread()
 }
-pub unsafe fn SwitchToFiber(lp_fiber: *mut ::std::ffi::c_void) {
+pub unsafe fn SwitchToFiber(lpfiber: *mut ::std::ffi::c_void) {
     #[link(name = "KERNEL32")]
     extern "system" {
-        pub fn SwitchToFiber(lp_fiber: *mut ::std::ffi::c_void);
+        pub fn SwitchToFiber(lpfiber: *mut ::std::ffi::c_void);
     }
-    SwitchToFiber(::std::mem::transmute(lp_fiber))
+    SwitchToFiber(::std::mem::transmute(lpfiber))
 }

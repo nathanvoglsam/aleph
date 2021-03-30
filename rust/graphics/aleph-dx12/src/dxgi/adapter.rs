@@ -28,7 +28,7 @@
 //
 
 use crate::dxgi::AdapterDesc;
-use windows_raw::win32::dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
+use windows_raw::Win32::Dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 
 #[repr(transparent)]
 pub struct Adapter(pub(crate) IDXGIAdapter1);

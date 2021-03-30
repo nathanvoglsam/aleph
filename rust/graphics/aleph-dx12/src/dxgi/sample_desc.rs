@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::dxgi::DXGI_SAMPLE_DESC;
-
-pub type SampleDesc = DXGI_SAMPLE_DESC;
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct SampleDesc {
+    pub count: u32,
+    pub quality: u32,
+}

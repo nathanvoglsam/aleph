@@ -1,6 +1,13 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[repr(transparent)]
-#[allow(non_camel_case_types)]
 #[derive(
     :: std :: cmp :: PartialEq,
     :: std :: cmp :: Eq,
@@ -13,7 +20,6 @@ unsafe impl ::windows::Interface for IMalloc {
     type Vtable = IMalloc_abi;
     const IID: ::windows::Guid = ::windows::Guid::from_values(2, 0, 0, [192, 0, 0, 0, 0, 0, 0, 70]);
 }
-#[allow(non_snake_case)]
 impl IMalloc {
     pub unsafe fn Alloc(&self, cb: usize) -> *mut ::std::ffi::c_void {
         (::windows::Interface::vtable(self).3)(::windows::Abi::abi(self), ::std::mem::transmute(cb))

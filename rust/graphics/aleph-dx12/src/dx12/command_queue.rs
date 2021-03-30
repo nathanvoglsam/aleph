@@ -29,7 +29,7 @@
 
 use crate::{Fence, GraphicsCommandList};
 use std::ffi::c_void;
-use windows_raw::win32::direct3d12::ID3D12CommandQueue;
+use windows_raw::Win32::Direct3D12::ID3D12CommandQueue;
 
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);

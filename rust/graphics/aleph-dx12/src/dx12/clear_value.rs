@@ -29,7 +29,7 @@
 
 use crate::{dxgi, DepthStencilValue};
 use std::mem::transmute;
-use windows_raw::win32::direct3d12::{D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0};
+use windows_raw::Win32::Direct3D12::{D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0};
 
 #[derive(Clone, Debug)]
 pub enum ClearValue {
@@ -58,8 +58,8 @@ impl Into<D3D12_CLEAR_VALUE> for ClearValue {
             ClearValue::Color { format, color } => {
                 assert!(!format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
-                    format: format.into(),
-                    anonymous: D3D12_CLEAR_VALUE_0 { color },
+                    Format: format.into(),
+                    Anonymous: D3D12_CLEAR_VALUE_0 { Color: color },
                 }
             }
             ClearValue::Depth {
@@ -68,9 +68,9 @@ impl Into<D3D12_CLEAR_VALUE> for ClearValue {
             } => {
                 assert!(format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {
-                    format: format.into(),
-                    anonymous: D3D12_CLEAR_VALUE_0 {
-                        depth_stencil: unsafe { transmute(depth_stencil) },
+                    Format: format.into(),
+                    Anonymous: D3D12_CLEAR_VALUE_0 {
+                        DepthStencil: unsafe { transmute(depth_stencil) },
                     },
                 }
             }

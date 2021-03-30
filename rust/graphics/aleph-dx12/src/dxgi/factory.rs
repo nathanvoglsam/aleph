@@ -33,13 +33,13 @@ use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
-use windows_raw::win32::direct3d12::ID3D12Device4;
-use windows_raw::win32::dxgi::{
+use windows_raw::Win32::Direct3D12::ID3D12Device4;
+use windows_raw::Win32::Dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
     DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
 };
-use windows_raw::win32::windows_and_messaging::HWND;
-use windows_raw::win32::winrt::IInspectable;
+use windows_raw::Win32::WinRT::IInspectable;
+use windows_raw::Win32::WindowsAndMessaging::HWND;
 use windows_raw::{Abi, Interface};
 
 type CreateFn = extern "system" fn(
@@ -165,7 +165,7 @@ impl Factory {
                     adapter.GetDesc1(&mut desc).unwrap();
 
                     // We want to skip software adapters as they're going to be *very* slow
-                    if (desc.flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
+                    if (desc.Flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
                         i += 1;
                         continue;
                     }

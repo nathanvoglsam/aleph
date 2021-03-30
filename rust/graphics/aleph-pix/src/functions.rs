@@ -30,7 +30,7 @@
 use crate::Colour;
 use pix_raw::*;
 use std::ffi::{CStr, CString};
-use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
+use windows_raw::Win32::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
 pub unsafe fn begin_event(colour: Colour, text: &str) {
     let text = CString::new(text).unwrap();

@@ -27,4 +27,13 @@
 // SOFTWARE.
 //
 
-pub type Box = windows_raw::win32::direct3d12::D3D12_BOX;
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Box {
+    pub left: u32,
+    pub top: u32,
+    pub front: u32,
+    pub right: u32,
+    pub bottom: u32,
+    pub back: u32,
+}

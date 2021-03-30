@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::direct3d12::ID3D12Heap;
+use windows_raw::Win32::Direct3D12::ID3D12Heap;
 
 #[repr(transparent)]
 pub struct Heap(pub(crate) ID3D12Heap);

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::direct3d12::ID3D12QueryHeap;
+use windows_raw::Win32::Direct3D12::ID3D12QueryHeap;
 
 #[repr(transparent)]
 pub struct QueryHeap(pub(crate) ID3D12QueryHeap);

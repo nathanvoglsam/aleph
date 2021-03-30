@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::direct3d12::D3D12_FENCE_FLAGS;
+use windows_raw::Win32::Direct3D12::D3D12_FENCE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct FenceFlags(pub i32);

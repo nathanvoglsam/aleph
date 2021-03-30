@@ -30,7 +30,7 @@
 use crate::{CPUDescriptorHandle, DescriptorHeapDesc, GPUDescriptorHandle};
 use std::convert::TryFrom;
 use std::mem::transmute;
-use windows_raw::win32::direct3d12::ID3D12DescriptorHeap;
+use windows_raw::Win32::Direct3D12::ID3D12DescriptorHeap;
 
 #[repr(transparent)]
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);

@@ -33,7 +33,7 @@ use crate::{
 };
 use std::marker::PhantomData;
 use std::mem::{align_of, size_of, transmute};
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1,
     D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1, D3D12_STATIC_SAMPLER_DESC,
 };
@@ -61,9 +61,9 @@ impl<'a> RootSignatureDescBuilder<'a> {
         self.parameters = parameters
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER {
-                parameter_type: v.get_parameter_type(),
-                anonymous: v.get_variant(),
-                shader_visibility: v.get_shader_visibility(),
+                ParameterType: v.get_parameter_type(),
+                Anonymous: v.get_variant(),
+                ShaderVisibility: v.get_shader_visibility(),
             })
             .collect();
         self
@@ -106,11 +106,11 @@ impl<'a> RootSignatureDescBuilder<'a> {
         };
         RootSignatureDesc {
             inner: D3D12_ROOT_SIGNATURE_DESC {
-                num_parameters,
-                p_parameters,
-                num_static_samplers,
-                p_static_samplers,
-                flags: self.flags.into(),
+                NumParameters: num_parameters,
+                pParameters: p_parameters,
+                NumStaticSamplers: num_static_samplers,
+                pStaticSamplers: p_static_samplers,
+                Flags: self.flags.into(),
             },
             phantom: Default::default(),
         }
@@ -138,9 +138,9 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         self.parameters = parameters
             .iter()
             .map(|v| D3D12_ROOT_PARAMETER1 {
-                parameter_type: v.get_parameter_type(),
-                anonymous: v.get_variant(),
-                shader_visibility: v.get_shader_visibility(),
+                ParameterType: v.get_parameter_type(),
+                Anonymous: v.get_variant(),
+                ShaderVisibility: v.get_shader_visibility(),
             })
             .collect();
         self
@@ -183,11 +183,11 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         };
         RootSignatureDesc1 {
             inner: D3D12_ROOT_SIGNATURE_DESC1 {
-                num_parameters,
-                p_parameters,
-                num_static_samplers,
-                p_static_samplers,
-                flags: self.flags.into(),
+                NumParameters: num_parameters,
+                pParameters: p_parameters,
+                NumStaticSamplers: num_static_samplers,
+                pStaticSamplers: p_static_samplers,
+                Flags: self.flags.into(),
             },
             phantom: Default::default(),
         }

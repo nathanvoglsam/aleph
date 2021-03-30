@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::win32::direct3d12::D3D12_QUERY_TYPE;
+use windows_raw::Win32::Direct3D12::D3D12_QUERY_TYPE;
 
 /// Wrapper for `D3D12_QUERY_TYPE`
 #[repr(i32)]

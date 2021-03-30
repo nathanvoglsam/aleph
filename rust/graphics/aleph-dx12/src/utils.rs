@@ -33,7 +33,7 @@ macro_rules! device_child_impl {
         impl $crate::D3D12DeviceChild for $t {
             unsafe fn get_device(&self) -> $crate::Result<$crate::Device> {
                 use windows_raw::{Abi, Interface};
-                type D = $crate::windows_raw::win32::direct3d12::ID3D12Device4;
+                type D = $crate::windows_raw::Win32::Direct3D12::ID3D12Device4;
                 let mut device: Option<D> = None;
                 self.0
                     .GetDevice(&D::IID, device.set_abi())
@@ -49,7 +49,7 @@ macro_rules! object_impl {
     ($t:ident) => {
         impl $crate::D3D12Object for $t {
             unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::Result<()> {
-                use $crate::windows_raw::win32::system_services::PWSTR;
+                use $crate::windows_raw::Win32::SystemServices::PWSTR;
                 self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
             }
         }

@@ -32,7 +32,7 @@ use crate::{
     ShaderVisibility,
 };
 use std::mem::transmute_copy;
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_ROOT_DESCRIPTOR_TABLE, D3D12_ROOT_DESCRIPTOR_TABLE1, D3D12_ROOT_PARAMETER1_0,
     D3D12_ROOT_PARAMETER_0, D3D12_ROOT_PARAMETER_TYPE, D3D12_SHADER_VISIBILITY,
 };
@@ -81,31 +81,31 @@ impl<'a> RootParameter<'a> {
             RootParameter::DescriptorTable { ranges, .. } => {
                 if ranges.is_empty() {
                     D3D12_ROOT_PARAMETER_0 {
-                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE {
-                            num_descriptor_ranges: 0,
-                            p_descriptor_ranges: std::ptr::null_mut(),
+                        DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE {
+                            NumDescriptorRanges: 0,
+                            pDescriptorRanges: std::ptr::null_mut(),
                         },
                     }
                 } else {
                     D3D12_ROOT_PARAMETER_0 {
-                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE {
-                            num_descriptor_ranges: ranges.len() as _,
-                            p_descriptor_ranges: ranges.as_ptr() as *mut DescriptorRange as *mut _,
+                        DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE {
+                            NumDescriptorRanges: ranges.len() as _,
+                            pDescriptorRanges: ranges.as_ptr() as *mut DescriptorRange as *mut _,
                         },
                     }
                 }
             }
             RootParameter::Constants { constants, .. } => D3D12_ROOT_PARAMETER_0 {
-                constants: unsafe { transmute_copy(constants) },
+                Constants: unsafe { transmute_copy(constants) },
             },
             RootParameter::CBV { cbv, .. } => D3D12_ROOT_PARAMETER_0 {
-                descriptor: unsafe { transmute_copy(cbv) },
+                Descriptor: unsafe { transmute_copy(cbv) },
             },
             RootParameter::SRV { srv, .. } => D3D12_ROOT_PARAMETER_0 {
-                descriptor: unsafe { transmute_copy(srv) },
+                Descriptor: unsafe { transmute_copy(srv) },
             },
             RootParameter::UAV { uav, .. } => D3D12_ROOT_PARAMETER_0 {
-                descriptor: unsafe { transmute_copy(uav) },
+                Descriptor: unsafe { transmute_copy(uav) },
             },
         }
     }
@@ -165,31 +165,31 @@ impl<'a> RootParameter1<'a> {
             RootParameter1::DescriptorTable { ranges, .. } => {
                 if ranges.is_empty() {
                     D3D12_ROOT_PARAMETER1_0 {
-                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1 {
-                            num_descriptor_ranges: 0,
-                            p_descriptor_ranges: std::ptr::null_mut(),
+                        DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                            NumDescriptorRanges: 0,
+                            pDescriptorRanges: std::ptr::null_mut(),
                         },
                     }
                 } else {
                     D3D12_ROOT_PARAMETER1_0 {
-                        descriptor_table: D3D12_ROOT_DESCRIPTOR_TABLE1 {
-                            num_descriptor_ranges: ranges.len() as _,
-                            p_descriptor_ranges: ranges.as_ptr() as *mut DescriptorRange1 as *mut _,
+                        DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                            NumDescriptorRanges: ranges.len() as _,
+                            pDescriptorRanges: ranges.as_ptr() as *mut DescriptorRange1 as *mut _,
                         },
                     }
                 }
             }
             RootParameter1::Constants { constants, .. } => D3D12_ROOT_PARAMETER1_0 {
-                constants: unsafe { transmute_copy(constants) },
+                Constants: unsafe { transmute_copy(constants) },
             },
             RootParameter1::CBV { cbv, .. } => D3D12_ROOT_PARAMETER1_0 {
-                descriptor: unsafe { transmute_copy(cbv) },
+                Descriptor: unsafe { transmute_copy(cbv) },
             },
             RootParameter1::SRV { srv, .. } => D3D12_ROOT_PARAMETER1_0 {
-                descriptor: unsafe { transmute_copy(srv) },
+                Descriptor: unsafe { transmute_copy(srv) },
             },
             RootParameter1::UAV { uav, .. } => D3D12_ROOT_PARAMETER1_0 {
-                descriptor: unsafe { transmute_copy(uav) },
+                Descriptor: unsafe { transmute_copy(uav) },
             },
         }
     }

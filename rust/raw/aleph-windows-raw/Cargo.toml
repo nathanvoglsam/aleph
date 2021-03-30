@@ -49,10 +49,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 version = "1"
 
 [dependencies]
-windows = "0.6"
+windows = "0.7"
 
 [build-dependencies]
-windows = "0.6"
+windows = "0.7"
 
 [build-dependencies.syn]
 version = "1"

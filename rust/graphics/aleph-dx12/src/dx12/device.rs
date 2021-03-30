@@ -36,13 +36,13 @@ use crate::{
 use std::mem::{transmute, transmute_copy};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     ID3D12CommandAllocator, ID3D12CommandQueue, ID3D12DescriptorHeap, ID3D12Device4, ID3D12Fence,
     ID3D12GraphicsCommandList, ID3D12PipelineState, ID3D12RootSignature,
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC,
     D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
 };
-use windows_raw::win32::dxgi::IDXGIAdapter1;
+use windows_raw::Win32::Dxgi::IDXGIAdapter1;
 use windows_raw::{Abi, Interface};
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
@@ -128,8 +128,8 @@ impl Device {
     ) -> crate::Result<GraphicsPipelineState> {
         unsafe {
             let desc = D3D12_PIPELINE_STATE_STREAM_DESC {
-                size_in_bytes: state_stream.len(),
-                p_pipeline_state_subobject_stream: state_stream.as_ptr() as *mut u8 as *mut _,
+                SizeInBytes: state_stream.len(),
+                pPipelineStateSubobjectStream: state_stream.as_ptr() as *mut u8 as *mut _,
             };
             let mut out: Option<ID3D12PipelineState> = None;
             self.0

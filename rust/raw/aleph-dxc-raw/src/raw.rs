@@ -2,7 +2,7 @@
 //
 // This file is a part of Aleph
 //
-// https://github.com/nathanvoglsam/aleph
+// https://github.Com/nathanvoglsam/aleph
 //
 // MIT License
 //
@@ -283,7 +283,7 @@ impl IDxcBlobEncoding {
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
@@ -351,7 +351,7 @@ pub struct IDxcBlobEncoding_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode,
 );
@@ -531,7 +531,7 @@ impl IDxcBlobUtf16 {
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
@@ -627,7 +627,7 @@ pub struct IDxcBlobUtf16_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> *mut u16,
@@ -657,7 +657,7 @@ impl IDxcBlobUtf8 {
     }
     pub unsafe fn GetEncoding(
         &self,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
@@ -753,7 +753,7 @@ pub struct IDxcBlobUtf8_abi(
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> usize,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_known: *mut windows_raw::win32::system_services::BOOL,
+        p_known: *mut windows_raw::Win32::SystemServices::BOOL,
         p_code_page: *mut u32,
     ) -> ::windows::ErrorCode,
     pub unsafe extern "system" fn(this: ::windows::RawPtr) -> *mut i8,
@@ -1724,7 +1724,7 @@ unsafe impl ::windows::Interface for IDxcLibrary {
 impl IDxcLibrary {
     pub unsafe fn SetMalloc<
         'a,
-        T0__: ::windows::IntoParam<'a, windows_raw::win32::com::IMalloc>,
+        T0__: ::windows::IntoParam<'a, windows_raw::Win32::Com::IMalloc>,
     >(
         &self,
         p_malloc: T0__,
@@ -1795,7 +1795,7 @@ impl IDxcLibrary {
     pub unsafe fn CreateBlobWithEncodingOnMalloc(
         &self,
         p_text: *mut ::std::ffi::c_void,
-        p_imalloc: ::std::option::Option<windows_raw::win32::com::IMalloc>,
+        p_imalloc: ::std::option::Option<windows_raw::Win32::Com::IMalloc>,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
@@ -1821,7 +1821,7 @@ impl IDxcLibrary {
     pub unsafe fn CreateStreamFromBlobReadOnly<'a, T0__: ::windows::IntoParam<'a, IDxcBlob>>(
         &self,
         p_blob: T0__,
-        pp_stream: *mut ::std::option::Option<windows_raw::win32::structured_storage::IStream>,
+        pp_stream: *mut ::std::option::Option<windows_raw::Win32::StructuredStorage::IStream>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).10)(
             ::windows::Abi::abi(self),
@@ -2296,7 +2296,7 @@ impl IDxcResult {
     pub unsafe fn HasOutput(
         &self,
         dxc_out_kind: DXC_OUT_KIND,
-    ) -> windows_raw::win32::system_services::BOOL {
+    ) -> windows_raw::Win32::SystemServices::BOOL {
         (::windows::Interface::vtable(self).6)(
             ::windows::Abi::abi(self),
             ::std::mem::transmute(dxc_out_kind),
@@ -2399,7 +2399,7 @@ pub struct IDxcResult_abi(
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         dxc_out_kind: DXC_OUT_KIND,
-    ) -> windows_raw::win32::system_services::BOOL,
+    ) -> windows_raw::Win32::SystemServices::BOOL,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
         dxc_out_kind: DXC_OUT_KIND,
@@ -2460,7 +2460,7 @@ impl IDxcUtils {
     pub unsafe fn MoveToBlob(
         &self,
         p_data: *mut ::std::ffi::c_void,
-        p_imalloc: ::std::option::Option<windows_raw::win32::com::IMalloc>,
+        p_imalloc: ::std::option::Option<windows_raw::Win32::Com::IMalloc>,
         size: u32,
         code_page: u32,
         p_blob_encoding: *mut ::std::option::Option<IDxcBlobEncoding>,
@@ -2505,7 +2505,7 @@ impl IDxcUtils {
     pub unsafe fn CreateReadOnlyStreamFromBlob<'a, T0__: ::windows::IntoParam<'a, IDxcBlob>>(
         &self,
         p_blob: T0__,
-        pp_stream: *mut ::std::option::Option<windows_raw::win32::structured_storage::IStream>,
+        pp_stream: *mut ::std::option::Option<windows_raw::Win32::StructuredStorage::IStream>,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).8)(
             ::windows::Abi::abi(self),
@@ -2898,13 +2898,13 @@ impl IDxcVersionInfo2 {
     }
     pub unsafe fn GetCommitInfo(
         &self,
-        p_commit_count: *mut u32,
-        p_commit_hash: *mut *mut i8,
+        p_Commit_count: *mut u32,
+        p_Commit_hash: *mut *mut i8,
     ) -> ::windows::ErrorCode {
         (::windows::Interface::vtable(self).5)(
             ::windows::Abi::abi(self),
-            ::std::mem::transmute(p_commit_count),
-            ::std::mem::transmute(p_commit_hash),
+            ::std::mem::transmute(p_Commit_count),
+            ::std::mem::transmute(p_Commit_hash),
         )
     }
 }
@@ -2973,7 +2973,7 @@ pub struct IDxcVersionInfo2_abi(
     ) -> ::windows::ErrorCode,
     pub  unsafe extern "system" fn(
         this: ::windows::RawPtr,
-        p_commit_count: *mut u32,
-        p_commit_hash: *mut *mut i8,
+        p_Commit_count: *mut u32,
+        p_Commit_hash: *mut *mut i8,
     ) -> ::windows::ErrorCode,
 );

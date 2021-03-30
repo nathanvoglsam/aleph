@@ -29,7 +29,7 @@
 
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
-use windows_raw::win32::dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
+use windows_raw::Win32::Dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 use windows_raw::{Abi, Interface};
 
 type CreateFn = extern "system" fn(

@@ -27,4 +27,11 @@
 // SOFTWARE.
 //
 
-pub type Rect = windows_raw::win32::display_devices::RECT;
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Rect {
+    pub left: i32,
+    pub top: i32,
+    pub right: i32,
+    pub bottom: i32,
+}

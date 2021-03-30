@@ -1,6 +1,13 @@
-#![allow(unused_variables, non_upper_case_globals, non_snake_case)]
+#![allow(
+    unused_variables,
+    non_upper_case_globals,
+    non_snake_case,
+    unused_unsafe,
+    non_camel_case_types,
+    dead_code,
+    clippy::all
+)]
 #[repr(C)]
-#[allow(non_snake_case)]
 #[derive(:: std :: clone :: Clone, :: std :: marker :: Copy)]
 pub struct HMONITOR(pub isize);
 impl HMONITOR {}
@@ -12,7 +19,7 @@ impl ::std::default::Default for HMONITOR {
 impl ::std::fmt::Debug for HMONITOR {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
         fmt.debug_struct("HMONITOR")
-            .field("value", &format_args!("{:?}", self.0))
+            .field("Value", &format_args!("{:?}", self.0))
             .finish()
     }
 }

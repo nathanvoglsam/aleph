@@ -36,9 +36,9 @@ fn main() {
     use syn::{ItemMod, Visibility};
 
     windows::build!(
-        windows::win32::direct3d12::*,
-        windows::win32::dxgi::*,
-        windows::win32::system_services::{
+        Windows::Win32::Direct3D12::*,
+        Windows::Win32::Dxgi::*,
+        Windows::Win32::SystemServices::{
             CreateEventA,
             CreateEventW,
             WaitForSingleObject,
@@ -55,16 +55,16 @@ fn main() {
             ConvertFiberToThread,
             SwitchToFiber
         },
-        windows::win32::structured_storage::{
+        Windows::Win32::StructuredStorage::{
             STATSTG,
             ISequentialStream,
             IStream
         },
-        windows::win32::windows_programming::{
+        Windows::Win32::WindowsProgramming::{
             CloseHandle,
             FILETIME,
         },
-        windows::win32::com::IMalloc,
+        Windows::Win32::Com::IMalloc,
     );
 
     // Get a path to where windows-rs outputs the bindings

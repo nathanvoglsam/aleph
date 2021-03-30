@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::win32::direct3d12::D3D12_CACHED_PIPELINE_STATE;
-use crate::win32::direct3d12::D3D12_SHADER_BYTECODE;
-use crate::win32::system_services::GetProcAddress;
-use crate::win32::system_services::LoadLibraryW;
-use crate::win32::system_services::PSTR;
-use crate::win32::system_services::PWSTR;
+use crate::Win32::Direct3D12::D3D12_CACHED_PIPELINE_STATE;
+use crate::Win32::Direct3D12::D3D12_SHADER_BYTECODE;
+use crate::Win32::SystemServices::GetProcAddress;
+use crate::Win32::SystemServices::LoadLibraryW;
+use crate::Win32::SystemServices::PSTR;
+use crate::Win32::SystemServices::PWSTR;
 use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
@@ -163,8 +163,8 @@ impl<T: Sized> DynamicLoadCell<T> {
 /// undefined.
 ///
 pub unsafe fn name_current_thread(name: &[u16]) {
-    use crate::win32::system_services::GetCurrentThread;
-    use crate::win32::system_services::SetThreadDescription;
+    use crate::Win32::SystemServices::GetCurrentThread;
+    use crate::Win32::SystemServices::SetThreadDescription;
 
     let handle = GetCurrentThread();
     let _ = SetThreadDescription(handle, PWSTR(name.as_ptr() as *mut u16));
@@ -172,16 +172,16 @@ pub unsafe fn name_current_thread(name: &[u16]) {
 
 pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {
     D3D12_SHADER_BYTECODE {
-        p_shader_bytecode: blob.as_ptr() as _,
-        bytecode_length: blob.len() as _,
+        pShaderBytecode: blob.as_ptr() as _,
+        BytecodeLength: blob.len() as _,
     }
 }
 
 pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
     match blob {
         None => D3D12_SHADER_BYTECODE {
-            p_shader_bytecode: std::ptr::null_mut(),
-            bytecode_length: 0,
+            pShaderBytecode: std::ptr::null_mut(),
+            BytecodeLength: 0,
         },
         Some(blob) => blob_to_shader(blob),
     }
@@ -189,16 +189,16 @@ pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
 
 pub fn blob_to_cached_pso(blob: &[u8]) -> D3D12_CACHED_PIPELINE_STATE {
     D3D12_CACHED_PIPELINE_STATE {
-        p_cached_blob: blob.as_ptr() as _,
-        cached_blob_size_in_bytes: blob.len() as _,
+        pCachedBlob: blob.as_ptr() as _,
+        CachedBlobSizeInBytes: blob.len() as _,
     }
 }
 
 pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE_STATE {
     match blob {
         None => D3D12_CACHED_PIPELINE_STATE {
-            p_cached_blob: std::ptr::null_mut(),
-            cached_blob_size_in_bytes: 0,
+            pCachedBlob: std::ptr::null_mut(),
+            CachedBlobSizeInBytes: 0,
         },
         Some(blob) => blob_to_cached_pso(blob),
     }

@@ -28,11 +28,11 @@
 //
 
 use std::num::NonZeroIsize;
-use windows_raw::win32::system_services::{
+use windows_raw::Win32::SystemServices::{
     CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, PWSTR,
     WAIT_RETURN_CAUSE,
 };
-use windows_raw::win32::windows_programming::CloseHandle;
+use windows_raw::Win32::WindowsProgramming::CloseHandle;
 
 /// Wrapper around the return value of `WaitForSingleObject`
 #[repr(u32)]

@@ -28,8 +28,8 @@
 //
 
 use crate::Event;
-use windows_raw::win32::direct3d12::ID3D12Fence;
-use windows_raw::win32::system_services::HANDLE;
+use windows_raw::Win32::Direct3D12::ID3D12Fence;
+use windows_raw::Win32::SystemServices::HANDLE;
 
 #[repr(transparent)]
 pub struct Fence(pub(crate) ID3D12Fence);

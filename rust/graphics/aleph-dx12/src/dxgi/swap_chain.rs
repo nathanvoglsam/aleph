@@ -30,11 +30,11 @@
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
 use crate::CommandQueue;
 use std::mem::transmute;
-use windows_raw::win32::direct3d12::ID3D12Resource;
-use windows_raw::win32::dxgi::{
+use windows_raw::IUnknown;
+use windows_raw::Win32::Direct3D12::ID3D12Resource;
+use windows_raw::Win32::Dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
-use windows_raw::IUnknown;
 use windows_raw::{Abi, Interface};
 
 #[repr(transparent)]
@@ -109,10 +109,10 @@ impl SwapChain {
     /// `IDXGISwapChain1::Present1`
     pub unsafe fn present(&mut self, sync_interval: u32, present_flags: u32) -> crate::Result<()> {
         let presentation_params = DXGI_PRESENT_PARAMETERS {
-            dirty_rects_count: 0,
-            p_dirty_rects: std::ptr::null_mut(),
-            p_scroll_rect: std::ptr::null_mut(),
-            p_scroll_offset: std::ptr::null_mut(),
+            DirtyRectsCount: 0,
+            pDirtyRects: std::ptr::null_mut(),
+            pScrollRect: std::ptr::null_mut(),
+            pScrollOffset: std::ptr::null_mut(),
         };
         self.0
             .Present1(sync_interval, present_flags, &presentation_params)

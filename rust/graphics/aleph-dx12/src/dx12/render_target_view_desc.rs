@@ -28,10 +28,9 @@
 //
 
 use crate::dxgi;
-use windows_raw::win32::direct3d12::{
-    D3D12_BUFFER_RTV, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0,
-    D3D12_RTV_DIMENSION, D3D12_TEX1D_ARRAY_RTV, D3D12_TEX1D_RTV, D3D12_TEX2DMS_ARRAY_RTV,
-    D3D12_TEX2DMS_RTV, D3D12_TEX2D_ARRAY_RTV, D3D12_TEX2D_RTV, D3D12_TEX3D_RTV,
+use std::mem::transmute;
+use windows_raw::Win32::Direct3D12::{
+    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RTV_DIMENSION,
 };
 
 #[derive(Clone, Debug)]
@@ -74,16 +73,18 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
     fn into(self) -> D3D12_RENDER_TARGET_VIEW_DESC {
         match self {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {
-                format: format.into(),
-                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_BUFFER,
-                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 { buffer },
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_BUFFER,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Buffer: unsafe { transmute(buffer) },
+                },
             },
             RenderTargetViewDesc::Texture1D { format, texture_1d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
-                    format: format.into(),
-                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1D,
-                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                        texture1d: texture_1d,
+                    Format: format.into(),
+                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1D,
+                    Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        Texture1D: unsafe { transmute(texture_1d) },
                     },
                 }
             }
@@ -91,18 +92,18 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 format,
                 texture_1d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
-                format: format.into(),
-                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
-                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    texture1d_array: texture_1d_array,
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture1DArray: unsafe { transmute(texture_1d_array) },
                 },
             },
             RenderTargetViewDesc::Texture2D { format, texture_2d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
-                    format: format.into(),
-                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2D,
-                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                        texture2d: texture_2d,
+                    Format: format.into(),
+                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2D,
+                    Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        Texture2D: unsafe { transmute(texture_2d) },
                     },
                 }
             }
@@ -110,38 +111,38 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 format,
                 texture_2d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
-                format: format.into(),
-                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
-                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    texture2d_array: texture_2d_array,
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DArray: unsafe { transmute(texture_2d_array) },
                 },
             },
             RenderTargetViewDesc::Texture2DMS {
                 format,
                 texture_2dms,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
-                format: format.into(),
-                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMS,
-                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    texture2dms: texture_2dms,
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMS,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DMS: unsafe { transmute(texture_2dms) },
                 },
             },
             RenderTargetViewDesc::Texture2DMSArray {
                 format,
                 texture_2dms_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
-                format: format.into(),
-                view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
-                anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    texture2dms_array: texture_2dms_array,
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DMSArray: unsafe { transmute(texture_2dms_array) },
                 },
             },
             RenderTargetViewDesc::Texture3D { format, texture_3d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
-                    format: format.into(),
-                    view_dimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE3D,
-                    anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                        texture3d: texture_3d,
+                    Format: format.into(),
+                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE3D,
+                    Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                        Texture3D: unsafe { transmute(texture_3d) },
                     },
                 }
             }
@@ -149,11 +150,60 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
     }
 }
 
-pub type BufferRtv = D3D12_BUFFER_RTV;
-pub type Tex1DRtv = D3D12_TEX1D_RTV;
-pub type Tex1DArrayRtv = D3D12_TEX1D_ARRAY_RTV;
-pub type Tex2DRtv = D3D12_TEX2D_RTV;
-pub type Tex2DArrayRtv = D3D12_TEX2D_ARRAY_RTV;
-pub type Tex2DMSRtv = D3D12_TEX2DMS_RTV;
-pub type Tex2DMSArrayRtv = D3D12_TEX2DMS_ARRAY_RTV;
-pub type Tex3DRtv = D3D12_TEX3D_RTV;
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct BufferRtv {
+    pub first_element: u64,
+    pub num_elements: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex1DRtv {
+    pub mip_slice: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex1DArrayRtv {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex2DRtv {
+    pub mip_slice: u32,
+    pub plane_slice: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex2DArrayRtv {
+    pub mip_slice: u32,
+    pub first_array_slice: u32,
+    pub array_size: u32,
+    pub plane_slice: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex2DMSRtv {
+    pub _unused: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex2DMSArrayRtv {
+    pub first_array_slice: u32,
+    pub array_size: u32,
+}
+
+#[repr(C)]
+#[derive(Clone, Default, Eq, PartialEq, Debug)]
+pub struct Tex3DRtv {
+    pub mip_slice: u32,
+    pub first_w_slice: u32,
+    pub w_size: u32,
+}

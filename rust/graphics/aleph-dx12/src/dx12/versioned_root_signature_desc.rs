@@ -29,7 +29,7 @@
 
 use crate::{RootSignatureDesc, RootSignatureDesc1};
 use std::mem::ManuallyDrop;
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1, D3D_ROOT_SIGNATURE_VERSION,
 };
 

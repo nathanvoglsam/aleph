@@ -34,12 +34,12 @@ use crate::{
     ResourceBarrier, RootSignature, StreamOutputBufferView, TextureCopyLocation, TileCopyFlags,
     TileRegionSize, TiledResourceCoordinate, VertexBufferView, Viewport,
 };
-use std::mem::{align_of, size_of, MaybeUninit};
+use std::mem::{align_of, size_of, transmute, MaybeUninit};
 use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     ID3D12GraphicsCommandList, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
 };
-use windows_raw::win32::direct3d12::{
+use windows_raw::Win32::Direct3D12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
@@ -150,7 +150,7 @@ impl GraphicsCommandList {
             dst_y,
             dst_z,
             p_src as *const _,
-            src_box,
+            src_box as *const _,
         )
     }
 
@@ -180,7 +180,7 @@ impl GraphicsCommandList {
 
         self.0.CopyTiles(
             &tiled_resource.0,
-            tile_region_start_coordinate,
+            transmute(tile_region_start_coordinate),
             tile_region_size as *const TileRegionSize as *const _,
             &buffer.0,
             buffer_start_offset_in_bytes,
@@ -223,7 +223,7 @@ impl GraphicsCommandList {
     pub unsafe fn rs_set_scissor_rects(&mut self, rects: &[Rect]) {
         let num_rects = rects.len() as u32;
         let p_rects = rects.as_ptr();
-        self.0.RSSetScissorRects(num_rects, p_rects)
+        self.0.RSSetScissorRects(num_rects, p_rects as *const _)
     }
 
     /// `ID3D12GraphicsCommandList::OMSetBlendFactor`
@@ -623,7 +623,7 @@ impl GraphicsCommandList {
             depth,
             stencil,
             num_rects,
-            p_rects,
+            p_rects as *const _,
         )
     }
 
@@ -639,8 +639,12 @@ impl GraphicsCommandList {
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
         let render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE = render_target_view.into();
-        self.0
-            .ClearRenderTargetView(render_target_view, color_rgba.as_ptr(), num_rects, p_rects)
+        self.0.ClearRenderTargetView(
+            render_target_view,
+            color_rgba.as_ptr(),
+            num_rects,
+            p_rects as *const _,
+        )
     }
 
     /// `ID3D12GraphicsCommandList::ClearUnorderedAccessViewUint`
@@ -665,7 +669,7 @@ impl GraphicsCommandList {
             &resource.0,
             values.as_ptr(),
             num_rects,
-            p_rects,
+            p_rects as *const _,
         )
     }
 
@@ -691,7 +695,7 @@ impl GraphicsCommandList {
             &resource.0,
             values.as_ptr(),
             num_rects,
-            p_rects,
+            p_rects as *const _,
         )
     }
 

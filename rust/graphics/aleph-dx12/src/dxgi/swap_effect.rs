@@ -28,7 +28,7 @@
 //
 
 use std::convert::TryFrom;
-use windows_raw::win32::dxgi::DXGI_SWAP_EFFECT;
+use windows_raw::Win32::Dxgi::DXGI_SWAP_EFFECT;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
