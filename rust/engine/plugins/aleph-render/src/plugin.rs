@@ -204,7 +204,7 @@ impl IPlugin for RenderPlugin {
                         dxgi::Format::Unknown,
                         dxgi::SwapChainFlags::NONE,
                         None,
-                        &[&data.queue, &data.queue, &data.queue],
+                        &[data.queue.clone(), data.queue.clone(), data.queue.clone()],
                     )
                     .unwrap();
                 data.buffers = data.swap_chain.get_buffers(3).unwrap();
@@ -224,13 +224,12 @@ impl IPlugin for RenderPlugin {
                 data.render_data.take(),
             );
 
-            let mut queue_recorder = data.queue.record();
-
-            queue_recorder.execute_command_lists(&[&command_list]);
+            data.queue.execute_command_lists(&[&command_list]);
 
             data.swap_chain.present(0, 0).unwrap();
 
-            queue_recorder.signal(&data.fence, 1).unwrap();
+            data.queue.signal(&data.fence, 1).unwrap();
+
             data.event.wait(None).unwrap();
         }
     }

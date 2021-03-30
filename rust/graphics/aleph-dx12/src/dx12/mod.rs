@@ -136,7 +136,6 @@ pub use command_list::GraphicsCommandList;
 pub use command_list::GraphicsCommandListRecorder;
 pub use command_list_type::CommandListType;
 pub use command_queue::CommandQueue;
-pub use command_queue::CommandQueueRecorder;
 pub use command_queue_desc::CommandQueueDesc;
 pub use command_queue_desc::CommandQueueDescBuilder;
 pub use command_queue_flags::CommandQueueFlags;

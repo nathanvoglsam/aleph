@@ -29,7 +29,7 @@
 
 use super::functions::*;
 use crate::Colour;
-use dx12::{CommandQueueRecorder, GraphicsCommandListRecorder};
+use dx12::{CommandQueue, GraphicsCommandListRecorder};
 use std::ffi::CStr;
 
 pub struct ScopedEvent();
@@ -67,7 +67,7 @@ pub trait RecordScopedEvent {
     );
 }
 
-impl<'a> RecordScopedEvent for CommandQueueRecorder<'a> {
+impl<'a> RecordScopedEvent for CommandQueue {
     fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
         unsafe { for_queue(self, colour, text, f) }
     }
@@ -88,10 +88,10 @@ impl<'a> RecordScopedEvent for GraphicsCommandListRecorder<'a> {
 }
 
 pub unsafe fn for_queue<'a>(
-    queue: &mut CommandQueueRecorder<'a>,
+    queue: &mut CommandQueue,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&mut CommandQueueRecorder<'a>),
+    f: impl FnOnce(&mut CommandQueue),
 ) {
     begin_event_on_queue(queue.as_raw_mut(), colour, text);
     f(queue);
@@ -99,10 +99,10 @@ pub unsafe fn for_queue<'a>(
 }
 
 pub unsafe fn for_queue_cstr<'a>(
-    queue: &mut CommandQueueRecorder<'a>,
+    queue: &mut CommandQueue,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&mut CommandQueueRecorder<'a>),
+    f: impl FnOnce(&mut CommandQueue),
 ) {
     begin_event_cstr_on_queue(queue.as_raw_mut(), colour, text);
     f(queue);

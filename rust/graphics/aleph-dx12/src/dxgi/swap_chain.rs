@@ -30,9 +30,7 @@
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
 use crate::CommandQueue;
 use std::mem::transmute;
-use std::ops::Deref;
-use std::sync::RwLockReadGuard;
-use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12Resource};
+use windows_raw::win32::direct3d12::ID3D12Resource;
 use windows_raw::win32::dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
@@ -51,8 +49,9 @@ impl SwapChain {
         format: Format,
         flags: SwapChainFlags,
         node_masks: Option<&[u32]>,
-        queues: &[&CommandQueue],
+        queues: &[CommandQueue],
     ) -> crate::Result<()> {
+        // Input validation
         assert!(
             queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
             "queues len must be <= 16"
@@ -67,7 +66,12 @@ impl SwapChain {
             "can't have more than 16 swap chain buffers"
         );
 
-        let node_masks = if let Some(node_masks) = node_masks {
+        // Unpack args
+        let format = format.into();
+        let swap_chain_flags = flags.0;
+
+        // Input validation + arg unpacking
+        let p_creation_node_mask = if let Some(node_masks) = node_masks {
             assert!(!node_masks.iter().any(|v| v.count_ones() > 1));
             assert!(
                 node_masks.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
@@ -84,30 +88,19 @@ impl SwapChain {
             DEFAULT_NODE_MASKS.as_ptr()
         };
 
-        let mut locks: [Option<RwLockReadGuard<ID3D12CommandQueue>>; 16] = [
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None,
-        ];
-        let mut unpacked_queues: [Option<IUnknown>; 16] = [
-            None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-            None, None,
-        ];
-        queues.iter().enumerate().for_each(|(index, queue)| {
-            let lock = queue.get_raw_shared();
-            let ptr = lock.deref().clone();
-            unpacked_queues[index] = transmute(ptr);
-            locks[index] = Some(lock);
-        });
+        // Arg unpack
+        let pp_present_queue = queues.as_ptr() as *mut CommandQueue;
+        let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
 
         self.0
             .ResizeBuffers1(
                 buffer_count,
                 width,
                 height,
-                format.into(),
-                flags.0,
-                node_masks,
-                unpacked_queues.as_mut_ptr(),
+                format,
+                swap_chain_flags,
+                p_creation_node_mask,
+                pp_present_queue,
             )
             .ok()
     }

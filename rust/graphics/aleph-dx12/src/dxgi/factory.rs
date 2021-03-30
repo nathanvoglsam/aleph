@@ -31,7 +31,6 @@ use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
 use crate::{CommandQueue, FeatureLevel};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
-use std::ops::Deref;
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
 use windows_raw::win32::direct3d12::ID3D12Device4;
@@ -107,7 +106,7 @@ impl Factory {
         let swapchain = self
             .0
             .CreateSwapChainForHwnd(
-                queue.get_raw_shared().deref(),
+                queue.as_raw(),
                 hwnd,
                 &desc,
                 std::ptr::null(),
@@ -127,13 +126,7 @@ impl Factory {
         let mut swapchain: Option<IDXGISwapChain1> = None;
         let swapchain = self
             .0
-            .CreateSwapChainForCoreWindow(
-                queue.get_raw_shared().deref(),
-                core_window,
-                &desc,
-                None,
-                &mut swapchain,
-            )
+            .CreateSwapChainForCoreWindow(queue.as_raw(), core_window, &desc, None, &mut swapchain)
             .and_some(swapchain)?;
         swapchain.cast::<IDXGISwapChain4>()
     }

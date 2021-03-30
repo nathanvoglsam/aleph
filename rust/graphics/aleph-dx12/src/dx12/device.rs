@@ -184,7 +184,7 @@ impl Device {
             self.0
                 .CreateCommandQueue(&desc, &ID3D12CommandQueue::IID, out.set_abi())
                 .and_some(out)
-                .map(|v| CommandQueue(Arc::new(RwLock::new(v))))
+                .map(|v| CommandQueue(v))
         }
     }
 
