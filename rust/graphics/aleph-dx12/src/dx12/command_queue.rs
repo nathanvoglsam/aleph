@@ -29,10 +29,7 @@
 
 use crate::{Fence, GraphicsCommandList};
 use std::ffi::c_void;
-use std::mem::MaybeUninit;
-use std::ops::Deref;
-use std::sync::RwLockReadGuard;
-use windows_raw::win32::direct3d12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
+use windows_raw::win32::direct3d12::ID3D12CommandQueue;
 
 #[derive(Clone)]
 #[repr(transparent)]
@@ -47,57 +44,34 @@ impl CommandQueue {
         &mut self,
         command_lists: &[&GraphicsCommandList; NUM],
     ) {
-        // Type and const aliases
-        type MaybeLock<'a> = MaybeUninit<RwLockReadGuard<'a, ID3D12GraphicsCommandList>>;
-        const LOCK_VAL: MaybeLock = MaybeUninit::uninit();
-
-        // We need an array to store the locks in, and an array to put the ID3D12GraphicsCommandList
-        // pointers into
-        let mut locks: [MaybeLock; NUM] = [LOCK_VAL; NUM];
+        // We need an array to put the ID3D12GraphicsCommandList pointers into
         let mut lists: [*mut c_void; NUM] = [std::ptr::null_mut(); NUM];
 
         // Iterate over the given set of lists, accessing and storing the locks and putting the
         // ID3D12GraphicsCommandList pointer into their respective arrays
         for (i, list) in command_lists.iter().enumerate() {
-            let lock = list.get_shared();
-            let list = lock.deref();
+            let list = list.as_raw();
 
             // First we store the pointer in the list we pass to `ExecuteCommandLists`
             lists[i] = std::mem::transmute_copy(list);
-
-            // Then we store the lock so we can hold the lock over the duration of
-            // ExecuteCommandLists
-            locks[i] = MaybeUninit::new(lock);
         }
 
         // The actual call to ExecuteCommandLists
         self.0
             .ExecuteCommandLists(NUM as u32, lists.as_mut_ptr() as *mut _);
-
-        // Now we iterate over our locks and drop them
-        for lock in locks.iter_mut() {
-            std::ptr::drop_in_place(lock.as_mut_ptr());
-        }
     }
 
     pub unsafe fn execute_command_lists_dynamic(&mut self, command_lists: &[&GraphicsCommandList]) {
-        // We need an array to store the locks in, and an array to put the ID3D12GraphicsCommandList
-        // pointers into
-        let mut locks: Vec<RwLockReadGuard<ID3D12GraphicsCommandList>> = Vec::new();
+        // We need an array to put the ID3D12GraphicsCommandList pointers into
         let mut lists: Vec<*mut c_void> = Vec::new();
 
         // Iterate over the given set of lists, accessing and storing the locks and putting the
         // ID3D12GraphicsCommandList pointer into their respective arrays
         for list in command_lists.iter() {
-            let lock = list.get_shared();
-            let list = lock.deref();
+            let list = list.as_raw();
 
             // First we store the pointer in the list we pass to `ExecuteCommandLists`
             lists.push(std::mem::transmute_copy(list));
-
-            // Then we store the lock so we can hold the lock over the duration of
-            // ExecuteCommandLists
-            locks.push(lock);
         }
 
         // The actual call to ExecuteCommandLists

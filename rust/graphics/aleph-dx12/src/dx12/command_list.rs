@@ -29,15 +29,12 @@
 
 use crate::{
     dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
-    D3D12DeviceChild, D3D12Object, DescriptorHeap, DescriptorHeapType, Device, DiscardRegion,
-    GPUDescriptorHandle, IndexBufferView, PipelineState, PredicationOp, PrimitiveTopology,
-    QueryHeap, QueryType, Rect, Resource, ResourceBarrier, RootSignature, StreamOutputBufferView,
-    TextureCopyLocation, TileCopyFlags, TileRegionSize, TiledResourceCoordinate, VertexBufferView,
-    Viewport,
+    DescriptorHeap, DescriptorHeapType, DiscardRegion, GPUDescriptorHandle, IndexBufferView,
+    PipelineState, PredicationOp, PrimitiveTopology, QueryHeap, QueryType, Rect, Resource,
+    ResourceBarrier, RootSignature, StreamOutputBufferView, TextureCopyLocation, TileCopyFlags,
+    TileRegionSize, TiledResourceCoordinate, VertexBufferView, Viewport,
 };
 use std::mem::{align_of, size_of, MaybeUninit};
-use std::ops::{Deref, DerefMut};
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
 use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use windows_raw::win32::direct3d12::{
     ID3D12GraphicsCommandList, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
@@ -46,19 +43,21 @@ use windows_raw::win32::direct3d12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
-use windows_raw::win32::system_services::PWSTR;
 
-pub struct GraphicsCommandListRecorder<'a>(
-    pub(crate) std::sync::RwLockWriteGuard<'a, ID3D12GraphicsCommandList>,
-);
+#[repr(transparent)]
+pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
-impl<'a> GraphicsCommandListRecorder<'a> {
-    pub fn as_raw(&self) -> &ID3D12GraphicsCommandList {
-        self.0.deref()
-    }
+unsafe impl Send for GraphicsCommandList {}
 
-    pub fn as_raw_mut(&mut self) -> &mut ID3D12GraphicsCommandList {
-        self.0.deref_mut()
+impl GraphicsCommandList {
+    pub unsafe fn reset<T: Into<PipelineState> + Clone>(
+        &mut self,
+        allocator: &CommandAllocator,
+        initial_state: &T,
+    ) -> crate::Result<()> {
+        self.0
+            .Reset(&allocator.0, initial_state.clone().into().0)
+            .ok()
     }
 
     /// `ID3D12GraphicsCommandList::ClearState`
@@ -289,7 +288,7 @@ impl<'a> GraphicsCommandListRecorder<'a> {
 
     /// `ID3D12GraphicsCommandList::ExecuteBundle`
     pub unsafe fn execute_bundle(&mut self, command_list: &GraphicsCommandList) {
-        self.0.ExecuteBundle(command_list.get_shared().deref())
+        self.0.ExecuteBundle(command_list.as_raw())
     }
 
     /// `ID3D12GraphicsCommandList::SetDescriptorHeaps`
@@ -791,20 +790,8 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 
     /// `ID3D12GraphicsCommandList::Close`
-    ///
-    /// The `Drop` implementation also handles calling this. This function can be used to get access
-    /// to the error code that the close call would have otherwise returned if `drop` could return
-    /// a value.
-    pub unsafe fn close(mut self) -> crate::Result<()> {
-        // Take the guard from self
-        let taken: RwLockWriteGuard<'a, ID3D12GraphicsCommandList> =
-            std::mem::transmute_copy(&mut self.0);
-
-        // Forget self so we can't ever call Self::drop
-        std::mem::forget(self);
-
-        // Call close to end the recording session
-        taken.Close().ok()
+    pub unsafe fn close(&mut self) -> crate::Result<()> {
+        self.0.Close().ok()
     }
 
     /// `ID3D12GraphicsCommandList::GetType`
@@ -813,77 +800,6 @@ impl<'a> GraphicsCommandListRecorder<'a> {
     }
 }
 
-impl<'a> Drop for GraphicsCommandListRecorder<'a> {
-    fn drop(&mut self) {
-        unsafe { self.0.Close().ok().unwrap() }
-    }
-}
-
-impl<'a> D3D12Object for GraphicsCommandListRecorder<'a> {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
-    }
-}
-
-impl<'a> D3D12DeviceChild for GraphicsCommandListRecorder<'a> {
-    unsafe fn get_device(&self) -> crate::Result<Device> {
-        use windows_raw::{Abi, Interface};
-        type D = windows_raw::win32::direct3d12::ID3D12Device4;
-        let mut device: Option<D> = None;
-        self.0
-            .GetDevice(&D::IID, device.set_abi())
-            .and_some(device)
-            .map(|v| Device(v))
-    }
-}
-
-#[derive(Clone)]
-#[repr(transparent)]
-pub struct GraphicsCommandList(pub(crate) Arc<RwLock<ID3D12GraphicsCommandList>>);
-
-impl GraphicsCommandList {
-    pub unsafe fn reset<T: Into<PipelineState> + Clone>(
-        &self,
-        allocator: &CommandAllocator,
-        initial_state: &T,
-    ) -> crate::Result<GraphicsCommandListRecorder> {
-        let exclusive = self.get_exclusive();
-        exclusive
-            .Reset(&allocator.0, initial_state.clone().into().0)
-            .ok()
-            .map(|_| GraphicsCommandListRecorder(exclusive))
-    }
-
-    /// `ID3D12GraphicsCommandList::GetType`
-    pub fn get_type(&self) -> CommandListType {
-        unsafe { CommandListType::from_raw(self.get_shared().GetType()).unwrap() }
-    }
-
-    pub(crate) fn get_shared(&self) -> std::sync::RwLockReadGuard<ID3D12GraphicsCommandList> {
-        self.0.read().unwrap()
-    }
-
-    pub(crate) fn get_exclusive(&self) -> std::sync::RwLockWriteGuard<ID3D12GraphicsCommandList> {
-        self.0.write().unwrap()
-    }
-}
-
-impl D3D12Object for GraphicsCommandList {
-    unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()> {
-        self.get_shared()
-            .SetName(PWSTR(name.as_ptr() as *mut u16))
-            .ok()
-    }
-}
-
-impl D3D12DeviceChild for GraphicsCommandList {
-    unsafe fn get_device(&self) -> crate::Result<Device> {
-        use windows_raw::{Abi, Interface};
-        type D = windows_raw::win32::direct3d12::ID3D12Device4;
-        let mut device: Option<D> = None;
-        self.get_shared()
-            .GetDevice(&D::IID, device.set_abi())
-            .and_some(device)
-            .map(|v| Device(v))
-    }
-}
+crate::object_impl!(GraphicsCommandList);
+crate::device_child_impl!(GraphicsCommandList);
+windows_raw::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);

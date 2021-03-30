@@ -34,7 +34,6 @@ use crate::{
     Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
 use std::mem::{transmute, transmute_copy};
-use std::sync::{Arc, RwLock};
 use utf16_lit::utf16_null;
 use windows_raw::utils::DynamicLoadCell;
 use windows_raw::win32::direct3d12::{
@@ -120,7 +119,7 @@ impl Device {
                     out.set_abi(),
                 )
                 .and_some(out)
-                .map(|v| GraphicsCommandList(Arc::new(RwLock::new(v))))
+                .map(|v| GraphicsCommandList(v))
         }
     }
 

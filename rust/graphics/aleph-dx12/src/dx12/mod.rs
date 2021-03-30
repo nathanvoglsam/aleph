@@ -133,7 +133,6 @@ pub use clear_value::ClearValue;
 pub use color_write_enable::ColorWriteEnable;
 pub use command_allocator::CommandAllocator;
 pub use command_list::GraphicsCommandList;
-pub use command_list::GraphicsCommandListRecorder;
 pub use command_list_type::CommandListType;
 pub use command_queue::CommandQueue;
 pub use command_queue_desc::CommandQueueDesc;

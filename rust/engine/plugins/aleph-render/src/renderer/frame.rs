@@ -180,10 +180,7 @@ impl PerFrameObjects {
         }
     }
 
-    pub unsafe fn record_texture_upload(
-        &mut self,
-        command_list: &mut dx12::GraphicsCommandListRecorder,
-    ) {
+    pub unsafe fn record_texture_upload(&mut self, command_list: &mut dx12::GraphicsCommandList) {
         command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |command_list| {
             let staged_resource = self
                 .font_staged_image

@@ -107,7 +107,7 @@ impl EguiRenderer {
     pub unsafe fn record_frame(
         &mut self,
         index: usize,
-        command_list: &dx12::GraphicsCommandList,
+        command_list: &mut dx12::GraphicsCommandList,
         buffers: &[dx12::Resource],
         egui_ctx: &::egui::CtxRef,
         jobs: egui::PaintJobs,
@@ -116,7 +116,7 @@ impl EguiRenderer {
         &self.frames[index].command_allocator.reset().unwrap();
 
         // Begin recording commands into the command list
-        let mut command_list = command_list
+        command_list
             .reset(
                 &self.frames[index].command_allocator,
                 &self.global.pipeline_state,
@@ -133,14 +133,14 @@ impl EguiRenderer {
 
         // If a reupload is needed we record into the command buffer the commands required to do so
         if needs_reupload {
-            self.frames[index].record_texture_upload(&mut command_list);
+            self.frames[index].record_texture_upload(command_list);
         }
 
         // Map the buffers for copying into them
         let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
 
         // Begin the render pass and bind our resources
-        self.bind_resources(index, &mut command_list);
+        self.bind_resources(index, command_list);
 
         // Transition from present to render target state
         let barrier = dx12::ResourceBarrier::Transition {
@@ -196,7 +196,7 @@ impl EguiRenderer {
             v_ptr = v_ptr_next;
             i_ptr = i_ptr_next;
 
-            self.record_job_commands(&mut command_list, &job, vtx_base, idx_base);
+            self.record_job_commands(command_list, &job, vtx_base, idx_base);
 
             vtx_base += triangles.vertices.len();
             idx_base += triangles.indices.len();
@@ -219,7 +219,7 @@ impl EguiRenderer {
 
     unsafe fn record_job_commands(
         &mut self,
-        command_list: &mut dx12::GraphicsCommandListRecorder,
+        command_list: &mut dx12::GraphicsCommandList,
         job: &PaintJob,
         vtx_base: usize,
         idx_base: usize,
@@ -237,11 +237,7 @@ impl EguiRenderer {
         );
     }
 
-    unsafe fn bind_resources(
-        &self,
-        index: usize,
-        command_list: &mut dx12::GraphicsCommandListRecorder,
-    ) {
+    unsafe fn bind_resources(&self, index: usize, command_list: &mut dx12::GraphicsCommandList) {
         //
         // Bind the Root Signature
         //

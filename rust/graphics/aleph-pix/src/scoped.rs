@@ -29,7 +29,7 @@
 
 use super::functions::*;
 use crate::Colour;
-use dx12::{CommandQueue, GraphicsCommandListRecorder};
+use dx12::{CommandQueue, GraphicsCommandList};
 use std::ffi::CStr;
 
 pub struct ScopedEvent();
@@ -67,7 +67,7 @@ pub trait RecordScopedEvent {
     );
 }
 
-impl<'a> RecordScopedEvent for CommandQueue {
+impl RecordScopedEvent for CommandQueue {
     fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
         unsafe { for_queue(self, colour, text, f) }
     }
@@ -77,7 +77,7 @@ impl<'a> RecordScopedEvent for CommandQueue {
     }
 }
 
-impl<'a> RecordScopedEvent for GraphicsCommandListRecorder<'a> {
+impl RecordScopedEvent for GraphicsCommandList {
     fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
         unsafe { for_list(self, colour, text, f) }
     }
@@ -87,7 +87,7 @@ impl<'a> RecordScopedEvent for GraphicsCommandListRecorder<'a> {
     }
 }
 
-pub unsafe fn for_queue<'a>(
+pub unsafe fn for_queue(
     queue: &mut CommandQueue,
     colour: Colour,
     text: &str,
@@ -98,7 +98,7 @@ pub unsafe fn for_queue<'a>(
     end_event_on_queue(queue.as_raw_mut());
 }
 
-pub unsafe fn for_queue_cstr<'a>(
+pub unsafe fn for_queue_cstr(
     queue: &mut CommandQueue,
     colour: Colour,
     text: &CStr,
@@ -109,22 +109,22 @@ pub unsafe fn for_queue_cstr<'a>(
     end_event_on_queue(queue.as_raw_mut());
 }
 
-pub unsafe fn for_list<'a>(
-    list: &mut GraphicsCommandListRecorder<'a>,
+pub unsafe fn for_list(
+    list: &mut GraphicsCommandList,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&mut GraphicsCommandListRecorder<'a>),
+    f: impl FnOnce(&mut GraphicsCommandList),
 ) {
     begin_event_on_list(list.as_raw_mut(), colour, text);
     f(list);
     end_event_on_list(list.as_raw_mut());
 }
 
-pub unsafe fn for_list_cstr<'a>(
-    list: &mut GraphicsCommandListRecorder<'a>,
+pub unsafe fn for_list_cstr(
+    list: &mut GraphicsCommandList,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&mut GraphicsCommandListRecorder<'a>),
+    f: impl FnOnce(&mut GraphicsCommandList),
 ) {
     begin_event_cstr_on_list(list.as_raw_mut(), colour, text);
     f(list);

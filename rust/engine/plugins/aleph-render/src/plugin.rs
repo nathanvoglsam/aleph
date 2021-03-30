@@ -215,10 +215,10 @@ impl IPlugin for RenderPlugin {
 
         unsafe {
             let index = data.swap_chain.get_current_back_buffer_index();
-            let command_list = data.command_lists[index as usize].clone();
+            let command_list = &mut data.command_lists[index as usize];
             data.renderer.record_frame(
                 index as usize,
-                &command_list,
+                command_list,
                 &data.buffers,
                 &egui_ctx,
                 data.render_data.take(),
