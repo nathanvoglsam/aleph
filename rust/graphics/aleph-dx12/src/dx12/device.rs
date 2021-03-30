@@ -52,6 +52,7 @@ pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
 pub struct Device(pub(crate) ID3D12Device4);
 
 impl Device {
+    #[inline]
     pub fn new(
         adapter: Option<&dxgi::Adapter>,
         minimum_feature_level: FeatureLevel,
@@ -71,6 +72,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_fence(&self, initial_value: u64, flags: FenceFlags) -> crate::Result<Fence> {
         unsafe {
             let mut fence: Option<ID3D12Fence> = None;
@@ -86,6 +88,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_command_allocator(
         &self,
         list_type: CommandListType,
@@ -103,6 +106,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_graphics_command_list(
         &self,
         list_type: CommandListType,
@@ -122,6 +126,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_graphics_pipeline_state(
         &self,
         state_stream: &GraphicsPipelineStateStream,
@@ -139,6 +144,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_root_signature(
         &self,
         root_signature_blob: &RootSignatureBlob,
@@ -158,6 +164,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_descriptor_heap(
         &self,
         descriptor_heap_desc: &DescriptorHeapDesc,
@@ -172,6 +179,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn create_command_queue(
         &self,
         command_queue_desc: &CommandQueueDesc,
@@ -186,6 +194,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub fn get_descriptor_handle_increment_size(
         &self,
         descriptor_heap_type: DescriptorHeapType,
@@ -196,6 +205,7 @@ impl Device {
         }
     }
 
+    #[inline]
     pub unsafe fn create_sampler(&self, sampler_desc: &SamplerDesc, dest: CPUDescriptorHandle) {
         // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
         let desc = transmute(sampler_desc.clone());
@@ -203,6 +213,7 @@ impl Device {
         self.0.CreateSampler(&desc, dest)
     }
 
+    #[inline]
     pub unsafe fn create_shader_resource_view(
         &self,
         resource: &Resource,
@@ -217,6 +228,7 @@ impl Device {
             .CreateShaderResourceView(&resource.0, p_desc as *const _, dest)
     }
 
+    #[inline]
     pub unsafe fn create_render_target_view(
         &self,
         resource: &Resource,

@@ -34,6 +34,7 @@ use windows_raw::Win32::Dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
 pub struct Adapter(pub(crate) IDXGIAdapter1);
 
 impl Adapter {
+    #[inline]
     pub fn get_adapter_desc(&self) -> crate::Result<AdapterDesc> {
         unsafe {
             let mut desc = DXGI_ADAPTER_DESC1::default();

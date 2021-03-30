@@ -39,6 +39,7 @@ pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_GET_DEBUG_INTERFACE> =
 pub struct Debug(pub(crate) ID3D12Debug);
 
 impl Debug {
+    #[inline]
     pub unsafe fn new() -> crate::Result<Self> {
         let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
         let mut debug: Option<ID3D12Debug> = None;
@@ -47,16 +48,19 @@ impl Debug {
             .map(|v| Self(v))
     }
 
+    #[inline]
     pub unsafe fn enable_debug_layer(&self) {
         self.0.EnableDebugLayer()
     }
 
+    #[inline]
     pub unsafe fn set_enable_gpu_validation(&self, enable: bool) -> crate::Result<()> {
         let casted = self.0.cast::<ID3D12Debug1>()?;
         casted.SetEnableGPUBasedValidation(enable);
         Ok(())
     }
 
+    #[inline]
     pub unsafe fn set_enable_synchronized_command_queue_validation(
         &self,
         enable: bool,

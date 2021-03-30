@@ -34,62 +34,74 @@ pub struct SamplerDescBuilder {
 }
 
 impl SamplerDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: SamplerDesc::default(),
         }
     }
 
+    #[inline]
     pub fn filter(mut self, filter: Filter) -> Self {
         self.inner.filter = filter;
         self
     }
 
+    #[inline]
     pub fn address_u(mut self, address_u: TextureAddressMode) -> Self {
         self.inner.address_u = address_u;
         self
     }
 
+    #[inline]
     pub fn address_v(mut self, address_v: TextureAddressMode) -> Self {
         self.inner.address_v = address_v;
         self
     }
 
+    #[inline]
     pub fn address_w(mut self, address_w: TextureAddressMode) -> Self {
         self.inner.address_w = address_w;
         self
     }
 
+    #[inline]
     pub fn mip_lod_bias(mut self, mip_lod_bias: f32) -> Self {
         self.inner.mip_lod_bias = mip_lod_bias;
         self
     }
 
+    #[inline]
     pub fn max_anisotropy(mut self, max_anisotropy: u32) -> Self {
         self.inner.max_anisotropy = max_anisotropy;
         self
     }
 
+    #[inline]
     pub fn comparison_func(mut self, comparison_func: ComparisonFunc) -> Self {
         self.inner.comparison_func = comparison_func;
         self
     }
 
+    #[inline]
     pub fn border_color(mut self, border_color: [f32; 4]) -> Self {
         self.inner.border_color = border_color;
         self
     }
 
+    #[inline]
     pub fn min_lod(mut self, min_lod: f32) -> Self {
         self.inner.min_lod = min_lod;
         self
     }
 
+    #[inline]
     pub fn max_lod(mut self, max_lod: f32) -> Self {
         self.inner.max_lod = max_lod;
         self
     }
 
+    #[inline]
     pub fn build(self) -> SamplerDesc {
         self.inner
     }
@@ -111,6 +123,7 @@ pub struct SamplerDesc {
 }
 
 impl Default for SamplerDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             filter: Filter::MinMagMipLinear,
@@ -128,6 +141,7 @@ impl Default for SamplerDesc {
 }
 
 impl SamplerDesc {
+    #[inline]
     pub fn builder() -> SamplerDescBuilder {
         SamplerDescBuilder::new()
     }

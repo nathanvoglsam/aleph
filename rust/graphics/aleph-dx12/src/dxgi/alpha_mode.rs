@@ -42,6 +42,7 @@ pub enum AlphaMode {
 impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
     type Error = ();
 
+    #[inline]
     fn try_from(value: DXGI_ALPHA_MODE) -> Result<Self, Self::Error> {
         match value {
             DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_UNSPECIFIED => Ok(AlphaMode::Unspecified),
@@ -54,6 +55,7 @@ impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
 }
 
 impl Into<DXGI_ALPHA_MODE> for AlphaMode {
+    #[inline]
     fn into(self) -> DXGI_ALPHA_MODE {
         DXGI_ALPHA_MODE(self as u32)
     }

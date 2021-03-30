@@ -39,12 +39,14 @@ impl ColorWriteEnable {
     pub const BLUE: Self = Self(4);
     pub const ALPHA: Self = Self(8);
 
+    #[inline]
     pub fn all() -> Self {
         Self::RED | Self::BLUE | Self::GREEN | Self::ALPHA
     }
 }
 
 impl Default for ColorWriteEnable {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -53,6 +55,7 @@ impl Default for ColorWriteEnable {
 windows_raw::flags_bitwise_impl!(ColorWriteEnable);
 
 impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
+    #[inline]
     fn into(self) -> D3D12_COLOR_WRITE_ENABLE {
         D3D12_COLOR_WRITE_ENABLE(self.0 as i32)
     }

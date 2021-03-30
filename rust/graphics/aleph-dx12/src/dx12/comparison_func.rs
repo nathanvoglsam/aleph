@@ -43,6 +43,7 @@ pub enum ComparisonFunc {
 }
 
 impl Into<D3D12_COMPARISON_FUNC> for ComparisonFunc {
+    #[inline]
     fn into(self) -> D3D12_COMPARISON_FUNC {
         D3D12_COMPARISON_FUNC(self as i32)
     }

@@ -36,32 +36,38 @@ use windows_raw::Win32::Direct3D12::D3D12_CPU_DESCRIPTOR_HANDLE;
 pub struct CPUDescriptorHandle(NonZeroUsize);
 
 impl CPUDescriptorHandle {
+    #[inline]
     pub fn offset(self, offset: isize) -> Self {
         let ptr = self.0.get() as isize;
         let ptr = ptr + offset;
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
+    #[inline]
     pub fn add(self, offset: usize) -> Self {
         Self(NonZeroUsize::new(self.0.get() + offset).unwrap())
     }
 
+    #[inline]
     pub fn offset_increments(self, offset: isize, increment: usize) -> Self {
         let ptr = self.0.get() as isize;
         let ptr = ptr + (offset * increment as isize);
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
+    #[inline]
     pub fn add_increments(self, offset: usize, increment: usize) -> Self {
         Self(NonZeroUsize::new(self.0.get() + (offset * increment)).unwrap())
     }
 
+    #[inline]
     pub fn get_inner(&self) -> NonZeroUsize {
         self.0
     }
 }
 
 impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
+    #[inline]
     fn into(self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
         D3D12_CPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
     }
@@ -70,6 +76,7 @@ impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
 impl TryFrom<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
     type Error = ();
 
+    #[inline]
     fn try_from(value: D3D12_CPU_DESCRIPTOR_HANDLE) -> Result<Self, Self::Error> {
         let value = NonZeroUsize::new(value.ptr).ok_or(())?;
         Ok(Self(value))

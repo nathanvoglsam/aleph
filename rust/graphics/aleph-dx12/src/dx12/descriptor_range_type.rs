@@ -39,6 +39,7 @@ pub enum DescriptorRangeType {
 }
 
 impl Into<D3D12_DESCRIPTOR_RANGE_TYPE> for DescriptorRangeType {
+    #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_RANGE_TYPE {
         D3D12_DESCRIPTOR_RANGE_TYPE(self as i32)
     }

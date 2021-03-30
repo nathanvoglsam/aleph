@@ -40,6 +40,7 @@ pub enum DescriptorHeapType {
 }
 
 impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
+    #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
         D3D12_DESCRIPTOR_HEAP_TYPE(self as i32)
     }

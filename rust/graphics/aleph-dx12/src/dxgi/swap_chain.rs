@@ -107,6 +107,7 @@ impl SwapChain {
     }
 
     /// `IDXGISwapChain1::Present1`
+    #[inline]
     pub unsafe fn present(&mut self, sync_interval: u32, present_flags: u32) -> crate::Result<()> {
         let presentation_params = DXGI_PRESENT_PARAMETERS {
             DirtyRectsCount: 0,
@@ -120,10 +121,12 @@ impl SwapChain {
     }
 
     /// `IDXGISwapChain3::GetCurrentBackBufferIndex`
+    #[inline]
     pub fn get_current_back_buffer_index(&mut self) -> u32 {
         unsafe { self.0.GetCurrentBackBufferIndex() }
     }
 
+    #[inline]
     pub fn get_buffers(&mut self, buffer_count: u32) -> crate::Result<Vec<crate::Resource>> {
         let mut out = Vec::with_capacity(buffer_count as usize);
         for i in 0..buffer_count {
@@ -132,6 +135,7 @@ impl SwapChain {
         Ok(out)
     }
 
+    #[inline]
     pub fn get_buffer(&mut self, buffer: u32) -> crate::Result<crate::Resource> {
         unsafe {
             let mut resource: Option<ID3D12Resource> = None;
@@ -142,6 +146,7 @@ impl SwapChain {
         }
     }
 
+    #[inline]
     pub fn get_description(&mut self) -> crate::Result<SwapChainDesc1> {
         unsafe {
             let mut desc = Default::default();

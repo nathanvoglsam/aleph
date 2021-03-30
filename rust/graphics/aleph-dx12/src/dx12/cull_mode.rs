@@ -38,6 +38,7 @@ pub enum CullMode {
 }
 
 impl Into<D3D12_CULL_MODE> for CullMode {
+    #[inline]
     fn into(self) -> D3D12_CULL_MODE {
         D3D12_CULL_MODE(self as i32)
     }

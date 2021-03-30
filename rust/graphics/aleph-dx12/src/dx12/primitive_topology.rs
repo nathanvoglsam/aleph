@@ -77,12 +77,14 @@ pub enum PrimitiveTopology {
 }
 
 impl Default for PrimitiveTopology {
+    #[inline]
     fn default() -> Self {
         Self::Undefined
     }
 }
 
 impl Into<D3D_PRIMITIVE_TOPOLOGY> for PrimitiveTopology {
+    #[inline]
     fn into(self) -> D3D_PRIMITIVE_TOPOLOGY {
         D3D_PRIMITIVE_TOPOLOGY(self as i32)
     }

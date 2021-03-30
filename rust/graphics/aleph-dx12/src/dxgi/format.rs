@@ -157,6 +157,7 @@ pub enum Format {
 }
 
 impl Format {
+    #[inline]
     pub fn is_depth_stencil(&self) -> bool {
         match self {
             Self::D32Float | Self::D24UnormS8Uint | Self::D16Unorm | Self::D32FloatS8X24Uint => {
@@ -168,6 +169,7 @@ impl Format {
 }
 
 impl Default for Format {
+    #[inline]
     fn default() -> Self {
         Self::Unknown
     }
@@ -176,6 +178,7 @@ impl Default for Format {
 impl TryFrom<DXGI_FORMAT> for Format {
     type Error = ();
 
+    #[inline]
     fn try_from(value: DXGI_FORMAT) -> Result<Self, Self::Error> {
         match value {
             DXGI_FORMAT::DXGI_FORMAT_UNKNOWN => Ok(Format::Unknown),
@@ -311,6 +314,7 @@ impl TryFrom<DXGI_FORMAT> for Format {
 }
 
 impl Into<DXGI_FORMAT> for Format {
+    #[inline]
     fn into(self) -> DXGI_FORMAT {
         DXGI_FORMAT(self as u32)
     }

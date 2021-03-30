@@ -34,52 +34,74 @@ pub struct RasterizerDescBuilder {
 }
 
 impl RasterizerDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: Default::default(),
         }
     }
 
+    #[inline]
     pub fn fill_mode(mut self, fill_mode: FillMode) -> Self {
         self.inner.fill_mode = fill_mode;
         self
     }
+
+    #[inline]
     pub fn cull_mode(mut self, cull_mode: CullMode) -> Self {
         self.inner.cull_mode = cull_mode;
         self
     }
+
+    #[inline]
     pub fn front_counter_clockwise(mut self, front_counter_clockwise: bool) -> Self {
         self.inner.front_counter_clockwise = front_counter_clockwise.into();
         self
     }
+
+    #[inline]
     pub fn depth_bias(mut self, depth_bias: i32) -> Self {
         self.inner.depth_bias = depth_bias;
         self
     }
+
+    #[inline]
     pub fn depth_bias_clamp(mut self, depth_bias_clamp: f32) -> Self {
         self.inner.depth_bias_clamp = depth_bias_clamp;
         self
     }
+
+    #[inline]
     pub fn slope_scaled_depth_bias(mut self, slope_scaled_depth_bias: f32) -> Self {
         self.inner.slope_scaled_depth_bias = slope_scaled_depth_bias;
         self
     }
+
+    #[inline]
     pub fn depth_clip_enable(mut self, depth_clip_enable: bool) -> Self {
         self.inner.depth_clip_enable = depth_clip_enable.into();
         self
     }
+
+    #[inline]
     pub fn multisample_enable(mut self, multisample_enable: bool) -> Self {
         self.inner.multisample_enable = multisample_enable.into();
         self
     }
+
+    #[inline]
     pub fn antialiased_line_enable(mut self, antialiased_line_enable: bool) -> Self {
         self.inner.antialiased_line_enable = antialiased_line_enable.into();
         self
     }
+
+    #[inline]
     pub fn forced_sample_count(mut self, forced_sample_count: u32) -> Self {
         self.inner.forced_sample_count = forced_sample_count;
         self
     }
+
+    #[inline]
     pub fn conservative_raster(
         mut self,
         conservative_raster: ConservativeRasterizationMode,
@@ -88,6 +110,7 @@ impl RasterizerDescBuilder {
         self
     }
 
+    #[inline]
     pub fn build(self) -> RasterizerDesc {
         self.inner
     }
@@ -110,6 +133,7 @@ pub struct RasterizerDesc {
 }
 
 impl RasterizerDesc {
+    #[inline]
     pub fn builder() -> RasterizerDescBuilder {
         RasterizerDescBuilder::new()
     }

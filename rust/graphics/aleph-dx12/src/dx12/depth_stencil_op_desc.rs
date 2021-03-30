@@ -39,6 +39,7 @@ pub struct DepthStencilOpDesc {
 }
 
 impl Default for DepthStencilOpDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             stencil_fail_op: StencilOp::Keep,

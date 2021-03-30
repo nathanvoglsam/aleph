@@ -44,6 +44,7 @@ pub enum ClearValue {
 }
 
 impl ClearValue {
+    #[inline]
     pub fn format(&self) -> dxgi::Format {
         match self {
             ClearValue::Color { format, .. } => *format,
@@ -53,6 +54,7 @@ impl ClearValue {
 }
 
 impl Into<D3D12_CLEAR_VALUE> for ClearValue {
+    #[inline]
     fn into(self) -> D3D12_CLEAR_VALUE {
         match self {
             ClearValue::Color { format, color } => {

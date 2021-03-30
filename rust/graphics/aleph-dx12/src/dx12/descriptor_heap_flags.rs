@@ -38,6 +38,7 @@ impl DescriptorHeapFlags {
 }
 
 impl Default for DescriptorHeapFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -46,6 +47,7 @@ impl Default for DescriptorHeapFlags {
 windows_raw::flags_bitwise_impl!(DescriptorHeapFlags);
 
 impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
+    #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
         D3D12_DESCRIPTOR_HEAP_FLAGS(self.0)
     }

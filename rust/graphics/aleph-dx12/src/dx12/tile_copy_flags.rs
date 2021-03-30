@@ -40,6 +40,7 @@ impl TileCopyFlags {
 }
 
 impl Default for TileCopyFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -48,6 +49,7 @@ impl Default for TileCopyFlags {
 windows_raw::flags_bitwise_impl!(TileCopyFlags);
 
 impl Into<D3D12_TILE_COPY_FLAGS> for TileCopyFlags {
+    #[inline]
     fn into(self) -> D3D12_TILE_COPY_FLAGS {
         D3D12_TILE_COPY_FLAGS(self.0)
     }

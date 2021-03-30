@@ -31,6 +31,7 @@
 macro_rules! device_child_impl {
     ($t:ident) => {
         impl $crate::D3D12DeviceChild for $t {
+            #[inline]
             unsafe fn get_device(&self) -> $crate::Result<$crate::Device> {
                 use windows_raw::{Abi, Interface};
                 type D = $crate::windows_raw::Win32::Direct3D12::ID3D12Device4;
@@ -48,6 +49,7 @@ macro_rules! device_child_impl {
 macro_rules! object_impl {
     ($t:ident) => {
         impl $crate::D3D12Object for $t {
+            #[inline]
             unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::Result<()> {
                 use $crate::windows_raw::Win32::SystemServices::PWSTR;
                 self.0.SetName(PWSTR(name.as_ptr() as *mut u16)).ok()
@@ -67,6 +69,7 @@ macro_rules! owned_object {
 macro_rules! shared_object {
     ($t:ident) => {
         impl ::core::clone::Clone for $t {
+            #[inline]
             fn clone(&self) -> Self {
                 Self(self.0.clone())
             }

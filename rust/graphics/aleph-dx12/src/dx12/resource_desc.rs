@@ -34,62 +34,74 @@ pub struct ResourceDescBuilder {
 }
 
 impl ResourceDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: ResourceDesc::default(),
         }
     }
 
+    #[inline]
     pub fn dimension(mut self, dimension: ResourceDimension) -> Self {
         self.inner.dimension = dimension;
         self
     }
 
+    #[inline]
     pub fn alignment(mut self, alignment: u64) -> Self {
         self.inner.alignment = alignment;
         self
     }
 
+    #[inline]
     pub fn width(mut self, width: u64) -> Self {
         self.inner.width = width;
         self
     }
 
+    #[inline]
     pub fn height(mut self, height: u32) -> Self {
         self.inner.height = height;
         self
     }
 
+    #[inline]
     pub fn depth_or_array_size(mut self, depth_or_array_size: u16) -> Self {
         self.inner.depth_or_array_size = depth_or_array_size;
         self
     }
 
+    #[inline]
     pub fn mip_levels(mut self, mip_levels: u16) -> Self {
         self.inner.mip_levels = mip_levels;
         self
     }
 
+    #[inline]
     pub fn format(mut self, format: dxgi::Format) -> Self {
         self.inner.format = format;
         self
     }
 
+    #[inline]
     pub fn sample_desc(mut self, sample_desc: dxgi::SampleDesc) -> Self {
         self.inner.sample_desc = sample_desc;
         self
     }
 
+    #[inline]
     pub fn layout(mut self, layout: TextureLayout) -> Self {
         self.inner.layout = layout;
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: ResourceFlags) -> Self {
         self.inner.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn build(self) -> ResourceDesc {
         self.inner
     }
@@ -111,12 +123,14 @@ pub struct ResourceDesc {
 }
 
 impl ResourceDesc {
+    #[inline]
     pub fn builder() -> ResourceDescBuilder {
         ResourceDescBuilder::new()
     }
 }
 
 impl Default for ResourceDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             dimension: ResourceDimension::Unknown,

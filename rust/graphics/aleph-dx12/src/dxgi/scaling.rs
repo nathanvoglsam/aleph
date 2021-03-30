@@ -41,6 +41,7 @@ pub enum Scaling {
 impl TryFrom<DXGI_SCALING> for Scaling {
     type Error = ();
 
+    #[inline]
     fn try_from(value: DXGI_SCALING) -> Result<Self, Self::Error> {
         match value {
             DXGI_SCALING::DXGI_SCALING_STRETCH => Ok(Scaling::Stretch),
@@ -52,6 +53,7 @@ impl TryFrom<DXGI_SCALING> for Scaling {
 }
 
 impl Into<DXGI_SCALING> for Scaling {
+    #[inline]
     fn into(self) -> DXGI_SCALING {
         DXGI_SCALING(self as i32)
     }

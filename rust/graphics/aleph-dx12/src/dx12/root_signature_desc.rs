@@ -48,6 +48,7 @@ pub struct RootSignatureDescBuilder<'a> {
 static SS_EMPTY: [D3D12_STATIC_SAMPLER_DESC; 0] = [];
 
 impl<'a> RootSignatureDescBuilder<'a> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             parameters: Vec::new(),
@@ -57,6 +58,7 @@ impl<'a> RootSignatureDescBuilder<'a> {
         }
     }
 
+    #[inline]
     pub fn parameters(mut self, parameters: &[RootParameter<'a>]) -> Self {
         self.parameters = parameters
             .iter()
@@ -69,6 +71,7 @@ impl<'a> RootSignatureDescBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn static_samplers(mut self, static_samplers: &'a [StaticSamplerDesc]) -> Self {
         assert_eq!(
             size_of::<StaticSamplerDesc>(),
@@ -82,34 +85,24 @@ impl<'a> RootSignatureDescBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: RootSignatureFlags) -> Self {
         self.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn build(&'a self) -> RootSignatureDesc<'a> {
-        let (num_parameters, p_parameters) = if self.parameters.is_empty() {
-            (0, std::ptr::null_mut())
-        } else {
-            (
-                self.parameters.len() as _,
-                self.parameters.as_ptr() as *mut _,
-            )
-        };
-        let (num_static_samplers, p_static_samplers) = if self.static_samplers.is_empty() {
-            (0, std::ptr::null_mut())
-        } else {
-            (
-                self.static_samplers.len() as _,
-                self.static_samplers.as_ptr() as *mut _,
-            )
-        };
+        let (num_parameters, p_parameters) =
+            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
+        let (num_static_samplers, p_static_samplers) =
+            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
         RootSignatureDesc {
             inner: D3D12_ROOT_SIGNATURE_DESC {
                 NumParameters: num_parameters,
-                pParameters: p_parameters,
+                pParameters: p_parameters as *mut _,
                 NumStaticSamplers: num_static_samplers,
-                pStaticSamplers: p_static_samplers,
+                pStaticSamplers: p_static_samplers as *mut _,
                 Flags: self.flags.into(),
             },
             phantom: Default::default(),
@@ -125,6 +118,7 @@ pub struct RootSignatureDesc1Builder<'a> {
 }
 
 impl<'a> RootSignatureDesc1Builder<'a> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             parameters: vec![],
@@ -134,6 +128,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         }
     }
 
+    #[inline]
     pub fn parameters(mut self, parameters: &[RootParameter1<'a>]) -> Self {
         self.parameters = parameters
             .iter()
@@ -146,6 +141,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         self
     }
 
+    #[inline]
     pub fn static_samplers(mut self, static_samplers: &[StaticSamplerDesc]) -> Self {
         assert_eq!(
             size_of::<StaticSamplerDesc>(),
@@ -159,34 +155,24 @@ impl<'a> RootSignatureDesc1Builder<'a> {
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: RootSignatureFlags) -> Self {
         self.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn build(&self) -> RootSignatureDesc1<'a> {
-        let (num_parameters, p_parameters) = if self.parameters.is_empty() {
-            (0, std::ptr::null_mut())
-        } else {
-            (
-                self.parameters.len() as _,
-                self.parameters.as_ptr() as *mut _,
-            )
-        };
-        let (num_static_samplers, p_static_samplers) = if self.static_samplers.is_empty() {
-            (0, std::ptr::null_mut())
-        } else {
-            (
-                self.static_samplers.len() as _,
-                self.static_samplers.as_ptr() as *mut _,
-            )
-        };
+        let (num_parameters, p_parameters) =
+            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
+        let (num_static_samplers, p_static_samplers) =
+            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
         RootSignatureDesc1 {
             inner: D3D12_ROOT_SIGNATURE_DESC1 {
                 NumParameters: num_parameters,
-                pParameters: p_parameters,
+                pParameters: p_parameters as *mut _,
                 NumStaticSamplers: num_static_samplers,
-                pStaticSamplers: p_static_samplers,
+                pStaticSamplers: p_static_samplers as *mut _,
                 Flags: self.flags.into(),
             },
             phantom: Default::default(),
@@ -201,12 +187,14 @@ pub struct RootSignatureDesc<'a> {
 }
 
 impl<'a> RootSignatureDesc<'a> {
+    #[inline]
     pub fn builder() -> RootSignatureDescBuilder<'a> {
         RootSignatureDescBuilder::new()
     }
 }
 
 impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc<'a> {
+    #[inline]
     fn into(self) -> VersionedRootSignatureDesc<'a> {
         VersionedRootSignatureDesc::Desc(self)
     }
@@ -219,12 +207,14 @@ pub struct RootSignatureDesc1<'a> {
 }
 
 impl<'a> RootSignatureDesc1<'a> {
+    #[inline]
     pub fn builder() -> RootSignatureDesc1Builder<'a> {
         RootSignatureDesc1Builder::new()
     }
 }
 
 impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc1<'a> {
+    #[inline]
     fn into(self) -> VersionedRootSignatureDesc<'a> {
         VersionedRootSignatureDesc::Desc1(self)
     }

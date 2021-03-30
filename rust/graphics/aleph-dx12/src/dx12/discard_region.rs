@@ -40,6 +40,7 @@ pub struct DiscardRegion<'a> {
 }
 
 impl<'a> Into<D3D12_DISCARD_REGION> for DiscardRegion<'a> {
+    #[inline]
     fn into(self) -> D3D12_DISCARD_REGION {
         let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(self.rects);
         D3D12_DISCARD_REGION {

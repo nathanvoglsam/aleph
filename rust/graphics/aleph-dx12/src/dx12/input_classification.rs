@@ -37,6 +37,7 @@ pub enum InputClassification {
 }
 
 impl Into<D3D12_INPUT_CLASSIFICATION> for InputClassification {
+    #[inline]
     fn into(self) -> D3D12_INPUT_CLASSIFICATION {
         D3D12_INPUT_CLASSIFICATION(self as i32)
     }

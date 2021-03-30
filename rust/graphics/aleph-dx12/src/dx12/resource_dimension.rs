@@ -40,6 +40,7 @@ pub enum ResourceDimension {
 }
 
 impl Into<D3D12_RESOURCE_DIMENSION> for ResourceDimension {
+    #[inline]
     fn into(self) -> D3D12_RESOURCE_DIMENSION {
         D3D12_RESOURCE_DIMENSION(self as i32)
     }

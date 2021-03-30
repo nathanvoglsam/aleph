@@ -52,6 +52,7 @@ pub enum Blend {
 }
 
 impl Into<D3D12_BLEND> for Blend {
+    #[inline]
     fn into(self) -> D3D12_BLEND {
         D3D12_BLEND(self as i32)
     }

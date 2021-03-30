@@ -62,6 +62,7 @@ pub enum RootParameter<'a> {
 }
 
 impl<'a> RootParameter<'a> {
+    #[inline]
     pub(crate) fn get_parameter_type(&self) -> D3D12_ROOT_PARAMETER_TYPE {
         match self {
             RootParameter::DescriptorTable { .. } => {
@@ -76,6 +77,7 @@ impl<'a> RootParameter<'a> {
         }
     }
 
+    #[inline]
     pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER_0 {
         match self {
             RootParameter::DescriptorTable { ranges, .. } => {
@@ -110,6 +112,7 @@ impl<'a> RootParameter<'a> {
         }
     }
 
+    #[inline]
     pub(crate) fn get_shader_visibility(&self) -> D3D12_SHADER_VISIBILITY {
         match self {
             RootParameter::DescriptorTable { visibility, .. } => visibility.clone().into(),
@@ -146,6 +149,7 @@ pub enum RootParameter1<'a> {
 }
 
 impl<'a> RootParameter1<'a> {
+    #[inline]
     pub(crate) fn get_parameter_type(&self) -> D3D12_ROOT_PARAMETER_TYPE {
         match self {
             RootParameter1::DescriptorTable { .. } => {
@@ -160,6 +164,7 @@ impl<'a> RootParameter1<'a> {
         }
     }
 
+    #[inline]
     pub(crate) fn get_variant(&self) -> D3D12_ROOT_PARAMETER1_0 {
         match self {
             RootParameter1::DescriptorTable { ranges, .. } => {
@@ -194,6 +199,7 @@ impl<'a> RootParameter1<'a> {
         }
     }
 
+    #[inline]
     pub(crate) fn get_shader_visibility(&self) -> D3D12_SHADER_VISIBILITY {
         match self {
             RootParameter1::DescriptorTable { visibility, .. } => visibility.clone().into(),

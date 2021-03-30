@@ -35,6 +35,7 @@ pub struct SwapChainDesc1Builder {
 }
 
 impl SwapChainDesc1Builder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: SwapChainDesc1 {
@@ -56,61 +57,73 @@ impl SwapChainDesc1Builder {
         }
     }
 
+    #[inline]
     pub fn width(mut self, width: u32) -> Self {
         self.inner.width = width;
         self
     }
 
+    #[inline]
     pub fn height(mut self, height: u32) -> Self {
         self.inner.height = height;
         self
     }
 
+    #[inline]
     pub fn format(mut self, format: Format) -> Self {
         self.inner.format = format;
         self
     }
 
+    #[inline]
     pub fn stereo(mut self, stereo: bool) -> Self {
         self.inner.stereo = stereo.into();
         self
     }
 
+    #[inline]
     pub fn sample_desc(mut self, sample_desc: SampleDesc) -> Self {
         self.inner.sample_desc = sample_desc;
         self
     }
 
+    #[inline]
     pub fn buffer_count(mut self, buffer_count: u32) -> Self {
         self.inner.buffer_count = buffer_count;
         self
     }
 
+    #[inline]
     pub fn scaling(mut self, scaling: Scaling) -> Self {
         self.inner.scaling = scaling;
         self
     }
 
+    #[inline]
     pub fn swap_effect(mut self, swap_effect: SwapEffect) -> Self {
         self.inner.swap_effect = swap_effect;
         self
     }
 
+    #[inline]
     pub fn alpha_mode(mut self, alpha_mode: AlphaMode) -> Self {
         self.inner.alpha_mode = alpha_mode;
         self
     }
 
+    #[inline]
     pub fn usage_flags(mut self, usage_flags: UsageFlags) -> Self {
         self.inner.buffer_usage |= usage_flags;
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: SwapChainFlags) -> Self {
         self.inner.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn build(self) -> SwapChainDesc1 {
         self.inner
     }
@@ -133,6 +146,7 @@ pub struct SwapChainDesc1 {
 }
 
 impl SwapChainDesc1 {
+    #[inline]
     pub fn builder() -> SwapChainDesc1Builder {
         SwapChainDesc1Builder::new()
     }

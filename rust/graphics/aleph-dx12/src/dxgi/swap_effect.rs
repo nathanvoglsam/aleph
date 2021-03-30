@@ -42,6 +42,7 @@ pub enum SwapEffect {
 impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
     type Error = ();
 
+    #[inline]
     fn try_from(value: DXGI_SWAP_EFFECT) -> Result<Self, Self::Error> {
         match value {
             DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD => Ok(SwapEffect::Discard),
@@ -54,6 +55,7 @@ impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
 }
 
 impl Into<DXGI_SWAP_EFFECT> for SwapEffect {
+    #[inline]
     fn into(self) -> DXGI_SWAP_EFFECT {
         DXGI_SWAP_EFFECT(self as i32)
     }

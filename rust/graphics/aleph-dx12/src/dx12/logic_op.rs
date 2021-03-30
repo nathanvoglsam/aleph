@@ -51,6 +51,7 @@ pub enum LogicOp {
 }
 
 impl Into<D3D12_LOGIC_OP> for LogicOp {
+    #[inline]
     fn into(self) -> D3D12_LOGIC_OP {
         D3D12_LOGIC_OP(self as i32)
     }

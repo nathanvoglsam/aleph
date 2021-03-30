@@ -68,6 +68,7 @@ pub struct GraphicsPipelineStateStreamBuilder<'a> {
 }
 
 impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
+    #[inline]
     pub fn new() -> Self {
         Self {
             root_signature: None,
@@ -95,36 +96,43 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         }
     }
 
+    #[inline]
     pub fn root_signature(mut self, root_signature: crate::RootSignature) -> Self {
         self.root_signature = Some(root_signature);
         self
     }
 
+    #[inline]
     pub fn vertex_shader(mut self, vertex_shader: &'a [u8]) -> Self {
         self.vertex_shader = Some(vertex_shader);
         self
     }
 
+    #[inline]
     pub fn pixel_shader(mut self, pixel_shader: &'a [u8]) -> Self {
         self.pixel_shader = Some(pixel_shader);
         self
     }
 
+    #[inline]
     pub fn domain_shader(mut self, domain_shader: &'a [u8]) -> Self {
         self.domain_shader = Some(domain_shader);
         self
     }
 
+    #[inline]
     pub fn hull_shader(mut self, hull_shader: &'a [u8]) -> Self {
         self.hull_shader = Some(hull_shader);
         self
     }
 
+    #[inline]
     pub fn geometry_shader(mut self, geometry_shader: &'a [u8]) -> Self {
         self.geometry_shader = Some(geometry_shader);
         self
     }
 
+    #[inline]
     pub fn stream_output(mut self, stream_output: StreamOutputDesc<'a>) -> Self {
         assert_eq!(
             size_of::<StreamOutputDeclaration>(),
@@ -142,26 +150,31 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn blend_state(mut self, blend_state: BlendDesc) -> Self {
         self.blend_state = blend_state;
         self
     }
 
+    #[inline]
     pub fn sample_mask(mut self, sample_mask: u32) -> Self {
         self.sample_mask = sample_mask;
         self
     }
 
+    #[inline]
     pub fn rasterizer_state(mut self, rasterizer_state: RasterizerDesc) -> Self {
         self.rasterizer_state = rasterizer_state;
         self
     }
 
+    #[inline]
     pub fn depth_stencil_state(mut self, depth_stencil_state: DepthStencilDesc) -> Self {
         self.depth_stencil_state = depth_stencil_state;
         self
     }
 
+    #[inline]
     pub fn input_layout(mut self, input_layout: &'a [InputElementDesc<'a>]) -> Self {
         assert_eq!(
             size_of::<InputElementDesc>(),
@@ -175,11 +188,13 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn strip_cut_value(mut self, strip_cut_value: IndexBufferStripCutValue) -> Self {
         self.strip_cut_value = strip_cut_value;
         self
     }
 
+    #[inline]
     pub fn primitive_topology_type(
         mut self,
         primitive_topology_type: PrimitiveTopologyType,
@@ -188,26 +203,31 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn rtv_formats(mut self, rtv_formats: &'a [dxgi::Format]) -> Self {
         self.rtv_formats = rtv_formats;
         self
     }
 
+    #[inline]
     pub fn dsv_format(mut self, dsv_format: dxgi::Format) -> Self {
         self.dsv_format = dsv_format;
         self
     }
 
+    #[inline]
     pub fn sample_desc(mut self, sample_desc: dxgi::SampleDesc) -> Self {
         self.sample_desc = sample_desc;
         self
     }
 
+    #[inline]
     pub fn cached_pso(mut self, cached_pso: &'a [u8]) -> Self {
         self.cached_pso = Some(cached_pso.into());
         self
     }
 
+    #[inline]
     pub fn node_mask(mut self, node_mask: u32) -> Self {
         self.node_mask = node_mask;
         self
@@ -345,12 +365,14 @@ pub struct GraphicsPipelineStateStream<'a> {
 }
 
 impl<'a> GraphicsPipelineStateStream<'a> {
+    #[inline]
     pub fn builder() -> GraphicsPipelineStateStreamBuilder<'a> {
         GraphicsPipelineStateStreamBuilder::new()
     }
 }
 
 impl<'a> Hash for GraphicsPipelineStateStream<'a> {
+    #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.deref().hash(state)
     }
@@ -359,6 +381,7 @@ impl<'a> Hash for GraphicsPipelineStateStream<'a> {
 impl<'a> Deref for GraphicsPipelineStateStream<'a> {
     type Target = [u8];
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         unsafe {
             std::slice::from_raw_parts(

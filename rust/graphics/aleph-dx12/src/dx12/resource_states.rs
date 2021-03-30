@@ -63,6 +63,7 @@ impl ResourceStates {
 }
 
 impl Default for ResourceStates {
+    #[inline]
     fn default() -> Self {
         Self::COMMON
     }
@@ -71,6 +72,7 @@ impl Default for ResourceStates {
 windows_raw::flags_bitwise_impl!(ResourceStates);
 
 impl Into<D3D12_RESOURCE_STATES> for ResourceStates {
+    #[inline]
     fn into(self) -> D3D12_RESOURCE_STATES {
         D3D12_RESOURCE_STATES(self.0)
     }

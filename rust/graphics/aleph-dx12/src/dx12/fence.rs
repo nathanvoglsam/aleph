@@ -35,10 +35,12 @@ use windows_raw::Win32::SystemServices::HANDLE;
 pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
+    #[inline]
     pub fn signal(&self, value: u64) -> crate::Result<()> {
         unsafe { self.0.Signal(value).ok() }
     }
 
+    #[inline]
     pub fn set_event_on_completion(&self, value: u64, event: &Event) -> crate::Result<()> {
         unsafe {
             self.0

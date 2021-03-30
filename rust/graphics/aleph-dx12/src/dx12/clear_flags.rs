@@ -37,12 +37,14 @@ impl ClearFlags {
     pub const DEPTH: Self = Self(1i32);
     pub const STENCIL: Self = Self(2i32);
 
+    #[inline]
     pub fn all() -> Self {
         Self::DEPTH | Self::STENCIL
     }
 }
 
 impl Default for ClearFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -51,6 +53,7 @@ impl Default for ClearFlags {
 windows_raw::flags_bitwise_impl!(ClearFlags);
 
 impl Into<D3D12_CLEAR_FLAGS> for ClearFlags {
+    #[inline]
     fn into(self) -> D3D12_CLEAR_FLAGS {
         D3D12_CLEAR_FLAGS(self.0)
     }

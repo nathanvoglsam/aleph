@@ -39,6 +39,7 @@ pub enum HeapType {
 }
 
 impl Into<D3D12_HEAP_TYPE> for HeapType {
+    #[inline]
     fn into(self) -> D3D12_HEAP_TYPE {
         D3D12_HEAP_TYPE(self as i32)
     }

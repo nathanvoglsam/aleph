@@ -43,6 +43,7 @@ pub enum StencilOp {
 }
 
 impl Into<D3D12_STENCIL_OP> for StencilOp {
+    #[inline]
     fn into(self) -> D3D12_STENCIL_OP {
         D3D12_STENCIL_OP(self as i32)
     }

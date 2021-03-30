@@ -48,6 +48,7 @@ pub struct CStrFFI<'a> {
 }
 
 impl<'a> From<&'a CStr> for CStrFFI<'a> {
+    #[inline]
     fn from(v: &'a CStr) -> Self {
         Self {
             ptr: v.as_ptr(),
@@ -57,18 +58,21 @@ impl<'a> From<&'a CStr> for CStrFFI<'a> {
 }
 
 impl<'a> CStrFFI<'a> {
+    #[inline]
     pub unsafe fn as_cstr(&self) -> &CStr {
         CStr::from_ptr(self.ptr)
     }
 }
 
 impl<'a> Hash for CStrFFI<'a> {
+    #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         unsafe { self.as_cstr().hash(state) }
     }
 }
 
 impl<'a> Debug for CStrFFI<'a> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         unsafe { self.as_cstr().fmt(f) }
     }
@@ -92,6 +96,7 @@ impl Into<u32> for Bool {
 }
 
 impl From<u32> for Bool {
+    #[inline]
     fn from(v: u32) -> Self {
         if v != 0 {
             Bool(1)
@@ -102,6 +107,7 @@ impl From<u32> for Bool {
 }
 
 impl Into<bool> for Bool {
+    #[inline]
     fn into(self) -> bool {
         if self.0 != 0 {
             true
@@ -112,6 +118,7 @@ impl Into<bool> for Bool {
 }
 
 impl From<bool> for Bool {
+    #[inline]
     fn from(v: bool) -> Self {
         Bool(v as u32)
     }
@@ -132,6 +139,7 @@ impl<T: Sized> DynamicLoadCell<T> {
         }
     }
 
+    #[inline]
     pub unsafe fn get(&self) -> Option<&T> {
         self.cell
             .get_or_try_init(|| {
@@ -162,6 +170,7 @@ impl<T: Sized> DynamicLoadCell<T> {
 /// `name` must be a null terminated wchar string. If the null terminator is missing the behavior is
 /// undefined.
 ///
+#[inline]
 pub unsafe fn name_current_thread(name: &[u16]) {
     use crate::Win32::SystemServices::GetCurrentThread;
     use crate::Win32::SystemServices::SetThreadDescription;
@@ -170,6 +179,7 @@ pub unsafe fn name_current_thread(name: &[u16]) {
     let _ = SetThreadDescription(handle, PWSTR(name.as_ptr() as *mut u16));
 }
 
+#[inline]
 pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {
     D3D12_SHADER_BYTECODE {
         pShaderBytecode: blob.as_ptr() as _,
@@ -177,6 +187,7 @@ pub fn blob_to_shader(blob: &[u8]) -> D3D12_SHADER_BYTECODE {
     }
 }
 
+#[inline]
 pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
     match blob {
         None => D3D12_SHADER_BYTECODE {
@@ -187,6 +198,7 @@ pub fn optional_blob_to_shader(blob: Option<&[u8]>) -> D3D12_SHADER_BYTECODE {
     }
 }
 
+#[inline]
 pub fn blob_to_cached_pso(blob: &[u8]) -> D3D12_CACHED_PIPELINE_STATE {
     D3D12_CACHED_PIPELINE_STATE {
         pCachedBlob: blob.as_ptr() as _,
@@ -194,6 +206,7 @@ pub fn blob_to_cached_pso(blob: &[u8]) -> D3D12_CACHED_PIPELINE_STATE {
     }
 }
 
+#[inline]
 pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE_STATE {
     match blob {
         None => D3D12_CACHED_PIPELINE_STATE {
@@ -204,11 +217,18 @@ pub fn optional_blob_to_cached_pso(blob: Option<&[u8]>) -> D3D12_CACHED_PIPELINE
     }
 }
 
+#[inline]
 pub fn optional_slice_to_num_ptr_pair<T>(slice: Option<&[T]>) -> (u32, *const T) {
     if let Some(slice) = slice {
-        let num = slice.len() as u32;
-        let ptr = slice.as_ptr();
-        (num, ptr)
+        if slice.is_empty() {
+            let num = 0;
+            let ptr = std::ptr::null();
+            (num, ptr)
+        } else {
+            let num = slice.len() as u32;
+            let ptr = slice.as_ptr();
+            (num, ptr)
+        }
     } else {
         let num = 0;
         let ptr = std::ptr::null();
@@ -216,6 +236,7 @@ pub fn optional_slice_to_num_ptr_pair<T>(slice: Option<&[T]>) -> (u32, *const T)
     }
 }
 
+#[inline]
 pub fn optional_ref_to_ptr<T>(option: Option<&T>) -> *const T {
     option.map(|v| v as *const T).unwrap_or(std::ptr::null())
 }
@@ -226,12 +247,14 @@ macro_rules! flags_bitwise_impl {
         impl std::ops::BitOr for $t {
             type Output = Self;
 
+            #[inline]
             fn bitor(self, rhs: Self) -> Self::Output {
                 Self(self.0 | rhs.0)
             }
         }
 
         impl std::ops::BitOrAssign for $t {
+            #[inline]
             fn bitor_assign(&mut self, rhs: Self) {
                 self.0 |= rhs.0
             }
@@ -240,12 +263,14 @@ macro_rules! flags_bitwise_impl {
         impl std::ops::BitAnd for $t {
             type Output = Self;
 
+            #[inline]
             fn bitand(self, rhs: Self) -> Self::Output {
                 Self(self.0 & rhs.0)
             }
         }
 
         impl std::ops::BitAndAssign for $t {
+            #[inline]
             fn bitand_assign(&mut self, rhs: Self) {
                 self.0 &= rhs.0
             }
@@ -254,12 +279,14 @@ macro_rules! flags_bitwise_impl {
         impl std::ops::BitXor for $t {
             type Output = Self;
 
+            #[inline]
             fn bitxor(self, rhs: Self) -> Self::Output {
                 Self(self.0 ^ rhs.0)
             }
         }
 
         impl std::ops::BitXorAssign for $t {
+            #[inline]
             fn bitxor_assign(&mut self, rhs: Self) {
                 self.0 ^= rhs.0
             }
@@ -271,10 +298,12 @@ macro_rules! flags_bitwise_impl {
 macro_rules! deref_impl {
     ($t:ident, $d:ident) => {
         impl $t {
+            #[inline]
             pub fn as_raw(&self) -> &$d {
                 &self.0
             }
 
+            #[inline]
             pub fn as_raw_mut(&mut self) -> &mut $d {
                 &mut self.0
             }

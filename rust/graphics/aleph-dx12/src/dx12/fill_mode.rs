@@ -37,6 +37,7 @@ pub enum FillMode {
 }
 
 impl Into<D3D12_FILL_MODE> for FillMode {
+    #[inline]
     fn into(self) -> D3D12_FILL_MODE {
         D3D12_FILL_MODE(self as i32)
     }

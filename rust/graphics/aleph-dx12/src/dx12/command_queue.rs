@@ -35,10 +35,12 @@ use windows_raw::Win32::Direct3D12::ID3D12CommandQueue;
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
+    #[inline]
     pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> crate::Result<()> {
         self.0.Signal(&fence.0, value).ok()
     }
 
+    #[inline]
     pub unsafe fn execute_command_lists<const NUM: usize>(
         &mut self,
         command_lists: &[&GraphicsCommandList; NUM],
@@ -60,6 +62,7 @@ impl CommandQueue {
             .ExecuteCommandLists(NUM as u32, lists.as_mut_ptr() as *mut _);
     }
 
+    #[inline]
     pub unsafe fn execute_command_lists_dynamic(&mut self, command_lists: &[&GraphicsCommandList]) {
         // We need an array to put the ID3D12GraphicsCommandList pointers into
         let mut lists: Vec<*mut c_void> = Vec::new();

@@ -36,32 +36,38 @@ use windows_raw::Win32::Direct3D12::D3D12_GPU_DESCRIPTOR_HANDLE;
 pub struct GPUDescriptorHandle(pub(crate) NonZeroU64);
 
 impl GPUDescriptorHandle {
+    #[inline]
     pub fn offset(self, offset: i64) -> Self {
         let ptr = self.0.get() as i64;
         let ptr = ptr + offset;
         Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
+    #[inline]
     pub fn add(self, offset: u64) -> Self {
         Self(NonZeroU64::new(self.0.get() + offset).unwrap())
     }
 
+    #[inline]
     pub fn offset_increments(self, offset: i64, increment: u64) -> Self {
         let ptr = self.0.get() as i64;
         let ptr = ptr + (offset * increment as i64);
         Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
+    #[inline]
     pub fn add_increments(self, offset: u64, increment: u64) -> Self {
         Self(NonZeroU64::new(self.0.get() + (offset * increment)).unwrap())
     }
 
+    #[inline]
     pub fn get_inner(&self) -> NonZeroU64 {
         self.0
     }
 }
 
 impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
+    #[inline]
     fn into(self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
         D3D12_GPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
     }
@@ -70,6 +76,7 @@ impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
 impl TryFrom<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
     type Error = ();
 
+    #[inline]
     fn try_from(value: D3D12_GPU_DESCRIPTOR_HANDLE) -> Result<Self, Self::Error> {
         let value = NonZeroU64::new(value.ptr).ok_or(())?;
         Ok(Self(value))

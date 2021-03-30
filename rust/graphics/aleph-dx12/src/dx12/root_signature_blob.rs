@@ -46,6 +46,7 @@ pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_
 pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
 impl RootSignatureBlob {
+    #[inline]
     pub unsafe fn new(desc: &VersionedRootSignatureDesc) -> crate::Result<Self> {
         let desc: MyDesc = desc.clone().into();
         let desc_ptr = &desc as *const MyDesc as *const Desc;

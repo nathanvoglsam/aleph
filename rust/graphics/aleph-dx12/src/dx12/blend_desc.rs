@@ -34,20 +34,26 @@ pub struct BlendDescBuilder {
 }
 
 impl BlendDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: Default::default(),
         }
     }
 
+    #[inline]
     pub fn alpha_to_coverage_enable(mut self, alpha_to_coverage_enable: bool) -> Self {
         self.inner.alpha_to_coverage_enable = alpha_to_coverage_enable.into();
         self
     }
+
+    #[inline]
     pub fn independent_blend_enable(mut self, independent_blend_enable: bool) -> Self {
         self.inner.independent_blend_enable = independent_blend_enable.into();
         self
     }
+
+    #[inline]
     pub fn render_targets(mut self, render_targets: &[RenderTargetBlendDesc]) -> Self {
         assert!(render_targets.len() <= 8);
         render_targets
@@ -60,6 +66,7 @@ impl BlendDescBuilder {
         self
     }
 
+    #[inline]
     pub fn build(self) -> BlendDesc {
         self.inner
     }
@@ -74,12 +81,14 @@ pub struct BlendDesc {
 }
 
 impl BlendDesc {
+    #[inline]
     pub fn builder() -> BlendDescBuilder {
         BlendDescBuilder::new()
     }
 }
 
 impl Default for BlendDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             alpha_to_coverage_enable: false.into(),

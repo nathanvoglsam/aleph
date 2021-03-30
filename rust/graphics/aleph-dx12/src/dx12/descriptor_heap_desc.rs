@@ -38,6 +38,7 @@ pub struct DescriptorHeapDescBuilder {
 }
 
 impl DescriptorHeapDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             heap_type: None,
@@ -47,26 +48,31 @@ impl DescriptorHeapDescBuilder {
         }
     }
 
+    #[inline]
     pub fn heap_type(mut self, heap_type: DescriptorHeapType) -> Self {
         self.heap_type = Some(heap_type);
         self
     }
 
+    #[inline]
     pub fn num_descriptors(mut self, num_descriptors: u32) -> Self {
         self.num_descriptors = num_descriptors;
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: DescriptorHeapFlags) -> Self {
         self.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn node_mask(mut self, node_mask: u32) -> Self {
         self.node_mask = node_mask;
         self
     }
 
+    #[inline]
     pub fn build(self) -> DescriptorHeapDesc {
         DescriptorHeapDesc {
             heap_type: self.heap_type.unwrap(),
@@ -87,6 +93,7 @@ pub struct DescriptorHeapDesc {
 }
 
 impl DescriptorHeapDesc {
+    #[inline]
     pub fn builder() -> DescriptorHeapDescBuilder {
         DescriptorHeapDescBuilder::new()
     }

@@ -71,6 +71,7 @@ pub enum Filter {
 }
 
 impl Into<D3D12_FILTER> for Filter {
+    #[inline]
     fn into(self) -> D3D12_FILTER {
         D3D12_FILTER(self as i32)
     }

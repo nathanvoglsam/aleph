@@ -34,6 +34,7 @@ pub struct CommandQueueDescBuilder {
 }
 
 impl CommandQueueDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: CommandQueueDesc {
@@ -45,26 +46,31 @@ impl CommandQueueDescBuilder {
         }
     }
 
+    #[inline]
     pub fn queue_type(mut self, queue_type: CommandListType) -> Self {
         self.inner.queue_type = queue_type;
         self
     }
 
+    #[inline]
     pub fn priority(mut self, priority: i32) -> Self {
         self.inner.priority = priority;
         self
     }
 
+    #[inline]
     pub fn flags(mut self, flags: CommandQueueFlags) -> Self {
         self.inner.flags |= flags;
         self
     }
 
+    #[inline]
     pub fn node_mask(mut self, node_mask: u32) -> Self {
         self.inner.node_mask = node_mask;
         self
     }
 
+    #[inline]
     pub fn build(self) -> CommandQueueDesc {
         self.inner
     }
@@ -80,6 +86,7 @@ pub struct CommandQueueDesc {
 }
 
 impl CommandQueueDesc {
+    #[inline]
     pub fn builder() -> CommandQueueDescBuilder {
         CommandQueueDescBuilder::new()
     }

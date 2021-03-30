@@ -46,6 +46,7 @@ pub enum TextureCopyLocation {
 }
 
 impl TextureCopyLocation {
+    #[inline]
     pub fn resource(&self) -> Option<Resource> {
         match self {
             TextureCopyLocation::Placed { resource, .. } => resource.clone(),
@@ -55,6 +56,7 @@ impl TextureCopyLocation {
 }
 
 impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
+    #[inline]
     fn into(self) -> D3D12_TEXTURE_COPY_LOCATION {
         match self {
             TextureCopyLocation::Placed {

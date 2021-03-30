@@ -38,6 +38,7 @@ use windows_raw::Win32::Direct3D12::{ID3D12Resource, D3D12_RANGE};
 pub struct Resource(pub(crate) ID3D12Resource);
 
 impl Resource {
+    #[inline]
     pub fn get_gpu_virtual_address(&self) -> Option<GPUDescriptorHandle> {
         unsafe {
             let ptr = self.0.GetGPUVirtualAddress();
@@ -45,6 +46,7 @@ impl Resource {
         }
     }
 
+    #[inline]
     pub fn write_to_subresource(
         &self,
         dst_subresource: u32,
@@ -68,6 +70,7 @@ impl Resource {
         }
     }
 
+    #[inline]
     pub fn read_from_subresource(
         &self,
         dst_data: &mut [u8],
@@ -91,6 +94,7 @@ impl Resource {
         }
     }
 
+    #[inline]
     pub fn map(
         &self,
         subresource: u32,
@@ -116,6 +120,7 @@ impl Resource {
         }
     }
 
+    #[inline]
     pub fn unmap(&self, subresource: u32, written_range: Option<Range<usize>>) {
         unsafe {
             if let Some(written_range) = written_range {

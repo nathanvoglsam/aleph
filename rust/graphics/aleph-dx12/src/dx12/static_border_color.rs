@@ -38,6 +38,7 @@ pub enum StaticBorderColor {
 }
 
 impl Into<D3D12_STATIC_BORDER_COLOR> for StaticBorderColor {
+    #[inline]
     fn into(self) -> D3D12_STATIC_BORDER_COLOR {
         D3D12_STATIC_BORDER_COLOR(self as i32)
     }

@@ -41,6 +41,7 @@ windows_raw::deref_impl!(PipelineState, ID3D12PipelineState);
 pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
 
 impl Into<PipelineState> for GraphicsPipelineState {
+    #[inline]
     fn into(self) -> PipelineState {
         PipelineState(self.0)
     }
@@ -55,6 +56,7 @@ windows_raw::deref_impl!(GraphicsPipelineState, ID3D12PipelineState);
 pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
 
 impl Into<PipelineState> for ComputePipelineState {
+    #[inline]
     fn into(self) -> PipelineState {
         PipelineState(self.0)
     }

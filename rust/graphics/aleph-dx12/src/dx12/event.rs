@@ -54,6 +54,7 @@ pub enum SingleWaitResponse {
 }
 
 impl SingleWaitResponse {
+    #[inline]
     fn from_u32(v: u32) -> Result<Self, ()> {
         match v {
             0x00000080 => Ok(SingleWaitResponse::Abandoned),
@@ -63,6 +64,7 @@ impl SingleWaitResponse {
         }
     }
 
+    #[inline]
     fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
         Self::from_u32(v.0)
     }
@@ -82,6 +84,7 @@ pub enum MultipleWaitAllResponse {
 }
 
 impl MultipleWaitAllResponse {
+    #[inline]
     fn from_u32(v: u32) -> Result<Self, ()> {
         match v {
             0x00000080 => Ok(MultipleWaitAllResponse::Abandoned),
@@ -91,6 +94,7 @@ impl MultipleWaitAllResponse {
         }
     }
 
+    #[inline]
     fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
         Self::from_u32(v.0)
     }
@@ -111,6 +115,7 @@ pub enum MultipleWaitAnyResponse {
 }
 
 impl MultipleWaitAnyResponse {
+    #[inline]
     fn from_u32(v: u32) -> Result<Self, ()> {
         if v == WAIT_RETURN_CAUSE::WAIT_TIMEOUT.0 {
             return Ok(MultipleWaitAnyResponse::Timeout);
@@ -133,6 +138,7 @@ impl MultipleWaitAnyResponse {
         unreachable!()
     }
 
+    #[inline]
     fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
         Self::from_u32(v.0)
     }
@@ -142,6 +148,7 @@ impl MultipleWaitAnyResponse {
 pub struct Event(pub(crate) NonZeroIsize);
 
 impl Event {
+    #[inline]
     pub fn new() -> Option<Self> {
         let event = unsafe {
             CreateEventW(
@@ -155,6 +162,7 @@ impl Event {
         NonZeroIsize::new(event.0).map(|v| Self(v))
     }
 
+    #[inline]
     pub fn wait(&self, timeout: Option<u32>) -> Result<SingleWaitResponse, ()> {
         let ret = if let Some(timeout) = timeout {
             unsafe { WaitForSingleObject(HANDLE(self.0.get()), timeout) }
@@ -166,6 +174,7 @@ impl Event {
 }
 
 impl Drop for Event {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
             assert_ne!(
@@ -183,6 +192,7 @@ pub trait WaitAll {
 }
 
 impl WaitAll for [Event] {
+    #[inline]
     fn wait_all(&self, timeout: Option<u32>) -> Result<MultipleWaitAllResponse, ()> {
         if self.len() > 64 {
             panic!("Can't use WaitForMultipleObjects with more than 64 objects");
@@ -209,6 +219,7 @@ impl WaitAll for [Event] {
         MultipleWaitAllResponse::from_cause(ret)
     }
 
+    #[inline]
     fn wait_any(&self, timeout: Option<u32>) -> Result<MultipleWaitAnyResponse, ()> {
         if self.len() > 64 {
             panic!("Can't use WaitForMultipleObjects with more than 64 objects");

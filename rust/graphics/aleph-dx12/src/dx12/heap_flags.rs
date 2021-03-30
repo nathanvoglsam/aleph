@@ -52,6 +52,7 @@ impl HeapFlags {
 }
 
 impl Default for HeapFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -60,6 +61,7 @@ impl Default for HeapFlags {
 windows_raw::flags_bitwise_impl!(HeapFlags);
 
 impl Into<D3D12_HEAP_FLAGS> for HeapFlags {
+    #[inline]
     fn into(self) -> D3D12_HEAP_FLAGS {
         D3D12_HEAP_FLAGS(self.0)
     }

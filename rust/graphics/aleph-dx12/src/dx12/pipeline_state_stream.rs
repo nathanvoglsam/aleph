@@ -35,6 +35,7 @@ use windows_raw::Win32::Direct3D12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 pub(crate) struct PackedPipelineStateStreamObject<T>(AlignmentWrapper<Packed<T>>);
 
 impl<T> PackedPipelineStateStreamObject<T> {
+    #[inline]
     pub fn new(object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, object: T) -> Self {
         let out = AlignmentWrapper {
             wrapped: ManuallyDrop::new(Packed {
@@ -59,6 +60,7 @@ union AlignmentWrapper<T> {
 }
 
 impl<T> Drop for AlignmentWrapper<T> {
+    #[inline]
     fn drop(&mut self) {
         let _drop = unsafe { ManuallyDrop::take(&mut self.wrapped) };
     }

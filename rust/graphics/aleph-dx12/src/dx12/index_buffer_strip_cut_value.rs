@@ -38,12 +38,14 @@ pub enum IndexBufferStripCutValue {
 }
 
 impl Default for IndexBufferStripCutValue {
+    #[inline]
     fn default() -> Self {
         Self::Disabled
     }
 }
 
 impl Into<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE> for IndexBufferStripCutValue {
+    #[inline]
     fn into(self) -> D3D12_INDEX_BUFFER_STRIP_CUT_VALUE {
         D3D12_INDEX_BUFFER_STRIP_CUT_VALUE(self as i32)
     }

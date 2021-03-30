@@ -253,6 +253,7 @@ impl BufferSrvFlags {
 }
 
 impl Default for BufferSrvFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }

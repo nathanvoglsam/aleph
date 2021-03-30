@@ -36,6 +36,7 @@ use windows_raw::Win32::Direct3D12::ID3D12DescriptorHeap;
 pub struct DescriptorHeap(pub(crate) ID3D12DescriptorHeap);
 
 impl DescriptorHeap {
+    #[inline]
     pub fn get_cpu_descriptor_handle_for_heap_start(&self) -> Option<CPUDescriptorHandle> {
         unsafe {
             let out = self.0.GetCPUDescriptorHandleForHeapStart();
@@ -43,6 +44,7 @@ impl DescriptorHeap {
         }
     }
 
+    #[inline]
     pub fn get_gpu_descriptor_handle_for_heap_start(&self) -> Option<GPUDescriptorHandle> {
         unsafe {
             let out = self.0.GetGPUDescriptorHandleForHeapStart();
@@ -50,6 +52,7 @@ impl DescriptorHeap {
         }
     }
 
+    #[inline]
     pub fn get_desc(&self) -> DescriptorHeapDesc {
         unsafe { transmute(self.0.GetDesc()) }
     }

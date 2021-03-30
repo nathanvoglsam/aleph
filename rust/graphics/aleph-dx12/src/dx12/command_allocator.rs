@@ -33,6 +33,7 @@ use windows_raw::Win32::Direct3D12::ID3D12CommandAllocator;
 pub struct CommandAllocator(pub(crate) ID3D12CommandAllocator);
 
 impl CommandAllocator {
+    #[inline]
     pub unsafe fn reset(&self) -> crate::Result<()> {
         self.0.Reset().ok()
     }

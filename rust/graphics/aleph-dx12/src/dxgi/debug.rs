@@ -45,6 +45,7 @@ static CREATE_FN: DynamicLoadCell<CreateFn> =
 pub struct Debug(pub(crate) IDXGIDebug1);
 
 impl Debug {
+    #[inline]
     pub fn new() -> crate::Result<Debug> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgidebug.dll");
@@ -55,6 +56,7 @@ impl Debug {
         }
     }
 
+    #[inline]
     pub fn report_live_objects(
         &mut self,
         debug_id: DebugID,
@@ -76,6 +78,7 @@ pub enum DebugID {
 }
 
 impl Into<windows_raw::Guid> for DebugID {
+    #[inline]
     fn into(self) -> windows_raw::Guid {
         match self {
             DebugID::All => windows_raw::Guid::from_values(
@@ -127,6 +130,7 @@ impl DebugRLOFlags {
 }
 
 impl Into<DXGI_DEBUG_RLO_FLAGS> for DebugRLOFlags {
+    #[inline]
     fn into(self) -> DXGI_DEBUG_RLO_FLAGS {
         DXGI_DEBUG_RLO_FLAGS(self.0)
     }

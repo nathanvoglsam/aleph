@@ -42,6 +42,7 @@ impl DescriptorRangeFlags {
 }
 
 impl Default for DescriptorRangeFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -50,6 +51,7 @@ impl Default for DescriptorRangeFlags {
 windows_raw::flags_bitwise_impl!(DescriptorRangeFlags);
 
 impl Into<D3D12_DESCRIPTOR_RANGE_FLAGS> for DescriptorRangeFlags {
+    #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_RANGE_FLAGS {
         D3D12_DESCRIPTOR_RANGE_FLAGS(self.0)
     }

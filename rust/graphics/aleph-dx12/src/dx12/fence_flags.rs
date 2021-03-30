@@ -40,6 +40,7 @@ impl FenceFlags {
 }
 
 impl Default for FenceFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -48,6 +49,7 @@ impl Default for FenceFlags {
 windows_raw::flags_bitwise_impl!(FenceFlags);
 
 impl Into<D3D12_FENCE_FLAGS> for FenceFlags {
+    #[inline]
     fn into(self) -> D3D12_FENCE_FLAGS {
         D3D12_FENCE_FLAGS(self.0)
     }

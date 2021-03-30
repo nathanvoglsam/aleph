@@ -38,6 +38,7 @@ pub enum PredicationOp {
 }
 
 impl Into<D3D12_PREDICATION_OP> for PredicationOp {
+    #[inline]
     fn into(self) -> D3D12_PREDICATION_OP {
         D3D12_PREDICATION_OP(self as i32)
     }

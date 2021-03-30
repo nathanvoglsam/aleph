@@ -34,77 +34,92 @@ pub struct StaticSamplerDescBuilder {
 }
 
 impl StaticSamplerDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: StaticSamplerDesc::default(),
         }
     }
 
+    #[inline]
     pub fn filter(mut self, filter: Filter) -> Self {
         self.inner.filter = filter;
         self
     }
 
+    #[inline]
     pub fn address_u(mut self, address_u: TextureAddressMode) -> Self {
         self.inner.address_u = address_u;
         self
     }
 
+    #[inline]
     pub fn address_v(mut self, address_v: TextureAddressMode) -> Self {
         self.inner.address_v = address_v;
         self
     }
 
+    #[inline]
     pub fn address_w(mut self, address_w: TextureAddressMode) -> Self {
         self.inner.address_w = address_w;
         self
     }
 
+    #[inline]
     pub fn mip_lod_bias(mut self, mip_lod_bias: f32) -> Self {
         self.inner.mip_lod_bias = mip_lod_bias;
         self
     }
 
+    #[inline]
     pub fn max_anisotropy(mut self, max_anisotropy: u32) -> Self {
         self.inner.max_anisotropy = max_anisotropy;
         self
     }
 
+    #[inline]
     pub fn comparison_func(mut self, comparison_func: ComparisonFunc) -> Self {
         self.inner.comparison_func = comparison_func;
         self
     }
 
+    #[inline]
     pub fn border_color(mut self, border_color: StaticBorderColor) -> Self {
         self.inner.border_color = border_color;
         self
     }
 
+    #[inline]
     pub fn min_lod(mut self, min_lod: f32) -> Self {
         self.inner.min_lod = min_lod;
         self
     }
 
+    #[inline]
     pub fn max_lod(mut self, max_lod: f32) -> Self {
         self.inner.max_lod = max_lod;
         self
     }
 
+    #[inline]
     pub fn shader_register(mut self, shader_register: u32) -> Self {
         self.inner.shader_register = shader_register;
         self
     }
 
+    #[inline]
     pub fn register_space(mut self, register_space: u32) -> Self {
         self.inner.register_space = register_space;
         self
     }
 
+    #[inline]
     pub fn shader_visibility(mut self, shader_visibility: ShaderVisibility) -> Self {
         self.inner.shader_visibility = shader_visibility;
         self
     }
 
+    #[inline]
     pub fn build(self) -> StaticSamplerDesc {
         self.inner
     }
@@ -129,12 +144,14 @@ pub struct StaticSamplerDesc {
 }
 
 impl StaticSamplerDesc {
+    #[inline]
     pub fn builder() -> StaticSamplerDescBuilder {
         StaticSamplerDescBuilder::new()
     }
 }
 
 impl Default for StaticSamplerDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             filter: Filter::MinMagMipLinear,

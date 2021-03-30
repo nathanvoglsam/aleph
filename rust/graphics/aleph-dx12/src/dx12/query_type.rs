@@ -45,6 +45,7 @@ pub enum QueryType {
 }
 
 impl Into<D3D12_QUERY_TYPE> for QueryType {
+    #[inline]
     fn into(self) -> D3D12_QUERY_TYPE {
         D3D12_QUERY_TYPE(self as i32)
     }

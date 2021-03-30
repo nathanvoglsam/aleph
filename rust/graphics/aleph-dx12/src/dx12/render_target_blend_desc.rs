@@ -34,62 +34,74 @@ pub struct RenderTargetBlendDescBuilder {
 }
 
 impl RenderTargetBlendDescBuilder {
+    #[inline]
     pub fn new() -> Self {
         Self {
             inner: RenderTargetBlendDesc::default(),
         }
     }
 
+    #[inline]
     pub fn blend_enable(mut self, blend_enable: bool) -> Self {
         self.inner.blend_enable = blend_enable.into();
         self
     }
 
+    #[inline]
     pub fn logic_op_enable(mut self, logic_op_enable: bool) -> Self {
         self.inner.logic_op_enable = logic_op_enable.into();
         self
     }
 
+    #[inline]
     pub fn src_blend(mut self, src_blend: Blend) -> Self {
         self.inner.src_blend = src_blend;
         self
     }
 
+    #[inline]
     pub fn dest_blend(mut self, dest_blend: Blend) -> Self {
         self.inner.dest_blend = dest_blend;
         self
     }
 
+    #[inline]
     pub fn blend_op(mut self, blend_op: BlendOp) -> Self {
         self.inner.blend_op = blend_op;
         self
     }
 
+    #[inline]
     pub fn src_blend_alpha(mut self, src_blend_alpha: Blend) -> Self {
         self.inner.src_blend_alpha = src_blend_alpha;
         self
     }
 
+    #[inline]
     pub fn dest_blend_alpha(mut self, dest_blend_alpha: Blend) -> Self {
         self.inner.dest_blend_alpha = dest_blend_alpha;
         self
     }
 
+    #[inline]
     pub fn blend_op_alpha(mut self, blend_op_alpha: BlendOp) -> Self {
         self.inner.blend_op_alpha = blend_op_alpha;
         self
     }
 
+    #[inline]
     pub fn logic_op(mut self, logic_op: LogicOp) -> Self {
         self.inner.logic_op = logic_op;
         self
     }
 
+    #[inline]
     pub fn render_target_write_mask(mut self, render_target_write_mask: ColorWriteEnable) -> Self {
         self.inner.render_target_write_mask = render_target_write_mask;
         self
     }
 
+    #[inline]
     pub fn build(self) -> RenderTargetBlendDesc {
         self.inner
     }
@@ -111,12 +123,14 @@ pub struct RenderTargetBlendDesc {
 }
 
 impl RenderTargetBlendDesc {
+    #[inline]
     pub fn builder() -> RenderTargetBlendDescBuilder {
         RenderTargetBlendDescBuilder::new()
     }
 }
 
 impl Default for RenderTargetBlendDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             blend_enable: false.into(),

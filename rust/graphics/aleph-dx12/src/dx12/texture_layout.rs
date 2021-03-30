@@ -39,6 +39,7 @@ pub enum TextureLayout {
 }
 
 impl Into<D3D12_TEXTURE_LAYOUT> for TextureLayout {
+    #[inline]
     fn into(self) -> D3D12_TEXTURE_LAYOUT {
         D3D12_TEXTURE_LAYOUT(self as i32)
     }

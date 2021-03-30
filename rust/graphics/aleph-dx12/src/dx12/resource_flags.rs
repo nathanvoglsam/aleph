@@ -45,6 +45,7 @@ impl ResourceFlags {
 }
 
 impl Default for ResourceFlags {
+    #[inline]
     fn default() -> Self {
         Self::NONE
     }
@@ -53,6 +54,7 @@ impl Default for ResourceFlags {
 windows_raw::flags_bitwise_impl!(ResourceFlags);
 
 impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {
+    #[inline]
     fn into(self) -> D3D12_RESOURCE_FLAGS {
         D3D12_RESOURCE_FLAGS(self.0)
     }

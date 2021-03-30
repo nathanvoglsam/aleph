@@ -40,6 +40,7 @@ pub enum TextureAddressMode {
 }
 
 impl Into<D3D12_TEXTURE_ADDRESS_MODE> for TextureAddressMode {
+    #[inline]
     fn into(self) -> D3D12_TEXTURE_ADDRESS_MODE {
         D3D12_TEXTURE_ADDRESS_MODE(self as i32)
     }

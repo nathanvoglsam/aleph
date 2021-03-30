@@ -40,6 +40,7 @@ pub enum VersionedRootSignatureDesc<'a> {
 }
 
 impl<'a> Into<D3D12_VERSIONED_ROOT_SIGNATURE_DESC> for VersionedRootSignatureDesc<'a> {
+    #[inline]
     fn into(self) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
         match self {
             VersionedRootSignatureDesc::Desc(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {

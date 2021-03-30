@@ -43,6 +43,7 @@ pub enum CommandListType {
 }
 
 impl CommandListType {
+    #[inline]
     pub(crate) fn from_raw(v: D3D12_COMMAND_LIST_TYPE) -> Option<CommandListType> {
         type T = D3D12_COMMAND_LIST_TYPE;
         match v {
@@ -59,6 +60,7 @@ impl CommandListType {
 }
 
 impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
+    #[inline]
     fn into(self) -> D3D12_COMMAND_LIST_TYPE {
         D3D12_COMMAND_LIST_TYPE(self as i32)
     }

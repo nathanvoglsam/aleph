@@ -40,6 +40,7 @@ pub enum BlendOp {
 }
 
 impl Into<D3D12_BLEND_OP> for BlendOp {
+    #[inline]
     fn into(self) -> D3D12_BLEND_OP {
         D3D12_BLEND_OP(self as i32)
     }

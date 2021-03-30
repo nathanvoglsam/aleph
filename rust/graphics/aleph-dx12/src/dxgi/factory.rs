@@ -55,6 +55,7 @@ static CREATE_FN: DynamicLoadCell<CreateFn> =
 pub struct Factory(pub(crate) IDXGIFactory2);
 
 impl Factory {
+    #[inline]
     pub fn new(debug: bool) -> crate::Result<Factory> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
@@ -96,6 +97,7 @@ impl Factory {
         }
     }
 
+    #[inline]
     unsafe fn create_swap_chain_for_hwnd(
         &mut self,
         queue: &CommandQueue,
@@ -117,6 +119,7 @@ impl Factory {
         swapchain.cast::<IDXGISwapChain4>()
     }
 
+    #[inline]
     unsafe fn create_swap_chain_for_core_window(
         &mut self,
         queue: &CommandQueue,
@@ -131,6 +134,7 @@ impl Factory {
         swapchain.cast::<IDXGISwapChain4>()
     }
 
+    #[inline]
     pub fn enumerate_adapters(&mut self, i: u32) -> crate::Result<Adapter> {
         unsafe { Self::enum_edapter_old(&self.0, i).map(|v| Adapter(v)) }
     }
@@ -195,6 +199,7 @@ impl Factory {
 }
 
 impl Factory {
+    #[inline]
     unsafe fn enum_edapter_new(factory: &IDXGIFactory6, i: u32) -> crate::Result<IDXGIAdapter1> {
         let mut ppv_adapter: Option<IDXGIAdapter1> = None;
         factory
@@ -207,6 +212,7 @@ impl Factory {
             .and_some(ppv_adapter)
     }
 
+    #[inline]
     unsafe fn enum_edapter_old(factory: &IDXGIFactory2, i: u32) -> crate::Result<IDXGIAdapter1> {
         let mut pp_adapter: Option<IDXGIAdapter1> = None;
         factory

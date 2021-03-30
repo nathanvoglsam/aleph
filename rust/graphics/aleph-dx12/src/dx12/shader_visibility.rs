@@ -43,6 +43,7 @@ pub enum ShaderVisibility {
 }
 
 impl Into<D3D12_SHADER_VISIBILITY> for ShaderVisibility {
+    #[inline]
     fn into(self) -> D3D12_SHADER_VISIBILITY {
         D3D12_SHADER_VISIBILITY(self as i32)
     }
