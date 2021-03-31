@@ -56,6 +56,56 @@ impl PluginRegistryBuilder {
 
     /// Construct the final plugin registry, baking in execution orders
     pub fn build(mut self) -> PluginRegistry {
+        // First we handle registering the plugins. Here we call `IPlugin::register` for each
+        // plugin and collect their responses so we can schedule their execution phases.
+        let (
+            mut dependencies,
+            mut init_dependencies,
+            mut update_dependencies,
+            mut provided_interfaces,
+            mut update_stages,
+        ) = self.handle_plugin_registration();
+
+        // Then we need a resolution phase
+        self.resolve_dependencies(
+            &mut dependencies,
+            &mut init_dependencies,
+            &mut update_dependencies,
+            &mut provided_interfaces,
+        );
+
+        let (init_order, update_orders, exit_order) = self.schedule_plugin_execution(
+            &mut init_dependencies,
+            &mut update_dependencies,
+            &mut provided_interfaces,
+            &mut update_stages,
+        );
+
+        // Package up the final registry with the computed execution orders
+        let mut registry = PluginRegistry {
+            plugins: self.plugins,
+            interfaces: HashMap::new(),
+            init_order,
+            update_orders,
+            exit_order,
+        };
+
+        // Initialize the plugins
+        registry.init_plugins(provided_interfaces);
+
+        // Return the registry
+        registry
+    }
+
+    fn handle_plugin_registration(
+        &mut self,
+    ) -> (
+        Vec<HashSet<TypeId>>,
+        Vec<Vec<HashSet<TypeId>>>,
+        Vec<Vec<HashSet<TypeId>>>,
+        Vec<HashSet<TypeId>>,
+        Vec<HashSet<usize>>,
+    ) {
         // Construct our registrar with empty sets
         let mut registrar = PluginRegistrar {
             depends_on_list: Default::default(),
@@ -91,7 +141,90 @@ impl PluginRegistryBuilder {
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
             update_stages.push(std::mem::take(&mut registrar.update_stages));
         });
+        (
+            dependencies,
+            init_dependencies,
+            update_dependencies,
+            provided_interfaces,
+            update_stages,
+        )
+    }
 
+    fn resolve_dependencies(
+        &self,
+        dependencies: &Vec<HashSet<TypeId>>,
+        init_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
+        update_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
+        provided_interfaces: &Vec<HashSet<TypeId>>,
+    ) {
+        // Collect a flattened set of all interfaces that are mandatory for the full set of plugins
+        // to work
+        let mandatory_interfaces: HashSet<TypeId> = dependencies
+            .iter()
+            .map(|v| v.iter().cloned())
+            .flatten()
+            .collect();
+
+        // Collect a flattened set of all interfaces that have been provided by the set if plugins
+        let all_interfaces: HashSet<TypeId> = provided_interfaces
+            .iter()
+            .map(|v| v.iter().cloned())
+            .flatten()
+            .chain(self.plugins.iter().map(|v| v.type_id()))
+            .collect();
+
+        // If all interfaces contain the entirety of mandatory interfaces then all plugins provided
+        // satisfy everyone's requirements.
+        if !all_interfaces.is_superset(&mandatory_interfaces) {
+            log::error!("Plugins have been registered with unsatisfied dependencies");
+            log::error!("Error was caused by one of the following plugins: ");
+
+            // Get the set of mandatory interfaces that have not been provided
+            let unprovided_interfaces: HashSet<TypeId> = mandatory_interfaces
+                .difference(&all_interfaces)
+                .copied()
+                .collect();
+
+            // List of the name of all plugins with unsatisfied dependencies
+            self.plugins
+                .iter()
+                .enumerate()
+                .filter(|(i, _v)| !dependencies[*i].is_disjoint(&unprovided_interfaces))
+                .for_each(|(_i, v)| {
+                    let description = v.get_description();
+                    log::error!(
+                        "  {} - {}.{}.{}",
+                        description.name,
+                        description.major_version,
+                        description.minor_version,
+                        description.patch_version
+                    );
+                });
+
+            panic!("Plugins have been registered with unsatisfied dependencies")
+        }
+
+        // Remove non existent, but non mandatory interfaces from the execution dependencies so we
+        // can handle optional dependencies
+        init_dependencies.iter_mut().for_each(|v| {
+            v.iter_mut().for_each(|v| {
+                v.retain(|v| all_interfaces.contains(v));
+            });
+        });
+        update_dependencies.iter_mut().for_each(|v| {
+            v.iter_mut().for_each(|v| {
+                v.retain(|v| all_interfaces.contains(v));
+            });
+        });
+    }
+
+    fn schedule_plugin_execution(
+        &self,
+        init_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
+        update_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
+        provided_interfaces: &mut Vec<HashSet<TypeId>>,
+        update_stages: &mut Vec<HashSet<usize>>,
+    ) -> (Vec<usize>, Vec<Vec<usize>>, Vec<usize>) {
         // Build a hash set populated with the number 0..n where n is the number of plugins.
         let unscheduled: HashSet<usize> = (0..self.plugins.len()).collect();
 
@@ -99,16 +232,14 @@ impl PluginRegistryBuilder {
         //
         // Clone the unscheduled set as we need it multiple times and the mem copy is faster than
         // constructing the set multiple times.
-        let init_order = build_execution_order(
+        let init_order = self.build_execution_order(
             unscheduled.clone(),
-            &self.plugins,
             &init_dependencies,
             &provided_interfaces,
             0,
         );
 
-        let update_orders = build_update_exec_orders(
-            &self.plugins,
+        let update_orders = self.build_update_exec_orders(
             &update_dependencies,
             &provided_interfaces,
             &update_stages,
@@ -122,119 +253,92 @@ impl PluginRegistryBuilder {
             order.reverse();
             order
         };
-
-        // Package up the final registry with the computed execution orders
-        let mut registry = PluginRegistry {
-            plugins: self.plugins,
-            interfaces: HashMap::new(),
-            init_order,
-            update_orders,
-            exit_order,
-        };
-
-        // Initialize the plugins
-        registry.init_plugins(provided_interfaces);
-
-        // Return the registry
-        registry
+        (init_order, update_orders, exit_order)
     }
-}
 
-fn build_update_exec_orders(
-    plugins: &[Box<dyn IPlugin>],
-    dependencies: &[Vec<HashSet<TypeId>>],
-    provided_implementations: &[HashSet<TypeId>],
-    update_stages: &[HashSet<usize>],
-) -> Vec<Vec<usize>> {
-    let mut output = Vec::new();
+    fn build_update_exec_orders(
+        &self,
+        execution_dependencies: &[Vec<HashSet<TypeId>>],
+        provided_implementations: &[HashSet<TypeId>],
+        update_stages: &[HashSet<usize>],
+    ) -> Vec<Vec<usize>> {
+        let mut output = Vec::new();
 
-    (0..UpdateStage::STAGE_COUNT).into_iter().for_each(|stage| {
-        let unscheduled: HashSet<usize> = plugins
-            .iter()
-            .enumerate()
-            .filter(|(index, _)| update_stages[*index].contains(&stage))
-            .map(|v| v.0)
-            .collect();
-        let order = build_execution_order(
-            unscheduled,
-            plugins,
-            &dependencies,
-            provided_implementations,
-            stage,
-        );
-        output.push(order);
-    });
-
-    output
-}
-
-fn build_execution_order(
-    mut unscheduled: HashSet<usize>,
-    plugins: &[Box<dyn IPlugin>],
-    dependencies: &[Vec<HashSet<TypeId>>],
-    provided_implementations: &[HashSet<TypeId>],
-    stage: usize,
-) -> Vec<usize> {
-    // Output list we build the order into
-    let mut order = Vec::new();
-
-    // Set to keep track of what has been executed
-    let mut executed = HashSet::new();
-
-    // Set to keep track of what was executed over the course of a single scheduler iteration
-    let mut newly_executed = HashSet::new();
-
-    while !unscheduled.is_empty() {
-        // Store how many plugins have been scheduled before attempting the next scheduling round
-        let already_scheduled_count = order.len();
-
-        unscheduled.retain(|v| {
-            // If all of the the plugin's dependencies are in the executed set then we can execute
-            // this plugin.
-            //
-            // If we can execute the plugin we add its index to the order and add it to the executed
-            // set. We can then mark it to be removed from the unscheduled set.
-            let dependencies_satisfied = executed.is_superset(&dependencies[*v][stage]);
-            if dependencies_satisfied {
-                // Insert the plugin's concrete type id into the executed set
-                newly_executed.insert(plugins[*v].type_id());
-
-                // Insert the type id for all interfaces that the plugin implements
-                newly_executed.extend(provided_implementations[*v].iter());
-
-                // Schedule the plugin
-                order.push(*v);
-                false
-            } else {
-                true
-            }
+        (0..UpdateStage::STAGE_COUNT).into_iter().for_each(|stage| {
+            let unscheduled: HashSet<usize> = self
+                .plugins
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| update_stages[*index].contains(&stage))
+                .map(|v| v.0)
+                .collect();
+            let order = self.build_execution_order(
+                unscheduled,
+                &execution_dependencies,
+                provided_implementations,
+                stage,
+            );
+            output.push(order);
         });
 
-        // Merge the newly_executed set into executed ready to be used next iteration
-        executed.extend(newly_executed.iter());
-
-        // Clear the newly executed set to ready for next iteration
-        newly_executed.clear();
-
-        // If the `already_scheduled_count` does not change over the course of an iteration it means
-        // there are execution dependencies that can not be satisfied. This is an error condition
-        // and so we panic if we detect when this has happened.
-        if already_scheduled_count == order.len() {
-            log::error!("A plugin has been registered with unsatisfiable execution dependencies");
-            log::error!("Error was caused by one of the following plugins: ");
-            for plugin in unscheduled {
-                let description = plugins[plugin].get_description();
-                log::error!(
-                    "  {} - {}.{}.{}",
-                    description.name,
-                    description.major_version,
-                    description.minor_version,
-                    description.patch_version
-                );
-            }
-            panic!("A plugin has been registered with unsatisfiable execution dependencies");
-        }
+        output
     }
 
-    order
+    fn build_execution_order(
+        &self,
+        mut unscheduled: HashSet<usize>,
+        execution_dependencies: &[Vec<HashSet<TypeId>>],
+        provided_implementations: &[HashSet<TypeId>],
+        stage: usize,
+    ) -> Vec<usize> {
+        // Output list we build the order into
+        let mut order = Vec::new();
+
+        // Set to keep track of what has been executed
+        let mut executed = HashSet::new();
+
+        // Set to keep track of what was executed over the course of a single scheduler iteration
+        let mut newly_executed = HashSet::new();
+
+        while !unscheduled.is_empty() {
+            // Store how many plugins have been scheduled before attempting the next scheduling round
+            let already_scheduled_count = order.len();
+
+            unscheduled.retain(|v| {
+                // If all of the the plugin's dependencies are in the executed set then we can execute
+                // this plugin.
+                //
+                // If we can execute the plugin we add its index to the order and add it to the executed
+                // set. We can then mark it to be removed from the unscheduled set.
+                let dependencies_satisfied =
+                    executed.is_superset(&execution_dependencies[*v][stage]);
+                if dependencies_satisfied {
+                    // Insert the plugin's concrete type id into the executed set
+                    newly_executed.insert(self.plugins[*v].type_id());
+
+                    // Insert the type id for all interfaces that the plugin implements
+                    newly_executed.extend(provided_implementations[*v].iter());
+
+                    // Schedule the plugin
+                    order.push(*v);
+                    false
+                } else {
+                    true
+                }
+            });
+
+            // Merge the newly_executed set into executed ready to be used next iteration
+            executed.extend(newly_executed.iter());
+
+            // Clear the newly executed set to ready for next iteration
+            newly_executed.clear();
+
+            // If the `already_scheduled_count` does not change over the course of an iteration it means
+            // there are execution dependencies that can not be satisfied. This is an error condition
+            // and so we panic if we detect when this has happened.
+            assert_ne!(already_scheduled_count, order.len());
+        }
+
+        order
+    }
 }
