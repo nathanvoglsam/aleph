@@ -47,20 +47,20 @@ struct Data {
     renderer: EguiRenderer,
 }
 
-pub struct RenderPlugin {
+pub struct PluginRenderDX12 {
     data: Option<Data>,
 }
 
-impl RenderPlugin {
+impl PluginRenderDX12 {
     pub fn new() -> Self {
         Self { data: None }
     }
 }
 
-impl IPlugin for RenderPlugin {
+impl IPlugin for PluginRenderDX12 {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
-            name: "DX12 Render Plugin".to_string(),
+            name: "PluginRenderDX12".to_string(),
             description: "A render plugin implemented with dx12".to_string(),
             major_version: 0,
             minor_version: 1,
@@ -235,9 +235,9 @@ impl IPlugin for RenderPlugin {
     }
 }
 
-any::declare_interfaces!(RenderPlugin, [IPlugin]);
+any::declare_interfaces!(PluginRenderDX12, [IPlugin]);
 
-impl RenderPlugin {
+impl PluginRenderDX12 {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///

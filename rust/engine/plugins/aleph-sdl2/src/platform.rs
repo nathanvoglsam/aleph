@@ -48,7 +48,7 @@ use std::any::TypeId;
 use std::collections::HashMap;
 use std::ops::Deref;
 
-pub struct PlatformSDL2 {
+pub struct PluginPlatformSDL2 {
     _sdl: Option<sdl2::Sdl>,
     _sdl_video: Option<sdl2::VideoSubsystem>,
     _sdl_event: Option<sdl2::EventSubsystem>,
@@ -61,7 +61,7 @@ pub struct PlatformSDL2 {
     cursors: HashMap<Cursor, sdl2::mouse::Cursor>,
 }
 
-impl PlatformSDL2 {
+impl PluginPlatformSDL2 {
     pub fn new() -> Self {
         let sdl_main_ctx = unsafe { crate::sdl_main_wrapper::run_sdl_main() };
 
@@ -87,7 +87,7 @@ impl PlatformSDL2 {
     }
 }
 
-impl Drop for PlatformSDL2 {
+impl Drop for PluginPlatformSDL2 {
     fn drop(&mut self) {
         self._sdl = None;
         self._sdl_video = None;
@@ -101,10 +101,10 @@ impl Drop for PlatformSDL2 {
     }
 }
 
-impl IPlugin for PlatformSDL2 {
+impl IPlugin for PluginPlatformSDL2 {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
-            name: "PlatformSDL2".to_string(),
+            name: "PluginPlatformSDL2".to_string(),
             description: "A platform abstraction layer implemented with SDL2".to_string(),
             major_version: 0,
             minor_version: 1,
@@ -215,7 +215,7 @@ impl IPlugin for PlatformSDL2 {
     }
 }
 
-impl PlatformSDL2 {
+impl PluginPlatformSDL2 {
     fn handle_requests(&mut self, _registry: &dyn IRegistryAccessor) {
         let mut window = self.sdl_window.take().unwrap();
         let mouse_utils = self.sdl_mouse_util.take().unwrap();
@@ -332,7 +332,7 @@ impl PlatformSDL2 {
     }
 }
 
-impl PlatformSDL2 {
+impl PluginPlatformSDL2 {
     fn window_state(&self) -> RwLockWriteGuard<WindowState> {
         self.provider.window.as_ref().unwrap().state.write()
     }
@@ -374,7 +374,7 @@ impl PlatformSDL2 {
     }
 }
 
-interfaces::any::declare_interfaces!(PlatformSDL2, [IPlugin]);
+interfaces::any::declare_interfaces!(PluginPlatformSDL2, [IPlugin]);
 
 fn init_cursor_map() -> HashMap<Cursor, sdl2::mouse::Cursor> {
     let mut cursors = HashMap::new();

@@ -58,4 +58,4 @@ mod renderer;
 mod shaders;
 
 #[cfg(target_os = "windows")]
-pub use plugin::RenderPlugin;
+pub use plugin::PluginRenderDX12;

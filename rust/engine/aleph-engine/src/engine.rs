@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::egui::EguiPlugin;
+use crate::egui::PluginEgui;
 use crate::plugin_registry::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
-use aleph_sdl2::PlatformSDL2;
+use aleph_sdl2::PluginPlatformSDL2;
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,
@@ -68,11 +68,11 @@ impl EngineBuilder {
     }
 
     pub fn default_plugins(&mut self) -> &mut Self {
-        self.plugin(PlatformSDL2::new());
-        self.plugin(EguiPlugin::new());
+        self.plugin(PluginPlatformSDL2::new());
+        self.plugin(PluginEgui::new());
 
         #[cfg(target_os = "windows")]
-        self.plugin(aleph_render::RenderPlugin::new());
+        self.plugin(aleph_render::PluginRenderDX12::new());
 
         self
     }

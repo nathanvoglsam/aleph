@@ -39,13 +39,13 @@ use aleph::plugin_registry::interfaces::plugin::{
 };
 use aleph::Engine;
 
-struct AlephAppLogic {
+struct PluginGameLogic {
     demo_window: egui_demo_lib::DemoWindows,
     colour_test: egui_demo_lib::ColorTest,
     egui_provider: Option<AnyArc<dyn IEguiContextProvider>>,
 }
 
-impl AlephAppLogic {
+impl PluginGameLogic {
     pub fn new() -> Self {
         Self {
             demo_window: Default::default(),
@@ -55,10 +55,10 @@ impl AlephAppLogic {
     }
 }
 
-impl IPlugin for AlephAppLogic {
+impl IPlugin for PluginGameLogic {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
-            name: "test-game-app-logic".to_string(),
+            name: "PluginGameLogic".to_string(),
             description: "The game logic implementation for test-game".to_string(),
             major_version: 0,
             minor_version: 1,
@@ -104,11 +104,11 @@ impl IPlugin for AlephAppLogic {
     }
 }
 
-aleph::plugin_registry::interfaces::any::declare_interfaces!(AlephAppLogic, [IPlugin]);
+aleph::plugin_registry::interfaces::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 fn main() {
     let mut engine = Engine::builder();
     engine.default_plugins();
-    engine.plugin(AlephAppLogic::new());
+    engine.plugin(PluginGameLogic::new());
     engine.build().run()
 }

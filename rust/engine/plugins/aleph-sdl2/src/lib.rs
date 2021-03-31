@@ -40,4 +40,4 @@ mod provider;
 mod sdl_main_wrapper;
 mod window;
 
-pub use platform::PlatformSDL2;
+pub use platform::PluginPlatformSDL2;

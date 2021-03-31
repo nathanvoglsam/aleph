@@ -41,7 +41,7 @@ use interfaces::plugin::{
 use std::any::TypeId;
 use std::ops::Deref;
 
-pub struct EguiPlugin {
+pub struct PluginEgui {
     window: Option<AnyArc<dyn IWindow>>,
     mouse: Option<AnyArc<dyn IMouse>>,
     keyboard: Option<AnyArc<dyn IKeyboard>>,
@@ -52,7 +52,7 @@ pub struct EguiPlugin {
     context_provider: AnyArc<EguiContextProvider>,
 }
 
-impl EguiPlugin {
+impl PluginEgui {
     pub fn new() -> Self {
         let render_data: AnyArc<EguiRenderData> = AnyArc::default();
         let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
@@ -69,10 +69,10 @@ impl EguiPlugin {
     }
 }
 
-impl IPlugin for EguiPlugin {
+impl IPlugin for PluginEgui {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
-            name: "Egui Plugin".to_string(),
+            name: "PluginEgui".to_string(),
             description: "Plugin that integrates egui".to_string(),
             major_version: 0,
             minor_version: 1,
@@ -175,4 +175,4 @@ impl IPlugin for EguiPlugin {
     }
 }
 
-interfaces::any::declare_interfaces!(EguiPlugin, [IPlugin]);
+interfaces::any::declare_interfaces!(PluginEgui, [IPlugin]);
