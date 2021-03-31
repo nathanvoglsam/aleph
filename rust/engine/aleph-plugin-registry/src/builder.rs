@@ -31,7 +31,7 @@ use crate::interfaces::plugin::{IPlugin, UpdateStage};
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 ///
 ///
@@ -84,7 +84,7 @@ impl PluginRegistryBuilder {
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
             plugins: self.plugins,
-            interfaces: HashMap::new(),
+            interfaces: BTreeMap::new(),
             init_order,
             update_orders,
             exit_order,
@@ -100,27 +100,27 @@ impl PluginRegistryBuilder {
     fn handle_plugin_registration(
         &mut self,
     ) -> (
-        Vec<HashSet<TypeId>>,
-        Vec<Vec<HashSet<TypeId>>>,
-        Vec<Vec<HashSet<TypeId>>>,
-        Vec<HashSet<TypeId>>,
-        Vec<HashSet<usize>>,
+        Vec<BTreeSet<TypeId>>,
+        Vec<Vec<BTreeSet<TypeId>>>,
+        Vec<Vec<BTreeSet<TypeId>>>,
+        Vec<BTreeSet<TypeId>>,
+        Vec<BTreeSet<usize>>,
     ) {
         // Construct our registrar with empty sets
         let mut registrar = PluginRegistrar {
             depends_on_list: Default::default(),
             provided_interfaces: Default::default(),
-            init_after_list: vec![HashSet::default(); 1],
-            update_stage_dependencies: vec![HashSet::default(); UpdateStage::STAGE_COUNT],
-            update_stages: HashSet::new(),
+            init_after_list: vec![BTreeSet::default(); 1],
+            update_stage_dependencies: vec![BTreeSet::default(); UpdateStage::STAGE_COUNT],
+            update_stages: BTreeSet::new(),
         };
 
         // SoA storage for the plugin's execution dependencies for each execution stage
-        let mut dependencies: Vec<HashSet<TypeId>> = Vec::new();
-        let mut init_dependencies: Vec<Vec<HashSet<TypeId>>> = Vec::new();
-        let mut update_dependencies: Vec<Vec<HashSet<TypeId>>> = Vec::new();
-        let mut provided_interfaces: Vec<HashSet<TypeId>> = Vec::new();
-        let mut update_stages: Vec<HashSet<usize>> = Vec::new();
+        let mut dependencies: Vec<BTreeSet<TypeId>> = Vec::new();
+        let mut init_dependencies: Vec<Vec<BTreeSet<TypeId>>> = Vec::new();
+        let mut update_dependencies: Vec<Vec<BTreeSet<TypeId>>> = Vec::new();
+        let mut provided_interfaces: Vec<BTreeSet<TypeId>> = Vec::new();
+        let mut update_stages: Vec<BTreeSet<usize>> = Vec::new();
 
         // Iterate over each plugin and record its registration info
         self.plugins.iter_mut().for_each(|plugin| {
@@ -132,11 +132,11 @@ impl PluginRegistryBuilder {
             dependencies.push(std::mem::take(&mut registrar.depends_on_list));
             init_dependencies.push(std::mem::replace(
                 &mut registrar.init_after_list,
-                vec![HashSet::default(); 1],
+                vec![BTreeSet::default(); 1],
             ));
             update_dependencies.push(std::mem::replace(
                 &mut registrar.update_stage_dependencies,
-                vec![HashSet::default(); UpdateStage::STAGE_COUNT],
+                vec![BTreeSet::default(); UpdateStage::STAGE_COUNT],
             ));
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
             update_stages.push(std::mem::take(&mut registrar.update_stages));
@@ -152,21 +152,21 @@ impl PluginRegistryBuilder {
 
     fn resolve_dependencies(
         &self,
-        dependencies: &Vec<HashSet<TypeId>>,
-        init_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
-        update_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
-        provided_interfaces: &Vec<HashSet<TypeId>>,
+        dependencies: &Vec<BTreeSet<TypeId>>,
+        init_dependencies: &mut Vec<Vec<BTreeSet<TypeId>>>,
+        update_dependencies: &mut Vec<Vec<BTreeSet<TypeId>>>,
+        provided_interfaces: &Vec<BTreeSet<TypeId>>,
     ) {
         // Collect a flattened set of all interfaces that are mandatory for the full set of plugins
         // to work
-        let mandatory_interfaces: HashSet<TypeId> = dependencies
+        let mandatory_interfaces: BTreeSet<TypeId> = dependencies
             .iter()
             .map(|v| v.iter().cloned())
             .flatten()
             .collect();
 
-        // Collect a flattened set of all interfaces that have been provided by the set if plugins
-        let all_interfaces: HashSet<TypeId> = provided_interfaces
+        // Collect a flattened set of all interfaces that have been provided by the set of plugins
+        let all_interfaces: BTreeSet<TypeId> = provided_interfaces
             .iter()
             .map(|v| v.iter().cloned())
             .flatten()
@@ -177,10 +177,10 @@ impl PluginRegistryBuilder {
         // satisfy everyone's requirements.
         if !all_interfaces.is_superset(&mandatory_interfaces) {
             log::error!("Plugins have been registered with unsatisfied dependencies");
-            log::error!("Error was caused by one of the following plugins: ");
+            log::error!("Error was caused by the following plugins: ");
 
             // Get the set of mandatory interfaces that have not been provided
-            let unprovided_interfaces: HashSet<TypeId> = mandatory_interfaces
+            let unprovided_interfaces: BTreeSet<TypeId> = mandatory_interfaces
                 .difference(&all_interfaces)
                 .copied()
                 .collect();
@@ -208,25 +208,35 @@ impl PluginRegistryBuilder {
         // can handle optional dependencies
         init_dependencies.iter_mut().for_each(|v| {
             v.iter_mut().for_each(|v| {
-                v.retain(|v| all_interfaces.contains(v));
+                let set = std::mem::take(v);
+                let set: BTreeSet<TypeId> = set
+                    .into_iter()
+                    .filter(|v| all_interfaces.contains(v))
+                    .collect();
+                *v = set;
             });
         });
         update_dependencies.iter_mut().for_each(|v| {
             v.iter_mut().for_each(|v| {
-                v.retain(|v| all_interfaces.contains(v));
+                let set = std::mem::take(v);
+                let set: BTreeSet<TypeId> = set
+                    .into_iter()
+                    .filter(|v| all_interfaces.contains(v))
+                    .collect();
+                *v = set;
             });
         });
     }
 
     fn schedule_plugin_execution(
         &self,
-        init_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
-        update_dependencies: &mut Vec<Vec<HashSet<TypeId>>>,
-        provided_interfaces: &mut Vec<HashSet<TypeId>>,
-        update_stages: &mut Vec<HashSet<usize>>,
+        init_dependencies: &mut Vec<Vec<BTreeSet<TypeId>>>,
+        update_dependencies: &mut Vec<Vec<BTreeSet<TypeId>>>,
+        provided_interfaces: &mut Vec<BTreeSet<TypeId>>,
+        update_stages: &mut Vec<BTreeSet<usize>>,
     ) -> (Vec<usize>, Vec<Vec<usize>>, Vec<usize>) {
         // Build a hash set populated with the number 0..n where n is the number of plugins.
-        let unscheduled: HashSet<usize> = (0..self.plugins.len()).collect();
+        let unscheduled: BTreeSet<usize> = (0..self.plugins.len()).collect();
 
         // Build the init execution order
         //
@@ -258,14 +268,14 @@ impl PluginRegistryBuilder {
 
     fn build_update_exec_orders(
         &self,
-        execution_dependencies: &[Vec<HashSet<TypeId>>],
-        provided_implementations: &[HashSet<TypeId>],
-        update_stages: &[HashSet<usize>],
+        execution_dependencies: &[Vec<BTreeSet<TypeId>>],
+        provided_implementations: &[BTreeSet<TypeId>],
+        update_stages: &[BTreeSet<usize>],
     ) -> Vec<Vec<usize>> {
         let mut output = Vec::new();
 
         (0..UpdateStage::STAGE_COUNT).into_iter().for_each(|stage| {
-            let unscheduled: HashSet<usize> = self
+            let unscheduled: BTreeSet<usize> = self
                 .plugins
                 .iter()
                 .enumerate()
@@ -286,46 +296,51 @@ impl PluginRegistryBuilder {
 
     fn build_execution_order(
         &self,
-        mut unscheduled: HashSet<usize>,
-        execution_dependencies: &[Vec<HashSet<TypeId>>],
-        provided_implementations: &[HashSet<TypeId>],
+        mut unscheduled: BTreeSet<usize>,
+        execution_dependencies: &[Vec<BTreeSet<TypeId>>],
+        provided_implementations: &[BTreeSet<TypeId>],
         stage: usize,
     ) -> Vec<usize> {
         // Output list we build the order into
         let mut order = Vec::new();
 
         // Set to keep track of what has been executed
-        let mut executed = HashSet::new();
+        let mut executed = BTreeSet::new();
 
         // Set to keep track of what was executed over the course of a single scheduler iteration
-        let mut newly_executed = HashSet::new();
+        let mut newly_executed = BTreeSet::new();
 
         while !unscheduled.is_empty() {
             // Store how many plugins have been scheduled before attempting the next scheduling round
             let already_scheduled_count = order.len();
 
-            unscheduled.retain(|v| {
-                // If all of the the plugin's dependencies are in the executed set then we can execute
-                // this plugin.
-                //
-                // If we can execute the plugin we add its index to the order and add it to the executed
-                // set. We can then mark it to be removed from the unscheduled set.
-                let dependencies_satisfied =
-                    executed.is_superset(&execution_dependencies[*v][stage]);
-                if dependencies_satisfied {
-                    // Insert the plugin's concrete type id into the executed set
-                    newly_executed.insert(self.plugins[*v].type_id());
+            let map = std::mem::take(&mut unscheduled);
+            let map: BTreeSet<usize> = map
+                .into_iter()
+                .filter(|v| {
+                    // If all of the the plugin's dependencies are in the executed set then we can execute
+                    // this plugin.
+                    //
+                    // If we can execute the plugin we add its index to the order and add it to the executed
+                    // set. We can then mark it to be removed from the unscheduled set.
+                    let dependencies_satisfied =
+                        executed.is_superset(&execution_dependencies[*v][stage]);
+                    if dependencies_satisfied {
+                        // Insert the plugin's concrete type id into the executed set
+                        newly_executed.insert(self.plugins[*v].type_id());
 
-                    // Insert the type id for all interfaces that the plugin implements
-                    newly_executed.extend(provided_implementations[*v].iter());
+                        // Insert the type id for all interfaces that the plugin implements
+                        newly_executed.extend(provided_implementations[*v].iter());
 
-                    // Schedule the plugin
-                    order.push(*v);
-                    false
-                } else {
-                    true
-                }
-            });
+                        // Schedule the plugin
+                        order.push(*v);
+                        false
+                    } else {
+                        true
+                    }
+                })
+                .collect();
+            unscheduled = map;
 
             // Merge the newly_executed set into executed ready to be used next iteration
             executed.extend(newly_executed.iter());

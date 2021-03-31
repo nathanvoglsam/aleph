@@ -40,7 +40,7 @@ pub use builder::PluginRegistryBuilder;
 use crate::interfaces::any::{AnyArc, IAny};
 use crate::interfaces::plugin::{IPlugin, IRegistryAccessor};
 use std::any::TypeId;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
@@ -50,7 +50,7 @@ pub struct PluginRegistry {
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
-    interfaces: HashMap<TypeId, AnyArc<dyn IAny>>,
+    interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
 
     /// The baked init execution sequence
     init_order: Vec<usize>,
@@ -68,7 +68,7 @@ impl PluginRegistry {
     }
 
     /// Internal function that drives the initialization of all the plugins
-    pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<HashSet<TypeId>>) {
+    pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<BTreeSet<TypeId>>) {
         let mut plugins = std::mem::take(&mut self.plugins);
         let mut accessor = RegistryAccessor {
             interfaces: std::mem::take(&mut self.interfaces),
@@ -192,7 +192,7 @@ impl Drop for PluginRegistry {
 }
 
 struct RegistryAccessor {
-    interfaces: HashMap<TypeId, AnyArc<dyn IAny>>,
+    interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
     should_quit: AtomicBool,
 }
 

@@ -29,14 +29,14 @@
 
 use crate::interfaces::plugin::{IPluginRegistrar, UpdateStage};
 use std::any::TypeId;
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 pub struct PluginRegistrar {
-    pub depends_on_list: HashSet<TypeId>,
-    pub provided_interfaces: HashSet<TypeId>,
-    pub init_after_list: Vec<HashSet<TypeId>>,
-    pub update_stage_dependencies: Vec<HashSet<TypeId>>,
-    pub update_stages: HashSet<usize>,
+    pub depends_on_list: BTreeSet<TypeId>,
+    pub provided_interfaces: BTreeSet<TypeId>,
+    pub init_after_list: Vec<BTreeSet<TypeId>>,
+    pub update_stage_dependencies: Vec<BTreeSet<TypeId>>,
+    pub update_stages: BTreeSet<usize>,
 }
 
 impl IPluginRegistrar for PluginRegistrar {
