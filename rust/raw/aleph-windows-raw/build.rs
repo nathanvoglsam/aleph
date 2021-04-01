@@ -53,7 +53,8 @@ fn main() {
             CreateFiberEx,
             DeleteFiber,
             ConvertFiberToThread,
-            SwitchToFiber
+            SwitchToFiber,
+            GetPhysicallyInstalledSystemMemory
         },
         Windows::Win32::StructuredStorage::{
             STATSTG,

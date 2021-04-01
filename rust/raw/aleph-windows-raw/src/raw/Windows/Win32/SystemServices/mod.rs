@@ -518,3 +518,10 @@ pub unsafe fn SwitchToFiber(lpfiber: *mut ::std::ffi::c_void) {
     }
     SwitchToFiber(::std::mem::transmute(lpfiber))
 }
+pub unsafe fn GetPhysicallyInstalledSystemMemory(totalmemoryinkilobytes: *mut u64) -> BOOL {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn GetPhysicallyInstalledSystemMemory(totalmemoryinkilobytes: *mut u64) -> BOOL;
+    }
+    GetPhysicallyInstalledSystemMemory(::std::mem::transmute(totalmemoryinkilobytes))
+}
