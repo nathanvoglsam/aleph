@@ -57,6 +57,46 @@ static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
 });
 
 ///
+/// Only need to look this up once so wrap it in a lazy static
+///
+#[cfg(target_os = "windows")]
+#[allow(clippy::identity_op)]
+static SYSTEM_MEMORY: Lazy<Option<u64>> = Lazy::new(get_memory);
+
+#[cfg(target_os = "windows")]
+fn get_memory() -> Option<u64> {
+    use aleph_windows_raw::Win32::SystemServices::GetPhysicallyInstalledSystemMemory;
+
+    unsafe {
+        let mut memory = 0;
+        if GetPhysicallyInstalledSystemMemory(&mut memory) != false {
+            Some(memory * 1024)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn get_memory() -> Option<u64> {
+    unsafe {
+        use std::mem::MaybeUninit;
+        let mut sysinfo = MaybeUninit::uninit();
+
+        if libc::sysinfo(&mut sysinfo) == 0 {
+            Some(sysinfo.totalram as u64)
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "linux")))]
+fn get_memory() -> Option<u64> {
+    None
+}
+
+///
 /// Gets the vendor string for the current CPU
 ///
 /// # Warning
@@ -83,13 +123,21 @@ pub fn cpu_brand() -> &'static str {
 ///
 /// Returns the number of physical cores (non SMT cores) on the current host
 ///
-pub fn physical_core_count() -> usize {
-    num_cpus::get_physical()
+pub fn physical_core_count() -> u64 {
+    num_cpus::get_physical() as u64
 }
 
 ///
 /// Returns the number of logical cores (physical + SMT cores) on the current host
 ///
-pub fn logical_core_count() -> usize {
-    num_cpus::get()
+pub fn logical_core_count() -> u64 {
+    num_cpus::get() as u64
+}
+
+///
+/// Returns the amount of memory installed in the system in bytes. A `None` value indicates that
+/// the information could not be retrieved successfully
+///
+pub fn installed_memory() -> Option<u64> {
+    *SYSTEM_MEMORY
 }

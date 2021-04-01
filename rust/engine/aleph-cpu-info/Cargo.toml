@@ -30,7 +30,7 @@
 
 [package]
 name = "aleph-cpu-info"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Crate for getting information about the host CPU"
 license = "MIT"
@@ -45,6 +45,12 @@ edition = "2018"
 raw-cpuid = "8.1"
 once_cell = "1"
 num_cpus = "1"
+
+[target.'cfg(windows)'.dependencies]
+aleph-windows-raw = { path = "../../raw/aleph-windows-raw", version = "0.1" }
+
+[target.'cfg(linux)'.dependencies]
+libc = "0.2"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

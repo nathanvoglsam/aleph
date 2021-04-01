@@ -127,12 +127,23 @@ impl Engine {
         let cpu_brand = aleph_cpu_info::cpu_brand();
         let physical_cpus = aleph_cpu_info::physical_core_count();
         let logical_cpus = aleph_cpu_info::logical_core_count();
-        //let system_ram = Platform::system_ram(); // TODO: Replacement for this
+        let (system_ram_mib, system_ram_gib) = aleph_cpu_info::installed_memory()
+            .map(|v| {
+                let mib = (v / (1024 * 1024)).to_string();
+                let gib = (v / (1024 * 1024 * 1024)).to_string();
+                (mib, gib)
+            })
+            .unwrap_or(("Unknown".to_owned(), "Unknown".to_owned()));
+
         aleph_log::info!("=== CPU INFO ===");
         aleph_log::info!("CPU Vendor    : {}", cpu_vendor);
         aleph_log::info!("CPU Brand     : {}", cpu_brand);
         aleph_log::info!("Physical CPUs : {}", physical_cpus);
         aleph_log::info!("Logical CPUs  : {}", logical_cpus);
-        //aleph_log::info!("System RAM    : {}MB", system_ram);
+        aleph_log::info!(
+            "System RAM    : {} MiB ({} GiB)",
+            system_ram_mib,
+            system_ram_gib
+        );
     }
 }
