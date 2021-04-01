@@ -1150,7 +1150,7 @@ impl VkFormat {
             | VkFormat::R64G64B64A64_SINT
             | VkFormat::R64G64B64A64_SFLOAT
             | VkFormat::D32_SFLOAT
-            | VkFormat::D32_SFLOAT_S8_UINT // TODO: Is this signed or unsigned? I would say yes
+            | VkFormat::D32_SFLOAT_S8_UINT
             | VkFormat::BC4_SNORM_BLOCK
             | VkFormat::BC5_SNORM_BLOCK
             | VkFormat::BC6H_SFLOAT_BLOCK
