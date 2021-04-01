@@ -59,7 +59,6 @@ static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
 ///
 /// Only need to look this up once so wrap it in a lazy static
 ///
-#[cfg(target_os = "windows")]
 #[allow(clippy::identity_op)]
 static SYSTEM_MEMORY: Lazy<Option<u64>> = Lazy::new(get_memory);
 
@@ -83,7 +82,8 @@ fn get_memory() -> Option<u64> {
         use std::mem::MaybeUninit;
         let mut sysinfo = MaybeUninit::uninit();
 
-        if libc::sysinfo(&mut sysinfo) == 0 {
+        if libc::sysinfo(sysinfo.as_mut_ptr()) == 0 {
+            let sysinfo = sysinfo.assume_init();
             Some(sysinfo.totalram as u64)
         } else {
             None
