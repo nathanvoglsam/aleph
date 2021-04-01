@@ -256,7 +256,7 @@ impl PerFrameObjects {
     unsafe fn update_srv(&self, device: &dx12::Device) {
         let srv_desc = dx12::ShaderResourceViewDesc::Texture2D {
             format: dxgi::Format::R8Unorm,
-            component_mapping: 0x1688, // TODO: Need to warp the macros the C++ api uses
+            component_mapping: dx12::ComponentMapping::identity(),
             texture_2d: dx12::Tex2DSrv {
                 most_detailed_mip: 0,
                 mip_levels: 1,
