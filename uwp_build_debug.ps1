@@ -1,1 +1,1 @@
-cargo build -Z build-std=std,panic_abort --target=x86_64-uwp-windows-msvc
+cargo +nightly-msvc build -Z build-std=std,panic_abort --target=x86_64-uwp-windows-msvc

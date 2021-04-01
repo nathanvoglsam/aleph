@@ -29,7 +29,7 @@
 
 #[cfg(target_vendor = "uwp")]
 mod uwp {
-    use aleph_windows_raw::win32::system_services::{
+    use aleph_windows_raw::Win32::SystemServices::{
         ConvertFiberToThread, ConvertThreadToFiberEx, CreateFiberEx, DeleteFiber, SwitchToFiber,
     };
     use once_cell::sync::OnceCell;
@@ -43,37 +43,52 @@ mod uwp {
         fn SDL_WinRTRunApp(main: RTMain, reserved: *const c_void) -> c_int;
     }
 
-    struct MainPayload {
-        main_fiber: NonNull<c_void>,
+    struct FiberPayload {
+        fiber: NonNull<c_void>,
     }
 
-    unsafe impl Send for MainPayload {}
-    unsafe impl Sync for MainPayload {}
+    unsafe impl Send for FiberPayload {}
+    unsafe impl Sync for FiberPayload {}
 
-    static MAIN_PAYLOAD: OnceCell<MainPayload> = OnceCell::new();
+    static MAIN_PAYLOAD: OnceCell<FiberPayload> = OnceCell::new();
+    static WINRT_PAYLOAD: OnceCell<FiberPayload> = OnceCell::new();
 
     unsafe extern "C" fn main_wrapper(
         _argc: std::os::raw::c_int,
         _argv: *const *const std::os::raw::c_char,
     ) -> std::os::raw::c_int {
+        let winrt_fiber = ConvertThreadToFiberEx(std::ptr::null_mut(), 0);
+        let winrt_fiber = NonNull::new(winrt_fiber).expect("Failed to convert thread to fiber");
+        let payload = FiberPayload { fiber: winrt_fiber };
+        if WINRT_PAYLOAD.set(payload).is_err() {
+            panic!("Trying to init platform twice");
+        }
+
         // Get our payload, panic if it isn't there
-        let payload = MAIN_PAYLOAD.get().unwrap();
+        let main_payload = MAIN_PAYLOAD.get().unwrap();
 
         // Now we've run the uwp init we can switch back to the original fiber
-        SwitchToFiber(payload.main_fiber.as_ptr());
+        SwitchToFiber(main_payload.fiber.as_ptr());
+
+        // Destroy this function's fiber
+        if ConvertFiberToThread() == false {
+            panic!("Failed to convert fiber to thread");
+        }
 
         // Return our exit code
         return 0;
     }
 
-    unsafe extern "system" fn fiber_proc(lp_parameter: *mut c_void) {
-        SDL_WinRTRunApp(main_wrapper, std::ptr::null());
+    extern "system" fn fiber_proc(_lp_parameter: *mut c_void) {
+        unsafe {
+            SDL_WinRTRunApp(main_wrapper, std::ptr::null());
 
-        // Get our payload, panic if it isn't there
-        let payload = MAIN_PAYLOAD.get().unwrap();
+            // Get our payload, panic if it isn't there
+            let payload = MAIN_PAYLOAD.get().unwrap();
 
-        // Switch back again as we've escaped SDL_WinRTRunApp
-        SwitchToFiber(payload.main_fiber.as_ptr());
+            // Switch back again as we've escaped SDL_WinRTRunApp
+            SwitchToFiber(payload.fiber.as_ptr());
+        }
     }
 
     pub struct MainCtx {
@@ -83,23 +98,17 @@ mod uwp {
     pub unsafe fn run_sdl_main() -> MainCtx {
         // Convert to fiber so we can jump back here from within the main function
         let main_fiber = ConvertThreadToFiberEx(std::ptr::null_mut(), 0);
-        let main_fiber = NonNull::new(fiber).expect("Failed to convert thread to fiber");
+        let main_fiber = NonNull::new(main_fiber).expect("Failed to convert thread to fiber");
 
         // Push into our global payload a pointer to the fiber to return to once SDL_WinRTRunApp
         // returns control to us
-        let payload = MainPayload { main_fiber };
+        let payload = FiberPayload { fiber: main_fiber };
         if MAIN_PAYLOAD.set(payload).is_err() {
             panic!("Trying to init platform twice");
         }
 
         // Create a new fiber which will drive our SDL_WinRTRunApp wrapper
-        let sdl_fiber = CreateFiberEx(
-            0,
-            0,
-            0,
-            std::mem::transmute(fiber_proc),
-            std::ptr::null_mut(),
-        );
+        let sdl_fiber = CreateFiberEx(0, 0, 0, Some(fiber_proc), std::ptr::null_mut());
         let sdl_fiber = NonNull::new(sdl_fiber).expect("Failed to crate main fiber");
 
         // Switch to the created fiber to run the SDL_WinRTRunApp to initialize required
@@ -114,16 +123,17 @@ mod uwp {
     }
 
     pub unsafe fn run_sdl_exit(ctx: &MainCtx) {
+        let winrt = WINRT_PAYLOAD.get().unwrap();
         // Now we need to destroy the resources SDL_WinRTRunApp created. To do so we jump back
         // into the sdl fiber so it can unwind its stack. Then it will jump back here again and
         // we can continue
-        SwitchToFiber(ctx.sdl_fiber.as_ptr());
+        SwitchToFiber(winrt.fiber.as_ptr());
 
         // We no longer need the other fiber so we destroy it.
         DeleteFiber(ctx.sdl_fiber.as_ptr());
 
         // Undo ConvertThreadToFiberEx
-        if ConvertFiberToThread() == 0 {
+        if ConvertFiberToThread() == false {
             panic!("Failed to convert fiber to thread");
         }
     }
