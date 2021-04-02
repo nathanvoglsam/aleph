@@ -29,7 +29,7 @@
 
 use interfaces::platform::{
     Cursor, Event, IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow, KeyCode, KeyMod,
-    KeyboardEvent, MouseEvent, MouseWheelDirection,
+    KeyboardEvent, MouseEvent, MouseWheelDirection, ScanCode,
 };
 
 pub fn get_egui_input(
@@ -125,30 +125,31 @@ pub fn get_egui_events(events: &dyn IEvents) -> Vec<egui::Event> {
             Event::KeyboardEvent(event) => match event {
                 KeyboardEvent::KeyDown(e) => {
                     // Add an event for copy paste
-                    if e.key_mod.contains(KeyMod::L_CTRL) || e.key_mod.contains(KeyMod::R_CTRL) {
-                        if e.key_code == KeyCode::C {
+                    if e.modifiers.contains(KeyMod::L_CTRL) || e.modifiers.contains(KeyMod::R_CTRL)
+                    {
+                        if e.scan_code == ScanCode::C {
                             out.push(egui::Event::Copy);
                         }
-                        if e.key_code == KeyCode::X {
+                        if e.scan_code == ScanCode::X {
                             out.push(egui::Event::Cut);
                         }
                     }
 
-                    if let Some(key) = translate_key(e.key_code) {
+                    if let Some(key) = translate_scan_code(e.scan_code) {
                         let event = egui::Event::Key {
                             key,
                             pressed: true,
-                            modifiers: translate_modifiers(e.key_mod),
+                            modifiers: translate_modifiers(e.modifiers),
                         };
                         out.push(event);
                     }
                 }
                 KeyboardEvent::KeyUp(e) => {
-                    if let Some(key) = translate_key(e.key_code) {
+                    if let Some(key) = translate_scan_code(e.scan_code) {
                         let event = egui::Event::Key {
                             key,
                             pressed: false,
-                            modifiers: translate_modifiers(e.key_mod),
+                            modifiers: translate_modifiers(e.modifiers),
                         };
 
                         out.push(event);
@@ -193,70 +194,139 @@ pub fn translate_modifiers(m: KeyMod) -> egui::Modifiers {
     }
 }
 
-pub fn translate_key(key: KeyCode) -> Option<egui::Key> {
-    let val = match key {
-        KeyCode::Backspace => egui::Key::Backspace,
-        KeyCode::Tab => egui::Key::Tab,
-        KeyCode::Return => egui::Key::Enter,
-        KeyCode::Escape => egui::Key::Escape,
-        KeyCode::Space => egui::Key::Space,
-        KeyCode::Num0 => egui::Key::Num0,
-        KeyCode::Num1 => egui::Key::Num1,
-        KeyCode::Num2 => egui::Key::Num2,
-        KeyCode::Num3 => egui::Key::Num3,
-        KeyCode::Num4 => egui::Key::Num4,
-        KeyCode::Num5 => egui::Key::Num5,
-        KeyCode::Num6 => egui::Key::Num6,
-        KeyCode::Num7 => egui::Key::Num7,
-        KeyCode::Num8 => egui::Key::Num8,
-        KeyCode::Num9 => egui::Key::Num9,
-        KeyCode::A => egui::Key::A,
-        KeyCode::B => egui::Key::B,
-        KeyCode::C => egui::Key::C,
-        KeyCode::D => egui::Key::D,
-        KeyCode::E => egui::Key::E,
-        KeyCode::F => egui::Key::F,
-        KeyCode::G => egui::Key::G,
-        KeyCode::H => egui::Key::H,
-        KeyCode::I => egui::Key::I,
-        KeyCode::J => egui::Key::J,
-        KeyCode::K => egui::Key::K,
-        KeyCode::L => egui::Key::L,
-        KeyCode::M => egui::Key::M,
-        KeyCode::N => egui::Key::N,
-        KeyCode::O => egui::Key::O,
-        KeyCode::P => egui::Key::P,
-        KeyCode::Q => egui::Key::Q,
-        KeyCode::R => egui::Key::R,
-        KeyCode::S => egui::Key::S,
-        KeyCode::T => egui::Key::T,
-        KeyCode::U => egui::Key::U,
-        KeyCode::V => egui::Key::V,
-        KeyCode::W => egui::Key::W,
-        KeyCode::X => egui::Key::X,
-        KeyCode::Y => egui::Key::Y,
-        KeyCode::Z => egui::Key::Z,
-        KeyCode::Delete => egui::Key::Delete,
-        KeyCode::Insert => egui::Key::Insert,
-        KeyCode::Home => egui::Key::Home,
-        KeyCode::PageUp => egui::Key::PageUp,
-        KeyCode::End => egui::Key::End,
-        KeyCode::PageDown => egui::Key::PageDown,
-        KeyCode::Right => egui::Key::ArrowRight,
-        KeyCode::Left => egui::Key::ArrowLeft,
-        KeyCode::Down => egui::Key::ArrowDown,
-        KeyCode::Up => egui::Key::ArrowUp,
-        KeyCode::Kp1 => egui::Key::Num1,
-        KeyCode::Kp2 => egui::Key::Num2,
-        KeyCode::Kp3 => egui::Key::Num3,
-        KeyCode::Kp4 => egui::Key::Num4,
-        KeyCode::Kp5 => egui::Key::Num5,
-        KeyCode::Kp6 => egui::Key::Num6,
-        KeyCode::Kp7 => egui::Key::Num7,
-        KeyCode::Kp8 => egui::Key::Num8,
-        KeyCode::Kp9 => egui::Key::Num9,
-        KeyCode::Kp0 => egui::Key::Num0,
-        _ => return None,
-    };
-    Some(val)
+// TODO: Once scan_code->key_code translation is done switch to this to handle regional keyboard
+//       layouts
+#[allow(unused)]
+pub fn translate_key_code(key: KeyCode) -> Option<egui::Key> {
+    match key {
+        KeyCode::Backspace => Some(egui::Key::Backspace),
+        KeyCode::Tab => Some(egui::Key::Tab),
+        KeyCode::Enter => Some(egui::Key::Enter),
+        KeyCode::Escape => Some(egui::Key::Escape),
+        KeyCode::Space => Some(egui::Key::Space),
+        KeyCode::Num0 => Some(egui::Key::Num0),
+        KeyCode::Num1 => Some(egui::Key::Num1),
+        KeyCode::Num2 => Some(egui::Key::Num2),
+        KeyCode::Num3 => Some(egui::Key::Num3),
+        KeyCode::Num4 => Some(egui::Key::Num4),
+        KeyCode::Num5 => Some(egui::Key::Num5),
+        KeyCode::Num6 => Some(egui::Key::Num6),
+        KeyCode::Num7 => Some(egui::Key::Num7),
+        KeyCode::Num8 => Some(egui::Key::Num8),
+        KeyCode::Num9 => Some(egui::Key::Num9),
+        KeyCode::A => Some(egui::Key::A),
+        KeyCode::B => Some(egui::Key::B),
+        KeyCode::C => Some(egui::Key::C),
+        KeyCode::D => Some(egui::Key::D),
+        KeyCode::E => Some(egui::Key::E),
+        KeyCode::F => Some(egui::Key::F),
+        KeyCode::G => Some(egui::Key::G),
+        KeyCode::H => Some(egui::Key::H),
+        KeyCode::I => Some(egui::Key::I),
+        KeyCode::J => Some(egui::Key::J),
+        KeyCode::K => Some(egui::Key::K),
+        KeyCode::L => Some(egui::Key::L),
+        KeyCode::M => Some(egui::Key::M),
+        KeyCode::N => Some(egui::Key::N),
+        KeyCode::O => Some(egui::Key::O),
+        KeyCode::P => Some(egui::Key::P),
+        KeyCode::Q => Some(egui::Key::Q),
+        KeyCode::R => Some(egui::Key::R),
+        KeyCode::S => Some(egui::Key::S),
+        KeyCode::T => Some(egui::Key::T),
+        KeyCode::U => Some(egui::Key::U),
+        KeyCode::V => Some(egui::Key::V),
+        KeyCode::W => Some(egui::Key::W),
+        KeyCode::X => Some(egui::Key::X),
+        KeyCode::Y => Some(egui::Key::Y),
+        KeyCode::Z => Some(egui::Key::Z),
+        KeyCode::Delete => Some(egui::Key::Delete),
+        KeyCode::Insert => Some(egui::Key::Insert),
+        KeyCode::Home => Some(egui::Key::Home),
+        KeyCode::PageUp => Some(egui::Key::PageUp),
+        KeyCode::End => Some(egui::Key::End),
+        KeyCode::PageDown => Some(egui::Key::PageDown),
+        KeyCode::ArrowRight => Some(egui::Key::ArrowRight),
+        KeyCode::ArrowLeft => Some(egui::Key::ArrowLeft),
+        KeyCode::ArrowDown => Some(egui::Key::ArrowDown),
+        KeyCode::ArrowUp => Some(egui::Key::ArrowUp),
+        KeyCode::PadNum1 => Some(egui::Key::Num1),
+        KeyCode::PadNum2 => Some(egui::Key::Num2),
+        KeyCode::PadNum3 => Some(egui::Key::Num3),
+        KeyCode::PadNum4 => Some(egui::Key::Num4),
+        KeyCode::PadNum5 => Some(egui::Key::Num5),
+        KeyCode::PadNum6 => Some(egui::Key::Num6),
+        KeyCode::PadNum7 => Some(egui::Key::Num7),
+        KeyCode::PadNum8 => Some(egui::Key::Num8),
+        KeyCode::PadNum9 => Some(egui::Key::Num9),
+        KeyCode::PadNum0 => Some(egui::Key::Num0),
+        _ => None,
+    }
+}
+
+pub fn translate_scan_code(key: ScanCode) -> Option<egui::Key> {
+    match key {
+        ScanCode::Backspace => Some(egui::Key::Backspace),
+        ScanCode::Tab => Some(egui::Key::Tab),
+        ScanCode::Return => Some(egui::Key::Enter),
+        ScanCode::Escape => Some(egui::Key::Escape),
+        ScanCode::Space => Some(egui::Key::Space),
+        ScanCode::Num0 => Some(egui::Key::Num0),
+        ScanCode::Num1 => Some(egui::Key::Num1),
+        ScanCode::Num2 => Some(egui::Key::Num2),
+        ScanCode::Num3 => Some(egui::Key::Num3),
+        ScanCode::Num4 => Some(egui::Key::Num4),
+        ScanCode::Num5 => Some(egui::Key::Num5),
+        ScanCode::Num6 => Some(egui::Key::Num6),
+        ScanCode::Num7 => Some(egui::Key::Num7),
+        ScanCode::Num8 => Some(egui::Key::Num8),
+        ScanCode::Num9 => Some(egui::Key::Num9),
+        ScanCode::A => Some(egui::Key::A),
+        ScanCode::B => Some(egui::Key::B),
+        ScanCode::C => Some(egui::Key::C),
+        ScanCode::D => Some(egui::Key::D),
+        ScanCode::E => Some(egui::Key::E),
+        ScanCode::F => Some(egui::Key::F),
+        ScanCode::G => Some(egui::Key::G),
+        ScanCode::H => Some(egui::Key::H),
+        ScanCode::I => Some(egui::Key::I),
+        ScanCode::J => Some(egui::Key::J),
+        ScanCode::K => Some(egui::Key::K),
+        ScanCode::L => Some(egui::Key::L),
+        ScanCode::M => Some(egui::Key::M),
+        ScanCode::N => Some(egui::Key::N),
+        ScanCode::O => Some(egui::Key::O),
+        ScanCode::P => Some(egui::Key::P),
+        ScanCode::Q => Some(egui::Key::Q),
+        ScanCode::R => Some(egui::Key::R),
+        ScanCode::S => Some(egui::Key::S),
+        ScanCode::T => Some(egui::Key::T),
+        ScanCode::U => Some(egui::Key::U),
+        ScanCode::V => Some(egui::Key::V),
+        ScanCode::W => Some(egui::Key::W),
+        ScanCode::X => Some(egui::Key::X),
+        ScanCode::Y => Some(egui::Key::Y),
+        ScanCode::Z => Some(egui::Key::Z),
+        ScanCode::Delete => Some(egui::Key::Delete),
+        ScanCode::Insert => Some(egui::Key::Insert),
+        ScanCode::Home => Some(egui::Key::Home),
+        ScanCode::PageUp => Some(egui::Key::PageUp),
+        ScanCode::End => Some(egui::Key::End),
+        ScanCode::PageDown => Some(egui::Key::PageDown),
+        ScanCode::ArrowRight => Some(egui::Key::ArrowRight),
+        ScanCode::ArrowLeft => Some(egui::Key::ArrowLeft),
+        ScanCode::ArrowDown => Some(egui::Key::ArrowDown),
+        ScanCode::ArrowUp => Some(egui::Key::ArrowUp),
+        ScanCode::PadNum1 => Some(egui::Key::Num1),
+        ScanCode::PadNum2 => Some(egui::Key::Num2),
+        ScanCode::PadNum3 => Some(egui::Key::Num3),
+        ScanCode::PadNum4 => Some(egui::Key::Num4),
+        ScanCode::PadNum5 => Some(egui::Key::Num5),
+        ScanCode::PadNum6 => Some(egui::Key::Num6),
+        ScanCode::PadNum7 => Some(egui::Key::Num7),
+        ScanCode::PadNum8 => Some(egui::Key::Num8),
+        ScanCode::PadNum9 => Some(egui::Key::Num9),
+        ScanCode::PadNum0 => Some(egui::Key::Num0),
+        _ => None,
+    }
 }
