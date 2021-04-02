@@ -286,7 +286,7 @@ fn translate_scan_code(scan_code: sdl2::keyboard::Scancode) -> ScanCode {
         Scancode::NonUsBackslash => ScanCode::NonUsBackslash,
         Scancode::Application => ScanCode::Application,
         Scancode::Power => ScanCode::Power,
-        Scancode::KpEquals => ScanCode::KpEquals,
+        Scancode::KpEquals => ScanCode::PadEquals,
         Scancode::F13 => ScanCode::F13,
         Scancode::F14 => ScanCode::F14,
         Scancode::F15 => ScanCode::F15,

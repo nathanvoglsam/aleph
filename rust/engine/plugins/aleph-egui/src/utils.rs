@@ -168,12 +168,12 @@ pub fn get_egui_events(events: &dyn IEvents) -> Vec<egui::Event> {
 
 pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
     let keyboard_state = keyboard.get_state();
-    let alt =
-        keyboard_state.key_code_down(KeyCode::LAlt) || keyboard_state.key_code_down(KeyCode::RAlt);
-    let ctrl = keyboard_state.key_code_down(KeyCode::LCtrl)
-        || keyboard_state.key_code_down(KeyCode::RCtrl);
-    let shift = keyboard_state.key_code_down(KeyCode::LShift)
-        || keyboard_state.key_code_down(KeyCode::RShift);
+    let alt = keyboard_state.key_code_down(KeyCode::LeftAlt)
+        || keyboard_state.key_code_down(KeyCode::RightAlt);
+    let ctrl = keyboard_state.key_code_down(KeyCode::LeftCtrl)
+        || keyboard_state.key_code_down(KeyCode::RightCtrl);
+    let shift = keyboard_state.key_code_down(KeyCode::LeftShift)
+        || keyboard_state.key_code_down(KeyCode::RightShift);
 
     egui::Modifiers {
         alt,
