@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{AnyArc, IAny};
+use crate::{AnyArc, IAny, QueryInterfaceBox};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -94,4 +94,44 @@ pub fn arc_test_1() {
 
     drop(test_other);
     assert_eq!(counter.load(Ordering::Relaxed), 32);
+}
+
+#[test]
+pub fn box_test_1() {
+    // Our counter for running the test
+    let counter = Arc::new(AtomicUsize::default());
+
+    // Wrap our counter in an AnyArc
+    let test = Test(counter.clone());
+    let test = Box::new(test);
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+
+    test.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 6);
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 7);
+
+    test.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 12);
+
+    let test = test.query_interface::<dyn ITestOther>().ok().unwrap();
+
+    test.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 17);
+
+    let test = test.query_interface::<dyn ITest>().ok().unwrap();
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 18);
+
+    let test = test.query_interface::<Test>().ok().unwrap();
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 19);
+
+    test.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 24);
 }

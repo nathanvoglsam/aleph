@@ -73,7 +73,7 @@ pub trait IAny: 'static {
     }
 }
 
-pub trait QueryInterface: IAny {
+pub trait QueryInterface {
     /// Generic wrapper function over the bare implementation of `__query_interface` that makes
     /// using it safe and simple.
     fn query_interface<Into: IAny + ?Sized>(&self) -> Option<&Into>;
@@ -90,10 +90,40 @@ impl<T: IAny + ?Sized> QueryInterface for T {
 
         unsafe {
             if let Some(obj) = self.__query_interface(TypeId::of::<Into>()) {
-                let any_ref = *(&obj as *const TraitObject as *const &Into);
+                let any_ref = (&obj as *const TraitObject as *const &Into).read();
                 Some(any_ref)
             } else {
                 None
+            }
+        }
+    }
+}
+
+pub trait QueryInterfaceBox: Sized {
+    /// Generic wrapper function over the bare implementation of `__query_interface` that makes
+    /// using it safe and simple.
+    fn query_interface<Into: IAny + ?Sized>(self) -> Result<Box<Into>, Self>;
+}
+
+impl<T: IAny + ?Sized> QueryInterfaceBox for Box<T> {
+    fn query_interface<Into: IAny + ?Sized>(self) -> Result<Box<Into>, Self> {
+        // Assert that trait object is the size of two pointers. Compiles to nothing
+        assert_eq!(size_of::<TraitObject>(), size_of::<usize>() * 2);
+
+        // Assert that the null pointer NonNull is correctly triggering size optimization. Compiles
+        // to nothing
+        assert_eq!(size_of::<Option<TraitObject>>(), size_of::<TraitObject>());
+
+        unsafe {
+            if let Some(obj) = self.__query_interface(TypeId::of::<Into>()) {
+                let any_box = (&obj as *const TraitObject as *const Box<Into>).read();
+
+                // Forget the original box so we don't double free
+                std::mem::forget(self);
+
+                Ok(any_box)
+            } else {
+                Err(self)
             }
         }
     }

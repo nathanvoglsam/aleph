@@ -75,6 +75,7 @@ mod tests;
 
 pub use any::IAny;
 pub use any::QueryInterface;
+pub use any::QueryInterfaceBox;
 pub use any::TraitObject;
 pub use any_arc::AnyArc;
 pub use any_arc::AnyWeak;
