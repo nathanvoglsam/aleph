@@ -206,7 +206,7 @@ impl PluginRegistryBuilder {
 
         // Remove non existent, but non mandatory interfaces from the execution dependencies so we
         // can handle optional dependencies
-        init_dependencies.iter_mut().for_each(|v| {
+        let resolver_fn = |v: &mut Vec<BTreeSet<TypeId>>| {
             v.iter_mut().for_each(|v| {
                 let set = std::mem::take(v);
                 let set: BTreeSet<TypeId> = set
@@ -215,17 +215,9 @@ impl PluginRegistryBuilder {
                     .collect();
                 *v = set;
             });
-        });
-        update_dependencies.iter_mut().for_each(|v| {
-            v.iter_mut().for_each(|v| {
-                let set = std::mem::take(v);
-                let set: BTreeSet<TypeId> = set
-                    .into_iter()
-                    .filter(|v| all_interfaces.contains(v))
-                    .collect();
-                *v = set;
-            });
-        });
+        };
+        init_dependencies.iter_mut().for_each(&resolver_fn);
+        update_dependencies.iter_mut().for_each(&resolver_fn);
     }
 
     fn schedule_plugin_execution(
