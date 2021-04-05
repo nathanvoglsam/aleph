@@ -54,7 +54,6 @@ members = [
     "rust/ktx/aleph-vk-format",
     "rust/logging/aleph-log",
     "rust/logging/aleph-logger",
-    "rust/engine/aleph-cpu-info",
     "rust/raw/aleph-dx12-alloc-raw",
     "rust/raw/aleph-dxc-raw",
     "rust/raw/aleph-pix-raw",
