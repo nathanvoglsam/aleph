@@ -34,8 +34,20 @@
 // Re-export useful crates
 pub extern crate aleph_egui as egui;
 pub extern crate aleph_log as log;
-pub extern crate aleph_plugin_registry as plugin_registry;
 pub extern crate aleph_target as target;
+
+pub mod plugin_registry {
+    pub use aleph_plugin_registry::PluginRegistry;
+    pub use aleph_plugin_registry::PluginRegistryBuilder;
+}
+
+pub mod any {
+    pub use aleph_plugin_registry::any::*;
+}
+
+pub mod interfaces {
+    pub use aleph_plugin_registry::interfaces::*;
+}
 
 // =================================================================================================
 // Modules
@@ -44,7 +56,7 @@ pub extern crate aleph_target as target;
 mod cpu_info;
 
 use crate::egui::PluginEgui;
-use crate::plugin_registry::interfaces::plugin::IPlugin;
+use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 use aleph_sdl2::PluginPlatformSDL2;
 

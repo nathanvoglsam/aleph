@@ -32,9 +32,9 @@
 extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
+use aleph::any::AnyArc;
 use aleph::egui::IEguiContextProvider;
-use aleph::plugin_registry::interfaces::any::AnyArc;
-use aleph::plugin_registry::interfaces::plugin::{
+use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
 };
 use aleph::Engine;
@@ -104,7 +104,7 @@ impl IPlugin for PluginGameLogic {
     }
 }
 
-aleph::plugin_registry::interfaces::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
+aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 fn main() {
     let mut engine = Engine::builder();
