@@ -33,20 +33,22 @@ extern crate aleph_log as log;
 pub use interfaces::any;
 
 mod builder;
+mod quit_handle;
 mod registrar;
 
 pub use builder::PluginRegistryBuilder;
 
 use crate::interfaces::any::{AnyArc, IAny};
-use crate::interfaces::plugin::{IPlugin, IRegistryAccessor};
+use crate::interfaces::plugin::{IPlugin, IQuitHandle, IRegistryAccessor};
 use std::any::TypeId;
 use std::collections::{BTreeMap, BTreeSet};
-use std::sync::atomic::{AtomicBool, Ordering};
 
 ///
 pub struct PluginRegistry {
     /// This stores plugins that can only be invoked directly from the main thread
     plugins: Vec<Box<dyn IPlugin>>,
+
+    quit_handle: AnyArc<dyn IQuitHandle>,
 
     /// Sharable storage for the set of all interfaces that have been provided by the registered
     /// plugins
@@ -71,8 +73,8 @@ impl PluginRegistry {
     pub(crate) fn init_plugins(&mut self, mut provided_interfaces: Vec<BTreeSet<TypeId>>) {
         let mut plugins = std::mem::take(&mut self.plugins);
         let mut accessor = RegistryAccessor {
+            quit_handle: self.quit_handle.clone(),
             interfaces: std::mem::take(&mut self.interfaces),
-            should_quit: AtomicBool::new(false),
         };
 
         self.init_order.iter().cloned().for_each(|index| {
@@ -145,11 +147,11 @@ impl PluginRegistry {
     pub fn run(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
         let accessor = RegistryAccessor {
+            quit_handle: self.quit_handle.clone(),
             interfaces: std::mem::take(&mut self.interfaces),
-            should_quit: AtomicBool::new(false),
         };
 
-        while !accessor.should_quit.load(Ordering::Relaxed) {
+        while !accessor.quit_handle.quit_requested() {
             for (stage, order) in self.update_orders.iter().enumerate() {
                 for plugin_index in order.iter().cloned() {
                     plugins[plugin_index].update_driver(stage, &accessor);
@@ -166,8 +168,8 @@ impl Drop for PluginRegistry {
     fn drop(&mut self) {
         let mut plugins = std::mem::take(&mut self.plugins);
         let accessor = RegistryAccessor {
+            quit_handle: self.quit_handle.clone(),
             interfaces: std::mem::take(&mut self.interfaces),
-            should_quit: AtomicBool::new(false),
         };
 
         self.exit_order.iter().cloned().for_each(|v| {
@@ -192,8 +194,8 @@ impl Drop for PluginRegistry {
 }
 
 struct RegistryAccessor {
+    quit_handle: AnyArc<dyn IQuitHandle>,
     interfaces: BTreeMap<TypeId, AnyArc<dyn IAny>>,
-    should_quit: AtomicBool,
 }
 
 impl IRegistryAccessor for RegistryAccessor {
@@ -201,7 +203,7 @@ impl IRegistryAccessor for RegistryAccessor {
         self.interfaces.get(&interface).cloned()
     }
 
-    fn request_quit(&self) {
-        self.should_quit.store(true, Ordering::Relaxed);
+    fn quit_handle(&self) -> AnyArc<dyn IQuitHandle> {
+        self.quit_handle.clone()
     }
 }

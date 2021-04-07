@@ -28,6 +28,7 @@
 //
 
 use crate::interfaces::plugin::{IPlugin, UpdateStage};
+use crate::quit_handle::QuitHandleImpl;
 use crate::registrar::PluginRegistrar;
 use crate::PluginRegistry;
 use std::any::{Any, TypeId};
@@ -84,6 +85,7 @@ impl PluginRegistryBuilder {
         // Package up the final registry with the computed execution orders
         let mut registry = PluginRegistry {
             plugins: self.plugins,
+            quit_handle: QuitHandleImpl::new().query_interface().unwrap(),
             interfaces: BTreeMap::new(),
             init_order,
             update_orders,
