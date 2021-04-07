@@ -45,6 +45,7 @@ edition = "2018"
 aleph-log = { path = "../../../logging/aleph-log", version = "1" }
 aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
 aleph-windows-raw = { path = "../../../raw/aleph-windows-raw", version = "0.1" }
+ctrlc = "3"
 once_cell = "1"
 parking_lot = "0.10"
 

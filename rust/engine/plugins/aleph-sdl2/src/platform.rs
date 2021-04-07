@@ -49,6 +49,7 @@ use std::collections::HashMap;
 use std::ops::Deref;
 
 pub struct PluginPlatformSDL2 {
+    headless: bool,
     _sdl: Option<sdl2::Sdl>,
     _sdl_video: Option<sdl2::VideoSubsystem>,
     _sdl_event: Option<sdl2::EventSubsystem>,
@@ -62,10 +63,11 @@ pub struct PluginPlatformSDL2 {
 }
 
 impl PluginPlatformSDL2 {
-    pub fn new() -> Self {
+    pub fn new(headless: bool) -> Self {
         let sdl_main_ctx = unsafe { crate::sdl_main_wrapper::run_sdl_main() };
 
         Self {
+            headless,
             _sdl: None,
             _sdl_video: None,
             _sdl_event: None,
@@ -113,16 +115,88 @@ impl IPlugin for PluginPlatformSDL2 {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.provides_interface::<dyn IFrameTimerProvider>();
-        registrar.provides_interface::<dyn IWindowProvider>();
-        registrar.provides_interface::<dyn IClipboardProvider>();
-        registrar.provides_interface::<dyn IKeyboardProvider>();
-        registrar.provides_interface::<dyn IMouseProvider>();
-        registrar.provides_interface::<dyn IEventsProvider>();
+        if !self.headless {
+            registrar.provides_interface::<dyn IFrameTimerProvider>();
+            registrar.provides_interface::<dyn IWindowProvider>();
+            registrar.provides_interface::<dyn IClipboardProvider>();
+            registrar.provides_interface::<dyn IKeyboardProvider>();
+            registrar.provides_interface::<dyn IMouseProvider>();
+            registrar.provides_interface::<dyn IEventsProvider>();
+        } else {
+            registrar.provides_interface::<dyn IFrameTimerProvider>();
+            registrar.provides_interface::<dyn IEventsProvider>();
+        }
+
         registrar.update_stage(UpdateStage::InputCollection);
     }
 
-    fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+    fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        let quit_handle = registry.quit_handle();
+        ctrlc::set_handler(move || {
+            println!();
+            quit_handle.quit()
+        })
+        .expect("Failed to registr ctrl+c handler");
+
+        if !self.headless {
+            self.init_typical()
+        } else {
+            self.init_headless()
+        }
+    }
+
+    fn on_input_collection(&mut self, registry: &dyn IRegistryAccessor) {
+        let timer = self.sdl_timer.take().unwrap();
+        self.frame_timer().unwrap().update(&timer);
+        self.sdl_timer = Some(timer);
+
+        self.handle_requests(registry);
+        self.handle_events(registry);
+    }
+}
+
+impl PluginPlatformSDL2 {
+    fn init_headless(&mut self) -> Box<dyn IInitResponse> {
+        aleph_log::trace!("Initializing SDL2 Library");
+        let sdl = sdl2::init().expect("Failed to initialize SDL2");
+
+        aleph_log::trace!("Initializing SDL2 Timer Subsystem");
+        let sdl_timer = sdl
+            .timer()
+            .expect("Failed to initialize SDL2 timer subsystem");
+
+        aleph_log::trace!("Initializing SDL2 Event Pump");
+        let sdl_event_pump = sdl
+            .event_pump()
+            .expect("Failed to initialize SDL2 event pump");
+
+        // Initialize all our implementations
+        let frame_timer = FrameTimerImpl::new(&sdl_timer);
+        let events = EventsImpl::new();
+
+        self.sdl_event_pump = Some(sdl_event_pump);
+        self.sdl_timer = Some(sdl_timer);
+
+        // Update our provider with the newly created implementations
+        let provider = AnyArc::get_mut(&mut self.provider).unwrap();
+        provider.frame_timer = Some(frame_timer);
+        provider.events = Some(events);
+
+        // Provide our declared implementations to the plugin registry
+        let response = vec![
+            (
+                TypeId::of::<dyn IFrameTimerProvider>(),
+                AnyArc::into_any(self.provider.clone()),
+            ),
+            (
+                TypeId::of::<dyn IEventsProvider>(),
+                AnyArc::into_any(self.provider.clone()),
+            ),
+        ];
+        Box::new(response)
+    }
+
+    fn init_typical(&mut self) -> Box<dyn IInitResponse> {
         aleph_log::trace!("Initializing SDL2 Library");
         let sdl = sdl2::init().expect("Failed to initialize SDL2");
 
@@ -205,156 +279,165 @@ impl IPlugin for PluginPlatformSDL2 {
         Box::new(response)
     }
 
-    fn on_input_collection(&mut self, registry: &dyn IRegistryAccessor) {
-        let timer = self.sdl_timer.take().unwrap();
-        self.frame_timer().unwrap().update(&timer);
-        self.sdl_timer = Some(timer);
-
-        self.handle_requests(registry);
-        self.handle_events(registry);
-    }
-}
-
-impl PluginPlatformSDL2 {
     fn handle_requests(&mut self, _registry: &dyn IRegistryAccessor) {
-        let mut window = self.sdl_window.take().unwrap();
-        let mouse_utils = self.sdl_mouse_util.take().unwrap();
-        let mut window_state = self.window_state();
+        if !self.headless {
+            let mut window = self.sdl_window.take().unwrap();
+            let mouse_utils = self.sdl_mouse_util.take().unwrap();
+            let mut window_state = self.window_state().unwrap();
 
-        self.mouse()
-            .unwrap()
-            .process_mouse_requests(&window, &mouse_utils, &self.cursors);
-        self.window()
-            .unwrap()
-            .process_window_requests(&mut window, &mut window_state);
+            self.mouse()
+                .unwrap()
+                .process_mouse_requests(&window, &mouse_utils, &self.cursors);
+            self.window()
+                .unwrap()
+                .process_window_requests(&mut window, &mut window_state);
 
-        drop(window_state);
-        self.sdl_mouse_util = Some(mouse_utils);
-        self.sdl_window = Some(window);
+            drop(window_state);
+            self.sdl_mouse_util = Some(mouse_utils);
+            self.sdl_window = Some(window);
+        }
     }
 
     fn handle_events(&mut self, registry: &dyn IRegistryAccessor) {
-        let mut event_pump = self.sdl_event_pump.take().unwrap();
-        let mut sdl_window = self.sdl_window.take().unwrap();
+        if !self.headless {
+            let mut event_pump = self.sdl_event_pump.take().unwrap();
+            let mut sdl_window = self.sdl_window.take().unwrap();
 
-        let window = self.window().unwrap();
-        let mouse = self.mouse().unwrap();
-        let keyboard = self.keyboard().unwrap();
+            let window = self.window().unwrap();
+            let mouse = self.mouse().unwrap();
+            let keyboard = self.keyboard().unwrap();
 
-        // Window state an events
-        let mut window_state = self.window_state();
-        let mut window_events = self.window_events();
+            let mut window_state = self.window_state().unwrap();
+            let mut window_events = self.window_events().unwrap();
+            let mut keyboard_state = self.keyboard_state().unwrap();
+            let mut keyboard_events = self.keyboard_events().unwrap();
+            let mut mouse_events = self.mouse_events().unwrap();
+            let mut all_events = self.all_events().unwrap();
 
-        // Keyboard state an events
-        let mut keyboard_state = self.keyboard_state();
-        let mut keyboard_events = self.keyboard_events();
+            // Clear the events buffers of last frames events
+            window_events.clear();
+            mouse_events.clear();
+            keyboard_events.clear();
+            all_events.clear();
 
-        // Mouse events
-        let mut mouse_events = self.mouse_events();
-
-        let mut all_events = self.all_events();
-
-        // Clear the events buffers of last frames events
-        window_events.clear();
-        mouse_events.clear();
-        keyboard_events.clear();
-        all_events.clear();
-
-        // Clear the event pump and delegate the events to their event handlers
-        for event in event_pump.poll_iter() {
-            match event {
-                sdl2::event::Event::Quit { .. } => {
-                    aleph_log::info!("Quit Event Received");
-                    registry.request_quit();
+            // Clear the event pump and delegate the events to their event handlers
+            for event in event_pump.poll_iter() {
+                match event {
+                    sdl2::event::Event::Quit { .. } => {
+                        aleph_log::info!("Quit Event Received");
+                        registry.quit_handle().quit();
+                    }
+                    sdl2::event::Event::Window { win_event, .. } => {
+                        window.process_window_event(
+                            &mut window_state,
+                            &mut window_events,
+                            &mut all_events,
+                            win_event,
+                        );
+                    }
+                    event @ sdl2::event::Event::MouseButtonDown { .. } => {
+                        mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
+                    }
+                    event @ sdl2::event::Event::MouseButtonUp { .. } => {
+                        mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
+                    }
+                    event @ sdl2::event::Event::MouseMotion { .. } => {
+                        mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
+                    }
+                    event @ sdl2::event::Event::MouseWheel { .. } => {
+                        mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
+                    }
+                    event @ sdl2::event::Event::KeyDown { .. } => {
+                        keyboard.process_keyboard_event(
+                            &mut keyboard_events,
+                            &mut keyboard_state,
+                            &mut all_events,
+                            event,
+                        );
+                    }
+                    event @ sdl2::event::Event::KeyUp { .. } => {
+                        keyboard.process_keyboard_event(
+                            &mut keyboard_events,
+                            &mut keyboard_state,
+                            &mut all_events,
+                            event,
+                        );
+                    }
+                    event @ sdl2::event::Event::TextInput { .. } => {
+                        keyboard.process_keyboard_event(
+                            &mut keyboard_events,
+                            &mut keyboard_state,
+                            &mut all_events,
+                            event,
+                        );
+                    }
+                    _ => {}
                 }
-                sdl2::event::Event::Window { win_event, .. } => {
-                    window.process_window_event(
-                        &mut window_state,
-                        &mut window_events,
-                        &mut all_events,
-                        win_event,
-                    );
-                }
-                event @ sdl2::event::Event::MouseButtonDown { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::MouseButtonUp { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::MouseMotion { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::MouseWheel { .. } => {
-                    mouse.process_mouse_event(&mut mouse_events, &mut all_events, event);
-                }
-                event @ sdl2::event::Event::KeyDown { .. } => {
-                    keyboard.process_keyboard_event(
-                        &mut keyboard_events,
-                        &mut keyboard_state,
-                        &mut all_events,
-                        event,
-                    );
-                }
-                event @ sdl2::event::Event::KeyUp { .. } => {
-                    keyboard.process_keyboard_event(
-                        &mut keyboard_events,
-                        &mut keyboard_state,
-                        &mut all_events,
-                        event,
-                    );
-                }
-                event @ sdl2::event::Event::TextInput { .. } => {
-                    keyboard.process_keyboard_event(
-                        &mut keyboard_events,
-                        &mut keyboard_state,
-                        &mut all_events,
-                        event,
-                    );
-                }
-                _ => {}
             }
+
+            // Update the mouse's state from the fresh sequence of events
+            mouse.update_state(&event_pump);
+
+            WindowImpl::update_state(&mut sdl_window, &mut window_state);
+
+            drop(window_state);
+            drop(window_events);
+            drop(keyboard_state);
+            drop(keyboard_events);
+            drop(mouse_events);
+            drop(all_events);
+
+            self.sdl_event_pump = Some(event_pump);
+            self.sdl_window = Some(sdl_window);
+        } else {
+            let mut event_pump = self.sdl_event_pump.take().unwrap();
+
+            let mut all_events = self.all_events().unwrap();
+
+            // Clear the events buffers of last frames events
+            all_events.clear();
+
+            // Clear the event pump and delegate the events to their event handlers
+            for event in event_pump.poll_iter() {
+                match event {
+                    sdl2::event::Event::Quit { .. } => {
+                        aleph_log::info!("Quit Event Received");
+                        registry.quit_handle().quit();
+                    }
+                    _ => {}
+                }
+            }
+
+            drop(all_events);
+
+            self.sdl_event_pump = Some(event_pump);
         }
-
-        // Update the mouse's state from the fresh sequence of events
-        mouse.update_state(&event_pump);
-
-        WindowImpl::update_state(&mut sdl_window, &mut window_state);
-
-        drop(window_state);
-        drop(window_events);
-        drop(keyboard_state);
-        drop(keyboard_events);
-        drop(mouse_events);
-        drop(all_events);
-
-        self.sdl_event_pump = Some(event_pump);
-        self.sdl_window = Some(sdl_window);
     }
 }
 
 impl PluginPlatformSDL2 {
-    fn window_state(&self) -> RwLockWriteGuard<WindowState> {
-        self.provider.window.as_ref().unwrap().state.write()
+    fn window_state(&self) -> Option<RwLockWriteGuard<WindowState>> {
+        self.provider.window.as_ref().map(|v| v.state.write())
     }
 
-    fn window_events(&self) -> RwLockWriteGuard<Vec<WindowEvent>> {
-        self.provider.window.as_ref().unwrap().events.write()
+    fn window_events(&self) -> Option<RwLockWriteGuard<Vec<WindowEvent>>> {
+        self.provider.window.as_ref().map(|v| v.events.write())
     }
 
-    fn keyboard_state(&self) -> RwLockWriteGuard<KeyboardState> {
-        self.provider.keyboard.as_ref().unwrap().state.write()
+    fn keyboard_state(&self) -> Option<RwLockWriteGuard<KeyboardState>> {
+        self.provider.keyboard.as_ref().map(|v| v.state.write())
     }
 
-    fn keyboard_events(&self) -> RwLockWriteGuard<Vec<KeyboardEvent>> {
-        self.provider.keyboard.as_ref().unwrap().events.write()
+    fn keyboard_events(&self) -> Option<RwLockWriteGuard<Vec<KeyboardEvent>>> {
+        self.provider.keyboard.as_ref().map(|v| v.events.write())
     }
 
-    fn mouse_events(&self) -> RwLockWriteGuard<Vec<MouseEvent>> {
-        self.provider.mouse.as_ref().unwrap().events.write()
+    fn mouse_events(&self) -> Option<RwLockWriteGuard<Vec<MouseEvent>>> {
+        self.provider.mouse.as_ref().map(|v| v.events.write())
     }
 
-    fn all_events(&self) -> RwLockWriteGuard<Vec<Event>> {
-        self.provider.events.as_ref().unwrap().0.write()
+    fn all_events(&self) -> Option<RwLockWriteGuard<Vec<Event>>> {
+        self.provider.events.as_ref().map(|v| v.deref().0.write())
     }
 
     fn mouse(&self) -> Option<&MouseImpl> {
