@@ -107,7 +107,8 @@ impl IPlugin for PluginGameLogic {
 aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 fn main() {
-    let headless = !cfg!(target_os = "windows");
+    let platform = aleph::target::build::target_platform();
+    let headless = !platform.is_windows();
 
     let mut engine = Engine::builder();
     engine.default_plugins(headless);
