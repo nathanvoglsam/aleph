@@ -69,38 +69,38 @@ impl IPlugin for PluginGameLogic {
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         registrar.update_stage(UpdateStage::Update);
 
-        registrar.depends_on::<dyn IEguiContextProvider>();
+        //registrar.depends_on::<dyn IEguiContextProvider>();
         registrar.must_init_after::<dyn IEguiContextProvider>();
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let egui_provider = registry
-            .get_interface::<dyn IEguiContextProvider>()
-            .unwrap();
-        self.egui_provider = Some(egui_provider);
+        let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
+        self.egui_provider = egui_provider;
 
         Box::new(Vec::new())
     }
 
     fn on_update(&mut self, _registry: &dyn IRegistryAccessor) {
-        let egui_ctx = self.egui_provider.as_ref().unwrap().get_context();
+        if let Some(egui) = self.egui_provider.as_ref() {
+            let egui_ctx = egui.get_context();
 
-        self.demo_window.ui(&egui_ctx);
+            self.demo_window.ui(&egui_ctx);
 
-        aleph::egui::Window::new("Colour Test")
-            .collapsible(false)
-            .scroll(true)
-            .show(&egui_ctx, |ui| {
-                let mut tex_allocator = None;
-                self.colour_test.ui(ui, &mut tex_allocator);
-            });
+            aleph::egui::Window::new("Colour Test")
+                .collapsible(false)
+                .scroll(true)
+                .show(&egui_ctx, |ui| {
+                    let mut tex_allocator = None;
+                    self.colour_test.ui(ui, &mut tex_allocator);
+                });
 
-        aleph::egui::Window::new("Settings")
-            .collapsible(false)
-            .scroll(true)
-            .show(&egui_ctx, |ui| {
-                egui_ctx.settings_ui(ui);
-            });
+            aleph::egui::Window::new("Settings")
+                .collapsible(false)
+                .scroll(true)
+                .show(&egui_ctx, |ui| {
+                    egui_ctx.settings_ui(ui);
+                });
+        }
     }
 }
 
