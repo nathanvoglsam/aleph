@@ -189,10 +189,9 @@ pub trait IRegistryAccessor: 'static {
     /// Object safe implementation of `get_interface`. See wrapper for more info.
     fn __get_interface(&self, interface: TypeId) -> Option<AnyArc<dyn IAny>>;
 
-    /// Used by a plugin to tell the registry it should exit the main loop and quit.
-    ///
-    /// This function has no effect during the `on_init` or `on_exit` functions.
-    fn request_quit(&self);
+    /// Registry quit handle which can be freely sent to other threads. The object is used to
+    /// request the engine/plugin registry to exit.
+    fn quit_handle(&self) -> AnyArc<dyn IQuitHandle>;
 }
 
 impl dyn IRegistryAccessor {
@@ -202,6 +201,24 @@ impl dyn IRegistryAccessor {
         self.__get_interface(TypeId::of::<T>())
             .map(|v| v.query_interface::<T>().unwrap())
     }
+}
+
+///
+/// Interface for accessing the registry's quit handle
+///
+pub trait IQuitHandle: IAny + Send + Sync + 'static {
+    /// Requests that the registry exit the main loop, call each plugin's `on_exit` and exit.
+    ///
+    /// # Info
+    ///
+    /// Calling `quit` will not immediately exit the main loop. If called within a main loop
+    /// iteration the iteration will continue to completion and no further iterations will occur.
+    ///
+    /// This way there can never be a partial main loop iteration.
+    fn quit(&self);
+
+    /// Returns whether a quit has been requested
+    fn quit_requested(&self) -> bool;
 }
 
 ///
