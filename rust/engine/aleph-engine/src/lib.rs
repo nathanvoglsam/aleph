@@ -55,10 +55,8 @@ pub mod interfaces {
 
 mod cpu_info;
 
-use crate::egui::PluginEgui;
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
-use aleph_sdl2::PluginPlatformSDL2;
 
 pub struct EngineBuilder {
     registry: PluginRegistryBuilder,
@@ -95,12 +93,21 @@ impl EngineBuilder {
         }
     }
 
-    pub fn default_plugins(&mut self) -> &mut Self {
-        self.plugin(PluginPlatformSDL2::new());
-        self.plugin(PluginEgui::new());
+    pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
+        self.plugin(aleph_sdl2::PluginPlatformSDL2::new(headless));
 
-        #[cfg(target_os = "windows")]
-        self.plugin(aleph_render::PluginRenderDX12::new());
+        // This only makes sense to load on platforms we have a renderer for, and only if we're not
+        // trying to run headless
+        if !headless {
+            #[cfg(target_os = "windows")]
+            self.plugin(egui::PluginEgui::new());
+        }
+
+        // This only makes sense to load on windows and not headless
+        if !headless {
+            #[cfg(target_os = "windows")]
+            self.plugin(aleph_render::PluginRenderDX12::new());
+        }
 
         self
     }
