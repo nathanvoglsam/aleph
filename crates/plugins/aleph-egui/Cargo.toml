@@ -29,24 +29,22 @@
 
 
 [package]
-name = "aleph-pix-raw"
+name = "aleph-egui"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine WinPixEventRuntime interface"
+description = "Aleph's egui plugin"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-pix-raw/"
+documentation = "https://docs.rs/aleph-egui/"
 readme = "README.md"
-## TODO: keywords = ["engine", "graphics", "directx", "game"]
-## TODO: categories = ["game-engines"]
+## TODO: keywords = ["macro", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
-build = "build.rs"
+
+[dependencies]
+aleph-log = { path = "../../aleph-log", version = "1" }
+aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
+egui = "0.8.0"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
-
-[build-dependencies]
-cc = "1"
-zip = "0.5"
-aleph-compile = { path = "../../build/aleph-compile", version = "1"}
-aleph-target-build = { path = "../../build/aleph-target-build", version = "2"}

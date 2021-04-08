@@ -29,29 +29,24 @@
 
 
 [package]
-name = "aleph-dx12"
+name = "aleph-pix-raw"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine dx12 interface"
+description = "The aleph-engine WinPixEventRuntime interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-dx12/"
+documentation = "https://docs.rs/aleph-pix-raw/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "directx", "game"]
 ## TODO: categories = ["game-engines"]
 edition = "2018"
+build = "build.rs"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies.aleph-windows-raw]
-path = "../../raw/aleph-windows-raw"
-version = "0.1"
-
-[dependencies.raw-window-handle]
-git = "https://github.com/rust-windowing/raw-window-handle.git"
-branch = "master"
-version = "0.3"
-
-[dependencies.utf16_lit]
-version = "2"
+[build-dependencies]
+cc = "1"
+zip = "0.5"
+aleph-compile = { path = "../aleph-compile", version = "1"}
+aleph-target-build = { path = "../aleph-target-build", version = "2"}

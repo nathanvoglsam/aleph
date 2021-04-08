@@ -29,28 +29,29 @@
 
 
 [package]
-name = "aleph-render"
+name = "aleph-dx12-alloc-raw"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine renderer"
+description = "The aleph-engine dx12 memory allocator interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-render/"
+documentation = "https://docs.rs/aleph-dx12-alloc-raw/"
 readme = "README.md"
-keywords = ["engine", "graphics", "vulkan", "game"]
-categories = ["game-engines"]
+## TODO: keywords = ["engine", "graphics", "directx", "game"]
+## TODO: categories = ["game-engines"]
 edition = "2018"
+build = "build.rs"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-egui = { path = "../aleph-egui", version = "0.1" }
-aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
-aleph-dx12 = { path = "../../../graphics/aleph-dx12", version = "0.1" }
-aleph-dx12-alloc = { path = "../../../graphics/aleph-dx12-alloc", version = "0.1" }
-aleph-pix = { path = "../../../graphics/aleph-pix", version = "0.1" }
-aleph-log = { path = "../../../logging/aleph-log", version = "1" }
-cstr = "0.2"
-once_cell = "1"
-ultraviolet = {version = "0.7", features = ["f64"] }
+[dependencies.aleph-windows-raw]
+path = "../aleph-windows-raw"
+version = "0.1"
+
+[build-dependencies.aleph-target-build]
+path = "../aleph-target-build"
+version = "2"
+
+[build-dependencies.cc]
+version = "1"

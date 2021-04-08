@@ -29,18 +29,17 @@
 
 
 [package]
-name = "aleph-dx12-alloc-raw"
+name = "aleph-dx12"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine dx12 memory allocator interface"
+description = "The aleph-engine dx12 interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-dx12-alloc-raw/"
+documentation = "https://docs.rs/aleph-dx12/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "directx", "game"]
 ## TODO: categories = ["game-engines"]
 edition = "2018"
-build = "build.rs"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
@@ -49,9 +48,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 path = "../aleph-windows-raw"
 version = "0.1"
 
-[build-dependencies.aleph-target-build]
-path = "../../build/aleph-target-build"
-version = "2"
+[dependencies.raw-window-handle]
+git = "https://github.com/rust-windowing/raw-window-handle.git"
+branch = "master"
+version = "0.3"
 
-[build-dependencies.cc]
-version = "1"
+[dependencies.utf16_lit]
+version = "2"

@@ -124,7 +124,7 @@ fn main() {
 
             // Perform the cmake build with the ninja generator, ninja will need to be in the system
             // path for this to work
-            let mut build = cmake::Config::new("../../../../submodules/SDL-mirror");
+            let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
             if target_platform.is_uwp() {
                 build.generator("Visual Studio 16 2019");
             } else {

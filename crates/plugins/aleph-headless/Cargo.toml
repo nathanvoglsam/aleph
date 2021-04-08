@@ -42,7 +42,7 @@ readme = "README.md"
 edition = "2018"
 
 [dependencies]
-aleph-log = { path = "../../../logging/aleph-log", version = "1" }
+aleph-log = { path = "../../aleph-log", version = "1" }
 aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
 ctrlc = "3"
 once_cell = "1"

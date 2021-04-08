@@ -29,32 +29,46 @@
 
 
 [package]
-name = "aleph-dxc"
+name = "aleph-engine"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine dxc interface"
+description = "A Rust and Vulkan powered 3D game engine"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-dxc/"
+documentation = "https://docs.rs/aleph-engine/"
 readme = "README.md"
-## TODO: keywords = ["engine", "graphics", "directx", "game"]
-## TODO: categories = ["game-engines"]
+keywords = ["engine", "graphics", "vulkan", "game"]
+categories = ["game-engines"]
 edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies.aleph-dx12]
-path = "../aleph-dx12"
-version = "0.1"
+[features]
+default = ["platform_sdl2"]
+platform_sdl2 = ["aleph-sdl2"]
 
-[dependencies.aleph-windows-raw]
-path = "../../raw/aleph-windows-raw"
-version = "0.1"
+[dependencies]
+aleph-plugin-registry = { path = "../aleph-plugin-registry", version = "0.1" }
+aleph-log = { path = "../aleph-log", version = "1" }
+aleph-logger = { path = "../aleph-logger", version = "0.1" }
 
-[dependencies.aleph-dxc-raw]
-path = "../../raw/aleph-dxc-raw"
-version = "0.1"
+aleph-target = { path = "../aleph-target", version = "2" }
+aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
 
-[dependencies.utf16_lit]
-version = "2"
+aleph-egui = { path = "../plugins/aleph-egui", version = "0.1" }
+aleph-sdl2 = { path = "../plugins/aleph-sdl2", version = "0.1", optional = true }
+aleph-headless = { path = "../plugins/aleph-headless", version = "0.1" }
+
+raw-cpuid = "8.1"
+once_cell = "1"
+num_cpus = "1"
+
+[target.'cfg(windows)'.dependencies]
+aleph-render = { path = "../plugins/aleph-render", version = "0.1" }
+aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
+
+utf16_lit = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"

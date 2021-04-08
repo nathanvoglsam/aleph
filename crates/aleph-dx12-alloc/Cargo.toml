@@ -29,21 +29,29 @@
 
 
 [package]
-name = "aleph-plugin-registry"
+name = "aleph-dx12-alloc"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The core driver for Aleph's plugin system"
+description = "The aleph-engine dx12 alloc interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-plugin-registry/"
+documentation = "https://docs.rs/aleph-dx12-alloc/"
 readme = "README.md"
-## keywords = ["engine", "graphics", "vulkan", "game"]
-## categories = ["game-engines"]
+## TODO: keywords = ["engine", "graphics", "directx", "game"]
+## TODO: categories = ["game-engines"]
 edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies]
-aleph-log = { path = "../../logging/aleph-log", version = "1" }
-aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
+[dependencies.aleph-dx12]
+path = "../aleph-dx12"
+version = "0.1"
+
+[dependencies.aleph-windows-raw]
+path = "../aleph-windows-raw"
+version = "0.1"
+
+[dependencies.aleph-dx12-alloc-raw]
+path = "../aleph-dx12-alloc-raw"
+version = "0.1"
