@@ -94,7 +94,7 @@ impl EngineBuilder {
     }
 
     pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
-        self.plugin(aleph_sdl2::PluginPlatformSDL2::new(headless));
+        self.platform(headless);
 
         // This only makes sense to load on platforms we have a renderer for, and only if we're not
         // trying to run headless
@@ -121,6 +121,23 @@ impl EngineBuilder {
         Engine {
             registry: self.registry.build(),
         }
+    }
+
+    #[cfg(feature = "aleph-sdl2")]
+    fn platform(&mut self, headless: bool) {
+        if headless {
+            self.plugin(aleph_headless::PluginPlatformHeadless::new());
+        } else {
+            self.plugin(aleph_sdl2::PluginPlatformSDL2::new(false));
+        }
+    }
+
+    #[cfg(not(feature = "aleph-sdl2"))]
+    fn platform(&mut self, headless: bool) {
+        if !headless {
+            panic!("Requesting a non headless platform plugin when none is available");
+        }
+        self.plugin(aleph_headless::PluginPlatformHeadless::new())
     }
 }
 
