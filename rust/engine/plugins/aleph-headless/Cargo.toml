@@ -27,37 +27,26 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
 
-[workspace]
+[package]
+name = "aleph-headless"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "A platform plugin designed for running headless with minimal dependencies"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-headless/"
+readme = "README.md"
+## TODO: keywords = ["macro", "utility"]
+## TODO: categories = ["development-tools::build-utils"]
+edition = "2018"
 
-members = [
-    "rust/build/aleph-compile",
-    "rust/build/aleph-target",
-    "rust/build/aleph-target-build",
-    "rust/engine/aleph-any",
-    "rust/engine/aleph-engine",
-    "rust/engine/aleph-interfaces",
-    "rust/engine/plugins/aleph-egui",
-    "rust/engine/plugins/aleph-headless",
-    "rust/engine/plugins/aleph-render",
-    "rust/engine/plugins/aleph-sdl2",
-    "rust/engine/aleph-plugin-registry",
-    "rust/graphics/aleph-dx12",
-    "rust/graphics/aleph-dx12-alloc",
-    "rust/graphics/aleph-dxc",
-    "rust/graphics/aleph-pix",
-    "rust/ktx/aleph-ktx",
-    "rust/ktx/aleph-vk-format",
-    "rust/logging/aleph-log",
-    "rust/logging/aleph-logger",
-    "rust/raw/aleph-dx12-alloc-raw",
-    "rust/raw/aleph-dxc-raw",
-    "rust/raw/aleph-pix-raw",
-    "rust/raw/aleph-windows-raw",
-    "game/aleph-test",
-]
+[dependencies]
+aleph-log = { path = "../../../logging/aleph-log", version = "1" }
+aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
+ctrlc = "3"
+once_cell = "1"
+parking_lot = "0.10"
+
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
