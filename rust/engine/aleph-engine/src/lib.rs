@@ -128,7 +128,7 @@ impl EngineBuilder {
         if headless {
             self.plugin(aleph_headless::PluginPlatformHeadless::new());
         } else {
-            self.plugin(aleph_sdl2::PluginPlatformSDL2::new(false));
+            self.plugin(aleph_sdl2::PluginPlatformSDL2::new());
         }
     }
 
