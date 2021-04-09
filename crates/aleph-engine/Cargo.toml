@@ -52,9 +52,8 @@ platform_sdl2 = ["aleph-sdl2"]
 aleph-plugin-registry = { path = "../aleph-plugin-registry", version = "0.1" }
 aleph-log = { path = "../aleph-log", version = "1" }
 aleph-logger = { path = "../aleph-logger", version = "0.1" }
-
 aleph-target = { path = "../aleph-target", version = "2" }
-aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
+aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
 
 aleph-egui = { path = "../plugins/aleph-egui", version = "0.1" }
 aleph-sdl2 = { path = "../plugins/aleph-sdl2", version = "0.1", optional = true }

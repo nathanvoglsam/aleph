@@ -53,8 +53,6 @@ pub mod interfaces {
 // Modules
 // =================================================================================================
 
-mod cpu_info;
-
 use crate::interfaces::plugin::IPlugin;
 use crate::plugin_registry::{PluginRegistry, PluginRegistryBuilder};
 
@@ -175,11 +173,11 @@ impl Engine {
     /// Internal function for logging info about the CPU that is being used
     ///
     fn log_cpu_info() {
-        let cpu_vendor = cpu_info::cpu_vendor();
-        let cpu_brand = cpu_info::cpu_brand();
-        let physical_cpus = cpu_info::physical_core_count();
-        let logical_cpus = cpu_info::logical_core_count();
-        let (system_ram_mib, system_ram_gib) = cpu_info::installed_memory()
+        let cpu_vendor = aleph_sys_info::cpu_vendor();
+        let cpu_brand = aleph_sys_info::cpu_brand();
+        let physical_cpus = aleph_sys_info::physical_core_count();
+        let logical_cpus = aleph_sys_info::logical_core_count();
+        let (system_ram_mib, system_ram_gib) = aleph_sys_info::installed_memory()
             .map(|v| {
                 let mib = (v / (1024 * 1024)).to_string();
                 let gib = (v / (1024 * 1024 * 1024)).to_string();

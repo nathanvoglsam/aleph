@@ -27,38 +27,31 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
 
-[workspace]
+[package]
+name = "aleph-sys-info"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "Simple utility crate for getting basic system info"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-sys-info/"
+readme = "README.md"
+## TODO: keywords = ["engine", "graphics", "directx", "game"]
+## TODO: categories = ["game-engines"]
+edition = "2018"
 
-members = [
-    "crates/aleph-any",
-    "crates/aleph-compile",
-    "crates/aleph-dx12",
-    "crates/aleph-dx12-alloc",
-    "crates/aleph-dx12-alloc-raw",
-    "crates/aleph-dxc",
-    "crates/aleph-dxc-raw",
-    "crates/aleph-engine",
-    "crates/aleph-interfaces",
-    "crates/aleph-ktx",
-    "crates/aleph-log",
-    "crates/aleph-logger",
-    "crates/aleph-pix",
-    "crates/aleph-pix-raw",
-    "crates/aleph-plugin-registry",
-    "crates/aleph-sys-info",
-    "crates/aleph-target",
-    "crates/aleph-target-build",
-    "crates/aleph-vk-format",
-    "crates/aleph-windows-raw",
-    "crates/plugins/aleph-egui",
-    "crates/plugins/aleph-headless",
-    "crates/plugins/aleph-render",
-    "crates/plugins/aleph-sdl2",
-    "game/aleph-test",
-]
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]
+raw-cpuid = "8.1"
+once_cell = "1"
+num_cpus = "1"
+
+[target.'cfg(windows)'.dependencies]
+aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
+utf16_lit = "2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"
