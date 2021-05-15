@@ -27,9 +27,19 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+use crate::archive::{ArchiveID, AssetLocalID};
+use std::fmt::{Display, Formatter};
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
+///
+/// A unique ID for an asset that uniquely and globally identifies an asset.
+///
+/// This type is simply a tuple of an `ArchiveID` and an `AssetLocalID`.
+///
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct AssetID(pub ArchiveID, pub AssetLocalID);
+
+impl Display for AssetID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("[{}]:[{}]", self.0, self.1))
+    }
+}

@@ -27,9 +27,20 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+///
+/// Enumerates the possible locations for the asset system to load data from.
+///
+/// An `AssetDescriptor` describes where the data is located so it can be loaded into
+///
+pub enum AssetDescriptor {
+    /// A slice to the asset's data within a memory mapped archive. Anything memory mapped must be
+    /// made permanently resident, hence the static lifetime.
+    MemoryMapped(&'static [u8]),
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
+    /// A path to a file on the OS filesystem that should be opened and read to load the asset's
+    /// data into memory.
+    FilePath(std::path::PathBuf),
+
+    /// An already open file handle that should be read to load the asset's data into memory.
+    File(std::fs::File),
+}
