@@ -27,10 +27,32 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+///
+/// A bitflags struct that specifies configuration options for asset insertion operations on an
+/// `IArchiveMut` implementation
+///
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct AssetInsertFlags(u32);
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
-mod utils;
+crate::flags_impl!(AssetInsertFlags, u32);
+
+impl AssetInsertFlags {
+    /// Empty flags
+    pub const NONE: Self = Self(0);
+}
+
+///
+/// A bitflags struct that specifies configuration options for asset removal operations on an
+/// `IArchiveMut` implementation
+///
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct AssetRemoveFlags(u32);
+
+crate::flags_impl!(AssetRemoveFlags, u32);
+
+impl AssetRemoveFlags {
+    /// Empty flags
+    pub const NONE: Self = Self(0);
+}

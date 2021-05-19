@@ -27,20 +27,36 @@
 // SOFTWARE.
 //
 
+use std::io::{Read, Seek};
+
+/// A readable and seekable stream
+pub trait IAssetStream: Read + Seek {}
+
 ///
 /// Enumerates the possible locations for the asset system to load data from.
 ///
 /// An `AssetDescriptor` describes where the data is located so it can be loaded into
 ///
 pub enum AssetDescriptor {
-    /// A slice to the asset's data within a memory mapped archive. Anything memory mapped must be
-    /// made permanently resident, hence the static lifetime.
+    /// A slice to the asset's data that will be resident for the remainder of the program's
+    /// lifetime. This is distinct from `AssetDescriptor::MemoryMapped` in that the data is backed
+    /// by committed memory and not a memory mapped file.
+    ///
+    /// This variant should be used to flag asset data that needs no further loading and will
+    /// always be accessible. A user could optimize by choosing to use this buffer directly.
+    PermanentlyResident(&'static [u8]),
+
+    /// A slice to the asset's data within a permanently memory mapped archive. This is distinct
+    /// from `AssetDescriptor::PermanentlyResident` in that the data is not actually guaranteed to
+    /// be resident in memory so reading the data may cause page faults to load from disk, which
+    /// will significantly impact performance.
+    ///
+    /// This variant should be used to flag memory mapped resources so that users can optimize by
+    /// copying out of the memory mapped region into a committed address range.
     MemoryMapped(&'static [u8]),
 
-    /// A path to a file on the OS filesystem that should be opened and read to load the asset's
-    /// data into memory.
-    FilePath(std::path::PathBuf),
-
-    /// An already open file handle that should be read to load the asset's data into memory.
-    File(std::fs::File),
+    /// A readable and seekable stream that can yield the asset's data. This would typically be used
+    /// when the data is located in a file on disk and the implementation returns an object to read
+    /// from the file.
+    Stream(Box<dyn IAssetStream>),
 }
