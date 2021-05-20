@@ -27,10 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::any::{AnyArc, IAny};
+use crate::any::IAny;
 use crate::archive::{
     ArchiveID, AssetInsertError, AssetLocalID, AssetLookupError, AssetRemoveError,
-    IFolderHierarchy, IFolderHierarchyMut,
 };
 use crate::asset::AssetDescriptor;
 
@@ -50,9 +49,6 @@ pub trait IArchive: IAny + Send + Sync + 'static {
 
     /// Will lookup a value by its ID that is local to this specific archive.
     fn lookup(&self, id: AssetLocalID) -> Result<AssetDescriptor, AssetLookupError>;
-
-    /// Returns the `IFolderHierarchy` implementation for the archive, if one exists.
-    fn hierarchy(&self) -> Option<AnyArc<dyn IFolderHierarchy>>;
 }
 
 ///
@@ -73,7 +69,4 @@ pub trait IArchiveMut: IArchive {
 
     /// Will attempt to remove the given asset from the archive.
     fn remove(&self, id: AssetLocalID, flags: AssetRemoveFlags) -> Result<(), AssetRemoveError>;
-
-    /// Returns the `IFolderHierarchyMut` implementation for the archive, if one exists.
-    fn hierarchy_mut(&self) -> Option<AnyArc<dyn IFolderHierarchyMut>>;
 }

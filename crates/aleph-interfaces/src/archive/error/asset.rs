@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::archive::{ArchiveID, AssetID};
+use crate::archive::{ArchiveID, AssetLocalID};
 use std::error::Error;
 use thiserror::Error;
 
@@ -42,7 +42,7 @@ pub enum AssetLookupError {
         archive: ArchiveID,
 
         /// The id that was used to attempt to lookup an asset
-        id: AssetID,
+        id: AssetLocalID,
     },
 
     #[error(
@@ -85,7 +85,7 @@ pub enum AssetRemoveError {
         archive: ArchiveID,
 
         /// The id that was used to attempt to remove an asset
-        id: AssetID,
+        id: AssetLocalID,
     },
 
     #[error(

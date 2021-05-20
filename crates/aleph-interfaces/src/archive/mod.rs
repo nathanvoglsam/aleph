@@ -55,3 +55,4 @@ pub use hierarchy::EntryRemoveFlags;
 pub use hierarchy::EntryType;
 pub use hierarchy::IFolderHierarchy;
 pub use hierarchy::IFolderHierarchyMut;
+pub use hierarchy::IReadDir;
