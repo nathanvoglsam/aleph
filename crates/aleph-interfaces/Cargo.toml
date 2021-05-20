@@ -44,13 +44,18 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[features]
+default = ["serde", "rkyv"]
+
 [dependencies.raw-window-handle]
 git = "https://github.com/rust-windowing/raw-window-handle.git"
 branch = "master"
 version = "0.3"
 
-[dependencies.thiserror]
-version = "1"
+[dependencies]
+serde = { version = "1", features = ["derive"], optional = true }
+rkyv = {version = "0.6", optional = true }
+thiserror = "1"
 
 [dependencies.aleph-any]
 path = "../aleph-any"

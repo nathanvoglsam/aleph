@@ -37,8 +37,11 @@ use std::num::{NonZeroU64, TryFromIntError};
 /// to all assets mounted by the asset system, it is only unique within an individual archive.
 /// To uniquely identify an asset globally use `AssetID`.
 ///
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(rkyv::Archive, rkyv::Deserialize))]
+#[cfg_attr(feature = "rkyv", archive(copy))]
 pub struct AssetLocalID(NonZeroU64);
 
 impl Display for AssetLocalID {

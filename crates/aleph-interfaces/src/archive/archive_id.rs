@@ -35,8 +35,11 @@ use std::num::{NonZeroU64, TryFromIntError};
 ///
 /// A unique ID for an archive that uniquely and globally identifies a distinct archive.
 ///
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(rkyv::Archive, rkyv::Deserialize))]
+#[cfg_attr(feature = "rkyv", archive(copy))]
 pub struct ArchiveID(NonZeroU64);
 
 impl ArchiveID {

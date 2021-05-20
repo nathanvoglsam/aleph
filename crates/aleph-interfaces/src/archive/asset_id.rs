@@ -36,6 +36,9 @@ use std::fmt::{Display, Formatter};
 /// This type is simply a tuple of an `ArchiveID` and an `AssetLocalID`.
 ///
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(rkyv::Archive, rkyv::Deserialize))]
+#[cfg_attr(feature = "rkyv", archive(derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)))]
 pub struct AssetID(pub ArchiveID, pub AssetLocalID);
 
 impl Display for AssetID {
