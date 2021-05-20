@@ -27,8 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::archive::hierarchy::EntryType;
-use crate::archive::ArchiveID;
+use crate::archive::{ArchiveID, EntryType, PathError};
 use std::error::Error;
 use thiserror::Error;
 
@@ -36,58 +35,8 @@ use thiserror::Error;
 /// Error enum for lookup operations with `IFolderHierarchy`
 ///
 #[derive(Error, Debug)]
-pub enum EntryError {
-    /// This error may be thrown if an `IFolder` instance refers to a folder that has been
-    /// deleted after it was created.
-    ///
-    /// If this error surfaces the `IFolderMut` should be discarded as there is no way for it to
-    /// re-associate with a folder.
-    #[error("Entry operation failed in archive {archive}, attempted to perform operation through dangling entry \"{path}\"")]
-    DanglingEntry {
-        /// The ID of the archive that the error was caused by
-        archive: ArchiveID,
-
-        /// The path to the entry that was dangling
-        path: String,
-    },
-
-    #[error(
-        "Entry lookup failed due to an unknown reason in archive {archive}. Error: \"{error}\""
-    )]
-    Unknown {
-        /// The ID of the archive that the error was caused by
-        archive: ArchiveID,
-
-        /// The underlying error that was thrown by the implementation
-        error: Box<dyn Error>,
-    },
-}
-
-///
-/// Error enum for lookup operations with `IFolderHierarchy`
-///
-#[derive(Error, Debug)]
 pub enum EntryLookupError {
-    /// This error may be thrown if an `IFolder` instance refers to a folder that has been
-    /// deleted after it was created.
-    ///
-    /// If this error surfaces the `IFolderMut` should be discarded as there is no way for it to
-    /// re-associate with a folder.
-    #[error("Entry lookup failed in archive {archive}, attempted to lookup \"{name}\" through dangling entry \"{path}\"")]
-    DanglingEntry {
-        /// The ID of the archive that the error was caused by
-        archive: ArchiveID,
-
-        /// The path to the entry that was dangling
-        path: String,
-
-        /// The path that was used to attempt to lookup an entry
-        name: String,
-    },
-
-    #[error(
-        "Entry lookup failed in archive {archive}, there is no asset with the path \"{path}\""
-    )]
+    #[error("Entry lookup failed in archive {archive}, no entry with the path \"{path}\"")]
     NotFound {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
@@ -96,18 +45,31 @@ pub enum EntryLookupError {
         path: String,
     },
 
-    #[error("Entry lookup failed in archive {archive}, the path \"{path}\" is invalid")]
-    InvalidPath {
+    #[error("Entry lookup failed in archive {archive}. Reason: {error}")]
+    PathError {
+        /// The ID of the archive that the error was caused by
+        archive: ArchiveID,
+
+        /// The underlying path error
+        error: PathError,
+    },
+
+    #[error("Entry lookup failed in archive {archive}, path \"{path}\" wrong entry type. Expected {expected}, got {actual}.")]
+    WrongEntryType {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
 
         /// The path that was used to attempt to lookup an entry
         path: String,
+
+        /// The type of entry that the operation expected
+        expected: EntryType,
+
+        /// The type of entry that was actually found
+        actual: EntryType,
     },
 
-    #[error(
-        "Entry lookup failed due to an unknown reason in archive {archive}. Error: \"{error}\""
-    )]
+    #[error("Entry lookup failed for unknown reason in archive {archive}. Error: \"{error}\"")]
     Unknown {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
@@ -122,23 +84,6 @@ pub enum EntryLookupError {
 ///
 #[derive(Error, Debug)]
 pub enum EntryInsertError {
-    /// This error may be thrown if an `IFolder` instance refers to a folder that has been
-    /// deleted after it was created.
-    ///
-    /// If this error surfaces the `IFolderMut` should be discarded as there is no way for it to
-    /// re-associate with a folder.
-    #[error("Entry insertion failed in archive {archive}, attempted to insert \"{name}\" through dangling entry \"{path}\"")]
-    DanglingEntry {
-        /// The ID of the archive that the error was caused by
-        archive: ArchiveID,
-
-        /// The path to the entry that was dangling
-        path: String,
-
-        /// The path that was used to attempt to insert an entry
-        name: String,
-    },
-
     #[error("Entry insertion failed in archive {archive}, attempted to create \"{path}\" but an entry already exists there")]
     AlreadyExists {
         /// The ID of the archive that the error was caused by
@@ -151,18 +96,16 @@ pub enum EntryInsertError {
         existing_type: EntryType,
     },
 
-    #[error("Entry insertion failed in archive {archive}, the path \"{path}\" is invalid")]
-    InvalidPath {
+    #[error("Entry lookup failed in archive {archive}. Reason: {error}")]
+    PathError {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
 
-        /// The path that was used to attempt to lookup an entry
-        path: String,
+        /// The underlying path error
+        error: PathError,
     },
 
-    #[error(
-        "Entry removal failed due to an unknown reason in archive {archive}. Error: \"{error}\""
-    )]
+    #[error("Entry removal failed for unknown reason in archive {archive}. Error: \"{error}\"")]
     Unknown {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
@@ -177,26 +120,7 @@ pub enum EntryInsertError {
 ///
 #[derive(Error, Debug)]
 pub enum EntryRemoveError {
-    /// This error may be thrown if an `IFolder` instance refers to a folder that has been
-    /// deleted after it was created.
-    ///
-    /// If this error surfaces the `IFolderMut` should be discarded as there is no way for it to
-    /// re-associate with a folder.
-    #[error("Entry removal failed in archive {archive}, attempted to remove \"{name}\" through dangling entry \"{path}\"")]
-    DanglingEntry {
-        /// The ID of the archive that the error was caused by
-        archive: ArchiveID,
-
-        /// The path to the entry that was dangling
-        path: String,
-
-        /// The path that was used to attempt to lookup an entry
-        name: String,
-    },
-
-    #[error(
-        "Entry removal failed in archive {archive}, there is no entry with the path \"{path}\""
-    )]
+    #[error("Entry removal failed in archive {archive}, no entry with the path \"{path}\"")]
     NotFound {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
@@ -205,18 +129,16 @@ pub enum EntryRemoveError {
         path: String,
     },
 
-    #[error("Entry lookup failed in archive {archive}, the path \"{path}\" is invalid")]
-    InvalidPath {
+    #[error("Entry lookup failed in archive {archive}. Reason: {error}")]
+    PathError {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,
 
-        /// The path that was used to attempt to lookup an entry
-        path: String,
+        /// The underlying path error
+        error: PathError,
     },
 
-    #[error(
-        "Entry removal failed due to an unknown reason in archive {archive}. Error: \"{error}\""
-    )]
+    #[error("Entry removal failed for unknown reason in archive {archive}. Error: \"{error}\"")]
     Unknown {
         /// The ID of the archive that the error was caused by
         archive: ArchiveID,

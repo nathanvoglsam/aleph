@@ -27,14 +27,20 @@
 // SOFTWARE.
 //
 
-mod asset;
-mod entry;
-mod path;
+use std::error::Error;
+use thiserror::Error;
 
-pub use asset::AssetInsertError;
-pub use asset::AssetLookupError;
-pub use asset::AssetRemoveError;
-pub use entry::EntryInsertError;
-pub use entry::EntryLookupError;
-pub use entry::EntryRemoveError;
-pub use path::PathError;
+///
+/// Error enum for when path parser errors
+///
+#[derive(Error, Debug)]
+pub enum PathError {
+    #[error("Path \"{path}\" failed to parse due to unknown reason. Error: \"{error}\"")]
+    Unknown {
+        /// The ID of the archive that the error was caused by
+        path: String,
+
+        /// The underlying error that was thrown by the implementation
+        error: Box<dyn Error>,
+    },
+}

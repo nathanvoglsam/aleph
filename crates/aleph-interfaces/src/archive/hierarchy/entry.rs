@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::archive::{AssetLocalID, IFolder, IFolderMut};
+use crate::archive::AssetLocalID;
 use std::fmt::{Display, Formatter};
 
 ///
@@ -35,7 +35,7 @@ use std::fmt::{Display, Formatter};
 ///
 pub enum Entry {
     /// The entity is a folder
-    Folder(Box<dyn IFolder>),
+    Folder(String),
 
     /// The entity is a file, with its local asset id attached
     File(AssetLocalID),
@@ -53,8 +53,8 @@ impl Entry {
         }
     }
 
-    /// Converts to an optional `IFolder` to shorten cases where a folder is assumed
-    pub fn folder(self) -> Option<Box<dyn IFolder>> {
+    /// Converts to an optional path to shorten cases where a folder is assumed
+    pub fn folder(self) -> Option<String> {
         match self {
             Entry::Folder(v) => Some(v),
             Entry::File(_) => None,
@@ -66,46 +66,6 @@ impl Entry {
         match self {
             Entry::Folder(_) => None,
             Entry::File(v) => Some(v),
-        }
-    }
-}
-
-///
-/// An enum over the types of entries within a folder hierarchy
-///
-pub enum EntryMut {
-    /// The entity is a folder
-    Folder(Box<dyn IFolderMut>),
-
-    /// The entity is a file, with its local asset id attached
-    File(AssetLocalID),
-}
-
-impl EntryMut {
-    /// Returns the `EntryType` that matches the variant of `self`.
-    ///
-    /// This essentially just discards the associated values, useful for when you need to store the
-    /// type without the associated values in a struct somewhere.
-    pub fn entry_type(&self) -> EntryType {
-        match self {
-            EntryMut::Folder(_) => EntryType::Folder,
-            EntryMut::File(_) => EntryType::File,
-        }
-    }
-
-    /// Converts to an optional `IFolderMut` to shorten cases where a folder is assumed
-    pub fn folder(self) -> Option<Box<dyn IFolderMut>> {
-        match self {
-            EntryMut::Folder(v) => Some(v),
-            EntryMut::File(_) => None,
-        }
-    }
-
-    /// Converts to an optional `AssetLocalID` to shorten cases where a file is assumed
-    pub fn file(self) -> Option<AssetLocalID> {
-        match self {
-            EntryMut::Folder(_) => None,
-            EntryMut::File(v) => Some(v),
         }
     }
 }
