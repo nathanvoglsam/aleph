@@ -87,3 +87,5 @@ pub trait IFolderHierarchyMut: IFolderHierarchy {
 /// Trait alias for an iterator that yields `Entry` enums.
 ///
 pub trait IReadDir: Iterator<Item = Result<Entry, EntryLookupError>> {}
+
+impl<T: Iterator<Item = Result<Entry, EntryLookupError>>> IReadDir for T {}
