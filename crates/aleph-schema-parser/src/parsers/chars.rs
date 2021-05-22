@@ -31,9 +31,6 @@
 /// A set of extensions for the char type for shorthand functions for checking characters
 ///
 pub trait CharExtensions {
-    /// Returns whether this character is a valid integer literal character
-    fn is_decimal_point(&self) -> bool;
-
     /// Returns whether this character is the beginning of an identifier
     fn is_identifier_first(&self) -> bool;
 
@@ -42,10 +39,6 @@ pub trait CharExtensions {
 }
 
 impl CharExtensions for char {
-    fn is_decimal_point(&self) -> bool {
-        *self == '.'
-    }
-
     fn is_identifier_first(&self) -> bool {
         self.is_ascii_alphabetic() || self.is_identifier_special()
     }
