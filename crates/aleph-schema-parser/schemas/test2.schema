@@ -1,12 +1,12 @@
-(namespace aleph
+(namespace aleph -0
     (def-struct Vector2
-        (field x f32 (default -0.0))
-        (field y f32 (default -0.0))
+        (field x f32 (default -0.))
+        (field y f32 (default -0.))
     )
     (def-struct Vector3
-        (field x f32 (default 0.0))
-        (field y f32 (default 0.0))
-        (field z f32 (default 0.0))
+        (field x f32 (default 0.))
+        (field y f32 (default 0.))
+        (field z f32 (default 0.))
     )
     (def-struct Vector2I
         (field x i32 (default -0))
