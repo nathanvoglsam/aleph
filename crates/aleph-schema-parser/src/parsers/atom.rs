@@ -28,7 +28,7 @@
 //
 
 use crate::parsers::{ident, literal};
-use combine::{choice, Parser, Stream};
+use combine::{attempt, choice, Parser, Stream};
 
 ///
 /// A parser that attempts to parse out an atom
@@ -39,11 +39,11 @@ pub fn atom<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::u
         // Try a string first as it is delimited
         literal::string(),
         // Float literal is superset of integer so parse first as an integer will parse first
-        literal::float(),
+        attempt(literal::float()),
         // Integer literal will start with number unlike ident so check this first
-        literal::integer(),
+        attempt(literal::integer()),
         // Lastly check for an ident
-        ident::ident(),
+        attempt(ident::ident()),
     );
     choice(parsers).map(|v| ast::untyped::Item::Atom(v))
 }

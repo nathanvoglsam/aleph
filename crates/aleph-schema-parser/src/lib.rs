@@ -115,7 +115,7 @@ fn print_errors(error: ParseError<&str>) {
                     } else {
                         println!(" - Unexpected token '{}'", token)
                     }
-                },
+                }
                 Info::Range(range) => println!(" - Unexpected range '{}'", range),
                 Info::Owned(msg) => println!(" - Unexpected \"{}\"", msg),
                 Info::Static(msg) => println!(" - Unexpected \"{}\"", msg),
@@ -127,7 +127,7 @@ fn print_errors(error: ParseError<&str>) {
                     } else {
                         println!(" - Expected token '{}'", token)
                     }
-                },
+                }
                 Info::Range(range) => println!(" - Expected input '{}'", range),
                 Info::Owned(msg) => println!(" - Expected \"{}\"", msg),
                 Info::Static(msg) => println!(" - Expected \"{}\"", msg),
@@ -139,7 +139,7 @@ fn print_errors(error: ParseError<&str>) {
                     } else {
                         println!(" - Message '{}'", token)
                     }
-                },
+                }
                 Info::Range(range) => println!(" - Message '{}'", range),
                 Info::Owned(msg) => println!(" - Message \"{}\"", msg),
                 Info::Static(msg) => println!(" - Message \"{}\"", msg),

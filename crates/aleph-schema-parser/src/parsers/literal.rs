@@ -79,7 +79,12 @@ pub fn float<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::
     // Combine all the parsers
     number.and(fractional).map(
         |((prefix, first), (_, rest)): ((Option<String>, String), (char, Option<String>))| {
-            let mut first = prefix.unwrap_or(first);
+            let mut first = prefix
+                .map(|mut v| {
+                    v.push_str(first.as_str());
+                    v
+                })
+                .unwrap_or(first);
             first.push('.');
             if let Some(rest) = rest {
                 first.push_str(rest.as_str());
