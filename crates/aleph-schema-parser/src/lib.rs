@@ -29,72 +29,122 @@
 
 extern crate aleph_schema_ast as ast;
 
+use combine::easy::{Error, Info, ParseError};
 use combine::EasyParser;
-use combine::easy::{ Error, Info};
+use num_integer::Integer;
 
 mod parsers;
 
-pub fn parse(text: &str) -> Result<ast::untyped::List, combine::easy::ParseError<&str>> {
+pub fn parse(text: &str) -> Result<ast::untyped::List, ParseError<&str>> {
     let result = parsers::item::item().easy_parse(text);
     let (out, _): (ast::untyped::Item, _) = result?;
     Ok(vec![out])
 }
 
-pub fn print_error(original: &str, error: combine::easy::ParseError<&str>) {
+pub fn print_error(original: &str, error: ParseError<&str>) {
     // Get the error
     let err_pos = error.position.0 as usize - original.as_ptr() as usize;
 
     // Identify which line the error is on
-    let mut err_line = None;
+    let line_history = produce_error_line_history(original, err_pos);
+
+    // If we found where the error is print it
+    print_lines(err_pos, line_history);
+
+    print_errors(error)
+}
+
+fn produce_error_line_history(original: &str, err_pos: usize) -> [Option<(usize, usize, &str)>; 3] {
+    let mut line_history = [None; 3];
     for (line_number, line) in original.lines().enumerate() {
         // We need to know the span within the original string this line represents to compare with
         // our reported error pos
         let line_pos = line.as_ptr() as usize - original.as_ptr() as usize;
         let line_end = line_pos + line.len();
 
+        // Append to the line history, pushing old entries out of the list
+        line_history[2] = line_history[1].take();
+        line_history[1] = line_history[0].take();
+        line_history[0] = Some((line_number, line_pos, line));
+
         // Check if the error is on this line
-        if err_pos >= line_pos && err_pos < line_end {
-            err_line = Some((line_number, line_pos, line));
+        if err_pos >= line_pos && err_pos <= line_end {
             break;
         }
     }
+    line_history
+}
 
-    // If we found where the error is print it
-    if let Some((line_number, line_pos, line)) = err_line {
+fn print_lines(err_pos: usize, line_history: [Option<(usize, usize, &str)>; 3]) {
+    let width: usize = line_history.iter().fold(1, |width, v| {
+        if let Some((line_number, _, _)) = v {
+            let new_width = line_number.div_ceil(&10);
+            if width < new_width {
+                new_width
+            } else {
+                width
+            }
+        } else {
+            width
+        }
+    });
+    line_history[2].map(|v| println!("{:>width$}: {}", v.0, v.2, width = width));
+    line_history[1].map(|v| println!("{:>width$}: {}", v.0, v.2, width = width));
+    line_history[0].map(|(line_number, line_pos, line)| {
         let err_offset = err_pos - line_pos;
         let space = {
-            (0..err_offset).into_iter().fold(String::new(), |mut v, _| {
+            let num_spaces = err_offset + width + 2;
+            (0..num_spaces).into_iter().fold(String::new(), |mut v, _| {
                 v.push('~');
                 v
             })
         };
-        println!("Error in line {}:", line_number);
-        println!("{}", line);
+        println!("{}: {}", line_number, line);
         println!("{}{}", space, '^');
+        println!("Error in line {}:", line_number);
+    });
+}
 
-    }
-
+fn print_errors(error: ParseError<&str>) {
     for error in error.errors.into_iter() {
         match error {
             Error::Unexpected(info) => match info {
-                Info::Token(token) => println!("Unexpected token '{}'", token),
-                Info::Range(range) => println!("Unexpected range '{}'", range),
-                Info::Owned(msg) => println!("Unexpected input \"{}\"", msg),
-                Info::Static(msg) => println!("Unexpected input \"{}\"", msg),
+                Info::Token(token) => {
+                    if token.is_control() || token.is_ascii_control() {
+                        println!(" - Unexpected token '{}'", token.escape_default())
+                    } else {
+                        println!(" - Unexpected token '{}'", token)
+                    }
+                },
+                Info::Range(range) => println!(" - Unexpected range '{}'", range),
+                Info::Owned(msg) => println!(" - Unexpected \"{}\"", msg),
+                Info::Static(msg) => println!(" - Unexpected \"{}\"", msg),
             },
             Error::Expected(info) => match info {
-                Info::Token(token) => println!("Expected token '{}'", token),
-                Info::Range(range) => println!("Expected input '{}'", range),
-                Info::Owned(msg) => println!("Expected input \"{}\"", msg),
-                Info::Static(msg) => println!("Expected input \"{}\"", msg),
+                Info::Token(token) => {
+                    if token.is_control() || token.is_ascii_control() {
+                        println!(" - Expected token '{}'", token.escape_default())
+                    } else {
+                        println!(" - Expected token '{}'", token)
+                    }
+                },
+                Info::Range(range) => println!(" - Expected input '{}'", range),
+                Info::Owned(msg) => println!(" - Expected \"{}\"", msg),
+                Info::Static(msg) => println!(" - Expected \"{}\"", msg),
             },
             Error::Message(info) => match info {
-                Info::Token(token) => println!("Message '{}'", token),
-                Info::Range(range) => println!("Message '{}'", range),
-                Info::Owned(msg) => println!("Message \"{}\"", msg),
-                Info::Static(msg) => println!("Message \"{}\"", msg),
+                Info::Token(token) => {
+                    if token.is_control() || token.is_ascii_control() {
+                        println!(" - Message '{}'", token.escape_default())
+                    } else {
+                        println!(" - Message '{}'", token)
+                    }
+                },
+                Info::Range(range) => println!(" - Message '{}'", range),
+                Info::Owned(msg) => println!(" - Message \"{}\"", msg),
+                Info::Static(msg) => println!(" - Message \"{}\"", msg),
             },
-            Error::Other(info) => println!("Unknown error \"{}\"", info),
+            Error::Other(info) => println!(" - Unknown error \"{}\"", info),
         }
     }
 }

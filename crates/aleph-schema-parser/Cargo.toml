@@ -44,6 +44,8 @@ edition = "2018"
 [dependencies]
 aleph-schema-ast = { path = "../aleph-schema-ast", version = "0.1" }
 combine = "4"
+unicode-width = "0.1"
+num-integer = "0.1"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
