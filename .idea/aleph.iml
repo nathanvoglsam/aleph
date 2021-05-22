@@ -118,6 +118,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-plugin-registry/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-headless/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-sys-info/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/aleph-schema-ast/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-sdl2/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-egui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
