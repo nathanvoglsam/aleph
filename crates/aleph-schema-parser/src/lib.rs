@@ -32,6 +32,7 @@ extern crate aleph_schema_ast as ast;
 use combine::easy::{Error, Info, ParseError};
 use combine::EasyParser;
 use num_integer::Integer;
+use unicode_width::UnicodeWidthStr;
 
 mod parsers;
 
@@ -88,19 +89,35 @@ fn print_lines(err_pos: usize, line_history: [Option<(usize, usize, &str)>; 3]) 
             width
         }
     });
-    line_history[2].map(|v| println!("{:>width$}: {}", v.0, v.2, width = width));
-    line_history[1].map(|v| println!("{:>width$}: {}", v.0, v.2, width = width));
+    line_history[2].map(|v| println!("{:>width$}| {}", v.0, v.2, width = width));
+    line_history[1].map(|v| println!("{:>width$}| {}", v.0, v.2, width = width));
     line_history[0].map(|(line_number, line_pos, line)| {
+        // Get the offset within the line of the error
         let err_offset = err_pos - line_pos;
+
+        // Get a slice that encompasses all characters in the line before the error
+        let err_space = &line[0..err_offset];
+
+        // Get the width of the above slice so we can generate the space for rendering the error
+        // marker
+        let err_width = err_space.width();
+
+        // Create a the spacer string for our marker
         let space = {
-            let num_spaces = err_offset + width + 2;
+            let num_spaces = err_width + width + 2;
             (0..num_spaces).into_iter().fold(String::new(), |mut v, _| {
                 v.push('~');
                 v
             })
         };
-        println!("{}: {}", line_number, line);
+
+        // Print the line the error is on
+        println!("{}| {}", line_number, line);
+
+        // Print the marker
         println!("{}{}", space, '^');
+
+        // Print the line number for the error
         println!("Error in line {}:", line_number);
     });
 }
