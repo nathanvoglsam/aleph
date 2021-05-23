@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-extern crate aleph_schema_ast as ast;
+use crate::parsers::item;
+use combine::parser::char::spaces;
+use combine::{sep_end_by, Parser, Stream};
 
-mod parsers;
-mod utils;
-
-pub use parsers::parse;
-pub use parsers::print_error;
-
-#[cfg(test)]
-mod tests;
+///
+/// Parser that will attempt to parse a whole file out to a list
+///
+pub fn file<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::List> {
+    sep_end_by(item::item(), spaces())
+}

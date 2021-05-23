@@ -27,13 +27,20 @@
 // SOFTWARE.
 //
 
-extern crate aleph_schema_ast as ast;
+#[test]
+fn test1() {
+    let text = std::fs::read_to_string("./schemas/test1.schema").unwrap();
+    match crate::parse(text.as_str()) {
+        Ok(output) => println!("{:#?}", output),
+        Err(error) => crate::print_error(&text, error),
+    }
+}
 
-mod parsers;
-mod utils;
-
-pub use parsers::parse;
-pub use parsers::print_error;
-
-#[cfg(test)]
-mod tests;
+#[test]
+fn test2() {
+    let text = std::fs::read_to_string("./schemas/test2.schema").unwrap();
+    match crate::parse(text.as_str()) {
+        Ok(output) => println!("{:#?}", output),
+        Err(error) => crate::print_error(&text, error),
+    }
+}

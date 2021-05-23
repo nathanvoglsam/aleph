@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::parsers::chars::CharExtensions;
+use crate::utils::CharExtensions;
 use combine::{many, satisfy, Parser, Stream};
 
 ///
