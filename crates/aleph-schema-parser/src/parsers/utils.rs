@@ -121,7 +121,16 @@ pub fn highlight_code(
         let err_offset = position - line_pos;
 
         // Get a slice that encompasses all characters in the line before the highlighted point
-        let err_space = &line[0..err_offset];
+        //
+        // We need to handle a special case where the err_offset is trying to point at a newline
+        // character. The slices yielded by the `.lines()` iterator strips them so when we try to
+        // take a sub slice we get an out of bounds index panic. We can detect this case and just
+        // yield the whole line.
+        let err_space = if err_offset >= line.len() {
+            line
+        } else {
+            &line[0..err_offset]
+        };
 
         // Get the width of the above slice so we can generate the space for rendering the marker
         let err_width = err_space.width();
