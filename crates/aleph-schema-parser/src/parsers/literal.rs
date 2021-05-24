@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::parsers::MyStream;
 use combine::parser::char::digit;
 use combine::{between, many, many1, optional, satisfy, token, Parser};
-use crate::parsers::MyStream;
 
 ///
 /// A parser that attempts to parse out a string literal

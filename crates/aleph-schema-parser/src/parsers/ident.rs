@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
 use combine::{many, satisfy, Parser};
-use crate::parsers::MyStream;
 
 ///
 /// Parser that attempts to parse out an identifier

@@ -34,13 +34,17 @@ use combine::{between, sep_end_by, skip_many1, token, Parser};
 ///
 /// Parser that will attempt to parse out a list
 ///
-pub fn list<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
+pub fn list<Input: MyStream>(
+    input_base: usize,
+) -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
     let open = token('(');
     let close = token(')');
     let inner = list_inner(input_base);
     between(open, close, inner).map(|v| ast::untyped::ItemVariant::List(v))
 }
 
-fn list_inner<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
+fn list_inner<Input: MyStream>(
+    input_base: usize,
+) -> impl Parser<Input, Output = ast::untyped::List> {
     sep_end_by(item::item(input_base), skip_many1(space()))
 }
