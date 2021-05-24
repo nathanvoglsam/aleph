@@ -41,7 +41,10 @@ pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::At
     between(open, close, inner).map(|v| ast::untyped::Atom::LiteralString(v))
 }
 
-fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
+///
+/// This parser will succeed and yield a token only for tokens valid inside a string literal
+///
+pub fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
     satisfy::<Input, _>(|v: char| v != '"')
 }
 
