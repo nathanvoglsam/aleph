@@ -92,7 +92,7 @@ pub fn highlight_code(
     // justify to when printing line numbers
     let width: usize = line_history.iter().fold(1, |width, v| {
         if let Some((line_number, _, _)) = v {
-            let new_width = line_number.div_ceil(&10);
+            let new_width = 1 + (*line_number as f64).log10() as usize;
             if width < new_width {
                 new_width
             } else {
@@ -137,7 +137,7 @@ pub fn highlight_code(
         };
 
         // Print the line the highlighted point is on
-        writeln!(&mut output, "{}| {}", line_number, line)?;
+        writeln!(&mut output, "{:>width$}| {}", line_number, line, width = width)?;
 
         // Print the marker
         writeln!(&mut output, "{}{}", space, '^')?;
