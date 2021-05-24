@@ -27,20 +27,26 @@
 // SOFTWARE.
 //
 
-use crate::parsers::{atom, list};
-use combine::{choice, Parser, Stream};
+use crate::parsers::{atom, list, MyStream};
+use combine::{choice, Parser, position};
+use combine::stream::PointerOffset;
 
 combine::parser! {
-    fn item_inner[Input]()(Input) -> ast::untyped::Item
-    where [Input: Stream<Token = char>]
+    fn item_inner[Input](input_base: usize)(Input) -> ast::untyped::ItemVariant
+    where [Input: MyStream]
     {
-        choice((list::list(), atom::atom()))
+        choice((list::list(*input_base), atom::atom()))
     }
 }
 
 ///
 /// Parser that will try to parse out a list or an atom to create an item
 ///
-pub fn item<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Item> {
-    item_inner()
+pub fn item<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::Item> {
+    position().and(item_inner(input_base)).map(move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| {
+        ast::untyped::Item {
+            position: pos.0 - input_base,
+            item
+        }
+    })
 }

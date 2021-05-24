@@ -28,12 +28,13 @@
 //
 
 use crate::utils::CharExtensions;
-use combine::{many, satisfy, Parser, Stream};
+use combine::{many, satisfy, Parser};
+use crate::parsers::MyStream;
 
 ///
 /// Parser that attempts to parse out an identifier
 ///
-pub fn ident<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+pub fn ident<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     ident_first()
         .and(ident_rest())
         .map(|(first, rest): (char, String)| {
@@ -44,10 +45,10 @@ pub fn ident<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::
         })
 }
 
-fn ident_first<Input: Stream<Token = char>>() -> impl Parser<Input, Output = char> {
+fn ident_first<Input: MyStream>() -> impl Parser<Input, Output = char> {
     satisfy::<Input, _>(|v: char| v.is_identifier_first())
 }
 
-fn ident_rest<Input: Stream<Token = char>>() -> impl Parser<Input, Output = String> {
+fn ident_rest<Input: MyStream>() -> impl Parser<Input, Output = String> {
     many(satisfy::<Input, _>(|v: char| v.is_identifier_rest()))
 }

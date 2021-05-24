@@ -28,26 +28,27 @@
 //
 
 use combine::parser::char::digit;
-use combine::{between, many, many1, optional, satisfy, token, Parser, Stream};
+use combine::{between, many, many1, optional, satisfy, token, Parser};
+use crate::parsers::MyStream;
 
 ///
 /// A parser that attempts to parse out a string literal
 ///
-pub fn string<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     let open = token('"');
     let close = token('"');
     let inner = many(string_char());
     between(open, close, inner).map(|v| ast::untyped::Atom::LiteralString(v))
 }
 
-fn string_char<Input: Stream<Token = char>>() -> impl Parser<Input, Output = char> {
+fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
     satisfy::<Input, _>(|v: char| v != '"')
 }
 
 ///
 /// A parser that attempts to parse out an integer literal
 ///
-pub fn integer<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+pub fn integer<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     // A parser that will parse an optional "negation" prefix
     let prefix = number_prefix();
     let number = prefix.and(many1(digit()));
@@ -64,7 +65,7 @@ pub fn integer<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast
 ///
 /// A parser that attempts to parse out a float literal
 ///
-pub fn float<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+pub fn float<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     // A parser that will parse an optional "negation" prefix
     let prefix = number_prefix();
 
@@ -94,6 +95,6 @@ pub fn float<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::
     )
 }
 
-fn number_prefix<Input: Stream<Token = char>>() -> impl Parser<Input, Output = Option<String>> {
+fn number_prefix<Input: MyStream>() -> impl Parser<Input, Output = Option<String>> {
     optional(token('-')).map(|v: Option<char>| v.map(|v| v.to_string()))
 }

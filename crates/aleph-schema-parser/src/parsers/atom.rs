@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::parsers::{ident, literal};
-use combine::{attempt, choice, Parser, Stream};
+use crate::parsers::{ident, literal, MyStream};
+use combine::{attempt, choice, Parser};
 
 ///
 /// A parser that attempts to parse out an atom
 ///
-pub fn atom<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::Item> {
+pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
     // The order to attempt to parse elements in
     let parsers = (
         // Try a string first as it is delimited
@@ -45,5 +45,5 @@ pub fn atom<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::u
         // Lastly check for an ident
         attempt(ident::ident()),
     );
-    choice(parsers).map(|v| ast::untyped::Item::Atom(v))
+    choice(parsers).map(|v| ast::untyped::ItemVariant::Atom(v))
 }

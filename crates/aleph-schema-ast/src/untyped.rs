@@ -28,10 +28,22 @@
 //
 
 ///
+/// A wrapper over `ItemVariant` that associates the position within the source file of the item
+///
+#[derive(Hash, Debug)]
+pub struct Item {
+    /// Position within the source text this item resides
+    pub position: usize,
+
+    /// The item variant itself
+    pub item: ItemVariant,
+}
+
+///
 /// Enumeration of all valid list items
 ///
 #[derive(Hash, Debug)]
-pub enum Item {
+pub enum ItemVariant {
     /// A singular atom
     Atom(Atom),
 
