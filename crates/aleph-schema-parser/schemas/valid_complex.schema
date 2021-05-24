@@ -1,0 +1,31 @@
+(namespace aleph
+    (def-struct Vector2
+        (field x f32 (default 0.0))
+        (field y f32 (default 0.0))
+    )
+    (def-struct Vector3
+        (field x f32 (default 0.0))
+        (field y f32 (default 0.0))
+        (field z f32 (default 0.0))
+    )
+    (def-table Monster
+        (field position Vector3)
+        (field target Vector3)
+        (field name string (default "default-monster"))
+    )
+    (- hello world)
+)
+(namespace engine
+    (def-table Soldier
+        (field position Vector3)
+        (field target Vector3)
+        (field name string (default "default-soldier"))
+        (field health u32 (default 10_000.0))
+    )
+    (def-table Human
+        (field position Vector3)
+        (field target Vector3)
+        (field name string (default "default-monster"))
+        (field health f64 (default 10_000.0_0_0))
+    )
+)

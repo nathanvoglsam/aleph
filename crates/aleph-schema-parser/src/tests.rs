@@ -28,19 +28,22 @@
 //
 
 #[test]
-fn test1() {
-    let text = std::fs::read_to_string("./schemas/test1.schema").unwrap();
-    match crate::parse(text.as_str()) {
-        Ok(output) => println!("{:#?}", output),
-        Err(error) => crate::print_error(&text, error),
-    }
+fn test_valid_simple() {
+    test_parses_valid("./schemas/valid_simple.schema");
 }
 
 #[test]
-fn test2() {
-    let text = std::fs::read_to_string("./schemas/test2.schema").unwrap();
+fn test_valid_complex() {
+    test_parses_valid("./schemas/valid_complex.schema");
+}
+
+fn test_parses_valid(file_name: &str) {
+    let text = std::fs::read_to_string(file_name).unwrap();
     match crate::parse(text.as_str()) {
         Ok(output) => println!("{:#?}", output),
-        Err(error) => crate::print_error(&text, error),
+        Err(error) => {
+            crate::print_error(&text, error);
+            panic!("Failed to parse a valid input")
+        },
     }
 }

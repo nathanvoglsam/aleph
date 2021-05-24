@@ -13,4 +13,5 @@
         (field target Vector3)
         (field name string (default "default-monster"))
     )
+    (- hello world)
 )
