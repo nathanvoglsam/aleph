@@ -28,8 +28,8 @@
 //
 
 use crate::parsers::item;
-use combine::parser::char::spaces;
-use combine::{between, sep_end_by, token, Parser, Stream};
+use combine::parser::char::space;
+use combine::{between, sep_end_by, skip_many1, token, Parser, Stream};
 
 ///
 /// Parser that will attempt to parse out a list
@@ -42,5 +42,5 @@ pub fn list<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::u
 }
 
 fn list_inner<Input: Stream<Token = char>>() -> impl Parser<Input, Output = ast::untyped::List> {
-    sep_end_by(item::item(), spaces())
+    sep_end_by(item::item(), skip_many1(space()))
 }
