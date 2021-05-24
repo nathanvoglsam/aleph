@@ -27,13 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::parsers::{item, MyStream};
+use crate::parsers::{list, MyStream};
 use combine::parser::char::spaces;
-use combine::{sep_end_by, Parser};
+use combine::stream::PointerOffset;
+use combine::{position, sep_end_by, Parser};
 
 ///
 /// Parser that will attempt to parse a whole file out to a list
 ///
 pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
-    sep_end_by(item::item(input_base), spaces())
+    let parser = position().and(list::list(input_base)).map(
+        move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| ast::untyped::Item {
+            position: pos.0 - input_base,
+            item,
+        },
+    );
+    sep_end_by(parser, spaces())
 }

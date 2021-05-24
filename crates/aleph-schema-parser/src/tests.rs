@@ -38,6 +38,11 @@ fn test_valid_complex() {
 }
 
 #[test]
+fn test_valid_empty_file() {
+    test_parses_valid("./schemas/valid_empty_file.schema");
+}
+
+#[test]
 fn test_invalid_unterminated_list() {
     test_parses_invalid("./schemas/invalid_unterminated_list.schema");
 }
@@ -47,6 +52,21 @@ fn test_invalid_unterminated_string() {
     test_parses_invalid("./schemas/invalid_unterminated_string.schema");
 }
 
+#[test]
+fn test_invalid_terminating_too_many_lists() {
+    test_parses_invalid("./schemas/invalid_terminating_too_many_lists.schema");
+}
+
+#[test]
+fn test_invalid_terminating_unopened_list() {
+    test_parses_invalid("./schemas/invalid_terminating_unopened_list.schema");
+}
+
+#[test]
+fn test_invalid_root_atom() {
+    test_parses_invalid("./schemas/invalid_root_atom.schema");
+}
+
 fn test_parses_valid(file_name: &str) {
     let text = std::fs::read_to_string(file_name).unwrap();
     match crate::parse(text.as_str()) {
@@ -54,7 +74,7 @@ fn test_parses_valid(file_name: &str) {
         Err(error) => {
             crate::print_error(&text, error);
             panic!("Failed to parse a valid input")
-        },
+        }
     }
 }
 
@@ -64,9 +84,9 @@ fn test_parses_invalid(file_name: &str) {
         Ok(output) => {
             println!("{:#?}", output);
             panic!("Successfully parsed an invalid input");
-        },
+        }
         Err(error) => {
             crate::print_error(&text, error);
-        },
+        }
     }
 }

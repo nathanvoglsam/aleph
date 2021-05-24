@@ -59,9 +59,7 @@ pub fn integer<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::A
 /// A parser that attempts to parse out a float literal
 ///
 pub fn float<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    decimal().map(|v| {
-        ast::untyped::Atom::LiteralFloat(v)
-    })
+    decimal().map(|v| ast::untyped::Atom::LiteralFloat(v))
 }
 
 ///
