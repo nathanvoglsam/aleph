@@ -29,7 +29,7 @@
 
 use crate::parsers::MyStream;
 use combine::parser::char::digit;
-use combine::{between, many, many1, optional, satisfy, token, Parser};
+use combine::{between, many, optional, satisfy, skip_many, token, Parser};
 
 ///
 /// A parser that attempts to parse out a string literal
@@ -49,52 +49,100 @@ fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
 /// A parser that attempts to parse out an integer literal
 ///
 pub fn integer<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    // A parser that will parse an optional "negation" prefix
-    let prefix = number_prefix();
-    let number = prefix.and(many1(digit()));
-    number.map(|(prefix, number): (Option<String>, String)| {
-        if let Some(mut prefix) = prefix {
-            prefix.push_str(number.as_str());
-            ast::untyped::Atom::LiteralInteger(prefix)
-        } else {
-            ast::untyped::Atom::LiteralInteger(number)
-        }
-    })
+    number().map(|number| ast::untyped::Atom::LiteralInteger(number))
 }
 
 ///
 /// A parser that attempts to parse out a float literal
 ///
 pub fn float<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    // A parser that will parse an optional "negation" prefix
-    let prefix = number_prefix();
+    decimal().map(|v| {
+        ast::untyped::Atom::LiteralFloat(v)
+    })
+}
 
-    // A parser that combines the prefix parser and another parser that will consume the whole
-    // number portion of the float
-    let number = prefix.and(many1(digit()));
-
+///
+/// A parser that parses out an entire decimal number. This includes a negation prefix, the whole
+/// number part, the decimal point and the fractional part.
+///
+pub fn decimal<Input: MyStream>() -> impl Parser<Input, Output = String> {
     // A parser that parses the fractional part of the float, taking a decimal point and optionally
     // after another string of digits
-    let fractional = token('.').and(optional(many1(digit())));
+    let fractional = token('.').and(optional(number_body()));
 
     // Combine all the parsers
-    number.and(fractional).map(
-        |((prefix, first), (_, rest)): ((Option<String>, String), (char, Option<String>))| {
-            let mut first = prefix
-                .map(|mut v| {
-                    v.push_str(first.as_str());
-                    v
-                })
-                .unwrap_or(first);
+    number()
+        .and(fractional)
+        .map(|(mut first, (_, rest)): (String, (_, Option<String>))| {
             first.push('.');
             if let Some(rest) = rest {
                 first.push_str(rest.as_str());
             }
-            ast::untyped::Atom::LiteralFloat(first)
+            first
+        })
+}
+
+///
+/// A parser that parses out an entire number, including a negation prefix and all the numbers of
+/// a base10 whole number.
+///
+pub fn number<Input: MyStream>() -> impl Parser<Input, Output = String> {
+    number_prefix().and(number_body()).map(|(prefix, body)| {
+        if let Some(prefix) = prefix {
+            let mut out = String::new();
+            out.push(prefix);
+            out.push_str(&body);
+            out
+        } else {
+            body
+        }
+    })
+}
+
+///
+/// A parser that parses out a base10 whole number.
+///
+/// # Note
+///
+/// This parser does not handle a negation prefix and will fail if it encounters one.
+///
+pub fn number_body<Input: MyStream>() -> impl Parser<Input, Output = String> {
+    number_first().and(optional(many(number_rest()))).map(
+        |(first, rest): (char, Option<String>)| {
+            let mut out = String::new();
+            out.push(first);
+            if let Some(rest) = rest {
+                out.push_str(&rest);
+            }
+            out
         },
     )
 }
 
-fn number_prefix<Input: MyStream>() -> impl Parser<Input, Output = Option<String>> {
-    optional(token('-')).map(|v: Option<char>| v.map(|v| v.to_string()))
+///
+/// This parser handles an optional negation prefix for a number. It is intended to be used to parse
+/// a leading prefix for a number literal
+///
+pub fn number_prefix<Input: MyStream>() -> impl Parser<Input, Output = Option<char>> {
+    optional(token('-'))
+}
+
+///
+/// This parser will parse the first token after an optional prefix in a number literal. The first
+/// token after a prefix is special as it must not be an '_' token.
+///
+pub fn number_first<Input: MyStream>() -> impl Parser<Input, Output = char> {
+    digit()
+}
+
+///
+/// This parser will parse a single token which is valid to find as part of a number after the
+/// optional prefix and the first number part.
+///
+/// This parser will yield the next digit, skipping over any '_' tokens which are considered
+/// thousands separators. The '_' tokens are discarded as they are purely visual aids for humans
+/// and have no meaning.
+///
+pub fn number_rest<Input: MyStream>() -> impl Parser<Input, Output = char> {
+    skip_many(token('_')).and(digit()).map(|v| v.1)
 }

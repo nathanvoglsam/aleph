@@ -9,7 +9,7 @@
         (field z f32 (default 0.))
     )
     (def-struct Vector2I
-        (field x i32 (default -0))
+        (field x i32 (default -2_000_000))
         (field y i32 (default -0))
     )
     (def-struct Vector3I
@@ -47,6 +47,7 @@
         (field position Vector3)
         (field target Vector3)
         (field name string (default "default-monster"))
+        (field health u32 (default 10_000.0))
     )
     (- hello world)
 )

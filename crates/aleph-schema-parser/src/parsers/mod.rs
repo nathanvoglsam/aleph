@@ -36,8 +36,8 @@ pub mod literal;
 
 mod utils;
 
+pub use utils::highlight_code;
 pub use utils::parse;
 pub use utils::print_error;
 pub use utils::MyStream;
-pub use utils::highlight_code;
 pub use utils::SourcePosition;

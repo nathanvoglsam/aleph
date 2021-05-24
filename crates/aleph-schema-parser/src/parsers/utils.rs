@@ -30,7 +30,6 @@
 use combine::easy::{Error, Info, ParseError};
 use combine::stream::PointerOffset;
 use combine::EasyParser;
-use num_integer::Integer;
 use unicode_width::UnicodeWidthStr;
 
 ///
@@ -137,7 +136,13 @@ pub fn highlight_code(
         };
 
         // Print the line the highlighted point is on
-        writeln!(&mut output, "{:>width$}| {}", line_number, line, width = width)?;
+        writeln!(
+            &mut output,
+            "{:>width$}| {}",
+            line_number,
+            line,
+            width = width
+        )?;
 
         // Print the marker
         writeln!(&mut output, "{}{}", space, '^')?;
