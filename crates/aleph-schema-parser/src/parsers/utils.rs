@@ -104,10 +104,10 @@ pub fn highlight_code(
 
     // Print the preceding two lines, if they exist
     if let Some(v) = line_history[2] {
-        writeln!(&mut output, "{:>width$}| {}", v.0, v.2, width = width)?
+        writeln!(&mut output, "{:>width$}| {}", v.0 + 1, v.2, width = width)?
     }
     if let Some(v) = line_history[1] {
-        writeln!(&mut output, "{:>width$}| {}", v.0, v.2, width = width)?
+        writeln!(&mut output, "{:>width$}| {}", v.0 + 1, v.2, width = width)?
     }
 
     // Slots for outputing the line number and column number that is being highlighted
@@ -148,7 +148,7 @@ pub fn highlight_code(
         writeln!(
             &mut output,
             "{:>width$}| {}",
-            line_number,
+            line_number + 1,
             line,
             width = width
         )?;
@@ -156,7 +156,8 @@ pub fn highlight_code(
         // Print the marker
         writeln!(&mut output, "{}{}", space, '^')?;
 
-        highlighted_line = line_number;
+        // Write out the highlighted line and column, +1 to use 1 indexing not 0 indexing
+        highlighted_line = line_number + 1;
         highlighted_column = err_width + 1;
     }
 
