@@ -27,24 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::parsers::empty_space::empty_spaces;
-use crate::parsers::{item, MyStream};
-use combine::{between, sep_end_by, token, Parser};
+use crate::parsers::comment::{block_comment, line_comment};
+use crate::parsers::MyStream;
+use combine::parser::char::space;
+use combine::{attempt, choice, skip_many, Parser};
 
 ///
-/// Parser that will attempt to parse out a list
+/// Parser that attempts to parse out an identifier
 ///
-pub fn list<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
-    let open = token('(');
-    let close = token(')');
-    let inner = list_body(input_base);
-    between(open, close, inner).map(|v| ast::untyped::ItemVariant::List(v))
+pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let line_comment = attempt(line_comment());
+    let block_comment = attempt(block_comment());
+    let space = space().map(|_| ());
+    choice((space, block_comment, line_comment))
 }
 
-pub fn list_body<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::List> {
-    sep_end_by(item::item(input_base), empty_spaces())
+///
+/// Parser that attempts to parse out an identifier
+///
+pub fn empty_spaces<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    skip_many(empty_space()).expected("whitespace or comment")
 }

@@ -43,6 +43,11 @@ fn test_valid_empty_file() {
 }
 
 #[test]
+fn test_valid_empty_file_with_whitespace() {
+    test_parses_valid("./schemas/valid_empty_file_with_whitespace.schema");
+}
+
+#[test]
 fn test_invalid_unterminated_list() {
     test_parses_invalid("./schemas/invalid_unterminated_list.schema");
 }

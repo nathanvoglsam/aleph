@@ -28,6 +28,8 @@
 //
 
 pub mod atom;
+pub mod comment;
+pub mod empty_space;
 pub mod file;
 pub mod ident;
 pub mod item;

@@ -27,24 +27,33 @@
 // SOFTWARE.
 //
 
-use crate::parsers::empty_space::empty_spaces;
-use crate::parsers::{item, MyStream};
-use combine::{between, sep_end_by, token, Parser};
+use crate::parsers::MyStream;
+use combine::parser::char::{newline, string};
+use combine::parser::repeat::skip_until;
+use combine::{eof, Parser, attempt, skip_count, any};
 
 ///
-/// Parser that will attempt to parse out a list
+/// Parser that attempts to parse out an identifier
 ///
-pub fn list<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
-    let open = token('(');
-    let close = token(')');
-    let inner = list_body(input_base);
-    between(open, close, inner).map(|v| ast::untyped::ItemVariant::List(v))
+pub fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let start_of_comment = string("//").map(|_| ());
+    let end_of_line = newline().map(|_| ());
+    let end_of_file = eof();
+    let terminator = end_of_line.or(end_of_file);
+    let body = skip_until(attempt(terminator));
+    let end = skip_count(1, any());
+    start_of_comment.and(body).and(end).map(|_| ())
 }
 
-pub fn list_body<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::List> {
-    sep_end_by(item::item(input_base), empty_spaces())
+///
+/// Parser that attempts to parse out an identifier
+///
+pub fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let start_of_block = string("/*").map(|_| ());
+    let end_of_block = string("*/").map(|_| ());
+    let end_of_file = eof();
+    let terminator = end_of_block.or(end_of_file);
+    let body = skip_until(attempt(terminator));
+    let end = skip_count(2, any());
+    start_of_block.and(body).and(end).map(|_| ())
 }

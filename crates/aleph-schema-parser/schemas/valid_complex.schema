@@ -1,15 +1,26 @@
+// Top level comment
+/* top level
+*/
+/* */
 (namespace aleph
+    // comment
     (def-struct Vector2
+        // comment
         (field x f32 (default 0.0))
         (field y f32 (default 0.0))
     )
+                // comment
     (def-struct Vector3
-        (field x f32 (default 0.0))
-        (field y f32 (default 0.0))
-        (field z f32 (default 0.0))
-    )
+        // comment
+        (field x f32 (default 0.0))// comment
+        (field y f32 (default 0.0))// comment
+        (field z f32 (default 0.0))// comment
+    ) // comment
+    /**
+     * // comment
+     */
     (def-table Monster
-        (field position Vector3)
+        (field position Vector3 /* comment */)
         (field target Vector3)
         (field name string (default "default-monster"))
     )
@@ -29,3 +40,4 @@
         (field health f64 (default 10_000.0_0_0))
     )
 )
+// end

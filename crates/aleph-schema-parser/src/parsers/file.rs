@@ -27,20 +27,30 @@
 // SOFTWARE.
 //
 
+use crate::parsers::empty_space::empty_spaces;
 use crate::parsers::{list, MyStream};
-use combine::parser::char::spaces;
 use combine::stream::PointerOffset;
-use combine::{position, sep_end_by, Parser};
+use combine::{attempt, choice, eof, position, sep_end_by1, Parser};
 
 ///
 /// Parser that will attempt to parse a whole file out to a list
 ///
 pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
+    choice((empty_file(), non_empty_file(input_base)))
+}
+
+fn empty_file<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::List> {
+    attempt(empty_spaces().with(eof())).map(|_| Vec::new())
+}
+
+fn non_empty_file<Input: MyStream>(
+    input_base: usize,
+) -> impl Parser<Input, Output = ast::untyped::List> {
     let parser = position().and(list::list(input_base)).map(
         move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| ast::untyped::Item {
             position: pos.0 - input_base,
             item,
         },
     );
-    sep_end_by(parser, spaces())
+    empty_spaces().with(sep_end_by1(parser, empty_spaces()))
 }

@@ -55,9 +55,9 @@ trait InternalCharExtensions {
 
 impl InternalCharExtensions for char {
     fn is_identifier_special(&self) -> bool {
-        const SPECIAL_CHARS: [char; 26] = [
+        const SPECIAL_CHARS: [char; 24] = [
             '_', '-', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#',
-            '$', '%', '^', '&', '*', '?', '/', '\\', '|',
+            '$', '%', '^', '&', '*', '?', '|',
         ];
         SPECIAL_CHARS.contains(self)
     }
