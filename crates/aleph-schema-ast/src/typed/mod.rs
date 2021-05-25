@@ -27,6 +27,12 @@
 // SOFTWARE.
 //
 
+mod types;
+
+pub use types::PrimitiveType;
+pub use types::SizedType;
+pub use types::Structure;
+
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
 ///
