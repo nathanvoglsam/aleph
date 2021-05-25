@@ -1,13 +1,20 @@
+// Top level comment
 (namespace aleph
+    // Comment inside a list
     (def-struct Vector2
         (field x f32 (default 0.0))
         (field y f32 (default 0.0))
     )
+    /* block comment inside a list */
     (def-struct Vector3
         (field x f32 (default 0.0))
         (field y f32 (default 0.0))
         (field z f32 (default 0.0))
     )
+    /* multi line
+     * block comment
+     * inside a list
+     */
     (def-table Monster
         (field position Vector3)
         (field target Vector3)
