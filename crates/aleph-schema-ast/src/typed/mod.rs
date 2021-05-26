@@ -33,6 +33,8 @@ pub use types::PrimitiveType;
 pub use types::SizedType;
 pub use types::Structure;
 
+use std::fmt::{Display, Formatter};
+
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
 ///
@@ -56,6 +58,37 @@ pub enum ItemVariant {
     /// A list of items
     List(List),
 }
+
+impl ItemVariant {
+    pub fn list(&self) -> Option<&List> {
+        match self {
+            ItemVariant::Atom(_) => None,
+            ItemVariant::List(list) => Some(list),
+        }
+    }
+
+    pub fn list_mut(&mut self) -> Option<&mut List> {
+        match self {
+            ItemVariant::Atom(_) => None,
+            ItemVariant::List(list) => Some(list),
+        }
+    }
+
+    pub fn atom(&self) -> Option<&Atom> {
+        match self {
+            ItemVariant::Atom(atom) => Some(atom),
+            ItemVariant::List(_) => None,
+        }
+    }
+
+    pub fn atom_mut(&mut self) -> Option<&mut Atom> {
+        match self {
+            ItemVariant::Atom(atom) => Some(atom),
+            ItemVariant::List(_) => None,
+        }
+    }
+}
+
 ///
 /// Enumeration of all possible atom types
 ///
@@ -64,14 +97,21 @@ pub enum Atom {
     /// A string literal, i.e `"Hello, World!"`
     LiteralString(String),
 
-    /// An integer literal, i.e `56`
-    LiteralInteger(String),
-
-    /// A floating point literal, i.e `56.21` or `56.`
-    LiteralFloat(String),
+    /// An number literal, i.e `56` or `56.21` or `56.`
+    LiteralNumber(String),
 
     /// An identifier, i.e `hello` or `defstruct`
     Ident(String),
+}
+
+impl Display for Atom {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Atom::LiteralString(v) => f.write_fmt(format_args!("\"{}\"", v)),
+            Atom::LiteralNumber(v) => f.write_str(v),
+            Atom::Ident(v) => f.write_str(v),
+        }
+    }
 }
 
 ///
