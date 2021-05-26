@@ -143,9 +143,9 @@ impl CharExtensions for char {
     }
 
     fn is_identifier_special(self) -> bool {
-        const SPECIAL_CHARS: [char; 24] = [
-            '_', '-', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#',
-            '$', '%', '^', '&', '*', '?', '|',
+        const SPECIAL_CHARS: [char; 25] = [
+            '_', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#', '$',
+            '%', '^', '&', '*', '?', '|', '/', '\\',
         ];
         SPECIAL_CHARS.contains(&self)
     }
