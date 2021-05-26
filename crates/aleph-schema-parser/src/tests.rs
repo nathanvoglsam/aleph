@@ -53,6 +53,11 @@ fn test_valid_escaped_string() {
 }
 
 #[test]
+fn test_valid_special_idents() {
+    test_parses_valid("./schemas/valid_special_idents.schema");
+}
+
+#[test]
 fn test_invalid_unterminated_list() {
     test_parses_invalid("./schemas/invalid_unterminated_list.schema");
 }
