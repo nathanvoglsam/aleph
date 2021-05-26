@@ -27,34 +27,135 @@
 // SOFTWARE.
 //
 
-#[test]
-fn test_valid_simple() {
-    test_parses_valid("./schemas/valid_simple.schema");
+fn default(default: ast::untyped::Atom) -> ast::untyped::ListBuilder {
+    ast::untyped::ListBuilder::new()
+        .add_ident("default", None)
+        .add_atom(default, None)
+}
+
+fn default_0_float() -> ast::untyped::ListBuilder {
+    default(ast::untyped::Atom::string_number("0.0"))
+}
+
+fn field(name: &str, field_type: &str) -> ast::untyped::ListBuilder {
+    ast::untyped::ListBuilder::new()
+        .add_ident("field", None)
+        .add_ident(name, None)
+        .add_ident(field_type, None)
+}
+
+fn field_default<L: Into<ast::untyped::List>>(
+    name: &str,
+    field_type: &str,
+    default: L,
+) -> ast::untyped::ListBuilder {
+    ast::untyped::ListBuilder::new()
+        .add_ident("field", None)
+        .add_ident(name, None)
+        .add_ident(field_type, None)
+        .add_list(default, None)
+}
+
+fn float_field_default_0(name: &str) -> ast::untyped::ListBuilder {
+    field_default(name, "f32", default_0_float())
+}
+
+fn vector2() -> ast::untyped::ListBuilder {
+    ast::untyped::ListBuilder::new()
+        .add_ident("def-struct", None)
+        .add_ident("Vector2", None)
+        .add_list(float_field_default_0("x"), None)
+        .add_list(float_field_default_0("y"), None)
+}
+
+fn vector3() -> ast::untyped::ListBuilder {
+    ast::untyped::ListBuilder::new()
+        .add_ident("def-struct", None)
+        .add_ident("Vector3", None)
+        .add_list(float_field_default_0("x"), None)
+        .add_list(float_field_default_0("y"), None)
+        .add_list(float_field_default_0("z"), None)
+}
+
+fn monster() -> ast::untyped::ListBuilder {
+    let default_name = default(ast::untyped::Atom::string("default-monster"));
+    ast::untyped::ListBuilder::new()
+        .add_ident("def-table", None)
+        .add_ident("Monster", None)
+        .add_list(field("position", "Vector3"), None)
+        .add_list(field("target", "Vector3"), None)
+        .add_list(field_default("name", "string", default_name), None)
+}
+
+fn soldier() -> ast::untyped::ListBuilder {
+    let default_health = default(ast::untyped::Atom::string_number("1000000.0"));
+    ast::untyped::ListBuilder::new()
+        .add_ident("def-table", None)
+        .add_ident("Soldier", None)
+        .add_list(field("position", "aleph::Vector3"), None)
+        .add_list(field("target", "aleph::Vector3"), None)
+        .add_list(field_default("health", "f64", default_health), None)
 }
 
 #[test]
-fn test_valid_complex() {
-    test_parses_valid("./schemas/valid_complex.schema");
+fn test_valid() {
+    let namespace_aleph = ast::untyped::ListBuilder::new()
+        .add_ident("namespace", None)
+        .add_ident("aleph", None)
+        .add_list(vector2(), None)
+        .add_list(vector3(), None)
+        .add_list(monster(), None);
+    let namespace_engine = ast::untyped::ListBuilder::new()
+        .add_ident("namespace", None)
+        .add_ident("engine", None)
+        .add_list(soldier(), None)
+        .add_list([], None);
+    let expected = ast::untyped::ListBuilder::new()
+        .add_list(namespace_aleph, None)
+        .add_list(namespace_engine, None);
+    test_parses_valid("./schemas/valid.schema", expected);
 }
 
 #[test]
 fn test_valid_empty_file() {
-    test_parses_valid("./schemas/valid_empty_file.schema");
+    let expected = ast::untyped::ListBuilder::new();
+    test_parses_valid("./schemas/valid_empty_file.schema", expected);
 }
 
 #[test]
 fn test_valid_empty_file_with_whitespace() {
-    test_parses_valid("./schemas/valid_empty_file_with_whitespace.schema");
+    let expected = ast::untyped::ListBuilder::new();
+    test_parses_valid(
+        "./schemas/valid_empty_file_with_whitespace.schema",
+        expected,
+    );
 }
 
 #[test]
 fn test_valid_escaped_string() {
-    test_parses_valid("./schemas/valid_escaped_string.schema");
+    let string = "Test text please \"ignore\" me";
+    let list = ast::untyped::ListBuilder::new().add_string(string, None);
+    let expected = ast::untyped::ListBuilder::new().add_list(list, None);
+    test_parses_valid("./schemas/valid_escaped_string.schema", expected);
 }
 
 #[test]
 fn test_valid_special_idents() {
-    test_parses_valid("./schemas/valid_special_idents.schema");
+    let first = ast::untyped::ListBuilder::new()
+        .add_ident("\\first", None);
+    let second = ast::untyped::ListBuilder::new()
+        .add_ident("/second", None);
+    let third = ast::untyped::ListBuilder::new()
+        .add_ident("-third", None);
+    let namespace_aleph = ast::untyped::ListBuilder::new()
+        .add_ident("namespace", None)
+        .add_ident("aleph", None)
+        .add_list(first, None)
+        .add_list(second, None)
+        .add_list(third, None);
+    let expected = ast::untyped::ListBuilder::new()
+        .add_list(namespace_aleph, None);
+    test_parses_valid("./schemas/valid_special_idents.schema", expected);
 }
 
 #[test]
@@ -82,13 +183,20 @@ fn test_invalid_root_atom() {
     test_parses_invalid("./schemas/invalid_root_atom.schema");
 }
 
-fn test_parses_valid(file_name: &str) {
+fn test_parses_valid<L: Into<ast::untyped::List>>(file_name: &str, expected: L) {
+    let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();
     match crate::parse(text.as_str()) {
-        Ok(output) => println!("{:#?}", output),
+        Ok(output) => {
+            assert_eq!(
+                &output, &expected,
+                "ASTs do not match\nGOT:\n{:#?}\n---------------\nEXPECTED:\n{:#?}",
+                &output, &expected
+            );
+        }
         Err(error) => {
             crate::print_error(&text, error);
-            panic!("Failed to parse a valid input")
+            panic!("Failed to parse a valid input");
         }
     }
 }

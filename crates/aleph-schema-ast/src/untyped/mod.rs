@@ -27,18 +27,70 @@
 // SOFTWARE.
 //
 
+mod builders;
+
+pub use builders::ListBuilder;
+
 use std::fmt::{Display, Formatter};
 
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
 ///
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Hash, Debug)]
 pub struct Item {
     /// Position within the source text this item resides
     pub position: usize,
 
     /// The item variant itself
     pub item: ItemVariant,
+}
+
+impl PartialEq for Item {
+    fn eq(&self, other: &Self) -> bool {
+        // The default implementation ignores the position as it has no semantic meaning and is only
+        // used for generating error messages
+        self.item.eq(&other.item)
+    }
+
+    fn ne(&self, other: &Self) -> bool {
+        // The default implementation ignores the position as it has no semantic meaning and is only
+        // used for generating error messages
+        self.item.ne(&other.item)
+    }
+}
+
+impl Eq for Item {}
+
+impl Item {
+    ///
+    /// A custom eq implementation that performs a full equality check, including comparing the
+    /// `position` field which is ignored in the `PartialEq` implementation
+    ///
+    pub fn full_eq(&self, other: &Self) -> bool {
+        self.position.eq(&other.position) && self.item.eq(&other.item)
+    }
+
+    ///
+    /// A custom ne implementation that performs a full equality check, including comparing the
+    /// `position` field which is ignored in the `PartialEq` implementation
+    ///
+    pub fn full_ne(&self, other: &Self) -> bool {
+        self.position.ne(&other.position) && self.item.ne(&other.item)
+    }
+
+    pub fn atom<A: Into<Atom>>(atom: A, position: Option<usize>) -> Item {
+        Item {
+            position: position.unwrap_or(0),
+            item: ItemVariant::Atom(atom.into()),
+        }
+    }
+
+    pub fn list<L: Into<List>>(list: L, position: Option<usize>) -> Item {
+        Item {
+            position: position.unwrap_or(0),
+            item: ItemVariant::List(list.into()),
+        }
+    }
 }
 
 ///
@@ -96,6 +148,28 @@ pub enum Atom {
 
     /// An identifier, i.e `hello` or `defstruct`
     Ident(String),
+}
+
+impl Atom {
+    pub fn string<S: Into<String>>(string: S) -> Self {
+        Atom::LiteralString(string.into())
+    }
+
+    pub fn int_number(integer: i128) -> Self {
+        Atom::LiteralNumber(integer.to_string())
+    }
+
+    pub fn float_number(float: f64) -> Self {
+        Atom::LiteralNumber(float.to_string())
+    }
+
+    pub fn string_number<S: Into<String>>(number: S) -> Self {
+        Atom::LiteralNumber(number.into())
+    }
+
+    pub fn ident<S: Into<String>>(ident: S) -> Self {
+        Atom::Ident(ident.into())
+    }
 }
 
 impl Display for Atom {

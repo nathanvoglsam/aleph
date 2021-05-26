@@ -20,5 +20,18 @@
         (field target Vector3)
         (field name string (default "default-monster"))
     )
-    (- hello world)
+)
+(namespace engine
+    // Comment inside a list
+    /* block comment inside a list */
+    /* multi line
+     * block comment
+     * inside a list
+     */
+    (/* A comment*/ def-table Soldier
+        (field position aleph::Vector3)
+        (field target aleph::Vector3)
+        (field health f64 (default 1_000_000.0))
+    )
+    ()
 )
