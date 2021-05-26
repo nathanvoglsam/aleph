@@ -30,35 +30,123 @@
 ///
 /// A set of extensions for the char type for shorthand functions for checking characters
 ///
+//noinspection RsSelfConvention
 pub trait CharExtensions {
+    /// Returns whether the char is the list open char
+    fn is_list_open(self) -> bool;
+
+    /// Returns the list open char
+    fn list_open() -> char {
+        '('
+    }
+
+    /// Returns whether the char is the list close char
+    fn is_list_close(self) -> bool;
+
+    /// Returns the list close char
+    fn list_close() -> char {
+        ')'
+    }
+
+    /// Returns whether the char is the quote char (for string literal)
+    fn is_quote(self) -> bool;
+
+    /// Returns the quote char
+    fn quote() -> char {
+        '"'
+    }
+
+    /// Returns whether the char is the negation prefix (for negative number literals)
+    fn is_negation_prefix(self) -> bool;
+
+    /// Returns the negation prefix char
+    fn negation_prefix() -> char {
+        '-'
+    }
+
+    /// Returns whether the char is the escape prefix (for escape sequence in string literal)
+    fn is_escape_prefix(self) -> bool;
+
+    /// Returns the negation prefix char
+    fn escape_prefix() -> char {
+        '\\'
+    }
+
+    /// Returns whether the char is the decimal point char
+    fn is_decimal_point(self) -> bool;
+
+    /// Returns the decimal point char
+    fn decimal_point() -> char {
+        '.'
+    }
+
+    /// Returns whether the char is the thousands separator
+    fn is_thousands_separator(self) -> bool;
+
+    /// Returns the thousands separator
+    fn thousands_separator() -> char {
+        '_'
+    }
+
     /// Returns whether this character is the beginning of an identifier
-    fn is_identifier_first(&self) -> bool;
+    fn is_identifier_first(self) -> bool;
 
     /// Returns whether this character is a valid identifier character
-    fn is_identifier_rest(&self) -> bool;
+    fn is_identifier_rest(self) -> bool;
+
+    /// Returns whether this character is a special character for an identifier ('+', '-', etc)
+    fn is_identifier_special(self) -> bool;
 }
 
 impl CharExtensions for char {
-    fn is_identifier_first(&self) -> bool {
+    #[inline]
+    fn is_list_open(self) -> bool {
+        self == char::list_open()
+    }
+
+    #[inline]
+    fn is_list_close(self) -> bool {
+        self == char::list_close()
+    }
+
+    #[inline]
+    fn is_quote(self) -> bool {
+        self == char::quote()
+    }
+
+    #[inline]
+    fn is_negation_prefix(self) -> bool {
+        self == char::negation_prefix()
+    }
+
+    #[inline]
+    fn is_escape_prefix(self) -> bool {
+        self == char::escape_prefix()
+    }
+
+    #[inline]
+    fn is_decimal_point(self) -> bool {
+        self == char::decimal_point()
+    }
+
+    fn is_thousands_separator(self) -> bool {
+        self == char::thousands_separator()
+    }
+
+    #[inline]
+    fn is_identifier_first(self) -> bool {
         self.is_ascii_alphabetic() || self.is_identifier_special()
     }
-
-    fn is_identifier_rest(&self) -> bool {
-        self.is_alphanumeric() || self.is_identifier_special()
+    #[inline]
+    fn is_identifier_rest(self) -> bool {
+        self.is_ascii_alphanumeric() || self.is_identifier_special()
     }
-}
 
-trait InternalCharExtensions {
-    /// Returns whether this character is a special character for an identifier ('+', '-', etc)
-    fn is_identifier_special(&self) -> bool;
-}
-
-impl InternalCharExtensions for char {
-    fn is_identifier_special(&self) -> bool {
+    fn is_identifier_special(self) -> bool {
         const SPECIAL_CHARS: [char; 24] = [
             '_', '-', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#',
             '$', '%', '^', '&', '*', '?', '|',
         ];
-        SPECIAL_CHARS.contains(self)
+        SPECIAL_CHARS.contains(&self)
     }
 }

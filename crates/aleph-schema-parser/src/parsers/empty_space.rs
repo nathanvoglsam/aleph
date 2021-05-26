@@ -39,7 +39,7 @@ pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
     let line_comment = attempt(line_comment());
     let block_comment = attempt(block_comment());
     let space = space().map(|_| ());
-    choice((space, block_comment, line_comment))
+    choice((space, block_comment, line_comment)).expected("whitespace or comment")
 }
 
 ///

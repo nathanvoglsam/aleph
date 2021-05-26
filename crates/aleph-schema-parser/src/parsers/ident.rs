@@ -43,12 +43,13 @@ pub fn ident<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Ato
             string.push_str(rest.as_str());
             ast::untyped::Atom::Ident(string)
         })
+        .expected("identifier")
 }
 
 fn ident_first<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    satisfy::<Input, _>(|v: char| v.is_identifier_first())
+    satisfy::<Input, _>(char::is_identifier_first)
 }
 
 fn ident_rest<Input: MyStream>() -> impl Parser<Input, Output = String> {
-    many(satisfy::<Input, _>(|v: char| v.is_identifier_rest()))
+    many(satisfy::<Input, _>(char::is_identifier_rest))
 }

@@ -59,11 +59,8 @@ pub enum Atom {
     /// A string literal, i.e `"Hello, World!"`
     LiteralString(String),
 
-    /// An integer literal, i.e `56`
-    LiteralInteger(String),
-
-    /// A floating point literal, i.e `56.21` or `56.`
-    LiteralFloat(String),
+    /// An number literal, i.e `56` or `56.21` or `56.`
+    LiteralNumber(String),
 
     /// An identifier, i.e `hello` or `defstruct`
     Ident(String),

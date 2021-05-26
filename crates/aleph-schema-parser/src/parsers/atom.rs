@@ -38,12 +38,12 @@ pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Item
     let parsers = (
         // Try a string first as it is delimited
         literal::string(),
-        // Float literal is superset of integer so parse first as an integer will parse first
-        attempt(literal::float()),
-        // Integer literal will start with number unlike ident so check this first
-        attempt(literal::integer()),
+        // Next try a number literal
+        attempt(literal::number()),
         // Lastly check for an ident
         attempt(ident::ident()),
     );
-    choice(parsers).map(|v| ast::untyped::ItemVariant::Atom(v))
+    choice(parsers)
+        .map(|v| ast::untyped::ItemVariant::Atom(v))
+        .expected("atom")
 }

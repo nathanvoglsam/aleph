@@ -48,6 +48,11 @@ fn test_valid_empty_file_with_whitespace() {
 }
 
 #[test]
+fn test_valid_escaped_string() {
+    test_parses_valid("./schemas/valid_escaped_string.schema");
+}
+
+#[test]
 fn test_invalid_unterminated_list() {
     test_parses_invalid("./schemas/invalid_unterminated_list.schema");
 }

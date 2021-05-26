@@ -20,11 +20,12 @@
      * // comment
      */
     (def-table Monster
-        (field position Vector3 /* comment */)
+        (/* */field position Vector3 /* comment */)
         (field target Vector3)
         (field name string (default "default-monster"))
     )
-    (- hello world)
+    (// yeet- hello world
+    -)
 )
 (namespace engine
     (def-table Soldier

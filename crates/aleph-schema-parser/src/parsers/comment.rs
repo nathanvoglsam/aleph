@@ -30,7 +30,7 @@
 use crate::parsers::MyStream;
 use combine::parser::char::{newline, string};
 use combine::parser::repeat::skip_until;
-use combine::{eof, Parser, attempt, skip_count, any};
+use combine::{any, attempt, eof, skip_count, Parser};
 
 ///
 /// Parser that attempts to parse out an identifier
