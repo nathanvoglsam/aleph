@@ -29,13 +29,13 @@
 
 use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
-use combine::{many, satisfy, Parser};
+use combine::{many1, satisfy, Parser};
 
 ///
 /// Parser that parses out an item
 ///
 pub fn word<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    many(satisfy::<Input, _>(char::is_item_token))
+    many1(satisfy::<Input, _>(char::is_item_token))
         .map(|v| ast::untyped::Atom::Word(v))
         .expected("word")
 }

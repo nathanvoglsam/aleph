@@ -27,22 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::{literal, word};
+use crate::parsers::untyped::literal::string;
+use crate::parsers::untyped::word::word;
 use crate::parsers::MyStream;
-use combine::{choice, Parser};
+use combine::Parser;
 
 ///
 /// A parser that parses out an atom
 ///
 pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
     // The order to try to parse elements in
-    let parsers = (
-        // Try a string first as it is delimited
-        literal::string(),
-        // Then check for an item
-        word::word(),
-    );
-    choice(parsers)
+    string()
+        .or(word())
         .map(|v| ast::untyped::ItemVariant::Atom(v))
         .expected("atom")
 }

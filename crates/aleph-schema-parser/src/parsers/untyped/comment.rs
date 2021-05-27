@@ -29,9 +29,9 @@
 
 use crate::parsers::MyStream;
 use combine::parser::char::newline;
-use combine::parser::repeat::skip_until;
-use combine::{any, eof, skip_count, Parser, token};
 use combine::parser::choice::or;
+use combine::parser::repeat::skip_until;
+use combine::{eof, token, Parser};
 
 ///
 /// Parser that parses out a line comment
@@ -41,13 +41,13 @@ pub fn comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
 }
 
 fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    let start_of_comment = token('/');
-    let end_of_line = newline().map(|_| ());
-    let end_of_file = eof();
-    let terminator = end_of_line.or(end_of_file);
-    let body = skip_until(terminator);
-    let end = skip_count(1, any());
-    start_of_comment.with(body).with(end).map(|_| ())
+    token('/')
+        .with(skip_until(line_comment_end()))
+        .skip(line_comment_end())
+}
+
+fn line_comment_end<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    newline().map(|_| ()).or(eof())
 }
 
 fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
@@ -55,13 +55,15 @@ fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
 }
 
 fn block_segment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    skip_until(block_segment_end()).with(skip_count(2, any()))
+    skip_until(token('*'))
+        .skip(token('*'))
+        .with(block_segment_end())
 }
 
 combine::parser! {
     fn block_segment_end[Input]()(Input) -> ()
     where [Input: MyStream]
     {
-        token('*').with(token('/').map(|_| ()).or(block_segment()))
+        token('/').map(|_| ()).or(block_segment())
     }
 }

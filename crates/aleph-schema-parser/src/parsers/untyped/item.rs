@@ -27,16 +27,18 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::{atom, list};
+use crate::parsers::untyped::atom::atom;
+use crate::parsers::untyped::list::list;
 use crate::parsers::MyStream;
+use combine::parser::choice::or;
 use combine::stream::PointerOffset;
-use combine::{choice, position, Parser};
+use combine::{position, Parser};
 
 combine::parser! {
     fn item_inner[Input](input_base: usize)(Input) -> ast::untyped::ItemVariant
     where [Input: MyStream]
     {
-        choice((list::list(*input_base), atom::atom()))
+        or(list(*input_base), atom())
     }
 }
 

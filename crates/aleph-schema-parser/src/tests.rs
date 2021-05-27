@@ -88,7 +88,7 @@ fn monster() -> ast::untyped::ListBuilder {
 }
 
 fn soldier() -> ast::untyped::ListBuilder {
-    let default_health = default(ast::untyped::Atom::word("1000000.0"));
+    let default_health = default(ast::untyped::Atom::word("1_000_000.0"));
     ast::untyped::ListBuilder::new()
         .add_word("def-table", None)
         .add_word("Soldier", None)
@@ -141,8 +141,8 @@ fn test_valid_escaped_string() {
 
 #[test]
 fn test_valid_special_idents() {
-    let first = ast::untyped::ListBuilder::new().add_word("\\first", None);
-    let second = ast::untyped::ListBuilder::new().add_word("/second", None);
+    let first = ast::untyped::ListBuilder::new().add_word("#first", None);
+    let second = ast::untyped::ListBuilder::new().add_word("?second?", None);
     let third = ast::untyped::ListBuilder::new().add_word("-third", None);
     let namespace_aleph = ast::untyped::ListBuilder::new()
         .add_word("namespace", None)

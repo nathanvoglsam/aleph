@@ -129,9 +129,9 @@ impl CharExtensions for char {
 
     #[inline]
     fn is_item_token(self) -> bool {
-        const SPECIAL_CHARS: [char; 25] = [
-            '_', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#', '$',
-            '%', '^', '&', '*', '?', '|', '/', '\\',
+        const SPECIAL_CHARS: [char; 26] = [
+            '!', '@', '#', '$', '%', '^', '&', '*', '[', ']', '{', '}', '<', '>', '.', ',', ':',
+            ';', '+', '=', '-', '_', '~', '`', '?', '|',
         ];
         self.is_ascii_alphanumeric() || SPECIAL_CHARS.contains(&self)
     }

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::comment::{comment};
+use crate::parsers::untyped::comment::comment;
 use crate::parsers::MyStream;
 use combine::parser::char::space;
 use combine::{choice, skip_many, Parser};

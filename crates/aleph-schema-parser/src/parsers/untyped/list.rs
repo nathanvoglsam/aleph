@@ -31,7 +31,7 @@ use crate::parsers::untyped::empty_space::empty_spaces;
 use crate::parsers::untyped::item;
 use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
-use combine::{between, token, Parser, sep_end_by};
+use combine::{between, sep_end_by, token, Parser};
 
 ///
 /// Parser that will parse out a list
