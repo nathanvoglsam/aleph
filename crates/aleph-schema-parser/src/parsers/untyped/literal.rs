@@ -30,10 +30,10 @@
 use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
 use combine::parser::char::digit;
-use combine::{any, attempt, between, choice, many, optional, satisfy, skip_many, token, Parser};
+use combine::{between, many, optional, satisfy, skip_many, token, Parser};
 
 ///
-/// A parser that attempts to parse out a string literal
+/// A parser that parses out a string literal
 ///
 pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     let open = token(char::quote());
@@ -48,9 +48,7 @@ pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::At
 /// This parser will succeed and yield a token only for tokens valid inside a string literal
 ///
 pub fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    let escaped = attempt(token(char::escape_prefix()).with(any()));
-    let parsers = (escaped, satisfy::<Input, _>(|v: char| !v.is_quote()));
-    choice(parsers)
+    satisfy::<Input, _>(|v: char| !v.is_quote())
 }
 
 ///

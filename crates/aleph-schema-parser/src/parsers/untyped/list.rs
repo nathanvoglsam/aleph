@@ -31,10 +31,10 @@ use crate::parsers::untyped::empty_space::empty_spaces;
 use crate::parsers::untyped::item;
 use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
-use combine::{attempt, between, sep_end_by1, token, Parser};
+use combine::{between, token, Parser, sep_end_by};
 
 ///
-/// Parser that will attempt to parse out a list
+/// Parser that will parse out a list
 ///
 pub fn list<Input: MyStream>(
     input_base: usize,
@@ -50,15 +50,5 @@ pub fn list<Input: MyStream>(
 pub fn list_body<Input: MyStream>(
     input_base: usize,
 ) -> impl Parser<Input, Output = ast::untyped::List> {
-    attempt(non_empty_list(input_base)).or(attempt(empty_list()))
-}
-
-fn empty_list<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::List> {
-    empty_spaces().map(|_| Vec::new())
-}
-
-fn non_empty_list<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::List> {
-    empty_spaces().with(sep_end_by1(item::item(input_base), empty_spaces()))
+    empty_spaces().with(sep_end_by(item::item(input_base), empty_spaces()))
 }

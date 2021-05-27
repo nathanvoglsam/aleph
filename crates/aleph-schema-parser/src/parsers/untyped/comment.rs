@@ -28,32 +28,40 @@
 //
 
 use crate::parsers::MyStream;
-use combine::parser::char::{newline, string};
+use combine::parser::char::newline;
 use combine::parser::repeat::skip_until;
-use combine::{any, attempt, eof, skip_count, Parser};
+use combine::{any, eof, skip_count, Parser, token};
+use combine::parser::choice::or;
 
 ///
-/// Parser that attempts to parse out an identifier
+/// Parser that parses out a line comment
 ///
-pub fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    let start_of_comment = string("//").map(|_| ());
+pub fn comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    token('/').with(or(line_comment(), block_comment()))
+}
+
+fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let start_of_comment = token('/');
     let end_of_line = newline().map(|_| ());
     let end_of_file = eof();
     let terminator = end_of_line.or(end_of_file);
-    let body = skip_until(attempt(terminator));
+    let body = skip_until(terminator);
     let end = skip_count(1, any());
-    start_of_comment.and(body).and(end).map(|_| ())
+    start_of_comment.with(body).with(end).map(|_| ())
 }
 
-///
-/// Parser that attempts to parse out an identifier
-///
-pub fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    let start_of_block = string("/*").map(|_| ());
-    let end_of_block = string("*/").map(|_| ());
-    let end_of_file = eof();
-    let terminator = end_of_block.or(end_of_file);
-    let body = skip_until(attempt(terminator));
-    let end = skip_count(2, any());
-    start_of_block.and(body).and(end).map(|_| ())
+fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    token('*').with(block_segment())
+}
+
+fn block_segment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    skip_until(block_segment_end()).with(skip_count(2, any()))
+}
+
+combine::parser! {
+    fn block_segment_end[Input]()(Input) -> ()
+    where [Input: MyStream]
+    {
+        token('*').with(token('/').map(|_| ()).or(block_segment()))
+    }
 }

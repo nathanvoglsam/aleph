@@ -32,7 +32,7 @@ use crate::utils::CharExtensions;
 use combine::{many, satisfy, Parser};
 
 ///
-/// Parser that attempts to parse out an item
+/// Parser that parses out an item
 ///
 pub fn word<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     many(satisfy::<Input, _>(char::is_item_token))

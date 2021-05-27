@@ -32,10 +32,10 @@ use crate::parsers::MyStream;
 use combine::{choice, Parser};
 
 ///
-/// A parser that attempts to parse out an atom
+/// A parser that parses out an atom
 ///
 pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
-    // The order to attempt to parse elements in
+    // The order to try to parse elements in
     let parsers = (
         // Try a string first as it is delimited
         literal::string(),

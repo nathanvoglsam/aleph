@@ -34,7 +34,7 @@ use combine::stream::PointerOffset;
 use combine::{eof, position, sep_end_by, Parser};
 
 ///
-/// Parser that will attempt to parse a whole file out to a list
+/// Parser that will parse a whole file out to an AST.
 ///
 pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
     // Parser for an individual list item
@@ -45,7 +45,7 @@ pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = a
         },
     );
 
-    // Parser for a sequence of 1 or more lists at the file root
+    // Parser for a sequence of 0 or more lists at the file root
     let main = sep_end_by(parser, empty_spaces()).and(eof()).map(|v| v.0);
 
     empty_spaces().with(main)
