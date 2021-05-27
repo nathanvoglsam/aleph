@@ -27,23 +27,15 @@
 // SOFTWARE.
 //
 
-use crate::parsers::{ident, literal, MyStream};
-use combine::{attempt, choice, Parser};
+use crate::parsers::MyStream;
+use crate::utils::CharExtensions;
+use combine::{many, satisfy, Parser};
 
 ///
-/// A parser that attempts to parse out an atom
+/// Parser that attempts to parse out an item
 ///
-pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
-    // The order to attempt to parse elements in
-    let parsers = (
-        // Try a string first as it is delimited
-        literal::string(),
-        // Next try a number literal
-        attempt(literal::number()),
-        // Lastly check for an ident
-        attempt(ident::ident()),
-    );
-    choice(parsers)
-        .map(|v| ast::untyped::ItemVariant::Atom(v))
-        .expected("atom")
+pub fn word<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+    many(satisfy::<Input, _>(char::is_item_token))
+        .map(|v| ast::untyped::Atom::Word(v))
+        .expected("word")
 }

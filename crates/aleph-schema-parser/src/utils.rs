@@ -88,14 +88,8 @@ pub trait CharExtensions {
         '_'
     }
 
-    /// Returns whether this character is the beginning of an identifier
-    fn is_identifier_first(self) -> bool;
-
-    /// Returns whether this character is a valid identifier character
-    fn is_identifier_rest(self) -> bool;
-
-    /// Returns whether this character is a special character for an identifier ('+', '-', etc)
-    fn is_identifier_special(self) -> bool;
+    /// Returns whether this character is the beginning of an item
+    fn is_item_token(self) -> bool;
 }
 
 impl CharExtensions for char {
@@ -134,19 +128,11 @@ impl CharExtensions for char {
     }
 
     #[inline]
-    fn is_identifier_first(self) -> bool {
-        self.is_ascii_alphabetic() || self.is_identifier_special()
-    }
-    #[inline]
-    fn is_identifier_rest(self) -> bool {
-        self.is_ascii_alphanumeric() || self.is_identifier_special()
-    }
-
-    fn is_identifier_special(self) -> bool {
+    fn is_item_token(self) -> bool {
         const SPECIAL_CHARS: [char; 25] = [
             '_', '<', '>', '+', '-', '[', ']', '{', '}', ':', ';', '.', ',', '!', '@', '#', '$',
             '%', '^', '&', '*', '?', '|', '/', '\\',
         ];
-        SPECIAL_CHARS.contains(&self)
+        self.is_ascii_alphanumeric() || SPECIAL_CHARS.contains(&self)
     }
 }

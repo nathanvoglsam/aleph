@@ -27,29 +27,22 @@
 // SOFTWARE.
 //
 
+use crate::parsers::untyped::{literal, word};
 use crate::parsers::MyStream;
-use crate::utils::CharExtensions;
-use combine::{many, satisfy, Parser};
+use combine::{choice, Parser};
 
 ///
-/// Parser that attempts to parse out an identifier
+/// A parser that attempts to parse out an atom
 ///
-pub fn ident<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    ident_first()
-        .and(ident_rest())
-        .map(|(first, rest): (char, String)| {
-            let mut string = String::new();
-            string.push(first);
-            string.push_str(rest.as_str());
-            ast::untyped::Atom::Ident(string)
-        })
-        .expected("identifier")
-}
-
-fn ident_first<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    satisfy::<Input, _>(char::is_identifier_first)
-}
-
-fn ident_rest<Input: MyStream>() -> impl Parser<Input, Output = String> {
-    many(satisfy::<Input, _>(char::is_identifier_rest))
+pub fn atom<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
+    // The order to attempt to parse elements in
+    let parsers = (
+        // Try a string first as it is delimited
+        literal::string(),
+        // Then check for an item
+        word::word(),
+    );
+    choice(parsers)
+        .map(|v| ast::untyped::ItemVariant::Atom(v))
+        .expected("atom")
 }

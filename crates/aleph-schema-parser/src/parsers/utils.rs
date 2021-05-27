@@ -56,7 +56,7 @@ impl<T: combine::Stream<Token = char, Position = PointerOffset<str>>> MyStream f
 ///
 pub fn parse(text: &str) -> Result<ast::untyped::List, ParseError<&str>> {
     let input_base = text.as_ptr() as usize;
-    let result = crate::parsers::file::file(input_base).easy_parse(text)?;
+    let result = crate::parsers::untyped::file::file(input_base).easy_parse(text)?;
     Ok(result.0)
 }
 

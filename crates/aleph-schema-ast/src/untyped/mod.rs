@@ -143,11 +143,8 @@ pub enum Atom {
     /// A string literal, i.e `"Hello, World!"`
     LiteralString(String),
 
-    /// An number literal, i.e `56` or `56.21` or `56.`
-    LiteralNumber(String),
-
-    /// An identifier, i.e `hello` or `defstruct`
-    Ident(String),
+    /// Anything that isn't a string literal
+    Word(String),
 }
 
 impl Atom {
@@ -155,20 +152,8 @@ impl Atom {
         Atom::LiteralString(string.into())
     }
 
-    pub fn int_number(integer: i128) -> Self {
-        Atom::LiteralNumber(integer.to_string())
-    }
-
-    pub fn float_number(float: f64) -> Self {
-        Atom::LiteralNumber(float.to_string())
-    }
-
-    pub fn string_number<S: Into<String>>(number: S) -> Self {
-        Atom::LiteralNumber(number.into())
-    }
-
-    pub fn ident<S: Into<String>>(ident: S) -> Self {
-        Atom::Ident(ident.into())
+    pub fn word<S: Into<String>>(word: S) -> Self {
+        Atom::Word(word.into())
     }
 }
 
@@ -176,8 +161,7 @@ impl Display for Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Atom::LiteralString(v) => f.write_fmt(format_args!("\"{}\"", v)),
-            Atom::LiteralNumber(v) => f.write_str(v),
-            Atom::Ident(v) => f.write_str(v),
+            Atom::Word(v) => f.write_str(v),
         }
     }
 }

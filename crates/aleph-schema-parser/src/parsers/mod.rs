@@ -27,14 +27,7 @@
 // SOFTWARE.
 //
 
-pub mod atom;
-pub mod comment;
-pub mod empty_space;
-pub mod file;
-pub mod ident;
-pub mod item;
-pub mod list;
-pub mod literal;
+pub mod untyped;
 
 mod utils;
 

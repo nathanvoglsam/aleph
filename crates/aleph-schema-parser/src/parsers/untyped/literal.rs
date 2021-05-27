@@ -54,15 +54,6 @@ pub fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
 }
 
 ///
-/// A parser that attempts to parse out a float literal
-///
-pub fn number<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    decimal()
-        .map(|v| ast::untyped::Atom::LiteralNumber(v))
-        .expected("float literal")
-}
-
-///
 /// A parser that parses out an entire decimal number. This includes a negation prefix, the whole
 /// number part, the decimal point and the fractional part.
 ///

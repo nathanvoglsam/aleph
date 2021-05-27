@@ -29,19 +29,19 @@
 
 fn default(default: ast::untyped::Atom) -> ast::untyped::ListBuilder {
     ast::untyped::ListBuilder::new()
-        .add_ident("default", None)
+        .add_word("default", None)
         .add_atom(default, None)
 }
 
 fn default_0_float() -> ast::untyped::ListBuilder {
-    default(ast::untyped::Atom::string_number("0.0"))
+    default(ast::untyped::Atom::word("0.0"))
 }
 
 fn field(name: &str, field_type: &str) -> ast::untyped::ListBuilder {
     ast::untyped::ListBuilder::new()
-        .add_ident("field", None)
-        .add_ident(name, None)
-        .add_ident(field_type, None)
+        .add_word("field", None)
+        .add_word(name, None)
+        .add_word(field_type, None)
 }
 
 fn field_default<L: Into<ast::untyped::List>>(
@@ -50,9 +50,9 @@ fn field_default<L: Into<ast::untyped::List>>(
     default: L,
 ) -> ast::untyped::ListBuilder {
     ast::untyped::ListBuilder::new()
-        .add_ident("field", None)
-        .add_ident(name, None)
-        .add_ident(field_type, None)
+        .add_word("field", None)
+        .add_word(name, None)
+        .add_word(field_type, None)
         .add_list(default, None)
 }
 
@@ -62,16 +62,16 @@ fn float_field_default_0(name: &str) -> ast::untyped::ListBuilder {
 
 fn vector2() -> ast::untyped::ListBuilder {
     ast::untyped::ListBuilder::new()
-        .add_ident("def-struct", None)
-        .add_ident("Vector2", None)
+        .add_word("def-struct", None)
+        .add_word("Vector2", None)
         .add_list(float_field_default_0("x"), None)
         .add_list(float_field_default_0("y"), None)
 }
 
 fn vector3() -> ast::untyped::ListBuilder {
     ast::untyped::ListBuilder::new()
-        .add_ident("def-struct", None)
-        .add_ident("Vector3", None)
+        .add_word("def-struct", None)
+        .add_word("Vector3", None)
         .add_list(float_field_default_0("x"), None)
         .add_list(float_field_default_0("y"), None)
         .add_list(float_field_default_0("z"), None)
@@ -80,18 +80,18 @@ fn vector3() -> ast::untyped::ListBuilder {
 fn monster() -> ast::untyped::ListBuilder {
     let default_name = default(ast::untyped::Atom::string("default-monster"));
     ast::untyped::ListBuilder::new()
-        .add_ident("def-table", None)
-        .add_ident("Monster", None)
+        .add_word("def-table", None)
+        .add_word("Monster", None)
         .add_list(field("position", "Vector3"), None)
         .add_list(field("target", "Vector3"), None)
         .add_list(field_default("name", "string", default_name), None)
 }
 
 fn soldier() -> ast::untyped::ListBuilder {
-    let default_health = default(ast::untyped::Atom::string_number("1000000.0"));
+    let default_health = default(ast::untyped::Atom::word("1000000.0"));
     ast::untyped::ListBuilder::new()
-        .add_ident("def-table", None)
-        .add_ident("Soldier", None)
+        .add_word("def-table", None)
+        .add_word("Soldier", None)
         .add_list(field("position", "aleph::Vector3"), None)
         .add_list(field("target", "aleph::Vector3"), None)
         .add_list(field_default("health", "f64", default_health), None)
@@ -100,14 +100,14 @@ fn soldier() -> ast::untyped::ListBuilder {
 #[test]
 fn test_valid() {
     let namespace_aleph = ast::untyped::ListBuilder::new()
-        .add_ident("namespace", None)
-        .add_ident("aleph", None)
+        .add_word("namespace", None)
+        .add_word("aleph", None)
         .add_list(vector2(), None)
         .add_list(vector3(), None)
         .add_list(monster(), None);
     let namespace_engine = ast::untyped::ListBuilder::new()
-        .add_ident("namespace", None)
-        .add_ident("engine", None)
+        .add_word("namespace", None)
+        .add_word("engine", None)
         .add_list(soldier(), None)
         .add_list([], None);
     let expected = ast::untyped::ListBuilder::new()
@@ -141,20 +141,16 @@ fn test_valid_escaped_string() {
 
 #[test]
 fn test_valid_special_idents() {
-    let first = ast::untyped::ListBuilder::new()
-        .add_ident("\\first", None);
-    let second = ast::untyped::ListBuilder::new()
-        .add_ident("/second", None);
-    let third = ast::untyped::ListBuilder::new()
-        .add_ident("-third", None);
+    let first = ast::untyped::ListBuilder::new().add_word("\\first", None);
+    let second = ast::untyped::ListBuilder::new().add_word("/second", None);
+    let third = ast::untyped::ListBuilder::new().add_word("-third", None);
     let namespace_aleph = ast::untyped::ListBuilder::new()
-        .add_ident("namespace", None)
-        .add_ident("aleph", None)
+        .add_word("namespace", None)
+        .add_word("aleph", None)
         .add_list(first, None)
         .add_list(second, None)
         .add_list(third, None);
-    let expected = ast::untyped::ListBuilder::new()
-        .add_list(namespace_aleph, None);
+    let expected = ast::untyped::ListBuilder::new().add_list(namespace_aleph, None);
     test_parses_valid("./schemas/valid_special_idents.schema", expected);
 }
 

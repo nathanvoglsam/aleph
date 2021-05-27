@@ -27,31 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::parsers::empty_space::empty_spaces;
-use crate::parsers::{list, MyStream};
-use combine::stream::PointerOffset;
-use combine::{choice, eof, position, sep_end_by1, Parser};
+use crate::parsers::untyped::comment::{block_comment, line_comment};
+use crate::parsers::MyStream;
+use combine::parser::char::space;
+use combine::{attempt, choice, skip_many, Parser};
 
 ///
-/// Parser that will attempt to parse a whole file out to a list
+/// Parser that attempts to parse out an identifier
 ///
-pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
-    // Parser for an individual list item
-    let parser = position().and(list::list(input_base)).map(
-        move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| ast::untyped::Item {
-            position: pos.0 - input_base,
-            item,
-        },
-    );
+pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let line_comment = attempt(line_comment());
+    let block_comment = attempt(block_comment());
+    let space = space().map(|_| ());
+    choice((space, block_comment, line_comment)).expected("whitespace or comment")
+}
 
-    // Parser for end of file
-    let empty = eof().map(|_| Vec::new());
-
-    // Parser for a sequence of 1 or more lists at the file root
-    let main = sep_end_by1(parser, empty_spaces()).and(eof()).map(|v| v.0);
-
-    // Parser that handles either the end of input or a sequence of lists
-    let empty_or_not = choice((empty, main));
-
-    empty_spaces().with(empty_or_not)
+///
+/// Parser that attempts to parse out an identifier
+///
+pub fn empty_spaces<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    skip_many(empty_space()).expected("whitespace or comment")
 }

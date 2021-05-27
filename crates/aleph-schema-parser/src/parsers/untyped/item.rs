@@ -27,24 +27,27 @@
 // SOFTWARE.
 //
 
-use crate::parsers::comment::{block_comment, line_comment};
+use crate::parsers::untyped::{atom, list};
 use crate::parsers::MyStream;
-use combine::parser::char::space;
-use combine::{attempt, choice, skip_many, Parser};
+use combine::stream::PointerOffset;
+use combine::{choice, position, Parser};
 
-///
-/// Parser that attempts to parse out an identifier
-///
-pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    let line_comment = attempt(line_comment());
-    let block_comment = attempt(block_comment());
-    let space = space().map(|_| ());
-    choice((space, block_comment, line_comment)).expected("whitespace or comment")
+combine::parser! {
+    fn item_inner[Input](input_base: usize)(Input) -> ast::untyped::ItemVariant
+    where [Input: MyStream]
+    {
+        choice((list::list(*input_base), atom::atom()))
+    }
 }
 
 ///
-/// Parser that attempts to parse out an identifier
+/// Parser that will try to parse out a list or an atom to create an item
 ///
-pub fn empty_spaces<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    skip_many(empty_space()).expected("whitespace or comment")
+pub fn item<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::Item> {
+    position().and(item_inner(input_base)).map(
+        move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| ast::untyped::Item {
+            position: pos.0 - input_base,
+            item,
+        },
+    )
 }

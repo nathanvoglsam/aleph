@@ -27,49 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::untyped::{Atom, Item, List};
-
-pub struct ListBuilder {
-    inner: List,
-}
-
-impl ListBuilder {
-    #[inline]
-    pub fn new() -> Self {
-        Self { inner: Vec::new() }
-    }
-
-    #[inline]
-    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, position: Option<usize>) -> Self {
-        self.inner.push(Item::atom(atom, position));
-        self
-    }
-
-    #[inline]
-    pub fn add_string<S: Into<String>>(self, string: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::string(string), position)
-    }
-
-    #[inline]
-    pub fn add_word<S: Into<String>>(self, word: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::word(word), position)
-    }
-
-    #[inline]
-    pub fn add_list<L: Into<List>>(mut self, list: L, position: Option<usize>) -> Self {
-        self.inner.push(Item::list(list, position));
-        self
-    }
-
-    #[inline]
-    pub fn build(self) -> List {
-        self.inner
-    }
-}
-
-impl Into<List> for ListBuilder {
-    #[inline]
-    fn into(self) -> List {
-        self.inner
-    }
-}
+pub mod atom;
+pub mod comment;
+pub mod empty_space;
+pub mod file;
+pub mod item;
+pub mod list;
+pub mod literal;
+pub mod word;
