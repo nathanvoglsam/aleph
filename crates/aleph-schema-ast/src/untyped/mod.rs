@@ -36,7 +36,7 @@ use std::fmt::{Display, Formatter};
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
 ///
-#[derive(Hash, Debug)]
+#[derive(Clone, Hash, Debug)]
 pub struct Item {
     /// Position within the source text this item resides
     pub position: usize,
@@ -96,7 +96,7 @@ impl Item {
 ///
 /// Enumeration of all valid list items
 ///
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum ItemVariant {
     /// A singular atom
     Atom(Atom),
@@ -138,7 +138,7 @@ impl ItemVariant {
 ///
 /// Enumeration of all possible atom types
 ///
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Atom {
     /// A string literal, i.e `"Hello, World!"`
     LiteralString(String),

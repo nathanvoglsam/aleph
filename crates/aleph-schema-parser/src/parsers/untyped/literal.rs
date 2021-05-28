@@ -29,8 +29,11 @@
 
 use crate::parsers::MyStream;
 use crate::utils::CharExtensions;
-use combine::parser::char::digit;
-use combine::{between, many, optional, satisfy, skip_many, token, Parser};
+use combine::error::StreamError;
+use combine::parser::char::{digit, hex_digit, spaces};
+use combine::{between, choice, count_min_max, many, optional, satisfy, skip_many, token, ParseError, Parser, StreamOnce, value};
+use smartstring::alias::CompactString;
+use combine::parser::choice::or;
 
 ///
 /// A parser that parses out a string literal
@@ -38,17 +41,90 @@ use combine::{between, many, optional, satisfy, skip_many, token, Parser};
 pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
     let open = token(char::quote());
     let close = token(char::quote());
-    let inner = many(string_char());
+    let inner = string_content();
     between(open, close, inner)
-        .map(|v| ast::untyped::Atom::LiteralString(v))
+        .map(|v| ast::untyped::Atom::LiteralString(v.to_string()))
         .expected("string literal")
 }
 
-///
-/// This parser will succeed and yield a token only for tokens valid inside a string literal
-///
-pub fn string_char<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    satisfy::<Input, _>(|v: char| !v.is_quote())
+fn string_content<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    many(string_char())
+}
+
+fn string_char<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    let not_quote = satisfy::<Input, _>(|v: char| !v.is_quote()).map(|v: char| {
+        let mut output = CompactString::new();
+        output.push(v);
+        output
+    });
+
+    escape_sequence().or(not_quote)
+}
+
+fn escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    let choices = (
+        token('n').map(|_| CompactString::from("\n")),
+        token('r').map(|_| CompactString::from("\r")),
+        token('t').map(|_| CompactString::from("\t")),
+        token('r').map(|_| CompactString::from("\r")),
+        token('\\').map(|_| CompactString::from("\\")),
+        token('"').map(|_| CompactString::from("\"")),
+        token('\'').map(|_| CompactString::from("\'")),
+        token('0').map(|_| CompactString::from("\0")),
+        ascii_escape_sequence(),
+        unicode_escape_sequence(),
+        newline_escape_sequence(),
+    );
+    token('\\').with(choice(choices))
+}
+
+fn newline_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    or(token('\n'), token('\r')).with(spaces()).with(value(CompactString::new()))
+}
+
+fn ascii_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    let sequence = hex_digit().and(hex_digit());
+    let sequence = sequence.and_then(|(f, s)| {
+        let first = f.hex_value() << 4;
+        let second = s.hex_value();
+        let combined = first | second;
+        if combined > 0x7F {
+            let err = format!("\\x{}{} is not a valid ASCII character", f, s);
+            let err = <<Input as StreamOnce>::Error as ParseError<
+                Input::Token,
+                Input::Range,
+                Input::Position,
+            >>::StreamError::message_format(err);
+            Err(err)
+        } else {
+            let mut output = CompactString::new();
+            output.push(char::from(combined));
+            Ok(output)
+        }
+    });
+    token('x').with(sequence)
+}
+
+fn unicode_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
+    let sequence_char = hex_digit();
+    let sequence = count_min_max(1, 6, sequence_char);
+    let sequence = sequence.and_then(|v: String| {
+        let num = u32::from_str_radix(&v, 16).unwrap();
+        if let Some(result) = char::from_u32(num) {
+            let mut output = CompactString::new();
+            output.push(result);
+            Ok(output)
+        } else {
+            let err = format!("\\x{{{}}} is not a valid Unicode codepoint", v);
+            let err = <<Input as StreamOnce>::Error as ParseError<
+                Input::Token,
+                Input::Range,
+                Input::Position,
+            >>::StreamError::message_format(err);
+            Err(err)
+        }
+    });
+    token('u').with(between(token('{'), token('}'), sequence))
 }
 
 ///

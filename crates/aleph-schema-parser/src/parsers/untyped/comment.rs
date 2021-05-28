@@ -28,7 +28,6 @@
 //
 
 use crate::parsers::MyStream;
-use combine::parser::char::newline;
 use combine::parser::choice::or;
 use combine::parser::repeat::skip_until;
 use combine::{eof, token, Parser};
@@ -47,7 +46,7 @@ fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
 }
 
 fn line_comment_end<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    newline().map(|_| ()).or(eof())
+    or(token('\n'), token('\r')).map(|_| ()).or(eof())
 }
 
 fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {

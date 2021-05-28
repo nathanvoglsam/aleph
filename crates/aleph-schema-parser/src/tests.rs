@@ -134,8 +134,13 @@ fn test_valid_empty_file_with_whitespace() {
 #[test]
 fn test_valid_escaped_string() {
     let string = "Test text please \"ignore\" me";
-    let list = ast::untyped::ListBuilder::new().add_string(string, None);
-    let expected = ast::untyped::ListBuilder::new().add_list(list, None);
+    let list = ast::untyped::ListBuilder::new()
+        .add_string(string, None)
+        .build();
+    let expected = ast::untyped::ListBuilder::new()
+        .add_list(list.clone(), None)
+        .add_list(list.clone(), None)
+        .add_list(list.clone(), None);
     test_parses_valid("./schemas/valid_escaped_string.schema", expected);
 }
 
