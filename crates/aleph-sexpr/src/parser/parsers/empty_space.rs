@@ -27,11 +27,23 @@
 // SOFTWARE.
 //
 
-pub mod atom;
-pub mod comment;
-pub mod empty_space;
-pub mod file;
-pub mod item;
-pub mod list;
-pub mod literal;
-pub mod word;
+use crate::parser::comment;
+use combine::parser::char::space;
+use combine::{choice, skip_many, Parser};
+use combine_utils::MyStream;
+
+///
+/// Parser that skips over a single unit of empty space. This could either be a single whitespace
+/// character or an entire line comment or an entire block comment, all are equivalent.
+///
+pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    let space = space().map(|_| ());
+    choice((space, comment())).expected("whitespace or comment")
+}
+
+///
+/// A wrapper that skips over 0 or more `empty_space` tokens
+///
+pub fn empty_spaces<Input: MyStream>() -> impl Parser<Input, Output = ()> {
+    skip_many(empty_space())
+}

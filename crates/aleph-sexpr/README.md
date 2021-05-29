@@ -1,3 +1,3 @@
-# Aleph-Schema
+# Aleph-SExpr
 
 Aleph data schema

@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-schema-ast"
+name = "aleph-sexpr"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
 description = "Aleph data schema"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-schema-ast/"
+documentation = "https://docs.rs/aleph-sexpr/"
 readme = "README.md"
 ## TODO: keywords = ["build", "compilation", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
@@ -43,3 +43,10 @@ edition = "2018"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]
+aleph-combine-utils = { version = "0.1", path = "../aleph-combine-utils" }
+combine = "4"
+unicode-width = "0.1"
+num-integer = "0.1"
+smartstring = "0.2"

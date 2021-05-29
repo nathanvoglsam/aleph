@@ -27,5 +27,14 @@
 // SOFTWARE.
 //
 
-pub mod typed;
-pub mod untyped;
+use combine::{many1, satisfy, Parser};
+use combine_utils::{CharExtensions, MyStream};
+
+///
+/// Parser that parses out an item
+///
+pub fn word<Input: MyStream>() -> impl Parser<Input, Output = crate::ast::Atom> {
+    many1(satisfy::<Input, _>(char::is_item_token))
+        .map(|v| crate::ast::Atom::Word(v))
+        .expected("word")
+}

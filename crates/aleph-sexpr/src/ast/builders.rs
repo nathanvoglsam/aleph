@@ -27,26 +27,50 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::empty_space::empty_spaces;
-use crate::parsers::untyped::list;
-use crate::parsers::MyStream;
-use combine::stream::PointerOffset;
-use combine::{eof, position, sep_end_by, Parser};
+use crate::ast::{Atom, Item, List};
+use smartstring::alias::CompactString;
 
-///
-/// Parser that will parse a whole file out to an AST.
-///
-pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = ast::untyped::List> {
-    // Parser for an individual list item
-    let parser = position().and(list::list(input_base)).map(
-        move |(pos, item): (PointerOffset<str>, ast::untyped::ItemVariant)| ast::untyped::Item {
-            position: pos.0 - input_base,
-            item,
-        },
-    );
+pub struct ListBuilder {
+    inner: List,
+}
 
-    // Parser for a sequence of 0 or more lists at the file root
-    let main = sep_end_by(parser, empty_spaces()).and(eof()).map(|v| v.0);
+impl ListBuilder {
+    #[inline]
+    pub fn new() -> Self {
+        Self { inner: Vec::new() }
+    }
 
-    empty_spaces().with(main)
+    #[inline]
+    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, position: Option<usize>) -> Self {
+        self.inner.push(Item::atom(atom, position));
+        self
+    }
+
+    #[inline]
+    pub fn add_string<S: Into<CompactString>>(self, string: S, position: Option<usize>) -> Self {
+        self.add_atom(Atom::string(string), position)
+    }
+
+    #[inline]
+    pub fn add_word<S: Into<CompactString>>(self, word: S, position: Option<usize>) -> Self {
+        self.add_atom(Atom::word(word), position)
+    }
+
+    #[inline]
+    pub fn add_list<L: Into<List>>(mut self, list: L, position: Option<usize>) -> Self {
+        self.inner.push(Item::list(list, position));
+        self
+    }
+
+    #[inline]
+    pub fn build(self) -> List {
+        self.inner
+    }
+}
+
+impl Into<List> for ListBuilder {
+    #[inline]
+    fn into(self) -> List {
+        self.inner
+    }
 }

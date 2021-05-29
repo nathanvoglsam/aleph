@@ -27,49 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::untyped::{Atom, Item, List};
+use crate::parser::{empty_spaces, item};
+use combine::{between, sep_end_by, token, Parser};
+use combine_utils::{CharExtensions, MyStream};
 
-pub struct ListBuilder {
-    inner: List,
+///
+/// Parser that will parse out a list
+///
+pub fn list<Input: MyStream>(
+    input_base: usize,
+) -> impl Parser<Input, Output = crate::ast::ItemVariant> {
+    let open = token(char::list_open());
+    let close = token(char::list_close());
+    let inner = list_body(input_base);
+    between(open, close, inner)
+        .map(|v| crate::ast::ItemVariant::List(v))
+        .expected("list")
 }
 
-impl ListBuilder {
-    #[inline]
-    pub fn new() -> Self {
-        Self { inner: Vec::new() }
-    }
-
-    #[inline]
-    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, position: Option<usize>) -> Self {
-        self.inner.push(Item::atom(atom, position));
-        self
-    }
-
-    #[inline]
-    pub fn add_string<S: Into<String>>(self, string: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::string(string), position)
-    }
-
-    #[inline]
-    pub fn add_word<S: Into<String>>(self, word: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::word(word), position)
-    }
-
-    #[inline]
-    pub fn add_list<L: Into<List>>(mut self, list: L, position: Option<usize>) -> Self {
-        self.inner.push(Item::list(list, position));
-        self
-    }
-
-    #[inline]
-    pub fn build(self) -> List {
-        self.inner
-    }
-}
-
-impl Into<List> for ListBuilder {
-    #[inline]
-    fn into(self) -> List {
-        self.inner
-    }
+fn list_body<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = crate::ast::List> {
+    empty_spaces().with(sep_end_by(item(input_base), empty_spaces()))
 }

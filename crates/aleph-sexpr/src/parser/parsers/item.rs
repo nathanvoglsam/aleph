@@ -27,13 +27,28 @@
 // SOFTWARE.
 //
 
-extern crate aleph_schema_ast as ast;
+use crate::parser::{atom, list};
+use combine::parser::choice::or;
+use combine::stream::PointerOffset;
+use combine::{position, Parser};
+use combine_utils::MyStream;
 
-mod parsers;
-mod utils;
+combine::parser! {
+    fn item_inner[Input](input_base: usize)(Input) -> crate::ast::ItemVariant
+    where [Input: MyStream]
+    {
+        or(list(*input_base), atom())
+    }
+}
 
-pub use parsers::parse;
-pub use parsers::print_error;
-
-#[cfg(test)]
-mod tests;
+///
+/// Parser that will try to parse out a list or an atom to create an item
+///
+pub fn item<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = crate::ast::Item> {
+    position().and(item_inner(input_base)).map(
+        move |(pos, item): (PointerOffset<str>, crate::ast::ItemVariant)| crate::ast::Item {
+            position: pos.0 - input_base,
+            item,
+        },
+    )
+}

@@ -27,42 +27,4 @@
 // SOFTWARE.
 //
 
-use crate::parsers::MyStream;
-use combine::parser::choice::or;
-use combine::parser::repeat::skip_until;
-use combine::{eof, token, Parser};
-
-///
-/// Parser that parses out a line comment
-///
-pub fn comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    token('/').with(or(line_comment(), block_comment()))
-}
-
-fn line_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    token('/')
-        .with(skip_until(line_comment_end()))
-        .skip(line_comment_end())
-}
-
-fn line_comment_end<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    or(token('\n'), token('\r')).map(|_| ()).or(eof())
-}
-
-fn block_comment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    token('*').with(block_segment())
-}
-
-fn block_segment<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    skip_until(token('*'))
-        .skip(token('*'))
-        .with(block_segment_end())
-}
-
-combine::parser! {
-    fn block_segment_end[Input]()(Input) -> ()
-    where [Input: MyStream]
-    {
-        token('/').map(|_| ()).or(block_segment())
-    }
-}
+pub mod number;

@@ -27,28 +27,4 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::empty_space::empty_spaces;
-use crate::parsers::untyped::item;
-use crate::parsers::MyStream;
-use crate::utils::CharExtensions;
-use combine::{between, sep_end_by, token, Parser};
-
-///
-/// Parser that will parse out a list
-///
-pub fn list<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::ItemVariant> {
-    let open = token(char::list_open());
-    let close = token(char::list_close());
-    let inner = list_body(input_base);
-    between(open, close, inner)
-        .map(|v| ast::untyped::ItemVariant::List(v))
-        .expected("list")
-}
-
-pub fn list_body<Input: MyStream>(
-    input_base: usize,
-) -> impl Parser<Input, Output = ast::untyped::List> {
-    empty_spaces().with(sep_end_by(item::item(input_base), empty_spaces()))
-}
+mod parsers;

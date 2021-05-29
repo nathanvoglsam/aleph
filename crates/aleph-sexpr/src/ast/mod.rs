@@ -31,6 +31,7 @@ mod builders;
 
 pub use builders::ListBuilder;
 
+use smartstring::alias::CompactString;
 use std::fmt::{Display, Formatter};
 
 ///
@@ -141,18 +142,18 @@ impl ItemVariant {
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Atom {
     /// A string literal, i.e `"Hello, World!"`
-    LiteralString(String),
+    String(CompactString),
 
     /// Anything that isn't a string literal
-    Word(String),
+    Word(CompactString),
 }
 
 impl Atom {
-    pub fn string<S: Into<String>>(string: S) -> Self {
-        Atom::LiteralString(string.into())
+    pub fn string<S: Into<CompactString>>(string: S) -> Self {
+        Atom::String(string.into())
     }
 
-    pub fn word<S: Into<String>>(word: S) -> Self {
+    pub fn word<S: Into<CompactString>>(word: S) -> Self {
         Atom::Word(word.into())
     }
 }
@@ -160,7 +161,7 @@ impl Atom {
 impl Display for Atom {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Atom::LiteralString(v) => f.write_fmt(format_args!("\"{}\"", v)),
+            Atom::String(v) => f.write_fmt(format_args!("\"{}\"", v)),
             Atom::Word(v) => f.write_str(v),
         }
     }

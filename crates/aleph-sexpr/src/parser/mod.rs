@@ -27,12 +27,19 @@
 // SOFTWARE.
 //
 
-pub mod untyped;
+mod parsers;
 
-mod utils;
+pub use parsers::atom::atom;
+pub use parsers::comment::comment;
+pub use parsers::empty_space::empty_space;
+pub use parsers::empty_space::empty_spaces;
+pub use parsers::file::file;
+pub use parsers::item::item;
+pub use parsers::list::list;
+pub use parsers::string::string;
+pub use parsers::word::word;
 
-pub use utils::highlight_code;
-pub use utils::parse;
-pub use utils::print_error;
-pub use utils::MyStream;
-pub use utils::SourcePosition;
+pub use parsers::parse;
+
+#[cfg(test)]
+mod tests;

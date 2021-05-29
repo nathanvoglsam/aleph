@@ -27,15 +27,22 @@
 // SOFTWARE.
 //
 
-use crate::parsers::MyStream;
-use crate::utils::CharExtensions;
-use combine::{many1, satisfy, Parser};
+pub mod atom;
+pub mod comment;
+pub mod empty_space;
+pub mod file;
+pub mod item;
+pub mod list;
+pub mod string;
+pub mod word;
 
 ///
-/// Parser that parses out an item
+/// Will parse a source string into an s-expr ast
 ///
-pub fn word<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
-    many1(satisfy::<Input, _>(char::is_item_token))
-        .map(|v| ast::untyped::Atom::Word(v))
-        .expected("word")
+pub fn parse(text: &str) -> Result<crate::ast::List, combine::easy::ParseError<&str>> {
+    use combine::EasyParser;
+
+    let input_base = text.as_ptr() as usize;
+    let result = file::file(input_base).easy_parse(text)?;
+    Ok(result.0)
 }

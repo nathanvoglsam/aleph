@@ -27,24 +27,23 @@
 // SOFTWARE.
 //
 
-use crate::parsers::MyStream;
-use crate::utils::CharExtensions;
 use combine::error::StreamError;
-use combine::parser::char::{digit, hex_digit, spaces};
-use combine::{between, choice, count_min_max, many, optional, satisfy, skip_many, token, ParseError, Parser, StreamOnce, value};
-use smartstring::alias::CompactString;
+use combine::parser::char::{hex_digit, spaces};
 use combine::parser::choice::or;
+use combine::{
+    between, choice, count_min_max, many, satisfy, token, value, ParseError, Parser, StreamOnce,
+};
+use combine_utils::{CharExtensions, MyStream};
+use smartstring::alias::CompactString;
 
 ///
 /// A parser that parses out a string literal
 ///
-pub fn string<Input: MyStream>() -> impl Parser<Input, Output = ast::untyped::Atom> {
+pub fn string<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
     let open = token(char::quote());
     let close = token(char::quote());
     let inner = string_content();
-    between(open, close, inner)
-        .map(|v| ast::untyped::Atom::LiteralString(v.to_string()))
-        .expected("string literal")
+    between(open, close, inner).expected("string literal")
 }
 
 fn string_content<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
@@ -79,7 +78,9 @@ fn escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactStri
 }
 
 fn newline_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    or(token('\n'), token('\r')).with(spaces()).with(value(CompactString::new()))
+    or(token('\n'), token('\r'))
+        .with(spaces())
+        .with(value(CompactString::new()))
 }
 
 fn ascii_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
@@ -125,96 +126,4 @@ fn unicode_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = Com
         }
     });
     token('u').with(between(token('{'), token('}'), sequence))
-}
-
-///
-/// A parser that parses out an entire decimal number. This includes a negation prefix, the whole
-/// number part, the decimal point and the fractional part.
-///
-pub fn decimal<Input: MyStream>() -> impl Parser<Input, Output = String> {
-    // A parser that parses the fractional part of the float, taking a decimal point and optionally
-    // after another string of digits
-    let fractional = token(char::decimal_point()).and(optional(whole_number_body()));
-
-    // Combine all the parsers
-    whole_number()
-        .and(fractional)
-        .map(|(mut first, (_, rest)): (String, (_, Option<String>))| {
-            first.push(char::decimal_point());
-            if let Some(rest) = rest {
-                first.push_str(rest.as_str());
-            }
-            first
-        })
-        .expected("decimal number")
-}
-
-///
-/// A parser that parses out an entire number, including a negation prefix and all the numbers of
-/// a base10 whole number.
-///
-pub fn whole_number<Input: MyStream>() -> impl Parser<Input, Output = String> {
-    whole_number_prefix()
-        .and(whole_number_body())
-        .map(|(prefix, body)| {
-            if let Some(prefix) = prefix {
-                let mut out = String::new();
-                out.push(prefix);
-                out.push_str(&body);
-                out
-            } else {
-                body
-            }
-        })
-        .expected("whole number")
-}
-
-///
-/// A parser that parses out a base10 whole number.
-///
-/// # Note
-///
-/// This parser does not handle a negation prefix and will fail if it encounters one.
-///
-pub fn whole_number_body<Input: MyStream>() -> impl Parser<Input, Output = String> {
-    number_first().and(optional(many(number_rest()))).map(
-        |(first, rest): (char, Option<String>)| {
-            let mut out = String::new();
-            out.push(first);
-            if let Some(rest) = rest {
-                out.push_str(&rest);
-            }
-            out
-        },
-    )
-}
-
-///
-/// This parser handles an optional negation prefix for a number. It is intended to be used to parse
-/// a leading prefix for a number literal
-///
-pub fn whole_number_prefix<Input: MyStream>() -> impl Parser<Input, Output = Option<char>> {
-    optional(token(char::negation_prefix()))
-}
-
-///
-/// This parser will parse the first token after an optional prefix in a number literal. The first
-/// token after a prefix is special as it must not be an '_' token.
-///
-pub fn number_first<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    digit()
-}
-
-///
-/// This parser will parse a single token which is valid to find as part of a number after the
-/// optional prefix and the first number part.
-///
-/// This parser will yield the next digit, skipping over any '_' tokens which are considered
-/// thousands separators. The '_' tokens are discarded as they are purely visual aids for humans
-/// and have no meaning.
-///
-pub fn number_rest<Input: MyStream>() -> impl Parser<Input, Output = char> {
-    skip_many(token(char::thousands_separator()))
-        .and(digit())
-        .map(|v| v.1)
 }

@@ -27,23 +27,25 @@
 // SOFTWARE.
 //
 
-use crate::parsers::untyped::comment::comment;
-use crate::parsers::MyStream;
-use combine::parser::char::space;
-use combine::{choice, skip_many, Parser};
+use crate::parser::{empty_spaces, list};
+use combine::stream::PointerOffset;
+use combine::{eof, position, sep_end_by, Parser};
+use combine_utils::MyStream;
 
 ///
-/// Parser that skips over a single unit of empty space. This could either be a single whitespace
-/// character or an entire line comment or an entire block comment, all are equivalent.
+/// Parser that will parse a whole file out to an AST.
 ///
-pub fn empty_space<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    let space = space().map(|_| ());
-    choice((space, comment())).expected("whitespace or comment")
-}
+pub fn file<Input: MyStream>(input_base: usize) -> impl Parser<Input, Output = crate::ast::List> {
+    // Parser for an individual list item
+    let parser = position().and(list(input_base)).map(
+        move |(pos, item): (PointerOffset<str>, crate::ast::ItemVariant)| crate::ast::Item {
+            position: pos.0 - input_base,
+            item,
+        },
+    );
 
-///
-/// A wrapper that skips over 0 or more `empty_space` tokens
-///
-pub fn empty_spaces<Input: MyStream>() -> impl Parser<Input, Output = ()> {
-    skip_many(empty_space())
+    // Parser for a sequence of 0 or more lists at the file root
+    let main = sep_end_by(parser, empty_spaces()).and(eof()).map(|v| v.0);
+
+    empty_spaces().with(main)
 }

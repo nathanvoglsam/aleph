@@ -28,9 +28,149 @@
 //
 
 use combine::easy::{Error, Info, ParseError};
-use combine::stream::PointerOffset;
-use combine::EasyParser;
 use unicode_width::UnicodeWidthStr;
+
+///
+/// A set of extensions for the char type for shorthand functions for checking characters
+///
+//noinspection RsSelfConvention
+pub trait CharExtensions {
+    /// Returns whether the char is the list open char
+    fn is_list_open(self) -> bool;
+
+    /// Returns the list open char
+    fn list_open() -> char {
+        '('
+    }
+
+    /// Returns whether the char is the list close char
+    fn is_list_close(self) -> bool;
+
+    /// Returns the list close char
+    fn list_close() -> char {
+        ')'
+    }
+
+    /// Returns whether the char is the quote char (for string literal)
+    fn is_quote(self) -> bool;
+
+    /// Returns the quote char
+    fn quote() -> char {
+        '"'
+    }
+
+    /// Returns whether the char is the negation prefix (for negative number literals)
+    fn is_negation_prefix(self) -> bool;
+
+    /// Returns the negation prefix char
+    fn negation_prefix() -> char {
+        '-'
+    }
+
+    /// Returns whether the char is the escape prefix (for escape sequence in string literal)
+    fn is_escape_prefix(self) -> bool;
+
+    /// Returns the negation prefix char
+    fn escape_prefix() -> char {
+        '\\'
+    }
+
+    /// Returns whether the char is the decimal point char
+    fn is_decimal_point(self) -> bool;
+
+    /// Returns the decimal point char
+    fn decimal_point() -> char {
+        '.'
+    }
+
+    /// Returns whether the char is the thousands separator
+    fn is_thousands_separator(self) -> bool;
+
+    /// Returns the thousands separator
+    fn thousands_separator() -> char {
+        '_'
+    }
+
+    /// Returns whether this character is the beginning of an item
+    fn is_item_token(self) -> bool;
+
+    /// Assuming the char is a hex digit, convert the digit to the corresponding number the digit
+    /// represents
+    fn hex_value(self) -> u8;
+}
+
+impl CharExtensions for char {
+    #[inline]
+    fn is_list_open(self) -> bool {
+        self == char::list_open()
+    }
+
+    #[inline]
+    fn is_list_close(self) -> bool {
+        self == char::list_close()
+    }
+
+    #[inline]
+    fn is_quote(self) -> bool {
+        self == char::quote()
+    }
+
+    #[inline]
+    fn is_negation_prefix(self) -> bool {
+        self == char::negation_prefix()
+    }
+
+    #[inline]
+    fn is_escape_prefix(self) -> bool {
+        self == char::escape_prefix()
+    }
+
+    #[inline]
+    fn is_decimal_point(self) -> bool {
+        self == char::decimal_point()
+    }
+
+    fn is_thousands_separator(self) -> bool {
+        self == char::thousands_separator()
+    }
+
+    #[inline]
+    fn is_item_token(self) -> bool {
+        const SPECIAL_CHARS: [char; 26] = [
+            '!', '@', '#', '$', '%', '^', '&', '*', '[', ']', '{', '}', '<', '>', '.', ',', ':',
+            ';', '+', '=', '-', '_', '~', '`', '?', '|',
+        ];
+        self.is_ascii_alphanumeric() || SPECIAL_CHARS.contains(&self)
+    }
+
+    fn hex_value(self) -> u8 {
+        match self {
+            '0' => 0x0,
+            '1' => 0x1,
+            '2' => 0x2,
+            '3' => 0x3,
+            '4' => 0x4,
+            '5' => 0x5,
+            '6' => 0x6,
+            '7' => 0x7,
+            '8' => 0x8,
+            '9' => 0x9,
+            'a' => 0xa,
+            'b' => 0xb,
+            'c' => 0xc,
+            'd' => 0xd,
+            'e' => 0xe,
+            'f' => 0xf,
+            'A' => 0xA,
+            'B' => 0xB,
+            'C' => 0xC,
+            'D' => 0xD,
+            'E' => 0xE,
+            'F' => 0xF,
+            _ => panic!("\'{}\' is not a hex digit", self),
+        }
+    }
+}
 
 ///
 /// A struct that defines a position inside a source code file
@@ -42,22 +182,6 @@ pub struct SourcePosition {
 
     /// The column the position points to
     pub column: usize,
-}
-
-///
-/// Trait alias for the stream type
-///
-pub trait MyStream: combine::Stream<Token = char, Position = PointerOffset<str>> {}
-
-impl<T: combine::Stream<Token = char, Position = PointerOffset<str>>> MyStream for T {}
-
-///
-/// Will parse a source string into an untyped ast
-///
-pub fn parse(text: &str) -> Result<ast::untyped::List, ParseError<&str>> {
-    let input_base = text.as_ptr() as usize;
-    let result = crate::parsers::untyped::file::file(input_base).easy_parse(text)?;
-    Ok(result.0)
 }
 
 ///
@@ -240,4 +364,17 @@ fn produce_error_line_history(source: &str, position: usize) -> [Option<(usize, 
         }
     }
     line_history
+}
+
+///
+/// Trait alias for the stream type
+///
+pub trait MyStream:
+    combine::Stream<Token = char, Position = combine::stream::PointerOffset<str>>
+{
+}
+
+impl<T: combine::Stream<Token = char, Position = combine::stream::PointerOffset<str>>> MyStream
+    for T
+{
 }
