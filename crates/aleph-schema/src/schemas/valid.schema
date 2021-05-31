@@ -1,0 +1,88 @@
+(namespace math
+    //
+    //
+    //
+    (struct Vector2
+        (field x f32)
+        (field y f32)
+    )
+
+    //
+    //
+    //
+    (struct Vector3
+        (field x f32)
+        (field y f32)
+        (field z f32)
+    )
+
+    //
+    //
+    //
+    (struct Vector4
+        (field x f32)
+        (field y f32)
+        (field z f32)
+        (field w f32)
+    )
+
+    //
+    //
+    //
+    (struct Quaternion
+        (field x f32)
+        (field y f32)
+        (field z f32)
+        (field w f32)
+    )
+
+    (struct Matrix4x4
+        (field scalars f32[16])
+    )
+)
+
+(namespace aleph
+    (namespace mesh
+        //
+        //
+        //
+        (struct StaticMeshI32
+            (field vertices math.Vector3[])
+            (field indices  i32[])
+        )
+
+        //
+        //
+        //
+        (struct StaticMeshI16
+            (field vertices math.Vector3[])
+            (field indices  i16[])
+        )
+
+        //
+        //
+        //
+        (enum StaticMesh
+            (I16 (StaticMeshI16))
+            (I32 (StaticMeshI32))
+        )
+    )
+
+    //
+    //
+    //
+    (struct Transform
+        (field position math.Vector3)
+        (field rotation math.Quaternion)
+        (field scale    math.Vector3)
+    )
+
+    //
+    //
+    //
+    (table Human
+        (field transform Transform)
+        (field name string)
+        (field health f32)
+    )
+)

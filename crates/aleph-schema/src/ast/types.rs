@@ -27,18 +27,12 @@
 // SOFTWARE.
 //
 
-pub struct Structure {
-    pub fields: Vec<Type>,
-}
-
-pub enum Type {
-    Primitive(PrimitiveType),
-    StructRef(String),
-}
+use crate::ast::SizedType;
 
 ///
 /// The set of all primitive types
 ///
+#[derive(Eq, PartialEq, Hash, Debug)]
 pub enum PrimitiveType {
     U8,
     U16,
@@ -75,15 +69,4 @@ impl SizedType for PrimitiveType {
     fn alignment(&self, context: &()) -> usize {
         self.size(context)
     }
-}
-
-///
-/// A trait that should be implemented for all sized schema types
-///
-pub trait SizedType {
-    /// Returns the size of the type in bytes
-    fn size(&self, context: &()) -> usize;
-
-    /// Returns the alignment of the type in bytes
-    fn alignment(&self, context: &()) -> usize;
 }

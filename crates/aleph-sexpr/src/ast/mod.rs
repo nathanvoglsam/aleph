@@ -76,7 +76,7 @@ impl Item {
     /// `position` field which is ignored in the `PartialEq` implementation
     ///
     pub fn full_ne(&self, other: &Self) -> bool {
-        self.position.ne(&other.position) && self.item.ne(&other.item)
+        self.position.ne(&other.position) || self.item.ne(&other.item)
     }
 
     pub fn atom<A: Into<Atom>>(atom: A, position: Option<usize>) -> Item {

@@ -27,8 +27,19 @@
 // SOFTWARE.
 //
 
-extern crate aleph_combine_utils as combine_utils;
-extern crate aleph_sexpr as sexpr;
+/// This trait is used to mark any type which has an associated list of attribute items
+pub trait HasAttributes {
+    /// Get a list of all attributes associated with `self`
+    fn attributes(&self) -> &[sexpr::ast::List];
+}
 
-pub mod ast;
-pub mod parser;
+///
+/// A trait that should be implemented for all sized schema types
+///
+pub trait SizedType {
+    /// Returns the size of the type in bytes
+    fn size(&self, context: &()) -> usize;
+
+    /// Returns the alignment of the type in bytes
+    fn alignment(&self, context: &()) -> usize;
+}
