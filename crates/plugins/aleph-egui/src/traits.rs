@@ -28,7 +28,7 @@
 //
 
 use egui::paint::ClippedShape;
-use egui::{Output, PaintJobs, RawInput};
+use egui::{ClippedMesh, Output, RawInput};
 use interfaces::any::IAny;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -85,15 +85,15 @@ interfaces::any::declare_interfaces!(EguiContextProvider, [IEguiContextProvider]
 ///
 pub trait IEguiRenderData: IAny {
     /// Replace the old paint job data with the newly provided data.
-    fn put(&self, data: PaintJobs);
+    fn put(&self, data: Vec<ClippedMesh>);
 
     /// Take the current paint job data, leaving an empty job list in its place.
-    fn take(&self) -> PaintJobs;
+    fn take(&self) -> Vec<ClippedMesh>;
 }
 
 /// Concrete implementation of `IEguiRenderData`
 pub struct EguiRenderData {
-    slot: Mutex<PaintJobs>,
+    slot: Mutex<Vec<ClippedMesh>>,
 }
 
 impl Default for EguiRenderData {
@@ -105,13 +105,13 @@ impl Default for EguiRenderData {
 }
 
 impl IEguiRenderData for EguiRenderData {
-    fn put(&self, data: PaintJobs) {
+    fn put(&self, data: Vec<ClippedMesh>) {
         let mut slot_lock = self.slot.lock().unwrap();
         let slot = slot_lock.deref_mut();
         *slot = data;
     }
 
-    fn take(&self) -> PaintJobs {
+    fn take(&self) -> Vec<ClippedMesh> {
         std::mem::take(self.slot.lock().unwrap().deref_mut())
     }
 }

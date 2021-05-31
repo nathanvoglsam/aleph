@@ -29,7 +29,7 @@
 
 use crate::traits::{EguiContextProvider, EguiRenderData};
 use crate::{IEguiContextProvider, IEguiRenderData};
-use egui::PaintJobs;
+use egui::ClippedMesh;
 use interfaces::any::AnyArc;
 use interfaces::platform::{
     IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
@@ -168,7 +168,7 @@ impl IPlugin for PluginEgui {
 
         let (output, shapes) = self.context_provider.end_frame();
         let egui_ctx = self.context_provider.get_context();
-        let jobs: PaintJobs = egui_ctx.tessellate(shapes);
+        let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
         crate::utils::process_egui_output(output, mouse, clipboard);
 
         self.render_data.put(jobs)

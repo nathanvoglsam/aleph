@@ -36,4 +36,4 @@ edition = "2018"
 
 [dependencies]
 aleph-engine = { path = "../../crates/aleph-engine", version = "0.1.0" }
-egui_demo_lib = "0.8"
+egui_demo_lib = "0.12"

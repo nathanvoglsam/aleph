@@ -29,7 +29,7 @@
 
 use interfaces::platform::{
     Cursor, Event, IClipboard, IEvents, IFrameTimer, IKeyboard, IMouse, IWindow, KeyCode, KeyMod,
-    KeyboardEvent, MouseEvent, MouseWheelDirection, ScanCode,
+    KeyboardEvent, MouseButton, MouseEvent, MouseWheelDirection, ScanCode,
 };
 
 pub fn get_egui_input(
@@ -39,12 +39,7 @@ pub fn get_egui_input(
     frame_timer: &dyn IFrameTimer,
     events: &dyn IEvents,
 ) -> egui::RawInput {
-    let mouse_state = mouse.get_state();
     let window_size = window.size();
-
-    let mouse_down = mouse_state.left();
-    let mouse_pos = mouse_state.pos();
-    let mouse_pos = Some(egui::Pos2::new(mouse_pos.0 as f32, mouse_pos.1 as f32));
 
     let scroll_delta = get_egui_scroll_delta(mouse);
 
@@ -60,11 +55,9 @@ pub fn get_egui_input(
 
     let modifiers = get_egui_modifiers(keyboard);
 
-    let events = get_egui_events(events);
+    let events = get_egui_events(events, &modifiers);
 
     egui::RawInput {
-        mouse_down,
-        mouse_pos,
         scroll_delta,
         screen_rect,
         pixels_per_point,
@@ -91,6 +84,7 @@ pub fn process_egui_output(output: egui::Output, mouse: &dyn IMouse, clipboard: 
         egui::CursorIcon::Text => mouse.set_cursor(Cursor::IBeam),
         egui::CursorIcon::Grab => mouse.set_cursor(Cursor::Arrow),
         egui::CursorIcon::Grabbing => mouse.set_cursor(Cursor::Arrow),
+        _ => mouse.set_cursor(Cursor::Arrow),
     }
 }
 
@@ -116,7 +110,7 @@ pub fn get_egui_scroll_delta(mouse: &dyn IMouse) -> egui::Vec2 {
     delta
 }
 
-pub fn get_egui_events(events: &dyn IEvents) -> Vec<egui::Event> {
+pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec<egui::Event> {
     let events = events.get();
 
     let mut out = Vec::new();
@@ -160,6 +154,11 @@ pub fn get_egui_events(events: &dyn IEvents) -> Vec<egui::Event> {
                     out.push(event);
                 }
             },
+            Event::MouseEvent(event) => {
+                if let Some(event) = translate_mouse_event(event, modifiers) {
+                    out.push(event);
+                }
+            }
             _ => {}
         }
     }
@@ -167,13 +166,14 @@ pub fn get_egui_events(events: &dyn IEvents) -> Vec<egui::Event> {
 }
 
 pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
+    // TODO: Use KeyCode api when KeyCode->ScanCode translation works again
     let keyboard_state = keyboard.get_state();
-    let alt = keyboard_state.key_code_down(KeyCode::LeftAlt)
-        || keyboard_state.key_code_down(KeyCode::RightAlt);
-    let ctrl = keyboard_state.key_code_down(KeyCode::LeftCtrl)
-        || keyboard_state.key_code_down(KeyCode::RightCtrl);
-    let shift = keyboard_state.key_code_down(KeyCode::LeftShift)
-        || keyboard_state.key_code_down(KeyCode::RightShift);
+    let alt = keyboard_state.scan_code_down(ScanCode::LeftAlt)
+        || keyboard_state.scan_code_down(ScanCode::RightAlt);
+    let ctrl = keyboard_state.scan_code_down(ScanCode::LeftCtrl)
+        || keyboard_state.scan_code_down(ScanCode::RightCtrl);
+    let shift = keyboard_state.scan_code_down(ScanCode::LeftShift)
+        || keyboard_state.scan_code_down(ScanCode::RightShift);
 
     egui::Modifiers {
         alt,
@@ -181,6 +181,52 @@ pub fn get_egui_modifiers(keyboard: &dyn IKeyboard) -> egui::Modifiers {
         shift,
         command: ctrl, // This would need tweaking for mac, but I don't care about mac so oh well
         ..Default::default()
+    }
+}
+
+pub fn translate_mouse_event(
+    event: &MouseEvent,
+    modifiers: &egui::Modifiers,
+) -> Option<egui::Event> {
+    match event {
+        MouseEvent::MouseMotion(e) => {
+            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let event = egui::Event::PointerMoved(pos);
+            Some(event)
+        }
+        MouseEvent::MouseButtonDown(e) => {
+            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let button = translate_mouse_button(&e.button)?;
+            let event = egui::Event::PointerButton {
+                pos,
+                button,
+                pressed: true,
+                modifiers: modifiers.clone(),
+            };
+            Some(event)
+        }
+        MouseEvent::MouseButtonUp(e) => {
+            let pos = egui::Pos2::new(e.x as f32, e.y as f32);
+            let button = translate_mouse_button(&e.button)?;
+            let event = egui::Event::PointerButton {
+                pos,
+                button,
+                pressed: false,
+                modifiers: modifiers.clone(),
+            };
+            Some(event)
+        }
+        _ => None,
+    }
+}
+
+pub fn translate_mouse_button(button: &MouseButton) -> Option<egui::PointerButton> {
+    match button {
+        MouseButton::Left => Some(egui::PointerButton::Primary),
+        MouseButton::Middle => Some(egui::PointerButton::Middle),
+        MouseButton::Right => Some(egui::PointerButton::Secondary),
+        MouseButton::X1 => None, // Skip emitting an event for this button
+        MouseButton::X2 => None, // Skip emitting an event for this button
     }
 }
 

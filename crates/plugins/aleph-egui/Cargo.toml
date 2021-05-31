@@ -44,7 +44,7 @@ edition = "2018"
 [dependencies]
 aleph-log = { path = "../../aleph-log", version = "1" }
 aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
-egui = "0.8.0"
+egui = "0.12"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

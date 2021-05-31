@@ -32,7 +32,6 @@ mod global;
 mod swap;
 
 use dx12::dxgi;
-use egui::paint::PaintJob;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use std::mem::transmute;
@@ -110,7 +109,7 @@ impl EguiRenderer {
         command_list: &mut dx12::GraphicsCommandList,
         buffers: &[dx12::Resource],
         egui_ctx: &::egui::CtxRef,
-        jobs: egui::PaintJobs,
+        jobs: Vec<aleph_egui::ClippedMesh>,
     ) {
         // Clear the command allocator
         &self.frames[index].command_allocator.reset().unwrap();
@@ -220,7 +219,7 @@ impl EguiRenderer {
     unsafe fn record_job_commands(
         &mut self,
         command_list: &mut dx12::GraphicsCommandList,
-        job: &PaintJob,
+        job: &aleph_egui::ClippedMesh,
         vtx_base: usize,
         idx_base: usize,
     ) {
@@ -350,7 +349,7 @@ impl EguiRenderer {
         idx_buffer.unmap(0, None);
     }
 
-    fn calculate_clip_rect(&self, job: &PaintJob) -> dx12::Rect {
+    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedMesh) -> dx12::Rect {
         let width_pixels = self.global.swap_width as f32;
         let height_pixels = self.global.swap_height as f32;
 
@@ -361,8 +360,8 @@ impl EguiRenderer {
             y: min.y * self.pixels_per_point,
         };
         let min = egui::Pos2 {
-            x: egui::math::clamp(min.x, 0.0..=width_pixels),
-            y: egui::math::clamp(min.y, 0.0..=height_pixels),
+            x: min.x.clamp(0.0, width_pixels),
+            y: min.y.clamp(0.0, height_pixels),
         };
 
         // Calculate clip extent
@@ -372,8 +371,8 @@ impl EguiRenderer {
             y: max.y * self.pixels_per_point,
         };
         let max = egui::Pos2 {
-            x: egui::math::clamp(max.x, min.x..=width_pixels),
-            y: egui::math::clamp(max.y, min.y..=height_pixels),
+            x: max.x.clamp(min.x, width_pixels),
+            y: max.y.clamp(min.y, height_pixels),
         };
 
         dx12::Rect {
