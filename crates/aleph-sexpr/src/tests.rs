@@ -35,22 +35,22 @@ fn default(default: crate::ast::Atom) -> crate::ast::ListBuilder {
         .add_atom(default, None)
 }
 
-fn default_0_float() -> crate::ast::ListBuilder {
+fn default_0_float() -> crate::ast::ListBuilder<'static> {
     default(crate::ast::Atom::word("0.0"))
 }
 
-fn field(name: &str, field_type: &str) -> crate::ast::ListBuilder {
+fn field<'input>(name: &'input str, field_type: &'input str) -> crate::ast::ListBuilder<'input> {
     crate::ast::ListBuilder::new()
         .add_word("field", None)
         .add_word(name, None)
         .add_word(field_type, None)
 }
 
-fn field_default<L: Into<crate::ast::List>>(
-    name: &str,
-    field_type: &str,
+fn field_default<'input, L: Into<crate::ast::List<'input>>>(
+    name: &'input str,
+    field_type: &'input str,
     default: L,
-) -> crate::ast::ListBuilder {
+) -> crate::ast::ListBuilder<'input> {
     crate::ast::ListBuilder::new()
         .add_word("field", None)
         .add_word(name, None)
@@ -62,7 +62,7 @@ fn float_field_default_0(name: &str) -> crate::ast::ListBuilder {
     field_default(name, "f32", default_0_float())
 }
 
-fn vector2() -> crate::ast::ListBuilder {
+fn vector2() -> crate::ast::ListBuilder<'static> {
     crate::ast::ListBuilder::new()
         .add_word("def-struct", None)
         .add_word("Vector2", None)
@@ -70,7 +70,7 @@ fn vector2() -> crate::ast::ListBuilder {
         .add_list(float_field_default_0("y"), None)
 }
 
-fn vector3() -> crate::ast::ListBuilder {
+fn vector3() -> crate::ast::ListBuilder<'static> {
     crate::ast::ListBuilder::new()
         .add_word("def-struct", None)
         .add_word("Vector3", None)
@@ -79,7 +79,7 @@ fn vector3() -> crate::ast::ListBuilder {
         .add_list(float_field_default_0("z"), None)
 }
 
-fn monster() -> crate::ast::ListBuilder {
+fn monster() -> crate::ast::ListBuilder<'static> {
     let default_name = default(crate::ast::Atom::string("default-monster"));
     crate::ast::ListBuilder::new()
         .add_word("def-table", None)
@@ -89,7 +89,7 @@ fn monster() -> crate::ast::ListBuilder {
         .add_list(field_default("name", "string", default_name), None)
 }
 
-fn soldier() -> crate::ast::ListBuilder {
+fn soldier() -> crate::ast::ListBuilder<'static> {
     let default_health = default(crate::ast::Atom::word("1_000_000.0"));
     crate::ast::ListBuilder::new()
         .add_word("def-table", None)
@@ -247,7 +247,7 @@ fn test_invalid_root_atom() {
     test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
 }
 
-fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
+fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(file_name: &'input str, expected: L) {
     let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();
     let lexer = crate::lexer::Lexer::new(&text);

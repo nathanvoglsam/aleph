@@ -1,11 +1,11 @@
 // auto-generated: "lalrpop 0.19.5"
-// sha3: df648c1d08db8209899bc2711e4bcd46c9faef4ca6b346c8f73c1457df56177
+// sha3: a0d1fab8fae3891fda72a4952ec2c7d47530436bc71bccff8cc0283c50af2f
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
 use self::__lalrpop_util::state_machine as __state_machine;
-extern crate alloc;
 extern crate core;
+extern crate alloc;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __parse__Atom {
@@ -23,10 +23,10 @@ mod __parse__Atom {
      {
         Variant0(crate::lexer::Tok<'input>),
         Variant1(&'input str),
-        Variant2(crate::ast::Atom),
-        Variant3(crate::ast::List),
-        Variant4(crate::ast::Item),
-        Variant5(alloc::vec::Vec<crate::ast::Item>),
+        Variant2(crate::ast::Atom<'input>),
+        Variant3(crate::ast::List<'input>),
+        Variant4(crate::ast::Item<'input>),
+        Variant5(alloc::vec::Vec<crate::ast::Item<'input>>),
     }
     const __ACTION: &[i8] = &[
         // State 0
@@ -86,7 +86,7 @@ mod __parse__Atom {
         type Token = crate::lexer::Tok<'input>;
         type TokenIndex = usize;
         type Symbol = __Symbol<'input>;
-        type Success = crate::ast::Atom;
+        type Success = crate::ast::Atom<'input>;
         type StateIndex = i8;
         type Action = i8;
         type ReduceIndex = i8;
@@ -219,7 +219,7 @@ mod __parse__Atom {
         >(
             &self,
             __tokens0: __TOKENS,
-        ) -> Result<crate::ast::Atom, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
+        ) -> Result<crate::ast::Atom<'input>, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
         {
             let __tokens = __tokens0.into_iter();
             let mut __tokens = __tokens.map(|t| __ToTriple::to_triple(t));
@@ -239,7 +239,7 @@ mod __parse__Atom {
         __states: &mut alloc::vec::Vec<i8>,
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>,
         _: core::marker::PhantomData<(&'input ())>,
-    ) -> Option<Result<crate::ast::Atom,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
+    ) -> Option<Result<crate::ast::Atom<'input>,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
     {
         let (__pop_states, __nonterminal) = match __action {
             0 => {
@@ -330,7 +330,7 @@ mod __parse__Atom {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, alloc::vec::Vec<crate::ast::Item>, usize)
+    ) -> (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant5(__v), __r)) => (__l, __v, __r),
@@ -341,7 +341,7 @@ mod __parse__Atom {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Atom, usize)
+    ) -> (usize, crate::ast::Atom<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant2(__v), __r)) => (__l, __v, __r),
@@ -352,7 +352,7 @@ mod __parse__Atom {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Item, usize)
+    ) -> (usize, crate::ast::Item<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant4(__v), __r)) => (__l, __v, __r),
@@ -363,7 +363,7 @@ mod __parse__Atom {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::List, usize)
+    ) -> (usize, crate::ast::List<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant3(__v), __r)) => (__l, __v, __r),
@@ -753,10 +753,10 @@ mod __parse__File {
      {
         Variant0(crate::lexer::Tok<'input>),
         Variant1(&'input str),
-        Variant2(crate::ast::Atom),
-        Variant3(crate::ast::List),
-        Variant4(crate::ast::Item),
-        Variant5(alloc::vec::Vec<crate::ast::Item>),
+        Variant2(crate::ast::Atom<'input>),
+        Variant3(crate::ast::List<'input>),
+        Variant4(crate::ast::Item<'input>),
+        Variant5(alloc::vec::Vec<crate::ast::Item<'input>>),
     }
     const __ACTION: &[i8] = &[
         // State 0
@@ -882,7 +882,7 @@ mod __parse__File {
         type Token = crate::lexer::Tok<'input>;
         type TokenIndex = usize;
         type Symbol = __Symbol<'input>;
-        type Success = crate::ast::List;
+        type Success = crate::ast::List<'input>;
         type StateIndex = i8;
         type Action = i8;
         type ReduceIndex = i8;
@@ -1015,7 +1015,7 @@ mod __parse__File {
         >(
             &self,
             __tokens0: __TOKENS,
-        ) -> Result<crate::ast::List, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
+        ) -> Result<crate::ast::List<'input>, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
         {
             let __tokens = __tokens0.into_iter();
             let mut __tokens = __tokens.map(|t| __ToTriple::to_triple(t));
@@ -1035,7 +1035,7 @@ mod __parse__File {
         __states: &mut alloc::vec::Vec<i8>,
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>,
         _: core::marker::PhantomData<(&'input ())>,
-    ) -> Option<Result<crate::ast::List,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
+    ) -> Option<Result<crate::ast::List<'input>,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
     {
         let (__pop_states, __nonterminal) = match __action {
             0 => {
@@ -1126,7 +1126,7 @@ mod __parse__File {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, alloc::vec::Vec<crate::ast::Item>, usize)
+    ) -> (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant5(__v), __r)) => (__l, __v, __r),
@@ -1137,7 +1137,7 @@ mod __parse__File {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Atom, usize)
+    ) -> (usize, crate::ast::Atom<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant2(__v), __r)) => (__l, __v, __r),
@@ -1148,7 +1148,7 @@ mod __parse__File {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Item, usize)
+    ) -> (usize, crate::ast::Item<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant4(__v), __r)) => (__l, __v, __r),
@@ -1159,7 +1159,7 @@ mod __parse__File {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::List, usize)
+    ) -> (usize, crate::ast::List<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant3(__v), __r)) => (__l, __v, __r),
@@ -1549,10 +1549,10 @@ mod __parse__Item {
      {
         Variant0(crate::lexer::Tok<'input>),
         Variant1(&'input str),
-        Variant2(crate::ast::Atom),
-        Variant3(crate::ast::List),
-        Variant4(crate::ast::Item),
-        Variant5(alloc::vec::Vec<crate::ast::Item>),
+        Variant2(crate::ast::Atom<'input>),
+        Variant3(crate::ast::List<'input>),
+        Variant4(crate::ast::Item<'input>),
+        Variant5(alloc::vec::Vec<crate::ast::Item<'input>>),
     }
     const __ACTION: &[i8] = &[
         // State 0
@@ -1661,7 +1661,7 @@ mod __parse__Item {
         type Token = crate::lexer::Tok<'input>;
         type TokenIndex = usize;
         type Symbol = __Symbol<'input>;
-        type Success = crate::ast::Item;
+        type Success = crate::ast::Item<'input>;
         type StateIndex = i8;
         type Action = i8;
         type ReduceIndex = i8;
@@ -1794,7 +1794,7 @@ mod __parse__Item {
         >(
             &self,
             __tokens0: __TOKENS,
-        ) -> Result<crate::ast::Item, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
+        ) -> Result<crate::ast::Item<'input>, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
         {
             let __tokens = __tokens0.into_iter();
             let mut __tokens = __tokens.map(|t| __ToTriple::to_triple(t));
@@ -1814,7 +1814,7 @@ mod __parse__Item {
         __states: &mut alloc::vec::Vec<i8>,
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>,
         _: core::marker::PhantomData<(&'input ())>,
-    ) -> Option<Result<crate::ast::Item,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
+    ) -> Option<Result<crate::ast::Item<'input>,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
     {
         let (__pop_states, __nonterminal) = match __action {
             0 => {
@@ -1905,7 +1905,7 @@ mod __parse__Item {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, alloc::vec::Vec<crate::ast::Item>, usize)
+    ) -> (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant5(__v), __r)) => (__l, __v, __r),
@@ -1916,7 +1916,7 @@ mod __parse__Item {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Atom, usize)
+    ) -> (usize, crate::ast::Atom<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant2(__v), __r)) => (__l, __v, __r),
@@ -1927,7 +1927,7 @@ mod __parse__Item {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Item, usize)
+    ) -> (usize, crate::ast::Item<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant4(__v), __r)) => (__l, __v, __r),
@@ -1938,7 +1938,7 @@ mod __parse__Item {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::List, usize)
+    ) -> (usize, crate::ast::List<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant3(__v), __r)) => (__l, __v, __r),
@@ -2328,10 +2328,10 @@ mod __parse__List {
      {
         Variant0(crate::lexer::Tok<'input>),
         Variant1(&'input str),
-        Variant2(crate::ast::Atom),
-        Variant3(crate::ast::List),
-        Variant4(crate::ast::Item),
-        Variant5(alloc::vec::Vec<crate::ast::Item>),
+        Variant2(crate::ast::Atom<'input>),
+        Variant3(crate::ast::List<'input>),
+        Variant4(crate::ast::Item<'input>),
+        Variant5(alloc::vec::Vec<crate::ast::Item<'input>>),
     }
     const __ACTION: &[i8] = &[
         // State 0
@@ -2442,7 +2442,7 @@ mod __parse__List {
         type Token = crate::lexer::Tok<'input>;
         type TokenIndex = usize;
         type Symbol = __Symbol<'input>;
-        type Success = crate::ast::List;
+        type Success = crate::ast::List<'input>;
         type StateIndex = i8;
         type Action = i8;
         type ReduceIndex = i8;
@@ -2575,7 +2575,7 @@ mod __parse__List {
         >(
             &self,
             __tokens0: __TOKENS,
-        ) -> Result<crate::ast::List, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
+        ) -> Result<crate::ast::List<'input>, __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>
         {
             let __tokens = __tokens0.into_iter();
             let mut __tokens = __tokens.map(|t| __ToTriple::to_triple(t));
@@ -2595,7 +2595,7 @@ mod __parse__List {
         __states: &mut alloc::vec::Vec<i8>,
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>,
         _: core::marker::PhantomData<(&'input ())>,
-    ) -> Option<Result<crate::ast::List,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
+    ) -> Option<Result<crate::ast::List<'input>,__lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>>
     {
         let (__pop_states, __nonterminal) = match __action {
             0 => {
@@ -2686,7 +2686,7 @@ mod __parse__List {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, alloc::vec::Vec<crate::ast::Item>, usize)
+    ) -> (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant5(__v), __r)) => (__l, __v, __r),
@@ -2697,7 +2697,7 @@ mod __parse__List {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Atom, usize)
+    ) -> (usize, crate::ast::Atom<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant2(__v), __r)) => (__l, __v, __r),
@@ -2708,7 +2708,7 @@ mod __parse__List {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::Item, usize)
+    ) -> (usize, crate::ast::Item<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant4(__v), __r)) => (__l, __v, __r),
@@ -2719,7 +2719,7 @@ mod __parse__List {
       'input,
     >(
         __symbols: &mut alloc::vec::Vec<(usize,__Symbol<'input>,usize)>
-    ) -> (usize, crate::ast::List, usize)
+    ) -> (usize, crate::ast::List<'input>, usize)
      {
         match __symbols.pop() {
             Some((__l, __Symbol::Variant3(__v), __r)) => (__l, __v, __r),
@@ -3093,193 +3093,281 @@ mod __parse__List {
 }
 pub use self::__parse__List::ListParser;
 
-fn __action0<'input>((_, __0, _): (usize, crate::ast::List, usize)) -> crate::ast::List {
+fn __action0<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::List<'input>, usize),
+) -> crate::ast::List<'input>
+{
     __0
 }
 
-fn __action1<'input>((_, __0, _): (usize, crate::ast::Item, usize)) -> crate::ast::Item {
+fn __action1<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Item<'input>, usize),
+) -> crate::ast::Item<'input>
+{
     __0
 }
 
-fn __action2<'input>((_, __0, _): (usize, crate::ast::List, usize)) -> crate::ast::List {
+fn __action2<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::List<'input>, usize),
+) -> crate::ast::List<'input>
+{
     __0
 }
 
-fn __action3<'input>((_, __0, _): (usize, crate::ast::Atom, usize)) -> crate::ast::Atom {
+fn __action3<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Atom<'input>, usize),
+) -> crate::ast::Atom<'input>
+{
     __0
 }
 
-fn __action4<'input>(
-    (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
-) -> crate::ast::List {
+fn __action4<
+    'input,
+>(
+    (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+) -> crate::ast::List<'input>
+{
     __0
 }
 
-fn __action5<'input>((_, __0, _): (usize, crate::ast::Item, usize)) -> crate::ast::Item {
+fn __action5<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Item<'input>, usize),
+) -> crate::ast::Item<'input>
+{
     __0
 }
 
-fn __action6<'input>((_, __0, _): (usize, crate::ast::Item, usize)) -> crate::ast::Item {
+fn __action6<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Item<'input>, usize),
+) -> crate::ast::Item<'input>
+{
     __0
 }
 
-fn __action7<'input>((_, l, _): (usize, crate::ast::List, usize)) -> crate::ast::Item {
-    crate::ast::Item {
-        span: 0..0,
-        item: l.into(),
-    }
+fn __action7<
+    'input,
+>(
+    (_, l, _): (usize, crate::ast::List<'input>, usize),
+) -> crate::ast::Item<'input>
+{
+    crate::ast::Item { span: 0..0, item: l.into() }
 }
 
-fn __action8<'input>((_, a, _): (usize, crate::ast::Atom, usize)) -> crate::ast::Item {
-    crate::ast::Item {
-        span: 0..0,
-        item: a.into(),
-    }
+fn __action8<
+    'input,
+>(
+    (_, a, _): (usize, crate::ast::Atom<'input>, usize),
+) -> crate::ast::Item<'input>
+{
+    crate::ast::Item { span: 0..0, item: a.into() }
 }
 
-fn __action9<'input>(
+fn __action9<
+    'input,
+>(
     (_, _, _): (usize, crate::lexer::Tok<'input>, usize),
-    (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
+    (_, __0, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     (_, _, _): (usize, crate::lexer::Tok<'input>, usize),
-) -> crate::ast::List {
+) -> crate::ast::List<'input>
+{
     __0
 }
 
-fn __action10<'input>((_, s, _): (usize, &'input str, usize)) -> crate::ast::Atom {
+fn __action10<
+    'input,
+>(
+    (_, s, _): (usize, &'input str, usize),
+) -> crate::ast::Atom<'input>
+{
     crate::ast::Atom::string(s)
 }
 
-fn __action11<'input>((_, w, _): (usize, &'input str, usize)) -> crate::ast::Atom {
+fn __action11<
+    'input,
+>(
+    (_, w, _): (usize, &'input str, usize),
+) -> crate::ast::Atom<'input>
+{
     crate::ast::Atom::word(w)
 }
 
-fn __action12<'input>(
+fn __action12<
+    'input,
+>(
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> alloc::vec::Vec<crate::ast::Item> {
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     alloc::vec![]
 }
 
-fn __action13<'input>(
-    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
+fn __action13<
+    'input,
+>(
+    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     v
 }
 
-fn __action14<'input>(
+fn __action14<
+    'input,
+>(
     __lookbehind: &usize,
     __lookahead: &usize,
-) -> alloc::vec::Vec<crate::ast::Item> {
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     alloc::vec![]
 }
 
-fn __action15<'input>(
-    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
+fn __action15<
+    'input,
+>(
+    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     v
 }
 
-fn __action16<'input>(
-    (_, __0, _): (usize, crate::ast::Item, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
+fn __action16<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Item<'input>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     alloc::vec![__0]
 }
 
-fn __action17<'input>(
-    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
-    (_, e, _): (usize, crate::ast::Item, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
-    {
-        let mut v = v;
-        v.push(e);
-        v
-    }
+fn __action17<
+    'input,
+>(
+    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+    (_, e, _): (usize, crate::ast::Item<'input>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
+    { let mut v = v; v.push(e); v }
 }
 
-fn __action18<'input>(
-    (_, __0, _): (usize, crate::ast::Item, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
+fn __action18<
+    'input,
+>(
+    (_, __0, _): (usize, crate::ast::Item<'input>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
     alloc::vec![__0]
 }
 
-fn __action19<'input>(
-    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item>, usize),
-    (_, e, _): (usize, crate::ast::Item, usize),
-) -> alloc::vec::Vec<crate::ast::Item> {
-    {
-        let mut v = v;
-        v.push(e);
-        v
-    }
+fn __action19<
+    'input,
+>(
+    (_, v, _): (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+    (_, e, _): (usize, crate::ast::Item<'input>, usize),
+) -> alloc::vec::Vec<crate::ast::Item<'input>>
+{
+    { let mut v = v; v.push(e); v }
 }
 
-fn __action20<'input>(
+fn __action20<
+    'input,
+>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
     __1: (usize, crate::lexer::Tok<'input>, usize),
-) -> crate::ast::List {
+) -> crate::ast::List<'input>
+{
     let __start0 = __0.2.clone();
     let __end0 = __1.0.clone();
-    let __temp0 = __action12(&__start0, &__end0);
+    let __temp0 = __action12(
+        &__start0,
+        &__end0,
+    );
     let __temp0 = (__start0, __temp0, __end0);
-    __action9(__0, __temp0, __1)
+    __action9(
+        __0,
+        __temp0,
+        __1,
+    )
 }
 
-fn __action21<'input>(
+fn __action21<
+    'input,
+>(
     __0: (usize, crate::lexer::Tok<'input>, usize),
-    __1: (usize, alloc::vec::Vec<crate::ast::Item>, usize),
+    __1: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
     __2: (usize, crate::lexer::Tok<'input>, usize),
-) -> crate::ast::List {
+) -> crate::ast::List<'input>
+{
     let __start0 = __1.0.clone();
     let __end0 = __1.2.clone();
-    let __temp0 = __action13(__1);
+    let __temp0 = __action13(
+        __1,
+    );
     let __temp0 = (__start0, __temp0, __end0);
-    __action9(__0, __temp0, __2)
+    __action9(
+        __0,
+        __temp0,
+        __2,
+    )
 }
 
-fn __action22<'input>(__lookbehind: &usize, __lookahead: &usize) -> crate::ast::List {
+fn __action22<
+    'input,
+>(
+    __lookbehind: &usize,
+    __lookahead: &usize,
+) -> crate::ast::List<'input>
+{
     let __start0 = __lookbehind.clone();
     let __end0 = __lookahead.clone();
-    let __temp0 = __action14(&__start0, &__end0);
+    let __temp0 = __action14(
+        &__start0,
+        &__end0,
+    );
     let __temp0 = (__start0, __temp0, __end0);
-    __action4(__temp0)
+    __action4(
+        __temp0,
+    )
 }
 
-fn __action23<'input>(__0: (usize, alloc::vec::Vec<crate::ast::Item>, usize)) -> crate::ast::List {
+fn __action23<
+    'input,
+>(
+    __0: (usize, alloc::vec::Vec<crate::ast::Item<'input>>, usize),
+) -> crate::ast::List<'input>
+{
     let __start0 = __0.0.clone();
     let __end0 = __0.2.clone();
-    let __temp0 = __action15(__0);
+    let __temp0 = __action15(
+        __0,
+    );
     let __temp0 = (__start0, __temp0, __end0);
-    __action4(__temp0)
+    __action4(
+        __temp0,
+    )
 }
 
-pub trait __ToTriple<'input> {
-    fn to_triple(
-        value: Self,
-    ) -> Result<
-        (usize, crate::lexer::Tok<'input>, usize),
-        __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>,
-    >;
+pub trait __ToTriple<'input, > {
+    fn to_triple(value: Self) -> Result<(usize,crate::lexer::Tok<'input>,usize), __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>>;
 }
 
-impl<'input> __ToTriple<'input> for (usize, crate::lexer::Tok<'input>, usize) {
-    fn to_triple(
-        value: Self,
-    ) -> Result<
-        (usize, crate::lexer::Tok<'input>, usize),
-        __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>,
-    > {
+impl<'input, > __ToTriple<'input, > for (usize, crate::lexer::Tok<'input>, usize) {
+    fn to_triple(value: Self) -> Result<(usize,crate::lexer::Tok<'input>,usize), __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>> {
         Ok(value)
     }
 }
-impl<'input> __ToTriple<'input>
-    for Result<(usize, crate::lexer::Tok<'input>, usize), crate::lexer::Error>
-{
-    fn to_triple(
-        value: Self,
-    ) -> Result<
-        (usize, crate::lexer::Tok<'input>, usize),
-        __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>,
-    > {
+impl<'input, > __ToTriple<'input, > for Result<(usize, crate::lexer::Tok<'input>, usize), crate::lexer::Error> {
+    fn to_triple(value: Self) -> Result<(usize,crate::lexer::Tok<'input>,usize), __lalrpop_util::ParseError<usize, crate::lexer::Tok<'input>, crate::lexer::Error>> {
         match value {
             Ok(v) => Ok(v),
             Err(error) => Err(__lalrpop_util::ParseError::User { error }),

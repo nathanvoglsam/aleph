@@ -28,50 +28,49 @@
 //
 
 use crate::ast::{Atom, Item, List};
-use smartstring::alias::CompactString;
 use std::ops::Range;
 
-pub struct ListBuilder {
-    inner: List,
+pub struct ListBuilder<'input> {
+    inner: List<'input>,
 }
 
-impl ListBuilder {
+impl<'input> ListBuilder<'input> {
     #[inline]
     pub fn new() -> Self {
         Self { inner: Vec::new() }
     }
 
     #[inline]
-    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, span: Option<Range<usize>>) -> Self {
+    pub fn add_atom<A: Into<Atom<'input>>>(mut self, atom: A, span: Option<Range<usize>>) -> Self {
         self.inner.push(Item::atom(atom, span));
         self
     }
 
     #[inline]
-    pub fn add_string<S: Into<CompactString>>(self, string: S, span: Option<Range<usize>>) -> Self {
+    pub fn add_string(self, string: &'input str, span: Option<Range<usize>>) -> Self {
         self.add_atom(Atom::string(string), span)
     }
 
     #[inline]
-    pub fn add_word<S: Into<CompactString>>(self, word: S, span: Option<Range<usize>>) -> Self {
+    pub fn add_word(self, word: &'input str, span: Option<Range<usize>>) -> Self {
         self.add_atom(Atom::word(word), span)
     }
 
     #[inline]
-    pub fn add_list<L: Into<List>>(mut self, list: L, span: Option<Range<usize>>) -> Self {
+    pub fn add_list<L: Into<List<'input>>>(mut self, list: L, span: Option<Range<usize>>) -> Self {
         self.inner.push(Item::list(list, span));
         self
     }
 
     #[inline]
-    pub fn build(self) -> List {
+    pub fn build(self) -> List<'input> {
         self.inner
     }
 }
 
-impl Into<List> for ListBuilder {
+impl<'input> Into<List<'input>> for ListBuilder<'input> {
     #[inline]
-    fn into(self) -> List {
+    fn into(self) -> List<'input> {
         self.inner
     }
 }

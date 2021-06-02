@@ -41,7 +41,7 @@ extern {
     }
 }
 
-pub File: crate::ast::List = {
+pub File: crate::ast::List<'input> = {
     <ItemList*>
 }
 
@@ -56,12 +56,12 @@ pub Item = {
 }
 
 /// A list wrapped as an ast::Item
-ItemList: crate::ast::Item = {
+ItemList: crate::ast::Item<'input> = {
     <l:List> => crate::ast::Item { span: 0..0, item: l.into() },
 }
 
 /// An atom wrapped as an ast::Item
-ItemAtom: crate::ast::Item = {
+ItemAtom: crate::ast::Item<'input> = {
     <a:Atom> => crate::ast::Item { span: 0..0, item: a.into() },
 }
 
@@ -69,7 +69,7 @@ ItemAtom: crate::ast::Item = {
 // ============================================================================================== //
 // ============================================================================================== //
 
-pub List: crate::ast::List = {
+pub List: crate::ast::List<'input> = {
     "(" <Item*> ")",
 }
 
@@ -78,7 +78,7 @@ pub List: crate::ast::List = {
 // ============================================================================================== //
 
 /// An atom, which is either a word or string literal
-pub Atom: crate::ast::Atom = {
+pub Atom: crate::ast::Atom<'input> = {
     <s: "string"> => crate::ast::Atom::string(s),
     <w: "word"> => crate::ast::Atom::word(w),
 }

@@ -31,7 +31,6 @@ mod builders;
 
 pub use builders::ListBuilder;
 
-use smartstring::alias::CompactString;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
@@ -39,15 +38,15 @@ use std::ops::Range;
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
 ///
 #[derive(Clone, Hash, Debug)]
-pub struct Item {
+pub struct Item<'input> {
     /// Position within the source text this item resides
     pub span: Range<usize>,
 
     /// The item variant itself
-    pub item: ItemVariant,
+    pub item: ItemVariant<'input>,
 }
 
-impl PartialEq for Item {
+impl<'input> PartialEq for Item<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
@@ -63,9 +62,9 @@ impl PartialEq for Item {
     }
 }
 
-impl Eq for Item {}
+impl<'input> Eq for Item<'input> {}
 
-impl Item {
+impl<'input> Item<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -85,7 +84,7 @@ impl Item {
     }
 
     #[inline]
-    pub fn atom<A: Into<Atom>>(atom: A, span: Option<Range<usize>>) -> Item {
+    pub fn atom<A: Into<Atom<'input>>>(atom: A, span: Option<Range<usize>>) -> Item<'input> {
         Item {
             span: span.unwrap_or(Range::default()),
             item: ItemVariant::Atom(atom.into()),
@@ -93,7 +92,7 @@ impl Item {
     }
 
     #[inline]
-    pub fn list<L: Into<List>>(list: L, span: Option<Range<usize>>) -> Item {
+    pub fn list<L: Into<List<'input>>>(list: L, span: Option<Range<usize>>) -> Item<'input> {
         Item {
             span: span.unwrap_or(Range::default()),
             item: ItemVariant::List(list.into()),
@@ -105,24 +104,24 @@ impl Item {
 /// Enumeration of all valid list items
 ///
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub enum ItemVariant {
+pub enum ItemVariant<'input> {
     /// A singular atom
-    Atom(Atom),
+    Atom(Atom<'input>),
 
     /// A list of items
-    List(List),
+    List(List<'input>),
 }
 
-impl From<Vec<Item>> for ItemVariant {
+impl<'input> From<Vec<Item<'input>>> for ItemVariant<'input> {
     #[inline]
-    fn from(v: Vec<Item>) -> Self {
+    fn from(v: Vec<Item<'input>>) -> Self {
         Self::List(v)
     }
 }
 
-impl ItemVariant {
+impl<'input> ItemVariant<'input> {
     #[inline]
-    pub fn list(&self) -> Option<&List> {
+    pub fn list(&self) -> Option<&List<'input>> {
         match self {
             ItemVariant::Atom(_) => None,
             ItemVariant::List(list) => Some(list),
@@ -130,7 +129,7 @@ impl ItemVariant {
     }
 
     #[inline]
-    pub fn list_mut(&mut self) -> Option<&mut List> {
+    pub fn list_mut(&mut self) -> Option<&mut List<'input>> {
         match self {
             ItemVariant::Atom(_) => None,
             ItemVariant::List(list) => Some(list),
@@ -138,7 +137,7 @@ impl ItemVariant {
     }
 
     #[inline]
-    pub fn atom(&self) -> Option<&Atom> {
+    pub fn atom(&self) -> Option<&Atom<'input>> {
         match self {
             ItemVariant::Atom(atom) => Some(atom),
             ItemVariant::List(_) => None,
@@ -146,7 +145,7 @@ impl ItemVariant {
     }
 
     #[inline]
-    pub fn atom_mut(&mut self) -> Option<&mut Atom> {
+    pub fn atom_mut(&mut self) -> Option<&mut Atom<'input>> {
         match self {
             ItemVariant::Atom(atom) => Some(atom),
             ItemVariant::List(_) => None,
@@ -158,34 +157,34 @@ impl ItemVariant {
 /// Enumeration of all possible atom types
 ///
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub enum Atom {
+pub enum Atom<'input> {
     /// A string literal, i.e `"Hello, World!"`
-    String(CompactString),
+    String(&'input str),
 
     /// Anything that isn't a string literal
-    Word(CompactString),
+    Word(&'input str),
 }
 
-impl Atom {
+impl<'input> Atom<'input> {
     #[inline]
-    pub fn string<S: Into<CompactString>>(string: S) -> Self {
-        Atom::String(string.into())
+    pub fn string(string: &'input str) -> Self {
+        Atom::String(string)
     }
 
     #[inline]
-    pub fn word<S: Into<CompactString>>(word: S) -> Self {
-        Atom::Word(word.into())
+    pub fn word(word: &'input str) -> Self {
+        Atom::Word(word)
     }
 }
 
-impl Into<ItemVariant> for Atom {
+impl<'input> Into<ItemVariant<'input>> for Atom<'input> {
     #[inline]
-    fn into(self) -> ItemVariant {
+    fn into(self) -> ItemVariant<'input> {
         ItemVariant::Atom(self)
     }
 }
 
-impl Display for Atom {
+impl<'input> Display for Atom<'input> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -198,4 +197,4 @@ impl Display for Atom {
 ///
 /// Type alias for a list
 ///
-pub type List = Vec<Item>;
+pub type List<'input> = Vec<Item<'input>>;
