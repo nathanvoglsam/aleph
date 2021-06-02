@@ -224,37 +224,6 @@ fn test_invalid_root_atom() {
     test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
 }
 
-//fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
-//    let expected = expected.into();
-//    let text = std::fs::read_to_string(file_name).unwrap();
-//    match crate::parser::parse(text.as_str()) {
-//        Ok(output) => {
-//            assert_eq!(
-//                &output, &expected,
-//                "ASTs do not match\nGOT:\n{:#?}\n---------------\nEXPECTED:\n{:#?}",
-//                &output, &expected
-//            );
-//        }
-//        Err(error) => {
-//            combine_utils::print_error(&text, error);
-//            panic!("Failed to parse a valid input");
-//        }
-//    }
-//}
-
-//fn test_parses_invalid(file_name: &str) {
-//    let text = std::fs::read_to_string(file_name).unwrap();
-//    match crate::parser::parse(text.as_str()) {
-//        Ok(output) => {
-//            println!("{:#?}", output);
-//            panic!("Successfully parsed an invalid input");
-//        }
-//        Err(error) => {
-//            combine_utils::print_error(&text, error);
-//        }
-//    }
-//}
-
 fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
     let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();

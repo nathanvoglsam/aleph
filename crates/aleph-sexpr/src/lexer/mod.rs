@@ -61,6 +61,7 @@ pub enum Tok<'input> {
 pub struct Lexer<'input> {
     chars: std::iter::Peekable<CharIndices<'input>>,
     input: &'input str,
+    state: LexerState,
 }
 
 impl<'input> Lexer<'input> {
@@ -69,6 +70,7 @@ impl<'input> Lexer<'input> {
         Lexer {
             chars: input.char_indices().peekable(),
             input,
+            state: LexerState::Default
         }
     }
 }
@@ -77,21 +79,9 @@ impl<'input> Iterator for Lexer<'input> {
     type Item = Spanned<Tok<'input>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        enum LexerState {
-            Default,
-            Word(usize),
-            StringLiteral(usize),
-            StringLiteralEscape(usize),
-            CommentStart(usize),
-            LineComment(usize),
-            BlockComment(usize),
-            BlockCommentEnd(usize),
-        }
-        let mut lexer_state = LexerState::Default;
-
         loop {
             match self.chars.peek().cloned() {
-                Some((i, c)) => match lexer_state {
+                Some((i, c)) => match self.state.take() {
                     LexerState::Default => {
                         // If we encounter an open paren in the default state we emit it directly
                         if c == '(' {
@@ -116,7 +106,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // token before yielding a value
                         if c == '"' {
                             // Skip the first index as we strip the quotes
-                            lexer_state = LexerState::StringLiteral(i + 1);
+                            self.state = LexerState::StringLiteral(i + 1);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -125,7 +115,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // CommentStart state and continue looping to determine what kind of comment
                         // is being read
                         if c == '/' {
-                            lexer_state = LexerState::CommentStart(i);
+                            self.state = LexerState::CommentStart(i);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -134,7 +124,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // consuming the word, looping until the whole word has been consumed before
                         // yielding a value
                         if c.is_item_token() {
-                            lexer_state = LexerState::Word(i);
+                            self.state = LexerState::Word(i);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -167,7 +157,9 @@ impl<'input> Iterator for Lexer<'input> {
                         // didn't handle this specially a \" sequence would look like the string
                         // should be closed when it should not be.
                         if c == '\\' {
-                            lexer_state = LexerState::StringLiteralEscape(span_start);
+                            self.state = LexerState::StringLiteralEscape(span_start);
+                        } else {
+                            self.state = LexerState::StringLiteral(span_start);
                         }
 
                         // All values other than a quote are valid inside a string literal so we
@@ -178,7 +170,7 @@ impl<'input> Iterator for Lexer<'input> {
                     LexerState::StringLiteralEscape(span_start) => {
                         // We don't have to actually parse an escape sequence here, just make sure
                         // we don't terminate the string early if there is a quote escape.
-                        lexer_state = LexerState::StringLiteral(span_start);
+                        self.state = LexerState::StringLiteral(span_start);
                         self.chars.next().unwrap();
                         continue;
                     }
@@ -196,6 +188,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // If we reach this code we know `c.is_item_token()` is true, which means
                         // c is a valid word character and so we should commit the parse and keep
                         // looping
+                        self.state = LexerState::Word(span_start);
                         self.chars.next().unwrap();
                         continue;
                     }
@@ -207,7 +200,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // If we encounter a second '/' token (i.e "//") then we must be handling
                         // a line comment.
                         if c == '/' {
-                            lexer_state = LexerState::LineComment(span_start);
+                            self.state = LexerState::LineComment(span_start);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -215,7 +208,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // If we encounter a '*' token (i.e "/*") then we must be handling a block
                         // comment.
                         if c == '*' {
-                            lexer_state = LexerState::BlockComment(span_start);
+                            self.state = LexerState::BlockComment(span_start);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -230,14 +223,14 @@ impl<'input> Iterator for Lexer<'input> {
                         };
                         return Some(Err(err));
                     }
-                    LexerState::LineComment(_span_start) => {
+                    LexerState::LineComment(span_start) => {
                         // We are now in the body of a line comment
 
                         // A line comment will endlessly skip characters until a newline character
                         // is encountered. As such we just keep looping and consuming, only breaking
                         // out of the line comment state when a newline is encountered.
-                        if c == '\n' || c == '\r' {
-                            lexer_state = LexerState::Default;
+                        if c != '\n' && c != '\r' {
+                            self.state = LexerState::LineComment(span_start);
                         }
 
                         self.chars.next().unwrap();
@@ -252,7 +245,9 @@ impl<'input> Iterator for Lexer<'input> {
                         // The block comment will continuously consume tokens until it encounters
                         // a "*/" sequence. This is the first stage of this check
                         if c == '*' {
-                            lexer_state = LexerState::BlockCommentEnd(span_start);
+                            self.state = LexerState::BlockCommentEnd(span_start);
+                        } else {
+                            self.state = LexerState::BlockComment(span_start);
                         }
 
                         self.chars.next().unwrap();
@@ -264,18 +259,20 @@ impl<'input> Iterator for Lexer<'input> {
                         //
                         // If a non '/' token is found we assume we are still inside the block
                         // comment body and a plain '*' token had been read.
-                        if c == '/' {
-                            lexer_state = LexerState::Default;
-                        } else {
-                            lexer_state = LexerState::BlockComment(span_start);
+                        if c != '/' {
+                            self.state = LexerState::BlockComment(span_start);
                         }
 
                         self.chars.next().unwrap();
                         continue;
                     }
+                    LexerState::DocComment(span_start, body) => {}
+                    LexerState::DocCommentEmit1(span_start, body) => {}
+                    LexerState::DocCommentEmit2(span_start, body) => {}
+                    LexerState::DocCommentEmit3(span_start, body) => {}
                 },
                 None => {
-                    return match lexer_state {
+                    return match self.state.take() {
                         // In the default state an end-of-stream is valid
                         LexerState::Default => None,
 
@@ -328,9 +325,40 @@ impl<'input> Iterator for Lexer<'input> {
                             let err = Error::UnexpectedEndOfInput { expected };
                             Some(Err(err))
                         }
+                        LexerState::DocComment(_, _) => todo!(),
+                        LexerState::DocCommentEmit1(_, _) => todo!(),
+                        LexerState::DocCommentEmit2(_, _) => todo!(),
+                        LexerState::DocCommentEmit3(_, _) => todo!(),
                     };
                 }
             }
         }
+    }
+}
+
+enum LexerState {
+    Default,
+    Word(usize),
+    StringLiteral(usize),
+    StringLiteralEscape(usize),
+    CommentStart(usize),
+    LineComment(usize),
+    BlockComment(usize),
+    BlockCommentEnd(usize),
+    DocComment(usize, String),
+    DocCommentEmit1(usize, String),
+    DocCommentEmit2(usize, String),
+    DocCommentEmit3(usize, String),
+}
+
+impl Default for LexerState {
+    fn default() -> Self {
+        Self::Default
+    }
+}
+
+impl LexerState {
+    fn take(&mut self) -> Self {
+        std::mem::take(self)
     }
 }
