@@ -1,5 +1,5 @@
 // auto-generated: "lalrpop 0.19.5"
-// sha3: 9b506dd693d6ff1625578f67eb58ff9c9d82da6546d72e3f6e2e1b9273898dc
+// sha3: df648c1d08db8209899bc2711e4bcd46c9faef4ca6b346c8f73c1457df56177
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
 #[allow(unused_imports)]
@@ -3125,14 +3125,14 @@ fn __action6<'input>((_, __0, _): (usize, crate::ast::Item, usize)) -> crate::as
 
 fn __action7<'input>((_, l, _): (usize, crate::ast::List, usize)) -> crate::ast::Item {
     crate::ast::Item {
-        position: 0,
+        span: 0..0,
         item: l.into(),
     }
 }
 
 fn __action8<'input>((_, a, _): (usize, crate::ast::Atom, usize)) -> crate::ast::Item {
     crate::ast::Item {
-        position: 0,
+        span: 0..0,
         item: a.into(),
     }
 }

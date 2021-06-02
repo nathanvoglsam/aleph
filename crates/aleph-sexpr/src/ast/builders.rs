@@ -29,6 +29,7 @@
 
 use crate::ast::{Atom, Item, List};
 use smartstring::alias::CompactString;
+use std::ops::Range;
 
 pub struct ListBuilder {
     inner: List,
@@ -41,24 +42,24 @@ impl ListBuilder {
     }
 
     #[inline]
-    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, position: Option<usize>) -> Self {
-        self.inner.push(Item::atom(atom, position));
+    pub fn add_atom<A: Into<Atom>>(mut self, atom: A, span: Option<Range<usize>>) -> Self {
+        self.inner.push(Item::atom(atom, span));
         self
     }
 
     #[inline]
-    pub fn add_string<S: Into<CompactString>>(self, string: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::string(string), position)
+    pub fn add_string<S: Into<CompactString>>(self, string: S, span: Option<Range<usize>>) -> Self {
+        self.add_atom(Atom::string(string), span)
     }
 
     #[inline]
-    pub fn add_word<S: Into<CompactString>>(self, word: S, position: Option<usize>) -> Self {
-        self.add_atom(Atom::word(word), position)
+    pub fn add_word<S: Into<CompactString>>(self, word: S, span: Option<Range<usize>>) -> Self {
+        self.add_atom(Atom::word(word), span)
     }
 
     #[inline]
-    pub fn add_list<L: Into<List>>(mut self, list: L, position: Option<usize>) -> Self {
-        self.inner.push(Item::list(list, position));
+    pub fn add_list<L: Into<List>>(mut self, list: L, span: Option<Range<usize>>) -> Self {
+        self.inner.push(Item::list(list, span));
         self
     }
 

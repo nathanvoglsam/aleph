@@ -57,12 +57,12 @@ pub Item = {
 
 /// A list wrapped as an ast::Item
 ItemList: crate::ast::Item = {
-    <l:List> => crate::ast::Item { position: 0, item: l.into() },
+    <l:List> => crate::ast::Item { span: 0..0, item: l.into() },
 }
 
 /// An atom wrapped as an ast::Item
 ItemAtom: crate::ast::Item = {
-    <a:Atom> => crate::ast::Item { position: 0, item: a.into() },
+    <a:Atom> => crate::ast::Item { span: 0..0, item: a.into() },
 }
 
 // ============================================================================================== //

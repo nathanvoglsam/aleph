@@ -33,6 +33,7 @@ pub use builders::ListBuilder;
 
 use smartstring::alias::CompactString;
 use std::fmt::{Display, Formatter};
+use std::ops::Range;
 
 ///
 /// A wrapper over `ItemVariant` that associates the position within the source file of the item
@@ -40,19 +41,21 @@ use std::fmt::{Display, Formatter};
 #[derive(Clone, Hash, Debug)]
 pub struct Item {
     /// Position within the source text this item resides
-    pub position: usize,
+    pub span: Range<usize>,
 
     /// The item variant itself
     pub item: ItemVariant,
 }
 
 impl PartialEq for Item {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
         // used for generating error messages
         self.item.eq(&other.item)
     }
 
+    #[inline]
     fn ne(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
         // used for generating error messages
@@ -67,28 +70,32 @@ impl Item {
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
     ///
+    #[inline]
     pub fn full_eq(&self, other: &Self) -> bool {
-        self.position.eq(&other.position) && self.item.eq(&other.item)
+        self.span.clone().eq(other.span.clone()) && self.item.eq(&other.item)
     }
 
     ///
     /// A custom ne implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
     ///
+    #[inline]
     pub fn full_ne(&self, other: &Self) -> bool {
-        self.position.ne(&other.position) || self.item.ne(&other.item)
+        !self.full_eq(other)
     }
 
-    pub fn atom<A: Into<Atom>>(atom: A, position: Option<usize>) -> Item {
+    #[inline]
+    pub fn atom<A: Into<Atom>>(atom: A, span: Option<Range<usize>>) -> Item {
         Item {
-            position: position.unwrap_or(0),
+            span: span.unwrap_or(Range::default()),
             item: ItemVariant::Atom(atom.into()),
         }
     }
 
-    pub fn list<L: Into<List>>(list: L, position: Option<usize>) -> Item {
+    #[inline]
+    pub fn list<L: Into<List>>(list: L, span: Option<Range<usize>>) -> Item {
         Item {
-            position: position.unwrap_or(0),
+            span: span.unwrap_or(Range::default()),
             item: ItemVariant::List(list.into()),
         }
     }
@@ -107,12 +114,14 @@ pub enum ItemVariant {
 }
 
 impl From<Vec<Item>> for ItemVariant {
+    #[inline]
     fn from(v: Vec<Item>) -> Self {
         Self::List(v)
     }
 }
 
 impl ItemVariant {
+    #[inline]
     pub fn list(&self) -> Option<&List> {
         match self {
             ItemVariant::Atom(_) => None,
@@ -120,6 +129,7 @@ impl ItemVariant {
         }
     }
 
+    #[inline]
     pub fn list_mut(&mut self) -> Option<&mut List> {
         match self {
             ItemVariant::Atom(_) => None,
@@ -127,6 +137,7 @@ impl ItemVariant {
         }
     }
 
+    #[inline]
     pub fn atom(&self) -> Option<&Atom> {
         match self {
             ItemVariant::Atom(atom) => Some(atom),
@@ -134,6 +145,7 @@ impl ItemVariant {
         }
     }
 
+    #[inline]
     pub fn atom_mut(&mut self) -> Option<&mut Atom> {
         match self {
             ItemVariant::Atom(atom) => Some(atom),
@@ -155,22 +167,26 @@ pub enum Atom {
 }
 
 impl Atom {
+    #[inline]
     pub fn string<S: Into<CompactString>>(string: S) -> Self {
         Atom::String(string.into())
     }
 
+    #[inline]
     pub fn word<S: Into<CompactString>>(word: S) -> Self {
         Atom::Word(word.into())
     }
 }
 
 impl Into<ItemVariant> for Atom {
+    #[inline]
     fn into(self) -> ItemVariant {
         ItemVariant::Atom(self)
     }
 }
 
 impl Display for Atom {
+    #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Atom::String(v) => f.write_fmt(format_args!("\"{}\"", v)),
