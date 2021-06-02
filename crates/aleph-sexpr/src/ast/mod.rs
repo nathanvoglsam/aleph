@@ -106,6 +106,12 @@ pub enum ItemVariant {
     List(List),
 }
 
+impl From<Vec<Item>> for ItemVariant {
+    fn from(v: Vec<Item>) -> Self {
+        Self::List(v)
+    }
+}
+
 impl ItemVariant {
     pub fn list(&self) -> Option<&List> {
         match self {
@@ -155,6 +161,12 @@ impl Atom {
 
     pub fn word<S: Into<CompactString>>(word: S) -> Self {
         Atom::Word(word.into())
+    }
+}
+
+impl Into<ItemVariant> for Atom {
+    fn into(self) -> ItemVariant {
+        ItemVariant::Atom(self)
     }
 }
 

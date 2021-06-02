@@ -27,9 +27,11 @@
 // SOFTWARE.
 //
 
-extern crate aleph_combine_utils as combine_utils;
+extern crate lalrpop;
 
-pub mod ast;
-pub mod lalr_parser;
-pub mod lexer;
-pub mod parser;
+fn main() {
+    lalrpop::Configuration::new()
+        .generate_in_source_tree()
+        .process()
+        .unwrap();
+}

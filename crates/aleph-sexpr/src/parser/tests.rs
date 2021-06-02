@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::lexer::{Error, Tok};
+
 fn default(default: crate::ast::Atom) -> crate::ast::ListBuilder {
     crate::ast::ListBuilder::new()
         .add_word("default", None)
@@ -133,14 +135,22 @@ fn test_valid_empty_file_with_whitespace() {
 
 #[test]
 fn test_valid_escaped_string() {
-    let string = "Test text please \"ignore\" me";
-    let list = crate::ast::ListBuilder::new()
-        .add_string(string, None)
+    let string_a = "Test \\x74ext please \\\"ignore\\\" me";
+    let string_b = "Test text please \\\"ignore\\\" me";
+    let string_c = "Test \\\r\n        \\u{74}ext please \\\"ignore\\\" me";
+    let list_a = crate::ast::ListBuilder::new()
+        .add_string(string_a, None)
+        .build();
+    let list_b = crate::ast::ListBuilder::new()
+        .add_string(string_b, None)
+        .build();
+    let list_c = crate::ast::ListBuilder::new()
+        .add_string(string_c, None)
         .build();
     let expected = crate::ast::ListBuilder::new()
-        .add_list(list.clone(), None)
-        .add_list(list.clone(), None)
-        .add_list(list.clone(), None);
+        .add_list(list_a, None)
+        .add_list(list_b, None)
+        .add_list(list_c, None);
     test_parses_valid("./schemas/valid_escaped_string.schema", expected);
 }
 
@@ -161,33 +171,96 @@ fn test_valid_special_idents() {
 
 #[test]
 fn test_invalid_unterminated_list() {
-    test_parses_invalid("./schemas/invalid_unterminated_list.schema");
+    let expected = lalrpop_util::ParseError::UnrecognizedEOF {
+        location: 39,
+        expected: vec![
+            "\"(\"".to_string(),
+            "\")\"".to_string(),
+            "\"string\"".to_string(),
+            "\"word\"".to_string(),
+        ]
+    };
+    test_parses_invalid("./schemas/invalid_unterminated_list.schema", expected);
 }
 
 #[test]
 fn test_invalid_unterminated_string() {
-    test_parses_invalid("./schemas/invalid_unterminated_string.schema");
+    let expected = lalrpop_util::ParseError::User {
+        error: Error::UnclosedStringLiteral { begin: 32 },
+    };
+    test_parses_invalid("./schemas/invalid_unterminated_string.schema", expected);
 }
 
 #[test]
 fn test_invalid_terminating_too_many_lists() {
-    test_parses_invalid("./schemas/invalid_terminating_too_many_lists.schema");
+    let expected = lalrpop_util::ParseError::UnrecognizedToken {
+        token: (38, Tok::ParenClose, 39),
+        expected: vec!["\"(\"".to_string()]
+    };
+    test_parses_invalid(
+        "./schemas/invalid_terminating_too_many_lists.schema",
+        expected,
+    );
 }
 
 #[test]
 fn test_invalid_terminating_unopened_list() {
-    test_parses_invalid("./schemas/invalid_terminating_unopened_list.schema");
+    let expected = lalrpop_util::ParseError::UnrecognizedToken {
+        token: (0, Tok::ParenClose, 1),
+        expected: vec!["\"(\"".to_string()]
+    };
+    test_parses_invalid(
+        "./schemas/invalid_terminating_unopened_list.schema",
+        expected,
+    );
 }
 
 #[test]
 fn test_invalid_root_atom() {
-    test_parses_invalid("./schemas/invalid_root_atom.schema");
+    let expected = lalrpop_util::ParseError::UnrecognizedToken {
+        token: (0, Tok::Word("namespace"), 9),
+        expected: vec!["\"(\"".to_string()]
+    };
+    test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
 }
+
+//fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
+//    let expected = expected.into();
+//    let text = std::fs::read_to_string(file_name).unwrap();
+//    match crate::parser::parse(text.as_str()) {
+//        Ok(output) => {
+//            assert_eq!(
+//                &output, &expected,
+//                "ASTs do not match\nGOT:\n{:#?}\n---------------\nEXPECTED:\n{:#?}",
+//                &output, &expected
+//            );
+//        }
+//        Err(error) => {
+//            combine_utils::print_error(&text, error);
+//            panic!("Failed to parse a valid input");
+//        }
+//    }
+//}
+
+//fn test_parses_invalid(file_name: &str) {
+//    let text = std::fs::read_to_string(file_name).unwrap();
+//    match crate::parser::parse(text.as_str()) {
+//        Ok(output) => {
+//            println!("{:#?}", output);
+//            panic!("Successfully parsed an invalid input");
+//        }
+//        Err(error) => {
+//            combine_utils::print_error(&text, error);
+//        }
+//    }
+//}
 
 fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
     let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();
-    match crate::parser::parse(text.as_str()) {
+    let lexer = crate::lexer::Lexer::new(&text);
+    let parser = crate::lalr_parser::FileParser::new();
+    match parser.parse(lexer) {
         Ok(output) => {
             assert_eq!(
                 &output, &expected,
@@ -196,21 +269,25 @@ fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
             );
         }
         Err(error) => {
-            combine_utils::print_error(&text, error);
-            panic!("Failed to parse a valid input");
+            panic!("{:#?}\nCorrectly failed to parse a valid input", error);
         }
     }
 }
 
-fn test_parses_invalid(file_name: &str) {
+fn test_parses_invalid(file_name: &str, expected: lalrpop_util::ParseError<usize, Tok, Error>) {
     let text = std::fs::read_to_string(file_name).unwrap();
-    match crate::parser::parse(text.as_str()) {
+    let lexer = crate::lexer::Lexer::new(&text);
+    let parser = crate::lalr_parser::FileParser::new();
+    match parser.parse(lexer) {
         Ok(output) => {
             println!("{:#?}", output);
             panic!("Successfully parsed an invalid input");
         }
         Err(error) => {
-            combine_utils::print_error(&text, error);
+            assert!(error.eq(&expected),
+                "Failed to parse an invalid input, but in the incorrect way.\nGOT:\n{:#?}\n---------------\nEXPECTED:\n{:#?}",
+                &error, &expected
+            );
         }
     }
 }

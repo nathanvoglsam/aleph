@@ -44,9 +44,14 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
+[build-dependencies]
+lalrpop = "0.19.5"
+
 [dependencies]
 aleph-combine-utils = { version = "0.1", path = "../aleph-combine-utils" }
 combine = "4"
 unicode-width = "0.1"
 num-integer = "0.1"
 smartstring = "0.2"
+lalrpop-util = "0.19.5"
+regex = "1"
