@@ -178,7 +178,7 @@ fn test_invalid_unterminated_list() {
             "\")\"".to_string(),
             "\"string\"".to_string(),
             "\"word\"".to_string(),
-        ]
+        ],
     };
     test_parses_invalid("./schemas/invalid_unterminated_list.schema", expected);
 }
@@ -195,7 +195,7 @@ fn test_invalid_unterminated_string() {
 fn test_invalid_terminating_too_many_lists() {
     let expected = lalrpop_util::ParseError::UnrecognizedToken {
         token: (38, Tok::ParenClose, 39),
-        expected: vec!["\"(\"".to_string()]
+        expected: vec!["\"(\"".to_string()],
     };
     test_parses_invalid(
         "./schemas/invalid_terminating_too_many_lists.schema",
@@ -207,7 +207,7 @@ fn test_invalid_terminating_too_many_lists() {
 fn test_invalid_terminating_unopened_list() {
     let expected = lalrpop_util::ParseError::UnrecognizedToken {
         token: (0, Tok::ParenClose, 1),
-        expected: vec!["\"(\"".to_string()]
+        expected: vec!["\"(\"".to_string()],
     };
     test_parses_invalid(
         "./schemas/invalid_terminating_unopened_list.schema",
@@ -219,7 +219,7 @@ fn test_invalid_terminating_unopened_list() {
 fn test_invalid_root_atom() {
     let expected = lalrpop_util::ParseError::UnrecognizedToken {
         token: (0, Tok::Word("namespace"), 9),
-        expected: vec!["\"(\"".to_string()]
+        expected: vec!["\"(\"".to_string()],
     };
     test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
 }
@@ -259,7 +259,7 @@ fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
     let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();
     let lexer = crate::lexer::Lexer::new(&text);
-    let parser = crate::lalr_parser::FileParser::new();
+    let parser = crate::parser::FileParser::new();
     match parser.parse(lexer) {
         Ok(output) => {
             assert_eq!(
@@ -277,7 +277,7 @@ fn test_parses_valid<L: Into<crate::ast::List>>(file_name: &str, expected: L) {
 fn test_parses_invalid(file_name: &str, expected: lalrpop_util::ParseError<usize, Tok, Error>) {
     let text = std::fs::read_to_string(file_name).unwrap();
     let lexer = crate::lexer::Lexer::new(&text);
-    let parser = crate::lalr_parser::FileParser::new();
+    let parser = crate::parser::FileParser::new();
     match parser.parse(lexer) {
         Ok(output) => {
             println!("{:#?}", output);

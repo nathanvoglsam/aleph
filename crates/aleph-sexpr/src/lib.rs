@@ -30,6 +30,8 @@
 extern crate aleph_combine_utils as combine_utils;
 
 pub mod ast;
-pub mod lalr_parser;
 pub mod lexer;
 pub mod parser;
+
+#[cfg(test)]
+mod tests;
