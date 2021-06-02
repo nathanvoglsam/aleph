@@ -247,7 +247,10 @@ fn test_invalid_root_atom() {
     test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
 }
 
-fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(file_name: &'input str, expected: L) {
+fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(
+    file_name: &'input str,
+    expected: L,
+) {
     let expected = expected.into();
     let text = std::fs::read_to_string(file_name).unwrap();
     let lexer = crate::lexer::Lexer::new(&text);

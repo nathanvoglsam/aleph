@@ -311,8 +311,8 @@ impl<'input> Iterator for Lexer<'input> {
                         return Some(Ok((span_start, Tok::StringLiteral(body), i)));
                     }
                     LexerState::DocCommentEmit3(span_start) => {
-                        // Emit the content token, commit to the doc comment parse, and transition
-                        // to the default state to continue lexing input
+                        // Emit the list close token, commit to the doc comment parse, and
+                        // transition to the default state ready to continue lexing input
                         self.chars.next().unwrap();
                         return Some(Ok((span_start, Tok::ParenClose, i)));
                     }
