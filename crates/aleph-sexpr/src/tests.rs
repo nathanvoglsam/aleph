@@ -170,6 +170,29 @@ fn test_valid_special_idents() {
 }
 
 #[test]
+fn test_valid_doc_comment() {
+    let first = crate::ast::ListBuilder::new()
+        .add_word("!doc", None)
+        .add_string(" This is a doc comment", None);
+    let second = crate::ast::ListBuilder::new()
+        .add_word("!doc", None)
+        .add_string(" This is also a doc comment", None);
+    let last = crate::ast::ListBuilder::new()
+        .add_word("!doc", None)
+        .add_string(" Root doc comment", None);
+    let namespace_aleph = crate::ast::ListBuilder::new()
+        .add_word("namespace", None)
+        .add_word("aleph", None)
+        .add_list(first, None)
+        .add_list(second, None)
+        .add_list(monster(), None);
+    let expected = crate::ast::ListBuilder::new()
+        .add_list(namespace_aleph, None)
+        .add_list(last, None);
+    test_parses_valid("./schemas/valid_doc_comment.schema", expected);
+}
+
+#[test]
 fn test_invalid_unterminated_list() {
     let expected = lalrpop_util::ParseError::UnrecognizedEOF {
         location: 39,

@@ -30,6 +30,7 @@
 use combine_utils::CharExtensions;
 use std::str::CharIndices;
 
+/// The error type the lexer emits
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Error {
     UnexpectedCharacter {
@@ -48,7 +49,7 @@ pub enum Error {
 /// Type alias for our lexer's iterator yield value
 pub type Spanned<Tok> = Result<(usize, Tok, usize), Error>;
 
-/// A enum over all token variants
+/// An enum over all token variants
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Tok<'input> {
     Word(&'input str),
@@ -70,7 +71,7 @@ impl<'input> Lexer<'input> {
         Lexer {
             chars: input.char_indices().peekable(),
             input,
-            state: LexerState::Default
+            state: LexerState::Default,
         }
     }
 }
@@ -200,7 +201,7 @@ impl<'input> Iterator for Lexer<'input> {
                         // If we encounter a second '/' token (i.e "//") then we must be handling
                         // a line comment.
                         if c == '/' {
-                            self.state = LexerState::LineComment(span_start);
+                            self.state = LexerState::LineCommentStart(span_start);
                             self.chars.next().unwrap();
                             continue;
                         }
@@ -222,6 +223,21 @@ impl<'input> Iterator for Lexer<'input> {
                             position: i,
                         };
                         return Some(Err(err));
+                    }
+                    LexerState::LineCommentStart(span_start) => {
+                        // A line comment could morph into a doc comment if the next character is
+                        // a third "/" character (i.e ///)
+
+                        // If we find a third "/" then we move to the doc comment state, otherwise
+                        // we're in a regular line comment
+                        if c == '/' {
+                            self.state = LexerState::DocComment(span_start);
+                        } else {
+                            self.state = LexerState::LineComment(span_start);
+                        }
+
+                        self.chars.next().unwrap();
+                        continue;
                     }
                     LexerState::LineComment(span_start) => {
                         // We are now in the body of a line comment
@@ -266,10 +282,40 @@ impl<'input> Iterator for Lexer<'input> {
                         self.chars.next().unwrap();
                         continue;
                     }
-                    LexerState::DocComment(span_start, body) => {}
-                    LexerState::DocCommentEmit1(span_start, body) => {}
-                    LexerState::DocCommentEmit2(span_start, body) => {}
-                    LexerState::DocCommentEmit3(span_start, body) => {}
+                    LexerState::DocComment(span_start) => {
+                        // A doc comment is a special type of line comment that emits the contents
+                        // of the comment inside a `(!doc "contents")` list.
+                        //
+                        // A doc comment is special in that it expands a single lexical item into
+                        // multiple tokens. The implementation uses a state chain that yields each
+                        // token in order without touching the underlying character stream.
+                        if c != '\n' && c != '\r' {
+                            self.state = LexerState::DocComment(span_start);
+                            self.chars.next().unwrap();
+                            continue;
+                        } else {
+                            // Emit the list open token
+                            self.state = LexerState::DocCommentEmit1(span_start);
+                            return Some(Ok((span_start, Tok::ParenOpen, i)));
+                        }
+                    }
+                    LexerState::DocCommentEmit1(span_start) => {
+                        // Emit the `!doc` token
+                        self.state = LexerState::DocCommentEmit2(span_start);
+                        return Some(Ok((span_start, Tok::Word("!doc"), i)));
+                    }
+                    LexerState::DocCommentEmit2(span_start) => {
+                        // Emit the content token
+                        let body = &self.input[span_start + 3..i];
+                        self.state = LexerState::DocCommentEmit3(span_start);
+                        return Some(Ok((span_start, Tok::StringLiteral(body), i)));
+                    }
+                    LexerState::DocCommentEmit3(span_start) => {
+                        // Emit the content token, commit to the doc comment parse, and transition
+                        // to the default state to continue lexing input
+                        self.chars.next().unwrap();
+                        return Some(Ok((span_start, Tok::ParenClose, i)));
+                    }
                 },
                 None => {
                     return match self.state.take() {
@@ -325,10 +371,35 @@ impl<'input> Iterator for Lexer<'input> {
                             let err = Error::UnexpectedEndOfInput { expected };
                             Some(Err(err))
                         }
-                        LexerState::DocComment(_, _) => todo!(),
-                        LexerState::DocCommentEmit1(_, _) => todo!(),
-                        LexerState::DocCommentEmit2(_, _) => todo!(),
-                        LexerState::DocCommentEmit3(_, _) => todo!(),
+                        LexerState::DocComment(span_start) => {
+                            // A doc comment is a special type of line comment that emits the contents
+                            // of the comment inside a `(!doc "contents")` list.
+                            //
+                            // A doc comment is special in that it expands a single lexical item into
+                            // multiple tokens. The implementation uses a state chain that yields each
+                            // token in order without touching the underlying character stream.
+
+                            // Emit the list open token
+                            self.state = LexerState::DocCommentEmit1(span_start);
+                            Some(Ok((span_start, Tok::ParenOpen, self.input.len())))
+                        }
+                        LexerState::DocCommentEmit1(span_start) => {
+                            // Emit the `!doc` token
+                            self.state = LexerState::DocCommentEmit2(span_start);
+                            Some(Ok((span_start, Tok::Word("!doc"), self.input.len())))
+                        }
+                        LexerState::DocCommentEmit2(span_start) => {
+                            // Emit the content token
+                            let body = &self.input[span_start + 3..self.input.len()];
+                            self.state = LexerState::DocCommentEmit3(span_start);
+                            Some(Ok((span_start, Tok::StringLiteral(body), self.input.len())))
+                        }
+                        LexerState::DocCommentEmit3(span_start) => {
+                            // Emit the list close token, and implicitly transition back to the
+                            // default state so all future calls to this iterator will yield None.
+                            Some(Ok((span_start, Tok::ParenClose, self.input.len())))
+                        }
+                        LexerState::LineCommentStart(_) => None,
                     };
                 }
             }
@@ -342,13 +413,14 @@ enum LexerState {
     StringLiteral(usize),
     StringLiteralEscape(usize),
     CommentStart(usize),
+    LineCommentStart(usize),
     LineComment(usize),
     BlockComment(usize),
     BlockCommentEnd(usize),
-    DocComment(usize, String),
-    DocCommentEmit1(usize, String),
-    DocCommentEmit2(usize, String),
-    DocCommentEmit3(usize, String),
+    DocComment(usize),
+    DocCommentEmit1(usize),
+    DocCommentEmit2(usize),
+    DocCommentEmit3(usize),
 }
 
 impl Default for LexerState {
