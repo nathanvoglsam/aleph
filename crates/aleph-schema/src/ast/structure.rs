@@ -32,19 +32,19 @@ use smartstring::alias::CompactString;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub struct Struct {
+pub struct Struct<'input> {
     /// Position within the source text this item resides
     pub position: usize,
 
     /// The list of fields on the struct
-    pub fields: HashMap<CompactString, Field>,
+    pub fields: HashMap<CompactString, Field<'input>>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
-    pub attributes: Vec<sexpr::ast::List>,
+    pub attributes: Vec<sexpr::ast::List<'input>>,
 }
 
-impl Struct {
+impl<'input> Struct<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -64,7 +64,7 @@ impl Struct {
     }
 }
 
-impl PartialEq for Struct {
+impl<'input> PartialEq for Struct<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
@@ -73,9 +73,9 @@ impl PartialEq for Struct {
     }
 }
 
-impl Eq for Struct {}
+impl<'input> Eq for Struct<'input> {}
 
-impl HasAttributes for Struct {
+impl<'input> HasAttributes for Struct<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         self.attributes.as_slice()

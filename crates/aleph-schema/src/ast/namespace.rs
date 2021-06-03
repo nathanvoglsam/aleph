@@ -33,19 +33,19 @@ use std::collections::HashMap;
 
 /// AST node that adds a name context for all it's child elements
 #[derive(Debug)]
-pub struct Namespace {
+pub struct Namespace<'input> {
     /// Position within the source text this item resides
     pub position: usize,
 
     /// The list of items inside the namespace
-    pub children: HashMap<CompactString, NamespaceItem>,
+    pub children: HashMap<CompactString, NamespaceItem<'input>>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
-    pub attributes: Vec<sexpr::ast::List>,
+    pub attributes: Vec<sexpr::ast::List<'input>>,
 }
 
-impl Namespace {
+impl<'input> Namespace<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -65,7 +65,7 @@ impl Namespace {
     }
 }
 
-impl PartialEq for Namespace {
+impl<'input> PartialEq for Namespace<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
@@ -74,9 +74,9 @@ impl PartialEq for Namespace {
     }
 }
 
-impl Eq for Namespace {}
+impl<'input> Eq for Namespace<'input> {}
 
-impl HasAttributes for Namespace {
+impl<'input> HasAttributes for Namespace<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         self.attributes.as_slice()
@@ -84,13 +84,13 @@ impl HasAttributes for Namespace {
 }
 
 #[derive(Debug)]
-pub enum NamespaceItem {
-    Namespace(Namespace),
-    Struct(Struct),
-    Table(Table),
+pub enum NamespaceItem<'input> {
+    Namespace(Namespace<'input>),
+    Struct(Struct<'input>),
+    Table(Table<'input>),
 }
 
-impl NamespaceItem {
+impl<'input> NamespaceItem<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -132,7 +132,7 @@ impl NamespaceItem {
     }
 }
 
-impl PartialEq for NamespaceItem {
+impl<'input> PartialEq for NamespaceItem<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
@@ -163,9 +163,9 @@ impl PartialEq for NamespaceItem {
     }
 }
 
-impl Eq for NamespaceItem {}
+impl<'input> Eq for NamespaceItem<'input> {}
 
-impl HasAttributes for NamespaceItem {
+impl<'input> HasAttributes for NamespaceItem<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         match self {
