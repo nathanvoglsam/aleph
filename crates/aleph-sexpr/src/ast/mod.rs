@@ -175,6 +175,22 @@ impl<'input> Atom<'input> {
     pub fn word(word: &'input str) -> Self {
         Atom::Word(word)
     }
+
+    #[inline]
+    pub fn as_string(&self) -> Option<&'input str> {
+        match self {
+            Atom::String(v) => Some(v),
+            Atom::Word(_) => None,
+        }
+    }
+
+    #[inline]
+    pub fn as_word(&self) -> Option<&'input str> {
+        match self {
+            Atom::String(_) => None,
+            Atom::Word(v) => Some(v),
+        }
+    }
 }
 
 impl<'input> Into<ItemVariant<'input>> for Atom<'input> {
