@@ -1,24 +1,53 @@
-(namespace math
-    //
-    //
-    //
+//
+//
+// This file is a part of Aleph
+//
+// https://github.com/nathanvoglsam/aleph
+//
+// MIT License
+//
+// Copyright (c) 2020 Aleph Engine
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+//
+
+(mod math
+    ///
+    ///
+    ///
     (struct Vector2
         (field x f32)
         (field y f32)
     )
 
-    //
-    //
-    //
+    ///
+    ///
+    ///
     (struct Vector3
         (field x f32)
         (field y f32)
         (field z f32)
     )
 
-    //
-    //
-    //
+    ///
+    ///
+    ///
     (struct Vector4
         (field x f32)
         (field y f32)
@@ -26,9 +55,9 @@
         (field w f32)
     )
 
-    //
-    //
-    //
+    ///
+    ///
+    ///
     (struct Quaternion
         (field x f32)
         (field y f32)
@@ -36,53 +65,85 @@
         (field w f32)
     )
 
+    ///
+    ///
+    ///
+    (struct Rotor
+        (field x f32)
+        (field y f32)
+        (field z f32)
+        (field w f32)
+    )
+
+    ///
+    ///
+    ///
     (struct Matrix4x4
         (field scalars f32[16])
     )
+
+    ///
+    ///
+    ///
+    (struct Matrix3x3
+        (field scalars f32[9])
+    )
+
+    ///
+    ///
+    ///
+    (struct Matrix2x2
+        (field scalars f32[4])
+    )
 )
 
-(namespace aleph
-    (namespace mesh
-        //
-        //
-        //
+(mod aleph
+    (mod mesh
+        ///
+        ///
+        ///
         (struct StaticMeshI32
             (field vertices math.Vector3[])
             (field indices  i32[])
         )
 
-        //
-        //
-        //
+        ///
+        ///
+        ///
         (struct StaticMeshI16
             (field vertices math.Vector3[])
             (field indices  i16[])
         )
 
-        //
-        //
-        //
+        ///
+        ///
+        ///
         (enum StaticMesh
             (I16 (StaticMeshI16))
             (I32 (StaticMeshI32))
         )
     )
 
-    //
-    //
-    //
+    ///
+    ///
+    ///
     (struct Transform
         (field position math.Vector3)
         (field rotation math.Quaternion)
         (field scale    math.Vector3)
     )
 
-    //
-    //
-    //
+    ///
+    /// A human
+    ///
     (table Human
+        /// The human's position in world space
         (field transform Transform)
+
+        /// The human's name
         (field name string)
+
+        /// The human's health
         (field health f32)
     )
 )

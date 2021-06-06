@@ -27,103 +27,274 @@
 // SOFTWARE.
 //
 
-use combine::error::StreamError;
-use combine::parser::char::{hex_digit, spaces};
-use combine::parser::choice::or;
-use combine::{
-    between, choice, count_min_max, many, satisfy, token, value, ParseError, Parser, StreamOnce,
-};
-use combine_utils::{CharExtensions, MyStream};
-use smartstring::alias::CompactString;
+use combine_utils::CharExtensions;
+use std::ops::Range;
+use std::str::CharIndices;
 
-///
-/// A parser that parses out a string literal
-///
-pub fn string<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    let open = token(char::quote());
-    let close = token(char::quote());
-    let inner = string_content();
-    between(open, close, inner).expected("string literal")
+/// The error type the lexer emits
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Error {
+    InvalidEscapeCharacter {
+        position: usize,
+    },
+    InvalidAsciiEscapeSequence {
+        span: Range<usize>,
+        expected: Vec<&'static str>,
+    },
+    InvalidUnicodeEscapeSequence {
+        span: Range<usize>,
+        expected: Vec<&'static str>,
+    },
+    UnexpectedEndOfInput {
+        expected: Vec<&'static str>,
+    },
 }
 
-fn string_content<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    many(string_char())
+/// Type alias for our parser's iterator yield value
+pub type Spanned<Tok> = Result<(usize, Tok, usize), Error>;
+
+/// Our custom lexer implementation
+pub struct StringLiteralParser<'input> {
+    chars: std::iter::Peekable<CharIndices<'input>>,
+    input: &'input str,
+    state: State,
 }
 
-fn string_char<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    let not_quote = satisfy::<Input, _>(|v: char| !v.is_quote()).map(|v: char| {
-        let mut output = CompactString::new();
-        output.push(v);
-        output
-    });
-
-    escape_sequence().or(not_quote)
-}
-
-fn escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    let choices = (
-        token('n').map(|_| CompactString::from("\n")),
-        token('r').map(|_| CompactString::from("\r")),
-        token('t').map(|_| CompactString::from("\t")),
-        token('r').map(|_| CompactString::from("\r")),
-        token('\\').map(|_| CompactString::from("\\")),
-        token('"').map(|_| CompactString::from("\"")),
-        token('\'').map(|_| CompactString::from("\'")),
-        token('0').map(|_| CompactString::from("\0")),
-        ascii_escape_sequence(),
-        unicode_escape_sequence(),
-        newline_escape_sequence(),
-    );
-    token('\\').with(choice(choices))
-}
-
-fn newline_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    or(token('\n'), token('\r'))
-        .with(spaces())
-        .with(value(CompactString::new()))
-}
-
-fn ascii_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    let sequence = hex_digit().and(hex_digit());
-    let sequence = sequence.and_then(|(f, s)| {
-        let first = f.hex_value() << 4;
-        let second = s.hex_value();
-        let combined = first | second;
-        if combined > 0x7F {
-            let err = format!("\\x{}{} is not a valid ASCII character", f, s);
-            let err = <<Input as StreamOnce>::Error as ParseError<
-                Input::Token,
-                Input::Range,
-                Input::Position,
-            >>::StreamError::message_format(err);
-            Err(err)
-        } else {
-            let mut output = CompactString::new();
-            output.push(char::from(combined));
-            Ok(output)
+impl<'input> StringLiteralParser<'input> {
+    /// Constructs a new lexer from the given text input
+    pub fn new(input: &'input str) -> Self {
+        Self {
+            chars: input.char_indices().peekable(),
+            input,
+            state: State::Default,
         }
-    });
-    token('x').with(sequence)
+    }
 }
 
-fn unicode_escape_sequence<Input: MyStream>() -> impl Parser<Input, Output = CompactString> {
-    let sequence_char = hex_digit();
-    let sequence = count_min_max(1, 6, sequence_char);
-    let sequence = sequence.and_then(|v: String| {
-        let num = u32::from_str_radix(&v, 16).unwrap();
+impl<'input> Iterator for StringLiteralParser<'input> {
+    type Item = Spanned<char>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.chars.peek().cloned() {
+                Some((i, c)) => match self.state.take() {
+                    State::Default => {
+                        if c == '\\' {
+                            self.state == State::EscapeStart(i);
+                            self.chars.next().unwrap();
+                            continue;
+                        } else {
+                            self.chars.next().unwrap();
+                            return Some(Ok((i, c, i + 1)));
+                        }
+                    }
+                    State::EscapeStart(span_start) => {
+                        if c == 'n'
+                            || c == 'r'
+                            || c == 't'
+                            || c == '\\'
+                            || c == '"'
+                            || c == '\''
+                            || c == '0'
+                        {
+                            self.chars.next().unwrap();
+                            return Some(Ok((span_start, c, i + 1)));
+                        }
+
+                        if c == 'x' {
+                            self.state = State::EscapeAscii(span_start, 0);
+                            self.chars.next().unwrap();
+                            continue;
+                        }
+
+                        if c == 'u' {
+                            self.state = State::EscapeUnicode(span_start, 0);
+                            self.chars.next().unwrap();
+                            continue;
+                        }
+
+                        if c == '\n' || c == '\r' {
+                            self.state = State::EscapeNewline(span_start);
+                            self.chars.next().unwrap();
+                            continue;
+                        }
+                    }
+                    State::EscapeAscii(span_start, tokens_consumed) => match tokens_consumed {
+                        0 | 1 => {
+                            if c.is_ascii_hexdigit() {
+                                self.state = State::EscapeAscii(span_start, tokens_consumed + 1);
+                                self.chars.next().unwrap();
+                                continue;
+                            } else {
+                                self.chars.next().unwrap();
+                                let span = span_start..span_start + tokens_consumed + 1;
+                                let expected = vec!["hex digit"];
+                                return Some(Err(Error::InvalidAsciiEscapeSequence {
+                                    span,
+                                    expected,
+                                }));
+                            }
+                        }
+                        2 => {
+                            let begin = span_start + 1;
+                            let end = begin + 2;
+                            let digits = &self.input[begin..end];
+                            let code = u8::from_str_radix(digits, 16).unwrap();
+
+                            return if code > 0x7F {
+                                let span = span_start..end;
+                                let expected = vec!["ascii code <= 0x7F"];
+                                self.chars.next().unwrap();
+                                Some(Err(Error::InvalidAsciiEscapeSequence { span, expected }))
+                            } else {
+                                let tok = char::from(code);
+                                self.chars.next().unwrap();
+                                Some(Ok((span_start, tok, end)))
+                            };
+                        }
+                        _ => unreachable!(),
+                    },
+                    State::EscapeUnicode(span_start, tokens_consumed) => match tokens_consumed {
+                        0 => {
+                            if c == '{' {
+                                self.state = State::EscapeUnicode(span_start, tokens_consumed + 1);
+                                self.chars.next().unwrap();
+                                continue;
+                            } else {
+                                let span = span_start..i;
+                                let expected = vec!["{"];
+                                self.chars.next().unwrap();
+                                return Some(Err(Error::InvalidUnicodeEscapeSequence {
+                                    span,
+                                    expected,
+                                }));
+                            }
+                        }
+                        1 => {
+                            if c.is_ascii_hexdigit() {
+                                self.state = State::EscapeUnicode(span_start, tokens_consumed + 1);
+                                self.chars.next().unwrap();
+                                continue;
+                            }
+
+                            let span = span_start..i;
+                            let expected = vec!["hex digit"];
+                            self.chars.next().unwrap();
+                            return Some(Err(Error::InvalidUnicodeEscapeSequence {
+                                span,
+                                expected,
+                            }));
+                        }
+                        2 | 3 | 4 | 5 | 6 => {
+                            if c == '}' {
+                                return self.unicode_token(i, span_start);
+                            }
+                            if c.is_ascii_hexdigit() {
+                                self.state = State::EscapeUnicode(span_start, tokens_consumed + 1);
+                                self.chars.next().unwrap();
+                                continue;
+                            }
+                            let span = span_start..i;
+                            let expected = vec!["hex digit", "}"];
+                            self.chars.next().unwrap();
+                            return Some(Err(Error::InvalidUnicodeEscapeSequence {
+                                span,
+                                expected,
+                            }));
+                        }
+                        7 => {
+                            if c == '}' {
+                                return self.unicode_token(i, span_start);
+                            }
+
+                            let span = span_start..i;
+                            let expected = vec!["}"];
+                            self.chars.next().unwrap();
+                            return Some(Err(Error::InvalidUnicodeEscapeSequence {
+                                span,
+                                expected,
+                            }));
+                        }
+                        _ => unreachable!(),
+                    },
+                    State::EscapeNewline(span_start) => {
+                        if c.is_whitespace() {
+                            state = State::EscapeNewline(span_start);
+                            self.chars.next().unwrap();
+                        }
+                        continue;
+                    }
+                },
+                None => {
+                    return match self.state.take() {
+                        State::Default => None,
+                        State::EscapeStart(_) => unreachable!(),
+                        State::EscapeAscii(span_start, tokens_consumed) => match tokens_consumed {
+                            0 | 1 => Some(Err(Error::UnexpectedEndOfInput {
+                                expected: vec!["complete ascii escape sequence"],
+                            })),
+                            2 => {
+                                let begin = span_start + 1;
+                                let end = begin + 2;
+                                let digits = &self.input[begin..end];
+                                let code = u8::from_str_radix(digits, 16).unwrap();
+
+                                if code > 0x7F {
+                                    let span = span_start..end;
+                                    let expected = vec!["ascii code <= 0x7F"];
+                                    Some(Err(Error::InvalidAsciiEscapeSequence { span, expected }))
+                                } else {
+                                    let tok = char::from(code);
+                                    Some(Ok((span_start, tok, end)))
+                                };
+                            }
+                            _ => unreachable!(),
+                        },
+                        State::EscapeUnicode(_, _) => Some(Err(Error::UnexpectedEndOfInput {
+                            expected: vec!["complete unicode escape sequence"],
+                        })),
+                        State::EscapeNewline(_) => None,
+                    };
+                }
+            }
+        }
+    }
+}
+
+impl<'input> StringLiteralParser<'input> {
+    fn unicode_token(&mut self, i: usize, span_start: usize) -> Option<Self::Item> {
+        let begin = span_start + 3;
+        let end = i;
+        let sequence = &self.input[begin..end];
+        let num = u32::from_str_radix(&sequence, 16).unwrap();
         if let Some(result) = char::from_u32(num) {
-            let mut output = CompactString::new();
-            output.push(result);
-            Ok(output)
+            self.chars.next().unwrap();
+            Some(Ok((span_start, result, i)))
         } else {
-            let err = format!("\\x{{{}}} is not a valid Unicode codepoint", v);
-            let err = <<Input as StreamOnce>::Error as ParseError<
-                Input::Token,
-                Input::Range,
-                Input::Position,
-            >>::StreamError::message_format(err);
-            Err(err)
+            let span = span_start..i;
+            let expected = vec!["valid unicode codepoint"];
+            self.chars.next().unwrap();
+            Some(Err(Error::InvalidUnicodeEscapeSequence { span, expected }))
         }
-    });
-    token('u').with(between(token('{'), token('}'), sequence))
+    }
+}
+
+enum State {
+    Default,
+    EscapeStart(usize),
+    EscapeAscii(usize, usize),
+    EscapeUnicode(usize, usize),
+    EscapeNewline(usize),
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::Default
+    }
+}
+
+impl State {
+    fn take(&mut self) -> Self {
+        std::mem::take(self)
+    }
 }

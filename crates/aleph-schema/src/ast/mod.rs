@@ -28,7 +28,7 @@
 //
 
 mod field;
-mod namespace;
+mod module;
 mod structure;
 mod table;
 mod traits;
@@ -36,8 +36,8 @@ mod types;
 
 pub use field::Field;
 pub use field::FieldType;
-pub use namespace::Namespace;
-pub use namespace::NamespaceItem;
+pub use module::Module;
+pub use module::ModuleItem;
 pub use structure::Struct;
 pub use table::Table;
 pub use traits::HasAttributes;

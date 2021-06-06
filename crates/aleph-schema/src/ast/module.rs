@@ -33,19 +33,19 @@ use std::collections::HashMap;
 
 /// AST node that adds a name context for all it's child elements
 #[derive(Debug)]
-pub struct Namespace<'input> {
+pub struct Module<'input> {
     /// Position within the source text this item resides
     pub position: usize,
 
-    /// The list of items inside the namespace
-    pub children: HashMap<CompactString, NamespaceItem<'input>>,
+    /// The list of items inside the module
+    pub children: HashMap<CompactString, ModuleItem<'input>>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
     pub attributes: Vec<sexpr::ast::List<'input>>,
 }
 
-impl<'input> Namespace<'input> {
+impl<'input> Module<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -65,7 +65,7 @@ impl<'input> Namespace<'input> {
     }
 }
 
-impl<'input> PartialEq for Namespace<'input> {
+impl<'input> PartialEq for Module<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
@@ -74,9 +74,9 @@ impl<'input> PartialEq for Namespace<'input> {
     }
 }
 
-impl<'input> Eq for Namespace<'input> {}
+impl<'input> Eq for Module<'input> {}
 
-impl<'input> HasAttributes for Namespace<'input> {
+impl<'input> HasAttributes for Module<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         self.attributes.as_slice()
@@ -84,13 +84,13 @@ impl<'input> HasAttributes for Namespace<'input> {
 }
 
 #[derive(Debug)]
-pub enum NamespaceItem<'input> {
-    Namespace(Namespace<'input>),
+pub enum ModuleItem<'input> {
+    Module(Module<'input>),
     Struct(Struct<'input>),
     Table(Table<'input>),
 }
 
-impl<'input> NamespaceItem<'input> {
+impl<'input> ModuleItem<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -98,22 +98,22 @@ impl<'input> NamespaceItem<'input> {
     #[inline]
     pub fn full_eq(&self, other: &Self) -> bool {
         match self {
-            NamespaceItem::Namespace(v) => {
-                if let NamespaceItem::Namespace(o) = other {
+            ModuleItem::Module(v) => {
+                if let ModuleItem::Module(o) = other {
                     v.full_eq(o)
                 } else {
                     false
                 }
             }
-            NamespaceItem::Struct(v) => {
-                if let NamespaceItem::Struct(o) = other {
+            ModuleItem::Struct(v) => {
+                if let ModuleItem::Struct(o) = other {
                     v.full_eq(o)
                 } else {
                     false
                 }
             }
-            NamespaceItem::Table(v) => {
-                if let NamespaceItem::Table(o) = other {
+            ModuleItem::Table(v) => {
+                if let ModuleItem::Table(o) = other {
                     v.full_eq(o)
                 } else {
                     false
@@ -132,28 +132,28 @@ impl<'input> NamespaceItem<'input> {
     }
 }
 
-impl<'input> PartialEq for NamespaceItem<'input> {
+impl<'input> PartialEq for ModuleItem<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
         // used for generating error messages
         match self {
-            NamespaceItem::Namespace(v) => {
-                if let NamespaceItem::Namespace(o) = other {
+            ModuleItem::Module(v) => {
+                if let ModuleItem::Module(o) = other {
                     v.eq(o)
                 } else {
                     false
                 }
             }
-            NamespaceItem::Struct(v) => {
-                if let NamespaceItem::Struct(o) = other {
+            ModuleItem::Struct(v) => {
+                if let ModuleItem::Struct(o) = other {
                     v.eq(o)
                 } else {
                     false
                 }
             }
-            NamespaceItem::Table(v) => {
-                if let NamespaceItem::Table(o) = other {
+            ModuleItem::Table(v) => {
+                if let ModuleItem::Table(o) = other {
                     v.eq(o)
                 } else {
                     false
@@ -163,15 +163,15 @@ impl<'input> PartialEq for NamespaceItem<'input> {
     }
 }
 
-impl<'input> Eq for NamespaceItem<'input> {}
+impl<'input> Eq for ModuleItem<'input> {}
 
-impl<'input> HasAttributes for NamespaceItem<'input> {
+impl<'input> HasAttributes for ModuleItem<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         match self {
-            NamespaceItem::Namespace(v) => v.attributes(),
-            NamespaceItem::Struct(v) => v.attributes(),
-            NamespaceItem::Table(v) => v.attributes(),
+            ModuleItem::Module(v) => v.attributes(),
+            ModuleItem::Struct(v) => v.attributes(),
+            ModuleItem::Table(v) => v.attributes(),
         }
     }
 }
