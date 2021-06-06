@@ -38,6 +38,7 @@ pub use field::Field;
 pub use field::FieldType;
 pub use module::Module;
 pub use module::ModuleItem;
+pub use module::ModuleItemType;
 pub use structure::Struct;
 pub use table::Table;
 pub use traits::HasAttributes;

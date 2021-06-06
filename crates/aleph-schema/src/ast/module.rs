@@ -84,6 +84,13 @@ impl<'input> HasAttributes for Module<'input> {
 }
 
 #[derive(Debug)]
+pub enum ModuleItemType {
+    Module,
+    Struct,
+    Table,
+}
+
+#[derive(Debug)]
 pub enum ModuleItem<'input> {
     Module(Module<'input>),
     Struct(Struct<'input>),
@@ -91,6 +98,18 @@ pub enum ModuleItem<'input> {
 }
 
 impl<'input> ModuleItem<'input> {
+    ///
+    /// Returns the type of module item this is, without the attached `Module`/`Struct`/`Table` item
+    ///
+    #[inline]
+    pub fn item_type(&self) -> ModuleItemType {
+        match self {
+            ModuleItem::Module(_) => ModuleItemType::Module,
+            ModuleItem::Struct(_) => ModuleItemType::Struct,
+            ModuleItem::Table(_) => ModuleItemType::Table,
+        }
+    }
+
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
