@@ -34,7 +34,7 @@ use std::str::CharIndices;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Error {
     InvalidEscapeCharacter {
-        position: usize,
+        span: Range<usize>,
     },
     InvalidAsciiEscapeSequence {
         span: Range<usize>,
@@ -117,6 +117,12 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                             self.chars.next().unwrap();
                             continue;
                         }
+
+                        self.chars.next().unwrap();
+                        let span = i..i+1;
+                        return Some(Err(Error::InvalidEscapeCharacter {
+                            span,
+                        }));
                     }
                     State::EscapeAscii(span_start, tokens_consumed) => match tokens_consumed {
                         0 | 1 => {
