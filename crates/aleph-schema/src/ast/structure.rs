@@ -30,11 +30,12 @@
 use crate::ast::{Field, HasAttributes};
 use smartstring::alias::CompactString;
 use std::collections::HashMap;
+use std::ops::Range;
 
 #[derive(Debug)]
 pub struct Struct<'input> {
     /// Position within the source text this item resides
-    pub position: usize,
+    pub position: Range<usize>,
 
     /// The list of fields on the struct
     pub fields: HashMap<CompactString, Field<'input>>,
@@ -51,7 +52,9 @@ impl<'input> Struct<'input> {
     ///
     #[inline]
     pub fn full_eq(&self, other: &Self) -> bool {
-        self.eq(other) && self.position.eq(&other.position)
+        self.eq(other)
+            && self.position.start == other.position.start
+            && self.position.end == other.position.end
     }
 
     ///

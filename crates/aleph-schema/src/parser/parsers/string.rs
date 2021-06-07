@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use combine_utils::CharExtensions;
 use std::ops::Range;
 use std::str::CharIndices;
 
@@ -80,7 +79,7 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                 Some((i, c)) => match self.state.take() {
                     State::Default => {
                         if c == '\\' {
-                            self.state == State::EscapeStart(i);
+                            self.state = State::EscapeStart(i);
                             self.chars.next().unwrap();
                             continue;
                         } else {
@@ -219,7 +218,7 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                     },
                     State::EscapeNewline(span_start) => {
                         if c.is_whitespace() {
-                            state = State::EscapeNewline(span_start);
+                            self.state = State::EscapeNewline(span_start);
                             self.chars.next().unwrap();
                         }
                         continue;
@@ -246,7 +245,7 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                                 } else {
                                     let tok = char::from(code);
                                     Some(Ok((span_start, tok, end)))
-                                };
+                                }
                             }
                             _ => unreachable!(),
                         },
@@ -262,7 +261,7 @@ impl<'input> Iterator for StringLiteralParser<'input> {
 }
 
 impl<'input> StringLiteralParser<'input> {
-    fn unicode_token(&mut self, i: usize, span_start: usize) -> Option<Self::Item> {
+    fn unicode_token(&mut self, i: usize, span_start: usize) -> Option<Spanned<char>> {
         let begin = span_start + 3;
         let end = i;
         let sequence = &self.input[begin..end];

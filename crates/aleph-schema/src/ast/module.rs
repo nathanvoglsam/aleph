@@ -30,12 +30,13 @@
 use crate::ast::{HasAttributes, Struct, Table};
 use smartstring::alias::CompactString;
 use std::collections::HashMap;
+use std::ops::Range;
 
 /// AST node that adds a name context for all it's child elements
 #[derive(Debug)]
 pub struct Module<'input> {
     /// Position within the source text this item resides
-    pub position: usize,
+    pub position: Range<usize>,
 
     /// The list of items inside the module
     pub children: HashMap<CompactString, ModuleItem<'input>>,
@@ -52,7 +53,9 @@ impl<'input> Module<'input> {
     ///
     #[inline]
     pub fn full_eq(&self, other: &Self) -> bool {
-        self.eq(other) && self.position.eq(&other.position)
+        self.eq(other)
+            && self.position.start == other.position.start
+            && self.position.end == other.position.end
     }
 
     ///
