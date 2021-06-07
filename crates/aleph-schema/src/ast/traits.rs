@@ -32,14 +32,3 @@ pub trait HasAttributes {
     /// Get a list of all attributes associated with `self`
     fn attributes(&self) -> &[sexpr::ast::List];
 }
-
-///
-/// A trait that should be implemented for all sized schema types
-///
-pub trait SizedType {
-    /// Returns the size of the type in bytes
-    fn size(&self, context: &()) -> usize;
-
-    /// Returns the alignment of the type in bytes
-    fn alignment(&self, context: &()) -> usize;
-}

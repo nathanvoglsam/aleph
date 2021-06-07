@@ -27,8 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::ast::SizedType;
-
 ///
 /// The set of all primitive types
 ///
@@ -45,28 +43,4 @@ pub enum PrimitiveType {
     F32,
     F64,
     Bool,
-}
-
-impl SizedType for PrimitiveType {
-    #[inline]
-    fn size(&self, _: &()) -> usize {
-        match self {
-            PrimitiveType::U8 => 1,
-            PrimitiveType::U16 => 2,
-            PrimitiveType::U32 => 4,
-            PrimitiveType::U64 => 8,
-            PrimitiveType::I8 => 1,
-            PrimitiveType::I16 => 2,
-            PrimitiveType::I32 => 4,
-            PrimitiveType::I64 => 8,
-            PrimitiveType::F32 => 4,
-            PrimitiveType::F64 => 8,
-            PrimitiveType::Bool => 1,
-        }
-    }
-
-    #[inline]
-    fn alignment(&self, context: &()) -> usize {
-        self.size(context)
-    }
 }

@@ -42,5 +42,4 @@ pub use module::ModuleItemType;
 pub use structure::Struct;
 pub use table::Table;
 pub use traits::HasAttributes;
-pub use traits::SizedType;
 pub use types::PrimitiveType;
