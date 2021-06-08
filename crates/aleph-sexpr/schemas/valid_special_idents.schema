@@ -1,6 +1,0 @@
-// Top level comment
-(namespace aleph
-    (#first)
-    (?second?)
-    (-third)
-)

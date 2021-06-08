@@ -29,6 +29,156 @@
 
 use crate::lexer::{Error, Tok};
 
+const INVALID_ROOT_ATOM: &'static str =
+r#"namespace
+
+"#;
+
+const INVALID_TERMINATING_TOO_MANY_LISTS: &'static str =
+r#"
+(namespace aleph
+    (hello world))
+))
+
+"#;
+
+const INVALID_TERMINATING_UNOPENED_LIST: &'static str =
+r#"
+)(namespace aleph
+    (hello world)
+)
+
+\"#;
+
+const INVALID_UNTERMINATED_LIST: &'static str =
+r#"(namespace aleph
+    (- hello world
+)
+
+"#;
+
+const INVALID_UNTERMINATED_STRING: &'static str =
+r#"(namespace aleph
+    (default "default-monster)
+)
+
+\"#;
+
+const VALID: &'static str =
+r#"
+// Top level comment
+(namespace aleph
+    // Comment inside a list
+    (def-struct Vector2
+        (field x f32 (default 0.0))
+        (field y f32 (default 0.0))
+    )
+    /* block comment inside a list */
+    (def-struct Vector3
+        (field x f32 (default 0.0))
+        (field y f32 (default 0.0))
+        (field z f32 (default 0.0))
+    )
+    /* multi line
+     * block comment
+     * inside a list
+     */
+    (def-table Monster
+        (field position Vector3)
+        (field target Vector3)
+        (field name string (default "default-monster"))
+    )
+)
+(namespace engine
+    // Comment inside a list
+    /* block comment inside a list */
+    /* multi line
+     * block comment
+     * inside a list
+     */
+    (/* A comment*/ def-table Soldier
+        (field position aleph::Vector3)
+        (field target aleph::Vector3)
+        (field health f64 (default 1_000_000.0))
+    )
+    ()
+)
+
+"#;
+
+const VALID_DOC_COMMENT: &'static str =
+r#"
+(namespace aleph
+    /// This is a doc comment
+    /// This is also a doc comment
+    (def-table Monster
+        (field position Vector3)
+        (field target Vector3)
+        (field name string (default "default-monster"))
+    )
+)
+/// Root doc comment
+"#;
+
+const VALID_EMPTY_FILE: &'static str =
+r#""#;
+
+const VALID_EMPTY_FILE_WITH_WHITESPACE: &'static str =
+r#"
+
+
+
+
+
+
+
+
+
+
+"#;
+
+const VALID_EMPTY_FILE_WITH_WHITESPACE_AND_COMMENTS: &'static str =
+r#"
+
+
+
+
+
+
+
+
+
+// There's also comments
+// yeet
+
+/*
+ * test pack please ignore
+ *
+ */
+"#;
+
+const VALID_ESCAPED_STRING: &'static str =
+r#"// Top level comment
+("Test \x74ext please \"ignore\" me")
+("Test text please \"ignore\" me")
+("Test \
+        \u{74}ext please \"ignore\" me")"#;
+
+const VALID_ONLY_COMMENT: &'static str =
+r#"// This file consists purely of comments
+/* Do not be alarmed
+ * comments are good
+ */"#;
+
+const VALID_SPECIAL_IDENT: &'static str =
+r#"// Top level comment
+(namespace aleph
+    (#first)
+    (?second?)
+    (-third)
+)
+"#;
+
 fn default(default: crate::ast::Atom) -> crate::ast::ListBuilder {
     crate::ast::ListBuilder::new()
         .add_word("default", None)
@@ -115,20 +265,32 @@ fn test_valid() {
     let expected = crate::ast::ListBuilder::new()
         .add_list(namespace_aleph, None)
         .add_list(namespace_engine, None);
-    test_parses_valid("./schemas/valid.schema", expected);
+    test_parses_valid(VALID, expected);
 }
 
 #[test]
 fn test_valid_empty_file() {
     let expected = crate::ast::ListBuilder::new();
-    test_parses_valid("./schemas/valid_empty_file.schema", expected);
+    test_parses_valid(VALID_EMPTY_FILE, expected);
+}
+
+#[test]
+fn test_valid_empty_file_with_whitespace_and_comments() {
+    let expected = crate::ast::ListBuilder::new();
+    test_parses_valid(VALID_EMPTY_FILE_WITH_WHITESPACE_AND_COMMENTS, expected);
+}
+
+#[test]
+fn test_valid_only_comments() {
+    let expected = crate::ast::ListBuilder::new();
+    test_parses_valid(VALID_ONLY_COMMENT, expected);
 }
 
 #[test]
 fn test_valid_empty_file_with_whitespace() {
     let expected = crate::ast::ListBuilder::new();
     test_parses_valid(
-        "./schemas/valid_empty_file_with_whitespace.schema",
+        VALID_EMPTY_FILE_WITH_WHITESPACE,
         expected,
     );
 }
@@ -137,7 +299,7 @@ fn test_valid_empty_file_with_whitespace() {
 fn test_valid_escaped_string() {
     let string_a = "Test \\x74ext please \\\"ignore\\\" me";
     let string_b = "Test text please \\\"ignore\\\" me";
-    let string_c = "Test \\\r\n        \\u{74}ext please \\\"ignore\\\" me";
+    let string_c = "Test \\\n        \\u{74}ext please \\\"ignore\\\" me";
     let list_a = crate::ast::ListBuilder::new()
         .add_string(string_a, None)
         .build();
@@ -151,7 +313,7 @@ fn test_valid_escaped_string() {
         .add_list(list_a, None)
         .add_list(list_b, None)
         .add_list(list_c, None);
-    test_parses_valid("./schemas/valid_escaped_string.schema", expected);
+    test_parses_valid(VALID_ESCAPED_STRING, expected);
 }
 
 #[test]
@@ -166,7 +328,7 @@ fn test_valid_special_idents() {
         .add_list(second, None)
         .add_list(third, None);
     let expected = crate::ast::ListBuilder::new().add_list(namespace_aleph, None);
-    test_parses_valid("./schemas/valid_special_idents.schema", expected);
+    test_parses_valid(VALID_SPECIAL_IDENT, expected);
 }
 
 #[test]
@@ -189,13 +351,13 @@ fn test_valid_doc_comment() {
     let expected = crate::ast::ListBuilder::new()
         .add_list(namespace_aleph, None)
         .add_list(last, None);
-    test_parses_valid("./schemas/valid_doc_comment.schema", expected);
+    test_parses_valid(VALID_DOC_COMMENT, expected);
 }
 
 #[test]
 fn test_invalid_unterminated_list() {
     let expected = lalrpop_util::ParseError::UnrecognizedEOF {
-        location: 39,
+        location: 37,
         expected: vec![
             "\"(\"".to_string(),
             "\")\"".to_string(),
@@ -203,25 +365,25 @@ fn test_invalid_unterminated_list() {
             "\"word\"".to_string(),
         ],
     };
-    test_parses_invalid("./schemas/invalid_unterminated_list.schema", expected);
+    test_parses_invalid(INVALID_UNTERMINATED_LIST, expected);
 }
 
 #[test]
 fn test_invalid_unterminated_string() {
     let expected = lalrpop_util::ParseError::User {
-        error: Error::UnclosedStringLiteral { begin: 32 },
+        error: Error::UnclosedStringLiteral { begin: 31 },
     };
-    test_parses_invalid("./schemas/invalid_unterminated_string.schema", expected);
+    test_parses_invalid(INVALID_UNTERMINATED_STRING, expected);
 }
 
 #[test]
 fn test_invalid_terminating_too_many_lists() {
     let expected = lalrpop_util::ParseError::UnrecognizedToken {
-        token: (38, Tok::ParenClose, 39),
+        token: (37, Tok::ParenClose, 38),
         expected: vec!["\"(\"".to_string()],
     };
     test_parses_invalid(
-        "./schemas/invalid_terminating_too_many_lists.schema",
+        INVALID_TERMINATING_TOO_MANY_LISTS,
         expected,
     );
 }
@@ -229,11 +391,11 @@ fn test_invalid_terminating_too_many_lists() {
 #[test]
 fn test_invalid_terminating_unopened_list() {
     let expected = lalrpop_util::ParseError::UnrecognizedToken {
-        token: (0, Tok::ParenClose, 1),
+        token: (1, Tok::ParenClose, 2),
         expected: vec!["\"(\"".to_string()],
     };
     test_parses_invalid(
-        "./schemas/invalid_terminating_unopened_list.schema",
+        INVALID_TERMINATING_UNOPENED_LIST,
         expected,
     );
 }
@@ -244,15 +406,14 @@ fn test_invalid_root_atom() {
         token: (0, Tok::Word("namespace"), 9),
         expected: vec!["\"(\"".to_string()],
     };
-    test_parses_invalid("./schemas/invalid_root_atom.schema", expected);
+    test_parses_invalid(INVALID_ROOT_ATOM, expected);
 }
 
 fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(
-    file_name: &'input str,
+    text: &'input str,
     expected: L,
 ) {
     let expected = expected.into();
-    let text = std::fs::read_to_string(file_name).unwrap();
     let lexer = crate::lexer::Lexer::new(&text);
     let parser = crate::parser::FileParser::new();
     match parser.parse(lexer) {
@@ -269,9 +430,8 @@ fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(
     }
 }
 
-fn test_parses_invalid(file_name: &str, expected: lalrpop_util::ParseError<usize, Tok, Error>) {
-    let text = std::fs::read_to_string(file_name).unwrap();
-    let lexer = crate::lexer::Lexer::new(&text);
+fn test_parses_invalid(text: &str, expected: lalrpop_util::ParseError<usize, Tok, Error>) {
+    let lexer = crate::lexer::Lexer::new(text);
     let parser = crate::parser::FileParser::new();
     match parser.parse(lexer) {
         Ok(output) => {

@@ -1,5 +1,0 @@
-// Top level comment
-("Test \x74ext please \"ignore\" me")
-("Test text please \"ignore\" me")
-("Test \
-        \u{74}ext please \"ignore\" me")
