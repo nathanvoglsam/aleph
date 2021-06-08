@@ -53,6 +53,10 @@ steps:
       RUSTUP_TOOLCHAIN: ${{parameters.rust}}
     displayName: "Set correct Rust version"
 
+  - bash: |
+      cargp install cargo-deny
+    displayName: "Install cargo-deny"
+
   ## Section for installing some extra stuff through rustup
 
   # Install additional targets:
@@ -88,16 +92,13 @@ steps:
 
   # The actual build
   - pwsh: |
-      if ($IsWindows) {
-          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM"
-      }
       cargo build --release
-
     displayName: Build
 
   - pwsh: |
-      if ($IsWindows) {
-          $env:LLVM_SYS_PREFIX = "C:\Program Files\LLVM"
-      }
-      cargo build --release
+      cargo test --release
     displayName: Test
+
+  - pwsh: |
+      cargo deny check
+    displayName: Check cargo-deny
