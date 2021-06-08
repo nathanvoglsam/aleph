@@ -54,7 +54,7 @@ steps:
     displayName: "Set correct Rust version"
 
   - bash: |
-      cargp install cargo-deny
+      cargo install cargo-deny
     displayName: "Install cargo-deny"
 
   ## Section for installing some extra stuff through rustup
