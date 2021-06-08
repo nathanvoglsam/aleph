@@ -44,11 +44,8 @@ edition = "2018"
 [dependencies]
 aleph-log = { path = "../aleph-log", version = "1" }
 
-[target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.8"
-
 [target.'cfg(not(target_os = "android"))'.dependencies]
-env_logger = "0.8.2"
+env_logger = "0.8"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

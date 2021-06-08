@@ -47,7 +47,7 @@ aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
 aleph-windows-raw = { path = "../../aleph-windows-raw", version = "0.1" }
 ctrlc = "3"
 once_cell = "1"
-parking_lot = "0.10"
+parking_lot = "0.11"
 
 [dependencies.sdl2]
 git = "https://github.com/nathanvoglsam/rust-sdl2.git"
@@ -58,7 +58,7 @@ features = ["raw-window-handle"]
 [dependencies.raw-window-handle]
 git = "https://github.com/rust-windowing/raw-window-handle.git"
 branch = "master"
-version = "0.3"
+version = "0.4.0-alpha.0"
 
 [build-dependencies]
 cmake = "0.1"

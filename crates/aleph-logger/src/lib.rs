@@ -27,12 +27,6 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "android")]
-fn init_internal() {
-    use android_logger::Config;
-    android_logger::init_once(Config::default().with_min_level(aleph_log::Level::Trace));
-}
-
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 fn init_internal() {
     env_logger::Builder::from_default_env()

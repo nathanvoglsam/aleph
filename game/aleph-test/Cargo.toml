@@ -32,6 +32,7 @@
 name = "aleph-test"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+license = "MIT"
 edition = "2018"
 
 [dependencies]
