@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(unused)]
+
 use std::ops::Range;
 use std::str::CharIndices;
 
@@ -119,10 +121,8 @@ impl<'input> Iterator for StringLiteralParser<'input> {
                         }
 
                         self.chars.next().unwrap();
-                        let span = i..i+1;
-                        return Some(Err(Error::InvalidEscapeCharacter {
-                            span,
-                        }));
+                        let span = i..i + 1;
+                        return Some(Err(Error::InvalidEscapeCharacter { span }));
                     }
                     State::EscapeAscii(span_start, tokens_consumed) => match tokens_consumed {
                         0 | 1 => {

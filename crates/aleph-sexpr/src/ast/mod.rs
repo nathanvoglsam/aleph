@@ -101,6 +101,15 @@ impl<'input> Item<'input> {
 }
 
 ///
+/// Enumeration of all valid list item types
+///
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum ItemVariantType {
+    Atom,
+    List,
+}
+
+///
 /// Enumeration of all valid list items
 ///
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
@@ -110,6 +119,15 @@ pub enum ItemVariant<'input> {
 
     /// A list of items
     List(List<'input>),
+}
+
+impl<'input> ItemVariant<'input> {
+    pub fn variant_type(&self) -> ItemVariantType {
+        match self {
+            Self::Atom(_) => ItemVariantType::Atom,
+            Self::List(_) => ItemVariantType::List,
+        }
+    }
 }
 
 impl<'input> From<Vec<Item<'input>>> for ItemVariant<'input> {

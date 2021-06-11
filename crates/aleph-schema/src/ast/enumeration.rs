@@ -27,24 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::ast::{Field, HasAttributes};
+use crate::ast::{HasAttributes, Struct};
 use smartstring::alias::CompactString;
 use std::ops::Range;
 
 #[derive(Debug)]
-pub struct Table<'input> {
+pub struct Enum<'input> {
     /// Position within the source text this item resides
     pub position: Range<usize>,
 
-    /// The list of fields on the table
-    pub fields: Vec<(CompactString, Field<'input>)>,
+    /// The list of fields on the struct
+    pub variants: Vec<(CompactString, Option<Struct<'input>>)>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
     pub attributes: Vec<sexpr::ast::List<'input>>,
 }
 
-impl<'input> Table<'input> {
+impl<'input> Enum<'input> {
     ///
     /// A custom eq implementation that performs a full equality check, including comparing the
     /// `position` field which is ignored in the `PartialEq` implementation
@@ -66,18 +66,18 @@ impl<'input> Table<'input> {
     }
 }
 
-impl<'input> PartialEq for Table<'input> {
+impl<'input> PartialEq for Enum<'input> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         // The default implementation ignores the position as it has no semantic meaning and is only
         // used for generating error messages
-        self.fields.eq(&other.fields) && self.attributes.eq(&other.attributes)
+        self.variants.eq(&other.variants) && self.attributes.eq(&other.attributes)
     }
 }
 
-impl<'input> Eq for Table<'input> {}
+impl<'input> Eq for Enum<'input> {}
 
-impl<'input> HasAttributes for Table<'input> {
+impl<'input> HasAttributes for Enum<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         self.attributes.as_slice()

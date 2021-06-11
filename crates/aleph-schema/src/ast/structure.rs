@@ -29,7 +29,6 @@
 
 use crate::ast::{Field, HasAttributes};
 use smartstring::alias::CompactString;
-use std::collections::HashMap;
 use std::ops::Range;
 
 #[derive(Debug)]
@@ -38,7 +37,7 @@ pub struct Struct<'input> {
     pub position: Range<usize>,
 
     /// The list of fields on the struct
-    pub fields: HashMap<CompactString, Field<'input>>,
+    pub fields: Vec<(CompactString, Field<'input>)>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.

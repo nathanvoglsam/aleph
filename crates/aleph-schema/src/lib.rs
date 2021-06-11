@@ -32,3 +32,6 @@ extern crate aleph_sexpr as sexpr;
 
 pub mod ast;
 pub mod parser;
+
+#[cfg(test)]
+pub mod tests;

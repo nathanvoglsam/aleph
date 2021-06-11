@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(unused)]
+
 use combine::parser::char::digit;
 use combine::{many, optional, skip_many, token, Parser};
 use combine_utils::{CharExtensions, MyStream};

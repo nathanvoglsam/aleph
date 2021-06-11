@@ -27,9 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::ast::{HasAttributes, Struct, Table};
+use crate::ast::{Enum, HasAttributes, Struct, Table};
 use smartstring::alias::CompactString;
-use std::collections::HashMap;
 use std::ops::Range;
 
 /// AST node that adds a name context for all it's child elements
@@ -39,7 +38,7 @@ pub struct Module<'input> {
     pub position: Range<usize>,
 
     /// The list of items inside the module
-    pub children: HashMap<CompactString, ModuleItem<'input>>,
+    pub children: Vec<(CompactString, ModuleItem<'input>)>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
@@ -86,11 +85,12 @@ impl<'input> HasAttributes for Module<'input> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 pub enum ModuleItemType {
     Module,
     Struct,
     Table,
+    Enum,
 }
 
 #[derive(Debug)]
@@ -98,6 +98,7 @@ pub enum ModuleItem<'input> {
     Module(Module<'input>),
     Struct(Struct<'input>),
     Table(Table<'input>),
+    Enum(Enum<'input>),
 }
 
 impl<'input> ModuleItem<'input> {
@@ -110,6 +111,7 @@ impl<'input> ModuleItem<'input> {
             ModuleItem::Module(_) => ModuleItemType::Module,
             ModuleItem::Struct(_) => ModuleItemType::Struct,
             ModuleItem::Table(_) => ModuleItemType::Table,
+            ModuleItem::Enum(_) => ModuleItemType::Enum,
         }
     }
 
@@ -136,6 +138,13 @@ impl<'input> ModuleItem<'input> {
             }
             ModuleItem::Table(v) => {
                 if let ModuleItem::Table(o) = other {
+                    v.full_eq(o)
+                } else {
+                    false
+                }
+            }
+            ModuleItem::Enum(v) => {
+                if let ModuleItem::Enum(o) = other {
                     v.full_eq(o)
                 } else {
                     false
@@ -181,6 +190,13 @@ impl<'input> PartialEq for ModuleItem<'input> {
                     false
                 }
             }
+            ModuleItem::Enum(v) => {
+                if let ModuleItem::Enum(o) = other {
+                    v.eq(o)
+                } else {
+                    false
+                }
+            }
         }
     }
 }
@@ -194,6 +210,7 @@ impl<'input> HasAttributes for ModuleItem<'input> {
             ModuleItem::Module(v) => v.attributes(),
             ModuleItem::Struct(v) => v.attributes(),
             ModuleItem::Table(v) => v.attributes(),
+            ModuleItem::Enum(v) => v.attributes(),
         }
     }
 }

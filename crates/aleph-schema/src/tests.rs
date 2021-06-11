@@ -27,21 +27,17 @@
 // SOFTWARE.
 //
 
-mod enumeration;
-mod field;
-mod module;
-mod structure;
-mod table;
-mod traits;
-mod types;
+#[test]
+pub fn test() {
+    let text = std::fs::read_to_string("./schemas/valid.schema").unwrap();
+    let text = text.replace("\r\n", "\n");
 
-pub use enumeration::Enum;
-pub use field::Field;
-pub use field::FieldType;
-pub use module::Module;
-pub use module::ModuleItem;
-pub use module::ModuleItemType;
-pub use structure::Struct;
-pub use table::Table;
-pub use traits::HasAttributes;
-pub use types::PrimitiveType;
+    let sexpr_lexer = sexpr::lexer::Lexer::new(text.as_str());
+    let sexpr_parser = sexpr::parser::FileParser::new();
+    let sexpr_tree = sexpr_parser.parse(sexpr_lexer).unwrap();
+
+    let ast_parser = crate::parser::Parser::new(sexpr_tree);
+    let ast = ast_parser.parse().unwrap();
+
+    println!("{:#?}", ast);
+}

@@ -29,43 +29,37 @@
 
 use crate::lexer::{Error, Tok};
 
-const INVALID_ROOT_ATOM: &'static str =
-r#"namespace
+const INVALID_ROOT_ATOM: &'static str = r#"namespace
 
 "#;
 
-const INVALID_TERMINATING_TOO_MANY_LISTS: &'static str =
-r#"
+const INVALID_TERMINATING_TOO_MANY_LISTS: &'static str = r#"
 (namespace aleph
     (hello world))
 ))
 
 "#;
 
-const INVALID_TERMINATING_UNOPENED_LIST: &'static str =
-r#"
+const INVALID_TERMINATING_UNOPENED_LIST: &'static str = r#"
 )(namespace aleph
     (hello world)
 )
 
 \"#;
 
-const INVALID_UNTERMINATED_LIST: &'static str =
-r#"(namespace aleph
+const INVALID_UNTERMINATED_LIST: &'static str = r#"(namespace aleph
     (- hello world
 )
 
 "#;
 
-const INVALID_UNTERMINATED_STRING: &'static str =
-r#"(namespace aleph
+const INVALID_UNTERMINATED_STRING: &'static str = r#"(namespace aleph
     (default "default-monster)
 )
 
 \"#;
 
-const VALID: &'static str =
-r#"
+const VALID: &'static str = r#"
 // Top level comment
 (namespace aleph
     // Comment inside a list
@@ -106,8 +100,7 @@ r#"
 
 "#;
 
-const VALID_DOC_COMMENT: &'static str =
-r#"
+const VALID_DOC_COMMENT: &'static str = r#"
 (namespace aleph
     /// This is a doc comment
     /// This is also a doc comment
@@ -120,11 +113,9 @@ r#"
 /// Root doc comment
 "#;
 
-const VALID_EMPTY_FILE: &'static str =
-r#""#;
+const VALID_EMPTY_FILE: &'static str = r#""#;
 
-const VALID_EMPTY_FILE_WITH_WHITESPACE: &'static str =
-r#"
+const VALID_EMPTY_FILE_WITH_WHITESPACE: &'static str = r#"
 
 
 
@@ -137,8 +128,7 @@ r#"
 
 "#;
 
-const VALID_EMPTY_FILE_WITH_WHITESPACE_AND_COMMENTS: &'static str =
-r#"
+const VALID_EMPTY_FILE_WITH_WHITESPACE_AND_COMMENTS: &'static str = r#"
 
 
 
@@ -157,21 +147,18 @@ r#"
  */
 "#;
 
-const VALID_ESCAPED_STRING: &'static str =
-r#"// Top level comment
+const VALID_ESCAPED_STRING: &'static str = r#"// Top level comment
 ("Test \x74ext please \"ignore\" me")
 ("Test text please \"ignore\" me")
 ("Test \
         \u{74}ext please \"ignore\" me")"#;
 
-const VALID_ONLY_COMMENT: &'static str =
-r#"// This file consists purely of comments
+const VALID_ONLY_COMMENT: &'static str = r#"// This file consists purely of comments
 /* Do not be alarmed
  * comments are good
  */"#;
 
-const VALID_SPECIAL_IDENT: &'static str =
-r#"// Top level comment
+const VALID_SPECIAL_IDENT: &'static str = r#"// Top level comment
 (namespace aleph
     (#first)
     (?second?)
@@ -289,10 +276,7 @@ fn test_valid_only_comments() {
 #[test]
 fn test_valid_empty_file_with_whitespace() {
     let expected = crate::ast::ListBuilder::new();
-    test_parses_valid(
-        VALID_EMPTY_FILE_WITH_WHITESPACE,
-        expected,
-    );
+    test_parses_valid(VALID_EMPTY_FILE_WITH_WHITESPACE, expected);
 }
 
 #[test]
@@ -382,10 +366,7 @@ fn test_invalid_terminating_too_many_lists() {
         token: (37, Tok::ParenClose, 38),
         expected: vec!["\"(\"".to_string()],
     };
-    test_parses_invalid(
-        INVALID_TERMINATING_TOO_MANY_LISTS,
-        expected,
-    );
+    test_parses_invalid(INVALID_TERMINATING_TOO_MANY_LISTS, expected);
 }
 
 #[test]
@@ -394,10 +375,7 @@ fn test_invalid_terminating_unopened_list() {
         token: (1, Tok::ParenClose, 2),
         expected: vec!["\"(\"".to_string()],
     };
-    test_parses_invalid(
-        INVALID_TERMINATING_UNOPENED_LIST,
-        expected,
-    );
+    test_parses_invalid(INVALID_TERMINATING_UNOPENED_LIST, expected);
 }
 
 #[test]
@@ -409,10 +387,7 @@ fn test_invalid_root_atom() {
     test_parses_invalid(INVALID_ROOT_ATOM, expected);
 }
 
-fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(
-    text: &'input str,
-    expected: L,
-) {
+fn test_parses_valid<'input, L: Into<crate::ast::List<'input>>>(text: &'input str, expected: L) {
     let expected = expected.into();
     let lexer = crate::lexer::Lexer::new(&text);
     let parser = crate::parser::FileParser::new();
