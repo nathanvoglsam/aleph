@@ -191,7 +191,7 @@ impl<'input> Parser<'input> {
             attributes: std::mem::take(attributes),
         };
 
-        Self::parse_struct_like(&mut v.fields, &mut v.attributes, input, span.clone())?;
+        Self::parse_struct_like(&mut v.fields, attributes, input, span.clone())?;
 
         let v = ModuleItem::Struct(v);
         into.children.push((name, v));
@@ -223,7 +223,7 @@ impl<'input> Parser<'input> {
             attributes: std::mem::take(attributes),
         };
 
-        Self::parse_struct_like(&mut v.fields, &mut v.attributes, input, span)?;
+        Self::parse_struct_like(&mut v.fields, attributes, input, span)?;
 
         let v = ModuleItem::Table(v);
         into.children.push((name, v));
@@ -290,6 +290,7 @@ impl<'input> Parser<'input> {
             };
             return Err(error);
         }
+        names.insert(name.clone());
 
         let name = CompactString::from(name.name);
 
