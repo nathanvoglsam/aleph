@@ -32,13 +32,13 @@ mod parsers;
 use crate::ast::{
     Field, FieldType, Module, ModuleItem, ModuleItemType, PrimitiveType, Struct, Table,
 };
+use crate::parser::Error::UnexpectedWord;
 use smartstring::alias::CompactString;
 use std::collections::HashSet;
-use std::ops::Range;
 use std::hash::{Hash, Hasher};
-use crate::parser::Error::UnexpectedWord;
+use std::ops::Range;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Error {
     ExpectedWord {
         span: Range<usize>,
@@ -101,13 +101,14 @@ impl<'input> Parser<'input> {
 
                     match item_type {
                         ModuleItemType::Module => {
-                            let name: NameWithSpan<'input> = Self::get_word(list, item.span.clone(), 1)?.into();
+                            let name: NameWithSpan<'input> =
+                                Self::get_word(list, item.span.clone(), 1)?.into();
 
                             if !top.1.insert(name.clone()) {
                                 let duplicate = top.1.get(&name).unwrap().span.clone();
                                 let error = Error::DuplicateEntity {
                                     span: name.span.clone(),
-                                    duplicate
+                                    duplicate,
                                 };
                                 return Err(error);
                             }
@@ -124,24 +125,20 @@ impl<'input> Parser<'input> {
                             );
                             module_stack.push(child);
                         }
-                        ModuleItemType::Struct => {
-                            Self::parse_struct(
-                                &mut top.3,
-                                &mut top.1,
-                                &mut attributes,
-                                list,
-                                item.span.clone(),
-                            )?
-                        }
-                        ModuleItemType::Table => {
-                            Self::parse_table(
-                                &mut top.3,
-                                &mut top.1,
-                                &mut attributes,
-                                list,
-                                item.span.clone(),
-                            )?
-                        }
+                        ModuleItemType::Struct => Self::parse_struct(
+                            &mut top.3,
+                            &mut top.1,
+                            &mut attributes,
+                            list,
+                            item.span.clone(),
+                        )?,
+                        ModuleItemType::Table => Self::parse_table(
+                            &mut top.3,
+                            &mut top.1,
+                            &mut attributes,
+                            list,
+                            item.span.clone(),
+                        )?,
                         ModuleItemType::Enum => {}
                     }
                 } else {
@@ -347,24 +344,23 @@ impl<'input> Parser<'input> {
         span: Range<usize>,
         index: usize,
     ) -> Result<(Range<usize>, &'input str), Error> {
-        let first = list.get(index).ok_or_else(|| {
-            Error::ExpectedWord {
-                span: span.end..span.end
-            }
+        let first = list.get(index).ok_or_else(|| Error::ExpectedWord {
+            span: span.end..span.end,
         })?;
-        let atom = first.item.atom().ok_or_else(|| {
-            Error::ExpectedWord {
-                span: first.span.clone(),
-            }
+        let atom = first.item.atom().ok_or_else(|| Error::ExpectedWord {
+            span: first.span.clone(),
         })?;
-        atom.as_word().ok_or_else(|| {
-            Error::ExpectedWord {
+        atom.as_word()
+            .ok_or_else(|| Error::ExpectedWord {
                 span: first.span.clone(),
-            }
-        }).map(|v| (first.span.clone(), v))
+            })
+            .map(|v| (first.span.clone(), v))
     }
 
-    fn identify_module_item(span: Range<usize>, word: &str) -> Result<crate::ast::ModuleItemType, Error> {
+    fn identify_module_item(
+        span: Range<usize>,
+        word: &str,
+    ) -> Result<crate::ast::ModuleItemType, Error> {
         match word {
             "struct" => Ok(crate::ast::ModuleItemType::Struct),
             "table" => Ok(crate::ast::ModuleItemType::Table),
@@ -401,9 +397,7 @@ impl<'a> PartialEq for NameWithSpan<'a> {
     }
 }
 
-impl<'a> Eq for NameWithSpan<'a> {
-
-}
+impl<'a> Eq for NameWithSpan<'a> {}
 
 impl<'a> From<(Range<usize>, &'a str)> for NameWithSpan<'a> {
     fn from(v: (Range<usize>, &'a str)) -> Self {

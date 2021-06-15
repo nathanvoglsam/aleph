@@ -1,0 +1,9 @@
+
+(mod math
+    /// Yeet
+    (struct Vector2
+        (field x f32)
+        (field x f32)
+        (field y f32)
+    )
+)

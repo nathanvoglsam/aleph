@@ -27,9 +27,40 @@
 // SOFTWARE.
 //
 
+use crate::parser::Error;
+
 #[test]
-pub fn test() {
-    let text = std::fs::read_to_string("./schemas/valid.schema").unwrap();
+pub fn test_valid() {
+    test_valid_file("./schemas/valid.schema");
+}
+
+#[test]
+pub fn test_invalid_duplicate_field() {
+    test_invalid_file(
+        "./schemas/invalid_duplicate_field.schema",
+        Error::DuplicateEntity {
+            span: 81..82,
+            duplicate: 59..60,
+        },
+    );
+}
+
+fn test_invalid_file(file: &str, expected: crate::parser::Error) {
+    let text = std::fs::read_to_string(file).unwrap();
+    let text = text.replace("\r\n", "\n");
+
+    let sexpr_lexer = sexpr::lexer::Lexer::new(text.as_str());
+    let sexpr_parser = sexpr::parser::FileParser::new();
+    let sexpr_tree = sexpr_parser.parse(sexpr_lexer).unwrap();
+
+    let ast_parser = crate::parser::Parser::new(sexpr_tree);
+    let err = ast_parser.parse().unwrap_err();
+
+    assert_eq!(err, expected);
+}
+
+fn test_valid_file(file: &str) {
+    let text = std::fs::read_to_string(file).unwrap();
     let text = text.replace("\r\n", "\n");
 
     let sexpr_lexer = sexpr::lexer::Lexer::new(text.as_str());
