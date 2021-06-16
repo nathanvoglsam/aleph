@@ -31,7 +31,7 @@ use crate::ast::{Field, HasAttributes};
 use smartstring::alias::CompactString;
 use std::ops::Range;
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Enum<'input> {
     /// Position within the source text this item resides
     pub position: Range<usize>,
@@ -84,7 +84,7 @@ impl<'input> HasAttributes for Enum<'input> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct EnumVariant<'input> {
     /// Position within the source text this item resides
     pub position: Range<usize>,

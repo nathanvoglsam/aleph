@@ -31,7 +31,7 @@ use crate::ast::{HasAttributes, PrimitiveType};
 use smartstring::alias::CompactString;
 use std::ops::Range;
 
-#[derive(Hash, Debug)]
+#[derive(Clone, Hash, Debug)]
 pub struct Field<'input> {
     /// Position within the source text this item resides
     pub position: Range<usize>,
@@ -42,6 +42,16 @@ pub struct Field<'input> {
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
     pub attributes: Vec<sexpr::ast::List<'input>>,
+}
+
+impl<'input> From<FieldType> for Field<'input> {
+    fn from(v: FieldType) -> Self {
+        Self {
+            position: Default::default(),
+            r#type: v,
+            attributes: Default::default(),
+        }
+    }
 }
 
 impl<'input> Field<'input> {
@@ -83,7 +93,7 @@ impl<'input> HasAttributes for Field<'input> {
     }
 }
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum FieldType {
     Primitive(PrimitiveType),
     StructRef(CompactString),

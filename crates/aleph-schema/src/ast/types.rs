@@ -30,7 +30,7 @@
 ///
 /// The set of all primitive types
 ///
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum PrimitiveType {
     U8,
     U16,

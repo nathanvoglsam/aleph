@@ -32,7 +32,7 @@ use smartstring::alias::CompactString;
 use std::ops::Range;
 
 /// AST node that adds a name context for all it's child elements
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub struct Module<'input> {
     /// Position within the source text this item resides
     pub position: Range<usize>,
@@ -212,5 +212,29 @@ impl<'input> HasAttributes for ModuleItem<'input> {
             ModuleItem::Table(v) => v.attributes(),
             ModuleItem::Enum(v) => v.attributes(),
         }
+    }
+}
+
+impl<'input> From<Module<'input>> for ModuleItem<'input> {
+    fn from(v: Module<'input>) -> Self {
+        Self::Module(v)
+    }
+}
+
+impl<'input> From<Struct<'input>> for ModuleItem<'input> {
+    fn from(v: Struct<'input>) -> Self {
+        Self::Struct(v)
+    }
+}
+
+impl<'input> From<Table<'input>> for ModuleItem<'input> {
+    fn from(v: Table<'input>) -> Self {
+        Self::Table(v)
+    }
+}
+
+impl<'input> From<Enum<'input>> for ModuleItem<'input> {
+    fn from(v: Enum<'input>) -> Self {
+        Self::Enum(v)
     }
 }
