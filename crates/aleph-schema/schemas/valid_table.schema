@@ -27,22 +27,16 @@
 // SOFTWARE.
 //
 
-mod enumeration;
-mod field;
-mod module;
-mod structure;
-mod table;
-mod traits;
-mod types;
+(mod aleph
+    /// A human
+    (table Human
+        /// The human's position in world space
+        (field transform Transform)
 
-pub use enumeration::Enum;
-pub use enumeration::EnumVariant;
-pub use field::Field;
-pub use field::FieldType;
-pub use module::Module;
-pub use module::ModuleItem;
-pub use module::ModuleItemType;
-pub use structure::Struct;
-pub use table::Table;
-pub use traits::HasAttributes;
-pub use types::PrimitiveType;
+        /// The human's name
+        (field name string)
+
+        /// The human's health
+        (field health f32)
+    )
+)

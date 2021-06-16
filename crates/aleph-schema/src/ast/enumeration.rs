@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ast::{HasAttributes, Struct};
+use crate::ast::{Field, HasAttributes};
 use smartstring::alias::CompactString;
 use std::ops::Range;
 
@@ -37,7 +37,7 @@ pub struct Enum<'input> {
     pub position: Range<usize>,
 
     /// The list of fields on the struct
-    pub variants: Vec<(CompactString, Option<Struct<'input>>)>,
+    pub variants: Vec<(CompactString, EnumVariant<'input>)>,
 
     /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
     /// s-expressions that can be freely interpreted.
@@ -78,6 +78,59 @@ impl<'input> PartialEq for Enum<'input> {
 impl<'input> Eq for Enum<'input> {}
 
 impl<'input> HasAttributes for Enum<'input> {
+    #[inline]
+    fn attributes(&self) -> &[sexpr::ast::List] {
+        self.attributes.as_slice()
+    }
+}
+
+#[derive(Debug)]
+pub struct EnumVariant<'input> {
+    /// Position within the source text this item resides
+    pub position: Range<usize>,
+
+    /// The list of fields on the enum
+    pub fields: Vec<Field<'input>>,
+
+    /// A list of arbitrary attributes attached to this item. These are simply arbitrary list
+    /// s-expressions that can be freely interpreted.
+    pub attributes: Vec<sexpr::ast::List<'input>>,
+}
+
+impl<'input> EnumVariant<'input> {
+    ///
+    /// A custom eq implementation that performs a full equality check, including comparing the
+    /// `position` field which is ignored in the `PartialEq` implementation
+    ///
+    #[inline]
+    pub fn full_eq(&self, other: &Self) -> bool {
+        self.eq(other)
+            && self.position.start == other.position.start
+            && self.position.end == other.position.end
+    }
+
+    ///
+    /// A custom ne implementation that performs a full equality check, including comparing the
+    /// `position` field which is ignored in the `PartialEq` implementation
+    ///
+    #[inline]
+    pub fn full_ne(&self, other: &Self) -> bool {
+        !self.full_eq(other)
+    }
+}
+
+impl<'input> PartialEq for EnumVariant<'input> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        // The default implementation ignores the position as it has no semantic meaning and is only
+        // used for generating error messages
+        self.fields.eq(&other.fields) && self.attributes.eq(&other.attributes)
+    }
+}
+
+impl<'input> Eq for EnumVariant<'input> {}
+
+impl<'input> HasAttributes for EnumVariant<'input> {
     #[inline]
     fn attributes(&self) -> &[sexpr::ast::List] {
         self.attributes.as_slice()

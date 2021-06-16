@@ -30,8 +30,23 @@
 use crate::parser::Error;
 
 #[test]
-pub fn test_valid() {
-    test_valid_file("./schemas/valid.schema");
+pub fn test_valid_enum() {
+    test_valid_file("./schemas/valid_enum.schema");
+}
+
+#[test]
+pub fn test_valid_nested_modules() {
+    test_valid_file("./schemas/valid_nested_modules.schema");
+}
+
+#[test]
+pub fn test_valid_struct() {
+    test_valid_file("./schemas/valid_struct.schema");
+}
+
+#[test]
+pub fn test_valid_table() {
+    test_valid_file("./schemas/valid_table.schema");
 }
 
 #[test]

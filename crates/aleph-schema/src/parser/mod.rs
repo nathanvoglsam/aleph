@@ -30,7 +30,8 @@
 mod parsers;
 
 use crate::ast::{
-    Field, FieldType, Module, ModuleItem, ModuleItemType, PrimitiveType, Struct, Table,
+    Enum, EnumVariant, Field, FieldType, Module, ModuleItem, ModuleItemType, PrimitiveType, Struct,
+    Table,
 };
 use crate::parser::Error::UnexpectedWord;
 use smartstring::alias::CompactString;
@@ -139,7 +140,13 @@ impl<'input> Parser<'input> {
                             list,
                             item.span.clone(),
                         )?,
-                        ModuleItemType::Enum => {}
+                        ModuleItemType::Enum => Self::parse_enum(
+                            &mut top.3,
+                            &mut top.1,
+                            &mut attributes,
+                            list,
+                            item.span.clone(),
+                        )?,
                     }
                 } else {
                     let error = Error::UnexpectedItem {
@@ -171,17 +178,9 @@ impl<'input> Parser<'input> {
         span: Range<usize>,
     ) -> Result<(), Error> {
         let name: NameWithSpan<'input> = Self::get_word(input, span.clone(), 1)?.into();
-
-        if !names.insert(name.clone()) {
-            let duplicate = names.get(&name).unwrap().span.clone();
-            let error = Error::DuplicateEntity {
-                span: name.span.clone(),
-                duplicate,
-            };
-            return Err(error);
-        }
-
+        Self::try_insert_name(names, name.clone())?;
         let name = CompactString::from(name.name);
+
         let mut v = Struct {
             position: span.clone(),
             fields: Vec::new(),
@@ -203,17 +202,9 @@ impl<'input> Parser<'input> {
         span: Range<usize>,
     ) -> Result<(), Error> {
         let name: NameWithSpan<'input> = Self::get_word(input, span.clone(), 1)?.into();
-
-        if !names.insert(name.clone()) {
-            let duplicate = names.get(&name).unwrap().span.clone();
-            let error = Error::DuplicateEntity {
-                span: name.span.clone(),
-                duplicate,
-            };
-            return Err(error);
-        }
-
+        Self::try_insert_name(names, name.clone())?;
         let name = CompactString::from(name.name);
+
         let mut v = Table {
             position: span.clone(),
             fields: Vec::new(),
@@ -277,18 +268,8 @@ impl<'input> Parser<'input> {
         input: &sexpr::ast::List<'input>,
         span: Range<usize>,
     ) -> Result<(), Error> {
-        let name = Self::get_word(input, span.clone(), 1)?.into();
-
-        if let Some(duplicate) = names.get(&name) {
-            let duplicate = duplicate.span.clone();
-            let error = Error::DuplicateEntity {
-                span: name.span.clone(),
-                duplicate,
-            };
-            return Err(error);
-        }
-        names.insert(name.clone());
-
+        let name: NameWithSpan<'input> = Self::get_word(input, span.clone(), 1)?.into();
+        Self::try_insert_name(names, name.clone())?;
         let name = CompactString::from(name.name);
 
         let r#type = Self::get_word(input, span.clone(), 2)?;
@@ -298,6 +279,133 @@ impl<'input> Parser<'input> {
             position: span,
             attributes: std::mem::take(attributes),
             r#type,
+        };
+
+        into.push((name, v));
+        Ok(())
+    }
+
+    fn parse_enum(
+        into: &mut Module<'input>,
+        names: &mut HashSet<NameWithSpan<'input>>,
+        attributes: &mut Vec<sexpr::ast::List<'input>>,
+        input: &sexpr::ast::List<'input>,
+        span: Range<usize>,
+    ) -> Result<(), Error> {
+        let name: NameWithSpan<'input> = Self::get_word(input, span.clone(), 1)?.into();
+        Self::try_insert_name(names, name.clone())?;
+        let name = CompactString::from(name.name);
+
+        let mut v = Enum {
+            position: span.clone(),
+            variants: Vec::new(),
+            attributes: std::mem::take(attributes),
+        };
+
+        Self::parse_enum_like(&mut v.variants, attributes, input, span.clone())?;
+
+        let v = ModuleItem::Enum(v);
+        into.children.push((name, v));
+        Ok(())
+    }
+
+    fn parse_enum_like(
+        variants: &mut Vec<(CompactString, EnumVariant<'input>)>,
+        attributes: &mut Vec<sexpr::ast::List<'input>>,
+        input: &sexpr::ast::List<'input>,
+        span: Range<usize>,
+    ) -> Result<(), Error> {
+        let mut variant_names = HashSet::new();
+
+        for item in &input[2..] {
+            if let Some(list) = item.item.list() {
+                if Self::try_parse_attribute(attributes, list, span.clone()).is_ok() {
+                    continue;
+                }
+
+                let first = Self::get_word(list, span.clone(), 0)?;
+                if first.1 == "variant" {
+                    Self::parse_enum_variant(
+                        variants,
+                        &mut variant_names,
+                        attributes,
+                        list,
+                        item.span.clone(),
+                    )?;
+                    continue;
+                } else {
+                    let error = UnexpectedWord {
+                        span: first.0,
+                        expected: vec!["variant".to_string()],
+                    };
+                    return Err(error);
+                }
+            } else {
+                let error = Error::UnexpectedItem {
+                    span: item.span.clone(),
+                    expected: vec![sexpr::ast::ItemVariantType::List],
+                };
+                return Err(error);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn parse_enum_variant(
+        into: &mut Vec<(CompactString, EnumVariant<'input>)>,
+        names: &mut HashSet<NameWithSpan<'input>>,
+        attributes: &mut Vec<sexpr::ast::List<'input>>,
+        input: &sexpr::ast::List<'input>,
+        span: Range<usize>,
+    ) -> Result<(), Error> {
+        let name: NameWithSpan<'input> = Self::get_word(input, span.clone(), 1)?.into();
+        Self::try_insert_name(names, name.clone())?;
+        let name = CompactString::from(name.name);
+
+        let fields = if let Some(item) = input.get(2) {
+            let mut fields = Vec::new();
+            if let Some(list) = item.item.list() {
+                for item in list.iter() {
+                    if let Some(atom) = item.item.atom() {
+                        if let Some(word) = atom.as_word() {
+                            let r#type = Self::parse_type_name(word);
+                            let field = Field {
+                                position: Default::default(),
+                                r#type,
+                                attributes: Vec::new(),
+                            };
+                            fields.push(field);
+                        } else {
+                            let error = Error::ExpectedWord {
+                                span: item.span.clone(),
+                            };
+                            return Err(error);
+                        }
+                    } else {
+                        let error = Error::UnexpectedItem {
+                            span: item.span.clone(),
+                            expected: vec![sexpr::ast::ItemVariantType::Atom],
+                        };
+                        return Err(error);
+                    }
+                }
+            } else {
+                let error = Error::UnexpectedItem {
+                    span: item.span.clone(),
+                    expected: vec![sexpr::ast::ItemVariantType::List],
+                };
+                return Err(error);
+            }
+            fields
+        } else {
+            Vec::new()
+        };
+
+        let v = EnumVariant {
+            position: span,
+            fields,
+            attributes: std::mem::take(attributes),
         };
 
         into.push((name, v));
@@ -375,6 +483,23 @@ impl<'input> Parser<'input> {
                     "enum".to_string(),
                 ],
             }),
+        }
+    }
+
+    fn try_insert_name(
+        names: &mut HashSet<NameWithSpan<'input>>,
+        name: NameWithSpan<'input>,
+    ) -> Result<(), Error> {
+        if let Some(duplicate) = names.get(&name) {
+            let duplicate = duplicate.span.clone();
+            let error = Error::DuplicateEntity {
+                span: name.span.clone(),
+                duplicate,
+            };
+            return Err(error);
+        } else {
+            names.insert(name);
+            Ok(())
         }
     }
 }
