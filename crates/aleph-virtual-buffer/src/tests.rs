@@ -27,19 +27,50 @@
 // SOFTWARE.
 //
 
-mod unsupported;
+use crate::VirtualBuffer;
 
-#[cfg(target_os = "windows")]
-mod windows;
+#[test]
+fn test_individual_commits() {
+    let mut buffer = VirtualBuffer::reserve(2).unwrap();
 
-#[cfg(target_os = "linux")]
-mod unix;
+    // Commit the first page
+    buffer.commit(0..1).unwrap();
 
-#[cfg(target_os = "windows")]
-pub use windows::*;
+    // Commit the second page
+    buffer.commit(5000..5001).unwrap();
 
-#[cfg(target_os = "linux")]
-pub use unix::*;
+    // This is safe as both pages should be committed now
+    let slice = unsafe { buffer.as_slice_mut() };
 
-#[cfg(not(any(target_os = "windows", target_os = "linux")))]
-pub use unsupported::*;
+    slice[5000] = 21;
+    slice[1] = 56;
+
+    assert_eq!(slice[5000], 21);
+    assert_eq!(slice[1], 56);
+
+    // Release the first page
+    buffer.commit(0..1).unwrap();
+
+    // Release the second page
+    buffer.commit(5000..5001).unwrap();
+}
+
+#[test]
+fn test_stradling_commit() {
+    let mut buffer = VirtualBuffer::reserve(2).unwrap();
+
+    // Commit both pages
+    buffer.commit(4095..4097).unwrap();
+
+    // This is safe as both pages should be committed now
+    let slice = unsafe { buffer.as_slice_mut() };
+
+    slice[5000] = 21;
+    slice[1] = 56;
+
+    assert_eq!(slice[5000], 21);
+    assert_eq!(slice[1], 56);
+
+    // Release both pages
+    buffer.release(4095..4097).unwrap();
+}

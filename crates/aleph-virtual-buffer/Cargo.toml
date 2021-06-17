@@ -48,3 +48,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [target.'cfg(windows)'.dependencies]
 aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
+
+[target.'cfg(linux)'.dependencies]
+libc = "0.2"

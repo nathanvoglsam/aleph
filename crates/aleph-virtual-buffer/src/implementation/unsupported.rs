@@ -31,23 +31,23 @@
 
 use crate::VirtualBuffer;
 
-#[inline(always)]
+#[inline]
 pub unsafe fn reserve_virtual_buffer(_pages: usize) -> Result<VirtualBuffer, ()> {
     panic!("Unsupported platform")
 }
 
-#[inline(always)]
-pub unsafe fn free_virtual_buffer(_base: usize, _pages: usize) -> Result<(), ()> {
+#[inline]
+pub unsafe fn free_virtual_buffer(_base: *mut u8, _pages: usize) -> Result<(), ()> {
     panic!("Unsupported platform")
 }
 
-#[inline(always)]
-pub unsafe fn commit_virtual_address_range(_base: usize, _pages: usize) -> Result<(), ()> {
+#[inline]
+pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
     panic!("Unsupported platform")
 }
 
-#[inline(always)]
-pub unsafe fn release_virtual_address_range(_base: usize, _pages: usize) -> Result<(), ()> {
+#[inline]
+pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
     panic!("Unsupported platform")
 }
 

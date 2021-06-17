@@ -27,9 +27,13 @@
 // SOFTWARE.
 //
 
+#[cfg(test)]
+mod tests;
+
 mod implementation;
 
 use std::ops::Range;
+use std::slice::{from_raw_parts, from_raw_parts_mut};
 
 ///
 /// An abstraction over an owned region of address space that can be committed and released
@@ -41,7 +45,9 @@ pub struct VirtualBuffer {
 
 impl VirtualBuffer {
     ///
-    /// Reserves the given number of pages somewhere in the address space
+    /// Reserves the given number of pages somewhere in the address space.
+    ///
+    /// Pages are assumed to always be 4096 bytes.
     ///
     pub fn reserve(pages: usize) -> Result<VirtualBuffer, ()> {
         unsafe { implementation::reserve_virtual_buffer(pages) }
@@ -56,7 +62,7 @@ impl VirtualBuffer {
     ///
     ///
     pub fn commit(&self, range: Range<usize>) -> Result<(), ()> {
-        let (base, pages) = Self::resolve_range(range);
+        let (base, pages) = Self::resolve_range(self.data, range);
         unsafe { implementation::commit_virtual_address_range(base, pages) }
     }
 
@@ -73,7 +79,7 @@ impl VirtualBuffer {
     /// the underlying memory for a call to this function to compile.
     ///
     pub fn release(&mut self, range: Range<usize>) -> Result<(), ()> {
-        let (base, pages) = Self::resolve_range(range);
+        let (base, pages) = Self::resolve_range(self.data, range);
         unsafe { implementation::release_virtual_address_range(base, pages) }
     }
 
@@ -104,6 +110,36 @@ impl VirtualBuffer {
     }
 
     ///
+    /// Returns a slice over the whole address range
+    ///
+    /// # SAFETY
+    ///
+    /// The entire address range is not guaranteed to be committed so creating a slice of it is
+    /// not safe as it could lead to safe code de-referencing un-commited memory.
+    ///
+    /// Commit all memory before using, or check if the platform requires it with
+    /// `Self::requires_committing`.
+    ///
+    pub unsafe fn as_slice(&self) -> &[u8] {
+        from_raw_parts(self.data, self.len)
+    }
+
+    ///
+    /// Returns a slice over the whole address range
+    ///
+    /// # SAFETY
+    ///
+    /// The entire address range is not guaranteed to be committed so creating a slice of it is
+    /// not safe as it could lead to safe code de-referencing un-commited memory.
+    ///
+    /// Commit all memory before using, or check if the platform requires it with
+    /// `Self::requires_committing`.
+    ///
+    pub unsafe fn as_slice_mut(&mut self) -> &mut [u8] {
+        from_raw_parts_mut(self.data, self.len)
+    }
+
+    ///
     /// This function returns whether the current platform requires committing pages explicitly
     /// before they can be used.
     ///
@@ -115,8 +151,15 @@ impl VirtualBuffer {
     }
 }
 
+impl Drop for VirtualBuffer {
+    fn drop(&mut self) {
+        unsafe { implementation::free_virtual_buffer(self.data, self.len / 4096).unwrap() }
+    }
+}
+
 impl VirtualBuffer {
-    fn resolve_range(range: Range<usize>) -> (usize, usize) {
+    #[inline]
+    fn resolve_range(data: *mut u8, range: Range<usize>) -> (*mut u8, usize) {
         // Destructure the range as it's not a copy type
         let (start, end) = (range.start, range.end);
 
@@ -124,8 +167,12 @@ impl VirtualBuffer {
         let base = start & !4095;
 
         // Find the number of pages the address intersects
-        let pages = (end - base) / 4096; // Division should optimize to shift
+        let pages = end - base; // Get the size of the range in bytes from the new base
+        let pages = pages + 4095 & !4095; // Round up to the next page size
+        let pages = pages / 4096; // Division should optimize to shift
 
-        (base, pages)
+        unsafe {
+            (data.add(base), pages)
+        }
     }
 }

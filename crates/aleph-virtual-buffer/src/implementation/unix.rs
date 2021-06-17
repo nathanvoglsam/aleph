@@ -29,21 +29,18 @@
 
 #![allow(unused)]
 
-use aleph_windows_raw as windows;
-
-use windows::Win32::SystemServices::{VirtualAlloc, VirtualFree};
-
 use crate::VirtualBuffer;
-use aleph_windows_raw::Win32::SystemServices::{
-    VirtualAlloc_flAllocationType, VirtualFree_dwFreeType, PAGE_TYPE,
-};
 
 #[inline]
 pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> {
-    let alloc_type = VirtualAlloc_flAllocationType::MEM_RESERVE;
-    let page_type = PAGE_TYPE::PAGE_READWRITE;
-
-    let result = VirtualAlloc(std::ptr::null_mut(), pages * 4096, alloc_type, page_type);
+    let result: *mut libc::c_void = libc::mmap(
+        std::ptr::null_mut(),
+        pages * 4096,
+        libc::PROT_READ | libc::PROT_WRITE,
+        libc::MAP_ANONYMOUS,
+        -1,
+        0,
+    );
 
     if result.is_null() {
         Err(())
@@ -56,25 +53,8 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> 
 }
 
 #[inline]
-pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> Result<(), ()> {
-    let free_type = VirtualFree_dwFreeType::MEM_RELEASE;
-
-    // The number of pages to free isn't needed on the windows implementation
-    if VirtualFree(base as _, 0, free_type).as_bool() {
-        Ok(())
-    } else {
-        Err(())
-    }
-}
-
-#[inline]
-pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> Result<(), ()> {
-    let alloc_type = VirtualAlloc_flAllocationType::MEM_COMMIT;
-    let page_type = PAGE_TYPE::PAGE_READWRITE;
-
-    let result = VirtualAlloc(base as _, pages * 4096, alloc_type, page_type);
-
-    if result.is_null() {
+pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> Result<(), ()> {
+    if libc::munmap(base as _, pages * 4096 as _) != 0 {
         Err(())
     } else {
         Ok(())
@@ -82,14 +62,15 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> Resul
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> Result<(), ()> {
-    let free_type = VirtualFree_dwFreeType::MEM_DECOMMIT;
+pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+    // This is a no-op on unix
+    Ok(())
+}
 
-    if VirtualFree(base as _, pages * 4096, free_type).as_bool() {
-        Ok(())
-    } else {
-        Err(())
-    }
+#[inline]
+pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+    // This is a no-op on unix
+    Ok(())
 }
 
 pub const fn requires_committing() -> bool {
