@@ -122,6 +122,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-combine-utils/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-schema/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-sexpr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/aleph-virtual-array/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-sdl2/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-egui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

@@ -525,3 +525,193 @@ pub unsafe fn GetPhysicallyInstalledSystemMemory(totalmemoryinkilobytes: *mut u6
     }
     GetPhysicallyInstalledSystemMemory(::std::mem::transmute(totalmemoryinkilobytes))
 }
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct VirtualAlloc_flAllocationType(pub u32);
+impl VirtualAlloc_flAllocationType {
+    pub const MEM_COMMIT: Self = Self(4096u32);
+    pub const MEM_RESERVE: Self = Self(8192u32);
+    pub const MEM_RESET: Self = Self(524288u32);
+    pub const MEM_RESET_UNDO: Self = Self(16777216u32);
+    pub const MEM_REPLACE_PLACEHOLDER: Self = Self(16384u32);
+    pub const MEM_LARGE_PAGES: Self = Self(536870912u32);
+    pub const MEM_RESERVE_PLACEHOLDER: Self = Self(262144u32);
+    pub const MEM_FREE: Self = Self(65536u32);
+}
+impl ::std::convert::From<u32> for VirtualAlloc_flAllocationType {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for VirtualAlloc_flAllocationType {
+    type Abi = Self;
+}
+impl ::std::ops::BitOr for VirtualAlloc_flAllocationType {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+impl ::std::ops::BitAnd for VirtualAlloc_flAllocationType {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+impl ::std::ops::BitOrAssign for VirtualAlloc_flAllocationType {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for VirtualAlloc_flAllocationType {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct PAGE_TYPE(pub u32);
+impl PAGE_TYPE {
+    pub const PAGE_NOACCESS: Self = Self(1u32);
+    pub const PAGE_READONLY: Self = Self(2u32);
+    pub const PAGE_READWRITE: Self = Self(4u32);
+    pub const PAGE_WRITECOPY: Self = Self(8u32);
+    pub const PAGE_EXECUTE: Self = Self(16u32);
+    pub const PAGE_EXECUTE_READ: Self = Self(32u32);
+    pub const PAGE_EXECUTE_READWRITE: Self = Self(64u32);
+    pub const PAGE_EXECUTE_WRITECOPY: Self = Self(128u32);
+    pub const PAGE_GUARD: Self = Self(256u32);
+    pub const PAGE_NOCACHE: Self = Self(512u32);
+    pub const PAGE_WRITECOMBINE: Self = Self(1024u32);
+    pub const PAGE_TARGETS_INVALID: Self = Self(1073741824u32);
+    pub const PAGE_TARGETS_NO_UPDATE: Self = Self(1073741824u32);
+}
+impl ::std::convert::From<u32> for PAGE_TYPE {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for PAGE_TYPE {
+    type Abi = Self;
+}
+impl ::std::ops::BitOr for PAGE_TYPE {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+impl ::std::ops::BitAnd for PAGE_TYPE {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+impl ::std::ops::BitOrAssign for PAGE_TYPE {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for PAGE_TYPE {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
+pub unsafe fn VirtualAlloc(
+    lpaddress: *mut ::std::ffi::c_void,
+    dwsize: usize,
+    flallocationtype: VirtualAlloc_flAllocationType,
+    flprotect: PAGE_TYPE,
+) -> *mut ::std::ffi::c_void {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn VirtualAlloc(
+            lpaddress: *mut ::std::ffi::c_void,
+            dwsize: usize,
+            flallocationtype: VirtualAlloc_flAllocationType,
+            flprotect: PAGE_TYPE,
+        ) -> *mut ::std::ffi::c_void;
+    }
+    VirtualAlloc(
+        ::std::mem::transmute(lpaddress),
+        ::std::mem::transmute(dwsize),
+        ::std::mem::transmute(flallocationtype),
+        ::std::mem::transmute(flprotect),
+    )
+}
+#[derive(
+    :: std :: cmp :: PartialEq,
+    :: std :: cmp :: Eq,
+    :: std :: marker :: Copy,
+    :: std :: clone :: Clone,
+    :: std :: default :: Default,
+    :: std :: fmt :: Debug,
+)]
+#[repr(transparent)]
+pub struct VirtualFree_dwFreeType(pub u32);
+impl VirtualFree_dwFreeType {
+    pub const MEM_DECOMMIT: Self = Self(16384u32);
+    pub const MEM_RELEASE: Self = Self(32768u32);
+}
+impl ::std::convert::From<u32> for VirtualFree_dwFreeType {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+unsafe impl ::windows::Abi for VirtualFree_dwFreeType {
+    type Abi = Self;
+}
+impl ::std::ops::BitOr for VirtualFree_dwFreeType {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self {
+        Self(self.0 | rhs.0)
+    }
+}
+impl ::std::ops::BitAnd for VirtualFree_dwFreeType {
+    type Output = Self;
+    fn bitand(self, rhs: Self) -> Self {
+        Self(self.0 & rhs.0)
+    }
+}
+impl ::std::ops::BitOrAssign for VirtualFree_dwFreeType {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0.bitor_assign(rhs.0)
+    }
+}
+impl ::std::ops::BitAndAssign for VirtualFree_dwFreeType {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0.bitand_assign(rhs.0)
+    }
+}
+pub unsafe fn VirtualFree(
+    lpaddress: *mut ::std::ffi::c_void,
+    dwsize: usize,
+    dwfreetype: VirtualFree_dwFreeType,
+) -> BOOL {
+    #[link(name = "KERNEL32")]
+    extern "system" {
+        pub fn VirtualFree(
+            lpaddress: *mut ::std::ffi::c_void,
+            dwsize: usize,
+            dwfreetype: VirtualFree_dwFreeType,
+        ) -> BOOL;
+    }
+    VirtualFree(
+        ::std::mem::transmute(lpaddress),
+        ::std::mem::transmute(dwsize),
+        ::std::mem::transmute(dwfreetype),
+    )
+}

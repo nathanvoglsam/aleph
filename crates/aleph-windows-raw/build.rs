@@ -54,7 +54,9 @@ fn main() {
             DeleteFiber,
             ConvertFiberToThread,
             SwitchToFiber,
-            GetPhysicallyInstalledSystemMemory
+            GetPhysicallyInstalledSystemMemory,
+            VirtualAlloc,
+            VirtualFree,
         },
         Windows::Win32::StructuredStorage::{
             STATSTG,
