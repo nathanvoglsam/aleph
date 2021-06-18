@@ -54,7 +54,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> 
 
 #[inline]
 pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> Result<(), ()> {
-    if libc::munmap(base as _, pages * 4096 as _) != 0 {
+    if libc::munmap(base as _, pages * 4096) != 0 {
         Err(())
     } else {
         Ok(())
