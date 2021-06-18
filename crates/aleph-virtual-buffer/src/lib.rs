@@ -49,7 +49,7 @@ impl VirtualBuffer {
     ///
     /// Pages are assumed to always be 4096 bytes.
     ///
-    pub fn reserve(pages: usize) -> Result<VirtualBuffer, ()> {
+    pub fn reserve(pages: usize) -> std::io::Result<VirtualBuffer> {
         unsafe { implementation::reserve_virtual_buffer(pages) }
     }
 
@@ -61,9 +61,13 @@ impl VirtualBuffer {
     /// This is safe to use behind a shared reference as we can only ever change the state of memory
     ///
     ///
-    pub fn commit(&self, range: Range<usize>) -> Result<(), ()> {
-        let (base, pages) = Self::resolve_range(self.data, range);
-        unsafe { implementation::commit_virtual_address_range(base, pages) }
+    pub fn commit(&self, range: Range<usize>) -> std::io::Result<()> {
+        if Self::requires_committing() {
+            let (base, pages) = Self::resolve_range(self.data, range);
+            unsafe { implementation::commit_virtual_address_range(base, pages) }
+        } else {
+            Ok(())
+        }
     }
 
     ///
@@ -78,9 +82,13 @@ impl VirtualBuffer {
     /// requiring exclusive access to the virtual buffer. There can be no outstanding borrows to
     /// the underlying memory for a call to this function to compile.
     ///
-    pub fn release(&mut self, range: Range<usize>) -> Result<(), ()> {
-        let (base, pages) = Self::resolve_range(self.data, range);
-        unsafe { implementation::release_virtual_address_range(base, pages) }
+    pub fn release(&mut self, range: Range<usize>) -> std::io::Result<()> {
+        if Self::requires_committing() {
+            let (base, pages) = Self::resolve_range(self.data, range);
+            unsafe { implementation::release_virtual_address_range(base, pages) }
+        } else {
+            Ok(())
+        }
     }
 
     ///

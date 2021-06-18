@@ -32,18 +32,18 @@
 use crate::VirtualBuffer;
 
 #[inline]
-pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> {
+pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
     let result: *mut libc::c_void = libc::mmap(
         std::ptr::null_mut(),
         pages * 4096,
         libc::PROT_READ | libc::PROT_WRITE,
-        libc::MAP_ANONYMOUS,
+        libc::MAP_SHARED | libc::MAP_ANON,
         -1,
         0,
     );
 
-    if result.is_null() {
-        Err(())
+    if result == libc::MAP_FAILED {
+        Err(std::io::Error::last_os_error())
     } else {
         Ok(VirtualBuffer {
             data: result as _,
@@ -53,22 +53,22 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> 
 }
 
 #[inline]
-pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> Result<(), ()> {
+pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> std::io::Result<()> {
     if libc::munmap(base as _, pages * 4096) != 0 {
-        Err(())
+        Err(std::io::Error::last_os_error())
     } else {
         Ok(())
     }
 }
 
 #[inline]
-pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
     // This is a no-op on unix
     Ok(())
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
     // This is a no-op on unix
     Ok(())
 }

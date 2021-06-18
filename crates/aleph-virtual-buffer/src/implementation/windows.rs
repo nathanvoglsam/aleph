@@ -39,14 +39,14 @@ use aleph_windows_raw::Win32::SystemServices::{
 };
 
 #[inline]
-pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> {
+pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
     let alloc_type = VirtualAlloc_flAllocationType::MEM_RESERVE;
     let page_type = PAGE_TYPE::PAGE_READWRITE;
 
     let result = VirtualAlloc(std::ptr::null_mut(), pages * 4096, alloc_type, page_type);
 
     if result.is_null() {
-        Err(())
+        Err(std::io::Error::last_os_error())
     } else {
         Ok(VirtualBuffer {
             data: result as _,
@@ -56,39 +56,39 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> Result<VirtualBuffer, ()> 
 }
 
 #[inline]
-pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> std::io::Result<()> {
     let free_type = VirtualFree_dwFreeType::MEM_RELEASE;
 
     // The number of pages to free isn't needed on the windows implementation
     if VirtualFree(base as _, 0, free_type).as_bool() {
         Ok(())
     } else {
-        Err(())
+        Err(std::io::Error::last_os_error())
     }
 }
 
 #[inline]
-pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> Result<(), ()> {
+pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
     let alloc_type = VirtualAlloc_flAllocationType::MEM_COMMIT;
     let page_type = PAGE_TYPE::PAGE_READWRITE;
 
     let result = VirtualAlloc(base as _, pages * 4096, alloc_type, page_type);
 
     if result.is_null() {
-        Err(())
+        Err(std::io::Error::last_os_error())
     } else {
         Ok(())
     }
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> Result<(), ()> {
+pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
     let free_type = VirtualFree_dwFreeType::MEM_DECOMMIT;
 
     if VirtualFree(base as _, pages * 4096, free_type).as_bool() {
         Ok(())
     } else {
-        Err(())
+        Err(std::io::Error::last_os_error())
     }
 }
 

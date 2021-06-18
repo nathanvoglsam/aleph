@@ -32,22 +32,22 @@
 use crate::VirtualBuffer;
 
 #[inline]
-pub unsafe fn reserve_virtual_buffer(_pages: usize) -> Result<VirtualBuffer, ()> {
+pub unsafe fn reserve_virtual_buffer(_pages: usize) -> std::io::Result<VirtualBuffer> {
     panic!("Unsupported platform")
 }
 
 #[inline]
-pub unsafe fn free_virtual_buffer(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn free_virtual_buffer(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
     panic!("Unsupported platform")
 }
 
 #[inline]
-pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
     panic!("Unsupported platform")
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> Result<(), ()> {
+pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
     panic!("Unsupported platform")
 }
 
