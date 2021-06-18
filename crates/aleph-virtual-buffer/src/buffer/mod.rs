@@ -69,8 +69,15 @@ impl VirtualBuffer {
     ///
     pub fn commit(&self, range: Range<usize>) -> std::io::Result<()> {
         if Self::requires_committing() {
-            let (base, pages) = Self::resolve_range(self.data, range);
-            unsafe { implementation::commit_virtual_address_range(base, pages) }
+            if range.end > self.len() {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "Range out of bounds",
+                ))
+            } else {
+                let (base, pages) = Self::resolve_range(self.data, range);
+                unsafe { implementation::commit_virtual_address_range(base, pages) }
+            }
         } else {
             Ok(())
         }
@@ -90,8 +97,15 @@ impl VirtualBuffer {
     ///
     pub fn release(&mut self, range: Range<usize>) -> std::io::Result<()> {
         if Self::requires_committing() {
-            let (base, pages) = Self::resolve_range(self.data, range);
-            unsafe { implementation::release_virtual_address_range(base, pages) }
+            if range.end > self.len() {
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidInput,
+                    "Range out of bounds",
+                ))
+            } else {
+                let (base, pages) = Self::resolve_range(self.data, range);
+                unsafe { implementation::release_virtual_address_range(base, pages) }
+            }
         } else {
             Ok(())
         }

@@ -45,7 +45,6 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-tinyvec = "1.2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }

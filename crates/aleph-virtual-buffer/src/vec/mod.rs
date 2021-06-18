@@ -29,3 +29,6 @@
 
 mod fully_committed;
 mod partially_committed;
+
+pub use fully_committed::CommittedVirtualVec;
+pub use partially_committed::VirtualVec;
