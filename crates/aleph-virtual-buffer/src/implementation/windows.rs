@@ -43,14 +43,19 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
     let alloc_type = VirtualAlloc_flAllocationType::MEM_RESERVE;
     let page_type = PAGE_TYPE::PAGE_READWRITE;
 
-    let result = VirtualAlloc(std::ptr::null_mut(), pages * 4096, alloc_type, page_type);
+    let result = VirtualAlloc(
+        std::ptr::null_mut(),
+        pages * page_size(),
+        alloc_type,
+        page_type,
+    );
 
     if result.is_null() {
         Err(std::io::Error::last_os_error())
     } else {
         Ok(VirtualBuffer {
             data: result as _,
-            len: pages * 4096,
+            len: pages * page_size(),
         })
     }
 }
@@ -72,7 +77,7 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
     let alloc_type = VirtualAlloc_flAllocationType::MEM_COMMIT;
     let page_type = PAGE_TYPE::PAGE_READWRITE;
 
-    let result = VirtualAlloc(base as _, pages * 4096, alloc_type, page_type);
+    let result = VirtualAlloc(base as _, pages * page_size(), alloc_type, page_type);
 
     if result.is_null() {
         Err(std::io::Error::last_os_error())
@@ -85,7 +90,7 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
 pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
     let free_type = VirtualFree_dwFreeType::MEM_DECOMMIT;
 
-    if VirtualFree(base as _, pages * 4096, free_type).as_bool() {
+    if VirtualFree(base as _, pages * page_size(), free_type).as_bool() {
         Ok(())
     } else {
         Err(std::io::Error::last_os_error())
@@ -94,4 +99,8 @@ pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std:
 
 pub const fn requires_committing() -> bool {
     true
+}
+
+pub const fn page_size() -> usize {
+    4096
 }

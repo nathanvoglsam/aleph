@@ -157,6 +157,13 @@ impl VirtualBuffer {
     pub const fn requires_committing() -> bool {
         implementation::requires_committing()
     }
+
+    ///
+    /// Returns the page size for the platform
+    ///
+    pub const fn page_size() -> usize {
+        implementation::page_size()
+    }
 }
 
 impl Drop for VirtualBuffer {
@@ -168,16 +175,18 @@ impl Drop for VirtualBuffer {
 impl VirtualBuffer {
     #[inline]
     fn resolve_range(data: *mut u8, range: Range<usize>) -> (*mut u8, usize) {
+        let mask = implementation::page_size() - 1;
+
         // Destructure the range as it's not a copy type
         let (start, end) = (range.start, range.end);
 
         // Find the base address for the first page the range intersects
-        let base = start & !4095;
+        let base = start & !mask;
 
         // Find the number of pages the address intersects
         let pages = end - base; // Get the size of the range in bytes from the new base
-        let pages = pages + 4095 & !4095; // Round up to the next page size
-        let pages = pages / 4096; // Division should optimize to shift
+        let pages = pages + mask & !mask; // Round up to the next page size
+        let pages = pages / implementation::page_size(); // Division should optimize to shift
 
         unsafe { (data.add(base), pages) }
     }
