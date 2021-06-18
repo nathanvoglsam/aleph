@@ -27,10 +27,5 @@
 // SOFTWARE.
 //
 
-#[cfg(test)]
-mod tests;
-
-mod buffer;
-mod vec;
-
-pub use buffer::VirtualBuffer;
+mod fully_committed;
+mod partially_committed;
