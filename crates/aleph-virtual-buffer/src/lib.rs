@@ -171,8 +171,6 @@ impl VirtualBuffer {
         let pages = pages + 4095 & !4095; // Round up to the next page size
         let pages = pages / 4096; // Division should optimize to shift
 
-        unsafe {
-            (data.add(base), pages)
-        }
+        unsafe { (data.add(base), pages) }
     }
 }
