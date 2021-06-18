@@ -68,18 +68,14 @@ impl VirtualBuffer {
     /// Commits all pages that intersect the range of *bytes* inside the virtual buffer
     ///
     pub fn commit(&self, range: Range<usize>) -> std::io::Result<()> {
-        if Self::requires_committing() {
-            if range.end > self.len() {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "Range out of bounds",
-                ))
-            } else {
-                let (base, pages) = Self::resolve_range(self.data, range);
-                unsafe { implementation::commit_virtual_address_range(base, pages) }
-            }
+        if range.end > self.len() {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Range out of bounds",
+            ))
         } else {
-            Ok(())
+            let (base, pages) = Self::resolve_range(self.data, range);
+            unsafe { implementation::commit_virtual_address_range(base, pages) }
         }
     }
 
@@ -96,18 +92,14 @@ impl VirtualBuffer {
     /// the underlying memory for a call to this function to compile.
     ///
     pub fn release(&mut self, range: Range<usize>) -> std::io::Result<()> {
-        if Self::requires_committing() {
-            if range.end > self.len() {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "Range out of bounds",
-                ))
-            } else {
-                let (base, pages) = Self::resolve_range(self.data, range);
-                unsafe { implementation::release_virtual_address_range(base, pages) }
-            }
+        if range.end > self.len() {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Range out of bounds",
+            ))
         } else {
-            Ok(())
+            let (base, pages) = Self::resolve_range(self.data, range);
+            unsafe { implementation::release_virtual_address_range(base, pages) }
         }
     }
 
@@ -174,17 +166,6 @@ impl VirtualBuffer {
     ///
     pub unsafe fn as_slice_mut(&mut self) -> &mut [u8] {
         from_raw_parts_mut(self.data, self.len)
-    }
-
-    ///
-    /// This function returns whether the current platform requires committing pages explicitly
-    /// before they can be used.
-    ///
-    /// When this returns false it can be assumed that the entire address space range is valid and
-    /// can be de-referenced.
-    ///
-    pub const fn requires_committing() -> bool {
-        implementation::requires_committing()
     }
 
     ///

@@ -36,7 +36,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
     let result: *mut libc::c_void = libc::mmap(
         std::ptr::null_mut(),
         pages * 4096,
-        libc::PROT_READ | libc::PROT_WRITE,
+        libc::PROT_NONE,
         libc::MAP_SHARED | libc::MAP_ANON,
         -1,
         0,
@@ -62,19 +62,29 @@ pub unsafe fn free_virtual_buffer(base: *mut u8, pages: usize) -> std::io::Resul
 }
 
 #[inline]
-pub unsafe fn commit_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
-    // This is a no-op on unix
-    Ok(())
+pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
+    let result = libc::mprotect(
+        base as _,
+        pages * page_size(),
+        libc::PROT_READ | libc::PROT_WRITE,
+    );
+
+    if result != 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 #[inline]
-pub unsafe fn release_virtual_address_range(_base: *mut u8, _pages: usize) -> std::io::Result<()> {
-    // This is a no-op on unix
-    Ok(())
-}
+pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
+    let result = libc::mprotect(base as _, pages * page_size(), libc::PROT_NONE);
 
-pub const fn requires_committing() -> bool {
-    true
+    if result != 0 {
+        Err(std::io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 pub const fn page_size() -> usize {

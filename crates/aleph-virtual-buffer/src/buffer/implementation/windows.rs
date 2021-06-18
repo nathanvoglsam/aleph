@@ -97,10 +97,6 @@ pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std:
     }
 }
 
-pub const fn requires_committing() -> bool {
-    true
-}
-
 pub const fn page_size() -> usize {
     4096
 }
