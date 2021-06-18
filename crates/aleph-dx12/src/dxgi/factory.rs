@@ -80,13 +80,15 @@ impl Factory {
 
             // Create the swapchain
             let swapchain = match window_handle {
-                RawWindowHandle::Windows(hwnd) => {
-                    let hwnd = hwnd.hwnd.unwrap().as_ptr() as isize;
+                RawWindowHandle::Win32(hwnd) => {
+                    assert!(!hwnd.hwnd.is_null());
+                    let hwnd = hwnd.hwnd as isize;
                     let hwnd = HWND(hwnd);
                     self.create_swap_chain_for_hwnd(queue, hwnd, desc)?
                 }
-                RawWindowHandle::WinRT(core_window) => {
-                    let core_window = core_window.core_window.unwrap();
+                RawWindowHandle::WinRt(core_window) => {
+                    assert!(!core_window.core_window.is_null());
+                    let core_window = core_window.core_window;
                     let core_window: IInspectable = std::mem::transmute(core_window);
                     self.create_swap_chain_for_core_window(queue, core_window, desc)?
                 }
