@@ -26,3 +26,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+pub use crate::generation::AliveGeneration;
+pub use crate::generation::DeadGeneration;
+pub use crate::generation::Generation;
+
+mod generation;
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub struct EntityID {
+    generation: AliveGeneration,
+    index: u32,
+}
