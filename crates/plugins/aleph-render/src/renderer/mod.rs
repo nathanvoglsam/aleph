@@ -84,6 +84,7 @@ impl EguiRenderer {
         }
     }
 
+    #[allow(unused)]
     pub fn update_screen_info(&mut self, pixels_per_point: f32) {
         self.pixels_per_point = pixels_per_point;
     }
