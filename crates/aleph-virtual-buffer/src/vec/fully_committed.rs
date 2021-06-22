@@ -120,18 +120,22 @@ impl<T> CommittedVirtualVec<T> {
     /// * If the index is out of bounds.
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        let targets: &mut [T] = &mut self.as_slice_mut()[index..];
+        if self.len == 0 {
+            panic!("VirtualVec::remove> Tried to remove an element from empty vec");
+        } else {
+            let targets: &mut [T] = &mut self.as_slice_mut()[index..];
 
-        // SAFETY:
-        // This is safe as the dangling data for the item will be inaccessible so `item` still
-        // upholds correct ownership semantics. The item in the array will end up at the end before
-        // being "popped" off by decrementing `self.len` which prevents drop from being called
-        // twice on the same item (when the vec is destroyed, and when the item we yield is
-        // dropped).
-        let item = unsafe { targets.as_ptr().read() };
-        targets.rotate_left(1);
-        self.len -= 1;
-        item
+            // SAFETY:
+            // This is safe as the dangling data for the item will be inaccessible so `item` still
+            // upholds correct ownership semantics. The item in the array will end up at the end before
+            // being "popped" off by decrementing `self.len` which prevents drop from being called
+            // twice on the same item (when the vec is destroyed, and when the item we yield is
+            // dropped).
+            let item = unsafe { targets.as_ptr().read() };
+            targets.rotate_left(1);
+            self.len -= 1;
+            item
+        }
     }
 
     /// As [`resize_with`](CommittedVirtualVec::resize_with)
@@ -192,7 +196,9 @@ impl<T> CommittedVirtualVec<T> {
             index,
             self.len
         );
-        if index == self.len - 1 {
+        if self.len == 0 {
+            panic!("VirtaulVec::swap_remove> tried to remove from empty vec");
+        } else if index == self.len - 1 {
             self.pop().unwrap()
         } else {
             // SAFETY:
@@ -251,7 +257,10 @@ impl<T> CommittedVirtualVec<T> {
         }
 
         // Check if we have enough capacity
-        let new_len = self.len + sli.len();
+        let new_len = self
+            .len
+            .checked_add(sli.len())
+            .expect("CommitedVirtualVec::extend_from_slice> overflow adding lengths");
         if new_len > self.capacity() {
             panic!(
                 "CommittedVirtualVec::extend_from_slice> total length {} exceeds capacity {}",

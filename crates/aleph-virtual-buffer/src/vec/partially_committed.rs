@@ -126,18 +126,22 @@ impl<T> VirtualVec<T> {
     /// * If the index is out of bounds.
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        let targets: &mut [T] = &mut self.as_slice_mut()[index..];
+        if self.len == 0 {
+            panic!("VirtualVec::remove> Tried to remove an element from empty vec");
+        } else {
+            let targets: &mut [T] = &mut self.as_slice_mut()[index..];
 
-        // SAFETY:
-        // This is safe as the dangling data for the item will be inaccessible so `item` still
-        // upholds correct ownership semantics. The item in the array will end up at the end before
-        // being "popped" off by decrementing `self.len` which prevents drop from being called
-        // twice on the same item (when the vec is destroyed, and when the item we yield is
-        // dropped).
-        let item = unsafe { targets.as_ptr().read() };
-        targets.rotate_left(1);
-        self.len -= 1;
-        item
+            // SAFETY:
+            // This is safe as the dangling data for the item will be inaccessible so `item` still
+            // upholds correct ownership semantics. The item in the array will end up at the end before
+            // being "popped" off by decrementing `self.len` which prevents drop from being called
+            // twice on the same item (when the vec is destroyed, and when the item we yield is
+            // dropped).
+            let item = unsafe { targets.as_ptr().read() };
+            targets.rotate_left(1);
+            self.len -= 1;
+            item
+        }
     }
 
     /// As [`resize_with`](VirtualVec::resize_with)
@@ -199,7 +203,9 @@ impl<T> VirtualVec<T> {
             index,
             self.len
         );
-        if index == self.len - 1 {
+        if self.len == 0 {
+            panic!("VirtaulVec::swap_remove> tried to remove from empty vec");
+        } else if index == self.len - 1 {
             self.pop().unwrap()
         } else {
             // SAFETY:
@@ -265,7 +271,9 @@ impl<T> VirtualVec<T> {
             // We do this so we only need one `VirtualAlloc` / `mmap` call
             let mut to_commit = self.committed;
             while count < to_commit {
-                to_commit *= 2;
+                to_commit = to_commit
+                    .checked_mul(2)
+                    .expect("VirtualVec::reserve> overflowed calculating growth");
             }
 
             // While it shouldn't be possible for this to be reachable I will check anyway
@@ -277,10 +285,15 @@ impl<T> VirtualVec<T> {
             );
 
             // The start of the range to commit is after the last committed item
-            let uncommitted_start = self.committed * size_of::<T>();
+            let uncommitted_start = self
+                .committed
+                .checked_mul(size_of::<T>())
+                .expect("VirtualVec::reserve> overflow getting commit range start");
 
             // We commit up to the `to_commit`
-            let uncommitted_end = to_commit;
+            let uncommitted_end = to_commit
+                .checked_mul(size_of::<T>())
+                .expect("VirtualVec::reserve> overflow getting commit range end");
 
             // Commit the range
             self.buffer.commit(uncommitted_start..uncommitted_end)?;
@@ -303,7 +316,10 @@ impl<T> VirtualVec<T> {
         }
 
         // Check if we have enough capacity
-        let new_len = self.len + sli.len();
+        let new_len = self
+            .len
+            .checked_add(sli.len())
+            .expect("VirtualVec::extend_from_slice> overflow adding lengths");
         if new_len > self.capacity() {
             panic!(
                 "VirtualVec::extend_from_slice> total length {} exceeds capacity {}",
@@ -347,19 +363,31 @@ impl<T> VirtualVec<T> {
     // Grows the committed range geometrically
     #[inline]
     fn grow(&mut self) -> std::io::Result<()> {
-        if self.committed * 2 > self.capacity() {
+        if let Some(committed) = self.committed.checked_mul(2) {
+            if committed > self.capacity() {
+                panic!(
+                    "VirtualVec::grow> total length {} exceeds capacity {}",
+                    self.committed * 2,
+                    self.capacity()
+                )
+            }
+        } else {
             panic!(
-                "VirtualVec::grow> total length {} exceeds capacity {}",
-                self.committed * 2,
-                self.capacity()
+                "VirtualVec::grow> overflow on length {}, doubling overflows",
+                self.committed,
             )
         }
 
         // The start of the range to commit is after the last committed item
-        let uncommitted_start = self.committed * size_of::<T>();
+        let uncommitted_start = self
+            .committed
+            .checked_mul(size_of::<T>())
+            .expect("VirtualVec::grow> overflow on byte size");
 
         // We double the amount of committed space to grow geometrically
-        let uncommitted_end = uncommitted_start * 2;
+        let uncommitted_end = uncommitted_start
+            .checked_mul(2)
+            .expect("VirtualVec::grow> overflow on byte size");
 
         // Commit the range
         self.buffer.commit(uncommitted_start..uncommitted_end)?;
