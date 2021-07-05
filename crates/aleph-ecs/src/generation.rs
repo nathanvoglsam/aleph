@@ -38,7 +38,7 @@ use std::convert::TryFrom;
 ///
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct Generation(pub(crate) u32);
+pub struct Generation(u32);
 
 impl Generation {
     /// Returns whether this generation marks a generation that is alive
@@ -112,7 +112,7 @@ impl PartialOrd<DeadGeneration> for Generation {
 ///
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct AliveGeneration(pub(crate) Generation);
+pub struct AliveGeneration(Generation);
 
 impl AliveGeneration {
     /// "Revives" the generation, producing a dead generation, by incrementing the generation
@@ -162,7 +162,7 @@ impl PartialEq<DeadGeneration> for AliveGeneration {
 ///
 #[repr(transparent)]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct DeadGeneration(pub(crate) Generation);
+pub struct DeadGeneration(Generation);
 
 impl DeadGeneration {
     /// "Revives" the generation, producing a live generation, by incrementing the generation
