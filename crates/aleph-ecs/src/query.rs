@@ -1,3 +1,5 @@
+use crate::EntityLayout;
+
 //
 //
 // This file is a part of Aleph
@@ -27,25 +29,15 @@
 // SOFTWARE.
 //
 
-extern crate aleph_virtual_buffer as virtual_buffer;
+///
+/// A structure that represents the information that constitutes a query
+///
+#[derive(Clone, Hash, Debug)]
+#[repr(C)]
+pub struct Query<'a> {
+    /// A list of components that *must* be present on a component for the query to match
+    pub wanted_components: Option<&'a EntityLayout>,
 
-mod component;
-mod entity;
-mod entity_layout;
-mod generation;
-mod query;
-
-pub use crate::component::Component;
-pub use crate::component::ComponentTypeDescription;
-pub use crate::component::ComponentTypeId;
-pub use crate::entity::EntityEntry;
-pub use crate::entity::EntityEntryData;
-pub use crate::entity::EntityId;
-pub use crate::entity::EntityLocation;
-pub use crate::entity::EntityStorage;
-pub use crate::entity_layout::EntityLayout;
-pub use crate::entity_layout::EntityLayoutBuf;
-pub use crate::generation::AliveGeneration;
-pub use crate::generation::DeadGeneration;
-pub use crate::generation::Generation;
-pub use crate::query::Query;
+    /// A list of components that *must not* be present on a component for the query to match
+    pub excluded_components: Option<&'a EntityLayout>,
+}

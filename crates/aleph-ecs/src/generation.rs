@@ -70,6 +70,12 @@ impl Generation {
     pub fn increment(self) -> Generation {
         Self(self.0.wrapping_add(1))
     }
+
+    /// Increments the generation index and assigns the result to self
+    #[inline]
+    pub fn increment_assign(&mut self) {
+        *self = self.increment()
+    }
 }
 
 impl Default for Generation {
