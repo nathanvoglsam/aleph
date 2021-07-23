@@ -378,22 +378,34 @@ impl<T> VirtualVec<T> {
             )
         }
 
-        // The start of the range to commit is after the last committed item
-        let uncommitted_start = self
-            .committed
-            .checked_mul(size_of::<T>())
-            .expect("VirtualVec::grow> overflow on byte size");
+        let (new_committed, uncommitted_start, uncommitted_end) = if self.committed == 0 {
+            let new_committed = 1;
+            let uncommitted_start = 0;
+            let uncommitted_end = 1;
 
-        // We double the amount of committed space to grow geometrically
-        let uncommitted_end = uncommitted_start
-            .checked_mul(2)
-            .expect("VirtualVec::grow> overflow on byte size");
+            (new_committed, uncommitted_start, uncommitted_end)
+        } else {
+            let new_committed = self.committed * 2;
+
+            // The start of the range to commit is after the last committed item
+            let uncommitted_start = self
+                .committed
+                .checked_mul(size_of::<T>())
+                .expect("VirtualVec::grow> overflow on byte size");
+
+            // We double the amount of committed space to grow geometrically
+            let uncommitted_end = uncommitted_start
+                .checked_mul(2)
+                .expect("VirtualVec::grow> overflow on byte size");
+
+            (new_committed, uncommitted_start, uncommitted_end)
+        };
 
         // Commit the range
         self.buffer.commit(uncommitted_start..uncommitted_end)?;
 
         // Update the number of committed entries
-        self.committed *= 2;
+        self.committed = new_committed;
 
         Ok(())
     }
