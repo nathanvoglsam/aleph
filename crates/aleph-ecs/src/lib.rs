@@ -45,7 +45,5 @@ pub use crate::entity::EntityLocation;
 pub use crate::entity::EntityStorage;
 pub use crate::entity_layout::EntityLayout;
 pub use crate::entity_layout::EntityLayoutBuf;
-pub use crate::generation::AliveGeneration;
-pub use crate::generation::DeadGeneration;
 pub use crate::generation::Generation;
 pub use crate::query::Query;

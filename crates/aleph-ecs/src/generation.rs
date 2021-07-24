@@ -27,9 +27,6 @@
 // SOFTWARE.
 //
 
-use std::cmp::Ordering;
-use std::convert::TryFrom;
-
 ///
 /// The base `Generation` type that represents an arbitrary generation index.
 ///
@@ -53,18 +50,6 @@ impl Generation {
         !self.is_alive()
     }
 
-    /// Converts the generation to an `AliveGeneration` new-type if `self` is alive
-    #[inline]
-    pub fn into_alive(self) -> Option<AliveGeneration> {
-        AliveGeneration::try_from(self).ok()
-    }
-
-    /// Converts the generation to an `DeadGeneration` new-type if `self` is dead
-    #[inline]
-    pub fn into_dead(self) -> Option<DeadGeneration> {
-        DeadGeneration::try_from(self).ok()
-    }
-
     /// Increments the generation index.
     #[inline]
     pub fn increment(self) -> Generation {
@@ -82,133 +67,5 @@ impl Default for Generation {
     #[inline]
     fn default() -> Self {
         Generation(0)
-    }
-}
-
-impl PartialEq<AliveGeneration> for Generation {
-    #[inline]
-    fn eq(&self, other: &AliveGeneration) -> bool {
-        self.0.eq(&other.0 .0)
-    }
-}
-
-impl PartialOrd<AliveGeneration> for Generation {
-    #[inline]
-    fn partial_cmp(&self, other: &AliveGeneration) -> Option<Ordering> {
-        self.0.partial_cmp(&other.0 .0)
-    }
-}
-
-impl PartialEq<DeadGeneration> for Generation {
-    #[inline]
-    fn eq(&self, other: &DeadGeneration) -> bool {
-        self.0.eq(&other.0 .0)
-    }
-}
-
-impl PartialOrd<DeadGeneration> for Generation {
-    #[inline]
-    fn partial_cmp(&self, other: &DeadGeneration) -> Option<Ordering> {
-        self.0.partial_cmp(&other.0 .0)
-    }
-}
-
-///
-/// A new-type wrapper over `Generation` that can only hold a generation index that is alive
-///
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct AliveGeneration(Generation);
-
-impl AliveGeneration {
-    /// "Revives" the generation, producing a dead generation, by incrementing the generation
-    /// index
-    #[inline]
-    pub fn kill(self) -> DeadGeneration {
-        DeadGeneration(self.0.increment())
-    }
-}
-
-impl TryFrom<Generation> for AliveGeneration {
-    type Error = ();
-
-    #[inline]
-    fn try_from(value: Generation) -> Result<Self, Self::Error> {
-        if value.is_dead() {
-            Err(())
-        } else {
-            Ok(AliveGeneration(value))
-        }
-    }
-}
-
-impl PartialEq<Generation> for AliveGeneration {
-    #[inline]
-    fn eq(&self, other: &Generation) -> bool {
-        self.0.eq(other)
-    }
-}
-
-impl PartialOrd<Generation> for AliveGeneration {
-    #[inline]
-    fn partial_cmp(&self, other: &Generation) -> Option<Ordering> {
-        self.0.partial_cmp(other)
-    }
-}
-
-impl PartialEq<DeadGeneration> for AliveGeneration {
-    #[inline]
-    fn eq(&self, _: &DeadGeneration) -> bool {
-        false
-    }
-}
-
-///
-/// A new-type wrapper over `Generation` that can only hold a generation index that is dead
-///
-#[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct DeadGeneration(Generation);
-
-impl DeadGeneration {
-    /// "Revives" the generation, producing a live generation, by incrementing the generation
-    /// index
-    #[inline]
-    pub fn revive(self) -> AliveGeneration {
-        AliveGeneration(self.0.increment())
-    }
-}
-
-impl TryFrom<Generation> for DeadGeneration {
-    type Error = ();
-
-    #[inline]
-    fn try_from(value: Generation) -> Result<Self, Self::Error> {
-        if value.is_alive() {
-            Err(())
-        } else {
-            Ok(DeadGeneration(value))
-        }
-    }
-}
-
-impl PartialEq<Generation> for DeadGeneration {
-    #[inline]
-    fn eq(&self, other: &Generation) -> bool {
-        self.0.eq(other)
-    }
-}
-
-impl PartialOrd<Generation> for DeadGeneration {
-    #[inline]
-    fn partial_cmp(&self, other: &Generation) -> Option<Ordering> {
-        self.0.partial_cmp(other)
-    }
-}
-
-impl PartialEq<AliveGeneration> for DeadGeneration {
-    #[inline]
-    fn eq(&self, _: &AliveGeneration) -> bool {
-        false
     }
 }
