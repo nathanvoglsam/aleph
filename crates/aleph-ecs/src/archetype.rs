@@ -27,28 +27,22 @@
 // SOFTWARE.
 //
 
-extern crate aleph_virtual_buffer as virtual_buffer;
+///
+/// This index wrapper represents an index into the list of archetypes within a world.
+///
+/// This is used to better document the purpose of various indexes that would've otherwise been
+/// plain `u32` fields.
+///
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct ArchetypeIndex(pub u32);
 
-mod archetype;
-mod component;
-mod entity;
-mod entity_layout;
-mod generation;
-mod query;
-
-pub use crate::archetype::ArchetypeEntityIndex;
-pub use crate::archetype::ArchetypeIndex;
-pub use crate::component::Component;
-pub use crate::component::ComponentTypeDescription;
-pub use crate::component::ComponentTypeId;
-pub use crate::entity::EntityEntry;
-pub use crate::entity::EntityEntryData;
-pub use crate::entity::EntityFreeListLink;
-pub use crate::entity::EntityId;
-pub use crate::entity::EntityIndex;
-pub use crate::entity::EntityLocation;
-pub use crate::entity::EntityStorage;
-pub use crate::entity_layout::EntityLayout;
-pub use crate::entity_layout::EntityLayoutBuf;
-pub use crate::generation::Generation;
-pub use crate::query::Query;
+///
+/// This index wrapper represents an index into an archetype's component storage.
+///
+/// This is used to better document the purpose of various indexes that would've otherwise been
+/// plain `u32` fields.
+///
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct ArchetypeEntityIndex(pub u32);

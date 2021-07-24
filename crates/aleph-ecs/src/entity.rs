@@ -31,9 +31,19 @@
 //! Most structures in this module are repr(C) for FFI reasons
 //!
 
-use crate::Generation;
+use crate::{ArchetypeEntityIndex, ArchetypeIndex, Generation};
 use std::mem::MaybeUninit;
 use virtual_buffer::VirtualVec;
+
+///
+/// This index wrapper represents an index into an `EntityStorage`.
+///
+/// This is used to better document the purpose of various indexes that would've otherwise been
+/// plain `u32` fields.
+///
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct EntityIndex(pub u32);
 
 ///
 /// This represents an ID that refers to a specific entity.
@@ -45,7 +55,7 @@ pub struct EntityId {
     pub generation: Generation,
 
     /// The index inside the entity list this ID was allocated to
-    pub index: u32,
+    pub index: EntityIndex,
 }
 
 ///
@@ -56,11 +66,22 @@ pub struct EntityId {
 #[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct EntityLocation {
     /// The index inside the set of all archetypes the entity is a member of
-    pub archetype: u32,
+    pub archetype: ArchetypeIndex,
 
     /// The index within the archetype the entity can be found at
-    pub entity: u32,
+    pub entity: ArchetypeEntityIndex,
 }
+
+///
+/// This index wrapper represents an index into an `EntityStorage`, but with a specific usecase for
+/// the free list linked-list encoded in the de-allocated entity slots.
+///
+/// This is used to better document the purpose of various indexes that would've otherwise been
+/// plain `u32` fields.
+///
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+pub struct EntityFreeListLink(pub u32);
 
 ///
 /// This union represents a single entry in the `EntityStorage` structure's backing storage. The
@@ -74,7 +95,7 @@ pub union EntityEntryData {
     pub location: EntityLocation,
 
     /// The next free element
-    pub next: u32,
+    pub next: EntityFreeListLink,
 }
 
 impl Default for EntityEntryData {
@@ -134,10 +155,7 @@ impl EntityStorage {
         // the head of the free list.
         entities.resize(1, EntityEntry::default());
 
-        let out = Self {
-            entities,
-            count: 0,
-        };
+        let out = Self { entities, count: 0 };
         Ok(out)
     }
 
@@ -150,12 +168,13 @@ impl EntityStorage {
     ///
     /// Will return None if the ID is invalid (dangling)
     pub fn lookup(&self, id: EntityId) -> Option<EntityLocation> {
+        let index = id.index.0 as usize;
+
         // If the generations do not match then this ID is dangling
-        if self.entities[id.index as usize].generation == id.generation && id.generation.is_alive()
-        {
+        if self.entities[index].generation == id.generation && id.generation.is_alive() {
             // SAFETY: The location field will always be the current live field if the generation
             //         is alive so accessing this is sound.
-            let location = unsafe { self.entities[id.index as usize].data.location };
+            let location = unsafe { self.entities[index].data.location };
             Some(location)
         } else {
             None
@@ -169,22 +188,22 @@ impl EntityStorage {
         let slot = unsafe {
             // Take an item from the free list
             let slot = self.entities[0].data.next;
-            self.entities[0].data.next = self.entities[slot as usize].data.next;
+            self.entities[0].data.next = self.entities[slot.0 as usize].data.next;
             slot
         };
 
         // If the freelist is empty, slot will be 0, because the header
         // item will point to itself.
-        let out = if slot != 0 {
+        let out = if slot.0 != 0 {
             // Assert the generation was actually dead before reviving it
-            debug_assert!(self.entities[slot as usize].generation.is_dead());
+            debug_assert!(self.entities[slot.0 as usize].generation.is_dead());
 
             // Increment the generation to revive the slot
-            self.entities[slot as usize].generation.increment_assign();
+            self.entities[slot.0 as usize].generation.increment_assign();
 
             EntityId {
-                generation: self.entities[slot as usize].generation,
-                index: slot,
+                generation: self.entities[slot.0 as usize].generation,
+                index: EntityIndex(slot.0),
             }
         } else {
             // Add a new entry if there are no free ones in the free list
@@ -199,7 +218,7 @@ impl EntityStorage {
 
             EntityId {
                 generation: Generation::default(),
-                index: slot as u32,
+                index: EntityIndex(slot as u32),
             }
         };
 
@@ -212,28 +231,27 @@ impl EntityStorage {
     /// slot to the free list and return the location the entity pointed to before being marked
     /// as free.
     pub fn destroy(&mut self, id: EntityId) -> Option<EntityLocation> {
+        let index = id.index.0 as usize;
+
         // Check if the generations match, if they don't match we don't have a valid ID to free
-        if self.entities[id.index as usize].generation == id.generation && id.generation.is_alive()
-        {
+        if self.entities[index].generation == id.generation && id.generation.is_alive() {
             // SAFETY: The union access is safe as location will always be the live field of the
             //         union for live entity slots. Both members are also plain old data and so
             //         the access is still safe anyway as all bit patterns are valid in either
             //         member.
             let location = unsafe {
                 // Capture the location the slot points to before we clobber it
-                let location = self.entities[id.index as usize].data.location;
+                let location = self.entities[index].data.location;
 
                 // Add this entity slot to the free list
-                self.entities[id.index as usize].data.next = self.entities[0].data.next;
-                self.entities[0].data.next = id.index;
+                self.entities[index].data.next = self.entities[0].data.next;
+                self.entities[0].data.next = EntityFreeListLink(id.index.0);
 
                 location
             };
 
             // Increment the generation to mark this slot as dead
-            self.entities[id.index as usize]
-                .generation
-                .increment_assign();
+            self.entities[index].generation.increment_assign();
 
             self.count -= 1;
             Some(location)
