@@ -80,7 +80,8 @@ pub union EntityEntryData {
 impl Default for EntityEntryData {
     fn default() -> EntityEntryData {
         // SAFETY: Zero initialization is perfectly valid as all fields in the union's members are
-        //         plain integers. Using this guarantees the entire union is zero initialized.
+        //         plain integers. Using this guarantees the entire union is zero initialized, even
+        //         if the layout is changed in the future.
         unsafe { MaybeUninit::zeroed().assume_init() }
     }
 }
@@ -163,8 +164,8 @@ impl EntityStorage {
 
     /// Allocates a new entity ID with the given location data and returns the ID.
     pub fn create(&mut self, location: EntityLocation) -> EntityId {
-        // SAFETY: This is safe because the first slot
-        //
+        // SAFETY: This is safe because the first slot is always the head of the free list and will
+        //         never contain an entity.
         let slot = unsafe {
             // Take an item from the free list
             let slot = self.entities[0].data.next;
