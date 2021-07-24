@@ -32,8 +32,8 @@ use crate::EntityLayout;
 ///
 /// A structure that represents the information that constitutes a query
 ///
-#[derive(Clone, Hash, Debug)]
 #[repr(C)]
+#[derive(Clone, Hash, Debug)]
 pub struct Query<'a> {
     /// A list of components that *must* be present on a component for the query to match
     pub wanted_components: Option<&'a EntityLayout>,

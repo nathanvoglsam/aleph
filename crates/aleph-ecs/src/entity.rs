@@ -107,7 +107,7 @@ pub struct EntityStorage {
     entities: VirtualVec<EntityEntry>,
 
     /// The number of entities that are currently live
-    entity_count: usize,
+    count: usize,
 }
 
 impl EntityStorage {
@@ -136,14 +136,14 @@ impl EntityStorage {
 
         let out = Self {
             entities,
-            entity_count: 0,
+            count: 0,
         };
         Ok(out)
     }
 
     /// Returns the number of entities that are live in this storage.
     pub fn len(&self) -> usize {
-        self.entity_count
+        self.count
     }
 
     /// Looks up the location of the entity with the given ID.
@@ -203,7 +203,7 @@ impl EntityStorage {
             }
         };
 
-        self.entity_count += 1;
+        self.count += 1;
         out
     }
 
@@ -235,7 +235,7 @@ impl EntityStorage {
                 .generation
                 .increment_assign();
 
-            self.entity_count -= 1;
+            self.count -= 1;
             Some(location)
         } else {
             None
