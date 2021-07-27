@@ -38,21 +38,26 @@
 pub struct Generation(u32);
 
 impl Generation {
+    /// Returns a newly created generation. The initial state is 0, which encodes a dead generation.
+    pub const fn new() -> Self {
+        Self(0)
+    }
+
     /// Returns whether this generation marks a generation that is alive
     #[inline]
-    pub fn is_alive(self) -> bool {
-        self.0 % 2 == 0
+    pub const fn is_alive(self) -> bool {
+        self.0 % 2 != 0
     }
 
     /// Returns whether this generation marks a generation that si dead
     #[inline]
-    pub fn is_dead(self) -> bool {
+    pub const fn is_dead(self) -> bool {
         !self.is_alive()
     }
 
     /// Increments the generation index.
     #[inline]
-    pub fn increment(self) -> Generation {
+    pub const fn increment(self) -> Generation {
         Self(self.0.wrapping_add(1))
     }
 
