@@ -36,6 +36,7 @@ mod entity_layout;
 mod generation;
 mod query;
 
+pub use crate::archetype::Archetype;
 pub use crate::archetype::ArchetypeEntityIndex;
 pub use crate::archetype::ArchetypeIndex;
 pub use crate::component::Component;
