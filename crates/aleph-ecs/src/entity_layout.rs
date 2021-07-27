@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::{iter::FromIterator, ops::Deref, vec::IntoIter};
+use std::{borrow::Borrow, iter::FromIterator, ops::Deref, vec::IntoIter};
 
 use crate::ComponentTypeId;
 
@@ -43,6 +43,7 @@ pub struct EntityLayout {
 impl EntityLayout {
     /// An unsafe function similar to `Self::from_inner`. This function skips checking the
     /// requirements and so is marked as unsafe.
+    #[inline]
     pub unsafe fn from_inner_unchecked<'a>(components: &'a [ComponentTypeId]) -> &'a Self {
         // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
         // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
@@ -59,6 +60,7 @@ impl EntityLayout {
     ///   - There are no duplicate entries
     ///
     /// If these requirements are not met then the function will return None.
+    #[inline]
     pub fn from_inner<'a>(components: &'a [ComponentTypeId]) -> Option<&'a Self> {
         // First we check if the given list is sorted
         let is_sorted = components.windows(2).all(|w| w[0] <= w[1]);
@@ -81,21 +83,25 @@ impl EntityLayout {
     }
 
     /// Returns whether the given component type is present in the `EntityLayoutBuf`.
+    #[inline]
     pub fn contains_component_type(&self, id: ComponentTypeId) -> bool {
         self.components.binary_search(&id).is_ok()
     }
 
     /// Returns if the `EntityLayoutBuf` has no member component types.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.components.is_empty()
     }
 
     /// Returns the number of component types that the `EntityLayoutBuf` holds.
+    #[inline]
     pub fn len(&self) -> usize {
         self.components.len()
     }
 
     /// Returns if `self` is a subset of `other`
+    #[inline]
     pub fn is_subset_of(&self, other: &EntityLayout) -> bool {
         // Early exit if self is empty, as an empty set is always a subset of any other set.
         if self.is_empty() {
@@ -134,6 +140,7 @@ impl EntityLayout {
     }
 
     /// Returns if `self` contains no elements in common with other
+    #[inline]
     pub fn is_disjoint_from(&self, other: &EntityLayoutBuf) -> bool {
         // An empty set is always jisjoint from every other set
         if self.is_empty() {
@@ -153,8 +160,20 @@ impl EntityLayout {
     }
 
     /// An iterator over the components in this layout
+    #[inline]
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = ComponentTypeId> + 'a {
         self.components.iter().cloned()
+    }
+}
+
+impl ToOwned for EntityLayout {
+    type Owned = EntityLayoutBuf;
+
+    #[inline]
+    fn to_owned(&self) -> Self::Owned {
+        EntityLayoutBuf {
+            components: self.components.into(),
+        }
     }
 }
 
@@ -187,13 +206,15 @@ pub struct EntityLayoutBuf {
 
 impl EntityLayoutBuf {
     /// Constructs a new, empty `EntityLayoutBuf`.
-    pub fn new() -> EntityLayoutBuf {
+    #[inline]
+    pub const fn new() -> EntityLayoutBuf {
         Self {
             components: Vec::new(),
         }
     }
 
     /// Constructs a new, empty `EntityLayoutBuf` with capacity for `capacity` elements.
+    #[inline]
     pub fn with_capacity(capacity: usize) -> EntityLayoutBuf {
         Self {
             components: Vec::with_capacity(capacity),
@@ -203,6 +224,7 @@ impl EntityLayoutBuf {
     /// Adds the given component ID to the `EntityLayoutBuf`.
     ///
     /// Returns true if the component is already present in the `EntityLayoutBuf`, and false if it is not.
+    #[inline]
     pub fn add_component_type(&mut self, id: ComponentTypeId) -> bool {
         match self.components.binary_search(&id) {
             Ok(_) => true,
@@ -217,6 +239,7 @@ impl EntityLayoutBuf {
     ///
     /// Returns true if the component was present in the `EntityLayoutBuf` and was removed, or false if
     /// the component was not present in the `EntityLayoutBuf`.
+    #[inline]
     pub fn remove_component_type(&mut self, id: ComponentTypeId) -> bool {
         match self.components.binary_search(&id) {
             Ok(index) => {
@@ -231,6 +254,7 @@ impl EntityLayoutBuf {
 impl Deref for EntityLayoutBuf {
     type Target = EntityLayout;
 
+    #[inline]
     fn deref(&self) -> &EntityLayout {
         let slice = self.components.as_slice();
         // SAFETY: All invariants of EntityLayout::from_inner are upheld by EntityLayoutBuf's
@@ -240,8 +264,16 @@ impl Deref for EntityLayoutBuf {
 }
 
 impl AsRef<EntityLayout> for EntityLayoutBuf {
+    #[inline]
     fn as_ref(&self) -> &EntityLayout {
         self
+    }
+}
+
+impl Borrow<EntityLayout> for EntityLayoutBuf {
+    #[inline]
+    fn borrow(&self) -> &EntityLayout {
+        self.as_ref()
     }
 }
 
@@ -250,12 +282,14 @@ impl IntoIterator for EntityLayoutBuf {
 
     type IntoIter = IntoIter<ComponentTypeId>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.components.into_iter()
     }
 }
 
 impl FromIterator<ComponentTypeId> for EntityLayoutBuf {
+    #[inline]
     fn from_iter<T: IntoIterator<Item = ComponentTypeId>>(iter: T) -> Self {
         Self {
             components: Vec::from_iter(iter),
