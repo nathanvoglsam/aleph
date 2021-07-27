@@ -58,6 +58,27 @@ pub struct EntityId {
     pub index: EntityIndex,
 }
 
+impl EntityId {
+    #[inline]
+    pub const fn null(self) -> Self {
+        Self {
+            generation: Generation::new(),
+            index: EntityIndex(0),
+        }
+    }
+
+    /// Returns whether this entity reference is a null reference.
+    ///
+    /// # Info
+    ///
+    /// An entity id is considered null when it encodes a dead generation. It is impossible for an
+    /// entity id to point to an entity with a dead generation so makes a perfect null flag.
+    #[inline]
+    pub const fn is_null(self) -> bool {
+        self.generation.is_dead()
+    }
+}
+
 ///
 /// This represents a reference to the location an entity is stored within the set of all archetypes
 /// and the components inside that archetype.
@@ -99,6 +120,7 @@ pub union EntityEntryData {
 }
 
 impl Default for EntityEntryData {
+    #[inline]
     fn default() -> EntityEntryData {
         // SAFETY: Zero initialization is perfectly valid as all fields in the union's members are
         //         plain integers. Using this guarantees the entire union is zero initialized, even
@@ -160,6 +182,7 @@ impl EntityStorage {
     }
 
     /// Returns the number of entities that are live in this storage.
+    #[inline]
     pub fn len(&self) -> usize {
         self.count
     }
@@ -167,6 +190,7 @@ impl EntityStorage {
     /// Looks up the location of the entity with the given ID.
     ///
     /// Will return None if the ID is invalid (dangling)
+    #[inline]
     pub fn lookup(&self, id: EntityId) -> Option<EntityLocation> {
         let index = id.index.0 as usize;
 
@@ -182,6 +206,7 @@ impl EntityStorage {
     }
 
     /// Allocates a new entity ID with the given location data and returns the ID.
+    #[inline]
     pub fn create(&mut self, location: EntityLocation) -> EntityId {
         // SAFETY: This is safe because the first slot is always the head of the free list and will
         //         never contain an entity.
@@ -209,7 +234,7 @@ impl EntityStorage {
             // Add a new entry if there are no free ones in the free list
             let slot = self.entities.len();
             self.entities.push(EntityEntry {
-                generation: Generation::default(),
+                generation: Generation::default().increment(),
                 data: EntityEntryData { location },
             });
 
@@ -217,7 +242,7 @@ impl EntityStorage {
             debug_assert!(self.entities[slot].generation.is_alive());
 
             EntityId {
-                generation: Generation::default(),
+                generation: Generation::default().increment(),
                 index: EntityIndex(slot as u32),
             }
         };
@@ -230,6 +255,7 @@ impl EntityStorage {
     /// function does nothing and returns None. If the ID is valid then the function will add the
     /// slot to the free list and return the location the entity pointed to before being marked
     /// as free.
+    #[inline]
     pub fn destroy(&mut self, id: EntityId) -> Option<EntityLocation> {
         let index = id.index.0 as usize;
 
