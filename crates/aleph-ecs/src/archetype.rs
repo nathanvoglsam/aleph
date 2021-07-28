@@ -195,6 +195,24 @@ impl Archetype {
         Some(storage.as_slice_mut())
     }
 
+    /// Given a storage index, returns the raw bytes for the backing storage
+    #[inline]
+    pub fn component_storage_raw_index(&self, index: usize) -> &[u8] {
+        // Lookup the storage
+        let storage = &self.storages[index];
+
+        storage.as_slice()
+    }
+
+    /// Given a storage index, returns the raw bytes for the backing storage
+    #[inline]
+    pub fn component_storage_mut_raw_index(&mut self, index: usize) -> &mut [u8] {
+        // Lookup the storage
+        let storage = &mut self.storages[index];
+
+        storage.as_slice_mut()
+    }
+
     ///
     #[inline]
     pub fn entity_ids(&self) -> &[EntityId] {
