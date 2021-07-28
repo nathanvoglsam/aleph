@@ -32,10 +32,7 @@
 //!
 
 use crate::{ArchetypeEntityIndex, ArchetypeIndex, Generation};
-use std::{
-    io::{Error, ErrorKind},
-    mem::MaybeUninit,
-};
+use std::io::{Error, ErrorKind};
 use virtual_buffer::VirtualVec;
 
 ///
@@ -125,10 +122,12 @@ pub union EntityEntryData {
 impl Default for EntityEntryData {
     #[inline]
     fn default() -> EntityEntryData {
-        // SAFETY: Zero initialization is perfectly valid as all fields in the union's members are
-        //         plain integers. Using this guarantees the entire union is zero initialized, even
-        //         if the layout is changed in the future.
-        unsafe { MaybeUninit::zeroed().assume_init() }
+        Self {
+            location: EntityLocation {
+                archetype: ArchetypeIndex(0),
+                entity: ArchetypeEntityIndex(0),
+            },
+        }
     }
 }
 
