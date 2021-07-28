@@ -85,7 +85,7 @@ pub struct Archetype {
 }
 
 impl Archetype {
-    pub fn new(capacity: u32, layout: &EntityLayout, registry: ComponentRegistry) -> Self {
+    pub fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
         // Produce the indice map from the layout
         let storage_indices: ComponentIdMap<usize> =
             layout.iter().enumerate().map(|v| (v.1, v.0)).collect();
