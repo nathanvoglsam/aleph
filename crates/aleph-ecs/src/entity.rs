@@ -32,7 +32,10 @@
 //!
 
 use crate::{ArchetypeEntityIndex, ArchetypeIndex, Generation};
-use std::mem::MaybeUninit;
+use std::{
+    io::{Error, ErrorKind},
+    mem::MaybeUninit,
+};
 use virtual_buffer::VirtualVec;
 
 ///
@@ -163,15 +166,16 @@ impl EntityStorage {
     ///
     /// It is recommended to make `capacity` something large like 1,048,576 as this sets the upper
     /// bound on the maximum number of entities that can be alive at any one time.
-    pub fn new(capacity: usize) -> std::io::Result<EntityStorage> {
-        assert!(
-            capacity < (u32::MAX - 1) as usize,
-            "Can't have more than {} entities as capacity",
-            (u32::MAX - 1)
-        );
+    pub fn new(capacity: u32) -> std::io::Result<EntityStorage> {
+        if capacity < (u32::MAX - 1) {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Can't have more than (u32::MAX - 1) entities as capacity",
+            ));
+        }
 
         // Create the backing storage with the given total capacity
-        let mut entities = VirtualVec::new(capacity)?;
+        let mut entities = VirtualVec::new((capacity + 1) as usize)?;
 
         // Push the first element of the list. This first element must always exist and serves as
         // the head of the free list.
