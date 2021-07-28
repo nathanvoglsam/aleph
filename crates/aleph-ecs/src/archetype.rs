@@ -98,6 +98,7 @@ impl Archetype {
                     .lookup(v)
                     .expect("Tried to create an archetype with an unregistered component type")
             })
+            .cloned()
             .collect();
 
         // Create a virtual memory reservation for each component's storage

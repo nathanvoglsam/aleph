@@ -142,8 +142,8 @@ impl ComponentRegistry {
     }
 
     #[inline]
-    pub fn lookup(&self, id: ComponentTypeId) -> Option<ComponentTypeDescription> {
-        self.descriptions.get(&id).cloned()
+    pub fn lookup(&self, id: ComponentTypeId) -> Option<&ComponentTypeDescription> {
+        self.descriptions.get(&id)
     }
 
     #[inline]
