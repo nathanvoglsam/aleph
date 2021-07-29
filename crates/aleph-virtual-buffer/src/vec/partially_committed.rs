@@ -436,6 +436,9 @@ impl<T> VirtualVec<T> {
     }
 }
 
+unsafe impl<T: Send> Send for VirtualVec<T> {}
+unsafe impl<T: Sync> Sync for VirtualVec<T> {}
+
 impl<T> Deref for VirtualVec<T> {
     type Target = [T];
     #[inline(always)]

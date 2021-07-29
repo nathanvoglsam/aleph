@@ -324,6 +324,9 @@ impl<T> CommittedVirtualVec<T> {
     }
 }
 
+unsafe impl<T: Send> Send for CommittedVirtualVec<T> {}
+unsafe impl<T: Sync> Sync for CommittedVirtualVec<T> {}
+
 impl<T> Deref for CommittedVirtualVec<T> {
     type Target = [T];
     #[inline(always)]

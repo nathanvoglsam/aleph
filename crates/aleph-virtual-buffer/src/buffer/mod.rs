@@ -212,6 +212,9 @@ impl VirtualBuffer {
     }
 }
 
+unsafe impl Send for VirtualBuffer {}
+unsafe impl Sync for VirtualBuffer {}
+
 ///
 /// A new-type wrapper around `VirtualBuffer` that requires that the entire buffer is committed.
 ///
