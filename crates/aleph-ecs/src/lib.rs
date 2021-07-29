@@ -57,6 +57,6 @@ pub use crate::entity_layout::EntityLayout;
 pub use crate::entity_layout::EntityLayoutBuf;
 pub use crate::generation::Generation;
 pub use crate::query::Query;
-pub use crate::world::EntityInsertionDescription;
+pub use crate::world::operations;
 pub use crate::world::World;
 pub use crate::world::WorldOptions;

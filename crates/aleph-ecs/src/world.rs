@@ -35,6 +35,72 @@ use crate::{
     EntityStorage,
 };
 
+/// A module that groups all the operation descriptions
+pub mod operations {
+    use crate::{ComponentTypeId, EntityId, EntityLayout};
+
+    ///
+    /// The raw, FFI friendly struct that describes an entity insertion operation.
+    ///
+    #[repr(C)]
+    pub struct EntityInsertionDescription<'a, 'b> {
+        /// The layout of the entities to create. (Sorted de-duplicated list of component type ids)
+        pub entity_layout: &'a EntityLayout,
+
+        /// An array of pointers to buffers that contain `count` components for each component type.
+        ///
+        /// Each pointer must point to a buffer that holds `count` items for the given component.
+        pub component_buffers: &'a [&'a [u8]],
+
+        /// The buffer to write all the entity ids into
+        pub ids: &'b mut [EntityId],
+
+        /// The number of entities we want to create.
+        pub count: u32,
+    }
+
+    ///
+    /// The raw, FFI friendly struct that describes an entity removal operation.
+    ///
+    pub struct EntityRemovalDescription<'a> {
+        /// The ids for each entity to remove
+        pub ids: &'a [EntityId],
+    }
+
+    ///
+    /// The raw, FFI friendly struct that describes an entity component removal operation.
+    ///
+    #[repr(C)]
+    pub struct ComponentRemovalDescription<'a> {
+        /// The layout of every entity pointed to with the `ids` list.
+        pub entity_layout: &'a EntityLayout,
+
+        /// The ids of all the entities we want to operate on
+        pub ids: &'a [EntityId],
+
+        /// The ID of the component to remove from the given entities.
+        pub component_id: ComponentTypeId,
+    }
+
+    ///
+    /// The raw, FFI friendly struct that describes an entity component insertion operation.
+    ///
+    #[repr(C)]
+    pub struct ComponentInsertionDescription<'a> {
+        /// The layout of every entity pointed to with the `ids` list.
+        pub entity_layout: &'a EntityLayout,
+
+        /// The ids of all the entities we want to operate on
+        pub ids: &'a [EntityId],
+
+        /// The ID of the component to insert into the given entities.
+        pub component_id: ComponentTypeId,
+
+        /// A buffer that holds the component for each entity
+        pub buffer: &'a [u8],
+    }
+}
+
 ///
 /// This struct packages the options for creating a `World`. The purpose is to provide an easy to
 /// use "default options" via `Default::default()`.
@@ -48,26 +114,6 @@ pub struct WorldOptions {
     /// The maximum number of entities that can ever be allocated within a single archetype at
     /// one time.
     pub archetype_capacity: u32,
-}
-
-///
-/// The raw, FFI friendly struct that describes an entity insertion operation.
-///
-#[repr(C)]
-pub struct EntityInsertionDescription<'a, 'b> {
-    /// The layout of the entities to create. (Sorted de-duplicated list of component type ids)
-    pub entity_layout: &'a EntityLayout,
-
-    /// An array of pointers to buffers that contain `count` components for each component type.
-    ///
-    /// Each pointer must point to a buffer that holds `count` items for the given component.
-    pub component_buffers: &'a [&'a [u8]],
-
-    /// The buffer to write all the entity ids into
-    pub ids: &'b mut [EntityId],
-
-    /// The number of entities we want to create.
-    pub count: u32,
 }
 
 impl Default for WorldOptions {
@@ -135,7 +181,7 @@ impl World {
     }
 
     #[inline]
-    pub fn insert_entities_dynamic(&mut self, payload: EntityInsertionDescription) {
+    pub fn insert_entities_dynamic(&mut self, payload: operations::EntityInsertionDescription) {
         debug_assert_eq!(
             payload.count as usize,
             payload.ids.len(),
