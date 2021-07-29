@@ -181,16 +181,16 @@ impl World {
     }
 
     #[inline]
-    pub fn insert_entities_dynamic(&mut self, payload: operations::EntityInsertionDescription) {
+    pub fn insert_entities_dynamic(&mut self, description: operations::EntityInsertionDescription) {
         debug_assert_eq!(
-            payload.count as usize,
-            payload.ids.len(),
+            description.count as usize,
+            description.ids.len(),
             "The length of the id slice and number of entities must match"
         );
 
         debug_assert_eq!(
-            payload.entity_layout.len(),
-            payload.component_buffers.len(),
+            description.entity_layout.len(),
+            description.component_buffers.len(),
             "The number of components in the layout and number of buffers provided must match"
         );
 
@@ -198,7 +198,7 @@ impl World {
         // and alignment needed.
         #[cfg(debug_assertions)]
         {
-            let layouts = payload.entity_layout.iter();
+            let layouts = description.entity_layout.iter();
             let descs = layouts.map(|v| {
                 let desc = self
                     .component_registry
@@ -206,9 +206,9 @@ impl World {
                     .expect("Tried to insert an unregistered component type");
                 desc
             });
-            let buffers = payload.component_buffers.iter().cloned();
+            let buffers = description.component_buffers.iter().cloned();
             for (desc, buffer) in descs.zip(buffers) {
-                let required_bytes = payload.count as usize * desc.type_size;
+                let required_bytes = description.count as usize * desc.type_size;
                 let actual_bytes = buffer.len();
                 assert_eq!(
                     required_bytes, actual_bytes,
@@ -226,23 +226,23 @@ impl World {
             }
         }
 
-        for id in payload.entity_layout.iter() {
+        for id in description.entity_layout.iter() {
             if self.component_registry.lookup(id).is_none() {
                 panic!("Tried to insert an unregistered component type");
             }
         }
 
         // Locate the archetype and allocate space in the archetype for the new entities
-        let archetype_index = self.find_or_create_archetype(payload.entity_layout);
+        let archetype_index = self.find_or_create_archetype(description.entity_layout);
         let archetype = &mut self.archetypes[archetype_index as usize];
-        let archetype_entity_base = archetype.allocate_entities(payload.count);
+        let archetype_entity_base = archetype.allocate_entities(description.count);
 
         // Copy the component data into the archetype buffers
-        for (i, (source, comp_id)) in payload
+        for (i, (source, comp_id)) in description
             .component_buffers
             .iter()
             .cloned()
-            .zip(payload.entity_layout.iter())
+            .zip(description.entity_layout.iter())
             .enumerate()
         {
             let desc = self.component_registry.lookup(comp_id).unwrap();
@@ -258,7 +258,7 @@ impl World {
         }
 
         // Allocate the entity IDs and write them into the output slice
-        payload.ids.iter_mut().enumerate().for_each(|(i, v)| {
+        description.ids.iter_mut().enumerate().for_each(|(i, v)| {
             let location = EntityLocation {
                 archetype: ArchetypeIndex(archetype_index),
                 entity: ArchetypeEntityIndex(archetype_entity_base + i as u32),
