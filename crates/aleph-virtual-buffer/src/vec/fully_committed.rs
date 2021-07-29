@@ -29,8 +29,9 @@
 
 use crate::buffer::CommittedVirtualBuffer;
 use crate::VirtualBuffer;
+use std::io::{Error, ErrorKind};
 use std::marker::PhantomData;
-use std::mem::{needs_drop, size_of};
+use std::mem::{align_of, needs_drop, size_of};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 use std::slice::{from_raw_parts, from_raw_parts_mut, SliceIndex};
 pub struct CommittedVirtualVec<T> {
@@ -50,11 +51,25 @@ impl<T> CommittedVirtualVec<T> {
     pub fn new(capacity: usize) -> std::io::Result<Self> {
         let buffer = VirtualBuffer::reserve_bytes(capacity * size_of::<T>())?;
         let buffer = buffer.commit_whole()?;
-        Ok(CommittedVirtualVec {
-            buffer,
-            len: 0,
-            phantom: Default::default(),
-        })
+
+        // Check that we have the required alignment
+        //
+        // This should almost always pass as the buffers should always be aligned to a page boundary
+        // which are aligned to 4096. Types that need higher alignment than that are very rare.
+        let wanted_alignment = align_of::<T>();
+        let buffer_base = buffer.as_ptr() as usize;
+        if buffer_base % wanted_alignment != 0 {
+            Err(Error::new(
+                ErrorKind::Other,
+                "The allocated buffer was not sufficiently aligned",
+            ))
+        } else {
+            Ok(CommittedVirtualVec {
+                buffer,
+                len: 0,
+                phantom: Default::default(),
+            })
+        }
     }
 
     /// Returns the number of items that the `CommittedVirtualVec` holds.

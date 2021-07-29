@@ -168,6 +168,16 @@ impl VirtualBuffer {
         from_raw_parts_mut(self.data, self.len)
     }
 
+    /// Returns a pointer to the base address of the virtual address range.
+    pub fn as_ptr(&self) -> *const u8 {
+        self.data as *const u8
+    }
+
+    /// Returns a pointer to the base address of the virtual address range.
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.data
+    }
+
     ///
     /// Returns the page size for the platform
     ///
