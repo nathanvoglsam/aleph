@@ -150,8 +150,14 @@ impl Archetype {
     ///
     #[inline]
     pub fn component_storage<T: Component>(&self) -> Option<&[T]> {
-        let ptr = self.component_storage_raw(T::get_type_description().type_id)?;
+        let ptr = self.component_storage_raw(ComponentTypeId::of::<T>())?;
 
+        // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
+        //         component registry has incorrect data provided by an unsafe call to
+        //         `register_dynamic`.
+        //
+        //         As such this interface can be considered safe as it can only trigger UB with the
+        //         presence of other unsafe code
         let slice = unsafe {
             std::slice::from_raw_parts(ptr.as_ptr() as *mut T as *const T, self.len as usize)
         };
@@ -162,8 +168,14 @@ impl Archetype {
     ///
     #[inline]
     pub fn component_storage_mut<T: Component>(&mut self) -> Option<&mut [T]> {
-        let ptr = self.component_storage_mut_raw(T::get_type_description().type_id)?;
+        let ptr = self.component_storage_mut_raw(ComponentTypeId::of::<T>())?;
 
+        // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
+        //         component registry has incorrect data provided by an unsafe call to
+        //         `register_dynamic`.
+        //
+        //         As such this interface can be considered safe as it can only trigger UB with the
+        //         presence of other unsafe code
         let slice = unsafe {
             std::slice::from_raw_parts_mut(ptr.as_mut_ptr() as *mut T, self.len as usize)
         };

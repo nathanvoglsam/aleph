@@ -78,16 +78,8 @@ impl ComponentTypeId {
     /// Returns the ComponentTypeId of the given component type
     #[inline]
     pub fn of<T: Component>() -> Self {
-        union CastHack {
-            type_id: TypeId,
-            id: u64,
-        }
-
-        let hack = CastHack {
-            type_id: TypeId::of::<T>(),
-        };
-
-        unsafe { ComponentTypeId(hack.id) }
+        // SAFETY: Just a bitcast from one wrapped u64 to another wrapped u64
+        unsafe { std::mem::transmute(TypeId::of::<T>()) }
     }
 
     /// Returns the ComponentTypeId of the given component type by value. The value's type can be
