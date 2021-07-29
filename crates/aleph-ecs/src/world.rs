@@ -54,7 +54,7 @@ pub struct WorldOptions {
 /// The raw, FFI friendly struct that describes an entity insertion operation.
 ///
 #[repr(C)]
-pub struct CreateEntityDesc<'a, 'b> {
+pub struct EntityInsertionDescription<'a, 'b> {
     /// The layout of the entities to create. (Sorted de-duplicated list of component type ids)
     pub entity_layout: &'a EntityLayout,
 
@@ -82,11 +82,23 @@ impl Default for WorldOptions {
     }
 }
 
+///
+///
+///
 pub struct World {
+    /// Configuration options the world was created with
     options: WorldOptions,
+
+    /// Holds all the components that have been registered with the World
     component_registry: ComponentRegistry,
+
+    /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
     entities: EntityStorage,
+
+    /// Map that maps an entity layout to the index inside the archetypes list
     archetype_map: HashMap<EntityLayoutBuf, u32>,
+
+    /// The list of all archetypes in the ECS world
     archetypes: Vec<Archetype>,
 }
 
@@ -123,7 +135,7 @@ impl World {
     }
 
     #[inline]
-    pub fn create_entities_raw(&mut self, payload: CreateEntityDesc) {
+    pub fn insert_entities_dynamic(&mut self, payload: EntityInsertionDescription) {
         debug_assert_eq!(
             payload.count as usize,
             payload.ids.len(),
@@ -140,18 +152,16 @@ impl World {
         // and alignment needed.
         #[cfg(debug_assertions)]
         {
-            for (desc, buffer) in payload
-                .entity_layout
-                .iter()
-                .zip(payload.component_buffers.iter().cloned())
-                .map(|(comp_id, buffer)| {
-                    let desc = self
-                        .component_registry
-                        .lookup(comp_id)
-                        .expect("Tried to insert an unregistered component type");
-                    (desc, buffer)
-                })
-            {
+            let layouts = payload.entity_layout.iter();
+            let descs = layouts.map(|v| {
+                let desc = self
+                    .component_registry
+                    .lookup(v)
+                    .expect("Tried to insert an unregistered component type");
+                desc
+            });
+            let buffers = payload.component_buffers.iter().cloned();
+            for (desc, buffer) in descs.zip(buffers) {
                 let required_bytes = payload.count as usize * desc.type_size;
                 let actual_bytes = buffer.len();
                 assert_eq!(
@@ -212,6 +222,7 @@ impl World {
         });
     }
 
+    #[inline]
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(entity) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[entity.archetype.0 as usize];
@@ -224,6 +235,7 @@ impl World {
 }
 
 impl World {
+    #[inline]
     fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> u32 {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
             archetype
