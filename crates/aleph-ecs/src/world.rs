@@ -278,6 +278,13 @@ impl World {
             false
         }
     }
+
+    #[inline]
+    pub fn remove_entities_dynamic(&mut self, description: operations::EntityRemovalDescription) {
+        for id in description.ids.iter().cloned() {
+            self.remove_entity(id);
+        }
+    }
 }
 
 impl World {
