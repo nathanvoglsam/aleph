@@ -48,7 +48,12 @@ pub struct EntityIndex(pub u32);
 ///
 /// This represents an ID that refers to a specific entity.
 ///
+/// # Info
+///
+/// Needs to be 8 byte aligned as this should have the same size and alignment as a u64
+///
 #[repr(C)]
+#[repr(align(8))]
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct EntityId {
     /// The generation of the slot in the entity list when this ID was allocated
@@ -68,14 +73,50 @@ impl EntityId {
     }
 
     /// Returns whether this entity reference is a null reference.
-    ///
-    /// # Info
-    ///
-    /// An entity id is considered null when it encodes a dead generation. It is impossible for an
-    /// entity id to point to an entity with a dead generation so makes a perfect null flag.
     #[inline]
     pub const fn is_null(self) -> bool {
-        self.generation.is_dead()
+        self.generation.is_dead() && self.index.0 == 0
+    }
+}
+
+impl From<u64> for EntityId {
+    /// Theoretically this whole thing should compile to a no-op as we're just manually spelling out
+    /// the semantics of something that could be implemented with a mem::transmute.
+    ///
+    /// No point adding extra unsafe if it can be avoided
+    #[inline]
+    fn from(v: u64) -> Self {
+        // Extract the high 32 bits of the u64 id, which we use as the entity index
+        let first = v >> 32 & 0xFFFFFFFF;
+        let first = first as u32;
+
+        // Extract the low 32 bits of the u64 id, which we use as the generation
+        let second = v & 0xFFFFFFFF;
+        let second = second as u32;
+
+        Self {
+            generation: Generation::from_raw(second),
+            index: EntityIndex(first),
+        }
+    }
+}
+
+impl Into<u64> for EntityId {
+    /// Theoretically this whole thing should compile to a no-op as we're just manually spelling out
+    /// the semantics of something that could be implemented with a mem::transmute.
+    ///
+    /// No point adding extra unsafe if it can be avoided
+    #[inline]
+    fn into(self) -> u64 {
+        // Convert the generation index into the low 32 bits of a u64
+        let first = self.generation.into_inner() as u64;
+
+        // Convert the entity index into the high 32 bits of a u64
+        let second = self.index.0 as u64;
+        let second = second << 32;
+
+        // Combine the two haves to create a whole u64 id and return it
+        first | second
     }
 }
 

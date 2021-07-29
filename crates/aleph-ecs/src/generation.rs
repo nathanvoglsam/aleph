@@ -43,6 +43,16 @@ impl Generation {
         Self(0)
     }
 
+    /// Constructs a generation with the given initial value
+    pub const fn from_raw(v: u32) -> Self {
+        Self(v)
+    }
+
+    /// Returns the inner u32 value the generation wraps
+    pub const fn into_inner(self) -> u32 {
+        self.0
+    }
+
     /// Returns whether this generation marks a generation that is alive
     #[inline]
     pub const fn is_alive(self) -> bool {
