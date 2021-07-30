@@ -29,7 +29,7 @@
 
 use std::{
     any::TypeId,
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     hash::{BuildHasherDefault, Hasher},
 };
 
@@ -212,3 +212,8 @@ impl Hasher for IdentityHasher {
 /// as a key. This alias is special as it skips hashing the `ComponentTypeId` and uses that id
 /// directly as the key.
 pub type ComponentIdMap<T> = HashMap<ComponentTypeId, T, BuildHasherDefault<IdentityHasher>>;
+
+/// A type alias for a configuration of `std::hash::HashSet` that efficiently uses `ComponentTypeId`
+/// as a key. This alias is special as it skips hashing the `ComponentTypeId` and uses that id
+/// directly as the key.
+pub type ComponentSet = HashSet<ComponentTypeId, BuildHasherDefault<IdentityHasher>>;

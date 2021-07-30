@@ -43,6 +43,7 @@ pub use crate::archetype::ArchetypeIndex;
 pub use crate::component::Component;
 pub use crate::component::ComponentIdMap;
 pub use crate::component::ComponentRegistry;
+pub use crate::component::ComponentSet;
 pub use crate::component::ComponentTypeDescription;
 pub use crate::component::ComponentTypeId;
 pub use crate::component::IdentityHasher;
