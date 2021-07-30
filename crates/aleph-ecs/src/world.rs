@@ -150,12 +150,28 @@ pub struct World {
 
 impl World {
     pub fn new(options: WorldOptions) -> std::io::Result<Self> {
+        let component_registry = ComponentRegistry::new();
+        let entities = EntityStorage::new(options.entity_capacity)?;
+
+        // Create the list of archetypes, with the first slot taken by an archetype with no
+        // components.
+        //
+        // This allows using `ArchetypeIndex(0)` as a special value as its not possible to create
+        // an entity with no components.
+        let mut archetypes = Vec::new();
+        let base_archetype = Archetype::new(1, EntityLayout::empty(), &component_registry);
+        archetypes.push(base_archetype);
+
+        // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
+        let mut archetype_map = HashMap::new();
+        archetype_map.insert(EntityLayoutBuf::new(), ArchetypeIndex(0));
+
         let out = Self {
-            options: options.clone(),
-            component_registry: ComponentRegistry::new(),
-            entities: EntityStorage::new(options.entity_capacity)?,
-            archetype_map: HashMap::new(),
-            archetypes: Vec::new(),
+            options,
+            component_registry,
+            entities,
+            archetype_map,
+            archetypes,
         };
 
         Ok(out)
@@ -231,8 +247,11 @@ impl World {
                 panic!("Tried to insert an unregistered component type");
             }
         }
-        
-        assert!(!description.entity_layout.is_empty(), "Tried to insert entity with 0 components");
+
+        debug_assert!(
+            !description.entity_layout.is_empty(),
+            "Tried to insert entity with 0 components"
+        );
 
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(description.entity_layout);
