@@ -87,9 +87,7 @@ impl EntityLayout {
         static EMPTY: [ComponentTypeId; 0] = [];
 
         // SAFETY: The list is empty so there is nothing to actually check so this is safe.
-        unsafe {
-            Self::from_inner_unchecked(&EMPTY)
-        }
+        unsafe { Self::from_inner_unchecked(&EMPTY) }
     }
 
     /// Returns whether the given component type is present in the `EntityLayoutBuf`.
@@ -303,8 +301,6 @@ impl FromIterator<ComponentTypeId> for EntityLayoutBuf {
     fn from_iter<T: IntoIterator<Item = ComponentTypeId>>(iter: T) -> Self {
         let mut components = Vec::from_iter(iter);
         components.sort();
-        Self {
-            components
-        }
+        Self { components }
     }
 }
