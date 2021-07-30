@@ -142,7 +142,7 @@ pub struct World {
     entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    archetype_map: HashMap<EntityLayoutBuf, u32>,
+    archetype_map: HashMap<EntityLayoutBuf, ArchetypeIndex>,
 
     /// The list of all archetypes in the ECS world
     archetypes: Vec<Archetype>,
@@ -234,7 +234,7 @@ impl World {
 
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(description.entity_layout);
-        let archetype = &mut self.archetypes[archetype_index as usize];
+        let archetype = &mut self.archetypes[archetype_index.0 as usize];
         let archetype_entity_base = archetype.allocate_entities(description.count);
 
         // Copy the component data into the archetype buffers
@@ -260,7 +260,7 @@ impl World {
         // Allocate the entity IDs and write them into the output slice
         description.ids.iter_mut().enumerate().for_each(|(i, v)| {
             let location = EntityLocation {
-                archetype: ArchetypeIndex(archetype_index),
+                archetype: archetype_index,
                 entity: ArchetypeEntityIndex(archetype_entity_base + i as u32),
             };
 
@@ -289,7 +289,7 @@ impl World {
 
 impl World {
     #[inline]
-    fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> u32 {
+    fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
             archetype
         } else {
@@ -297,9 +297,9 @@ impl World {
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
             let archetype_index = self.archetypes.len() as u32;
             self.archetype_map
-                .insert(layout.to_owned(), archetype_index);
+                .insert(layout.to_owned(), ArchetypeIndex(archetype_index));
             self.archetypes.push(archetype);
-            archetype_index
+            ArchetypeIndex(archetype_index)
         }
     }
 }
