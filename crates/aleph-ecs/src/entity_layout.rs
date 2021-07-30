@@ -82,6 +82,16 @@ impl EntityLayout {
         unsafe { Some(Self::from_inner_unchecked(components)) }
     }
 
+    /// A utility that returns an empty EntityLayout. That is, a layout with no components.
+    pub fn empty() -> &'static EntityLayout {
+        static EMPTY: [ComponentTypeId; 0] = [];
+
+        // SAFETY: The list is empty so there is nothing to actually check so this is safe.
+        unsafe {
+            Self::from_inner_unchecked(&EMPTY)
+        }
+    }
+
     /// Returns whether the given component type is present in the `EntityLayoutBuf`.
     #[inline]
     pub fn contains_component_type(&self, id: ComponentTypeId) -> bool {
