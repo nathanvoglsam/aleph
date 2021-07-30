@@ -231,6 +231,8 @@ impl World {
                 panic!("Tried to insert an unregistered component type");
             }
         }
+        
+        assert!(!description.entity_layout.is_empty(), "Tried to insert entity with 0 components");
 
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(description.entity_layout);

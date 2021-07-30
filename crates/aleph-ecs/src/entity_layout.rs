@@ -301,8 +301,10 @@ impl IntoIterator for EntityLayoutBuf {
 impl FromIterator<ComponentTypeId> for EntityLayoutBuf {
     #[inline]
     fn from_iter<T: IntoIterator<Item = ComponentTypeId>>(iter: T) -> Self {
+        let mut components = Vec::from_iter(iter);
+        components.sort();
         Self {
-            components: Vec::from_iter(iter),
+            components
         }
     }
 }
