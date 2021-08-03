@@ -79,8 +79,20 @@ pub mod operations {
         /// The ids of all the entities we want to operate on
         pub ids: &'a [EntityId],
 
-        /// The ID of the component to remove from the given entities.
-        pub component_id: ComponentTypeId,
+        /// The IDs of the components to remove from the given entities.
+        pub components: &'a [ComponentTypeId],
+    }
+
+    ///
+    /// A component ID and buffer pair, specified for FFI friendliness.
+    ///
+    #[repr(C)]
+    pub struct ComponentBufferPair<'a> {
+        /// The ID of the component this stores data for.
+        pub id: ComponentTypeId,
+
+        /// The buffer that holds the components
+        pub buffer: &'a [u8],
     }
 
     ///
@@ -94,11 +106,9 @@ pub mod operations {
         /// The ids of all the entities we want to operate on
         pub ids: &'a [EntityId],
 
-        /// The ID of the component to insert into the given entities.
-        pub component_id: ComponentTypeId,
-
-        /// A buffer that holds the component for each entity
-        pub buffer: &'a [u8],
+        /// This list stores a pair of `ComponentTypeId` and a buffer which can holds the data to
+        /// copy component data from. This defines the set of components to add to each entity.
+        pub components: &'a [ComponentBufferPair<'a>],
     }
 }
 
