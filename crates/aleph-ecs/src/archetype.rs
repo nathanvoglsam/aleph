@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::borrow::Borrow;
+use std::{borrow::Borrow, mem::size_of, num::NonZeroU32};
 
 use crate::{
     Component, ComponentIdMap, ComponentRegistry, ComponentTypeDescription, ComponentTypeId,
@@ -42,8 +42,8 @@ use virtual_buffer::VirtualVec;
 /// plain `u32` fields.
 ///
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-pub struct ArchetypeIndex(pub u32);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct ArchetypeIndex(pub NonZeroU32);
 
 ///
 /// This index wrapper represents an index into an archetype's component storage.
@@ -52,8 +52,8 @@ pub struct ArchetypeIndex(pub u32);
 /// plain `u32` fields.
 ///
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-pub struct ArchetypeEntityIndex(pub u32);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct ArchetypeEntityIndex(pub NonZeroU32);
 
 pub struct Archetype {
     /// The entity layout of this archetype
@@ -86,6 +86,9 @@ pub struct Archetype {
 
 impl Archetype {
     pub fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
+        // Add 1 so there's space for the always empty 0th element
+        let storage_capacity = capacity.checked_add(1).unwrap();
+
         // Produce the indice map from the layout
         let storage_indices: ComponentIdMap<usize> =
             layout.iter().enumerate().map(|v| (v.1, v.0)).collect();
@@ -105,16 +108,19 @@ impl Archetype {
         let storages = component_descriptions
             .iter()
             .map(|v| {
-                let buffer = VirtualVec::new(v.type_size * capacity as usize)
+                let mut buffer = VirtualVec::new(v.type_size * storage_capacity as usize)
                     .expect("Failed to reserve address space for components");
+                // Pre-fill the first slot with zeroes, it will never be accessed
+                buffer.resize(v.type_size, 0);
 
                 buffer
             })
             .collect();
 
         // Create the buffer for mapping entity indices back to an entity id
-        let entity_ids = VirtualVec::new(capacity as usize)
+        let mut entity_ids = VirtualVec::new(storage_capacity as usize)
             .expect("Failed to reserve address space for entity id list");
+        entity_ids.push(EntityId::null());
 
         Self {
             entity_layout: layout.to_owned(),
@@ -150,7 +156,13 @@ impl Archetype {
     ///
     #[inline]
     pub fn component_storage<T: Component>(&self) -> Option<&[T]> {
-        let ptr = self.component_storage_raw(ComponentTypeId::of::<T>())?;
+        let len = self.len as usize;
+        let slice = self.component_storage_raw(ComponentTypeId::of::<T>())?;
+        debug_assert_eq!(
+            slice.len() / size_of::<T>(),
+            len,
+            "Size of buffer is incorrect"
+        );
 
         // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
         //         component registry has incorrect data provided by an unsafe call to
@@ -159,7 +171,7 @@ impl Archetype {
         //         As such this interface can be considered safe as it can only trigger UB with the
         //         presence of other unsafe code
         let slice = unsafe {
-            std::slice::from_raw_parts(ptr.as_ptr() as *mut T as *const T, self.len as usize)
+            std::slice::from_raw_parts(slice.as_ptr() as *mut T as *const T, self.len as usize)
         };
 
         Some(slice)
@@ -168,7 +180,13 @@ impl Archetype {
     ///
     #[inline]
     pub fn component_storage_mut<T: Component>(&mut self) -> Option<&mut [T]> {
-        let ptr = self.component_storage_mut_raw(ComponentTypeId::of::<T>())?;
+        let len = self.len as usize;
+        let slice = self.component_storage_mut_raw(ComponentTypeId::of::<T>())?;
+        debug_assert_eq!(
+            slice.len() / size_of::<T>(),
+            len,
+            "Size of buffer is incorrect"
+        );
 
         // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
         //         component registry has incorrect data provided by an unsafe call to
@@ -177,7 +195,7 @@ impl Archetype {
         //         As such this interface can be considered safe as it can only trigger UB with the
         //         presence of other unsafe code
         let slice = unsafe {
-            std::slice::from_raw_parts_mut(ptr.as_mut_ptr() as *mut T, self.len as usize)
+            std::slice::from_raw_parts_mut(slice.as_mut_ptr() as *mut T, self.len as usize)
         };
 
         Some(slice)
@@ -188,11 +206,12 @@ impl Archetype {
     pub fn component_storage_raw(&self, id: ComponentTypeId) -> Option<&[u8]> {
         // Map the component ID to the storage index
         let storage_index = self.storage_indices.get(&id).cloned()?;
+        let type_size = self.component_descriptions[storage_index].type_size;
 
         // Lookup the storage
-        let storage = &self.storages[storage_index];
+        let storage = self.storages[storage_index].as_slice();
 
-        Some(storage.as_slice())
+        Some(&storage[type_size..])
     }
 
     /// Given a component id, returns the raw bytes for the backing storage
@@ -200,41 +219,44 @@ impl Archetype {
     pub fn component_storage_mut_raw(&mut self, id: ComponentTypeId) -> Option<&mut [u8]> {
         // Map the component ID to the storage index
         let storage_index = self.storage_indices.get(&id).cloned()?;
+        let type_size = self.component_descriptions[storage_index].type_size;
 
         // Lookup the storage
-        let storage = &mut self.storages[storage_index];
+        let storage = self.storages[storage_index].as_slice_mut();
 
-        Some(storage.as_slice_mut())
+        Some(&mut storage[type_size..])
     }
 
     /// Given a storage index, returns the raw bytes for the backing storage
     #[inline]
     pub fn component_storage_raw_index(&self, index: usize) -> &[u8] {
         // Lookup the storage
+        let type_size = self.component_descriptions[index].type_size;
         let storage = &self.storages[index];
 
-        storage.as_slice()
+        &storage[type_size..]
     }
 
     /// Given a storage index, returns the raw bytes for the backing storage
     #[inline]
     pub fn component_storage_mut_raw_index(&mut self, index: usize) -> &mut [u8] {
         // Lookup the storage
+        let type_size = self.component_descriptions[index].type_size;
         let storage = &mut self.storages[index];
 
-        storage.as_slice_mut()
+        &mut storage[type_size..]
     }
 
     ///
     #[inline]
     pub fn entity_ids(&self) -> &[EntityId] {
-        self.entity_ids.as_slice()
+        &self.entity_ids[1..]
     }
 
     ///
     #[inline]
     pub fn entity_ids_mut(&mut self) -> &mut [EntityId] {
-        self.entity_ids.as_slice_mut()
+        &mut self.entity_ids[1..]
     }
 }
 
@@ -246,10 +268,10 @@ impl Archetype {
     /// The function returns the base index where the first newly allocated entity can be found.
     /// All new entities will be contiguous.
     #[inline]
-    pub(crate) fn allocate_entities(&mut self, count: u32) -> u32 {
-        let base = self.len;
+    pub(crate) fn allocate_entities(&mut self, count: u32) -> ArchetypeEntityIndex {
+        let base = NonZeroU32::new(self.len).unwrap();
 
-        let new_size = self.len + count;
+        let new_size = self.len.checked_add(count).unwrap();
         if new_size > self.capacity {
             panic!(
                 "Adding {} entities would overflow capacity \"{}\"",
@@ -268,12 +290,12 @@ impl Archetype {
 
         self.len = new_size;
 
-        base
+        ArchetypeEntityIndex(base)
     }
 
     #[inline]
     pub(crate) fn remove_entity(&mut self, index: ArchetypeEntityIndex) {
-        self.entity_ids.swap_remove(index.0 as usize);
+        self.entity_ids.swap_remove(index.0.get() as usize);
         for i in 0..self.storages.len() {
             self.swap_and_pop_for_storage(i, index);
         }
@@ -285,7 +307,7 @@ impl Archetype {
         storage_index: usize,
         index: ArchetypeEntityIndex,
     ) {
-        let index = index.0 as usize;
+        let index = index.0.get() as usize;
         let last_index = (self.len - 1) as usize;
         if index == last_index {
             // Swap and pop at the end of the storage just decays to a regular pop operation.

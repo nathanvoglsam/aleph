@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use std::collections::HashMap;
+use std::{collections::HashMap, num::NonZeroU32};
 
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentRegistry,
@@ -62,6 +62,7 @@ pub mod operations {
     ///
     /// The raw, FFI friendly struct that describes an entity removal operation.
     ///
+    #[repr(C)]
     pub struct EntityRemovalDescription<'a> {
         /// The ids for each entity to remove
         pub ids: &'a [EntityId],
@@ -73,7 +74,7 @@ pub mod operations {
     #[repr(C)]
     pub struct ComponentRemovalDescription<'a> {
         /// The layout of every entity pointed to with the `ids` list.
-        pub entity_layout: &'a EntityLayout,
+        pub soruce_layout: &'a EntityLayout,
 
         /// The ids of all the entities we want to operate on
         pub ids: &'a [EntityId],
@@ -88,7 +89,7 @@ pub mod operations {
     #[repr(C)]
     pub struct ComponentInsertionDescription<'a> {
         /// The layout of every entity pointed to with the `ids` list.
-        pub entity_layout: &'a EntityLayout,
+        pub source_layout: &'a EntityLayout,
 
         /// The ids of all the entities we want to operate on
         pub ids: &'a [EntityId],
@@ -142,7 +143,7 @@ pub struct World {
     entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    archetype_map: HashMap<EntityLayoutBuf, ArchetypeIndex>,
+    archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
 
     /// The list of all archetypes in the ECS world
     archetypes: Vec<Archetype>,
@@ -164,7 +165,7 @@ impl World {
 
         // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
         let mut archetype_map = HashMap::new();
-        archetype_map.insert(EntityLayoutBuf::new(), ArchetypeIndex(0));
+        archetype_map.insert(EntityLayoutBuf::new(), None);
 
         let out = Self {
             options,
@@ -255,7 +256,7 @@ impl World {
 
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(description.entity_layout);
-        let archetype = &mut self.archetypes[archetype_index.0 as usize];
+        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
         let archetype_entity_base = archetype.allocate_entities(description.count);
 
         // Copy the component data into the archetype buffers
@@ -267,7 +268,7 @@ impl World {
             .enumerate()
         {
             let desc = self.component_registry.lookup(comp_id).unwrap();
-            let base = desc.type_size * archetype_entity_base as usize;
+            let base = desc.type_size * archetype_entity_base.0.get() as usize;
             let target = archetype.component_storage_mut_raw_index(i);
             let target = &mut target[base..];
             debug_assert_eq!(
@@ -280,9 +281,11 @@ impl World {
 
         // Allocate the entity IDs and write them into the output slice
         description.ids.iter_mut().enumerate().for_each(|(i, v)| {
+            let entity = archetype_entity_base.0.get() + i as u32;
+            let entity = NonZeroU32::new(entity).unwrap();
             let location = EntityLocation {
                 archetype: archetype_index,
-                entity: ArchetypeEntityIndex(archetype_entity_base + i as u32),
+                entity: ArchetypeEntityIndex(entity),
             };
 
             *v = self.entities.create(location);
@@ -292,7 +295,7 @@ impl World {
     #[inline]
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(entity) = self.entities.lookup(entity) {
-            let archetype = &mut self.archetypes[entity.archetype.0 as usize];
+            let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
             archetype.remove_entity(entity.entity);
             true
         } else {
@@ -312,13 +315,14 @@ impl World {
     #[inline]
     fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
-            archetype
+            archetype.unwrap()
         } else {
             let capacity = self.options.archetype_capacity;
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
             let archetype_index = self.archetypes.len() as u32;
+            let archetype_index = NonZeroU32::new(archetype_index).unwrap();
             self.archetype_map
-                .insert(layout.to_owned(), ArchetypeIndex(archetype_index));
+                .insert(layout.to_owned(), Some(ArchetypeIndex(archetype_index)));
             self.archetypes.push(archetype);
             ArchetypeIndex(archetype_index)
         }

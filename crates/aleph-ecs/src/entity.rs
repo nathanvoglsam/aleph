@@ -32,7 +32,10 @@
 //!
 
 use crate::{ArchetypeEntityIndex, ArchetypeIndex, Generation};
-use std::io::{Error, ErrorKind};
+use std::{
+    io::{Error, ErrorKind},
+    num::NonZeroU32,
+};
 use virtual_buffer::VirtualVec;
 
 ///
@@ -42,8 +45,8 @@ use virtual_buffer::VirtualVec;
 /// plain `u32` fields.
 ///
 #[repr(transparent)]
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
-pub struct EntityIndex(pub u32);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct EntityIndex(pub NonZeroU32);
 
 ///
 /// This represents an ID that refers to a specific entity.
@@ -60,22 +63,22 @@ pub struct EntityId {
     pub generation: Generation,
 
     /// The index inside the entity list this ID was allocated to
-    pub index: EntityIndex,
+    pub index: Option<EntityIndex>,
 }
 
 impl EntityId {
     #[inline]
-    pub const fn null(self) -> Self {
+    pub const fn null() -> Self {
         Self {
             generation: Generation::new(),
-            index: EntityIndex(0),
+            index: None,
         }
     }
 
     /// Returns whether this entity reference is a null reference.
     #[inline]
     pub const fn is_null(self) -> bool {
-        self.generation.is_dead() && self.index.0 == 0
+        self.generation.is_dead() && self.index.is_none()
     }
 }
 
@@ -96,7 +99,7 @@ impl From<u64> for EntityId {
 
         Self {
             generation: Generation::from_raw(second),
-            index: EntityIndex(first),
+            index: NonZeroU32::new(first).map(|v| EntityIndex(v)),
         }
     }
 }
@@ -112,7 +115,7 @@ impl Into<u64> for EntityId {
         let first = self.generation.into_inner() as u64;
 
         // Convert the entity index into the high 32 bits of a u64
-        let second = self.index.0 as u64;
+        let second = self.index.map(|v| v.0.get()).unwrap_or(0) as u64;
         let second = second << 32;
 
         // Combine the two haves to create a whole u64 id and return it
@@ -125,7 +128,7 @@ impl Into<u64> for EntityId {
 /// and the components inside that archetype.
 ///
 #[repr(C)]
-#[derive(Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct EntityLocation {
     /// The index inside the set of all archetypes the entity is a member of
     pub archetype: ArchetypeIndex,
@@ -154,7 +157,7 @@ pub struct EntityFreeListLink(pub u32);
 #[derive(Clone, Copy)]
 pub union EntityEntryData {
     /// The location of an entity
-    pub location: EntityLocation,
+    pub location: Option<EntityLocation>,
 
     /// The next free element
     pub next: EntityFreeListLink,
@@ -163,12 +166,7 @@ pub union EntityEntryData {
 impl Default for EntityEntryData {
     #[inline]
     fn default() -> EntityEntryData {
-        Self {
-            location: EntityLocation {
-                archetype: ArchetypeIndex(0),
-                entity: ArchetypeEntityIndex(0),
-            },
-        }
+        Self { location: None }
     }
 }
 
@@ -236,14 +234,14 @@ impl EntityStorage {
     /// Will return None if the ID is invalid (dangling)
     #[inline]
     pub fn lookup(&self, id: EntityId) -> Option<EntityLocation> {
-        let index = id.index.0 as usize;
+        let index = id.index?.0.get() as usize;
 
         // If the generations do not match then this ID is dangling
         if self.entities[index].generation == id.generation && id.generation.is_alive() {
             // SAFETY: The location field will always be the current live field if the generation
             //         is alive so accessing this is sound.
             let location = unsafe { self.entities[index].data.location };
-            Some(location)
+            location
         } else {
             None
         }
@@ -270,24 +268,28 @@ impl EntityStorage {
             // Increment the generation to revive the slot
             self.entities[slot.0 as usize].generation.increment_assign();
 
+            let index = NonZeroU32::new(slot.0).unwrap();
             EntityId {
                 generation: self.entities[slot.0 as usize].generation,
-                index: EntityIndex(slot.0),
+                index: Some(EntityIndex(index)),
             }
         } else {
             // Add a new entry if there are no free ones in the free list
             let slot = self.entities.len();
             self.entities.push(EntityEntry {
                 generation: Generation::default().increment(),
-                data: EntityEntryData { location },
+                data: EntityEntryData {
+                    location: Some(location),
+                },
             });
 
             // Debug assert the new entity is alive
             debug_assert!(self.entities[slot].generation.is_alive());
 
+            let index = NonZeroU32::new(slot as u32).unwrap();
             EntityId {
                 generation: Generation::default().increment(),
-                index: EntityIndex(slot as u32),
+                index: Some(EntityIndex(index)),
             }
         };
 
@@ -301,7 +303,7 @@ impl EntityStorage {
     /// as free.
     #[inline]
     pub fn destroy(&mut self, id: EntityId) -> Option<EntityLocation> {
-        let index = id.index.0 as usize;
+        let index = id.index?.0.get() as usize;
 
         // Check if the generations match, if they don't match we don't have a valid ID to free
         if self.entities[index].generation == id.generation && id.generation.is_alive() {
@@ -315,7 +317,7 @@ impl EntityStorage {
 
                 // Add this entity slot to the free list
                 self.entities[index].data.next = self.entities[0].data.next;
-                self.entities[0].data.next = EntityFreeListLink(id.index.0);
+                self.entities[0].data.next = EntityFreeListLink(index as u32);
 
                 location
             };
@@ -324,7 +326,7 @@ impl EntityStorage {
             self.entities[index].generation.increment_assign();
 
             self.count -= 1;
-            Some(location)
+            location
         } else {
             None
         }
