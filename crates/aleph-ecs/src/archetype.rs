@@ -293,16 +293,22 @@ impl Archetype {
         ArchetypeEntityIndex(base)
     }
 
+    /// Remove the entity at the given index.
+    ///
+    /// The const parameter chooses whether to call the drop function or not
     #[inline]
-    pub(crate) fn remove_entity(&mut self, index: ArchetypeEntityIndex) {
+    pub(crate) fn remove_entity<const DROP: bool>(&mut self, index: ArchetypeEntityIndex) {
         self.entity_ids.swap_remove(index.0.get() as usize);
         for i in 0..self.storages.len() {
-            self.swap_and_pop_for_storage(i, index);
+            self.swap_and_pop_for_storage::<DROP>(i, index);
         }
     }
 
+    /// Swap and pop the component in `storage_index` at `index`
+    ///
+    /// The const parameter chooses whether to call the drop function or not
     #[inline]
-    pub(crate) fn swap_and_pop_for_storage(
+    pub(crate) fn swap_and_pop_for_storage<const DROP: bool>(
         &mut self,
         storage_index: usize,
         index: ArchetypeEntityIndex,
@@ -311,7 +317,7 @@ impl Archetype {
         let last_index = (self.len - 1) as usize;
         if index == last_index {
             // Swap and pop at the end of the storage just decays to a regular pop operation.
-            self.pop_for_storage(storage_index);
+            self.pop_for_storage::<DROP>(storage_index);
         } else {
             let storage = &mut self.storages[storage_index];
             let desc = &self.component_descriptions[storage_index];
@@ -325,34 +331,37 @@ impl Archetype {
             remove.swap_with_slice(last);
 
             // Pop off the end, which destroys the element we wanted to remove
-            self.pop_for_storage(storage_index);
+            self.pop_for_storage::<DROP>(storage_index);
         }
     }
 
+    /// The const parameter chooses whether to call the drop function or not
     #[inline]
-    pub(crate) fn pop_for_storage(&mut self, storage_index: usize) {
+    pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
         if self.len != 0 {
             let storage = &mut self.storages[storage_index];
             let desc = &self.component_descriptions[storage_index];
 
-            if let Some(fn_drop) = desc.fn_drop {
-                let last_index = (self.len - 1) as usize;
-                let last_ptr = &mut storage[last_index * desc.type_size] as *mut u8;
+            if DROP {
+                if let Some(fn_drop) = desc.fn_drop {
+                    let last_index = (self.len - 1) as usize;
+                    let last_ptr = &mut storage[last_index * desc.type_size] as *mut u8;
 
-                // SAFETY: This handles calling the drop function for a component through a raw
-                //         pointer. The signature is type erased so the interface is unsafe.
-                //
-                //         This is just a type-erased call to `drop::<T>()` where T is the type of
-                //         the component. The `Archetype` data structure's safe interface ensures
-                //         the drop function is only called with valid data.
-                //
-                //         UB can be triggered if `fn_drop` is not implemented correctly, but this
-                //         is impossible from safe code as the implementation for each component is
-                //         auto generated from a generic implementation. The function can only be
-                //         incorrect by providing an incorrect ComponentTypeDescription using an
-                //         unsafe function.
-                unsafe {
-                    fn_drop(last_ptr);
+                    // SAFETY: This handles calling the drop function for a component through a raw
+                    //         pointer. The signature is type erased so the interface is unsafe.
+                    //
+                    //         This is just a type-erased call to `drop::<T>()` where T is the type of
+                    //         the component. The `Archetype` data structure's safe interface ensures
+                    //         the drop function is only called with valid data.
+                    //
+                    //         UB can be triggered if `fn_drop` is not implemented correctly, but this
+                    //         is impossible from safe code as the implementation for each component is
+                    //         auto generated from a generic implementation. The function can only be
+                    //         incorrect by providing an incorrect ComponentTypeDescription using an
+                    //         unsafe function.
+                    unsafe {
+                        fn_drop(last_ptr);
+                    }
                 }
             }
 
