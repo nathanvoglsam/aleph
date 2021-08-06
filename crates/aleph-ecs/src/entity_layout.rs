@@ -90,10 +90,16 @@ impl EntityLayout {
         unsafe { Self::from_inner_unchecked(&EMPTY) }
     }
 
-    /// Returns whether the given component type is present in the `EntityLayoutBuf`.
+    /// Returns whether the given component type is present in the `EntityLayout`.
     #[inline]
     pub fn contains_component_type(&self, id: ComponentTypeId) -> bool {
         self.components.binary_search(&id).is_ok()
+    }
+
+    /// Returns the index of the component type in the `EntityLayout`, if it exists in the layout
+    #[inline]
+    pub fn index_of_component_type(&self, id: ComponentTypeId) -> Option<usize> {
+        self.components.binary_search(&id).ok()
     }
 
     /// Returns if the `EntityLayoutBuf` has no member component types.
