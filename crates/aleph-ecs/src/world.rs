@@ -145,6 +145,9 @@ pub struct World {
     archetypes: Vec<Archetype>,
 }
 
+///
+/// Implementations for the rust friendly interface
+///
 impl World {
     ///
     pub fn new(options: WorldOptions) -> std::io::Result<Self> {
@@ -185,7 +188,7 @@ impl World {
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(entity) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
-            archetype.remove_entity(entity.entity);
+            archetype.remove_entity::<true>(entity.entity);
             true
         } else {
             false
@@ -193,6 +196,9 @@ impl World {
     }
 }
 
+///
+/// Implementations for the underlying FFI friendly API
+///
 impl World {
     /// The function provides the raw implementation of adding to the component registry using an
     /// arbitrary `ComponentTypeDescription`.
@@ -207,7 +213,149 @@ impl World {
     }
 
     ///
-    pub fn insert_entities_dynamic(
+    pub unsafe fn add_component_to_entity_dynamic(
+        &mut self,
+        description: &operations::ComponentInsertionDescription,
+    ) -> bool {
+        // Lookup the entity location by the provided ID, returning false if the ID is invalid
+        let location = if let Some(location) = self.entities.lookup(description.id) {
+            location
+        } else {
+            return false;
+        };
+
+        // Lookup the archetype to copy the entity from
+        let source_archetype_index = location.archetype;
+
+        // Add the new component to create our destination layout. If the source layout already
+        // contains the new component (i.e we're adding a component that is already present) then
+        // we return false to specify we did not add the component.
+        let source_layout = self.archetypes[source_archetype_index.0.get() as usize]
+            .entity_layout()
+            .to_owned();
+        let mut destination_layout = source_layout.clone();
+        if destination_layout.add_component_type(description.component) {
+            return false;
+        }
+
+        // Find or create the archetype to copy the modified entity into
+        let destination_archetype_index = self.find_or_create_archetype(&destination_layout);
+
+        // Move the entity into the destination archetype
+        let new_index = self.move_entity_to_archetype::<false>(
+            description.id,
+            source_archetype_index,
+            destination_archetype_index,
+        );
+
+        {
+            let dest = &mut self.archetypes[destination_archetype_index.0.get() as usize];
+
+            // Get the index of the type inside the archetype and lookup the size of the type
+            let type_index = dest
+                .entity_layout()
+                .index_of_component_type(description.component)
+                .unwrap();
+            let type_size = dest.component_descriptions()[type_index].type_size;
+
+            // Get the bounds of the component's data
+            let dest_base = new_index.0.get() as usize;
+            let dest_base = dest_base * type_size;
+            let dest_end = dest_base + type_size;
+
+            // Create the slice to copy into, no dropping is needed as the data is uninitialized
+            let dest_buffer = dest.component_storage_mut_raw_index(type_index);
+            let dest_buffer = &mut dest_buffer[dest_base..dest_end];
+
+            // Perform the actual copy
+            dest_buffer.copy_from_slice(description.data);
+        }
+
+        // Remove the entity from the previous archetype without dropping the components as they
+        // were moved
+        let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
+        source.remove_entity::<false>(location.entity);
+
+        true
+    }
+
+    ///
+    pub unsafe fn remove_component_from_entity_dynamic(
+        &mut self,
+        description: &operations::ComponentRemovalDescription,
+    ) -> bool {
+        // Lookup the entity location by the provided ID, returning false if the ID is invalid
+        let location = if let Some(location) = self.entities.lookup(description.id) {
+            location
+        } else {
+            return false;
+        };
+
+        // Lookup the archetype to copy the entity from
+        let source_archetype_index = location.archetype;
+
+        // Add the new component to create our destination layout. If the source layout already
+        // contains the new component (i.e we're adding a component that is already present) then
+        // we return false to specify we did not add the component.
+        let source_layout = self.archetypes[source_archetype_index.0.get() as usize]
+            .entity_layout()
+            .to_owned();
+        let mut destination_layout = source_layout.clone();
+        if !destination_layout.remove_component_type(description.component) {
+            return false;
+        }
+
+        // Find or create the archetype to copy the modified entity into
+        let destination_archetype_index = self.find_or_create_archetype(&destination_layout);
+
+        // Move the entity into the destination archetype
+        self.move_entity_to_archetype::<false>(
+            description.id,
+            source_archetype_index,
+            destination_archetype_index,
+        );
+
+        // Manually drop the component we're removing
+        let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
+        let type_index = source_layout
+            .index_of_component_type(description.component)
+            .unwrap();
+        let type_size = source.component_descriptions()[type_index].type_size;
+        let drop_fn = source.component_descriptions()[type_index].fn_drop;
+
+        if let Some(drop_fn) = drop_fn {
+            let base = location.entity.0.get() as usize;
+            let base = base * type_size;
+            let end = base + type_size;
+
+            let slice = source.component_storage_mut_raw_index(type_index);
+            let slice = &mut slice[base..end];
+
+            drop_fn(slice.as_mut_ptr());
+        }
+
+        // Remove the entity from the previous archetype without dropping the components as they
+        // were moved
+        source.remove_entity::<false>(location.entity);
+
+        true
+    }
+
+    /// This function provides the raw implementation of inserting entities into the ECS world.
+    ///
+    /// # Safety
+    ///
+    /// The actual implementation of this function is safe. All operations on the data itself are
+    /// sound and are built from safe interfaces.
+    ///
+    /// This function is unsafe because there is no sane way to verify the data provided by the
+    /// `description` parameter is valid. The buffers for the components could be filled with
+    /// garbage data and would then be later read back when querying the world. To prevent this we
+    /// mark this function as unsafe.
+    ///
+    /// To use this function safely the contents of `component_buffers` in `description` must point
+    /// to valid type-erased byte buffers for each component's data.
+    pub unsafe fn insert_entities_dynamic(
         &mut self,
         description: &mut operations::EntityInsertionDescription,
     ) {
@@ -221,13 +369,6 @@ impl World {
             "Can't allocate more than {} entities",
             (u32::MAX - 1)
         );
-
-        for id in description.entity_layout.iter() {
-            assert!(
-                self.component_registry.lookup(id).is_some(),
-                "Tried to insert an unregistered component type"
-            );
-        }
 
         assert!(
             !description.entity_layout.is_empty(),
@@ -281,10 +422,11 @@ impl World {
     }
 }
 
+/// Private function implementations
 impl World {
     fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
-            archetype.unwrap()
+            archetype.expect("Tried to lookup the empty archetype")
         } else {
             let capacity = self.options.archetype_capacity;
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
@@ -334,5 +476,59 @@ impl World {
                 desc.type_name
             );
         }
+    }
+
+    unsafe fn move_entity_to_archetype<const DROP: bool>(
+        &mut self,
+        target: EntityId,
+        source_index: ArchetypeIndex,
+        dest_index: ArchetypeIndex,
+    ) -> ArchetypeEntityIndex {
+        // Use our split_at_mut wrapper to get access to both archetypes mutably
+        //
+        // Unfortunately this has to be vendored into each function to satisfy the borrow checker
+        let (source, dest) = {
+            let source: usize = source_index.0.get() as usize;
+            let dest: usize = dest_index.0.get() as usize;
+            // Handles all cases: <, >, and ==. Will panic from underflow in the == case as that
+            // would lead to mutable aliasing.
+            if source < dest {
+                // Select the pivot based on the lowest of the two indices and split the array
+                let pivot = source.checked_add(1).unwrap();
+                let (l, r) = self.archetypes.split_at_mut(pivot);
+    
+                // Rebase the destination index in the second of the splits
+                let dest = dest.checked_sub(pivot).unwrap();
+    
+                // Get the references to the target indices
+                (&mut l[source as usize], &mut r[dest as usize])
+            } else {
+                // Select the pivot based on the lowest of the two indices and split the array
+                let pivot = dest.checked_add(1).unwrap();
+                let (l, r) = self.archetypes.split_at_mut(pivot);
+    
+                // Rebase the source index in the second of the splits
+                let source = source.checked_sub(pivot).unwrap();
+    
+                // Get the references to the target indices
+                (&mut l[source], &mut r[dest])
+            }
+        };
+
+        // Allocate space for the entity in the destination archetype and construct the new
+        // location while updating the entity slot
+        let entry = self.entities.lookup_entry_mut(target).unwrap();
+        let old_index = entry.data.location.unwrap().entity;
+        let new_index = dest.copy_from_archetype(old_index, source);
+        entry.data.location = Some(EntityLocation {
+            archetype: dest_index,
+            entity: new_index,
+        });
+
+        // Remove the entity from the previous archetype without dropping the components as they
+        // were moved
+        source.remove_entity::<DROP>(old_index);
+
+        new_index
     }
 }
