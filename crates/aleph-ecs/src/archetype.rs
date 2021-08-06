@@ -312,6 +312,49 @@ impl Archetype {
             self.len -= 1;
         }
     }
+
+    #[inline]
+    pub(crate) fn copy_from_archetype(
+        &mut self,
+        target: ArchetypeEntityIndex,
+        source: &Archetype,
+    ) -> ArchetypeEntityIndex {
+        let new_index = self.allocate_entities(1);
+
+        for (source_index, source_id) in self.entity_layout.iter().enumerate() {
+            // Get the size of the component to copy
+            let type_size = source.component_descriptions[source_index].type_size;
+
+            // Get the bounds of the data to copy
+            let source_base = target.0.get() as usize;
+            let source_base = source_base * type_size;
+            let source_end = source_base + type_size;
+
+            // Create a slice of the data to copy
+            let source_buffer = source.component_storage_raw_index(source_index);
+            let source_buffer = &source_buffer[source_base..source_end];
+
+            // Get the bounds of the memory to copy the data to
+            let dest_base = new_index.0.get() as usize;
+            let dest_base = dest_base * type_size;
+            let dest_end = dest_base + type_size;
+
+            // Create a slice of the destination to copy into
+            let dest_buffer = {
+                // Map the component ID to the storage index
+                let storage_index = self.storage_indices.get(&source_id).cloned().unwrap();
+
+                // Lookup the storage
+                self.storages[storage_index].as_slice_mut()
+            };
+            let dest_buffer = &mut dest_buffer[dest_base..dest_end];
+
+            // Perform the actual copy
+            dest_buffer.copy_from_slice(source_buffer);
+        }
+
+        new_index
+    }
 }
 
 impl Drop for Archetype {
