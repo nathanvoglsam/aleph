@@ -155,6 +155,12 @@ impl Archetype {
 impl Archetype {
     ///
     #[inline]
+    pub fn component_descriptions(&self) -> &[ComponentTypeDescription] {
+        &self.component_descriptions
+    }
+
+    ///
+    #[inline]
     pub fn component_storage<T: Component>(&self) -> Option<&[T]> {
         let len = self.len as usize;
         let slice = self.component_storage_raw(ComponentTypeId::of::<T>())?;
