@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use std::{borrow::Borrow, mem::size_of, num::NonZeroU32};
+use std::{borrow::Borrow, num::NonZeroU32};
 
 use crate::{
-    Component, ComponentIdMap, ComponentRegistry, ComponentTypeDescription, ComponentTypeId,
-    EntityId, EntityLayout, EntityLayoutBuf,
+    ComponentIdMap, ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId,
+    EntityLayout, EntityLayoutBuf,
 };
 use virtual_buffer::VirtualVec;
 
@@ -159,65 +159,14 @@ impl Archetype {
         &self.component_descriptions
     }
 
-    ///
-    #[inline]
-    pub fn component_storage<T: Component>(&self) -> Option<&[T]> {
-        let len = self.len as usize;
-        let slice = self.component_storage_raw(ComponentTypeId::of::<T>())?;
-        debug_assert_eq!(
-            slice.len() / size_of::<T>(),
-            len,
-            "Size of buffer is incorrect"
-        );
-
-        // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
-        //         component registry has incorrect data provided by an unsafe call to
-        //         `register_dynamic`.
-        //
-        //         As such this interface can be considered safe as it can only trigger UB with the
-        //         presence of other unsafe code
-        let slice = unsafe {
-            std::slice::from_raw_parts(slice.as_ptr() as *mut T as *const T, self.len as usize)
-        };
-
-        Some(slice)
-    }
-
-    ///
-    #[inline]
-    pub fn component_storage_mut<T: Component>(&mut self) -> Option<&mut [T]> {
-        let len = self.len as usize;
-        let slice = self.component_storage_mut_raw(ComponentTypeId::of::<T>())?;
-        debug_assert_eq!(
-            slice.len() / size_of::<T>(),
-            len,
-            "Size of buffer is incorrect"
-        );
-
-        // SAFETY: This can only cause UB with the help of other unsafe code. Specifically if the
-        //         component registry has incorrect data provided by an unsafe call to
-        //         `register_dynamic`.
-        //
-        //         As such this interface can be considered safe as it can only trigger UB with the
-        //         presence of other unsafe code
-        let slice = unsafe {
-            std::slice::from_raw_parts_mut(slice.as_mut_ptr() as *mut T, self.len as usize)
-        };
-
-        Some(slice)
-    }
-
     /// Given a component id, returns the raw bytes for the backing storage
     #[inline]
     pub fn component_storage_raw(&self, id: ComponentTypeId) -> Option<&[u8]> {
         // Map the component ID to the storage index
         let storage_index = self.storage_indices.get(&id).cloned()?;
-        let type_size = self.component_descriptions[storage_index].type_size;
 
         // Lookup the storage
-        let storage = self.storages[storage_index].as_slice();
-
-        Some(&storage[type_size..])
+        Some(self.storages[storage_index].as_slice())
     }
 
     /// Given a component id, returns the raw bytes for the backing storage
@@ -225,32 +174,21 @@ impl Archetype {
     pub fn component_storage_mut_raw(&mut self, id: ComponentTypeId) -> Option<&mut [u8]> {
         // Map the component ID to the storage index
         let storage_index = self.storage_indices.get(&id).cloned()?;
-        let type_size = self.component_descriptions[storage_index].type_size;
 
         // Lookup the storage
-        let storage = self.storages[storage_index].as_slice_mut();
-
-        Some(&mut storage[type_size..])
+        Some(self.storages[storage_index].as_slice_mut())
     }
 
     /// Given a storage index, returns the raw bytes for the backing storage
     #[inline]
     pub fn component_storage_raw_index(&self, index: usize) -> &[u8] {
-        // Lookup the storage
-        let type_size = self.component_descriptions[index].type_size;
-        let storage = &self.storages[index];
-
-        &storage[type_size..]
+        &self.storages[index]
     }
 
     /// Given a storage index, returns the raw bytes for the backing storage
     #[inline]
     pub fn component_storage_mut_raw_index(&mut self, index: usize) -> &mut [u8] {
-        // Lookup the storage
-        let type_size = self.component_descriptions[index].type_size;
-        let storage = &mut self.storages[index];
-
-        &mut storage[type_size..]
+        &mut self.storages[index]
     }
 
     ///
