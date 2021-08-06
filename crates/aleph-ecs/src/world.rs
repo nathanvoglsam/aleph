@@ -47,68 +47,54 @@ pub mod operations {
         /// The layout of the entities to create. (Sorted de-duplicated list of component type ids)
         pub entity_layout: &'a EntityLayout,
 
-        /// An array of pointers to buffers that contain `count` components for each component type.
+        /// An array of pointers to buffers that contain `ids.len()` components for each component
+        /// type.
         ///
-        /// Each pointer must point to a buffer that holds `count` items for the given component.
+        /// Each pointer must point to a buffer that holds `ids.len()` items for the given
+        /// component.
         pub component_buffers: &'a [&'a [u8]],
 
         /// The buffer to write all the entity ids into
         pub ids: &'b mut [EntityId],
-
-        /// The number of entities we want to create.
-        pub count: u32,
     }
 
     ///
     /// The raw, FFI friendly struct that describes an entity removal operation.
     ///
     #[repr(C)]
-    pub struct EntityRemovalDescription<'a> {
-        /// The ids for each entity to remove
-        pub ids: &'a [EntityId],
+    #[derive(Clone)]
+    pub struct EntityRemovalDescription {
+        /// The ID of the entity we want to operate on
+        pub id: EntityId,
     }
 
     ///
     /// The raw, FFI friendly struct that describes an entity component removal operation.
     ///
     #[repr(C)]
-    pub struct ComponentRemovalDescription<'a> {
-        /// The layout of every entity pointed to with the `ids` list.
-        pub soruce_layout: &'a EntityLayout,
+    #[derive(Clone)]
+    pub struct ComponentRemovalDescription {
+        /// The ID of the entity we want to operate on
+        pub id: EntityId,
 
-        /// The ids of all the entities we want to operate on
-        pub ids: &'a [EntityId],
-
-        /// The IDs of the components to remove from the given entities.
-        pub components: &'a [ComponentTypeId],
-    }
-
-    ///
-    /// A component ID and buffer pair, specified for FFI friendliness.
-    ///
-    #[repr(C)]
-    pub struct ComponentBufferPair<'a> {
-        /// The ID of the component this stores data for.
-        pub id: ComponentTypeId,
-
-        /// The buffer that holds the components
-        pub buffer: &'a [u8],
+        /// The type ID of the component to remove
+        pub component: ComponentTypeId,
     }
 
     ///
     /// The raw, FFI friendly struct that describes an entity component insertion operation.
     ///
     #[repr(C)]
+    #[derive(Clone)]
     pub struct ComponentInsertionDescription<'a> {
-        /// The layout of every entity pointed to with the `ids` list.
-        pub source_layout: &'a EntityLayout,
+        /// The ID of the entity we want to operate on
+        pub id: EntityId,
 
-        /// The ids of all the entities we want to operate on
-        pub ids: &'a [EntityId],
+        /// The type ID of the component to add
+        pub component: ComponentTypeId,
 
-        /// This list stores a pair of `ComponentTypeId` and a buffer which can holds the data to
-        /// copy component data from. This defines the set of components to add to each entity.
-        pub components: &'a [ComponentBufferPair<'a>],
+        /// The data to copy the component data from
+        pub data: &'a [u8],
     }
 }
 
@@ -160,6 +146,7 @@ pub struct World {
 }
 
 impl World {
+    ///
     pub fn new(options: WorldOptions) -> std::io::Result<Self> {
         let component_registry = ComponentRegistry::new();
         let entities = EntityStorage::new(options.entity_capacity)?;
@@ -194,6 +181,19 @@ impl World {
         self.component_registry.register::<T>()
     }
 
+    ///
+    pub fn remove_entity(&mut self, entity: EntityId) -> bool {
+        if let Some(entity) = self.entities.lookup(entity) {
+            let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
+            archetype.remove_entity(entity.entity);
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl World {
     /// The function provides the raw implementation of adding to the component registry using an
     /// arbitrary `ComponentTypeDescription`.
     ///
@@ -202,64 +202,34 @@ impl World {
     /// This function is unsafe because there is no way to guarantee that the memory layout provided
     /// is valid for the provided ID. It is possible to provide the ID for a rust type but give an
     /// incorrect size and trigger UB.
-    #[inline]
-    pub unsafe fn register_dynamic(&mut self, description: ComponentTypeDescription) -> bool {
+    pub unsafe fn register_dynamic(&mut self, description: &ComponentTypeDescription) -> bool {
         self.component_registry.register_dynamic(description)
     }
 
-    #[inline]
-    pub fn insert_entities_dynamic(&mut self, description: operations::EntityInsertionDescription) {
-        debug_assert_eq!(
-            description.count as usize,
-            description.ids.len(),
-            "The length of the id slice and number of entities must match"
-        );
-
-        debug_assert_eq!(
-            description.entity_layout.len(),
-            description.component_buffers.len(),
-            "The number of components in the layout and number of buffers provided must match"
-        );
-
-        // Debug assertion that checks that the buffer sizes for each component are exactly the size
-        // and alignment needed.
+    ///
+    pub fn insert_entities_dynamic(
+        &mut self,
+        description: &mut operations::EntityInsertionDescription,
+    ) {
         #[cfg(debug_assertions)]
         {
-            let layouts = description.entity_layout.iter();
-            let descs = layouts.map(|v| {
-                let desc = self
-                    .component_registry
-                    .lookup(v)
-                    .expect("Tried to insert an unregistered component type");
-                desc
-            });
-            let buffers = description.component_buffers.iter().cloned();
-            for (desc, buffer) in descs.zip(buffers) {
-                let required_bytes = description.count as usize * desc.type_size;
-                let actual_bytes = buffer.len();
-                assert_eq!(
-                    required_bytes, actual_bytes,
-                    "The buffer provided for component {} was the wrong size",
-                    desc.type_name
-                );
-
-                let buffer_base = buffer.as_ptr() as usize;
-                if buffer_base & (desc.type_align - 1) != 0 {
-                    panic!(
-                        "The buffer provided for component {} was not sufficiently aligned",
-                        desc.type_name
-                    );
-                }
-            }
+            self.insert_entities_dynamic_debug_assertions(&description);
         }
+
+        assert!(
+            description.ids.len() < (u32::MAX - 1) as usize,
+            "Can't allocate more than {} entities",
+            (u32::MAX - 1)
+        );
 
         for id in description.entity_layout.iter() {
-            if self.component_registry.lookup(id).is_none() {
-                panic!("Tried to insert an unregistered component type");
-            }
+            assert!(
+                self.component_registry.lookup(id).is_some(),
+                "Tried to insert an unregistered component type"
+            );
         }
 
-        debug_assert!(
+        assert!(
             !description.entity_layout.is_empty(),
             "Tried to insert entity with 0 components"
         );
@@ -267,7 +237,7 @@ impl World {
         // Locate the archetype and allocate space in the archetype for the new entities
         let archetype_index = self.find_or_create_archetype(description.entity_layout);
         let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
-        let archetype_entity_base = archetype.allocate_entities(description.count);
+        let archetype_entity_base = archetype.allocate_entities(description.ids.len() as u32);
 
         // Copy the component data into the archetype buffers
         for (i, (source, comp_id)) in description
@@ -302,27 +272,16 @@ impl World {
         });
     }
 
-    #[inline]
-    pub fn remove_entity(&mut self, entity: EntityId) -> bool {
-        if let Some(entity) = self.entities.lookup(entity) {
-            let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
-            archetype.remove_entity(entity.entity);
-            true
-        } else {
-            false
-        }
-    }
-
-    #[inline]
-    pub fn remove_entities_dynamic(&mut self, description: operations::EntityRemovalDescription) {
-        for id in description.ids.iter().cloned() {
-            self.remove_entity(id);
-        }
+    ///
+    pub fn remove_entity_dynamic(
+        &mut self,
+        description: &operations::EntityRemovalDescription,
+    ) -> bool {
+        self.remove_entity(description.id)
     }
 }
 
 impl World {
-    #[inline]
     fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
             archetype.unwrap()
@@ -335,6 +294,45 @@ impl World {
                 .insert(layout.to_owned(), Some(ArchetypeIndex(archetype_index)));
             self.archetypes.push(archetype);
             ArchetypeIndex(archetype_index)
+        }
+    }
+
+    fn insert_entities_dynamic_debug_assertions(
+        &self,
+        description: &operations::EntityInsertionDescription,
+    ) {
+        debug_assert_eq!(
+            description.entity_layout.len(),
+            description.component_buffers.len(),
+            "The number of components in the layout and number of buffers provided must match"
+        );
+
+        // Debug assertion that checks that the buffer sizes for each component are exactly the size
+        // and alignment needed.
+        let layouts = description.entity_layout.iter();
+        let descs = layouts.map(|v| {
+            let desc = self
+                .component_registry
+                .lookup(v)
+                .expect("Tried to insert an unregistered component type");
+            desc
+        });
+        let buffers = description.component_buffers.iter().cloned();
+        for (desc, buffer) in descs.zip(buffers) {
+            let required_bytes = description.ids.len() * desc.type_size;
+            let actual_bytes = buffer.len();
+            debug_assert_eq!(
+                required_bytes, actual_bytes,
+                "The buffer provided for component {} was the wrong size",
+                desc.type_name
+            );
+
+            let buffer_base = buffer.as_ptr() as usize;
+            debug_assert!(
+                buffer_base & (desc.type_align - 1) == 0,
+                "The buffer provided for component {} was not sufficiently aligned",
+                desc.type_name
+            );
         }
     }
 }
