@@ -247,6 +247,36 @@ impl EntityStorage {
         }
     }
 
+    /// Looks up the location of the entity with the given ID.
+    ///
+    /// Will return None if the ID is invalid (dangling)
+    #[inline]
+    pub fn lookup_entry(&self, id: EntityId) -> Option<&EntityEntry> {
+        let index = id.index?.0.get() as usize;
+
+        // If the generations do not match then this ID is dangling
+        if self.entities[index].generation == id.generation && id.generation.is_alive() {
+            Some(&self.entities[index])
+        } else {
+            None
+        }
+    }
+
+    /// Looks up the location of the entity with the given ID.
+    ///
+    /// Will return None if the ID is invalid (dangling)
+    #[inline]
+    pub fn lookup_entry_mut(&mut self, id: EntityId) -> Option<&mut EntityEntry> {
+        let index = id.index?.0.get() as usize;
+
+        // If the generations do not match then this ID is dangling
+        if self.entities[index].generation == id.generation && id.generation.is_alive() {
+            Some(&mut self.entities[index])
+        } else {
+            None
+        }
+    }
+
     /// Allocates a new entity ID with the given location data and returns the ID.
     #[inline]
     pub fn create(&mut self, location: EntityLocation) -> EntityId {
