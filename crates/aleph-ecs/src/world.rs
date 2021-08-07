@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use std::{collections::HashMap, num::NonZeroU32};
-
+use crate::ComponentTypeId;
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentRegistry,
     ComponentTypeDescription, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation,
     EntityStorage,
 };
+use std::{collections::HashMap, num::NonZeroU32};
 
 /// A module that groups all the operation descriptions
 pub mod operations {
@@ -427,6 +427,59 @@ impl World {
 
 /// Private function implementations
 impl World {
+    fn follow_archetype_link<const ADD: bool>(
+        &mut self,
+        source: ArchetypeIndex,
+        component: ComponentTypeId,
+    ) -> Option<ArchetypeIndex> {
+        let source = source.0.get() as usize;
+
+        // First check for an existing link in the graph
+        if let Some(edge) = self.archetypes[source].edges_mut().get_mut(&component) {
+            // Const switch between add or remove
+            if ADD {
+                if let Some(index) = edge.add {
+                    return Some(index);
+                }
+            } else {
+                if let Some(index) = edge.remove {
+                    return Some(index);
+                }
+            }
+        }
+
+        // If we get here then we failed to find an existing link so we'll need to lookup the target
+        // archetype by layout, which requires an allocation to build the layout to lookup with
+
+        // Create the destination layout, returning None if the component we're following a link
+        // for doesn't change the layout (i.e trying to go from src->src).
+        let source_layout = self.archetypes[source].entity_layout().to_owned();
+        let mut destination_layout = source_layout.clone();
+        if ADD {
+            if destination_layout.add_component_type(component) {
+                return None;
+            }
+        } else {
+            if !destination_layout.remove_component_type(component) {
+                return None;
+            }
+        }
+
+        // Lookup the archetype and update the graph edge in source
+        let index = self.find_or_create_archetype(&destination_layout);
+        let edge = self.archetypes[source]
+            .edges_mut()
+            .entry(component)
+            .or_default();
+        if ADD {
+            edge.add = Some(index);
+        } else {
+            edge.remove = Some(index);
+        }
+
+        Some(index)
+    }
+
     fn find_or_create_archetype(&mut self, layout: &EntityLayout) -> ArchetypeIndex {
         if let Some(archetype) = self.archetype_map.get(layout).cloned() {
             archetype.expect("Tried to lookup the empty archetype")
