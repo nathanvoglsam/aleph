@@ -184,7 +184,11 @@ impl World {
         self.component_registry.register::<T>()
     }
 
+    /// Erases the entity with the ID from the ECS.
     ///
+    /// Returns true if the operation was successful, otherwise returns false.
+    ///
+    /// If the ID is invalid then this function does nothing and returns false.
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(entity) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
@@ -212,7 +216,13 @@ impl World {
         self.component_registry.register_dynamic(description)
     }
 
+    /// This function provides the raw implementation of adding a component to an existing entity.
     ///
+    /// # Safety
+    ///
+    /// This function assumes the bytes provided for initializing the component encode a valid bit
+    /// pattern for the component type. It also assumes that it takes ownership of the object it
+    /// points to and that drop is not called on the underlying object.
     pub unsafe fn add_component_to_entity_dynamic(
         &mut self,
         description: &operations::ComponentInsertionDescription,
@@ -279,7 +289,9 @@ impl World {
         true
     }
 
+    /// This function provides the raw implementation of removing a component from an entity
     ///
+    /// # Safety
     pub unsafe fn remove_component_from_entity_dynamic(
         &mut self,
         description: &operations::ComponentRemovalDescription,
@@ -381,12 +393,7 @@ impl World {
         let archetype_entity_base = archetype.allocate_entities(description.ids.len() as u32);
 
         // Copy the component data into the archetype buffers
-        for (i, source) in description
-            .component_buffers
-            .iter()
-            .cloned()
-            .enumerate()
-        {
+        for (i, source) in description.component_buffers.iter().cloned().enumerate() {
             // Get the size of the type we're copying from the buffers
             let type_size = archetype.component_descriptions()[i].type_size;
 
@@ -480,6 +487,14 @@ impl World {
         }
     }
 
+    /// # Safety
+    ///
+    /// This function doesn't check what components intersect from the source and destination
+    /// archetypes. If dest is a superset of source then this will leave some component's data
+    /// uninitialized.
+    ///
+    /// To use this safely the data must be initialized manually outside this function in a higher
+    /// level wrapper.
     unsafe fn move_entity_to_archetype<const DROP: bool>(
         &mut self,
         target: EntityId,
@@ -498,20 +513,20 @@ impl World {
                 // Select the pivot based on the lowest of the two indices and split the array
                 let pivot = source.checked_add(1).unwrap();
                 let (l, r) = self.archetypes.split_at_mut(pivot);
-    
+
                 // Rebase the destination index in the second of the splits
                 let dest = dest.checked_sub(pivot).unwrap();
-    
+
                 // Get the references to the target indices
                 (&mut l[source as usize], &mut r[dest as usize])
             } else {
                 // Select the pivot based on the lowest of the two indices and split the array
                 let pivot = dest.checked_add(1).unwrap();
                 let (l, r) = self.archetypes.split_at_mut(pivot);
-    
+
                 // Rebase the source index in the second of the splits
                 let source = source.checked_sub(pivot).unwrap();
-    
+
                 // Get the references to the target indices
                 (&mut l[source], &mut r[dest])
             }
