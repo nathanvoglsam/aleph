@@ -395,6 +395,26 @@ impl Archetype {
 
 impl Drop for Archetype {
     fn drop(&mut self) {
-        todo!("Drop all live components in their type erased storages");
+        // Iterate over every component storage and call the drop function on all components
+        for (index, storage) in self.storages.iter_mut().enumerate() {
+
+            // Lookup the size and drop fn so we can iterate over the components in the storage
+            let type_size = self.component_descriptions[index].type_size;
+            let drop_fn = self.component_descriptions[index].fn_drop;
+
+            // Only need to iterate if the drop function is actually defined
+            if let Some(drop_fn) = drop_fn {
+                // SAFETY: This just iterates over each item in the storage while type erased, which
+                //         is a sound operation. The drop function will never be invalid to call if
+                //         there is no unsafe code interfacing with the world.
+                unsafe {
+                    let mut current = storage.as_mut_ptr();
+                    for _ in 0..self.len {
+                        drop_fn(current);
+                        current = current.add(type_size);
+                    }
+                }
+            }
+        }
     }
 }
