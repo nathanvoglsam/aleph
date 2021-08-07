@@ -190,7 +190,11 @@ impl World {
     /// unchanged and the provided component object will be dropped.
     ///
     /// Returns true if the component is successfully inserted, otherwise returns false.
-    pub fn add_component_to_entity<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
+    pub fn add_component_to_entity<T: Component>(
+        &mut self,
+        entity: EntityId,
+        component: T,
+    ) -> bool {
         // Construct a slice of the component data. This will be used by the underlying
         // implementation
         let data = unsafe {
@@ -226,10 +230,8 @@ impl World {
             id: entity,
             component: ComponentTypeId::of::<T>(),
         };
-        
-        unsafe {
-            self.remove_component_from_entity_dynamic(&description)
-        }
+
+        unsafe { self.remove_component_from_entity_dynamic(&description) }
     }
 
     /// Erases the entity with the ID from the ECS.
