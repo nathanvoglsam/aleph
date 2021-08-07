@@ -281,11 +281,6 @@ impl World {
             dest_buffer.copy_from_slice(description.data);
         }
 
-        // Remove the entity from the previous archetype without dropping the components as they
-        // were moved
-        let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
-        source.remove_entity::<false>(location.entity);
-
         true
     }
 
@@ -345,10 +340,6 @@ impl World {
 
             drop_fn(slice.as_mut_ptr());
         }
-
-        // Remove the entity from the previous archetype without dropping the components as they
-        // were moved
-        source.remove_entity::<false>(location.entity);
 
         true
     }
