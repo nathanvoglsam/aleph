@@ -237,19 +237,15 @@ impl World {
         // Lookup the archetype to copy the entity from
         let source_archetype_index = location.archetype;
 
-        // Add the new component to create our destination layout. If the source layout already
-        // contains the new component (i.e we're adding a component that is already present) then
-        // we return false to specify we did not add the component.
-        let source_layout = self.archetypes[source_archetype_index.0.get() as usize]
-            .entity_layout()
-            .to_owned();
-        let mut destination_layout = source_layout.clone();
-        if destination_layout.add_component_type(description.component) {
+        // Find the destination archetype, returning false if the source and destination are the
+        // same.
+        let destination_archetype_index = if let Some(index) =
+            self.follow_archetype_link::<true>(source_archetype_index, description.component)
+        {
+            index
+        } else {
             return false;
-        }
-
-        // Find or create the archetype to copy the modified entity into
-        let destination_archetype_index = self.find_or_create_archetype(&destination_layout);
+        };
 
         // Move the entity into the destination archetype
         let new_index = self.move_entity_to_archetype::<false>(
@@ -304,19 +300,15 @@ impl World {
         // Lookup the archetype to copy the entity from
         let source_archetype_index = location.archetype;
 
-        // Add the new component to create our destination layout. If the source layout already
-        // contains the new component (i.e we're adding a component that is already present) then
-        // we return false to specify we did not add the component.
-        let source_layout = self.archetypes[source_archetype_index.0.get() as usize]
-            .entity_layout()
-            .to_owned();
-        let mut destination_layout = source_layout.clone();
-        if !destination_layout.remove_component_type(description.component) {
+        // Find the destination archetype, returning false if the source and destination are the
+        // same.
+        let destination_archetype_index = if let Some(index) =
+            self.follow_archetype_link::<false>(source_archetype_index, description.component)
+        {
+            index
+        } else {
             return false;
-        }
-
-        // Find or create the archetype to copy the modified entity into
-        let destination_archetype_index = self.find_or_create_archetype(&destination_layout);
+        };
 
         // Move the entity into the destination archetype
         self.move_entity_to_archetype::<false>(
@@ -327,7 +319,8 @@ impl World {
 
         // Manually drop the component we're removing
         let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
-        let type_index = source_layout
+        let type_index = source
+            .entity_layout()
             .index_of_component_type(description.component)
             .unwrap();
         let type_size = source.component_descriptions()[type_index].type_size;
