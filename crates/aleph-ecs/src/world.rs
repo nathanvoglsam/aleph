@@ -381,22 +381,24 @@ impl World {
         let archetype_entity_base = archetype.allocate_entities(description.ids.len() as u32);
 
         // Copy the component data into the archetype buffers
-        for (i, (source, comp_id)) in description
+        for (i, source) in description
             .component_buffers
             .iter()
             .cloned()
-            .zip(description.entity_layout.iter())
             .enumerate()
         {
-            let desc = self.component_registry.lookup(comp_id).unwrap();
-            let base = desc.type_size * archetype_entity_base.0.get() as usize;
+            // Get the size of the type we're copying from the buffers
+            let type_size = archetype.component_descriptions()[i].type_size;
+
+            // Calculate the base index for where to start copying into the buffer
+            let base = archetype_entity_base.0.get() as usize;
+            let base = base * type_size;
+
+            // Get the target slice to copy into
             let target = archetype.component_storage_mut_raw_index(i);
             let target = &mut target[base..];
-            debug_assert_eq!(
-                target.len(),
-                source.len(),
-                "Target and Source must be the same length"
-            );
+
+            // Perform the actual copy
             target.copy_from_slice(source);
         }
 
