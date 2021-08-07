@@ -37,6 +37,9 @@ mod generation;
 mod query;
 mod world;
 
+#[cfg(test)]
+mod tests;
+
 pub use crate::archetype::Archetype;
 pub use crate::archetype::ArchetypeEntityIndex;
 pub use crate::archetype::ArchetypeIndex;

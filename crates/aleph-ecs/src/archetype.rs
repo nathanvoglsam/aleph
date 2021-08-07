@@ -397,7 +397,6 @@ impl Drop for Archetype {
     fn drop(&mut self) {
         // Iterate over every component storage and call the drop function on all components
         for (index, storage) in self.storages.iter_mut().enumerate() {
-
             // Lookup the size and drop fn so we can iterate over the components in the storage
             let type_size = self.component_descriptions[index].type_size;
             let drop_fn = self.component_descriptions[index].fn_drop;
