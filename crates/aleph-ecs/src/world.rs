@@ -284,7 +284,10 @@ impl World {
         true
     }
 
-    /// This function provides the raw implementation of removing a component from an entity
+    /// This function provides the raw implementation of removing a component from an entity.
+    ///
+    /// Returns true if the component existed on the entity and was removed, otherwise returns
+    /// false.
     ///
     /// # Safety
     pub unsafe fn remove_component_from_entity_dynamic(
