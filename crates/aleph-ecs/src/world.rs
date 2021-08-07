@@ -184,6 +184,54 @@ impl World {
         self.component_registry.register::<T>()
     }
 
+    /// Adds the given component to the entity pointed to by the provided ID.
+    ///
+    /// If the component already existed on the entity then original component will be left
+    /// unchanged and the provided component object will be dropped.
+    ///
+    /// Returns true if the component is successfully inserted, otherwise returns false.
+    pub fn add_component_to_entity<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
+        // Construct a slice of the component data. This will be used by the underlying
+        // implementation
+        let data = unsafe {
+            let data = &component as *const T as *const u8;
+            let len = std::mem::size_of::<T>();
+            std::slice::from_raw_parts(data, len)
+        };
+
+        // Construct our operation description
+        let description = operations::ComponentInsertionDescription {
+            id: entity,
+            component: ComponentTypeId::of::<T>(),
+            data,
+        };
+
+        // Perform the call, using mem::forget to not drop the component if ownership was
+        // successfully transferred into the archetype
+        unsafe {
+            if self.add_component_to_entity_dynamic(&description) {
+                std::mem::forget(component);
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    /// Removes the specified component from the provided entity.
+    ///
+    /// Returns true if the component is successfully removed, otherwise returns false.
+    pub fn remove_component_from_entity<T: Component>(&mut self, entity: EntityId) -> bool {
+        let description = operations::ComponentRemovalDescription {
+            id: entity,
+            component: ComponentTypeId::of::<T>(),
+        };
+        
+        unsafe {
+            self.remove_component_from_entity_dynamic(&description)
+        }
+    }
+
     /// Erases the entity with the ID from the ECS.
     ///
     /// Returns true if the operation was successful, otherwise returns false.
