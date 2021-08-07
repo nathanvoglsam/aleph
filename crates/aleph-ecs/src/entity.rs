@@ -205,10 +205,17 @@ impl EntityStorage {
     /// It is recommended to make `capacity` something large like 1,048,576 as this sets the upper
     /// bound on the maximum number of entities that can be alive at any one time.
     pub fn new(capacity: u32) -> std::io::Result<EntityStorage> {
-        if capacity < (u32::MAX - 1) {
+        if capacity >= (u32::MAX - 1) {
             return Err(Error::new(
                 ErrorKind::InvalidInput,
-                "Can't have more than (u32::MAX - 1) entities as capacity",
+                format!("Can't have more than {} entities as capacity", u32::MAX - 1),
+            ));
+        }
+
+        if capacity == 0 {
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "Can't have 0 entities as capacity",
             ));
         }
 
