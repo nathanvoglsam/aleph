@@ -342,7 +342,14 @@ impl Archetype {
             // Create a slice of the destination to copy into
             let dest_buffer = {
                 // Map the component ID to the storage index
-                let storage_index = self.storage_indices.get(&source_id).cloned().unwrap();
+                //
+                // We break from the loop if the source component does not exist in self
+                let storage_index =
+                    if let Some(storage_index) = self.storage_indices.get(&source_id).cloned() {
+                        storage_index
+                    } else {
+                        continue;
+                    };
 
                 // Lookup the storage
                 self.storages[storage_index].as_slice_mut()
