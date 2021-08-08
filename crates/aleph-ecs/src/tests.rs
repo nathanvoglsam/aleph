@@ -29,20 +29,44 @@ use crate::World;
 // SOFTWARE.
 //
 
+#[derive(Default)]
 struct Position {
     x: f32,
     y: f32,
 }
 
+#[derive(Default)]
 struct Scale {
     x: f32,
     y: f32,
 }
 
 #[test]
-fn create_test() {
+fn extend_test_vec() {
     let mut world = World::new(Default::default()).unwrap();
 
     world.register::<Position>();
     world.register::<Scale>();
+
+    let ids = world.extend((
+        vec![Position::default(), Position::default()],
+        vec![Scale::default(), Scale::default()],
+    ));
+
+    assert_eq!(ids.len(), 2);
+}
+
+#[test]
+fn extend_test_array() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+
+    let ids = world.extend((
+        [Position::default(), Position::default()],
+        [Scale::default(), Scale::default()],
+    ));
+
+    assert_eq!(ids.len(), 2)
 }
