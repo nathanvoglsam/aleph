@@ -277,12 +277,32 @@ impl Archetype {
     ///
     /// The const parameter chooses whether to call the drop function or not
     #[inline]
-    pub(crate) fn remove_entity<const DROP: bool>(&mut self, index: ArchetypeEntityIndex) {
+    pub(crate) fn remove_entity<const DROP: bool>(
+        &mut self,
+        index: ArchetypeEntityIndex,
+    ) -> Option<EntityId> {
+        // swap-remove the ID from the dense ID array
+        //
+        // Checks if we're popping from the end of th array. If we have to remove from the interior
+        // of the dense list then we will need to move the ID at the end into the empty space. The
+        // entity storage in the World will need to be updated to respect the entity being moved
+        // inside the archetype
+        //
+        // This returns the entity that needs to be updated and whether an update is needed
         self.entity_ids.swap_remove(index.0.get() as usize);
+        let out_index = if index.0.get() as usize == self.entity_ids.len() {
+            None
+        } else {
+            Some(self.entity_ids[index.0.get() as usize])
+        };
+
         for i in 0..self.storages.len() {
             self.swap_and_pop_for_storage::<DROP>(i, index);
         }
+
         self.len -= 1;
+
+        out_index
     }
 
     /// Swap and pop the component in `storage_index` at `index`

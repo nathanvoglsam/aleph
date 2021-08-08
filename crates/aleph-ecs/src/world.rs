@@ -278,7 +278,14 @@ impl World {
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
-            archetype.remove_entity::<true>(location.entity);
+
+            if let Some(needs_update) = archetype.remove_entity::<true>(location.entity) {
+                unsafe {
+                    let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
+                    let entry = entry.data.location.as_mut().unwrap();
+                    entry.entity = location.entity;
+                }
+            }
 
             self.entities.destroy(entity);
 
@@ -562,7 +569,11 @@ impl World {
 
         // Remove the entity from the previous archetype without dropping the components as they
         // were moved
-        source.remove_entity::<DROP>(old_index);
+        if let Some(needs_update) = source.remove_entity::<DROP>(old_index) {
+            let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
+            let entry = entry.data.location.as_mut().unwrap();
+            entry.entity = old_index;
+        }
 
         new_index
     }
