@@ -27,76 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::ComponentTypeId;
 use crate::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentRegistry,
-    ComponentTypeDescription, EntityId, EntityLayout, EntityLayoutBuf, EntityLocation,
-    EntityStorage,
+    ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf,
+    EntityLocation, EntityStorage,
 };
 use std::{collections::HashMap, num::NonZeroU32};
-
-/// A module that groups all the operation descriptions
-pub mod operations {
-    use crate::{ComponentTypeId, EntityId, EntityLayout};
-
-    ///
-    /// The raw, FFI friendly struct that describes an entity insertion operation.
-    ///
-    #[repr(C)]
-    pub struct EntityInsertionDescription<'a, 'b> {
-        /// The layout of the entities to create. (Sorted de-duplicated list of component type ids)
-        pub entity_layout: &'a EntityLayout,
-
-        /// An array of pointers to buffers that contain `ids.len()` components for each component
-        /// type.
-        ///
-        /// Each pointer must point to a buffer that holds `ids.len()` items for the given
-        /// component.
-        pub component_buffers: &'a [&'a [u8]],
-
-        /// The buffer to write all the entity ids into
-        pub ids: &'b mut [EntityId],
-    }
-
-    ///
-    /// The raw, FFI friendly struct that describes an entity removal operation.
-    ///
-    #[repr(C)]
-    #[derive(Clone)]
-    pub struct EntityRemovalDescription {
-        /// The ID of the entity we want to operate on
-        pub id: EntityId,
-    }
-
-    ///
-    /// The raw, FFI friendly struct that describes an entity component removal operation.
-    ///
-    #[repr(C)]
-    #[derive(Clone)]
-    pub struct ComponentRemovalDescription {
-        /// The ID of the entity we want to operate on
-        pub id: EntityId,
-
-        /// The type ID of the component to remove
-        pub component: ComponentTypeId,
-    }
-
-    ///
-    /// The raw, FFI friendly struct that describes an entity component insertion operation.
-    ///
-    #[repr(C)]
-    #[derive(Clone)]
-    pub struct ComponentInsertionDescription<'a> {
-        /// The ID of the entity we want to operate on
-        pub id: EntityId,
-
-        /// The type ID of the component to add
-        pub component: ComponentTypeId,
-
-        /// The data to copy the component data from
-        pub data: &'a [u8],
-    }
-}
 
 ///
 /// This struct packages the options for creating a `World`. The purpose is to provide an easy to
@@ -190,11 +126,7 @@ impl World {
     /// unchanged and the provided component object will be dropped.
     ///
     /// Returns true if the component is successfully inserted, otherwise returns false.
-    pub fn add_component_to_entity<T: Component>(
-        &mut self,
-        entity: EntityId,
-        component: T,
-    ) -> bool {
+    pub fn add_component<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
         // Construct a slice of the component data. This will be used by the underlying
         // implementation
         let data = unsafe {
@@ -203,17 +135,10 @@ impl World {
             std::slice::from_raw_parts(data, len)
         };
 
-        // Construct our operation description
-        let description = operations::ComponentInsertionDescription {
-            id: entity,
-            component: ComponentTypeId::of::<T>(),
-            data,
-        };
-
         // Perform the call, using mem::forget to not drop the component if ownership was
         // successfully transferred into the archetype
         unsafe {
-            if self.add_component_to_entity_dynamic(&description) {
+            if self.add_component_dynamic(entity, ComponentTypeId::of::<T>(), data) {
                 std::mem::forget(component);
                 true
             } else {
@@ -225,13 +150,8 @@ impl World {
     /// Removes the specified component from the provided entity.
     ///
     /// Returns true if the component is successfully removed, otherwise returns false.
-    pub fn remove_component_from_entity<T: Component>(&mut self, entity: EntityId) -> bool {
-        let description = operations::ComponentRemovalDescription {
-            id: entity,
-            component: ComponentTypeId::of::<T>(),
-        };
-
-        unsafe { self.remove_component_from_entity_dynamic(&description) }
+    pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
+        unsafe { self.remove_component_dynamic(entity, ComponentTypeId::of::<T>()) }
     }
 
     /// Erases the entity with the ID from the ECS.
@@ -273,12 +193,14 @@ impl World {
     /// This function assumes the bytes provided for initializing the component encode a valid bit
     /// pattern for the component type. It also assumes that it takes ownership of the object it
     /// points to and that drop is not called on the underlying object.
-    pub unsafe fn add_component_to_entity_dynamic(
+    pub unsafe fn add_component_dynamic(
         &mut self,
-        description: &operations::ComponentInsertionDescription,
+        entity: EntityId,
+        component: ComponentTypeId,
+        data: &[u8],
     ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
-        let location = if let Some(location) = self.entities.lookup(description.id) {
+        let location = if let Some(location) = self.entities.lookup(entity) {
             location
         } else {
             return false;
@@ -290,7 +212,7 @@ impl World {
         // Find the destination archetype, returning false if the source and destination are the
         // same.
         let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link::<true>(source_archetype_index, description.component)
+            self.follow_archetype_link::<true>(source_archetype_index, component)
         {
             index
         } else {
@@ -299,7 +221,7 @@ impl World {
 
         // Move the entity into the destination archetype
         let new_index = self.move_entity_to_archetype::<false>(
-            description.id,
+            entity,
             source_archetype_index,
             destination_archetype_index,
         );
@@ -310,7 +232,7 @@ impl World {
             // Get the index of the type inside the archetype and lookup the size of the type
             let type_index = dest
                 .entity_layout()
-                .index_of_component_type(description.component)
+                .index_of_component_type(component)
                 .unwrap();
             let type_size = dest.component_descriptions()[type_index].type_size;
 
@@ -324,7 +246,7 @@ impl World {
             let dest_buffer = &mut dest_buffer[dest_base..dest_end];
 
             // Perform the actual copy
-            dest_buffer.copy_from_slice(description.data);
+            dest_buffer.copy_from_slice(data);
         }
 
         true
@@ -336,12 +258,13 @@ impl World {
     /// false.
     ///
     /// # Safety
-    pub unsafe fn remove_component_from_entity_dynamic(
+    pub unsafe fn remove_component_dynamic(
         &mut self,
-        description: &operations::ComponentRemovalDescription,
+        entity: EntityId,
+        component: ComponentTypeId,
     ) -> bool {
         // Lookup the entity location by the provided ID, returning false if the ID is invalid
-        let location = if let Some(location) = self.entities.lookup(description.id) {
+        let location = if let Some(location) = self.entities.lookup(entity) {
             location
         } else {
             return false;
@@ -353,7 +276,7 @@ impl World {
         // Find the destination archetype, returning false if the source and destination are the
         // same.
         let destination_archetype_index = if let Some(index) =
-            self.follow_archetype_link::<false>(source_archetype_index, description.component)
+            self.follow_archetype_link::<false>(source_archetype_index, component)
         {
             index
         } else {
@@ -362,7 +285,7 @@ impl World {
 
         // Move the entity into the destination archetype
         self.move_entity_to_archetype::<false>(
-            description.id,
+            entity,
             source_archetype_index,
             destination_archetype_index,
         );
@@ -371,7 +294,7 @@ impl World {
         let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
         let type_index = source
             .entity_layout()
-            .index_of_component_type(description.component)
+            .index_of_component_type(component)
             .unwrap();
         let type_size = source.component_descriptions()[type_index].type_size;
         let drop_fn = source.component_descriptions()[type_index].fn_drop;
@@ -457,14 +380,6 @@ impl World {
 
             *v = self.entities.create(location);
         });
-    }
-
-    ///
-    pub fn remove_entity_dynamic(
-        &mut self,
-        description: &operations::EntityRemovalDescription,
-    ) -> bool {
-        self.remove_entity(description.id)
     }
 }
 
