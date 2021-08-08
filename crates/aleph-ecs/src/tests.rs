@@ -60,6 +60,7 @@ fn extend_test_vec() {
     ));
 
     assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
 }
 
 #[test]
@@ -75,7 +76,37 @@ fn extend_test_array() {
         [Scale::default(), Scale::default()],
     ));
 
-    assert_eq!(ids.len(), 2)
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+}
+
+#[test]
+fn remove_entity_array() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let ids = world.extend((
+        [Position::default(), Position::default()],
+        [Scale::default(), Scale::default()],
+    ));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+
+    assert!(world.remove_entity(ids[0]));
+    assert_eq!(world.len(), 1);
+
+    assert!(!world.remove_entity(ids[0]));
+    assert_eq!(world.len(), 1);
+
+    assert!(world.remove_entity(ids[1]));
+    assert_eq!(world.len(), 0);
+
+    assert!(!world.remove_entity(ids[1]));
+    assert_eq!(world.len(), 0);
 }
 
 #[test]
@@ -92,6 +123,9 @@ fn remove_component_test() {
     ));
 
     assert!(world.remove_component::<Scale>(ids[1]));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
 }
 
 #[test]
@@ -108,4 +142,7 @@ fn add_component_test() {
     ));
 
     assert!(world.add_component(ids[0], Mesh::default()));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
 }
