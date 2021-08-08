@@ -126,7 +126,7 @@ impl World {
             entities,
             archetype_map,
             archetypes,
-            len: 0
+            len: 0,
         };
 
         Ok(out)
@@ -279,6 +279,8 @@ impl World {
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
             archetype.remove_entity::<true>(location.entity);
+
+            self.entities.destroy(entity);
 
             self.len -= 1;
 
