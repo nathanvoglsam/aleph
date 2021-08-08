@@ -304,6 +304,9 @@ impl EntityStorage {
 
             // Increment the generation to revive the slot
             self.entities[slot.0 as usize].generation.increment_assign();
+            self.entities[slot.0 as usize].data = EntityEntryData {
+                location: Some(location),
+            };
 
             let index = NonZeroU32::new(slot.0).unwrap();
             EntityId {
