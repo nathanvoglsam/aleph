@@ -352,19 +352,29 @@ impl Archetype {
         target: ArchetypeEntityIndex,
         source: &Archetype,
     ) -> ArchetypeEntityIndex {
+        // Allocate a new slot in self to copy the component from the other archetype into
         let new_index = self.allocate_entities(1);
+
+        // Copy the entity ID slot across
+        self.entity_ids[new_index.0.get() as usize] = source.entity_ids()[target.0.get() as usize];
 
         for (source_index, source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
-            let type_size = source.component_descriptions[source_index].type_size;
+            let type_size = self.component_descriptions[source_index].type_size;
 
             // Get the bounds of the data to copy
             let source_base = target.0.get() as usize;
             let source_base = source_base * type_size;
             let source_end = source_base + type_size;
 
-            // Create a slice of the data to copy
-            let source_buffer = source.component_storage_raw_index(source_index);
+            // Create a slice of the data to copy, exiting the loop if the component is not present
+            // in the source archetype
+            let source_buffer = if let Some(source_buffer) = source.component_storage_raw(source_id)
+            {
+                source_buffer
+            } else {
+                continue;
+            };
             let source_buffer = &source_buffer[source_base..source_end];
 
             // Get the bounds of the memory to copy the data to
@@ -373,20 +383,7 @@ impl Archetype {
             let dest_end = dest_base + type_size;
 
             // Create a slice of the destination to copy into
-            let dest_buffer = {
-                // Map the component ID to the storage index
-                //
-                // We break from the loop if the source component does not exist in self
-                let storage_index =
-                    if let Some(storage_index) = self.storage_indices.get(&source_id).cloned() {
-                        storage_index
-                    } else {
-                        continue;
-                    };
-
-                // Lookup the storage
-                self.storages[storage_index].as_slice_mut()
-            };
+            let dest_buffer = self.storages[source_index].as_slice_mut();
             let dest_buffer = &mut dest_buffer[dest_base..dest_end];
 
             // Perform the actual copy
