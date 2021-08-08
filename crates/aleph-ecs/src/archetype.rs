@@ -265,6 +265,9 @@ impl Archetype {
             storage.resize(storage.len() + bytes, 0);
         }
 
+        self.entity_ids
+            .resize(count as usize + self.entity_ids.len(), EntityId::null());
+
         self.len = new_size;
 
         ArchetypeEntityIndex(base)

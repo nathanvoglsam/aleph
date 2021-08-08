@@ -217,6 +217,9 @@ impl World {
             };
 
             *v = self.entities.create(location);
+
+            let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
+            archetype.entity_ids_mut()[entity.get() as usize] = *v;
         });
 
         ids
