@@ -299,7 +299,7 @@ impl Archetype {
         index: ArchetypeEntityIndex,
     ) {
         let index = index.0.get() as usize;
-        let last_index = (self.len - 1) as usize;
+        let last_index = self.len as usize;
         if index == last_index {
             // Swap and pop at the end of the storage just decays to a regular pop operation.
             self.pop_for_storage::<DROP>(storage_index);
