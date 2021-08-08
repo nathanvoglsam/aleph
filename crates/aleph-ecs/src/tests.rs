@@ -41,12 +41,18 @@ struct Scale {
     y: f32,
 }
 
+#[derive(Default)]
+struct Mesh {
+    a: usize,
+}
+
 #[test]
 fn extend_test_vec() {
     let mut world = World::new(Default::default()).unwrap();
 
     world.register::<Position>();
     world.register::<Scale>();
+    world.register::<Mesh>();
 
     let ids = world.extend((
         vec![Position::default(), Position::default()],
@@ -62,6 +68,7 @@ fn extend_test_array() {
 
     world.register::<Position>();
     world.register::<Scale>();
+    world.register::<Mesh>();
 
     let ids = world.extend((
         [Position::default(), Position::default()],
@@ -69,4 +76,36 @@ fn extend_test_array() {
     ));
 
     assert_eq!(ids.len(), 2)
+}
+
+#[test]
+fn remove_component_test() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let ids = world.extend((
+        [Position::default(), Position::default()],
+        [Scale::default(), Scale::default()],
+    ));
+
+    assert!(world.remove_component::<Scale>(ids[1]));
+}
+
+#[test]
+fn add_component_test() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let ids = world.extend((
+        [Position::default(), Position::default()],
+        [Scale::default(), Scale::default()],
+    ));
+
+    assert!(world.add_component(ids[0], Mesh::default()));
 }
