@@ -30,6 +30,7 @@
 use std::{borrow::Borrow, iter::FromIterator, ops::Deref, vec::IntoIter};
 
 use crate::ComponentTypeId;
+use std::convert::TryFrom;
 
 ///
 /// A wrapper over a slice of an EntityLayoutBuf
@@ -308,5 +309,17 @@ impl FromIterator<ComponentTypeId> for EntityLayoutBuf {
         let mut components = Vec::from_iter(iter);
         components.sort();
         Self { components }
+    }
+}
+
+impl TryFrom<Vec<ComponentTypeId>> for EntityLayoutBuf {
+    type Error = ();
+
+    fn try_from(components: Vec<ComponentTypeId>) -> Result<Self, Self::Error> {
+        if EntityLayout::from_inner(&components).is_some() {
+            Ok(Self { components })
+        } else {
+            Err(())
+        }
     }
 }
