@@ -34,6 +34,20 @@ use crate::{
 };
 use std::{collections::HashMap, num::NonZeroU32};
 
+pub unsafe trait IntoComponentSource {
+    type Source: ComponentSource;
+
+    fn into_component_source(self) -> Self::Source;
+}
+
+pub unsafe trait ComponentSource {
+    fn entity_layout(&self) -> &EntityLayout;
+
+    fn data_for(&self, component: ComponentTypeId) -> &[u8];
+
+    fn count(&self) -> u32;
+}
+
 ///
 /// This struct packages the options for creating a `World`. The purpose is to provide an easy to
 /// use "default options" via `Default::default()`.
@@ -118,6 +132,94 @@ impl World {
     #[inline]
     pub fn register<T: Component>(&mut self) -> ComponentTypeDescription {
         self.component_registry.register::<T>()
+    }
+
+    pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> Vec<EntityId> {
+        let source = source.into_component_source();
+        let layout = source.entity_layout();
+
+        let mut ids = Vec::new();
+        ids.resize(source.count() as usize, EntityId::null());
+
+        #[cfg(debug_assertions)]
+        {
+            // Debug assertion that checks that the buffer sizes for each component are exactly the
+            // size and alignment needed.
+            let layouts = layout.iter();
+            let descs = layouts.map(|v| {
+                let desc = self
+                    .component_registry
+                    .lookup(v)
+                    .expect("Tried to insert an unregistered component type");
+                let buffer = source.data_for(v);
+                (desc, buffer)
+            });
+            for (desc, buffer) in descs {
+                let required_bytes = ids.len() * desc.type_size;
+                let actual_bytes = buffer.len();
+                debug_assert_eq!(
+                    required_bytes, actual_bytes,
+                    "The buffer provided for component {} was the wrong size",
+                    desc.type_name
+                );
+
+                let buffer_base = buffer.as_ptr() as usize;
+                debug_assert!(
+                    buffer_base & (desc.type_align - 1) == 0,
+                    "The buffer provided for component {} was not sufficiently aligned",
+                    desc.type_name
+                );
+            }
+        }
+
+        assert!(
+            ids.len() < (u32::MAX - 1) as usize,
+            "Can't allocate more than {} entities",
+            (u32::MAX - 1)
+        );
+
+        assert!(
+            !layout.is_empty(),
+            "Tried to insert entity with 0 components"
+        );
+
+        // Locate the archetype and allocate space in the archetype for the new entities
+        let archetype_index = self.find_or_create_archetype(&layout);
+        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
+        let archetype_entity_base = archetype.allocate_entities(ids.len() as u32);
+
+        // Copy the component data into the archetype buffers
+        for (i, comp) in layout.iter().enumerate() {
+            let source = source.data_for(comp);
+
+            // Get the size of the type we're copying from the buffers
+            let type_size = archetype.component_descriptions()[i].type_size;
+
+            // Calculate the base index for where to start copying into the buffer
+            let base = archetype_entity_base.0.get() as usize;
+            let base = base * type_size;
+
+            // Get the target slice to copy into
+            let target = archetype.component_storage_mut_raw_index(i);
+            let target = &mut target[base..];
+
+            // Perform the actual copy
+            target.copy_from_slice(source);
+        }
+
+        // Allocate the entity IDs and write them into the output slice
+        ids.iter_mut().enumerate().for_each(|(i, v)| {
+            let entity = archetype_entity_base.0.get() + i as u32;
+            let entity = NonZeroU32::new(entity).unwrap();
+            let location = EntityLocation {
+                archetype: archetype_index,
+                entity: ArchetypeEntityIndex(entity),
+            };
+
+            *v = self.entities.create(location);
+        });
+
+        ids
     }
 
     /// Adds the given component to the entity pointed to by the provided ID.
@@ -312,75 +414,6 @@ impl World {
 
         true
     }
-
-    /// This function provides the raw implementation of inserting entities into the ECS world.
-    ///
-    /// # Safety
-    ///
-    /// The actual implementation of this function is safe. All operations on the data itself are
-    /// sound and are built from safe interfaces.
-    ///
-    /// This function is unsafe because there is no sane way to verify the data provided by the
-    /// `description` parameter is valid. The buffers for the components could be filled with
-    /// garbage data and would then be later read back when querying the world. To prevent this we
-    /// mark this function as unsafe.
-    ///
-    /// To use this function safely the contents of `component_buffers` in `description` must point
-    /// to valid type-erased byte buffers for each component's data.
-    pub unsafe fn insert_entities_dynamic(
-        &mut self,
-        description: &mut operations::EntityInsertionDescription,
-    ) {
-        #[cfg(debug_assertions)]
-        {
-            self.insert_entities_dynamic_debug_assertions(&description);
-        }
-
-        assert!(
-            description.ids.len() < (u32::MAX - 1) as usize,
-            "Can't allocate more than {} entities",
-            (u32::MAX - 1)
-        );
-
-        assert!(
-            !description.entity_layout.is_empty(),
-            "Tried to insert entity with 0 components"
-        );
-
-        // Locate the archetype and allocate space in the archetype for the new entities
-        let archetype_index = self.find_or_create_archetype(description.entity_layout);
-        let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
-        let archetype_entity_base = archetype.allocate_entities(description.ids.len() as u32);
-
-        // Copy the component data into the archetype buffers
-        for (i, source) in description.component_buffers.iter().cloned().enumerate() {
-            // Get the size of the type we're copying from the buffers
-            let type_size = archetype.component_descriptions()[i].type_size;
-
-            // Calculate the base index for where to start copying into the buffer
-            let base = archetype_entity_base.0.get() as usize;
-            let base = base * type_size;
-
-            // Get the target slice to copy into
-            let target = archetype.component_storage_mut_raw_index(i);
-            let target = &mut target[base..];
-
-            // Perform the actual copy
-            target.copy_from_slice(source);
-        }
-
-        // Allocate the entity IDs and write them into the output slice
-        description.ids.iter_mut().enumerate().for_each(|(i, v)| {
-            let entity = archetype_entity_base.0.get() + i as u32;
-            let entity = NonZeroU32::new(entity).unwrap();
-            let location = EntityLocation {
-                archetype: archetype_index,
-                entity: ArchetypeEntityIndex(entity),
-            };
-
-            *v = self.entities.create(location);
-        });
-    }
 }
 
 /// Private function implementations
@@ -453,45 +486,6 @@ impl World {
         }
     }
 
-    fn insert_entities_dynamic_debug_assertions(
-        &self,
-        description: &operations::EntityInsertionDescription,
-    ) {
-        debug_assert_eq!(
-            description.entity_layout.len(),
-            description.component_buffers.len(),
-            "The number of components in the layout and number of buffers provided must match"
-        );
-
-        // Debug assertion that checks that the buffer sizes for each component are exactly the size
-        // and alignment needed.
-        let layouts = description.entity_layout.iter();
-        let descs = layouts.map(|v| {
-            let desc = self
-                .component_registry
-                .lookup(v)
-                .expect("Tried to insert an unregistered component type");
-            desc
-        });
-        let buffers = description.component_buffers.iter().cloned();
-        for (desc, buffer) in descs.zip(buffers) {
-            let required_bytes = description.ids.len() * desc.type_size;
-            let actual_bytes = buffer.len();
-            debug_assert_eq!(
-                required_bytes, actual_bytes,
-                "The buffer provided for component {} was the wrong size",
-                desc.type_name
-            );
-
-            let buffer_base = buffer.as_ptr() as usize;
-            debug_assert!(
-                buffer_base & (desc.type_align - 1) == 0,
-                "The buffer provided for component {} was not sufficiently aligned",
-                desc.type_name
-            );
-        }
-    }
-
     /// # Safety
     ///
     /// This function doesn't check what components intersect from the source and destination
@@ -554,3 +548,277 @@ impl World {
         new_index
     }
 }
+
+#[macro_export]
+macro_rules! impl_component_source_for_tuple {
+    ($(($t: ident, $i: ident)), *) => {
+        unsafe impl<$($t: $crate::Component),+> $crate::ComponentSource for (u32, $crate::EntityLayoutBuf, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+) {
+            #[inline]
+            fn entity_layout(&self) -> &$crate::EntityLayout {
+                &self.1
+            }
+
+            #[inline(always)]
+            fn data_for(&self, component: $crate::ComponentTypeId) -> &[u8] {
+                let (_, _, $($i,)+) = self;
+                $(
+                    if component == $crate::ComponentTypeId::of::<$t>() {
+                        let data = $i.as_ptr() as *const u8;
+                        let len = $i.len() * ::std::mem::size_of::<$t>();
+                        return unsafe {
+                            ::std::slice::from_raw_parts(data, len)
+                        };
+                    }
+                )+
+                panic!()
+            }
+
+            #[inline(always)]
+            fn count(&self) -> u32 {
+                self.0
+            }
+        }
+
+        unsafe impl<$($t: $crate::Component),+ ,const SIZE: usize> $crate::ComponentSource for ($crate::EntityLayoutBuf, $([::std::mem::ManuallyDrop<$t>; SIZE],)+) {
+            #[inline]
+            fn entity_layout(&self) -> &$crate::EntityLayout {
+                &self.0
+            }
+
+            #[inline(always)]
+            fn data_for(&self, component: $crate::ComponentTypeId) -> &[u8] {
+                let (_, $($i,)+) = self;
+                $(
+                    if component == $crate::ComponentTypeId::of::<$t>() {
+                        let data = $i.as_ptr() as *const u8;
+                        let len = $i.len() * ::std::mem::size_of::<$t>();
+                        return unsafe {
+                            ::std::slice::from_raw_parts(data, len)
+                        };
+                    }
+                )+
+                panic!()
+            }
+
+            #[inline(always)]
+            fn count(&self) -> u32 {
+                SIZE as u32
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! impl_into_component_source_for_tuple {
+    (($t0: ident, $i0: ident), $(($t: ident, $i: ident)), *) => {
+        unsafe impl<$t0: $crate::Component, $($t: $crate::Component),+> IntoComponentSource for (::std::vec::Vec<$t0>, $(::std::vec::Vec<$t>,)+) {
+            type Source = (u32, $crate::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+);
+
+            fn into_component_source(self) -> Self::Source {
+                let (mut $i0, $(mut $i,)+) = self;
+
+                let len = $i0.len();
+
+                $(
+                    assert_eq!(len, $i.len());
+                    let len = $i.len();
+                )+
+
+                assert!(len < (u32::MAX - 1) as usize);
+                let len = len as u32;
+
+                let mut layout = $crate::EntityLayoutBuf::new();
+                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                $(
+                    layout.add_component_type($crate::ComponentTypeId::of::<$t>());
+                )+
+
+                let $i0 = unsafe {
+                    let ptr = $i0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
+                    let length = $i0.len();
+                    let capacity = $i0.capacity();
+                    ::std::mem::forget($i0);
+                    Vec::from_raw_parts(ptr, length, capacity)
+                };
+
+                $(
+                    let $i = unsafe {
+                        let ptr = $i.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t>;
+                        let length = $i.len();
+                        let capacity = $i.capacity();
+                        ::std::mem::forget($i);
+                        ::std::vec::Vec::from_raw_parts(ptr, length, capacity)
+                    };
+                )+
+
+                (len, layout, $i0, $($i,)+)
+            }
+        }
+
+        unsafe impl<$t0: $crate::Component, $($t: $crate::Component),+ , const SIZE: usize> IntoComponentSource for ([$t0; SIZE], $([$t; SIZE],)+) {
+            type Source = ($crate::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE], $([::std::mem::ManuallyDrop<$t>; SIZE],)+);
+
+            fn into_component_source(self) -> Self::Source {
+                let ($i0, $($i,)+) = self;
+
+                assert!(SIZE < (u32::MAX - 1) as usize);
+
+                let mut layout = $crate::EntityLayoutBuf::new();
+                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                $(
+                    layout.add_component_type($crate::ComponentTypeId::of::<$t>());
+                )+
+
+                let $i0 = unsafe {
+                    let ptr = &$i0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
+                    let value = ptr.read();
+                    ::std::mem::forget($i0);
+                    value
+                };
+
+                $(
+                    let $i = unsafe {
+                        let ptr = &$i as *const [$t; SIZE] as *const [::std::mem::ManuallyDrop<$t>; SIZE];
+                        let value = ptr.read();
+                        ::std::mem::forget($i);
+                        value
+                    };
+                )+
+
+                (layout, $i0, $($i,)+)
+            }
+        }
+    };
+
+    (($t0: ident, $i0: ident)) => {
+        unsafe impl<$t0: $crate::Component, > IntoComponentSource for (::std::vec::Vec<$t0>, ) {
+            type Source = (u32, $crate::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>);
+
+            fn into_component_source(self) -> Self::Source {
+                let (mut $i0, ) = self;
+
+                let len = $i0.len();
+
+                assert!(len < (u32::MAX - 1) as usize);
+                let len = len as u32;
+
+                let mut layout = $crate::EntityLayoutBuf::new();
+                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+
+                let $i0 = unsafe {
+                    let ptr = $i0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
+                    let length = $i0.len();
+                    let capacity = $i0.capacity();
+                    ::std::mem::forget($i0);
+                    ::std::vec::Vec::from_raw_parts(ptr, length, capacity)
+                };
+
+                (len, layout, $i0)
+            }
+        }
+
+        unsafe impl<$t0: $crate::Component, const SIZE: usize> IntoComponentSource for ([$t0; SIZE], ) {
+            type Source = ($crate::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE]);
+
+            fn into_component_source(self) -> Self::Source {
+                let ($i0, ) = self;
+
+                assert!(SIZE < (u32::MAX - 1) as usize);
+
+                let mut layout = $crate::EntityLayoutBuf::new();
+                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+
+                let $i0 = unsafe {
+                    let ptr = &$i0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
+                    let value = ptr.read();
+                    ::std::mem::forget($i0);
+                    value
+                };
+
+                (layout, $i0)
+            }
+        }
+    }
+}
+
+impl_component_source_for_tuple!((A, a));
+impl_component_source_for_tuple!((A, a), (B, b));
+impl_component_source_for_tuple!((A, a), (B, b), (C, c));
+impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d));
+impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e));
+impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f));
+impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f), (G, g));
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h)
+);
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i)
+);
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j)
+);
+
+impl_into_component_source_for_tuple!((A, a));
+impl_into_component_source_for_tuple!((A, a), (B, b));
+impl_into_component_source_for_tuple!((A, a), (B, b), (C, c));
+impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d));
+impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e));
+impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f));
+impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f), (G, g));
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h)
+);
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i)
+);
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j)
+);
