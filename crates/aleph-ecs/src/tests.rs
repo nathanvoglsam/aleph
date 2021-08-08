@@ -107,6 +107,26 @@ fn remove_entity_array() {
 
     assert!(!world.remove_entity(ids[1]));
     assert_eq!(world.len(), 0);
+
+    let ids = world.extend((
+        [Position::default(), Position::default()],
+        [Mesh::default(), Mesh::default()],
+    ));
+
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+
+    assert!(world.remove_entity(ids[1]));
+    assert_eq!(world.len(), 1);
+
+    assert!(!world.remove_entity(ids[1]));
+    assert_eq!(world.len(), 1);
+
+    assert!(world.remove_entity(ids[0]));
+    assert_eq!(world.len(), 0);
+
+    assert!(!world.remove_entity(ids[0]));
+    assert_eq!(world.len(), 0);
 }
 
 #[test]
