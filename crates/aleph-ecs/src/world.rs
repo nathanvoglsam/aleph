@@ -781,6 +781,48 @@ impl_component_source_for_tuple!(
     (I, i),
     (J, j)
 );
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k)
+);
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k),
+    (L, l)
+);
+impl_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k),
+    (L, l),
+    (M, m)
+);
 
 impl_into_component_source_for_tuple!((A, a));
 impl_into_component_source_for_tuple!((A, a), (B, b));
@@ -821,4 +863,46 @@ impl_into_component_source_for_tuple!(
     (H, h),
     (I, i),
     (J, j)
+);
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k)
+);
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k),
+    (L, l)
+);
+impl_into_component_source_for_tuple!(
+    (A, a),
+    (B, b),
+    (C, c),
+    (D, d),
+    (E, e),
+    (F, f),
+    (G, g),
+    (H, h),
+    (I, i),
+    (J, j),
+    (K, k),
+    (L, l),
+    (M, m)
 );
