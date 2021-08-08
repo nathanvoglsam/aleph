@@ -93,6 +93,9 @@ pub struct World {
 
     /// The list of all archetypes in the ECS world
     archetypes: Vec<Archetype>,
+
+    /// The number of entities stored inside the ECS
+    len: u32,
 }
 
 ///
@@ -123,9 +126,15 @@ impl World {
             entities,
             archetype_map,
             archetypes,
+            len: 0
         };
 
         Ok(out)
+    }
+
+    /// Returns the number of entities allocated in the `World`
+    pub fn len(&self) -> u32 {
+        self.len
     }
 
     /// Register's a rust component type with this ECS world so that it can be used as a component
@@ -140,6 +149,8 @@ impl World {
 
         let mut ids = Vec::new();
         ids.resize(source.count() as usize, EntityId::null());
+
+        self.len += source.count();
 
         #[cfg(debug_assertions)]
         {
@@ -265,9 +276,12 @@ impl World {
     ///
     /// If the ID is invalid then this function does nothing and returns false.
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
-        if let Some(entity) = self.entities.lookup(entity) {
-            let archetype = &mut self.archetypes[entity.archetype.0.get() as usize];
-            archetype.remove_entity::<true>(entity.entity);
+        if let Some(location) = self.entities.lookup(entity) {
+            let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
+            archetype.remove_entity::<true>(location.entity);
+
+            self.len -= 1;
+
             true
         } else {
             false
