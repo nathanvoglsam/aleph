@@ -218,13 +218,13 @@ impl Archetype {
     ///
     #[inline]
     pub fn entity_ids(&self) -> &[EntityId] {
-        &self.entity_ids[1..]
+        &self.entity_ids
     }
 
     ///
     #[inline]
     pub fn entity_ids_mut(&mut self) -> &mut [EntityId] {
-        &mut self.entity_ids[1..]
+        &mut self.entity_ids
     }
 }
 
