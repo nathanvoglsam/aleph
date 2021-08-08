@@ -242,7 +242,11 @@ impl Archetype {
     /// All new entities will be contiguous.
     #[inline]
     pub(crate) fn allocate_entities(&mut self, count: u32) -> ArchetypeEntityIndex {
-        let base = NonZeroU32::new(self.len).unwrap();
+        // The base will be the index of the first slot after the end of the densely packed section
+        //
+        // We need to offset by 1 because the 1st slot in memory is skipped to allow using a 0 index
+        // as a niche value.
+        let base = NonZeroU32::new(self.len.checked_add(1).unwrap()).unwrap();
 
         let new_size = self.len.checked_add(count).unwrap();
         if new_size > self.capacity {
