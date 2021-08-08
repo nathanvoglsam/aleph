@@ -282,11 +282,16 @@ impl Archetype {
         for i in 0..self.storages.len() {
             self.swap_and_pop_for_storage::<DROP>(i, index);
         }
+        self.len -= 1;
     }
 
     /// Swap and pop the component in `storage_index` at `index`
     ///
     /// The const parameter chooses whether to call the drop function or not
+    ///
+    /// # Info
+    ///
+    /// DO NOT FORGET TO MANUALLY DECREMENT self.len
     #[inline]
     pub(crate) fn swap_and_pop_for_storage<const DROP: bool>(
         &mut self,
@@ -316,6 +321,10 @@ impl Archetype {
     }
 
     /// The const parameter chooses whether to call the drop function or not
+    ///
+    /// # Info
+    ///
+    /// DO NOT FORGET TO MANUALLY DECREMENT `self.len`
     #[inline]
     pub(crate) fn pop_for_storage<const DROP: bool>(&mut self, storage_index: usize) {
         if self.len != 0 {
@@ -344,8 +353,6 @@ impl Archetype {
                     }
                 }
             }
-
-            self.len -= 1;
         }
     }
 
