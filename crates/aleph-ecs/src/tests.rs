@@ -88,44 +88,50 @@ fn remove_entity_array() {
     world.register::<Scale>();
     world.register::<Mesh>();
 
-    let ids = world.extend((
+    let ids_a = world.extend((
         [Position::default(), Position::default()],
         [Scale::default(), Scale::default()],
     ));
 
-    assert_eq!(ids.len(), 2);
+    assert_eq!(ids_a.len(), 2);
     assert_eq!(world.len(), 2);
 
-    assert!(world.remove_entity(ids[0]));
+    assert!(world.remove_entity(ids_a[0]));
     assert_eq!(world.len(), 1);
 
-    assert!(!world.remove_entity(ids[0]));
+    assert!(!world.remove_entity(ids_a[0]));
     assert_eq!(world.len(), 1);
 
-    assert!(world.remove_entity(ids[1]));
+    assert!(world.remove_entity(ids_a[1]));
     assert_eq!(world.len(), 0);
 
-    assert!(!world.remove_entity(ids[1]));
+    assert!(!world.remove_entity(ids_a[1]));
     assert_eq!(world.len(), 0);
 
-    let ids = world.extend((
+    let ids_b = world.extend((
         [Position::default(), Position::default()],
         [Mesh::default(), Mesh::default()],
     ));
 
-    assert_eq!(ids.len(), 2);
+    assert_eq!(ids_b.len(), 2);
     assert_eq!(world.len(), 2);
 
-    assert!(world.remove_entity(ids[1]));
+    assert!(world.remove_entity(ids_b[1]));
     assert_eq!(world.len(), 1);
 
-    assert!(!world.remove_entity(ids[1]));
+    assert!(!world.remove_entity(ids_b[1]));
     assert_eq!(world.len(), 1);
 
-    assert!(world.remove_entity(ids[0]));
+    assert!(!world.remove_entity(ids_a[1]));
+    assert_eq!(world.len(), 1);
+
+    assert!(world.remove_entity(ids_b[0]));
     assert_eq!(world.len(), 0);
 
-    assert!(!world.remove_entity(ids[0]));
+    assert!(!world.remove_entity(ids_b[0]));
+    assert_eq!(world.len(), 0);
+
+    assert!(!world.remove_entity(ids_a[0]));
     assert_eq!(world.len(), 0);
 }
 
