@@ -32,8 +32,8 @@ use crate::{
     ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf,
     EntityLocation, EntityStorage,
 };
-use std::{collections::HashMap, num::NonZeroU32};
 use std::ptr::NonNull;
+use std::{collections::HashMap, num::NonZeroU32};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
 pub unsafe trait IntoComponentSource {
@@ -315,10 +315,11 @@ impl World {
     #[inline]
     pub fn get_component_ref<T: Component>(&self, entity: EntityId) -> Option<&T> {
         unsafe {
-            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>()).map(|v| {
-                let ptr = v.as_ptr() as *const u8 as *const T;
-                &*ptr
-            })
+            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>())
+                .map(|v| {
+                    let ptr = v.as_ptr() as *const u8 as *const T;
+                    &*ptr
+                })
         }
     }
 
@@ -327,10 +328,11 @@ impl World {
     #[inline]
     pub fn get_component_mut<T: Component>(&mut self, entity: EntityId) -> Option<&mut T> {
         unsafe {
-            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>()).map(|v| {
-                let ptr = v.as_ptr() as *mut T;
-                &mut *ptr
-            })
+            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>())
+                .map(|v| {
+                    let ptr = v.as_ptr() as *mut T;
+                    &mut *ptr
+                })
         }
     }
 }
@@ -481,16 +483,17 @@ impl World {
     /// This function provides a raw, untyped interface for looking up an individual component for
     /// a given entity.
     #[inline]
-    pub fn get_component_ptr_dynamic(&self, entity: EntityId, component: ComponentTypeId) -> Option<NonNull<u8>> {
+    pub fn get_component_ptr_dynamic(
+        &self,
+        entity: EntityId,
+        component: ComponentTypeId,
+    ) -> Option<NonNull<u8>> {
         if let Some(location) = self.entities.lookup(entity) {
             // Lookup the archetype
             let archetype = &self.archetypes[location.archetype.0.get() as usize];
 
             // Lookup the storage index, load the size of the type and get the storage pointer
-            let storage_index = archetype
-                .storage_indices
-                .get(&component)
-                .copied()?;
+            let storage_index = archetype.storage_indices.get(&component).copied()?;
             let type_size = archetype.component_descriptions[storage_index].type_size;
             let storage = archetype.storages[storage_index].as_slice();
 

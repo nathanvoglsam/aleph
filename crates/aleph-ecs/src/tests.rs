@@ -1,4 +1,6 @@
 use crate::World;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 //
 //
@@ -31,8 +33,8 @@ use crate::World;
 
 #[derive(Default, PartialEq, Debug)]
 struct Position {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Position {
@@ -43,8 +45,8 @@ impl Position {
 
 #[derive(Default, PartialEq, Debug)]
 struct Scale {
-    x: f32,
-    y: f32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Scale {
@@ -55,12 +57,32 @@ impl Scale {
 
 #[derive(Default, PartialEq, Debug)]
 struct Mesh {
-    a: usize,
+    pub a: usize,
 }
 
 impl Mesh {
     pub fn new(a: usize) -> Self {
         Self { a }
+    }
+}
+
+#[derive(Default, Debug)]
+struct Dropper {
+    pub counter: Arc<AtomicU32>,
+}
+
+impl Dropper {
+    pub fn new(counter: &Arc<AtomicU32>) -> Self {
+        counter.fetch_add(1, Ordering::SeqCst);
+        Self {
+            counter: counter.clone(),
+        }
+    }
+}
+
+impl Drop for Dropper {
+    fn drop(&mut self) {
+        self.counter.fetch_sub(1, Ordering::SeqCst);
     }
 }
 
@@ -273,4 +295,40 @@ fn add_component_test() {
 
     assert_eq!(ids.len(), 2);
     assert_eq!(world.len(), 2);
+}
+
+#[test]
+fn drop_test() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+    world.register::<Dropper>();
+
+    let counter = AtomicU32::new(0);
+    let counter = Arc::new(counter);
+
+    let ids = world.extend((
+        vec![Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        vec![Dropper::new(&counter), Dropper::new(&counter)],
+    ));
+
+    assert_eq!(counter.load(Ordering::SeqCst), 2);
+    assert_eq!(ids.len(), 2);
+    assert_eq!(world.len(), 2);
+
+    let comp = world.get_component_ref::<Dropper>(ids[0]).unwrap();
+    assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
+
+    let comp = world.get_component_ref::<Dropper>(ids[1]).unwrap();
+    assert_eq!(comp.counter.load(Ordering::SeqCst), 2);
+
+    assert!(world.remove_entity(ids[0]));
+
+    assert_eq!(counter.load(Ordering::SeqCst), 1);
+
+    drop(world);
+
+    assert_eq!(counter.load(Ordering::SeqCst), 0);
 }
