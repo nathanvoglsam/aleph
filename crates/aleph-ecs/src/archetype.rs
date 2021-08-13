@@ -74,34 +74,34 @@ pub struct ArchetypeEdge {
 
 pub struct Archetype {
     /// The entity layout of this archetype
-    entity_layout: EntityLayoutBuf,
+    pub(crate) entity_layout: EntityLayoutBuf,
 
     /// A hash table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
-    storage_indices: ComponentIdMap<usize>,
+    pub(crate) storage_indices: ComponentIdMap<usize>,
 
     /// A list of the description of each component type in the entity layout, indexed by the
     /// storage index
-    component_descriptions: Vec<ComponentTypeDescription>,
+    pub(crate) component_descriptions: Vec<ComponentTypeDescription>,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
-    storages: Vec<VirtualVec<u8>>,
+    pub(crate) storages: Vec<VirtualVec<u8>>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
-    entity_ids: VirtualVec<EntityId>,
+    pub(crate) entity_ids: VirtualVec<EntityId>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    edges: ComponentIdMap<ArchetypeEdge>,
+    pub(crate) edges: ComponentIdMap<ArchetypeEdge>,
 
     /// The maximum number of entities that can be stored in this archetype
-    capacity: u32,
+    pub(crate) capacity: u32,
 
     /// The number of entities currently stored in this archetype
-    len: u32,
+    pub(crate) len: u32,
 }
 
 impl Archetype {
@@ -187,7 +187,7 @@ impl Archetype {
     #[inline]
     pub fn component_storage_raw(&self, id: ComponentTypeId) -> Option<&[u8]> {
         // Map the component ID to the storage index
-        let storage_index = self.storage_indices.get(&id).cloned()?;
+        let storage_index = self.storage_indices.get(&id).copied()?;
 
         // Lookup the storage
         Some(self.storages[storage_index].as_slice())
@@ -197,44 +197,15 @@ impl Archetype {
     #[inline]
     pub fn component_storage_mut_raw(&mut self, id: ComponentTypeId) -> Option<&mut [u8]> {
         // Map the component ID to the storage index
-        let storage_index = self.storage_indices.get(&id).cloned()?;
+        let storage_index = self.storage_indices.get(&id).copied()?;
 
         // Lookup the storage
         Some(self.storages[storage_index].as_slice_mut())
-    }
-
-    /// Given a storage index, returns the raw bytes for the backing storage
-    #[inline]
-    pub fn component_storage_raw_index(&self, index: usize) -> &[u8] {
-        &self.storages[index]
-    }
-
-    /// Given a storage index, returns the raw bytes for the backing storage
-    #[inline]
-    pub fn component_storage_mut_raw_index(&mut self, index: usize) -> &mut [u8] {
-        &mut self.storages[index]
-    }
-
-    ///
-    #[inline]
-    pub fn entity_ids(&self) -> &[EntityId] {
-        &self.entity_ids
-    }
-
-    ///
-    #[inline]
-    pub fn entity_ids_mut(&mut self) -> &mut [EntityId] {
-        &mut self.entity_ids
     }
 }
 
 /// Internal implementations
 impl Archetype {
-    #[inline]
-    pub(crate) fn edges_mut(&mut self) -> &mut ComponentIdMap<ArchetypeEdge> {
-        &mut self.edges
-    }
-
     /// This function allocates spaces for `count` entities. This does not handle writting the
     /// entity components into the storages, this must be done separately.
     ///
@@ -386,7 +357,7 @@ impl Archetype {
         let new_index = self.allocate_entities(1);
 
         // Copy the entity ID slot across
-        self.entity_ids[new_index.0.get() as usize] = source.entity_ids()[target.0.get() as usize];
+        self.entity_ids[new_index.0.get() as usize] = source.entity_ids[target.0.get() as usize];
 
         for (source_index, source_id) in self.entity_layout.iter().enumerate() {
             // Get the size of the component to copy
