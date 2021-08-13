@@ -33,13 +33,17 @@ use crate::{
     EntityLocation, EntityStorage,
 };
 use std::{collections::HashMap, num::NonZeroU32};
+use std::ptr::NonNull;
 
+/// Interface for converting one type into a type that implements `ComponentSource`.
 pub unsafe trait IntoComponentSource {
     type Source: ComponentSource;
 
     fn into_component_source(self) -> Self::Source;
 }
 
+/// Interface expected of a type that is a source of component data for inserting entities into
+/// an ECS world
 pub unsafe trait ComponentSource {
     fn entity_layout(&self) -> &EntityLayout;
 
@@ -211,7 +215,7 @@ impl World {
             let base = base * type_size;
 
             // Get the target slice to copy into
-            let target = archetype.component_storage_mut_raw_index(i);
+            let target = archetype.storages[i].as_slice_mut();
             let target = &mut target[base..];
 
             // Perform the actual copy
@@ -230,7 +234,7 @@ impl World {
             *v = self.entities.create(location);
 
             let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
-            archetype.entity_ids_mut()[entity.get() as usize] = *v;
+            archetype.entity_ids[entity.get() as usize] = *v;
         });
 
         ids
@@ -242,6 +246,7 @@ impl World {
     /// unchanged and the provided component object will be dropped.
     ///
     /// Returns true if the component is successfully inserted, otherwise returns false.
+    #[inline]
     pub fn add_component<T: Component>(&mut self, entity: EntityId, component: T) -> bool {
         // Construct a slice of the component data. This will be used by the underlying
         // implementation
@@ -266,6 +271,7 @@ impl World {
     /// Removes the specified component from the provided entity.
     ///
     /// Returns true if the component is successfully removed, otherwise returns false.
+    #[inline]
     pub fn remove_component<T: Component>(&mut self, entity: EntityId) -> bool {
         unsafe { self.remove_component_dynamic(entity, ComponentTypeId::of::<T>()) }
     }
@@ -275,6 +281,7 @@ impl World {
     /// Returns true if the operation was successful, otherwise returns false.
     ///
     /// If the ID is invalid then this function does nothing and returns false.
+    #[inline]
     pub fn remove_entity(&mut self, entity: EntityId) -> bool {
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
@@ -294,6 +301,36 @@ impl World {
             true
         } else {
             false
+        }
+    }
+
+    /// Returns whether the specified component has the component `T`.
+    #[inline]
+    pub fn has_component<T: Component>(&self, entity: EntityId) -> bool {
+        self.get_component_ref::<T>(entity).is_some()
+    }
+
+    /// Returns a shared reference to the component `T` on the given entity, or `None` if no such
+    /// component is attached to the entity.
+    #[inline]
+    pub fn get_component_ref<T: Component>(&self, entity: EntityId) -> Option<&T> {
+        unsafe {
+            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>()).map(|v| {
+                let ptr = v.as_ptr() as *const u8 as *const T;
+                &*ptr
+            })
+        }
+    }
+
+    /// Returns a mutable reference to the component `T` on the given entity, or `None` if no such
+    /// component is attached to the entity.
+    #[inline]
+    pub fn get_component_mut<T: Component>(&mut self, entity: EntityId) -> Option<&mut T> {
+        unsafe {
+            self.get_component_ptr_dynamic(entity, ComponentTypeId::of::<T>()).map(|v| {
+                let ptr = v.as_ptr() as *mut T;
+                &mut *ptr
+            })
         }
     }
 }
@@ -370,7 +407,7 @@ impl World {
             let dest_end = dest_base + type_size;
 
             // Create the slice to copy into, no dropping is needed as the data is uninitialized
-            let dest_buffer = dest.component_storage_mut_raw_index(type_index);
+            let dest_buffer = dest.storages[type_index].as_slice_mut();
             let dest_buffer = &mut dest_buffer[dest_base..dest_end];
 
             // Perform the actual copy
@@ -432,13 +469,44 @@ impl World {
             let base = base * type_size;
             let end = base + type_size;
 
-            let slice = source.component_storage_mut_raw_index(type_index);
+            let slice = source.storages[type_index].as_slice_mut();
             let slice = &mut slice[base..end];
 
             drop_fn(slice.as_mut_ptr());
         }
 
         true
+    }
+
+    /// This function provides a raw, untyped interface for looking up an individual component for
+    /// a given entity.
+    #[inline]
+    pub fn get_component_ptr_dynamic(&self, entity: EntityId, component: ComponentTypeId) -> Option<NonNull<u8>> {
+        if let Some(location) = self.entities.lookup(entity) {
+            // Lookup the archetype
+            let archetype = &self.archetypes[location.archetype.0.get() as usize];
+
+            // Lookup the storage index, load the size of the type and get the storage pointer
+            let storage_index = archetype
+                .storage_indices
+                .get(&component)
+                .copied()?;
+            let type_size = archetype.component_descriptions[storage_index].type_size;
+            let storage = archetype.storages[storage_index].as_slice();
+
+            // Get the bounds of the component's data
+            let base = location.entity.0.get() as usize;
+            let base = base * type_size;
+            let end = base + type_size;
+
+            // Get a pointer to the position in the buffer the component can be found
+            let slice = &storage[base..end];
+            let ptr = slice.as_ptr();
+
+            NonNull::new(ptr as *mut u8)
+        } else {
+            None
+        }
     }
 }
 
@@ -452,7 +520,7 @@ impl World {
         let source = source.0.get() as usize;
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetypes[source].edges_mut().get_mut(&component) {
+        if let Some(edge) = self.archetypes[source].edges.get_mut(&component) {
             // Const switch between add or remove
             if ADD {
                 if let Some(index) = edge.add {
@@ -484,10 +552,7 @@ impl World {
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
-        let edge = self.archetypes[source]
-            .edges_mut()
-            .entry(component)
-            .or_default();
+        let edge = self.archetypes[source].edges.entry(component).or_default();
         if ADD {
             edge.add = Some(index);
         } else {
