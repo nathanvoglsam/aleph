@@ -60,7 +60,7 @@ pub use crate::entity::EntityStorage;
 pub use crate::entity_layout::EntityLayout;
 pub use crate::entity_layout::EntityLayoutBuf;
 pub use crate::generation::Generation;
-pub use crate::query::Query;
+pub use crate::query::RawArchetypeQuery;
 pub use crate::world::ComponentSource;
 pub use crate::world::IntoComponentSource;
 pub use crate::world::World;

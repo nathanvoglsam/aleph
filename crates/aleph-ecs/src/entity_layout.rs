@@ -45,7 +45,7 @@ impl EntityLayout {
     /// An unsafe function similar to `Self::from_inner`. This function skips checking the
     /// requirements and so is marked as unsafe.
     #[inline]
-    pub unsafe fn from_inner_unchecked<'a>(components: &'a [ComponentTypeId]) -> &'a Self {
+    pub unsafe fn from_inner_unchecked(components: &[ComponentTypeId]) -> &Self {
         // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
         // therefore converting &[ComponentTypeId] to &EntityLayout is safe.
         &*(components as *const [ComponentTypeId] as *const EntityLayout)
@@ -62,7 +62,7 @@ impl EntityLayout {
     ///
     /// If these requirements are not met then the function will return None.
     #[inline]
-    pub fn from_inner<'a>(components: &'a [ComponentTypeId]) -> Option<&'a Self> {
+    pub fn from_inner(components: &[ComponentTypeId]) -> Option<&Self> {
         // First we check if the given list is sorted
         let is_sorted = components.windows(2).all(|w| w[0] <= w[1]);
         if !is_sorted {
@@ -156,7 +156,7 @@ impl EntityLayout {
 
     /// Returns if `self` contains no elements in common with other
     #[inline]
-    pub fn is_disjoint_from(&self, other: &EntityLayoutBuf) -> bool {
+    pub fn is_disjoint_from(&self, other: &EntityLayout) -> bool {
         // An empty set is always jisjoint from every other set
         if self.is_empty() {
             return true;
@@ -178,6 +178,12 @@ impl EntityLayout {
     #[inline]
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = ComponentTypeId> + 'a {
         self.components.iter().cloned()
+    }
+
+    /// Returns the wrapped slice directly
+    #[inline]
+    pub fn as_inner(&self) -> &[ComponentTypeId] {
+        &self.components
     }
 }
 
