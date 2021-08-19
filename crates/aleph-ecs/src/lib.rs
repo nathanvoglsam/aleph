@@ -37,6 +37,8 @@ mod generation;
 mod query;
 mod world;
 
+pub mod c_api;
+
 #[cfg(test)]
 mod tests;
 
