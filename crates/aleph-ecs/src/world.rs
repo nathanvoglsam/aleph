@@ -36,6 +36,12 @@ use std::ptr::NonNull;
 use std::{collections::HashMap, num::NonZeroU32};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
+///
+/// # Safety
+///
+/// This trait is marked unsafe as `ComponentSource` is an unsafe trait as well. I have not spent
+/// any thought into investigating how safe these operations actually are so they are marked as
+/// unsafe pre-emptively until I can prove them as safe.
 pub unsafe trait IntoComponentSource {
     type Source: ComponentSource;
 
@@ -43,7 +49,16 @@ pub unsafe trait IntoComponentSource {
 }
 
 /// Interface expected of a type that is a source of component data for inserting entities into
-/// an ECS world
+/// an ECS world.
+///
+/// # Safe
+///
+/// This trait is marked as unsafe because any non-trivial implementation is going to use a lot of
+/// unsafe code anyway. The entire interface is based around type-erasure and copying data of
+/// objects without dropping.
+///
+/// I have not put time into proving how safe this interface is so I mark it as unsafe
+/// pre-emptively. The implementations provided are safe, but the trait remains unsafe for now.
 pub unsafe trait ComponentSource {
     fn entity_layout(&self) -> &EntityLayout;
 
@@ -84,19 +99,19 @@ impl Default for WorldOptions {
 ///
 pub struct World {
     /// Configuration options the world was created with
-    options: WorldOptions,
+    pub(crate) options: WorldOptions,
 
     /// Holds all the components that have been registered with the World
-    component_registry: ComponentRegistry,
+    pub(crate) component_registry: ComponentRegistry,
 
     /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
-    entities: EntityStorage,
+    pub(crate) entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
+    pub(crate) archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
 
     /// The list of all archetypes in the ECS world
-    archetypes: Vec<Archetype>,
+    pub(crate) archetypes: Vec<Archetype>,
 
     /// The number of entities stored inside the ECS
     len: u32,
@@ -425,6 +440,9 @@ impl World {
     /// false.
     ///
     /// # Safety
+    ///
+    /// Marked unsafe until the function is proven to be safe, as it currently ambiguous whether
+    /// this is safe to call.
     pub unsafe fn remove_component_dynamic(
         &mut self,
         entity: EntityId,
