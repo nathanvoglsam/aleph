@@ -30,8 +30,8 @@
 use std::{borrow::Borrow, num::NonZeroU32};
 
 use crate::{
-    ComponentIdMap, ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId,
-    EntityLayout, EntityLayoutBuf,
+    ComponentIdMap, ComponentRegistry, ComponentTypeDescription, EntityId, EntityLayout,
+    EntityLayoutBuf,
 };
 use virtual_buffer::VirtualVec;
 
@@ -74,7 +74,7 @@ pub struct ArchetypeEdge {
 
 pub struct Archetype {
     /// The entity layout of this archetype
-    pub(crate) entity_layout: EntityLayoutBuf,
+    entity_layout: EntityLayoutBuf,
 
     /// A hash table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
@@ -98,10 +98,10 @@ pub struct Archetype {
     pub(crate) edges: ComponentIdMap<ArchetypeEdge>,
 
     /// The maximum number of entities that can be stored in this archetype
-    pub(crate) capacity: u32,
+    capacity: u32,
 
     /// The number of entities currently stored in this archetype
-    pub(crate) len: u32,
+    len: u32,
 }
 
 impl Archetype {
@@ -109,7 +109,7 @@ impl Archetype {
         // Add 1 so there's space for the always empty 0th element
         let storage_capacity = capacity.checked_add(1).unwrap();
 
-        // Produce the indice map from the layout
+        // Produce the index map from the layout
         let storage_indices: ComponentIdMap<usize> =
             layout.iter().enumerate().map(|v| (v.1, v.0)).collect();
 
@@ -174,39 +174,17 @@ impl Archetype {
     pub fn entity_layout(&self) -> &EntityLayout {
         self.entity_layout.borrow()
     }
-}
 
-impl Archetype {
     ///
     #[inline]
     pub fn component_descriptions(&self) -> &[ComponentTypeDescription] {
         &self.component_descriptions
     }
-
-    /// Given a component id, returns the raw bytes for the backing storage
-    #[inline]
-    pub fn component_storage_raw(&self, id: ComponentTypeId) -> Option<&[u8]> {
-        // Map the component ID to the storage index
-        let storage_index = self.storage_indices.get(&id).copied()?;
-
-        // Lookup the storage
-        Some(self.storages[storage_index].as_slice())
-    }
-
-    /// Given a component id, returns the raw bytes for the backing storage
-    #[inline]
-    pub fn component_storage_mut_raw(&mut self, id: ComponentTypeId) -> Option<&mut [u8]> {
-        // Map the component ID to the storage index
-        let storage_index = self.storage_indices.get(&id).copied()?;
-
-        // Lookup the storage
-        Some(self.storages[storage_index].as_slice_mut())
-    }
 }
 
 /// Internal implementations
 impl Archetype {
-    /// This function allocates spaces for `count` entities. This does not handle writting the
+    /// This function allocates spaces for `count` entities. This does not handle writing the
     /// entity components into the storages, this must be done separately.
     ///
     /// The function returns the base index where the first newly allocated entity can be found.
@@ -370,12 +348,12 @@ impl Archetype {
 
             // Create a slice of the data to copy, exiting the loop if the component is not present
             // in the source archetype
-            let source_buffer = if let Some(source_buffer) = source.component_storage_raw(source_id)
-            {
-                source_buffer
-            } else {
-                continue;
-            };
+            let source_buffer =
+                if let Some(source_index) = source.storage_indices.get(&source_id).copied() {
+                    source.storages[source_index].as_slice()
+                } else {
+                    continue;
+                };
             let source_buffer = &source_buffer[source_base..source_end];
 
             // Get the bounds of the memory to copy the data to
