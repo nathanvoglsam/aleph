@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
-use std::{borrow::Borrow, num::NonZeroU32};
-
 use crate::{
     ComponentIdMap, ComponentRegistry, ComponentTypeDescription, EntityId, EntityLayout,
     EntityLayoutBuf,
 };
+use std::num::NonZeroU32;
 use virtual_buffer::VirtualVec;
 
 ///
@@ -74,7 +73,7 @@ pub struct ArchetypeEdge {
 
 pub struct Archetype {
     /// The entity layout of this archetype
-    entity_layout: EntityLayoutBuf,
+    pub(crate) entity_layout: EntityLayoutBuf,
 
     /// A hash table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
@@ -98,14 +97,15 @@ pub struct Archetype {
     pub(crate) edges: ComponentIdMap<ArchetypeEdge>,
 
     /// The maximum number of entities that can be stored in this archetype
-    capacity: u32,
+    pub(crate) capacity: u32,
 
     /// The number of entities currently stored in this archetype
-    len: u32,
+    pub(crate) len: u32,
 }
 
+/// Internal implementations
 impl Archetype {
-    pub fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
+    pub(crate) fn new(capacity: u32, layout: &EntityLayout, registry: &ComponentRegistry) -> Self {
         // Add 1 so there's space for the always empty 0th element
         let storage_capacity = capacity.checked_add(1).unwrap();
 
@@ -157,33 +157,6 @@ impl Archetype {
         }
     }
 
-    /// Returns the number of entities allocated in this archetype
-    #[inline]
-    pub fn len(&self) -> u32 {
-        self.len
-    }
-
-    /// Returns the maximum number of entities that this archetype can hold
-    #[inline]
-    pub fn capacity(&self) -> u32 {
-        self.capacity
-    }
-
-    /// Returns the layout for the set of components this archetype holds
-    #[inline]
-    pub fn entity_layout(&self) -> &EntityLayout {
-        self.entity_layout.borrow()
-    }
-
-    ///
-    #[inline]
-    pub fn component_descriptions(&self) -> &[ComponentTypeDescription] {
-        &self.component_descriptions
-    }
-}
-
-/// Internal implementations
-impl Archetype {
     /// This function allocates spaces for `count` entities. This does not handle writing the
     /// entity components into the storages, this must be done separately.
     ///
