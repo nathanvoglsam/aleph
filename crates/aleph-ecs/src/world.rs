@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::query::Query;
 use crate::{
-    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentRegistry,
+    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentQuery, ComponentRegistry,
     ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf,
     EntityLocation, EntityStorage,
 };
@@ -349,6 +350,11 @@ impl World {
                     &mut *ptr
                 })
         }
+    }
+
+    #[inline]
+    pub fn query<Q: ComponentQuery>(&mut self) -> Query<Q> {
+        Query::new(self)
     }
 }
 

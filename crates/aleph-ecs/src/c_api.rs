@@ -28,8 +28,8 @@
 //
 
 use crate::{
-    Archetype, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
-    ArchetypeFilter, World,
+    Archetype, ArchetypeFilter, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
+    World,
 };
 use std::ptr::NonNull;
 

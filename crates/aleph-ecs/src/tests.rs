@@ -332,3 +332,64 @@ fn drop_test() {
 
     assert_eq!(counter.load(Ordering::SeqCst), 0);
 }
+
+#[test]
+fn query_test() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    let scale_ids = world.extend((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
+    ));
+
+    let mesh_ids = world.extend((
+        [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
+        [Mesh::new(5), Mesh::new(6)],
+    ));
+
+    for (id, (_pos, _scale)) in world.query::<(&Position, &Scale)>() {
+        println!("iter");
+        assert!(scale_ids.contains(&id));
+    }
+
+    for (id, (_pos, _mesh)) in world.query::<(&Position, &mut Mesh)>() {
+        println!("iter");
+        assert!(mesh_ids.contains(&id));
+    }
+
+    {
+        let mut query = world.query::<(&Position, &Scale)>();
+
+        let first = query.next().unwrap().0;
+        println!("iter");
+        assert!(scale_ids.contains(&first));
+
+        let second = query.next().unwrap().0;
+        println!("iter");
+        assert!(scale_ids.contains(&second));
+
+        assert!(query.next().is_none());
+        assert!(query.next().is_none());
+        assert!(query.next().is_none());
+    }
+
+    {
+        let mut query = world.query::<(&Position, &mut Mesh)>();
+
+        let first = query.next().unwrap().0;
+        println!("iter");
+        assert!(mesh_ids.contains(&first));
+
+        let second = query.next().unwrap().0;
+        println!("iter");
+        assert!(mesh_ids.contains(&second));
+
+        assert!(query.next().is_none());
+        assert!(query.next().is_none());
+        assert!(query.next().is_none());
+    }
+}
