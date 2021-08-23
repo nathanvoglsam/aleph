@@ -360,7 +360,7 @@ impl Drop for Archetype {
                 //         is a sound operation. The drop function will never be invalid to call if
                 //         there is no unsafe code interfacing with the world.
                 unsafe {
-                    let mut current = storage.as_mut_ptr();
+                    let mut current = storage.as_mut_ptr().add(type_size);
                     for _ in 0..self.len {
                         drop_fn(current);
                         current = current.add(type_size);

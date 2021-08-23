@@ -352,12 +352,10 @@ fn query_test() {
     ));
 
     for (id, (_pos, _scale)) in world.query::<(&Position, &Scale)>() {
-        println!("iter");
         assert!(scale_ids.contains(&id));
     }
 
     for (id, (_pos, _mesh)) in world.query::<(&Position, &mut Mesh)>() {
-        println!("iter");
         assert!(mesh_ids.contains(&id));
     }
 
@@ -365,11 +363,9 @@ fn query_test() {
         let mut query = world.query::<(&Position, &Scale)>();
 
         let first = query.next().unwrap().0;
-        println!("iter");
         assert!(scale_ids.contains(&first));
 
         let second = query.next().unwrap().0;
-        println!("iter");
         assert!(scale_ids.contains(&second));
 
         assert!(query.next().is_none());
@@ -381,11 +377,9 @@ fn query_test() {
         let mut query = world.query::<(&Position, &mut Mesh)>();
 
         let first = query.next().unwrap().0;
-        println!("iter");
         assert!(mesh_ids.contains(&first));
 
         let second = query.next().unwrap().0;
-        println!("iter");
         assert!(mesh_ids.contains(&second));
 
         assert!(query.next().is_none());
