@@ -29,7 +29,7 @@
 
 use crate::{
     Archetype, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
-    RawArchetypeQuery, World,
+    ArchetypeFilter, World,
 };
 use std::ptr::NonNull;
 
@@ -155,12 +155,12 @@ pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -
 }
 
 /// `RawArchetypeQuery::new`
-pub unsafe extern "C" fn archetype_query_new(
+pub unsafe extern "C" fn archetype_filter_new(
     matching: NonNull<ComponentTypeId>,
     matching_len: usize,
     excluding: NonNull<ComponentTypeId>,
     excluding_len: usize,
-) -> NonNull<RawArchetypeQuery> {
+) -> NonNull<ArchetypeFilter> {
     // Convert unpacked slice to EntityLayout
     let matching = core::slice::from_raw_parts(matching.as_ptr(), matching_len);
     let matching = EntityLayout::from_inner_unchecked(matching);
@@ -170,7 +170,7 @@ pub unsafe extern "C" fn archetype_query_new(
     let excluding = EntityLayout::from_inner_unchecked(excluding);
 
     // Construct and box query
-    let query = RawArchetypeQuery::new(matching, excluding);
+    let query = ArchetypeFilter::new(matching, excluding);
     let query = Box::new(query);
 
     // Leak the box to transfer lifetime ownership to caller
@@ -179,8 +179,8 @@ pub unsafe extern "C" fn archetype_query_new(
 }
 
 /// `RawArchetypeQuery::next`
-pub unsafe extern "C" fn archetype_query_next(
-    mut query: NonNull<RawArchetypeQuery>,
+pub unsafe extern "C" fn archetype_filter_next(
+    mut query: NonNull<ArchetypeFilter>,
     world: NonNull<World>,
 ) -> u32 {
     // Call `next` converting the bool to a u32
@@ -192,15 +192,15 @@ pub unsafe extern "C" fn archetype_query_next(
 }
 
 /// `RawArchetypeQuery::current_ptr`
-pub unsafe extern "C" fn archetype_query_current(
-    query: NonNull<RawArchetypeQuery>,
+pub unsafe extern "C" fn archetype_filter_current(
+    query: NonNull<ArchetypeFilter>,
     world: NonNull<World>,
 ) -> Option<NonNull<Archetype>> {
     query.as_ref().current_ptr(world.as_ref())
 }
 
 /// `RawArchetypeQuery::drop`
-pub unsafe extern "C" fn archetype_query_destroy(query: NonNull<RawArchetypeQuery>) {
+pub unsafe extern "C" fn archetype_query_destroy(query: NonNull<ArchetypeFilter>) {
     // Recreate and drop the box to call cleanup code
     Box::from_raw(query.as_ptr());
     drop(query)

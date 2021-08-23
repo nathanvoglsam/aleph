@@ -50,7 +50,7 @@ use std::ptr::NonNull;
 ///
 /// This struct exists as an FFI compatible implementation layer that safe wrappers should
 /// abstract over
-pub struct RawArchetypeQuery {
+pub struct ArchetypeFilter {
     /// A list of components that *must* be present on a component for the query to match
     ///
     /// We create an owned copy to simplify FFI usage
@@ -65,7 +65,7 @@ pub struct RawArchetypeQuery {
     current: Option<ArchetypeIndex>,
 }
 
-impl RawArchetypeQuery {
+impl ArchetypeFilter {
     /// Constructs a new instance of `RawArchetypeQuery` in the default state.
     ///
     /// This struct will only yield archetypes that match the pattern specified when it was created
