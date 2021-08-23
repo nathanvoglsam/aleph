@@ -223,7 +223,7 @@ impl World {
             let source = source.data_for(comp);
 
             // Get the size of the type we're copying from the buffers
-            let type_size = archetype.component_descriptions()[i].type_size;
+            let type_size = archetype.component_descriptions[i].type_size;
 
             // Calculate the base index for where to start copying into the buffer
             let base = archetype_entity_base.0.get() as usize;
@@ -413,10 +413,10 @@ impl World {
 
             // Get the index of the type inside the archetype and lookup the size of the type
             let type_index = dest
-                .entity_layout()
+                .entity_layout
                 .index_of_component_type(component)
                 .unwrap();
-            let type_size = dest.component_descriptions()[type_index].type_size;
+            let type_size = dest.component_descriptions[type_index].type_size;
 
             // Get the bounds of the component's data
             let dest_base = new_index.0.get() as usize;
@@ -478,11 +478,11 @@ impl World {
         // Manually drop the component we're removing
         let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
         let type_index = source
-            .entity_layout()
+            .entity_layout
             .index_of_component_type(component)
             .unwrap();
-        let type_size = source.component_descriptions()[type_index].type_size;
-        let drop_fn = source.component_descriptions()[type_index].fn_drop;
+        let type_size = source.component_descriptions[type_index].type_size;
+        let drop_fn = source.component_descriptions[type_index].fn_drop;
 
         if let Some(drop_fn) = drop_fn {
             let base = location.entity.0.get() as usize;
@@ -559,7 +559,7 @@ impl World {
 
         // Create the destination layout, returning None if the component we're following a link
         // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout = self.archetypes[source].entity_layout().to_owned();
+        let source_layout = self.archetypes[source].entity_layout.to_owned();
         let mut destination_layout = source_layout.clone();
         if ADD {
             if destination_layout.add_component_type(component) {

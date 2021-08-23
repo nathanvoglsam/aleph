@@ -116,8 +116,8 @@ impl RawArchetypeQuery {
 
         // Search our candidate set for the next matching archetype
         let next_match = candidates.iter().enumerate().find(|(_, v)| {
-            self.matching_components.is_subset_of(v.entity_layout())
-                && self.excluded_components.is_disjoint_from(v.entity_layout())
+            self.matching_components.is_subset_of(&v.entity_layout)
+                && self.excluded_components.is_disjoint_from(&v.entity_layout)
         });
 
         // Based on our search result update the iterator and flag if we've found another matching

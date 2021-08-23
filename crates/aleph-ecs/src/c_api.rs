@@ -70,7 +70,7 @@ pub unsafe extern "C" fn world_remove_component(
     }
 }
 
-pub unsafe extern " C" fn world_has_component(
+pub unsafe extern "C" fn world_has_component(
     world: NonNull<World>,
     entity: EntityId,
     component: ComponentTypeId,
@@ -99,7 +99,7 @@ pub unsafe extern "C" fn archetype_get_entity_layout(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
 ) -> NonNull<ComponentTypeId> {
-    let layout = archetype.as_ref().entity_layout().as_inner();
+    let layout = archetype.as_ref().entity_layout.as_inner();
 
     let ptr = layout.as_ptr() as *mut ComponentTypeId;
     let ptr = NonNull::new_unchecked(ptr);
@@ -113,7 +113,7 @@ pub unsafe extern "C" fn archetype_get_component_descriptions(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
 ) -> NonNull<ComponentTypeDescription> {
-    let descriptions = archetype.as_ref().component_descriptions();
+    let descriptions = &archetype.as_ref().component_descriptions;
 
     let ptr = descriptions.as_ptr() as *mut ComponentTypeDescription;
     let ptr = NonNull::new_unchecked(ptr);
@@ -146,12 +146,12 @@ pub unsafe extern "C" fn archetype_get_storage_by_index(
 
 /// `Archetype::len`
 pub unsafe extern "C" fn archetype_get_len(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().len()
+    archetype.as_ref().len
 }
 
 /// `Archetype::len`
 pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().capacity()
+    archetype.as_ref().capacity
 }
 
 /// `RawArchetypeQuery::new`
