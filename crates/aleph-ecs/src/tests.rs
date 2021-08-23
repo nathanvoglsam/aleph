@@ -369,7 +369,13 @@ fn query_test() {
         assert!(scale_ids.contains(&second));
 
         assert!(query.next().is_none());
-        assert!(query.next().is_none());
+
+        let first = query.next().unwrap().0;
+        assert!(scale_ids.contains(&first));
+
+        let second = query.next().unwrap().0;
+        assert!(scale_ids.contains(&second));
+
         assert!(query.next().is_none());
     }
 
@@ -383,7 +389,13 @@ fn query_test() {
         assert!(mesh_ids.contains(&second));
 
         assert!(query.next().is_none());
-        assert!(query.next().is_none());
+
+        let first = query.next().unwrap().0;
+        assert!(mesh_ids.contains(&first));
+
+        let second = query.next().unwrap().0;
+        assert!(mesh_ids.contains(&second));
+
         assert!(query.next().is_none());
     }
 }

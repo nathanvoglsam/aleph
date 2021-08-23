@@ -58,7 +58,6 @@ impl<'world, Q: ComponentQuery> Query<'world, Q> {
 enum QueryState<Q: ComponentQuery> {
     FindingArchetype,
     IteratingArchetype(u32, NonNull<EntityId>, Q::Fetch),
-    Terminal,
 }
 
 impl<'world, Q: ComponentQuery> Iterator for Query<'world, Q> {
@@ -82,7 +81,7 @@ impl<'world, Q: ComponentQuery> Iterator for Query<'world, Q> {
                         let fetch = unsafe { Q::Fetch::create(current) };
                         self.state = QueryState::IteratingArchetype(remaining, ids, fetch);
                     } else {
-                        self.state = QueryState::Terminal;
+                        return None;
                     }
                 }
                 QueryState::IteratingArchetype(remaining, ids, fetch) => {
@@ -99,10 +98,6 @@ impl<'world, Q: ComponentQuery> Iterator for Query<'world, Q> {
                             return Some((out_id, out_fetch));
                         }
                     }
-                }
-                QueryState::Terminal => {
-                    // When in the terminal state we will continue yielding `None` forever
-                    return None;
                 }
             }
         }
