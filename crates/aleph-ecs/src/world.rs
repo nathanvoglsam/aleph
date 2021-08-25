@@ -1041,3 +1041,65 @@ impl_into_component_source_for_tuple!(
     (L, l),
     (M, m)
 );
+
+pub unsafe extern "C" fn world_register(
+    mut world: NonNull<World>,
+    description: &ComponentTypeDescription,
+) -> bool {
+    world.as_mut().register_dynamic(description)
+}
+
+pub unsafe extern "C" fn world_add_component(
+    mut world: NonNull<World>,
+    entity: EntityId,
+    component: ComponentTypeId,
+    data: NonNull<u8>,
+    data_len: usize,
+) -> u32 {
+    let data = core::slice::from_raw_parts(data.as_ptr() as *const u8, data_len);
+    if world
+        .as_mut()
+        .add_component_dynamic(entity, component, data)
+    {
+        1
+    } else {
+        0
+    }
+}
+
+pub unsafe extern "C" fn world_remove_component(
+    mut world: NonNull<World>,
+    entity: EntityId,
+    component: ComponentTypeId,
+) -> u32 {
+    if world.as_mut().remove_component_dynamic(entity, component) {
+        1
+    } else {
+        0
+    }
+}
+
+pub unsafe extern "C" fn world_has_component(
+    world: NonNull<World>,
+    entity: EntityId,
+    component: ComponentTypeId,
+) -> u32 {
+    if world
+        .as_ref()
+        .get_component_ptr_dynamic(entity, component)
+        .is_some()
+    {
+        1
+    } else {
+        0
+    }
+}
+
+#[inline]
+pub unsafe extern "C" fn world_get_component_ptr(
+    world: NonNull<World>,
+    entity: EntityId,
+    component: ComponentTypeId,
+) -> Option<NonNull<u8>> {
+    world.as_ref().get_component_ptr_dynamic(entity, component)
+}

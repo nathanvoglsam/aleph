@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{Archetype, ArchetypeIndex, EntityLayout, EntityLayoutBuf, World};
+use crate::{Archetype, ArchetypeIndex, ComponentTypeId, EntityLayout, EntityLayoutBuf, World};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
@@ -159,4 +159,56 @@ impl ArchetypeFilter {
         let ptr = NonNull::from(archetype);
         Some(ptr)
     }
+}
+
+/// `RawArchetypeQuery::new`
+pub unsafe extern "C" fn archetype_filter_new(
+    matching: NonNull<ComponentTypeId>,
+    matching_len: usize,
+    excluding: NonNull<ComponentTypeId>,
+    excluding_len: usize,
+) -> NonNull<ArchetypeFilter> {
+    // Convert unpacked slice to EntityLayout
+    let matching = core::slice::from_raw_parts(matching.as_ptr(), matching_len);
+    let matching = EntityLayout::from_inner_unchecked(matching);
+
+    // Convert unpacked slice to EntityLayout
+    let excluding = core::slice::from_raw_parts(excluding.as_ptr(), excluding_len);
+    let excluding = EntityLayout::from_inner_unchecked(excluding);
+
+    // Construct and box query
+    let query = ArchetypeFilter::new(matching, excluding);
+    let query = Box::new(query);
+
+    // Leak the box to transfer lifetime ownership to caller
+    let query = Box::leak(query);
+    NonNull::from(query)
+}
+
+/// `RawArchetypeQuery::next`
+pub unsafe extern "C" fn archetype_filter_next(
+    mut query: NonNull<ArchetypeFilter>,
+    world: NonNull<World>,
+) -> u32 {
+    // Call `next` converting the bool to a u32
+    if query.as_mut().next(world.as_ref()) {
+        1
+    } else {
+        0
+    }
+}
+
+/// `RawArchetypeQuery::current_ptr`
+pub unsafe extern "C" fn archetype_filter_current(
+    query: NonNull<ArchetypeFilter>,
+    world: NonNull<World>,
+) -> Option<NonNull<Archetype>> {
+    query.as_ref().current_ptr(world.as_ref())
+}
+
+/// `RawArchetypeQuery::drop`
+pub unsafe extern "C" fn archetype_filter_destroy(query: NonNull<ArchetypeFilter>) {
+    // Recreate and drop the box to call cleanup code
+    Box::from_raw(query.as_ptr());
+    drop(query)
 }

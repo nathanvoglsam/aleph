@@ -147,12 +147,6 @@ impl Archetype {
         &self.storage_indices
     }
 
-    /// Returns the internal array of component descriptions. Can be indexed by storage index
-    #[inline(always)]
-    pub(crate) fn component_descriptions(&self) -> &[ComponentTypeDescription] {
-        &self.component_descriptions
-    }
-
     /// Returns the internal array of entity IDs that associates an entity slot with the ID it was
     /// allocated with
     #[inline(always)]
@@ -557,4 +551,68 @@ impl Drop for Archetype {
             }
         }
     }
+}
+
+pub unsafe extern "C" fn archetype_get_component_descriptions(
+    archetype: NonNull<Archetype>,
+    out_len: &mut usize,
+) -> NonNull<ComponentTypeDescription> {
+    let descriptions = &archetype.as_ref().component_descriptions;
+
+    let ptr = descriptions.as_ptr() as *mut ComponentTypeDescription;
+    let ptr = NonNull::new_unchecked(ptr);
+
+    *out_len = descriptions.len();
+
+    ptr
+}
+
+pub unsafe extern "C" fn archetype_get_component_index(
+    archetype: NonNull<Archetype>,
+    component: ComponentTypeId,
+    out_index: &mut usize,
+) -> u32 {
+    if let Some(index) = archetype
+        .as_ref()
+        .storage_indices()
+        .get(&component)
+        .copied()
+    {
+        *out_index = index;
+        1
+    } else {
+        0
+    }
+}
+
+pub unsafe extern "C" fn archetype_get_storage_by_index(
+    mut archetype: NonNull<Archetype>,
+    index: usize,
+) -> NonNull<u8> {
+    let storage = archetype.as_mut().storages_mut()[index].as_slice_mut();
+    NonNull::new_unchecked(storage.as_mut_ptr())
+}
+
+pub unsafe extern "C" fn archetype_get_entity_layout(
+    archetype: NonNull<Archetype>,
+    out_len: &mut usize,
+) -> NonNull<ComponentTypeId> {
+    let layout = archetype.as_ref().entity_layout().as_inner();
+
+    let ptr = layout.as_ptr() as *mut ComponentTypeId;
+    let ptr = NonNull::new_unchecked(ptr);
+
+    *out_len = layout.len();
+
+    ptr
+}
+
+/// `Archetype::len`
+pub unsafe extern "C" fn archetype_get_len(archetype: NonNull<Archetype>) -> u32 {
+    archetype.as_ref().len()
+}
+
+/// `Archetype::len`
+pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -> u32 {
+    archetype.as_ref().capacity()
 }
