@@ -29,9 +29,9 @@
 
 use crate::query::Query;
 use crate::{
-    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentQuery, ComponentRegistry,
-    ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout, EntityLayoutBuf,
-    EntityLocation, EntityStorage,
+    Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
+    ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
+    EntityLayoutBuf, EntityLocation, EntityStorage,
 };
 use std::ptr::NonNull;
 use std::{collections::HashMap, num::NonZeroU32};
@@ -114,6 +114,9 @@ pub struct World {
     /// The list of all archetypes in the ECS world
     pub(crate) archetypes: Vec<Archetype>,
 
+    /// Holds the edges of the archetype graph. Maps component ID to the links.
+    pub(crate) archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
+
     /// The number of entities stored inside the ECS
     len: u32,
 }
@@ -133,8 +136,11 @@ impl World {
         // This allows using `ArchetypeIndex(0)` as a special value as its not possible to create
         // an entity with no components.
         let mut archetypes = Vec::new();
+        let mut archetype_edges = Vec::new();
         let base_archetype = Archetype::new(1, EntityLayout::empty(), &component_registry);
+        let base_archetype_edges = ComponentIdMap::with_hasher(Default::default());
         archetypes.push(base_archetype);
+        archetype_edges.push(base_archetype_edges);
 
         // Creates the table that maps entity layouts to archetypes. Maps the empty layout to 0.
         let mut archetype_map = HashMap::new();
@@ -146,6 +152,7 @@ impl World {
             entities,
             archetype_map,
             archetypes,
+            archetype_edges,
             len: 0,
         };
 
@@ -547,7 +554,7 @@ impl World {
         let source = source.0.get() as usize;
 
         // First check for an existing link in the graph
-        if let Some(edge) = self.archetypes[source].edges.get_mut(&component) {
+        if let Some(edge) = self.archetype_edges[source].get_mut(&component) {
             // Const switch between add or remove
             if ADD {
                 if let Some(index) = edge.add {
@@ -579,7 +586,7 @@ impl World {
 
         // Lookup the archetype and update the graph edge in source
         let index = self.find_or_create_archetype(&destination_layout);
-        let edge = self.archetypes[source].edges.entry(component).or_default();
+        let edge = self.archetype_edges[source].entry(component).or_default();
         if ADD {
             edge.add = Some(index);
         } else {
@@ -595,11 +602,13 @@ impl World {
         } else {
             let capacity = self.options.archetype_capacity;
             let archetype = Archetype::new(capacity, layout, &self.component_registry);
+            let archetype_edges = ComponentIdMap::with_hasher(Default::default());
             let archetype_index = self.archetypes.len() as u32;
             let archetype_index = NonZeroU32::new(archetype_index).unwrap();
             self.archetype_map
                 .insert(layout.to_owned(), Some(ArchetypeIndex(archetype_index)));
             self.archetypes.push(archetype);
+            self.archetype_edges.push(archetype_edges);
             ArchetypeIndex(archetype_index)
         }
     }
@@ -669,6 +678,21 @@ impl World {
 
         new_index
     }
+}
+
+///
+/// The structure that holds the links to other archetypes based on whether a specific component is
+/// added or removed
+///
+#[repr(C)]
+#[repr(align(8))]
+#[derive(Clone, Copy, Hash, Debug, Default)]
+pub struct ArchetypeEdge {
+    /// Links to the archetype to move to if the specific component is added
+    pub add: Option<ArchetypeIndex>,
+
+    /// Links to the archetype to move to if the specific component is removed
+    pub remove: Option<ArchetypeIndex>,
 }
 
 #[macro_export]

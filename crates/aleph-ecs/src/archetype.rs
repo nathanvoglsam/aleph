@@ -54,21 +54,6 @@ pub struct ArchetypeIndex(pub NonZeroU32);
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct ArchetypeEntityIndex(pub NonZeroU32);
 
-///
-/// The structure that holds the links to other archetypes based on whether a specific component is
-/// added or removed
-///
-#[repr(C)]
-#[repr(align(8))]
-#[derive(Clone, Copy, Hash, Debug, Default)]
-pub struct ArchetypeEdge {
-    /// Links to the archetype to move to if the specific component is added
-    pub add: Option<ArchetypeIndex>,
-
-    /// Links to the archetype to move to if the specific component is removed
-    pub remove: Option<ArchetypeIndex>,
-}
-
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
 
 pub struct Archetype {
@@ -92,9 +77,6 @@ pub struct Archetype {
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
     pub(crate) entity_ids: VirtualVec<EntityId>,
-
-    /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) edges: ComponentIdMap<ArchetypeEdge>,
 
     /// The maximum number of entities that can be stored in this archetype
     pub(crate) capacity: u32,
@@ -142,16 +124,12 @@ impl Archetype {
             .expect("Failed to reserve address space for entity id list");
         entity_ids.push(EntityId::null());
 
-        // Create graph links as empty
-        let edges = ComponentIdMap::with_hasher(Default::default());
-
         Self {
             entity_layout: layout.to_owned(),
             storage_indices,
             component_descriptions,
             storages,
             entity_ids,
-            edges,
             capacity,
             len: 0,
         }
