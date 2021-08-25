@@ -240,7 +240,8 @@ impl World {
         }
 
         // Allocate the entity IDs and write them into the output slice
-        ids.iter_mut().enumerate().for_each(|(i, v)| {
+        for (i, v) in ids.iter_mut().enumerate() {
+            // Calculate the final EntityLocation
             let entity = archetype_entity_base.0.get() + i as u32;
             let entity = NonZeroU32::new(entity).unwrap();
             let location = EntityLocation {
@@ -248,11 +249,13 @@ impl World {
                 entity: ArchetypeEntityIndex(entity),
             };
 
-            *v = self.entities.create(location);
+            // Allocate the ID
+            let id = self.entities.create(location);
 
-            let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
-            archetype.entity_ids[entity.get() as usize] = *v;
-        });
+            // Write the ID to the archetype and the output ID list
+            *v = id;
+            archetype.entity_ids[entity.get() as usize] = id;
+        }
 
         ids
     }
