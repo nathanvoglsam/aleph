@@ -33,8 +33,9 @@ use crate::{
     ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
     EntityLayoutBuf, EntityLocation, EntityStorage,
 };
+use std::collections::HashMap;
+use std::num::NonZeroU32;
 use std::ptr::NonNull;
-use std::{collections::HashMap, num::NonZeroU32};
 
 /// Interface for converting one type into a type that implements `ComponentSource`.
 ///

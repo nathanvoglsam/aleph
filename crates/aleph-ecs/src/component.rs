@@ -27,11 +27,9 @@
 // SOFTWARE.
 //
 
-use std::{
-    any::TypeId,
-    collections::{HashMap, HashSet},
-    hash::{BuildHasherDefault, Hasher},
-};
+use std::any::TypeId;
+use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasherDefault, Hasher};
 
 ///
 /// This trait needs to be implemented by any type that wishes to be used as a component

@@ -27,10 +27,12 @@
 // SOFTWARE.
 //
 
-use std::{borrow::Borrow, iter::FromIterator, ops::Deref, vec::IntoIter};
-
 use crate::ComponentTypeId;
+use std::borrow::Borrow;
 use std::convert::TryFrom;
+use std::iter::FromIterator;
+use std::ops::Deref;
+use std::vec::IntoIter;
 
 ///
 /// A wrapper over a slice of an EntityLayoutBuf

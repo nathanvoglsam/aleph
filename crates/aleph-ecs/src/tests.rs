@@ -1,7 +1,3 @@
-use crate::World;
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
-
 //
 //
 // This file is a part of Aleph
@@ -30,6 +26,10 @@ use std::sync::Arc;
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
+use crate::World;
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 #[derive(Default, PartialEq, Debug)]
 struct Position {
