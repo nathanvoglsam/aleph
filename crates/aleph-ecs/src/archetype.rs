@@ -28,10 +28,11 @@
 //
 
 use crate::{
-    ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, EntityId,
-    EntityLayout, EntityLayoutBuf,
+    ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
+    EntityId, EntityLayout, EntityLayoutBuf,
 };
 use std::num::NonZeroU32;
+use std::ptr::NonNull;
 use virtual_buffer::VirtualVec;
 
 ///
@@ -210,9 +211,92 @@ impl Archetype {
         }
     }
 
+    /// This function will write the provided `data` into the storage for the given `component_type`
+    /// at the given `slot` within the storage.
+    #[inline]
+    pub(crate) fn copy_component_data_into_slot(
+        &mut self,
+        slot: ArchetypeEntityIndex,
+        component_type: ComponentTypeId,
+        data: &[u8],
+    ) {
+        // Get the index of the type inside the archetype and lookup the size of the type
+        let type_index = self
+            .storage_indices.get(&component_type).copied().unwrap();
+        let type_size = self.component_descriptions[type_index].type_size;
+
+        // Get the bounds of the component's data
+        let dest_base = slot.0.get() as usize;
+        let dest_base = dest_base * type_size;
+        let dest_end = dest_base + type_size;
+
+        // Create the slice to copy into, no dropping is needed as the data is uninitialized
+        let dest_buffer = self.storages[type_index].as_slice_mut();
+        let dest_buffer = &mut dest_buffer[dest_base..dest_end];
+
+        // Perform the actual copy
+        dest_buffer.copy_from_slice(data);
+    }
+
+    #[inline]
+    pub(crate) unsafe fn drop_component_in_slot(
+        &mut self,
+        slot: ArchetypeEntityIndex,
+        component_type: ComponentTypeId,
+    ) {
+        let type_index = self
+            .storage_indices
+            .get(&component_type)
+            .copied()
+            .unwrap();
+        let type_size = self.component_descriptions[type_index].type_size;
+        let drop_fn = self.component_descriptions[type_index].fn_drop;
+
+        if let Some(drop_fn) = drop_fn {
+            let base = slot.0.get() as usize;
+            let base = base * type_size;
+            let end = base + type_size;
+
+            let slice = self.storages[type_index].as_slice_mut();
+            let slice = &mut slice[base..end];
+
+            drop_fn(slice.as_mut_ptr());
+        }
+    }
+
+    #[inline]
+    pub(crate) fn get_component_ptr(
+        &self,
+        slot: ArchetypeEntityIndex,
+        component_type: ComponentTypeId,
+    ) -> Option<NonNull<u8>> {
+        // Lookup the storage index, load the size of the type and get the storage pointer
+        let storage_index = self.storage_indices.get(&component_type).copied()?;
+        let type_size = self.component_descriptions[storage_index].type_size;
+        let storage = self.storages[storage_index].as_slice();
+
+        // Get the bounds of the component's data
+        let base = slot.0.get() as usize;
+        let base = base * type_size;
+        let end = base + type_size;
+
+        // Get a pointer to the position in the buffer the component can be found
+        let slice = &storage[base..end];
+        let ptr = slice.as_ptr();
+
+        NonNull::new(ptr as *mut u8)
+    }
+
     /// Remove the entity at the given index.
     ///
-    /// The const parameter chooses whether to call the drop function or not
+    /// The const parameter chooses whether to call the drop function or not.
+    ///
+    /// Will return an optional `EntityId`. If an ID is yielded it means we had to move an entity
+    /// within the archetype to perform the removal and keep the entities packed.
+    ///
+    /// If this function returns a value then the user (i.e. [`World`]) must update the
+    /// `EntityLocation` field for that ID to prevent the ID from becoming a dangling reference
+    /// (unsafe).
     #[inline]
     pub(crate) fn remove_entity<const DROP: bool>(
         &mut self,

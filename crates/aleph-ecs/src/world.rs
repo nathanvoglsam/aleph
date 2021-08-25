@@ -403,28 +403,8 @@ impl World {
             destination_archetype_index,
         );
 
-        {
-            let dest = &mut self.archetypes[destination_archetype_index.0.get() as usize];
-
-            // Get the index of the type inside the archetype and lookup the size of the type
-            let type_index = dest
-                .entity_layout
-                .index_of_component_type(component)
-                .unwrap();
-            let type_size = dest.component_descriptions[type_index].type_size;
-
-            // Get the bounds of the component's data
-            let dest_base = new_index.0.get() as usize;
-            let dest_base = dest_base * type_size;
-            let dest_end = dest_base + type_size;
-
-            // Create the slice to copy into, no dropping is needed as the data is uninitialized
-            let dest_buffer = dest.storages[type_index].as_slice_mut();
-            let dest_buffer = &mut dest_buffer[dest_base..dest_end];
-
-            // Perform the actual copy
-            dest_buffer.copy_from_slice(data);
-        }
+        self.archetypes[destination_archetype_index.0.get() as usize]
+            .copy_component_data_into_slot(new_index, component, data);
 
         true
     }
@@ -471,24 +451,8 @@ impl World {
         );
 
         // Manually drop the component we're removing
-        let source = &mut self.archetypes[source_archetype_index.0.get() as usize];
-        let type_index = source
-            .entity_layout
-            .index_of_component_type(component)
-            .unwrap();
-        let type_size = source.component_descriptions[type_index].type_size;
-        let drop_fn = source.component_descriptions[type_index].fn_drop;
-
-        if let Some(drop_fn) = drop_fn {
-            let base = location.entity.0.get() as usize;
-            let base = base * type_size;
-            let end = base + type_size;
-
-            let slice = source.storages[type_index].as_slice_mut();
-            let slice = &mut slice[base..end];
-
-            drop_fn(slice.as_mut_ptr());
-        }
+        self.archetypes[source_archetype_index.0.get() as usize]
+            .drop_component_in_slot(location.entity, component);
 
         true
     }
@@ -502,24 +466,8 @@ impl World {
         component: ComponentTypeId,
     ) -> Option<NonNull<u8>> {
         if let Some(location) = self.entities.lookup(entity) {
-            // Lookup the archetype
-            let archetype = &self.archetypes[location.archetype.0.get() as usize];
-
-            // Lookup the storage index, load the size of the type and get the storage pointer
-            let storage_index = archetype.storage_indices.get(&component).copied()?;
-            let type_size = archetype.component_descriptions[storage_index].type_size;
-            let storage = archetype.storages[storage_index].as_slice();
-
-            // Get the bounds of the component's data
-            let base = location.entity.0.get() as usize;
-            let base = base * type_size;
-            let end = base + type_size;
-
-            // Get a pointer to the position in the buffer the component can be found
-            let slice = &storage[base..end];
-            let ptr = slice.as_ptr();
-
-            NonNull::new(ptr as *mut u8)
+            self.archetypes[location.archetype.0.get() as usize]
+                .get_component_ptr(location.entity, component)
         } else {
             None
         }
