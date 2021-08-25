@@ -116,9 +116,6 @@ pub struct World {
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
     pub(crate) archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
-
-    /// The number of entities stored inside the ECS
-    len: u32,
 }
 
 ///
@@ -153,7 +150,6 @@ impl World {
             archetype_map,
             archetypes,
             archetype_edges,
-            len: 0,
         };
 
         Ok(out)
@@ -161,7 +157,7 @@ impl World {
 
     /// Returns the number of entities allocated in the `World`
     pub fn len(&self) -> u32 {
-        self.len
+        self.entities.len() as u32
     }
 
     /// Register's a rust component type with this ECS world so that it can be used as a component
@@ -176,8 +172,6 @@ impl World {
 
         let mut ids = Vec::new();
         ids.resize(source.count() as usize, EntityId::null());
-
-        self.len += source.count();
 
         #[cfg(debug_assertions)]
         {
@@ -309,6 +303,8 @@ impl World {
         if let Some(location) = self.entities.lookup(entity) {
             let archetype = &mut self.archetypes[location.archetype.0.get() as usize];
 
+            // Remove the entity from the archetype, patching the `EntityLocation` if an entity
+            // needed to be moved to keep the archetype storage dense.
             if let Some(needs_update) = archetype.remove_entity::<true>(location.entity) {
                 unsafe {
                     let entry = self.entities.lookup_entry_mut(needs_update).unwrap();
@@ -317,9 +313,8 @@ impl World {
                 }
             }
 
+            // Free's the entity ID slot (handles generation increment to invalidate the old IDs)
             self.entities.destroy(entity);
-
-            self.len -= 1;
 
             true
         } else {
