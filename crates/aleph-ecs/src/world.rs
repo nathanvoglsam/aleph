@@ -96,7 +96,50 @@ impl Default for WorldOptions {
 }
 
 ///
+/// # Implementation Details
 ///
+/// The `World` consists of a collection of individual data structures that together form the whole
+/// solution for storing entities and their components. These data structures are:
+///
+/// - A hash table that stores the set of registered component types and maps from the component
+///   type's registered ID to the type's description (name, size, alignment, drop_fn, etc).
+/// - A free-list based object pool for allocating entity IDs. Reuse of entity slots is made safe
+///   with the use of a generational index.
+/// - A hash table that maps entity layouts to an index in a set of arrays which form SoA storage
+///   for all archetypes within the world. The SoA storage splits the archetype into two pieces:
+///     - The core archetype data structure that handles the storage of the component data
+///     - A set of graph edges that forms a graph from archetypes to other archetypes for
+///       accelerating entity shape transitions.
+///
+/// ## Archetype
+///
+/// See [`Archetype`] for more detailed documentation.
+///
+/// ## Archetype Graph
+///
+/// The world also pairs archetypes with a set of links to other archetypes with similar layouts.
+/// These links, taken together with all other archetypes, form a graph of all the archetypes. The
+/// edges of the graph are defined by the addition or removal of a single component type to the
+/// source archetype's layout. This forms a graph of neighbouring archetypes joined by the
+/// transformation to the source layout required to create the destination layout.
+///
+/// This graph structure accelerates adding and removing components from entities. Changing an
+/// entity's shape requires moving it to the archetype of the target shape. Without this graph in,
+/// order to add/remove a component from an entity, it would be necessary to:
+///   - Allocate a new [`EntityLayoutBuf`], which requires a heap allocation.
+///   - Add the new component type to this [`EntityLayoutBuf`] so we know the layout of the
+///     destination archetype.
+///   - Use the layout to lookup the destination archetype, which requires a hash table lookup which
+///     means we need to hash the layout.
+///
+/// This will need to done **for every individual entity transformation**. This would add insane
+/// amounts of overhead.
+///
+/// By maintaining this graph it means we can add and remove components from entities without any
+/// of the above work by simply following the correct link in the graph. Going from an archetype
+/// with layout (A, B, C) to (A, B, C, D) we simply follow the edge for adding component D in the
+/// graph. This reduces finding destination archetypes to chains of hash table lookups
+/// (with a much smaller key to hash) without any heap allocations required.
 ///
 pub struct World {
     /// Configuration options the world was created with

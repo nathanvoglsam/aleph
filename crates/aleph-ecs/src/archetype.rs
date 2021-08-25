@@ -57,6 +57,41 @@ pub struct ArchetypeEntityIndex(pub NonZeroU32);
 
 // TODO: State system based on linked list described here: https://ajmmertens.medium.com/why-storing-state-machines-in-ecs-is-a-bad-idea-742de7a18e59
 
+///
+/// The data structure that stores the components for a given entity. An archetype provides SoA
+/// storage for all entities of the same "shape" (have the same components).
+///
+/// # Implementation Details
+///
+/// The storage implementation is very straight forward. An `Archetype` consists of an array of
+/// buffers and a map that maps the `ComponentId` to the buffer that stores data for the matching
+/// component type. There is also another buffer that stores the `EntityId` that the entity in the
+/// given slot was allocated to so you can map from entity slot back to the ID (needed for
+/// implementing component/entity removal and providing the ID of the entity in the slot when
+/// iterating).
+///
+/// All buffers are stored type-erased as raw `u8` buffers. Size and alignment is checked on
+/// construction to prevent unaligned access.
+///
+/// The components are stored using virtual memory allocations. When constructing an archetype a
+/// maximum capacity is provided as the maximum number of entities that can be stored. This capacity
+/// is then used to reserve enough address space to store the maximum number of entities and their
+/// components. Virtual memory is only committed when the space is needed to store entities meaning
+/// memory is only consumed for real entities and not the entire reserved range.
+///
+/// Using virtual memory like this has two important benefits:
+///
+/// Unlike `Vec<u8>` we do not copy the data when "growing" the buffer. A `Vec<u8>` will have to
+/// allocate a new region of memory and copy the old data across to grow the buffer. By using a
+/// virtual memory allocation the data never moves when growing, we simply commit more of the
+/// address space to grow the buffer. The data never needs to be copied because it never needs to
+/// move.
+///
+/// This also has the benefit of making pointers into the component storage stable. The backing
+/// buffers will never move. This allows for holding onto pointers into the component buffers, and
+/// they will never be invalidated by the buffer growing. This is still wildly unsafe but can be
+/// a useful assumption for optimization purposes.
+///
 pub struct Archetype {
     /// The entity layout of this archetype
     pub(crate) entity_layout: EntityLayoutBuf,
