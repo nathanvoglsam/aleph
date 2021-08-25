@@ -143,22 +143,22 @@ impl Default for WorldOptions {
 ///
 pub struct World {
     /// Configuration options the world was created with
-    pub(crate) options: WorldOptions,
+    options: WorldOptions,
 
     /// Holds all the components that have been registered with the World
-    pub(crate) component_registry: ComponentRegistry,
+    component_registry: ComponentRegistry,
 
     /// Holds all the entity slots. This handles ID allocation and maps the IDs to their archetype
-    pub(crate) entities: EntityStorage,
+    entities: EntityStorage,
 
     /// Map that maps an entity layout to the index inside the archetypes list
-    pub(crate) archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
+    archetype_map: HashMap<EntityLayoutBuf, Option<ArchetypeIndex>>,
 
     /// The list of all archetypes in the ECS world
-    pub(crate) archetypes: Vec<Archetype>,
+    archetypes: Vec<Archetype>,
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
-    pub(crate) archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
+    archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
 }
 
 ///
@@ -281,7 +281,7 @@ impl World {
 
             // Write the ID to the archetype and the output ID list
             *v = id;
-            archetype.entity_ids[entity.get() as usize] = id;
+            archetype.entity_ids_mut()[entity.get() as usize] = id;
         }
 
         ids
@@ -517,6 +517,19 @@ impl World {
     }
 }
 
+/// Crate private function implementations
+impl World {
+    /// Returns the internal archetype list
+    pub(crate) fn archetypes_ref(&self) -> &[Archetype] {
+        &self.archetypes
+    }
+
+    /// Returns the internal archetype list
+    pub(crate) fn archetypes_mut(&mut self) -> &mut [Archetype] {
+        &mut self.archetypes
+    }
+}
+
 /// Private function implementations
 impl World {
     fn follow_archetype_link<const ADD: bool>(
@@ -541,11 +554,13 @@ impl World {
         }
 
         // If we get here then we failed to find an existing link so we'll need to lookup the target
-        // archetype by layout, which requires an allocation to build the layout to lookup with
+        // archetype by layout, which requires an allocation to build the layout to lookup with.
+        //
+        // At least we'll only ever need to do this once
 
         // Create the destination layout, returning None if the component we're following a link
         // for doesn't change the layout (i.e trying to go from src->src).
-        let source_layout = self.archetypes[source].entity_layout.to_owned();
+        let source_layout = self.archetypes[source].entity_layout().to_owned();
         let mut destination_layout = source_layout.clone();
         if ADD {
             if destination_layout.add_component_type(component) {

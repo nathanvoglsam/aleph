@@ -105,19 +105,21 @@ impl ArchetypeFilter {
         // Chose the candidate subset of archetypes that should be used to search for the next
         // archetype
         let candidates = match &mut self.current {
-            None => world.archetypes.as_slice(),
+            None => world.archetypes_ref(),
             Some(current) => {
                 // Search for any more archetypes after the current one that matches the pattern
                 let current = current.0.get() as usize;
                 let next = current.checked_add(1).unwrap();
-                &world.archetypes[next..]
+                &world.archetypes_ref()[next..]
             }
         };
 
         // Search our candidate set for the next matching archetype
         let next_match = candidates.iter().enumerate().find(|(_, v)| {
-            self.matching_components.is_subset_of(&v.entity_layout)
-                && self.excluded_components.is_disjoint_from(&v.entity_layout)
+            self.matching_components.is_subset_of(&v.entity_layout())
+                && self
+                    .excluded_components
+                    .is_disjoint_from(&v.entity_layout())
         });
 
         // Based on our search result update the iterator and flag if we've found another matching
@@ -137,21 +139,23 @@ impl ArchetypeFilter {
     ///
     /// Will yield none if no archetype is being pointed to
     pub fn current_ref<'a>(&self, world: &'a World) -> Option<&'a Archetype> {
-        world.archetypes.get(self.current?.0.get() as usize)
+        world.archetypes_ref().get(self.current?.0.get() as usize)
     }
 
     /// Returns a mutable reference to the archetype currently being pointed to by the query.
     ///
     /// Will yield none if no archetype is being pointed to
     pub fn current_mut<'a>(&self, world: &'a mut World) -> Option<&'a mut Archetype> {
-        world.archetypes.get_mut(self.current?.0.get() as usize)
+        world
+            .archetypes_mut()
+            .get_mut(self.current?.0.get() as usize)
     }
 
     /// Returns a pointer to the archetype currently being pointed to by the query.
     ///
     /// Will yield none if no archetype is being pointed to
     pub fn current_ptr(&self, world: &World) -> Option<NonNull<Archetype>> {
-        let archetype = world.archetypes.get(self.current?.0.get() as usize)?;
+        let archetype = world.archetypes_ref().get(self.current?.0.get() as usize)?;
         let ptr = NonNull::from(archetype);
         Some(ptr)
     }

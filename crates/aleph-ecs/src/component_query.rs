@@ -26,6 +26,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 //
+
 use crate::{Archetype, Component, ComponentTypeId, EntityLayoutBuf};
 use std::ptr::NonNull;
 
@@ -47,8 +48,10 @@ pub type ComponentQueryItem<'a, Q> = <<Q as ComponentQuery>::Fetch as Fetch<'a>>
 pub unsafe trait Fetch<'a>: Sized {
     type Item;
 
-    /// Constructs an instance of [`Fetch`] from the given archetype
-    unsafe fn create(archetype: &Archetype) -> Self;
+    /// Constructs an instance of [`Fetch`] from the given archetype.
+    ///
+    /// Takes a pointer because borrow could mutable or shared depending on the implementation.
+    unsafe fn create(archetype: NonNull<Archetype>) -> Self;
 
     /// Skip to the next item in the stream
     ///
@@ -81,13 +84,14 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
     type Item = &'a T;
 
     #[inline]
-    unsafe fn create(archetype: &Archetype) -> Self {
+    unsafe fn create(archetype: NonNull<Archetype>) -> Self {
         let index = archetype
-            .storage_indices
+            .as_ref()
+            .storage_indices()
             .get(&ComponentTypeId::of::<T>())
             .copied()
             .unwrap();
-        let ptr = archetype.storages[index].as_ptr() as *const T;
+        let ptr = archetype.as_ref().storages_ref()[index].as_ptr() as *const T;
         let ptr = ptr.add(1);
         let ptr = NonNull::new(ptr as *mut T).unwrap();
 
@@ -123,13 +127,14 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     type Item = &'a mut T;
 
     #[inline]
-    unsafe fn create(archetype: &Archetype) -> Self {
+    unsafe fn create(mut archetype: NonNull<Archetype>) -> Self {
         let index = archetype
-            .storage_indices
+            .as_mut()
+            .storage_indices()
             .get(&ComponentTypeId::of::<T>())
             .copied()
             .unwrap();
-        let ptr = archetype.storages[index].as_ptr() as *const T as *mut T;
+        let ptr = archetype.as_mut().storages_mut()[index].as_mut_ptr() as *mut T;
         let ptr = ptr.add(1);
         let ptr = NonNull::new(ptr).unwrap();
         Self(ptr)
@@ -154,7 +159,7 @@ macro_rules! impl_query_for_tuple {
 
             #[inline]
             #[allow(unused_variables, clippy::unused_unit)]
-            unsafe fn create(archetype: &$crate::Archetype) -> Self {
+            unsafe fn create(archetype: ::std::ptr::NonNull<$crate::Archetype>) -> Self {
                 #[allow(non_snake_case)]
                 ($($name::create(archetype),)*)
             }

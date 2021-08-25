@@ -99,7 +99,7 @@ pub unsafe extern "C" fn archetype_get_entity_layout(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
 ) -> NonNull<ComponentTypeId> {
-    let layout = archetype.as_ref().entity_layout.as_inner();
+    let layout = archetype.as_ref().entity_layout().as_inner();
 
     let ptr = layout.as_ptr() as *mut ComponentTypeId;
     let ptr = NonNull::new_unchecked(ptr);
@@ -113,7 +113,7 @@ pub unsafe extern "C" fn archetype_get_component_descriptions(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
 ) -> NonNull<ComponentTypeDescription> {
-    let descriptions = &archetype.as_ref().component_descriptions;
+    let descriptions = &archetype.as_ref().component_descriptions();
 
     let ptr = descriptions.as_ptr() as *mut ComponentTypeDescription;
     let ptr = NonNull::new_unchecked(ptr);
@@ -128,7 +128,12 @@ pub unsafe extern "C" fn archetype_get_component_index(
     component: ComponentTypeId,
     out_index: &mut usize,
 ) -> u32 {
-    if let Some(index) = archetype.as_ref().storage_indices.get(&component).copied() {
+    if let Some(index) = archetype
+        .as_ref()
+        .storage_indices()
+        .get(&component)
+        .copied()
+    {
         *out_index = index;
         1
     } else {
@@ -137,21 +142,21 @@ pub unsafe extern "C" fn archetype_get_component_index(
 }
 
 pub unsafe extern "C" fn archetype_get_storage_by_index(
-    archetype: NonNull<Archetype>,
+    mut archetype: NonNull<Archetype>,
     index: usize,
 ) -> NonNull<u8> {
-    let storage = archetype.as_ref().storages[index].as_slice();
-    NonNull::new_unchecked(storage.as_ptr() as *mut u8)
+    let storage = archetype.as_mut().storages_mut()[index].as_slice_mut();
+    NonNull::new_unchecked(storage.as_mut_ptr())
 }
 
 /// `Archetype::len`
 pub unsafe extern "C" fn archetype_get_len(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().len
+    archetype.as_ref().len()
 }
 
 /// `Archetype::len`
 pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -> u32 {
-    archetype.as_ref().capacity
+    archetype.as_ref().capacity()
 }
 
 /// `RawArchetypeQuery::new`

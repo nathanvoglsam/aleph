@@ -94,31 +94,90 @@ pub struct ArchetypeEntityIndex(pub NonZeroU32);
 ///
 pub struct Archetype {
     /// The entity layout of this archetype
-    pub(crate) entity_layout: EntityLayoutBuf,
+    entity_layout: EntityLayoutBuf,
 
     /// A hash table that maps a component's id to the storage index. The storage index is used to
     /// index into the `component_descriptions` and `storages` fields.
-    pub(crate) storage_indices: ComponentIdMap<usize>,
+    storage_indices: ComponentIdMap<usize>,
 
     /// A list of the description of each component type in the entity layout, indexed by the
     /// storage index
-    pub(crate) component_descriptions: Vec<ComponentTypeDescription>,
+    component_descriptions: Vec<ComponentTypeDescription>,
 
     /// A list of all the storages of each component type in the entity layout, indexed by the
     /// storage index
-    pub(crate) storages: Vec<VirtualVec<u8>>,
+    storages: Vec<VirtualVec<u8>>,
 
     /// A list that maps an entity's index in the archetype storage back to the ID it was allocated
     /// with.
     ///
     /// Typically used by iterators that yield an `EntityID` alongside the components.
-    pub(crate) entity_ids: VirtualVec<EntityId>,
+    entity_ids: VirtualVec<EntityId>,
 
     /// The maximum number of entities that can be stored in this archetype
-    pub(crate) capacity: u32,
+    capacity: u32,
 
     /// The number of entities currently stored in this archetype
-    pub(crate) len: u32,
+    len: u32,
+}
+
+impl Archetype {
+    /// Returns a reference to the entity layout this archetype stores entities for
+    #[inline(always)]
+    pub fn entity_layout(&self) -> &EntityLayout {
+        &self.entity_layout
+    }
+
+    /// Returns the maximum number of entities that can be stored in this archetype
+    #[inline(always)]
+    pub fn capacity(&self) -> u32 {
+        self.capacity
+    }
+
+    /// Returns the current number of entities that can be stored in this archetype
+    #[inline(always)]
+    pub fn len(&self) -> u32 {
+        self.len
+    }
+
+    /// Returns the storage index map which maps `ComponentTypeId` the the index of the storage
+    /// within the archetype
+    #[inline(always)]
+    pub(crate) fn storage_indices(&self) -> &ComponentIdMap<usize> {
+        &self.storage_indices
+    }
+
+    /// Returns the internal array of component descriptions. Can be indexed by storage index
+    #[inline(always)]
+    pub(crate) fn component_descriptions(&self) -> &[ComponentTypeDescription] {
+        &self.component_descriptions
+    }
+
+    /// Returns the internal array of entity IDs that associates an entity slot with the ID it was
+    /// allocated with
+    #[inline(always)]
+    pub(crate) fn entity_ids_ref(&self) -> &[EntityId] {
+        &self.entity_ids
+    }
+
+    /// Returns the internal array of entity IDs that associates an entity slot with the ID it was
+    /// allocated with
+    #[inline(always)]
+    pub(crate) fn entity_ids_mut(&mut self) -> &mut [EntityId] {
+        &mut self.entity_ids
+    }
+
+    /// Returns the internal array of component storages
+    #[inline(always)]
+    pub(crate) fn storages_ref(&self) -> &[VirtualVec<u8>] {
+        &self.storages
+    }
+
+    /// Returns the internal array of component storages
+    #[inline(always)]
+    pub(crate) fn storages_mut(&mut self) -> &mut [VirtualVec<u8>] {
+        &mut self.storages
+    }
 }
 
 /// Internal implementations
@@ -256,8 +315,7 @@ impl Archetype {
         data: &[u8],
     ) {
         // Get the index of the type inside the archetype and lookup the size of the type
-        let type_index = self
-            .storage_indices.get(&component_type).copied().unwrap();
+        let type_index = self.storage_indices.get(&component_type).copied().unwrap();
         let type_size = self.component_descriptions[type_index].type_size;
 
         // Get the bounds of the component's data
@@ -279,11 +337,7 @@ impl Archetype {
         slot: ArchetypeEntityIndex,
         component_type: ComponentTypeId,
     ) {
-        let type_index = self
-            .storage_indices
-            .get(&component_type)
-            .copied()
-            .unwrap();
+        let type_index = self.storage_indices.get(&component_type).copied().unwrap();
         let type_size = self.component_descriptions[type_index].type_size;
         let drop_fn = self.component_descriptions[type_index].fn_drop;
 
