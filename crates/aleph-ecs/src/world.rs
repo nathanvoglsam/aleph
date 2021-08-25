@@ -221,23 +221,7 @@ impl World {
         let archetype_entity_base = archetype.allocate_entities(ids.len() as u32);
 
         // Copy the component data into the archetype buffers
-        for (i, comp) in layout.iter().enumerate() {
-            let source = source.data_for(comp);
-
-            // Get the size of the type we're copying from the buffers
-            let type_size = archetype.component_descriptions[i].type_size;
-
-            // Calculate the base index for where to start copying into the buffer
-            let base = archetype_entity_base.0.get() as usize;
-            let base = base * type_size;
-
-            // Get the target slice to copy into
-            let target = archetype.storages[i].as_slice_mut();
-            let target = &mut target[base..];
-
-            // Perform the actual copy
-            target.copy_from_slice(source);
-        }
+        archetype.copy_from_source(archetype_entity_base, source);
 
         // Allocate the entity IDs and write them into the output slice
         for (i, v) in ids.iter_mut().enumerate() {

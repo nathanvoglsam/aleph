@@ -28,8 +28,8 @@
 //
 
 use crate::{
-    ComponentIdMap, ComponentRegistry, ComponentTypeDescription, EntityId, EntityLayout,
-    EntityLayoutBuf,
+    ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, EntityId,
+    EntityLayout, EntityLayoutBuf,
 };
 use std::num::NonZeroU32;
 use virtual_buffer::VirtualVec;
@@ -171,6 +171,43 @@ impl Archetype {
         self.len = new_size;
 
         ArchetypeEntityIndex(base)
+    }
+
+    /// This function handles writing data from a generic component source into the correct buffers
+    /// for each component type. It starts the copy from the given `base` entity slot.
+    ///
+    /// # Warning
+    ///
+    /// This will not perform any checks to ensure existing data isn't overwritten, this is
+    /// effectively a wrapper around `memcpy`. It will, however, ensure that data is not written or
+    /// read out of bounds.
+    #[inline]
+    pub(crate) fn copy_from_source<T: ComponentSource>(
+        &mut self,
+        base: ArchetypeEntityIndex,
+        source: T,
+    ) {
+        // Copy the component data into the archetype buffers
+        for (i, comp) in source.entity_layout().iter().enumerate() {
+            let source = source.data_for(comp);
+
+            // Get the size of the type we're copying from the buffers
+            let type_size = self.component_descriptions[i].type_size;
+
+            // Calculate the base index for where to start copying into the buffer
+            let base = base.0.get() as usize;
+            let base = base * type_size;
+
+            // Calculate the end of the region to copy into
+            let end = base + source.len();
+
+            // Get the target slice to copy into
+            let target = self.storages[i].as_slice_mut();
+            let target = &mut target[base..end];
+
+            // Perform the actual copy
+            target.copy_from_slice(source);
+        }
     }
 
     /// Remove the entity at the given index.
