@@ -139,39 +139,6 @@ impl Archetype {
     pub fn len(&self) -> u32 {
         self.len
     }
-
-    /// Returns the storage index map which maps `ComponentTypeId` the the index of the storage
-    /// within the archetype
-    #[inline(always)]
-    pub(crate) fn storage_indices(&self) -> &ComponentIdMap<usize> {
-        &self.storage_indices
-    }
-
-    /// Returns the internal array of entity IDs that associates an entity slot with the ID it was
-    /// allocated with
-    #[inline(always)]
-    pub(crate) fn entity_ids_ref(&self) -> &[EntityId] {
-        &self.entity_ids
-    }
-
-    /// Returns the internal array of entity IDs that associates an entity slot with the ID it was
-    /// allocated with
-    #[inline(always)]
-    pub(crate) fn entity_ids_mut(&mut self) -> &mut [EntityId] {
-        &mut self.entity_ids
-    }
-
-    /// Returns the internal array of component storages
-    #[inline(always)]
-    pub(crate) fn storages_ref(&self) -> &[VirtualVec<u8>] {
-        &self.storages
-    }
-
-    /// Returns the internal array of component storages
-    #[inline(always)]
-    pub(crate) fn storages_mut(&mut self) -> &mut [VirtualVec<u8>] {
-        &mut self.storages
-    }
 }
 
 /// Internal implementations
@@ -526,6 +493,25 @@ impl Archetype {
 
         new_index
     }
+
+    /// Writes the entity ID into the ID list at the given slot.
+    ///
+    /// Used for initializing the ID when entities are inserted.
+    #[inline(always)]
+    pub(crate) fn update_entity_id(&mut self, slot: ArchetypeEntityIndex, id: EntityId) {
+        self.entity_ids[slot.0.get() as usize] = id;
+    }
+
+    /// Returns the starting address for the entity id list so it can be used by query iterators
+    #[inline(always)]
+    pub(crate) fn entity_id_base_ptr(&self) -> NonNull<EntityId> {
+        unsafe {
+            let ptr = self.entity_ids.as_ptr() as *mut EntityId;
+            let ptr = ptr.add(1);
+            let ptr = NonNull::new(ptr).unwrap();
+            ptr
+        }
+    }
 }
 
 impl Drop for Archetype {
@@ -572,12 +558,7 @@ pub unsafe extern "C" fn archetype_get_component_index(
     component: ComponentTypeId,
     out_index: &mut usize,
 ) -> u32 {
-    if let Some(index) = archetype
-        .as_ref()
-        .storage_indices()
-        .get(&component)
-        .copied()
-    {
+    if let Some(index) = archetype.as_ref().storage_indices.get(&component).copied() {
         *out_index = index;
         1
     } else {
@@ -589,7 +570,7 @@ pub unsafe extern "C" fn archetype_get_storage_by_index(
     mut archetype: NonNull<Archetype>,
     index: usize,
 ) -> NonNull<u8> {
-    let storage = archetype.as_mut().storages_mut()[index].as_slice_mut();
+    let storage = archetype.as_mut().storages[index].as_slice_mut();
     NonNull::new_unchecked(storage.as_mut_ptr())
 }
 

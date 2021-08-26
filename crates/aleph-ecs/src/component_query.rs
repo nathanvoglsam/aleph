@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::{Archetype, Component, ComponentTypeId, EntityLayoutBuf};
+use crate::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
+use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
 pub trait ComponentQuery {
@@ -85,15 +86,13 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentRead<T> {
 
     #[inline]
     unsafe fn create(archetype: NonNull<Archetype>) -> Self {
-        let index = archetype
+        let slot = NonZeroU32::new(1).unwrap();
+        let slot = ArchetypeEntityIndex(slot);
+        let ptr = archetype
             .as_ref()
-            .storage_indices()
-            .get(&ComponentTypeId::of::<T>())
-            .copied()
+            .get_component_ptr(slot, ComponentTypeId::of::<T>())
             .unwrap();
-        let ptr = archetype.as_ref().storages_ref()[index].as_ptr() as *const T;
-        let ptr = ptr.add(1);
-        let ptr = NonNull::new(ptr as *mut T).unwrap();
+        let ptr = NonNull::new(ptr.as_ptr() as *mut T).unwrap();
 
         Self(ptr)
     }
@@ -127,16 +126,14 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
     type Item = &'a mut T;
 
     #[inline]
-    unsafe fn create(mut archetype: NonNull<Archetype>) -> Self {
-        let index = archetype
-            .as_mut()
-            .storage_indices()
-            .get(&ComponentTypeId::of::<T>())
-            .copied()
+    unsafe fn create(archetype: NonNull<Archetype>) -> Self {
+        let slot = NonZeroU32::new(1).unwrap();
+        let slot = ArchetypeEntityIndex(slot);
+        let ptr = archetype
+            .as_ref()
+            .get_component_ptr(slot, ComponentTypeId::of::<T>())
             .unwrap();
-        let ptr = archetype.as_mut().storages_mut()[index].as_mut_ptr() as *mut T;
-        let ptr = ptr.add(1);
-        let ptr = NonNull::new(ptr).unwrap();
+        let ptr = NonNull::new(ptr.as_ptr() as *mut T).unwrap();
         Self(ptr)
     }
 

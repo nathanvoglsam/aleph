@@ -76,8 +76,7 @@ impl<'world, Q: ComponentQuery> Iterator for Query<'world, Q> {
                     if self.archetype_filter.next(self.world) {
                         let current = self.archetype_filter.current_ref(self.world).unwrap();
                         let remaining = current.len();
-                        let ids = &current.entity_ids_ref()[1] as *const EntityId as *mut EntityId;
-                        let ids = NonNull::new(ids).unwrap();
+                        let ids = current.entity_id_base_ptr();
                         let fetch = unsafe { Q::Fetch::create(NonNull::from(current)) };
                         self.state = QueryState::IteratingArchetype(remaining, ids, fetch);
                     } else {
