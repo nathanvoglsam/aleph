@@ -29,50 +29,40 @@
 
 extern crate aleph_virtual_buffer as virtual_buffer;
 
-mod archetype;
-mod archetype_filter;
-mod component;
-mod component_query;
-mod entity;
-mod entity_layout;
-mod entity_storage;
-mod generation;
-mod query;
-mod world;
-
-pub mod c_api;
+mod scheduler;
+pub mod world;
 
 #[cfg(test)]
 mod tests;
 
-pub use crate::archetype::Archetype;
-pub use crate::archetype::ArchetypeEntityIndex;
-pub use crate::archetype::ArchetypeIndex;
-pub use crate::archetype_filter::ArchetypeFilter;
-pub use crate::component::Component;
-pub use crate::component::ComponentIdMap;
-pub use crate::component::ComponentRegistry;
-pub use crate::component::ComponentSet;
-pub use crate::component::ComponentTypeDescription;
-pub use crate::component::ComponentTypeId;
-pub use crate::component::IdentityHasher;
-pub use crate::component_query::ComponentQuery;
-pub use crate::component_query::ComponentQueryItem;
-pub use crate::component_query::ComponentRead;
-pub use crate::component_query::ComponentWrite;
-pub use crate::component_query::Fetch;
-pub use crate::entity::EntityId;
-pub use crate::entity::EntityIndex;
-pub use crate::entity_layout::EntityLayout;
-pub use crate::entity_layout::EntityLayoutBuf;
-pub use crate::entity_storage::EntityEntry;
-pub use crate::entity_storage::EntityEntryData;
-pub use crate::entity_storage::EntityFreeListLink;
-pub use crate::entity_storage::EntityLocation;
-pub use crate::entity_storage::EntityStorage;
-pub use crate::generation::Generation;
-pub use crate::query::Query;
-pub use crate::world::ComponentSource;
-pub use crate::world::IntoComponentSource;
-pub use crate::world::World;
-pub use crate::world::WorldOptions;
+pub mod c_api {
+    //!
+    //! This module exposes a C friendly API for working with the ECS. Most functionality is unsafe as
+    //! none of the Rust type system tricks are available to C.
+    //!
+    //! These functions are intended to be utilized by language or script bindings to enable languages
+    //! other than Rust to interface with an ECS world. These provide the low-level building blocks for
+    //! building a more ergonomic interface in whichever language is being used.
+    //!
+    //! # Code Organization Details
+    //!
+    //! The functions are defined within private modules and re-exported here to avoid having to expose
+    //! data structure internals.
+    //!
+
+    pub use crate::world::archetype::archetype_get_capacity;
+    pub use crate::world::archetype::archetype_get_component_descriptions;
+    pub use crate::world::archetype::archetype_get_component_index;
+    pub use crate::world::archetype::archetype_get_entity_layout;
+    pub use crate::world::archetype::archetype_get_len;
+    pub use crate::world::archetype::archetype_get_storage_by_index;
+    pub use crate::world::archetype_filter::archetype_filter_current;
+    pub use crate::world::archetype_filter::archetype_filter_destroy;
+    pub use crate::world::archetype_filter::archetype_filter_new;
+    pub use crate::world::archetype_filter::archetype_filter_next;
+    pub use crate::world::world::world_add_component;
+    pub use crate::world::world::world_get_component_ptr;
+    pub use crate::world::world::world_has_component;
+    pub use crate::world::world::world_register;
+    pub use crate::world::world::world_remove_component;
+}

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::ComponentTypeId;
+use crate::world::ComponentTypeId;
 use std::borrow::Borrow;
 use std::convert::TryFrom;
 use std::iter::FromIterator;

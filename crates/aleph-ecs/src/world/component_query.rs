@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
+use crate::world::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
@@ -151,12 +151,12 @@ unsafe impl<'a, T: Component> Fetch<'a> for ComponentWrite<T> {
 #[macro_export]
 macro_rules! impl_query_for_tuple {
     ($($name: ident),*) => {
-        unsafe impl<'a, $($name: $crate::Fetch<'a>),*> $crate::Fetch<'a> for ($($name,)*) {
+        unsafe impl<'a, $($name: $crate::world::Fetch<'a>),*> $crate::world::Fetch<'a> for ($($name,)*) {
             type Item = ($($name::Item,)*);
 
             #[inline]
             #[allow(unused_variables, clippy::unused_unit)]
-            unsafe fn create(archetype: ::std::ptr::NonNull<$crate::Archetype>) -> Self {
+            unsafe fn create(archetype: ::std::ptr::NonNull<$crate::world::Archetype>) -> Self {
                 #[allow(non_snake_case)]
                 ($($name::create(archetype),)*)
             }
@@ -178,7 +178,7 @@ macro_rules! impl_query_for_tuple {
             }
         }
 
-        impl<$($name: $crate::ComponentQuery),*> $crate::ComponentQuery for ($($name,)*) {
+        impl<$($name: $crate::world::ComponentQuery),*> $crate::world::ComponentQuery for ($($name,)*) {
             type Fetch = ($($name::Fetch,)*);
 
             #[inline]

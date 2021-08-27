@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::World;
+use crate::world::World;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 

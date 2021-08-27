@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{
+use crate::world::{
     ComponentIdMap, ComponentRegistry, ComponentSource, ComponentTypeDescription, ComponentTypeId,
     EntityId, EntityLayout, EntityLayoutBuf,
 };

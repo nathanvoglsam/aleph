@@ -31,7 +31,7 @@
 //! Most structures in this module are repr(C) for FFI reasons
 //!
 
-use crate::Generation;
+use crate::world::Generation;
 use std::num::NonZeroU32;
 
 ///

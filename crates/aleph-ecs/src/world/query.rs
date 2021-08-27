@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{
+use crate::world::{
     ArchetypeFilter, ComponentQuery, ComponentQueryItem, EntityId, EntityLayout, EntityLayoutBuf,
     Fetch, World,
 };

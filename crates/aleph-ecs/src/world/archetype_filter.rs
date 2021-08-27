@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{Archetype, ArchetypeIndex, ComponentTypeId, EntityLayout, EntityLayoutBuf, World};
+use crate::world::{
+    Archetype, ArchetypeIndex, ComponentTypeId, EntityLayout, EntityLayoutBuf, World,
+};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 

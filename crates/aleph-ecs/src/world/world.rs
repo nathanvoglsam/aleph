@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::query::Query;
-use crate::{
+use crate::world::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
-    EntityLayoutBuf, EntityLocation, EntityStorage,
+    EntityLayoutBuf, EntityLocation, EntityStorage, Query,
 };
 use std::collections::HashMap;
 use std::num::NonZeroU32;
@@ -687,17 +686,17 @@ pub struct ArchetypeEdge {
 #[macro_export]
 macro_rules! impl_component_source_for_tuple {
     ($(($t: ident, $i: ident)), *) => {
-        unsafe impl<$($t: $crate::Component),+> $crate::ComponentSource for (u32, $crate::EntityLayoutBuf, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+) {
+        unsafe impl<$($t: $crate::world::Component),+> $crate::world::ComponentSource for (u32, $crate::world::EntityLayoutBuf, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+) {
             #[inline]
-            fn entity_layout(&self) -> &$crate::EntityLayout {
+            fn entity_layout(&self) -> &$crate::world::EntityLayout {
                 &self.1
             }
 
             #[inline(always)]
-            fn data_for(&self, component: $crate::ComponentTypeId) -> &[u8] {
+            fn data_for(&self, component: $crate::world::ComponentTypeId) -> &[u8] {
                 let (_, _, $($i,)+) = self;
                 $(
-                    if component == $crate::ComponentTypeId::of::<$t>() {
+                    if component == $crate::world::ComponentTypeId::of::<$t>() {
                         let data = $i.as_ptr() as *const u8;
                         let len = $i.len() * ::std::mem::size_of::<$t>();
                         return unsafe {
@@ -714,17 +713,17 @@ macro_rules! impl_component_source_for_tuple {
             }
         }
 
-        unsafe impl<$($t: $crate::Component),+ ,const SIZE: usize> $crate::ComponentSource for ($crate::EntityLayoutBuf, $([::std::mem::ManuallyDrop<$t>; SIZE],)+) {
+        unsafe impl<$($t: $crate::world::Component),+ ,const SIZE: usize> $crate::world::ComponentSource for ($crate::world::EntityLayoutBuf, $([::std::mem::ManuallyDrop<$t>; SIZE],)+) {
             #[inline]
-            fn entity_layout(&self) -> &$crate::EntityLayout {
+            fn entity_layout(&self) -> &$crate::world::EntityLayout {
                 &self.0
             }
 
             #[inline(always)]
-            fn data_for(&self, component: $crate::ComponentTypeId) -> &[u8] {
+            fn data_for(&self, component: $crate::world::ComponentTypeId) -> &[u8] {
                 let (_, $($i,)+) = self;
                 $(
-                    if component == $crate::ComponentTypeId::of::<$t>() {
+                    if component == $crate::world::ComponentTypeId::of::<$t>() {
                         let data = $i.as_ptr() as *const u8;
                         let len = $i.len() * ::std::mem::size_of::<$t>();
                         return unsafe {
@@ -746,8 +745,8 @@ macro_rules! impl_component_source_for_tuple {
 #[macro_export]
 macro_rules! impl_into_component_source_for_tuple {
     (($t0: ident, $i0: ident), $(($t: ident, $i: ident)), *) => {
-        unsafe impl<$t0: $crate::Component, $($t: $crate::Component),+> IntoComponentSource for (::std::vec::Vec<$t0>, $(::std::vec::Vec<$t>,)+) {
-            type Source = (u32, $crate::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+);
+        unsafe impl<$t0: $crate::world::Component, $($t: $crate::world::Component),+> $crate::world::IntoComponentSource for (::std::vec::Vec<$t0>, $(::std::vec::Vec<$t>,)+) {
+            type Source = (u32, $crate::world::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+);
 
             fn into_component_source(self) -> Self::Source {
                 let (mut $i0, $(mut $i,)+) = self;
@@ -762,10 +761,10 @@ macro_rules! impl_into_component_source_for_tuple {
                 assert!(len < (u32::MAX - 1) as usize);
                 let len = len as u32;
 
-                let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                let mut layout = $crate::world::EntityLayoutBuf::new();
+                layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
                 $(
-                    layout.add_component_type($crate::ComponentTypeId::of::<$t>());
+                    layout.add_component_type($crate::world::ComponentTypeId::of::<$t>());
                 )+
 
                 let $i0 = unsafe {
@@ -790,18 +789,18 @@ macro_rules! impl_into_component_source_for_tuple {
             }
         }
 
-        unsafe impl<$t0: $crate::Component, $($t: $crate::Component),+ , const SIZE: usize> IntoComponentSource for ([$t0; SIZE], $([$t; SIZE],)+) {
-            type Source = ($crate::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE], $([::std::mem::ManuallyDrop<$t>; SIZE],)+);
+        unsafe impl<$t0: $crate::world::Component, $($t: $crate::world::Component),+ , const SIZE: usize> $crate::world::IntoComponentSource for ([$t0; SIZE], $([$t; SIZE],)+) {
+            type Source = ($crate::world::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE], $([::std::mem::ManuallyDrop<$t>; SIZE],)+);
 
             fn into_component_source(self) -> Self::Source {
                 let ($i0, $($i,)+) = self;
 
                 assert!(SIZE < (u32::MAX - 1) as usize);
 
-                let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                let mut layout = $crate::world::EntityLayoutBuf::new();
+                layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
                 $(
-                    layout.add_component_type($crate::ComponentTypeId::of::<$t>());
+                    layout.add_component_type($crate::world::ComponentTypeId::of::<$t>());
                 )+
 
                 let $i0 = unsafe {
@@ -826,8 +825,8 @@ macro_rules! impl_into_component_source_for_tuple {
     };
 
     (($t0: ident, $i0: ident)) => {
-        unsafe impl<$t0: $crate::Component, > IntoComponentSource for (::std::vec::Vec<$t0>, ) {
-            type Source = (u32, $crate::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>);
+        unsafe impl<$t0: $crate::world::Component, > $crate::world::IntoComponentSource for (::std::vec::Vec<$t0>, ) {
+            type Source = (u32, $crate::world::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>);
 
             fn into_component_source(self) -> Self::Source {
                 let (mut $i0, ) = self;
@@ -837,8 +836,8 @@ macro_rules! impl_into_component_source_for_tuple {
                 assert!(len < (u32::MAX - 1) as usize);
                 let len = len as u32;
 
-                let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                let mut layout = $crate::world::EntityLayoutBuf::new();
+                layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
 
                 let $i0 = unsafe {
                     let ptr = $i0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
@@ -852,16 +851,16 @@ macro_rules! impl_into_component_source_for_tuple {
             }
         }
 
-        unsafe impl<$t0: $crate::Component, const SIZE: usize> IntoComponentSource for ([$t0; SIZE], ) {
-            type Source = ($crate::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE]);
+        unsafe impl<$t0: $crate::world::Component, const SIZE: usize> $crate::world::IntoComponentSource for ([$t0; SIZE], ) {
+            type Source = ($crate::world::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE]);
 
             fn into_component_source(self) -> Self::Source {
                 let ($i0, ) = self;
 
                 assert!(SIZE < (u32::MAX - 1) as usize);
 
-                let mut layout = $crate::EntityLayoutBuf::new();
-                layout.add_component_type($crate::ComponentTypeId::of::<$t0>());
+                let mut layout = $crate::world::EntityLayoutBuf::new();
+                layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
 
                 let $i0 = unsafe {
                     let ptr = &$i0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
