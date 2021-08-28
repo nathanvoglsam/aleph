@@ -29,7 +29,8 @@
 
 extern crate aleph_virtual_buffer as virtual_buffer;
 
-mod scheduler;
+pub mod scheduler;
+pub mod system;
 pub mod world;
 
 #[cfg(test)]
