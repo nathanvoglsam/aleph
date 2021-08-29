@@ -35,7 +35,7 @@ use std::any::Any;
 /// The interface expected of a [`System`] object.
 ///
 pub trait System: Any + Send + Sync + 'static {
-    /// An arbitrary type that can be passed into [`System::execute`]. Will almost always be `()`
+    /// An arbitrary type that can be passed into [`System::execute`].
     type In;
 
     /// The return type of the [`System::execute`] function.
@@ -53,10 +53,22 @@ pub trait System: Any + Send + Sync + 'static {
     /// exclusive accesses of other systems.
     fn declare_access(&mut self, access: &mut dyn AccessDescriptor);
 
-    /// This function will be called once by a scheduler to allow a system to load whatever
-    /// resources are needed from the world. This allows the system to prepare itself for any
-    /// subsequent calls to [`System::execute`].
-    fn build(&mut self, world: &mut World);
+    // /// This function will be called once by a scheduler before any call to [`System::execute`] to
+    // /// allow a system to load whatever resources are needed from the world. This allows the system
+    // /// to prepare itself for subsequent calls to [`System::execute`].
+    // ///
+    // /// # Safety
+    // ///
+    // /// This function is safe to call as it can not trigger UB on its own. Care must still be taken
+    // /// to use a [`System`] correctly. The [`World`] **must not** be mutated between a call to
+    // /// [`System::build`] and [`System::execute`].
+    // ///
+    // /// Implementations of [`System::execute`] are free to make this assumption, and **WILL** make
+    // /// this assumption. Some implementations may cache pointers into [`World`] that could be made
+    // /// dangling if the [`World`] is mutated and internal structures need to reallocate.
+    // ///
+    // /// [`System::build`] also **must not** mutate the [`World`] either.
+    // fn build(&mut self, world: &mut World);
 
     /// This function will be called by a scheduler during the scheduler's execution cycle at a
     /// point the scheduler decides. This function is where the system's actual code should go.

@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::{Resource, ResourceId};
+use crate::scheduler::{Label, Resource, ResourceId};
 use crate::world::{Component, ComponentTypeId, World};
 use std::any::{Any, TypeId};
 
@@ -99,6 +99,12 @@ pub trait AccessDescriptor {
 
     /// Caller uses this to declare a exclusive/write access to the given resource
     fn writes_resource_with_id(&mut self, resource: ResourceId);
+
+    /// Caller uses this to declare the label of another system that `self` should run before
+    fn runs_before_label(&mut self, system: Box<dyn Label>);
+
+    /// Caller uses this to declare the label of another system that `self` should run after
+    fn runs_after_label(&mut self, system: Box<dyn Label>);
 }
 
 impl dyn AccessDescriptor {
@@ -124,5 +130,15 @@ impl dyn AccessDescriptor {
     /// parameter to get the ID.
     pub fn writes_resource<T: Resource>(&mut self) {
         self.writes_resource_with_id(ResourceId::of::<T>());
+    }
+
+    /// Generic wrapper around [`AccessDescriptor::runs_before_label`] that handles boxing the label
+    pub fn runs_before(&mut self, system: impl Label) {
+        self.runs_before_label(Box::new(system))
+    }
+
+    /// Generic wrapper around [`AccessDescriptor::runs_after_label`] that handles boxing the label
+    pub fn runs_after(&mut self, system: impl Label) {
+        self.runs_after_label(Box::new(system))
     }
 }

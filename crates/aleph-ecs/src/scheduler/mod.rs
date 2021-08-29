@@ -57,6 +57,7 @@
 mod label;
 mod resource;
 mod stage;
+mod system_schedule;
 
 pub use label::DynEq;
 pub use label::DynHash;
@@ -65,6 +66,7 @@ pub use resource::Resource;
 pub use resource::ResourceId;
 pub use stage::AccessDescriptor;
 pub use stage::Stage;
+pub use system_schedule::SystemSchedule;
 
 use crate::system::System;
 use crate::world::World;
@@ -252,7 +254,7 @@ impl Stage for Schedule {
         if let Some(system) = self.run_criteria.system.as_mut() {
             // Initialize the criteria system if it hasn't already been
             if !self.run_criteria.initialized {
-                system.build(world);
+                //system.build(world);
                 self.run_criteria.initialized = true;
             }
 
