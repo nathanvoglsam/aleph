@@ -46,4 +46,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-virtual-buffer = {path = "../aleph-virtual-buffer", version = "0.1"}
+crossbeam = "0.8"
+rayon = "1.5"
 

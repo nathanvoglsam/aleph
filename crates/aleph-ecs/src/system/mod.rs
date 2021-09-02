@@ -84,6 +84,10 @@ pub trait System: Any + Send + Sync + 'static {
     ///     2. This system only runs in parallel with other systems that do not conflict with the
     ///        [`AccessDescriptor`]. It is the job of a scheduler to ensure at runtime that the
     ///        aliasing guarantees are upheld.
+    ///
+    /// It is an error for [`System::execute`] to access data in any way that does not match what
+    /// was declared with [`System::declare_access`]. Doing so will almost certainly cause undefined
+    /// behavior.
     unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out;
 
     /// A wrapper around [`System::execute`] that allows calling execute safely by enforcing that

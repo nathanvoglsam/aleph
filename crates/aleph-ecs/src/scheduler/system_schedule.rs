@@ -30,7 +30,12 @@
 use crate::scheduler::{AccessDescriptor, Label, ResourceId, Stage};
 use crate::system::System;
 use crate::world::{ComponentTypeId, World};
+use crossbeam::atomic::AtomicCell;
+use crossbeam::sync::WaitGroup;
+use rayon::prelude::*;
 use std::collections::{HashMap, HashSet};
+use std::hash::Hash;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Default)]
 pub struct SystemSchedule {
@@ -40,6 +45,9 @@ pub struct SystemSchedule {
     /// Maps a label to the system it was registered with. Accelerates looking up a system by label
     /// as well as accelerating duplicate label checks.
     system_label_map: HashMap<Box<dyn Label>, usize>,
+
+    /// This caches the list of root tasks where execution should start from
+    root_systems: Vec<usize>,
 
     /// A flag used to declare if the
     dirty: bool,
@@ -68,7 +76,8 @@ impl SystemSchedule {
     }
 
     pub fn run_once(&mut self, world: &mut World) {
-        self.check_dirty(world);
+        self.check_dirty();
+        self.execute(world);
     }
 }
 
@@ -79,18 +88,107 @@ impl Stage for SystemSchedule {
 }
 
 impl SystemSchedule {
+    fn execute(&mut self, world: &mut World) {
+        struct WorkerPayload {
+            wg: WaitGroup,
+        }
+
+        let wg = WaitGroup::new();
+
+        // SoA list of flags that denote whether the matching task has completed, indexed in
+        // parallel with self.systems
+        let done: Vec<AtomicBool> = (0..self.systems.len())
+            .into_iter()
+            .map(|_| AtomicBool::new(false))
+            .collect();
+
+        // SoA list of worker payloads, indexed in parallel with self.systems
+        let payloads: Vec<AtomicCell<Option<WorkerPayload>>> = (0..self.systems.len())
+            .into_iter()
+            .map(|_| {
+                let payload = WorkerPayload { wg: wg.clone() };
+                AtomicCell::new(Some(payload))
+            })
+            .collect();
+
+        // This handles executing a system, then recursively executing the successive tasks
+        fn exec_task(
+            systems: &[SystemBox],
+            done: &[AtomicBool],
+            payloads: &[AtomicCell<Option<WorkerPayload>>],
+            world: &World,
+            system_index: usize,
+        ) {
+            // Unpack the payload
+            let payload = payloads[system_index].take().unwrap();
+
+            // Unpack the wait group to explicitly drop it to "use" it
+            let wg = payload.wg;
+
+            // Pull the system from the cell, execute it, then return it to the cell
+            let mut system = systems[system_index].system.take().unwrap();
+            unsafe {
+                // SAFETY: This is unsafe to call in the event of unsafe implementations of System
+                //         that do not access world according to their access flags. If a System
+                //         does correctly respect its access declarations then the work scheduler
+                //         ensures that aliasing requirements will be upheld, making this safe to
+                //         call. This is only unsafe in the presence of other unsafe code.
+                system.execute((), world);
+            }
+            systems[system_index].system.store(Some(system));
+
+            // Update the "done" flag now that the system has executed
+            done[system_index].store(true, Ordering::Relaxed);
+
+            // Spawn new tasks for each successor system and execute it, if all of its predecessors
+            // have completed.
+            systems[system_index]
+                .edges
+                .successors
+                .par_iter()
+                .copied()
+                .for_each(|successor| {
+                    let successor: usize = successor;
+                    if systems[successor]
+                        .edges
+                        .predecessors
+                        .iter()
+                        .copied()
+                        .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
+                    {
+                        exec_task(systems, done, payloads, world, successor);
+                    }
+                });
+
+            // Explicitly drop the wait group to "use" it according to the compiler.
+            drop(wg);
+        }
+
+        // Kick off parallel tasks for each of the root systems
+        self.root_systems
+            .par_iter()
+            .copied()
+            .for_each(|system_index| {
+                exec_task(&self.systems, &done, &payloads, world, system_index);
+            });
+
+        // Wait for all of the systems to complete their execution
+        wg.wait();
+    }
+
     /// Checks if the system set is marked as dirty. If so it will automatically rebuild the
     /// execution graph as it will now be out of date compared to the
-    fn check_dirty(&mut self, world: &mut World) {
+    fn check_dirty(&mut self) {
         if self.dirty {
-            self.rebuild_graph(world);
+            self.rebuild_graph();
         }
     }
 
     /// Handles rebuilding the execution graph
-    fn rebuild_graph(&mut self, world: &mut World) {
+    fn rebuild_graph(&mut self) {
         self.clear_graph_nodes();
         self.collect_access_descriptors();
+        self.build_graph_nodes();
         self.dirty = false;
     }
 
@@ -99,7 +197,8 @@ impl SystemSchedule {
         self.systems.iter_mut().for_each(|v| {
             v.edges.predecessors.clear();
             v.edges.successors.clear();
-        })
+        });
+        self.root_systems.clear();
     }
 
     fn collect_access_descriptors(&mut self) {
@@ -109,7 +208,10 @@ impl SystemSchedule {
             {
                 let v = &mut self.systems[i];
                 v.access.clear();
-                v.system.declare_access(&mut v.access);
+
+                let mut system = v.system.take().unwrap();
+                system.declare_access(&mut v.access);
+                v.system.store(Some(system));
             }
 
             // Next we write the explicit "runs before" execution dependencies into the graph
@@ -141,7 +243,151 @@ impl SystemSchedule {
             self.systems[i].access.runs_after = runs_after;
         }
     }
+
+    fn build_graph_nodes(&mut self) {
+        let mut last_component_write: HashMap<ComponentTypeId, usize> = HashMap::new();
+        let mut last_component_reads: HashMap<ComponentTypeId, Vec<usize>> = HashMap::new();
+        let mut last_resource_write: HashMap<ResourceId, usize> = HashMap::new();
+        let mut last_resource_reads: HashMap<ResourceId, Vec<usize>> = HashMap::new();
+
+        for system_index in 0..self.systems.len() {
+            self.handle_writes(
+                &mut last_component_write,
+                &mut last_component_reads,
+                &mut last_resource_write,
+                &mut last_resource_reads,
+                system_index,
+            );
+
+            self.handle_reads(
+                &mut last_component_write,
+                &mut last_component_reads,
+                &mut last_resource_write,
+                &mut last_resource_reads,
+                system_index,
+            );
+        }
+
+        for (i, system) in self.systems.iter().enumerate() {
+            if system.edges.predecessors.is_empty() {
+                self.root_systems.push(i);
+            }
+        }
+    }
+
+    fn handle_writes(
+        &mut self,
+        last_component_write: &mut HashMap<ComponentTypeId, usize>,
+        last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
+        last_resource_write: &mut HashMap<ResourceId, usize>,
+        last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
+        system_index: usize,
+    ) {
+        let writes = std::mem::take(&mut self.systems[system_index].access.component_writes);
+        self.handle_writes_generic(
+            writes.iter().copied(),
+            last_component_write,
+            last_component_reads,
+            system_index,
+        );
+        self.systems[system_index].access.component_writes = writes;
+
+        let writes = std::mem::take(&mut self.systems[system_index].access.resource_writes);
+        self.handle_writes_generic(
+            writes.iter().copied(),
+            last_resource_write,
+            last_resource_reads,
+            system_index,
+        );
+        self.systems[system_index].access.resource_writes = writes;
+    }
+
+    fn handle_writes_generic<T: Copy + Eq + Hash>(
+        &mut self,
+        writes: impl Iterator<Item = T>,
+        last_write: &mut HashMap<T, usize>,
+        last_reads: &mut HashMap<T, Vec<usize>>,
+        system_index: usize,
+    ) {
+        for write in writes {
+            last_write.insert(write.clone(), system_index);
+
+            match last_reads.get_mut(&write) {
+                None => {}
+                Some(reads) => {
+                    for read in reads.iter().copied() {
+                        if read != system_index {
+                            self.systems[system_index].edges.predecessors.insert(read);
+                            self.systems[read].edges.successors.insert(system_index);
+                        }
+                    }
+                    reads.clear();
+                }
+            }
+        }
+    }
+
+    fn handle_reads(
+        &mut self,
+        last_component_write: &mut HashMap<ComponentTypeId, usize>,
+        last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
+        last_resource_write: &mut HashMap<ResourceId, usize>,
+        last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
+        system_index: usize,
+    ) {
+        let reads = std::mem::take(&mut self.systems[system_index].access.component_reads);
+        self.handle_reads_generic(
+            reads.iter().copied(),
+            last_component_write,
+            last_component_reads,
+            system_index,
+        );
+        self.systems[system_index].access.component_reads = reads;
+
+        let reads = std::mem::take(&mut self.systems[system_index].access.resource_reads);
+        self.handle_reads_generic(
+            reads.iter().copied(),
+            last_resource_write,
+            last_resource_reads,
+            system_index,
+        );
+        self.systems[system_index].access.resource_reads = reads;
+    }
+
+    fn handle_reads_generic<T: Copy + Eq + Hash>(
+        &mut self,
+        reads: impl Iterator<Item = T>,
+        last_write: &mut HashMap<T, usize>,
+        last_reads: &mut HashMap<T, Vec<usize>>,
+        system_index: usize,
+    ) {
+        for read in reads {
+            match last_reads.get_mut(&read) {
+                None => {
+                    let mut vec = Vec::with_capacity(4);
+                    vec.push(system_index);
+                    last_reads.insert(read, vec);
+                }
+                Some(vec) => {
+                    vec.push(system_index);
+                }
+            }
+
+            match last_write.get(&read).copied() {
+                None => {}
+                Some(write) => {
+                    if write != system_index {
+                        self.systems[system_index].edges.predecessors.insert(write);
+                        self.systems[write].edges.successors.insert(system_index);
+                    }
+                }
+            }
+        }
+    }
 }
+
+// Type alias for the thread safe slot a system is stored in. The type is very verbose to write
+type SystemCell = AtomicCell<Option<Box<dyn System<In = (), Out = ()>>>>;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
@@ -150,8 +396,8 @@ struct SystemBox {
     /// The label of the system
     label: Box<dyn Label>,
 
-    /// The boxed system
-    system: Box<dyn System<In = (), Out = ()>>,
+    /// The boxed system, stored in an atomic cell so it can be sent to other threads
+    system: SystemCell,
 
     /// The accesses declared by the system
     access: SystemAccessDescriptor,
@@ -162,9 +408,10 @@ struct SystemBox {
 
 impl SystemBox {
     pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
+        assert!(SystemCell::is_lock_free());
         Self {
             label,
-            system: Box::new(system),
+            system: SystemCell::new(Some(Box::new(system))),
             access: SystemAccessDescriptor::default(),
             edges: GraphEdges::default(),
         }
@@ -217,44 +464,6 @@ impl SystemAccessDescriptor {
         self.resource_writes.clear();
         self.runs_before.clear();
         self.runs_after.clear();
-    }
-}
-
-impl SystemAccessDescriptor {
-    fn is_access_disjoint(&self, other: &Self) -> bool {
-        self.is_component_access_disjoint(other) && self.is_resource_access_disjoint(other)
-    }
-
-    fn is_component_access_disjoint(&self, other: &Self) -> bool {
-        // Parallel access is only safe if self does not read any components other is writing
-        let a = self.component_reads.is_disjoint(&other.component_writes);
-
-        // Parallel access is only safe if self does not write any components other is writing
-        let b = self.component_writes.is_disjoint(&other.component_writes);
-
-        // Parallel access is only safe if self does not write any components other is reading
-        let c = self.component_writes.is_disjoint(&other.component_reads);
-
-        // It is safe for self.component_reads and other.component_reads to intersect
-
-        // Parallel access is only safe if all the above conditions are met
-        a && b && c
-    }
-
-    fn is_resource_access_disjoint(&self, other: &Self) -> bool {
-        // Parallel access is only safe if self does not read any resources other is writing
-        let a = self.resource_reads.is_disjoint(&other.resource_writes);
-
-        // Parallel access is only safe if self does not write any resources other is writing
-        let b = self.resource_writes.is_disjoint(&other.resource_writes);
-
-        // Parallel access is only safe if self does not write any resources other is reading
-        let c = self.resource_writes.is_disjoint(&other.resource_reads);
-
-        // It is safe for self.resource_reads and other.resource_reads to intersect
-
-        // Parallel access is only safe if all the above conditions are met
-        a && b && c
     }
 }
 
