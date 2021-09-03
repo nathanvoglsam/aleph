@@ -29,7 +29,7 @@
 
 use crate::scheduler::{AccessDescriptor, Label, ResourceId, Stage};
 use crate::system::System;
-use crate::world::{ComponentTypeId, World};
+use crate::world::{ComponentRegistry, ComponentTypeId, World};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
@@ -422,9 +422,9 @@ impl SystemBox {
     pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
         assert!(SystemCell::is_lock_free());
         Self {
-            label,
+            label: label.clone(),
             system: SystemCell::new(Some(Box::new(system))),
-            access: SystemAccessDescriptor::default(),
+            access: SystemAccessDescriptor::new(label),
             edges: GraphEdges::default(),
         }
     }
@@ -447,8 +447,10 @@ struct GraphEdges {
 ///
 /// Internal container for storing the sets of resource accesses of a system
 ///
-#[derive(Default)]
 struct SystemAccessDescriptor {
+    /// The label of the system we're collecting access for currently
+    label: Box<dyn Label>,
+
     /// Stores all component types that are read by a given system
     component_reads: HashSet<ComponentTypeId>,
 
@@ -469,6 +471,17 @@ struct SystemAccessDescriptor {
 }
 
 impl SystemAccessDescriptor {
+    fn new(label: Box<dyn Label>) -> Self {
+        Self {
+            label,
+            component_reads: Default::default(),
+            component_writes: Default::default(),
+            resource_reads: Default::default(),
+            resource_writes: Default::default(),
+            runs_before: Default::default(),
+            runs_after: Default::default(),
+        }
+    }
     fn clear(&mut self) {
         self.component_reads.clear();
         self.component_writes.clear();
@@ -481,19 +494,63 @@ impl SystemAccessDescriptor {
 
 impl AccessDescriptor for SystemAccessDescriptor {
     fn reads_component_with_id(&mut self, component: ComponentTypeId) {
-        self.component_reads.insert(component);
+        assert!(
+            !self.component_writes.contains(&resource),
+            "System \"{:#?}\" wants shared for component \"{:?}\" that is already being used",
+            self.label,
+            resource
+        );
+        assert!(
+            self.component_reads.insert(component),
+            "System \"{:#?}\" requested shared access for component \"{:?}\" more than once",
+            self.label,
+            component
+        );
     }
 
     fn writes_component_with_id(&mut self, component: ComponentTypeId) {
-        self.component_writes.insert(component);
+        assert!(
+            !self.component_reads.contains(&resource),
+            "System \"{:#?}\" wants exclusive for component \"{:?}\" that is already being used",
+            self.label,
+            resource
+        );
+        assert!(
+            self.component_writes.insert(component),
+            "System \"{:#?}\" requested exclusive access for component \"{:?}\" more than once",
+            self.label,
+            component
+        );
     }
 
     fn reads_resource_with_id(&mut self, resource: ResourceId) {
-        self.resource_reads.insert(resource);
+        assert!(
+            !self.resource_writes.contains(&resource),
+            "System \"{:#?}\" wants shared for resource \"{:?}\" that is already being used",
+            self.label,
+            resource
+        );
+        assert!(
+            self.resource_reads.insert(resource),
+            "System \"{:#?}\" requested shared access for resource \"{:?}\" more than once",
+            self.label,
+            resource
+        );
     }
 
     fn writes_resource_with_id(&mut self, resource: ResourceId) {
-        self.resource_writes.insert(resource);
+        assert!(
+            !self.resource_reads.contains(&resource),
+            "System \"{:#?}\" wants exclusive for resource \"{:?}\" that is already being used",
+            self.label,
+            resource
+        );
+        assert!(
+            self.resource_writes.insert(resource),
+            "System \"{:#?}\" requested exclusive access for resource \"{:?}\" more than once",
+            self.label,
+            resource
+        );
     }
 
     fn runs_before_label(&mut self, system: Box<dyn Label>) {
