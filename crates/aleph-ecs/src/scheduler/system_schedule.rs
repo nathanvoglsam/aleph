@@ -89,10 +89,22 @@ impl Stage for SystemSchedule {
 
 impl SystemSchedule {
     fn execute(&mut self, world: &mut World) {
+        /// Struct that holds data that needs ownership transferred to the thread that executes the
+        /// matching system
         struct WorkerPayload {
             wg: WaitGroup,
         }
 
+        /// Alias for the container a payload is sent to other threads in
+        ///
+        /// A Box is used to ensure the time in the AtomicCell is pointer sized so it can be sent
+        /// using atomic instructions instead of locks
+        type PayloadCell = AtomicCell<Option<Box<WorkerPayload>>>;
+
+        // Treat a non lock free implementation as an error
+        assert!(PayloadCell::is_lock_free());
+
+        // Root wait group that forces the function to wait for all systems to complete for exiting
         let wg = WaitGroup::new();
 
         // SoA list of flags that denote whether the matching task has completed, indexed in
@@ -103,11 +115,11 @@ impl SystemSchedule {
             .collect();
 
         // SoA list of worker payloads, indexed in parallel with self.systems
-        let payloads: Vec<AtomicCell<Option<WorkerPayload>>> = (0..self.systems.len())
+        let payloads: Vec<PayloadCell> = (0..self.systems.len())
             .into_iter()
             .map(|_| {
                 let payload = WorkerPayload { wg: wg.clone() };
-                AtomicCell::new(Some(payload))
+                AtomicCell::new(Some(Box::new(payload)))
             })
             .collect();
 
@@ -115,7 +127,7 @@ impl SystemSchedule {
         fn exec_task(
             systems: &[SystemBox],
             done: &[AtomicBool],
-            payloads: &[AtomicCell<Option<WorkerPayload>>],
+            payloads: &[PayloadCell],
             world: &World,
             system_index: usize,
         ) {
