@@ -28,7 +28,7 @@
 //
 
 use crate::scheduler::{AccessDescriptor, Label, ResourceId, Stage};
-use crate::system::System;
+use crate::system::{IntoSystem, System};
 use crate::world::{ComponentTypeId, World};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
@@ -54,7 +54,7 @@ pub struct SystemSchedule {
 }
 
 impl SystemSchedule {
-    pub fn add_system<S: System<In = (), Out = ()>>(
+    pub fn add_system<Param, S: IntoSystem<(), (), Param>>(
         &mut self,
         label: impl Label,
         system: S,
@@ -65,7 +65,8 @@ impl SystemSchedule {
 
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
-        self.systems.push(SystemBox::new(label.clone(), system));
+        self.systems
+            .push(SystemBox::new(label.clone(), system.system()));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
@@ -398,8 +399,14 @@ impl SystemSchedule {
     }
 }
 
-// Type alias for the thread safe slot a system is stored in. The type is very verbose to write
-type SystemCell = AtomicCell<Option<Box<dyn System<In = (), Out = ()>>>>;
+/// Type alias for a boxed system trait object
+type BoxedSystem = Box<dyn System<In = (), Out = ()>>;
+
+/// Type alias for the thread safe slot a system is stored in. The type is very verbose to write.
+///
+/// We need to double box the system to make sizeof(Option<Box<BoxedSystem>>) == 8 so atomics can
+/// be used. Otherwise global locks would be used to send the systems and that's bad
+type SystemCell = AtomicCell<Option<Box<BoxedSystem>>>;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
@@ -419,7 +426,7 @@ impl SystemBox {
     pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
         assert!(SystemCell::is_lock_free());
         Self {
-            system: SystemCell::new(Some(Box::new(system))),
+            system: SystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),
             edges: GraphEdges::default(),
         }

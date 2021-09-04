@@ -32,7 +32,7 @@ use crate::world::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, 
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
 
-pub trait ComponentQuery {
+pub trait ComponentQuery: Send + Sync {
     type Fetch: for<'a> Fetch<'a>;
 
     fn add_to_layout(layout: &mut EntityLayoutBuf);

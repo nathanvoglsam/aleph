@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::world::World;
+use crate::scheduler::SystemSchedule;
+use crate::system::{IntoSystem, Res, ResMut};
+use crate::world::{Query, World};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
@@ -398,4 +400,60 @@ fn query_test() {
 
         assert!(query.next().is_none());
     }
+}
+
+#[test]
+fn system_schedule_test() {
+    let mut world = World::new(Default::default()).unwrap();
+
+    world.register::<Position>();
+    world.register::<Scale>();
+    world.register::<Mesh>();
+
+    world.add_resource::<usize>(21);
+
+    let scale_ids = world.extend((
+        [Position::new(1.0, 2.0), Position::new(3.0, 4.0)],
+        [Scale::new(5.0, 6.0), Scale::new(7.0, 8.0)],
+    ));
+
+    let mesh_ids = world.extend((
+        [Position::new(1.5, 2.5), Position::new(3.5, 4.5)],
+        [Mesh::new(5), Mesh::new(6)],
+    ));
+
+    fn system_fn_1(v: (Query<(&Position, &Scale)>,)) {
+        for (id, (_pos, _scale)) in v.0 {
+            assert!(!id.is_null());
+        }
+    }
+
+    fn system_fn_2(v: Query<(&mut Position, &mut Mesh)>, mut r: ResMut<usize>) {
+        for (id, (_pos, _mesh)) in v {
+            assert!(!id.is_null());
+        }
+        assert_eq!(*r, 21);
+        *r = 56;
+    }
+
+    let system_closure_1 = move |v: Query<(&Position, &Scale)>| {
+        for (id, (_pos, _scale)) in v {
+            assert!(scale_ids.contains(&id));
+        }
+    };
+
+    let system_closure_2 = move |v: (Query<(&Position, &Mesh)>, Res<usize>)| {
+        for (id, (_pos, _mesh)) in v.0 {
+            assert!(mesh_ids.contains(&id));
+        }
+        assert_eq!(*v.1, 56);
+    };
+
+    let mut system_schedule = SystemSchedule::default();
+    system_schedule.add_system("SYSTEM_1", system_fn_1);
+    system_schedule.add_system("SYSTEM_2", system_fn_2.system());
+    system_schedule.add_system("SYSTEM_3", system_closure_1);
+    system_schedule.add_system("SYSTEM_4", system_closure_2.system());
+
+    system_schedule.run_once(&mut world);
 }

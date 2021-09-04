@@ -27,6 +27,18 @@
 // SOFTWARE.
 //
 
+mod system_access;
+
+pub use system_access::QueryState;
+pub use system_access::Res;
+pub use system_access::ResMut;
+pub use system_access::ResMutState;
+pub use system_access::ResState;
+pub use system_access::SystemParam;
+pub use system_access::SystemParamFetch;
+pub use system_access::SystemParamFunction;
+pub use system_access::SystemParamState;
+
 use crate::scheduler::AccessDescriptor;
 use crate::world::World;
 use std::any::Any;
@@ -96,5 +108,22 @@ pub trait System: Any + Send + Sync + 'static {
         // SAFETY: This is safe per the requirements of context 1 as documented on the execute
         //         function. See the documentation of System::execute for more info.
         unsafe { self.execute(input, world) }
+    }
+}
+
+/// Generic trait that handles transforming one type into another that implements `System`
+pub trait IntoSystem<In, Out, Params> {
+    type System: System<In = In, Out = Out>;
+
+    fn system(self) -> Self::System;
+}
+
+pub struct AlreadyWasSystem;
+
+// Systems implicitly implement IntoSystem
+impl<In, Out, Sys: System<In = In, Out = Out>> IntoSystem<In, Out, AlreadyWasSystem> for Sys {
+    type System = Sys;
+    fn system(self) -> Sys {
+        self
     }
 }

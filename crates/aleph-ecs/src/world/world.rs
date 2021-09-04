@@ -27,11 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::scheduler::{Resource, ResourceId};
 use crate::world::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
     EntityLayoutBuf, EntityLocation, EntityStorage, Query,
 };
+use std::any::Any;
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
@@ -159,6 +162,8 @@ pub struct World {
 
     /// Holds the edges of the archetype graph. Maps component ID to the links.
     archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
+
+    resources: HashMap<ResourceId, UnsafeCell<Box<dyn Any>>>,
 }
 
 ///
@@ -193,6 +198,7 @@ impl World {
             archetype_map,
             archetypes,
             archetype_edges,
+            resources: Default::default(),
         };
 
         Ok(out)
@@ -207,6 +213,11 @@ impl World {
     #[inline]
     pub fn register<T: Component>(&mut self) -> ComponentTypeDescription {
         self.component_registry.register::<T>()
+    }
+
+    pub fn add_resource<T: Resource>(&mut self, r: T) {
+        let cell: UnsafeCell<Box<dyn Any>> = UnsafeCell::new(Box::new(r));
+        assert!(self.resources.insert(ResourceId::of::<T>(), cell).is_none());
     }
 
     pub fn extend<T: IntoComponentSource>(&mut self, source: T) -> Vec<EntityId> {
@@ -517,6 +528,9 @@ impl World {
     }
 }
 
+unsafe impl Send for World {}
+unsafe impl Sync for World {}
+
 /// Crate private function implementations
 impl World {
     /// Returns the internal archetype list
@@ -527,6 +541,16 @@ impl World {
     /// Returns the internal archetype list
     pub(crate) fn archetypes_mut(&mut self) -> &mut [Archetype] {
         &mut self.archetypes
+    }
+
+    pub(crate) unsafe fn get_resource_ref_unchecked<T: Resource>(&self) -> Option<&T> {
+        let resource = self.resources.get(&ResourceId::of::<T>())?;
+        (*resource.get()).downcast_ref::<T>()
+    }
+
+    pub(crate) unsafe fn get_resource_mut_unchecked<T: Resource>(&self) -> Option<&mut T> {
+        let resource = self.resources.get(&ResourceId::of::<T>())?;
+        (*resource.get()).downcast_mut::<T>()
     }
 }
 
