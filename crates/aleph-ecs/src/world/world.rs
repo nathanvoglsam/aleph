@@ -163,7 +163,8 @@ pub struct World {
     /// Holds the edges of the archetype graph. Maps component ID to the links.
     archetype_edges: Vec<ComponentIdMap<ArchetypeEdge>>,
 
-    resources: HashMap<ResourceId, UnsafeCell<Box<dyn Any>>>,
+    /// The table of all resources registered with the world, keyed by the type id of the resource
+    resources: HashMap<ResourceId, UnsafeCell<Box<dyn Any + Send + Sync + 'static>>>,
 }
 
 ///
@@ -216,7 +217,7 @@ impl World {
     }
 
     pub fn add_resource<T: Resource>(&mut self, r: T) {
-        let cell: UnsafeCell<Box<dyn Any>> = UnsafeCell::new(Box::new(r));
+        let cell = UnsafeCell::new(Box::new(r));
         assert!(self.resources.insert(ResourceId::of::<T>(), cell).is_none());
     }
 
