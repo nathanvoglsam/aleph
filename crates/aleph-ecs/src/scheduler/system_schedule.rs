@@ -65,8 +65,7 @@ impl SystemSchedule {
 
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
-        self.systems
-            .push(SystemBox::new(label.clone(), system));
+        self.systems.push(SystemBox::new(label.clone(), system));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)

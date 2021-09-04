@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::scheduler::AccessDescriptor;
 use crate::world::{Archetype, ArchetypeEntityIndex, Component, ComponentTypeId, EntityLayoutBuf};
 use std::num::NonZeroU32;
 use std::ptr::NonNull;
@@ -35,6 +36,8 @@ pub trait ComponentQuery {
     type Fetch: for<'a> Fetch<'a>;
 
     fn add_to_layout(layout: &mut EntityLayoutBuf);
+
+    fn declare_access(access: &mut dyn AccessDescriptor);
 }
 
 /// Type of values yielded by a query
@@ -76,6 +79,10 @@ impl<'a, T: Component> ComponentQuery for &'a T {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
     }
+
+    fn declare_access(access: &mut dyn AccessDescriptor) {
+        access.reads_component::<T>();
+    }
 }
 
 /// Internal type that implements `Fetch` for shared references
@@ -116,6 +123,10 @@ impl<'a, T: Component> ComponentQuery for &'a mut T {
         if layout.add_component_type(ComponentTypeId::of::<T>()) {
             panic!("Trying to lookup the same component multiple times within the same query");
         }
+    }
+
+    fn declare_access(access: &mut dyn AccessDescriptor) {
+        access.writes_component::<T>();
     }
 }
 
@@ -182,8 +193,13 @@ macro_rules! impl_query_for_tuple {
             type Fetch = ($($name::Fetch,)*);
 
             #[inline]
-            fn add_to_layout(layout: &mut EntityLayoutBuf) {
+            fn add_to_layout(layout: &mut $crate::world::EntityLayoutBuf) {
                 ($($name::add_to_layout(layout),)*);
+            }
+
+            #[inline]
+            fn declare_access(access: &mut dyn $crate::scheduler::AccessDescriptor) {
+                ($($name::declare_access(access),)*);
             }
         }
     };

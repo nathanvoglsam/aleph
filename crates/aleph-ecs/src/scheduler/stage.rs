@@ -87,7 +87,7 @@ impl dyn Stage {
 /// A task would use this interface to declare the resources it accesses and the scheduler will then
 /// use the declared accesses to schedule tasks in parallel so their access conditions are met.
 ///
-pub trait AccessDescriptor {
+pub trait AccessDescriptor: 'static {
     /// Caller uses this to declare a shared/read access to the given component type
     fn reads_component_with_id(&mut self, component: ComponentTypeId);
 
