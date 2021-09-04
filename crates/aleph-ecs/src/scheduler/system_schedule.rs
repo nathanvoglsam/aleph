@@ -29,7 +29,7 @@
 
 use crate::scheduler::{AccessDescriptor, Label, ResourceId, Stage};
 use crate::system::System;
-use crate::world::{ComponentRegistry, ComponentTypeId, World};
+use crate::world::{ComponentTypeId, World};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
@@ -65,7 +65,8 @@ impl SystemSchedule {
 
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
-        self.systems.push(SystemBox::new(label.clone(), system));
+        self.systems
+            .push(SystemBox::new(label.clone(), system));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
@@ -405,9 +406,6 @@ type SystemCell = AtomicCell<Option<Box<dyn System<In = (), Out = ()>>>>;
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
 ///
 struct SystemBox {
-    /// The label of the system
-    label: Box<dyn Label>,
-
     /// The boxed system, stored in an atomic cell so it can be sent to other threads
     system: SystemCell,
 
@@ -422,7 +420,6 @@ impl SystemBox {
     pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
         assert!(SystemCell::is_lock_free());
         Self {
-            label: label.clone(),
             system: SystemCell::new(Some(Box::new(system))),
             access: SystemAccessDescriptor::new(label),
             edges: GraphEdges::default(),
@@ -495,10 +492,10 @@ impl SystemAccessDescriptor {
 impl AccessDescriptor for SystemAccessDescriptor {
     fn reads_component_with_id(&mut self, component: ComponentTypeId) {
         assert!(
-            !self.component_writes.contains(&resource),
+            !self.component_writes.contains(&component),
             "System \"{:#?}\" wants shared for component \"{:?}\" that is already being used",
             self.label,
-            resource
+            component
         );
         assert!(
             self.component_reads.insert(component),
@@ -510,10 +507,10 @@ impl AccessDescriptor for SystemAccessDescriptor {
 
     fn writes_component_with_id(&mut self, component: ComponentTypeId) {
         assert!(
-            !self.component_reads.contains(&resource),
+            !self.component_reads.contains(&component),
             "System \"{:#?}\" wants exclusive for component \"{:?}\" that is already being used",
             self.label,
-            resource
+            component
         );
         assert!(
             self.component_writes.insert(component),
