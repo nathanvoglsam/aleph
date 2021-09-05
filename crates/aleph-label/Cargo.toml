@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-ecs"
-version = "0.1.0"
+name = "aleph-label"
+version = "1.0.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "Aleph's ecs"
+description = "A generic mechanism for user defined identifier types"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-ecs/"
+documentation = "https://docs.rs/aleph-label/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "vulkan", "game"]
 ## TODO: categories = ["game-engines"]
@@ -45,8 +45,3 @@ edition = "2018"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-aleph-virtual-buffer = {path = "../aleph-virtual-buffer", version = "0.1"}
-aleph-label = {path = "../aleph-label", version = "1"}
-crossbeam = "0.8"
-rayon = "1.5"
-

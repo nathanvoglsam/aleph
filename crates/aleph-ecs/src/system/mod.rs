@@ -39,8 +39,9 @@ pub use system_access::SystemParamFetch;
 pub use system_access::SystemParamFunction;
 pub use system_access::SystemParamState;
 
-use crate::scheduler::{AccessDescriptor, Label};
+use crate::scheduler::AccessDescriptor;
 use crate::world::World;
+use aleph_label::Label;
 use std::any::Any;
 
 // ============================================================================================== //

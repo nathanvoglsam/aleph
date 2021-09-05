@@ -54,19 +54,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-mod label;
 mod stage;
 mod system_schedule;
 
-pub use label::DynEq;
-pub use label::DynHash;
-pub use label::Label;
 pub use stage::AccessDescriptor;
 pub use stage::Stage;
 pub use system_schedule::SystemSchedule;
 
 use crate::system::{IntoSystem, System};
 use crate::world::World;
+use aleph_label::Label;
 use std::collections::HashMap;
 
 ///

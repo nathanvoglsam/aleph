@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::Label;
 use crate::world::{Component, ComponentTypeId, Resource, ResourceId, World};
+use aleph_label::Label;
 use std::any::{Any, TypeId};
 
 ///

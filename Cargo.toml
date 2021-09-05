@@ -48,6 +48,7 @@ members = [
     "crates/aleph-engine",
     "crates/aleph-interfaces",
     "crates/aleph-ktx",
+    "crates/aleph-label",
     "crates/aleph-log",
     "crates/aleph-logger",
     "crates/aleph-pix",
