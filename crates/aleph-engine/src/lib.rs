@@ -32,6 +32,7 @@
 // =================================================================================================
 
 // Re-export useful crates
+pub extern crate aleph_core as core;
 pub extern crate aleph_egui as egui;
 pub extern crate aleph_log as log;
 pub extern crate aleph_target as target;
@@ -92,6 +93,8 @@ impl EngineBuilder {
     }
 
     pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
+        self.plugin(core::PluginCore::new());
+
         self.platform(headless);
 
         // This only makes sense to load on platforms we have a renderer for, and only if we're not

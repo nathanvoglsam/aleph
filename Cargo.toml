@@ -62,6 +62,7 @@ members = [
     "crates/aleph-virtual-buffer",
     "crates/aleph-vk-format",
     "crates/aleph-windows-raw",
+    "crates/plugins/aleph-core",
     "crates/plugins/aleph-egui",
     "crates/plugins/aleph-headless",
     "crates/plugins/aleph-render",

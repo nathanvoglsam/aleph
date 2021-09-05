@@ -27,13 +27,12 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+extern crate aleph_interfaces as interfaces;
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
-pub mod schedule;
-pub mod world;
+mod core_stage;
+mod plugin;
+mod schedule_provider;
+mod world_provider;
 
-mod utils;
+pub use core_stage::CoreStage;
+pub use plugin::PluginCore;

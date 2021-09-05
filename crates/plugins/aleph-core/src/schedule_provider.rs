@@ -27,13 +27,48 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+use crossbeam::atomic::AtomicCell;
+use interfaces::schedule::{IScheduleCell, IScheduleProvider, Schedule, ScheduleScope};
+use std::sync::Arc;
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
-pub mod schedule;
-pub mod world;
+pub struct ScheduleProvider {
+    schedule: Arc<dyn IScheduleCell>,
+}
 
-mod utils;
+impl ScheduleProvider {
+    pub fn new(schedule: Schedule) -> Self {
+        let schedule = Box::new(schedule);
+        let schedule = AtomicCell::new(Some(schedule));
+        let schedule = ScheduleCell { cell: schedule };
+        Self {
+            schedule: Arc::new(schedule),
+        }
+    }
+}
+
+impl IScheduleProvider for ScheduleProvider {
+    fn get(&self) -> Arc<dyn IScheduleCell> {
+        self.schedule.clone()
+    }
+}
+
+interfaces::any::declare_interfaces!(ScheduleProvider, [IScheduleProvider]);
+
+/// Internal implementation of IScheduleCell
+struct ScheduleCell {
+    cell: AtomicCell<Option<Box<Schedule>>>,
+}
+
+impl IScheduleCell for ScheduleCell {
+    fn take(&self) -> Box<Schedule> {
+        self.cell.take().unwrap()
+    }
+
+    fn store(&self, schedule: Box<Schedule>) {
+        assert!(self.cell.swap(Some(schedule)).is_none());
+    }
+
+    fn get(&self) -> ScheduleScope {
+        ScheduleScope::take_from(self)
+    }
+}

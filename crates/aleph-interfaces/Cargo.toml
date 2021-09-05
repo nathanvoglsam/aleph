@@ -60,3 +60,7 @@ thiserror = "1"
 [dependencies.aleph-any]
 path = "../aleph-any"
 version = "0.1"
+
+[dependencies.aleph-ecs]
+path = "../aleph-ecs"
+version = "0.1"

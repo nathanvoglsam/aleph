@@ -27,13 +27,50 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
+use crossbeam::atomic::AtomicCell;
+use interfaces::world::{IWorldCell, IWorldProvider, World, WorldOptions, WorldScope};
+use std::sync::Arc;
 
-pub mod archive;
-pub mod asset;
-pub mod platform;
-pub mod plugin;
-pub mod schedule;
-pub mod world;
+pub struct WorldProvider {
+    world: Arc<dyn IWorldCell>,
+}
 
-mod utils;
+impl WorldProvider {
+    pub fn new() -> Self {
+        let world = World::new(WorldOptions::default()).unwrap();
+        let world = Box::new(world);
+        let world = WorldCell {
+            cell: AtomicCell::new(Some(world)),
+        };
+        Self {
+            world: Arc::new(world),
+        }
+    }
+}
+
+impl IWorldProvider for WorldProvider {
+    fn get(&self) -> Arc<dyn IWorldCell> {
+        self.world.clone()
+    }
+}
+
+interfaces::any::declare_interfaces!(WorldProvider, [IWorldProvider]);
+
+/// Internal implementation of IWorldCell
+struct WorldCell {
+    cell: AtomicCell<Option<Box<World>>>,
+}
+
+impl IWorldCell for WorldCell {
+    fn take(&self) -> Box<World> {
+        self.cell.take().unwrap()
+    }
+
+    fn store(&self, world: Box<World>) {
+        assert!(self.cell.swap(Some(world)).is_none());
+    }
+
+    fn get(&self) -> WorldScope {
+        WorldScope::take_from(self)
+    }
+}

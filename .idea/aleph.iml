@@ -125,6 +125,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-ecs/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-virtual-buffer/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-label/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-sdl2/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-egui/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
