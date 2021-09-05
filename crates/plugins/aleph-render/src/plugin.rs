@@ -62,9 +62,9 @@ impl IPlugin for PluginRenderDX12 {
         PluginDescription {
             name: "PluginRenderDX12".to_string(),
             description: "A render plugin implemented with dx12".to_string(),
-            major_version: 0,
-            minor_version: 1,
-            patch_version: 0,
+            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         }
     }
 
