@@ -65,9 +65,9 @@ impl IPlugin for PluginCore {
         PluginDescription {
             name: "PluginCore".to_string(),
             description: "Foundational plugin that provides core level interfaces".to_string(),
-            major_version: 0,
-            minor_version: 1,
-            patch_version: 0,
+            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         }
     }
 
