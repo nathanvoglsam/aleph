@@ -113,7 +113,7 @@ impl EguiRenderer {
         jobs: Vec<aleph_egui::ClippedMesh>,
     ) {
         // Clear the command allocator
-        &self.frames[index].command_allocator.reset().unwrap();
+        self.frames[index].command_allocator.reset().unwrap();
 
         // Begin recording commands into the command list
         command_list
