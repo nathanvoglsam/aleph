@@ -68,7 +68,7 @@ pub use stage::AccessDescriptor;
 pub use stage::Stage;
 pub use system_schedule::SystemSchedule;
 
-use crate::system::System;
+use crate::system::{IntoSystem, System};
 use crate::world::World;
 use std::collections::HashMap;
 
@@ -105,17 +105,19 @@ impl Schedule {
     ///
     /// This provides a dynamic and composable system for skipping work based on arbitrary
     /// preconditions.
-    pub fn set_run_criteria<S: System<In = (), Out = ShouldRun>>(
+    #[inline]
+    pub fn set_run_criteria<Param, S: IntoSystem<(), ShouldRun, Param>>(
         &mut self,
         system: S,
     ) -> &mut Self {
-        self.run_criteria.system = Some(Box::new(system));
+        self.run_criteria.system = Some(Box::new(system.system()));
         self.run_criteria.initialized = false;
         self
     }
 
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be appended to the very end of the execution order, so it will run last.
+    #[inline]
     pub fn add_stage<S: Stage>(&mut self, label: impl Label, stage: S) -> &mut Self {
         let label: Box<dyn Label> = Box::new(label);
         self.stage_order.push(label.clone());
@@ -128,6 +130,7 @@ impl Schedule {
 
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be inserted into the execution immediately after the `target` stage.
+    #[inline]
     pub fn add_stage_after<S: Stage>(
         &mut self,
         target: impl Label,
@@ -158,6 +161,7 @@ impl Schedule {
 
     /// This adds a single execution stage to the [`Schedule`] with the provided [`Label`]. The
     /// stage will be inserted into the execution immediately before the `target` stage.
+    #[inline]
     pub fn add_stage_before<S: Stage>(
         &mut self,
         target: impl Label,
@@ -187,18 +191,37 @@ impl Schedule {
         self
     }
 
+    /// Inserts the given system labeled `label` into the stage with the `target` label.
+    ///
+    /// # Panics
+    ///
+    /// - Will panic if the stage with [`Label`] of `label` does not exist.
+    /// - Will panic if the stage is not of type [`SystemSchedule`].
+    #[inline]
+    pub fn add_system_to_stage<Param, S: IntoSystem<(), (), Param>>(
+        &mut self,
+        target: &impl Label,
+        label: impl Label,
+        system: S,
+    ) -> &mut Self {
+        self.stage(target, move |v: &mut SystemSchedule| {
+            v.add_system(label, system)
+        })
+    }
+
     /// Looks up the [`Stage`] that was registered with the [`Label`] provided in `label` and passes
     /// a downcasted reference into the closure provided in `func`.
     ///
     /// # Panics
     ///
     /// Will panic if the stage is not present or does not match the type `T`
+    #[inline]
     pub fn stage<T: Stage, F: FnOnce(&mut T) -> &mut T>(
         &mut self,
-        label: impl Label,
+        label: &impl Label,
         func: F,
     ) -> &mut Self {
-        let stage = self.get_stage_mut::<T>(&label).unwrap_or_else(move || {
+        let stage = self.get_stage_mut(label).unwrap_or_else(move || {
             panic!("stage '{:?}' does not exist or is the wrong type", label)
         });
         func(stage);
@@ -206,6 +229,7 @@ impl Schedule {
     }
 
     /// Get's a down-casted reference to the stage registered with the [`Label`] provided in `label`
+    #[inline]
     pub fn get_stage<T: Stage>(&self, label: &dyn Label) -> Option<&T> {
         self.stages
             .get(label)
@@ -213,6 +237,7 @@ impl Schedule {
     }
 
     /// Get's a down-casted reference to the stage registered with the [`Label`] provided in `label`
+    #[inline]
     pub fn get_stage_mut<T: Stage>(&mut self, label: &dyn Label) -> Option<&mut T> {
         self.stages
             .get_mut(label)
@@ -221,6 +246,7 @@ impl Schedule {
 
     /// Unconditionally (i.e, the run criteria system is **not** called) performs a single execution
     /// run of the [`Schedule`]
+    #[inline]
     pub fn run_once(&mut self, world: &mut World) {
         for label in self.stage_order.iter() {
             let stage = self.stages.get_mut(label).unwrap();
@@ -229,6 +255,7 @@ impl Schedule {
     }
 
     /// Iterates over all of schedule's stages and their labels, in execution order.
+    #[inline]
     pub fn iter_stages(&self) -> impl Iterator<Item = (&dyn Label, &dyn Stage)> {
         self.stage_order
             .iter()
