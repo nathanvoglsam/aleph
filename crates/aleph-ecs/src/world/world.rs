@@ -710,7 +710,8 @@ pub struct ArchetypeEdge {
 
 #[macro_export]
 macro_rules! impl_component_source_for_tuple {
-    ($(($t: ident, $i: ident)), *) => {
+    ($($t: ident), *) => {
+        #[allow(non_snake_case)]
         unsafe impl<$($t: $crate::world::Component),+> $crate::world::ComponentSource for (u32, $crate::world::EntityLayoutBuf, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+) {
             #[inline]
             fn entity_layout(&self) -> &$crate::world::EntityLayout {
@@ -719,11 +720,11 @@ macro_rules! impl_component_source_for_tuple {
 
             #[inline(always)]
             fn data_for(&self, component: $crate::world::ComponentTypeId) -> &[u8] {
-                let (_, _, $($i,)+) = self;
+                let (_, _, $($t,)+) = self;
                 $(
                     if component == $crate::world::ComponentTypeId::of::<$t>() {
-                        let data = $i.as_ptr() as *const u8;
-                        let len = $i.len() * ::std::mem::size_of::<$t>();
+                        let data = $t.as_ptr() as *const u8;
+                        let len = $t.len() * ::std::mem::size_of::<$t>();
                         return unsafe {
                             ::std::slice::from_raw_parts(data, len)
                         };
@@ -738,6 +739,7 @@ macro_rules! impl_component_source_for_tuple {
             }
         }
 
+        #[allow(non_snake_case)]
         unsafe impl<$($t: $crate::world::Component),+ ,const SIZE: usize> $crate::world::ComponentSource for ($crate::world::EntityLayoutBuf, $([::std::mem::ManuallyDrop<$t>; SIZE],)+) {
             #[inline]
             fn entity_layout(&self) -> &$crate::world::EntityLayout {
@@ -746,11 +748,11 @@ macro_rules! impl_component_source_for_tuple {
 
             #[inline(always)]
             fn data_for(&self, component: $crate::world::ComponentTypeId) -> &[u8] {
-                let (_, $($i,)+) = self;
+                let (_, $($t,)+) = self;
                 $(
                     if component == $crate::world::ComponentTypeId::of::<$t>() {
-                        let data = $i.as_ptr() as *const u8;
-                        let len = $i.len() * ::std::mem::size_of::<$t>();
+                        let data = $t.as_ptr() as *const u8;
+                        let len = $t.len() * ::std::mem::size_of::<$t>();
                         return unsafe {
                             ::std::slice::from_raw_parts(data, len)
                         };
@@ -769,18 +771,19 @@ macro_rules! impl_component_source_for_tuple {
 
 #[macro_export]
 macro_rules! impl_into_component_source_for_tuple {
-    (($t0: ident, $i0: ident), $(($t: ident, $i: ident)), *) => {
+    ($t0: ident, $($t: ident), *) => {
+        #[allow(non_snake_case)]
         unsafe impl<$t0: $crate::world::Component, $($t: $crate::world::Component),+> $crate::world::IntoComponentSource for (::std::vec::Vec<$t0>, $(::std::vec::Vec<$t>,)+) {
             type Source = (u32, $crate::world::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>, $(::std::vec::Vec<::std::mem::ManuallyDrop<$t>>,)+);
 
             fn into_component_source(self) -> Self::Source {
-                let (mut $i0, $(mut $i,)+) = self;
+                let (mut $t0, $(mut $t,)+) = self;
 
-                let len = $i0.len();
+                let len = $t0.len();
 
                 $(
-                    assert_eq!(len, $i.len());
-                    let len = $i.len();
+                    assert_eq!(len, $t.len());
+                    let len = $t.len();
                 )+
 
                 assert!(len < (u32::MAX - 1) as usize);
@@ -792,33 +795,34 @@ macro_rules! impl_into_component_source_for_tuple {
                     layout.add_component_type($crate::world::ComponentTypeId::of::<$t>());
                 )+
 
-                let $i0 = unsafe {
-                    let ptr = $i0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
-                    let length = $i0.len();
-                    let capacity = $i0.capacity();
-                    ::std::mem::forget($i0);
+                let $t0 = unsafe {
+                    let ptr = $t0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
+                    let length = $t0.len();
+                    let capacity = $t0.capacity();
+                    ::std::mem::forget($t0);
                     Vec::from_raw_parts(ptr, length, capacity)
                 };
 
                 $(
-                    let $i = unsafe {
-                        let ptr = $i.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t>;
-                        let length = $i.len();
-                        let capacity = $i.capacity();
-                        ::std::mem::forget($i);
+                    let $t = unsafe {
+                        let ptr = $t.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t>;
+                        let length = $t.len();
+                        let capacity = $t.capacity();
+                        ::std::mem::forget($t);
                         ::std::vec::Vec::from_raw_parts(ptr, length, capacity)
                     };
                 )+
 
-                (len, layout, $i0, $($i,)+)
+                (len, layout, $t0, $($t,)+)
             }
         }
 
+        #[allow(non_snake_case)]
         unsafe impl<$t0: $crate::world::Component, $($t: $crate::world::Component),+ , const SIZE: usize> $crate::world::IntoComponentSource for ([$t0; SIZE], $([$t; SIZE],)+) {
             type Source = ($crate::world::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE], $([::std::mem::ManuallyDrop<$t>; SIZE],)+);
 
             fn into_component_source(self) -> Self::Source {
-                let ($i0, $($i,)+) = self;
+                let ($t0, $($t,)+) = self;
 
                 assert!(SIZE < (u32::MAX - 1) as usize);
 
@@ -828,35 +832,36 @@ macro_rules! impl_into_component_source_for_tuple {
                     layout.add_component_type($crate::world::ComponentTypeId::of::<$t>());
                 )+
 
-                let $i0 = unsafe {
-                    let ptr = &$i0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
+                let $t0 = unsafe {
+                    let ptr = &$t0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
                     let value = ptr.read();
-                    ::std::mem::forget($i0);
+                    ::std::mem::forget($t0);
                     value
                 };
 
                 $(
-                    let $i = unsafe {
-                        let ptr = &$i as *const [$t; SIZE] as *const [::std::mem::ManuallyDrop<$t>; SIZE];
+                    let $t = unsafe {
+                        let ptr = &$t as *const [$t; SIZE] as *const [::std::mem::ManuallyDrop<$t>; SIZE];
                         let value = ptr.read();
-                        ::std::mem::forget($i);
+                        ::std::mem::forget($t);
                         value
                     };
                 )+
 
-                (layout, $i0, $($i,)+)
+                (layout, $t0, $($t,)+)
             }
         }
     };
 
-    (($t0: ident, $i0: ident)) => {
+    ($t0: ident) => {
+        #[allow(non_snake_case)]
         unsafe impl<$t0: $crate::world::Component, > $crate::world::IntoComponentSource for (::std::vec::Vec<$t0>, ) {
             type Source = (u32, $crate::world::EntityLayoutBuf, ::std::vec::Vec<::std::mem::ManuallyDrop<$t0>>);
 
             fn into_component_source(self) -> Self::Source {
-                let (mut $i0, ) = self;
+                let (mut $t0, ) = self;
 
-                let len = $i0.len();
+                let len = $t0.len();
 
                 assert!(len < (u32::MAX - 1) as usize);
                 let len = len as u32;
@@ -864,207 +869,70 @@ macro_rules! impl_into_component_source_for_tuple {
                 let mut layout = $crate::world::EntityLayoutBuf::new();
                 layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
 
-                let $i0 = unsafe {
-                    let ptr = $i0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
-                    let length = $i0.len();
-                    let capacity = $i0.capacity();
-                    ::std::mem::forget($i0);
+                let $t0 = unsafe {
+                    let ptr = $t0.as_mut_ptr() as *mut ::std::mem::ManuallyDrop<$t0>;
+                    let length = $t0.len();
+                    let capacity = $t0.capacity();
+                    ::std::mem::forget($t0);
                     ::std::vec::Vec::from_raw_parts(ptr, length, capacity)
                 };
 
-                (len, layout, $i0)
+                (len, layout, $t0)
             }
         }
 
+        #[allow(non_snake_case)]
         unsafe impl<$t0: $crate::world::Component, const SIZE: usize> $crate::world::IntoComponentSource for ([$t0; SIZE], ) {
             type Source = ($crate::world::EntityLayoutBuf, [::std::mem::ManuallyDrop<$t0>; SIZE]);
 
             fn into_component_source(self) -> Self::Source {
-                let ($i0, ) = self;
+                let ($t0, ) = self;
 
                 assert!(SIZE < (u32::MAX - 1) as usize);
 
                 let mut layout = $crate::world::EntityLayoutBuf::new();
                 layout.add_component_type($crate::world::ComponentTypeId::of::<$t0>());
 
-                let $i0 = unsafe {
-                    let ptr = &$i0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
+                let $t0 = unsafe {
+                    let ptr = &$t0 as *const [$t0; SIZE] as *const [::std::mem::ManuallyDrop<$t0>; SIZE];
                     let value = ptr.read();
-                    ::std::mem::forget($i0);
+                    ::std::mem::forget($t0);
                     value
                 };
 
-                (layout, $i0)
+                (layout, $t0)
             }
         }
     }
 }
 
-impl_component_source_for_tuple!((A, a));
-impl_component_source_for_tuple!((A, a), (B, b));
-impl_component_source_for_tuple!((A, a), (B, b), (C, c));
-impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d));
-impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e));
-impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f));
-impl_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f), (G, g));
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h)
-);
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i)
-);
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j)
-);
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k)
-);
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k),
-    (L, l)
-);
-impl_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k),
-    (L, l),
-    (M, m)
-);
+impl_into_component_source_for_tuple!(A);
+impl_into_component_source_for_tuple!(A, B);
+impl_into_component_source_for_tuple!(A, B, C);
+impl_into_component_source_for_tuple!(A, B, C, D);
+impl_into_component_source_for_tuple!(A, B, C, D, E);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H, I);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+impl_into_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
 
-impl_into_component_source_for_tuple!((A, a));
-impl_into_component_source_for_tuple!((A, a), (B, b));
-impl_into_component_source_for_tuple!((A, a), (B, b), (C, c));
-impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d));
-impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e));
-impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f));
-impl_into_component_source_for_tuple!((A, a), (B, b), (C, c), (D, d), (E, e), (F, f), (G, g));
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h)
-);
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i)
-);
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j)
-);
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k)
-);
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k),
-    (L, l)
-);
-impl_into_component_source_for_tuple!(
-    (A, a),
-    (B, b),
-    (C, c),
-    (D, d),
-    (E, e),
-    (F, f),
-    (G, g),
-    (H, h),
-    (I, i),
-    (J, j),
-    (K, k),
-    (L, l),
-    (M, m)
-);
+impl_component_source_for_tuple!(A);
+impl_component_source_for_tuple!(A, B);
+impl_component_source_for_tuple!(A, B, C);
+impl_component_source_for_tuple!(A, B, C, D);
+impl_component_source_for_tuple!(A, B, C, D, E);
+impl_component_source_for_tuple!(A, B, C, D, E, F);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
+impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
 
 pub unsafe extern "C" fn world_register(
     mut world: NonNull<World>,
