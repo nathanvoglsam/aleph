@@ -198,7 +198,7 @@ impl IPlugin for PluginPlatformSDL2 {
         let send_quit_handle = registry.quit_handle();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::InputCollection,
-            "platform_headless::input_collection",
+            "platform_sdl2::input_collection",
             move || {
                 let provider = send_provider.deref();
                 let sdl_cell = send_sdl.deref();
