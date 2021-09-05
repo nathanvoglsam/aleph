@@ -43,9 +43,9 @@ use std::any::TypeId;
 ///   plugin registry itself is created as the full set of plugins to register needs to be finalized
 ///   before a plugin registry can be constructed.
 ///
-/// - The plugin registry will, at some point during initialization, call `IPlugin::register`
+/// - The plugin registry will, at some point during initialization, call [IPlugin::register]
 ///   exactly once so a plugin can declare its execution dependencies, which abstract interfaces the
-///   plugin provides, and which execution stages it would like to be updated in.
+///   plugin provides, if it would like to be scheduled in the main loop.
 ///
 /// - The plugin registry will then use the dependencies declared from each plugin to compute a
 ///   final execution order for each execution stage.
@@ -55,15 +55,9 @@ use std::any::TypeId;
 ///   with the object that actually implements the interface.
 ///
 /// - The engine now moves into the main loop. The plugin registry has computed an execution order
-///   for each stage, of which there are currently 5. The registry will use this order to call the
-///   appropriate function for each plugin that has declared it updates in that stage. The functions
-///   for each stage are as follows:
-///
-///   - `IPlugin::on_input_collection`
-///   - `IPlugin::on_pre_update`
-///   - `IPlugin::on_update`
-///   - `IPlugin::on_post_update`
-///   - `IPlugin::on_render`
+///   that respects the requirements specified in [IPlugin::register]. The registry will use this
+///   order to call the [IPlugin::on_update] function *exactly once* on the main thread every
+///   iteration of the main loop.
 ///
 /// - The engine will eventually exit the main loop. `IPlugin::on_exit` will be called exactly once
 ///   so that the plugin can destroy any resources that may require ordering against other plugins.
