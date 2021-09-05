@@ -123,40 +123,47 @@ impl IPlugin for PluginEgui {
             .get_clipboard()
             .unwrap();
 
-        // TODO: Move to exclusive (main thread only) queue
         let pre_update_mouse = mouse.clone();
         let pre_update_ctx = context_provider.clone();
-        schedule.add_system_to_stage(&CoreStage::PreUpdate, "egui::pre_update", move || {
-            let context_provider = pre_update_ctx.deref();
+        schedule.add_exclusive_at_start_system_to_stage(
+            &CoreStage::PreUpdate,
+            "egui::pre_update",
+            move || {
+                let context_provider = pre_update_ctx.deref();
 
-            let window = window.deref();
-            let mouse = pre_update_mouse.deref();
-            let keyboard = keyboard.deref();
-            let frame_timer = frame_timer.deref();
-            let events = events.deref();
+                let window = window.deref();
+                let mouse = pre_update_mouse.deref();
+                let keyboard = keyboard.deref();
+                let frame_timer = frame_timer.deref();
+                let events = events.deref();
 
-            let input = crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
-            context_provider.begin_frame(input);
-        });
+                let input =
+                    crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
+                context_provider.begin_frame(input);
+            },
+        );
 
-        // TODO: Move to exclusive (main thread only) queue
         let post_update_mouse = mouse.clone();
         let post_update_rnd = render_data.clone();
         let post_update_ctx = context_provider.clone();
-        schedule.add_system_to_stage(&CoreStage::PostUpdate, "egui::post_update", move || {
-            let render_data = post_update_rnd.deref();
-            let context_provider = post_update_ctx.deref();
+        schedule.add_exclusive_at_start_system_to_stage(
+            &CoreStage::PostUpdate,
+            "egui::post_update",
+            move || {
+                let render_data = post_update_rnd.deref();
+                let context_provider = post_update_ctx.deref();
 
-            let mouse = post_update_mouse.deref();
-            let clipboard = clipboard.deref();
+                let mouse = post_update_mouse.deref();
+                let clipboard = clipboard.deref();
 
-            let (output, shapes) = context_provider.end_frame();
-            let egui_ctx = context_provider.get_context();
-            let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
-            crate::utils::process_egui_output(output, mouse, clipboard);
+                let (output, shapes) = context_provider.end_frame();
+                let egui_ctx = context_provider.get_context();
+                let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
+                crate::utils::process_egui_output(output, mouse, clipboard);
 
-            render_data.put(jobs);
-        });
+                render_data.put(jobs);
+            },
+        );
 
         let response = vec![
             (
