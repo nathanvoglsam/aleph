@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::{AccessDescriptor, Label, ResourceId, Stage};
+use crate::scheduler::{AccessDescriptor, Label, Stage};
 use crate::system::{IntoSystem, System};
-use crate::world::{ComponentTypeId, World};
+use crate::world::{ComponentTypeId, ResourceId, World};
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;

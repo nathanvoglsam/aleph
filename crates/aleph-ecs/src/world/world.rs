@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::{Resource, ResourceId};
 use crate::world::{
     Archetype, ArchetypeEntityIndex, ArchetypeIndex, Component, ComponentIdMap, ComponentQuery,
     ComponentRegistry, ComponentTypeDescription, ComponentTypeId, EntityId, EntityLayout,
-    EntityLayoutBuf, EntityLocation, EntityStorage, Query,
+    EntityLayoutBuf, EntityLocation, EntityStorage, Query, Resource, ResourceId,
 };
 use std::any::Any;
 use std::cell::UnsafeCell;

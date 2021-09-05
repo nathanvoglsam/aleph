@@ -55,15 +55,12 @@
 // SOFTWARE.
 
 mod label;
-mod resource;
 mod stage;
 mod system_schedule;
 
 pub use label::DynEq;
 pub use label::DynHash;
 pub use label::Label;
-pub use resource::Resource;
-pub use resource::ResourceId;
 pub use stage::AccessDescriptor;
 pub use stage::Stage;
 pub use system_schedule::SystemSchedule;

@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::scheduler::{Label, Resource, ResourceId};
-use crate::world::{Component, ComponentTypeId, World};
+use crate::scheduler::Label;
+use crate::world::{Component, ComponentTypeId, Resource, ResourceId, World};
 use std::any::{Any, TypeId};
 
 ///

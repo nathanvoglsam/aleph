@@ -37,6 +37,7 @@ pub(crate) mod entity_layout;
 pub(crate) mod entity_storage;
 pub(crate) mod generation;
 pub(crate) mod query;
+pub(crate) mod resource;
 pub(crate) mod world;
 
 pub use self::archetype::Archetype;
@@ -66,6 +67,8 @@ pub use self::entity_storage::EntityLocation;
 pub use self::entity_storage::EntityStorage;
 pub use self::generation::Generation;
 pub use self::query::Query;
+pub use self::resource::Resource;
+pub use self::resource::ResourceId;
 pub use self::world::ComponentSource;
 pub use self::world::IntoComponentSource;
 pub use self::world::World;
