@@ -32,40 +32,21 @@ use crate::{IEguiContextProvider, IEguiRenderData};
 use egui::ClippedMesh;
 use interfaces::any::AnyArc;
 use interfaces::platform::{
-    IClipboard, IClipboardProvider, IEvents, IEventsProvider, IFrameTimer, IFrameTimerProvider,
-    IKeyboard, IKeyboardProvider, IMouse, IMouseProvider, IWindow, IWindowProvider,
+    IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
+    IWindowProvider,
 };
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
+use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::any::TypeId;
 use std::ops::Deref;
 
-pub struct PluginEgui {
-    window: Option<AnyArc<dyn IWindow>>,
-    mouse: Option<AnyArc<dyn IMouse>>,
-    keyboard: Option<AnyArc<dyn IKeyboard>>,
-    frame_timer: Option<AnyArc<dyn IFrameTimer>>,
-    events: Option<AnyArc<dyn IEvents>>,
-    clipboard: Option<AnyArc<dyn IClipboard>>,
-    render_data: AnyArc<EguiRenderData>,
-    context_provider: AnyArc<EguiContextProvider>,
-}
+pub struct PluginEgui();
 
 impl PluginEgui {
     pub fn new() -> Self {
-        let render_data: AnyArc<EguiRenderData> = AnyArc::default();
-        let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
-        Self {
-            window: None,
-            mouse: None,
-            keyboard: None,
-            frame_timer: None,
-            events: None,
-            clipboard: None,
-            render_data,
-            context_provider,
-        }
+        Self()
     }
 }
 
@@ -81,15 +62,12 @@ impl IPlugin for PluginEgui {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        // We want to update in the pre update stage and post update stage
-        registrar.update_stage(UpdateStage::PreUpdate);
-        registrar.update_stage(UpdateStage::PostUpdate);
-
         // We export two interfaces for interacting with egui
         registrar.provides_interface::<dyn IEguiContextProvider>();
         registrar.provides_interface::<dyn IEguiRenderData>();
 
         // We need to get handles to all these when we initialize to save querying them every frame
+        registrar.must_init_after::<dyn IScheduleProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IMouseProvider>();
         registrar.must_init_after::<dyn IKeyboardProvider>();
@@ -97,6 +75,7 @@ impl IPlugin for PluginEgui {
         registrar.must_init_after::<dyn IEventsProvider>();
         registrar.must_init_after::<dyn IClipboardProvider>();
 
+        registrar.depends_on::<dyn IScheduleProvider>();
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.depends_on::<dyn IMouseProvider>();
         registrar.depends_on::<dyn IKeyboardProvider>();
@@ -106,72 +85,90 @@ impl IPlugin for PluginEgui {
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        self.window = registry
+        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
+        let schedule_cell = schedule_provider.get();
+        let mut schedule = schedule_cell.get();
+
+        let render_data: AnyArc<EguiRenderData> = AnyArc::default();
+        let context_provider: AnyArc<EguiContextProvider> = AnyArc::default();
+
+        let window = registry
             .get_interface::<dyn IWindowProvider>()
             .unwrap()
-            .get_window();
-        self.mouse = registry
+            .get_window()
+            .unwrap();
+        let mouse = registry
             .get_interface::<dyn IMouseProvider>()
             .unwrap()
-            .get_mouse();
-        self.keyboard = registry
+            .get_mouse()
+            .unwrap();
+        let keyboard = registry
             .get_interface::<dyn IKeyboardProvider>()
             .unwrap()
-            .get_keyboard();
-        self.frame_timer = registry
+            .get_keyboard()
+            .unwrap();
+        let frame_timer = registry
             .get_interface::<dyn IFrameTimerProvider>()
             .unwrap()
-            .get_frame_timer();
-        self.events = registry
+            .get_frame_timer()
+            .unwrap();
+        let events = registry
             .get_interface::<dyn IEventsProvider>()
             .unwrap()
-            .get_events();
-        self.clipboard = registry
+            .get_events()
+            .unwrap();
+        let clipboard = registry
             .get_interface::<dyn IClipboardProvider>()
             .unwrap()
-            .get_clipboard();
+            .get_clipboard()
+            .unwrap();
 
-        assert!(self.window.is_some());
-        assert!(self.mouse.is_some());
-        assert!(self.keyboard.is_some());
-        assert!(self.frame_timer.is_some());
-        assert!(self.events.is_some());
-        assert!(self.clipboard.is_some());
+        // TODO: Move to exclusive (main thread only) queue
+        let pre_update_mouse = mouse.clone();
+        let pre_update_ctx = context_provider.clone();
+        schedule.add_system_to_stage(&CoreStage::PreUpdate, "egui::pre_update", move || {
+            let context_provider = pre_update_ctx.deref();
+
+            let window = window.deref();
+            let mouse = pre_update_mouse.deref();
+            let keyboard = keyboard.deref();
+            let frame_timer = frame_timer.deref();
+            let events = events.deref();
+
+            let input = crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
+            context_provider.begin_frame(input);
+        });
+
+        // TODO: Move to exclusive (main thread only) queue
+        let post_update_mouse = mouse.clone();
+        let post_update_rnd = render_data.clone();
+        let post_update_ctx = context_provider.clone();
+        schedule.add_system_to_stage(&CoreStage::PostUpdate, "egui::post_update", move || {
+            let render_data = post_update_rnd.deref();
+            let context_provider = post_update_ctx.deref();
+
+            let mouse = post_update_mouse.deref();
+            let clipboard = clipboard.deref();
+
+            let (output, shapes) = context_provider.end_frame();
+            let egui_ctx = context_provider.get_context();
+            let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
+            crate::utils::process_egui_output(output, mouse, clipboard);
+
+            render_data.put(jobs);
+        });
 
         let response = vec![
             (
                 TypeId::of::<dyn IEguiContextProvider>(),
-                AnyArc::into_any(self.context_provider.clone()),
+                AnyArc::into_any(context_provider),
             ),
             (
                 TypeId::of::<dyn IEguiRenderData>(),
-                AnyArc::into_any(self.render_data.clone()),
+                AnyArc::into_any(render_data),
             ),
         ];
         Box::new(response)
-    }
-
-    fn on_pre_update(&mut self, _registry: &dyn IRegistryAccessor) {
-        let window = self.window.as_ref().unwrap().deref();
-        let mouse = self.mouse.as_ref().unwrap().deref();
-        let keyboard = self.keyboard.as_ref().unwrap().deref();
-        let frame_timer = self.frame_timer.as_ref().unwrap().deref();
-        let events = self.events.as_ref().unwrap().deref();
-
-        let input = crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
-        self.context_provider.begin_frame(input);
-    }
-
-    fn on_post_update(&mut self, _registry: &dyn IRegistryAccessor) {
-        let mouse = self.mouse.as_ref().unwrap().deref();
-        let clipboard = self.clipboard.as_ref().unwrap().deref();
-
-        let (output, shapes) = self.context_provider.end_frame();
-        let egui_ctx = self.context_provider.get_context();
-        let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
-        crate::utils::process_egui_output(output, mouse, clipboard);
-
-        self.render_data.put(jobs)
     }
 }
 
