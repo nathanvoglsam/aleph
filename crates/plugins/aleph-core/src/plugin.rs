@@ -33,7 +33,7 @@ use interfaces::any::AnyArc;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use interfaces::schedule::{IScheduleProvider, Schedule, Stage, SystemSchedule, CoreStage};
+use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
 use std::any::TypeId;
 
@@ -74,7 +74,6 @@ impl IPlugin for PluginCore {
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
         // We want to update in the pre update stage and post update stage
         registrar.should_update();
-        // registrar.update_stage(UpdateStage::PostUpdate);
 
         // We export two interfaces
         registrar.provides_interface::<dyn IWorldProvider>();
