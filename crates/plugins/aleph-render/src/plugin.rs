@@ -32,6 +32,7 @@ use dx12::{dxgi, D3D12Object};
 use interfaces::any;
 use interfaces::platform::*;
 use interfaces::plugin::*;
+use interfaces::schedule::{IScheduleProvider, CoreStage};
 
 struct Data {
     window: any::AnyArc<dyn IWindow>,
@@ -47,13 +48,11 @@ struct Data {
     renderer: EguiRenderer,
 }
 
-pub struct PluginRenderDX12 {
-    data: Option<Data>,
-}
+pub struct PluginRenderDX12();
 
 impl PluginRenderDX12 {
     pub fn new() -> Self {
-        Self { data: None }
+        Self()
     }
 }
 
@@ -72,12 +71,13 @@ impl IPlugin for PluginRenderDX12 {
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
 
+        registrar.depends_on::<dyn IScheduleProvider>();
+        registrar.must_init_after::<dyn IScheduleProvider>();
+
         registrar.depends_on::<dyn egui::IEguiRenderData>();
         registrar.depends_on::<dyn egui::IEguiContextProvider>();
         registrar.must_init_after::<dyn egui::IEguiRenderData>();
         registrar.must_init_after::<dyn egui::IEguiContextProvider>();
-
-        registrar.update_stage(UpdateStage::Render);
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
@@ -168,7 +168,11 @@ impl IPlugin for PluginRenderDX12 {
             drawable_size.1,
         );
 
-        self.data = Some(Data {
+        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
+        let schedule_cell = schedule_provider.get();
+        let mut schedule = schedule_cell.get();
+
+        let mut data = Data {
             window,
             render_data,
             egui_provider,
@@ -180,58 +184,61 @@ impl IPlugin for PluginRenderDX12 {
             buffers,
             command_lists,
             renderer,
-        });
+        };
+        schedule.add_exclusive_at_start_system_to_stage(
+            &CoreStage::Render,
+            "render::render",
+            move || {
+                let data = &mut data;
+                let egui_ctx = data.egui_provider.get_context();
+
+                data.fence.signal(0).unwrap();
+                data.fence.set_event_on_completion(1, &data.event).unwrap();
+
+                if data.window.resized() {
+                    let dimensions = data.window.size();
+                    unsafe {
+                        data.buffers.clear();
+                        data.swap_chain
+                            .resize_buffers(
+                                3,
+                                dimensions.0,
+                                dimensions.1,
+                                dxgi::Format::Unknown,
+                                dxgi::SwapChainFlags::NONE,
+                                None,
+                                &[data.queue.clone(), data.queue.clone(), data.queue.clone()],
+                            )
+                            .unwrap();
+                        data.buffers = data.swap_chain.get_buffers(3).unwrap();
+                        data.renderer
+                            .recreate_swap_resources(&data.device, &data.buffers, dimensions);
+                    }
+                }
+
+                unsafe {
+                    let index = data.swap_chain.get_current_back_buffer_index();
+                    let command_list = &mut data.command_lists[index as usize];
+                    data.renderer.record_frame(
+                        index as usize,
+                        command_list,
+                        &data.buffers,
+                        &egui_ctx,
+                        data.render_data.take(),
+                    );
+
+                    data.queue.execute_command_lists(&[&command_list]);
+
+                    data.swap_chain.present(0, 0).unwrap();
+
+                    data.queue.signal(&data.fence, 1).unwrap();
+
+                    data.event.wait(None).unwrap();
+                }
+            },
+        );
 
         Box::new(Vec::new())
-    }
-
-    fn on_render(&mut self, _registry: &dyn IRegistryAccessor) {
-        let data = self.data.as_mut().unwrap();
-        let egui_ctx = data.egui_provider.get_context();
-
-        data.fence.signal(0).unwrap();
-        data.fence.set_event_on_completion(1, &data.event).unwrap();
-
-        if data.window.resized() {
-            let dimensions = data.window.size();
-            unsafe {
-                data.buffers.clear();
-                data.swap_chain
-                    .resize_buffers(
-                        3,
-                        dimensions.0,
-                        dimensions.1,
-                        dxgi::Format::Unknown,
-                        dxgi::SwapChainFlags::NONE,
-                        None,
-                        &[data.queue.clone(), data.queue.clone(), data.queue.clone()],
-                    )
-                    .unwrap();
-                data.buffers = data.swap_chain.get_buffers(3).unwrap();
-                data.renderer
-                    .recreate_swap_resources(&data.device, &data.buffers, dimensions);
-            }
-        }
-
-        unsafe {
-            let index = data.swap_chain.get_current_back_buffer_index();
-            let command_list = &mut data.command_lists[index as usize];
-            data.renderer.record_frame(
-                index as usize,
-                command_list,
-                &data.buffers,
-                &egui_ctx,
-                data.render_data.take(),
-            );
-
-            data.queue.execute_command_lists(&[&command_list]);
-
-            data.swap_chain.present(0, 0).unwrap();
-
-            data.queue.signal(&data.fence, 1).unwrap();
-
-            data.event.wait(None).unwrap();
-        }
     }
 }
 
