@@ -102,6 +102,7 @@ pub struct Res<'w, T> {
 impl<'w, T: Resource> Deref for Res<'w, T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.value
     }
@@ -115,6 +116,7 @@ impl<'a, T: Resource> SystemParam for Res<'a, T> {
 }
 
 unsafe impl<T: Resource> SystemParamState for ResState<T> {
+    #[inline]
     fn init(access: &mut dyn AccessDescriptor) -> Self {
         access.reads_resource::<T>();
         Self(Default::default())
@@ -143,12 +145,14 @@ pub struct ResMut<'w, T> {
 impl<'w, T: Resource> Deref for ResMut<'w, T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.value
     }
 }
 
 impl<'w, T: Resource> DerefMut for ResMut<'w, T> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.value
     }
@@ -162,6 +166,7 @@ impl<'a, T: Resource> SystemParam for ResMut<'a, T> {
 }
 
 unsafe impl<T: Resource> SystemParamState for ResMutState<T> {
+    #[inline]
     fn init(access: &mut dyn AccessDescriptor) -> Self {
         access.reads_resource::<T>();
         Self(Default::default())
@@ -190,6 +195,7 @@ impl<'w, Q: ComponentQuery + 'static> SystemParam for Query<'w, Q> {
 }
 
 unsafe impl<Q: ComponentQuery + 'static> SystemParamState for QueryState<Q> {
+    #[inline]
     fn init(access: &mut dyn AccessDescriptor) -> Self {
         Q::declare_access(access);
         Self(Default::default())
@@ -233,10 +239,12 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
     type In = ();
     type Out = ();
 
+    #[inline]
     fn declare_access(&mut self, access: &mut dyn AccessDescriptor) {
         self.state = Some(Param::Fetch::init(access));
     }
 
+    #[inline]
     unsafe fn execute(&mut self, _input: Self::In, world: &World) -> Self::Out {
         self.f.run(self.state.as_mut().unwrap(), world)
     }
@@ -245,6 +253,7 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> System
 impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> IntoSystem<(), (), Param> for F {
     type System = FunctionSystem<Param, F>;
 
+    #[inline]
     fn system(self) -> FunctionSystem<Param, F> {
         FunctionSystem {
             f: self,
@@ -270,6 +279,7 @@ macro_rules! impl_system_function {
                 // Yes, this is strange, but rustc fails to compile this impl
                 // without using this function.
                 #[allow(clippy::too_many_arguments)]
+                #[inline]
                 fn call_inner<$($param,)*>(
                     mut f: impl FnMut($($param,)*),
                     $($param: $param,)*

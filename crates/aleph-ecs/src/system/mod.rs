@@ -123,6 +123,8 @@ pub struct AlreadyWasSystem;
 // Systems implicitly implement IntoSystem
 impl<In, Out, Sys: System<In = In, Out = Out>> IntoSystem<In, Out, AlreadyWasSystem> for Sys {
     type System = Sys;
+
+    #[inline]
     fn system(self) -> Sys {
         self
     }
