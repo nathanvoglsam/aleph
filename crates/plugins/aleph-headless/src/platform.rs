@@ -32,21 +32,16 @@ use crate::provider::ProviderImpl;
 use interfaces::any::AnyArc;
 use interfaces::platform::IFrameTimerProvider;
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
+use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::any::TypeId;
 
-pub struct PluginPlatformHeadless {
-    provider: AnyArc<ProviderImpl>,
-}
+pub struct PluginPlatformHeadless();
 
 impl PluginPlatformHeadless {
     pub fn new() -> Self {
-        Self {
-            provider: AnyArc::new(ProviderImpl {
-                frame_timer: FrameTimerImpl::new(),
-            }),
-        }
+        Self()
     }
 }
 
@@ -62,11 +57,17 @@ impl IPlugin for PluginPlatformHeadless {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.must_init_after::<dyn IScheduleProvider>();
+        registrar.depends_on::<dyn IScheduleProvider>();
+
         registrar.provides_interface::<dyn IFrameTimerProvider>();
-        registrar.update_stage(UpdateStage::InputCollection);
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        let provider = AnyArc::new(ProviderImpl {
+            frame_timer: FrameTimerImpl::new(),
+        });
+
         let quit_handle = registry.quit_handle();
         ctrlc::set_handler(move || {
             println!();
@@ -74,16 +75,25 @@ impl IPlugin for PluginPlatformHeadless {
         })
         .expect("Failed to registr ctrl+c handler");
 
+        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
+        let schedule_cell = schedule_provider.get();
+        let mut schedule = schedule_cell.get();
+
+        let send_provider = provider.clone();
+        schedule.add_system_to_stage(
+            &CoreStage::InputCollection,
+            "platform_headless::input_collection",
+            move || {
+                send_provider.frame_timer.update();
+            },
+        );
+
         // Provide our declared implementations to the plugin registry
         let response = vec![(
             TypeId::of::<dyn IFrameTimerProvider>(),
-            AnyArc::into_any(self.provider.clone()),
+            AnyArc::into_any(provider),
         )];
         Box::new(response)
-    }
-
-    fn on_input_collection(&mut self, _registry: &dyn IRegistryAccessor) {
-        self.provider.frame_timer.update();
     }
 }
 
