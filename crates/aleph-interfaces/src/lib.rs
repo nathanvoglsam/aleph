@@ -34,8 +34,8 @@ pub mod archive;
 pub mod asset;
 pub mod platform;
 pub mod plugin;
-pub mod system;
 pub mod schedule;
+pub mod system;
 pub mod world;
 
 mod utils;
