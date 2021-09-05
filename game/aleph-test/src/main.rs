@@ -32,26 +32,19 @@
 extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
-use aleph::any::AnyArc;
 use aleph::egui::IEguiContextProvider;
 use aleph::interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, UpdateStage,
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
+use aleph::interfaces::schedule::{IScheduleProvider, CoreStage};
 use aleph::Engine;
 
-struct PluginGameLogic {
-    demo_window: egui_demo_lib::DemoWindows,
-    colour_test: egui_demo_lib::ColorTest,
-    egui_provider: Option<AnyArc<dyn IEguiContextProvider>>,
-}
+struct PluginGameLogic();
+
 
 impl PluginGameLogic {
     pub fn new() -> Self {
-        Self {
-            demo_window: Default::default(),
-            colour_test: Default::default(),
-            egui_provider: None,
-        }
+        Self()
     }
 }
 
@@ -67,40 +60,51 @@ impl IPlugin for PluginGameLogic {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.update_stage(UpdateStage::Update);
+        registrar.depends_on::<dyn IScheduleProvider>();
+        registrar.must_init_after::<dyn IScheduleProvider>();
 
         //registrar.depends_on::<dyn IEguiContextProvider>();
         registrar.must_init_after::<dyn IEguiContextProvider>();
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        let mut demo_window = egui_demo_lib::DemoWindows::default();
+        let mut colour_test = egui_demo_lib::ColorTest::default();
+
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
-        self.egui_provider = egui_provider;
+
+        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
+        let schedule_cell = schedule_provider.get();
+        let mut schedule = schedule_cell.get();
+
+        schedule.add_exclusive_at_start_system_to_stage(
+            &CoreStage::Render,
+            "platform_headless::input_collection",
+            move || {
+                if let Some(egui) = egui_provider.as_ref() {
+                    let egui_ctx = egui.get_context();
+
+                    demo_window.ui(&egui_ctx);
+
+                    aleph::egui::Window::new("Colour Test")
+                        .collapsible(false)
+                        .scroll(true)
+                        .show(&egui_ctx, |ui| {
+                            let mut tex_allocator = None;
+                            colour_test.ui(ui, &mut tex_allocator);
+                        });
+
+                    aleph::egui::Window::new("Settings")
+                        .collapsible(false)
+                        .scroll(true)
+                        .show(&egui_ctx, |ui| {
+                            egui_ctx.settings_ui(ui);
+                        });
+                }
+            },
+        );
 
         Box::new(Vec::new())
-    }
-
-    fn on_update(&mut self, _registry: &dyn IRegistryAccessor) {
-        if let Some(egui) = self.egui_provider.as_ref() {
-            let egui_ctx = egui.get_context();
-
-            self.demo_window.ui(&egui_ctx);
-
-            aleph::egui::Window::new("Colour Test")
-                .collapsible(false)
-                .scroll(true)
-                .show(&egui_ctx, |ui| {
-                    let mut tex_allocator = None;
-                    self.colour_test.ui(ui, &mut tex_allocator);
-                });
-
-            aleph::egui::Window::new("Settings")
-                .collapsible(false)
-                .scroll(true)
-                .show(&egui_ctx, |ui| {
-                    egui_ctx.settings_ui(ui);
-                });
-        }
     }
 }
 
