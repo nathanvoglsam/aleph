@@ -42,14 +42,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 #[derive(Default)]
 pub struct SystemSchedule {
     /// Stores all exclusive systems in the schedule
-    exclusive_systems: Vec<ExclusiveSystemBox>,
+    exclusive_systems: Vec<SystemBox<ExclusiveSystemCell>>,
 
     /// Maps a label to the system it was registered with. Accelerates looking up a system by label
     /// as well as accelerating duplicate label checks.
     exclusive_system_label_map: HashMap<Box<dyn Label>, usize>,
 
+    /// This caches the list of root tasks where execution should start from
+    exclusive_root_systems: Vec<usize>,
+
     /// Stores all systems in the schedule
-    systems: Vec<SystemBox>,
+    systems: Vec<SystemBox<SystemCell>>,
 
     /// Maps a label to the system it was registered with. Accelerates looking up a system by label
     /// as well as accelerating duplicate label checks.
@@ -79,7 +82,10 @@ impl SystemSchedule {
         // Push the new system into the system list, capturing the index it will be inserted into
         let index = self.systems.len();
         self.exclusive_systems
-            .push(ExclusiveSystemBox::new(label.clone(), system.system()));
+            .push(SystemBox::<ExclusiveSystemCell>::new_exclusive(
+                label.clone(),
+                system.system(),
+            ));
 
         // Insert the label into the label->index map, checking if the label has already been
         // registered (triggers a panic)
@@ -121,7 +127,8 @@ impl SystemSchedule {
 
     pub fn run_once(&mut self, world: &mut World) {
         self.check_dirty();
-        self.execute(world);
+        self.execute_exclusive_at_start_systems(world);
+        self.execute_parallel_systems(world);
     }
 }
 
@@ -132,7 +139,115 @@ impl Stage for SystemSchedule {
 }
 
 impl SystemSchedule {
-    fn execute(&mut self, world: &mut World) {
+    fn execute_exclusive_at_start_systems(&mut self, world: &mut World) {
+        /// Struct that holds data that needs ownership transferred to the thread that executes the
+        /// matching system
+        struct WorkerPayload {
+            wg: WaitGroup,
+        }
+
+        /// Alias for the container a payload is sent to other threads in
+        ///
+        /// A Box is used to ensure the time in the AtomicCell is pointer sized so it can be sent
+        /// using atomic instructions instead of locks
+        type PayloadCell = AtomicCell<Option<Box<WorkerPayload>>>;
+
+        // Treat a non lock free implementation as an error
+        assert!(PayloadCell::is_lock_free());
+
+        // Root wait group that forces the function to wait for all systems to complete for exiting
+        let wg = WaitGroup::new();
+
+        // SoA list of flags that denote whether the matching task has completed, indexed in
+        // parallel with self.systems
+        let done: Vec<AtomicBool> = (0..self.exclusive_systems.len())
+            .into_iter()
+            .map(|_| AtomicBool::new(false))
+            .collect();
+
+        // SoA list of worker payloads, indexed in parallel with self.systems
+        let payloads: Vec<PayloadCell> = (0..self.exclusive_systems.len())
+            .into_iter()
+            .map(|_| {
+                let payload = WorkerPayload { wg: wg.clone() };
+                AtomicCell::new(Some(Box::new(payload)))
+            })
+            .collect();
+
+        // This handles executing a system, then recursively executing the successive tasks
+        fn exec_task(
+            systems: &[SystemBox<ExclusiveSystemCell>],
+            done: &[AtomicBool],
+            payloads: &[PayloadCell],
+            world: &World,
+            system_index: usize,
+        ) {
+            // Unpack the payload
+            let payload = if let Some(payload) = payloads[system_index].take() {
+                payload
+            } else {
+                return;
+            };
+
+            // Unpack the wait group to explicitly drop it to "use" it
+            let wg = payload.wg;
+
+            // Pull the system from the cell, execute it, then return it to the cell
+            let mut system = systems[system_index].system.take().unwrap();
+            unsafe {
+                // SAFETY: This is unsafe to call in the event of unsafe implementations of System
+                //         that do not access world according to their access flags. If a System
+                //         does correctly respect its access declarations then the work scheduler
+                //         ensures that aliasing requirements will be upheld, making this safe to
+                //         call. This is only unsafe in the presence of other unsafe code.
+                system.execute((), world);
+            }
+            systems[system_index].system.set(Some(system));
+
+            // Update the "done" flag now that the system has executed
+            done[system_index].store(true, Ordering::Relaxed);
+
+            // Spawn new tasks for each successor system and execute it, if all of its predecessors
+            // have completed.
+            systems[system_index]
+                .edges
+                .successors
+                .iter()
+                .copied()
+                .for_each(|successor| {
+                    let successor: usize = successor;
+                    if systems[successor]
+                        .edges
+                        .predecessors
+                        .iter()
+                        .copied()
+                        .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
+                    {
+                        exec_task(systems, done, payloads, world, successor);
+                    }
+                });
+
+            // Explicitly drop the wait group to "use" it according to the compiler.
+            drop(wg);
+        }
+
+        let systems = std::mem::take(&mut self.exclusive_systems);
+
+        // Kick off parallel tasks for each of the root systems
+        self.exclusive_root_systems
+            .iter()
+            .copied()
+            .for_each(|system_index| {
+                exec_task(&systems, &done, &payloads, world, system_index);
+            });
+
+        self.exclusive_systems = systems;
+
+        // Wait for all of the systems to complete their execution
+        wg.wait();
+    }
+
+    fn execute_parallel_systems(&mut self, world: &mut World) {
         /// Struct that holds data that needs ownership transferred to the thread that executes the
         /// matching system
         struct WorkerPayload {
@@ -169,7 +284,7 @@ impl SystemSchedule {
 
         // This handles executing a system, then recursively executing the successive tasks
         fn exec_task(
-            systems: &[SystemBox],
+            systems: &[SystemBox<SystemCell>],
             done: &[AtomicBool],
             payloads: &[PayloadCell],
             world: &World,
@@ -226,13 +341,6 @@ impl SystemSchedule {
 
         let systems = std::mem::take(&mut self.systems);
 
-        // TODO: Actually schedule these rather than just run them in order
-        for system_box in self.exclusive_systems.iter() {
-            let mut system = system_box.system.take().unwrap();
-            system.execute_safe((), world);
-            system_box.system.set(Some(system));
-        }
-
         // Kick off parallel tasks for each of the root systems
         self.root_systems
             .par_iter()
@@ -257,72 +365,86 @@ impl SystemSchedule {
 
     /// Handles rebuilding the execution graph
     fn rebuild_graph(&mut self) {
-        self.clear_graph_nodes();
-        self.collect_access_descriptors();
-        self.build_graph_nodes();
+        Self::clear_graph_nodes(&mut self.systems);
+        Self::clear_graph_nodes(&mut self.exclusive_systems);
+        self.root_systems.clear();
+        self.exclusive_root_systems.clear();
+
+        Self::collect_access_descriptors(&mut self.systems, &self.system_label_map);
+        Self::collect_access_descriptors(
+            &mut self.exclusive_systems,
+            &self.exclusive_system_label_map,
+        );
+
+        Self::build_graph_nodes(&mut self.systems, &mut self.root_systems);
+        Self::build_graph_nodes(
+            &mut self.exclusive_systems,
+            &mut self.exclusive_root_systems,
+        );
+
         self.dirty = false;
     }
 
     /// Used for clearing all the edges from all the nodes prior to a graph rebuild
-    fn clear_graph_nodes(&mut self) {
-        self.systems.iter_mut().for_each(|v| {
+    fn clear_graph_nodes<T>(systems: &mut [SystemBox<T>]) {
+        systems.iter_mut().for_each(|v| {
             v.edges.predecessors.clear();
             v.edges.successors.clear();
         });
-        self.root_systems.clear();
     }
 
-    fn collect_access_descriptors(&mut self) {
-        for i in 0..self.systems.len() {
+    fn collect_access_descriptors<T: GenericSystemCell>(
+        systems: &mut [SystemBox<T>],
+        system_label_map: &HashMap<Box<dyn Label>, usize>,
+    ) {
+        for i in 0..systems.len() {
             // First we call clear the access descriptor and re-populate it by calling
             // declare_access for each system
             {
-                let v = &mut self.systems[i];
+                let v = &mut systems[i];
                 v.access.clear();
-
-                let mut system = v.system.take().unwrap();
-                system.declare_access(&mut v.access);
-                v.system.store(Some(system));
+                v.system.declare_access(&mut v.access);
             }
 
             // Next we write the explicit "runs before" execution dependencies into the graph
-            let runs_before = std::mem::take(&mut self.systems[i].access.runs_before);
+            let runs_before = std::mem::take(&mut systems[i].access.runs_before);
             for before in runs_before.iter() {
                 // Get the index of the system that we wish to run before
-                let before = self.system_label_map.get(before).copied().unwrap();
+                let before = system_label_map.get(before).copied().unwrap();
 
                 // Mark ourselves as a predecessor to that system
-                self.systems[before].edges.predecessors.insert(i);
+                systems[before].edges.predecessors.insert(i);
 
                 // Add the target system to our successor set
-                self.systems[i].edges.successors.insert(before);
+                systems[i].edges.successors.insert(before);
             }
-            self.systems[i].access.runs_before = runs_before;
+            systems[i].access.runs_before = runs_before;
 
             // Next we write the explicit "runs after" execution dependencies into the graph
-            let runs_after = std::mem::take(&mut self.systems[i].access.runs_after);
+            let runs_after = std::mem::take(&mut systems[i].access.runs_after);
             for after in runs_after.iter() {
                 // Get the index of the system that we wish to run after
-                let after = self.system_label_map.get(after).copied().unwrap();
+                let after = system_label_map.get(after).copied().unwrap();
 
                 // Mark ourselves as a successor to that system
-                self.systems[after].edges.successors.insert(i);
+                systems[after].edges.successors.insert(i);
 
                 // Add the target system to our predecessor set
-                self.systems[i].edges.predecessors.insert(after);
+                systems[i].edges.predecessors.insert(after);
             }
-            self.systems[i].access.runs_after = runs_after;
+            systems[i].access.runs_after = runs_after;
         }
     }
 
-    fn build_graph_nodes(&mut self) {
+    fn build_graph_nodes<T>(systems: &mut [SystemBox<T>], root_systems: &mut Vec<usize>) {
         let mut last_component_write: HashMap<ComponentTypeId, usize> = HashMap::new();
         let mut last_component_reads: HashMap<ComponentTypeId, Vec<usize>> = HashMap::new();
         let mut last_resource_write: HashMap<ResourceId, usize> = HashMap::new();
         let mut last_resource_reads: HashMap<ResourceId, Vec<usize>> = HashMap::new();
 
-        for system_index in 0..self.systems.len() {
-            self.handle_writes(
+        for system_index in 0..systems.len() {
+            Self::handle_writes(
+                systems,
                 &mut last_component_write,
                 &mut last_component_reads,
                 &mut last_resource_write,
@@ -330,7 +452,8 @@ impl SystemSchedule {
                 system_index,
             );
 
-            self.handle_reads(
+            Self::handle_reads(
+                systems,
                 &mut last_component_write,
                 &mut last_component_reads,
                 &mut last_resource_write,
@@ -339,42 +462,44 @@ impl SystemSchedule {
             );
         }
 
-        for (i, system) in self.systems.iter().enumerate() {
+        for (i, system) in systems.iter().enumerate() {
             if system.edges.predecessors.is_empty() {
-                self.root_systems.push(i);
+                root_systems.push(i);
             }
         }
     }
 
-    fn handle_writes(
-        &mut self,
+    fn handle_writes<T>(
+        systems: &mut [SystemBox<T>],
         last_component_write: &mut HashMap<ComponentTypeId, usize>,
         last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
         last_resource_write: &mut HashMap<ResourceId, usize>,
         last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
         system_index: usize,
     ) {
-        let writes = std::mem::take(&mut self.systems[system_index].access.component_writes);
-        self.handle_writes_generic(
+        let writes = std::mem::take(&mut systems[system_index].access.component_writes);
+        Self::handle_writes_generic(
+            systems,
             writes.iter().copied(),
             last_component_write,
             last_component_reads,
             system_index,
         );
-        self.systems[system_index].access.component_writes = writes;
+        systems[system_index].access.component_writes = writes;
 
-        let writes = std::mem::take(&mut self.systems[system_index].access.resource_writes);
-        self.handle_writes_generic(
+        let writes = std::mem::take(&mut systems[system_index].access.resource_writes);
+        Self::handle_writes_generic(
+            systems,
             writes.iter().copied(),
             last_resource_write,
             last_resource_reads,
             system_index,
         );
-        self.systems[system_index].access.resource_writes = writes;
+        systems[system_index].access.resource_writes = writes;
     }
 
-    fn handle_writes_generic<T: Copy + Eq + Hash>(
-        &mut self,
+    fn handle_writes_generic<T: Copy + Eq + Hash, X>(
+        systems: &mut [SystemBox<X>],
         writes: impl Iterator<Item = T>,
         last_write: &mut HashMap<T, usize>,
         last_reads: &mut HashMap<T, Vec<usize>>,
@@ -388,8 +513,8 @@ impl SystemSchedule {
                 Some(reads) => {
                     for read in reads.iter().copied() {
                         if read != system_index {
-                            self.systems[system_index].edges.predecessors.insert(read);
-                            self.systems[read].edges.successors.insert(system_index);
+                            systems[system_index].edges.predecessors.insert(read);
+                            systems[read].edges.successors.insert(system_index);
                         }
                     }
                     reads.clear();
@@ -398,35 +523,37 @@ impl SystemSchedule {
         }
     }
 
-    fn handle_reads(
-        &mut self,
+    fn handle_reads<T>(
+        systems: &mut [SystemBox<T>],
         last_component_write: &mut HashMap<ComponentTypeId, usize>,
         last_component_reads: &mut HashMap<ComponentTypeId, Vec<usize>>,
         last_resource_write: &mut HashMap<ResourceId, usize>,
         last_resource_reads: &mut HashMap<ResourceId, Vec<usize>>,
         system_index: usize,
     ) {
-        let reads = std::mem::take(&mut self.systems[system_index].access.component_reads);
-        self.handle_reads_generic(
+        let reads = std::mem::take(&mut systems[system_index].access.component_reads);
+        Self::handle_reads_generic(
+            systems,
             reads.iter().copied(),
             last_component_write,
             last_component_reads,
             system_index,
         );
-        self.systems[system_index].access.component_reads = reads;
+        systems[system_index].access.component_reads = reads;
 
-        let reads = std::mem::take(&mut self.systems[system_index].access.resource_reads);
-        self.handle_reads_generic(
+        let reads = std::mem::take(&mut systems[system_index].access.resource_reads);
+        Self::handle_reads_generic(
+            systems,
             reads.iter().copied(),
             last_resource_write,
             last_resource_reads,
             system_index,
         );
-        self.systems[system_index].access.resource_reads = reads;
+        systems[system_index].access.resource_reads = reads;
     }
 
-    fn handle_reads_generic<T: Copy + Eq + Hash>(
-        &mut self,
+    fn handle_reads_generic<T: Copy + Eq + Hash, X>(
+        systems: &mut [SystemBox<X>],
         reads: impl Iterator<Item = T>,
         last_write: &mut HashMap<T, usize>,
         last_reads: &mut HashMap<T, Vec<usize>>,
@@ -448,8 +575,8 @@ impl SystemSchedule {
                 None => {}
                 Some(write) => {
                     if write != system_index {
-                        self.systems[system_index].edges.predecessors.insert(write);
-                        self.systems[write].edges.successors.insert(system_index);
+                        systems[system_index].edges.predecessors.insert(write);
+                        systems[write].edges.successors.insert(system_index);
                     }
                 }
             }
@@ -475,12 +602,33 @@ type SystemCell = AtomicCell<Option<Box<BoxedSystem>>>;
 /// be used. Otherwise global locks would be used to send the systems and that's bad
 type ExclusiveSystemCell = Cell<Option<Box<BoxedExclusiveSystem>>>;
 
+/// Generic wrapper for allowing to schedule different system streams with the same implementations
+trait GenericSystemCell {
+    fn declare_access(&self, access: &mut SystemAccessDescriptor);
+}
+
+impl GenericSystemCell for SystemCell {
+    fn declare_access(&self, access: &mut SystemAccessDescriptor) {
+        let mut system = self.take().unwrap();
+        system.declare_access(access);
+        self.store(Some(system))
+    }
+}
+
+impl GenericSystemCell for ExclusiveSystemCell {
+    fn declare_access(&self, access: &mut SystemAccessDescriptor) {
+        let mut system = self.take().unwrap();
+        system.declare_access(access);
+        self.set(Some(system))
+    }
+}
+
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
 ///
-struct SystemBox {
+struct SystemBox<T> {
     /// The boxed system, stored in an atomic cell so it can be sent to other threads
-    system: SystemCell,
+    system: T,
 
     /// The accesses declared by the system
     access: SystemAccessDescriptor,
@@ -489,7 +637,7 @@ struct SystemBox {
     edges: GraphEdges,
 }
 
-impl SystemBox {
+impl SystemBox<SystemCell> {
     pub fn new<S: System<In = (), Out = ()> + Send + Sync>(
         label: Box<dyn Label>,
         system: S,
@@ -503,23 +651,8 @@ impl SystemBox {
     }
 }
 
-///
-/// Internal container for pairing a boxed system with some metadata used to schedule the system
-///
-struct ExclusiveSystemBox {
-    /// The boxed system, stored in an atomic cell so it can be sent to other threads
-    system: ExclusiveSystemCell,
-
-    /// The accesses declared by the system
-    access: SystemAccessDescriptor,
-
-    /// The edges out of the system's node in the execution graph
-    edges: GraphEdges,
-}
-
-impl ExclusiveSystemBox {
-    pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
-        assert!(SystemCell::is_lock_free());
+impl SystemBox<ExclusiveSystemCell> {
+    pub fn new_exclusive<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
         Self {
             system: ExclusiveSystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),
@@ -527,7 +660,6 @@ impl ExclusiveSystemBox {
         }
     }
 }
-
 ///
 /// Internal container for the edges of execution dependency graph.
 ///
