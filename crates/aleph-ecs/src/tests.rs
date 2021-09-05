@@ -28,7 +28,7 @@
 //
 
 use crate::scheduler::SystemSchedule;
-use crate::system::{IntoSystem, Res, ResMut};
+use crate::system::{ExplicitDependencies, IntoSystem, Res, ResMut};
 use crate::world::{Query, World};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
@@ -449,11 +449,18 @@ fn system_schedule_test() {
         assert_eq!(*v.1, 56);
     };
 
+    let system_closure_3 = move |mut v: ResMut<usize>| {
+        *v = 21;
+    };
+
     let mut system_schedule = SystemSchedule::default();
     system_schedule.add_system("SYSTEM_1", system_fn_1);
     system_schedule.add_system("SYSTEM_2", system_fn_2.system());
-    system_schedule.add_system("SYSTEM_3", system_closure_1);
-    system_schedule.add_system("SYSTEM_4", system_closure_2.system());
+    system_schedule.add_system("SYSTEM_3", system_closure_1.system());
+    system_schedule.add_system("SYSTEM_4", system_closure_2);
+    system_schedule.add_system("SYSTEM_5", system_closure_3.system().runs_after("SYSTEM_4"));
 
+    system_schedule.run_once(&mut world);
+    system_schedule.run_once(&mut world);
     system_schedule.run_once(&mut world);
 }
