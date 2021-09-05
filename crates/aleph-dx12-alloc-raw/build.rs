@@ -36,6 +36,7 @@ fn main() {
 
     if target_platform().is_windows() && target_platform().is_gnu() {
         cc::Build::new()
+            .cpp(true)
             .file(cpp_file)
             .file("thirdparty_shim/shim.cpp")
             .flag("-fpermissive")
@@ -44,6 +45,7 @@ fn main() {
             .compile("d3d12ma");
     } else if target_platform().is_msvc() {
         cc::Build::new()
+            .cpp(true)
             .file(cpp_file)
             .file("thirdparty_shim/shim.cpp")
             .include(inc_dir)
