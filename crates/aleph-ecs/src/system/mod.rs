@@ -49,7 +49,7 @@ use std::any::Any;
 ///
 /// The interface expected of a [`System`] object.
 ///
-pub trait System: Any + Send + Sync + 'static {
+pub trait System: Any + 'static {
     /// An arbitrary type that can be passed into [`System::execute`].
     type In;
 

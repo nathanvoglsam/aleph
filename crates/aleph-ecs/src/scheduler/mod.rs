@@ -100,7 +100,11 @@ impl Schedule {
     /// This provides a dynamic and composable system for skipping work based on arbitrary
     /// preconditions.
     #[inline]
-    pub fn set_run_criteria<Param, S: IntoSystem<(), ShouldRun, Param>>(
+    pub fn set_run_criteria<
+        Param,
+        T: System<In = (), Out = ShouldRun> + Send + Sync,
+        S: IntoSystem<(), ShouldRun, Param, System = T>,
+    >(
         &mut self,
         system: S,
     ) -> &mut Self {
@@ -192,7 +196,11 @@ impl Schedule {
     /// - Will panic if the stage with [`Label`] of `label` does not exist.
     /// - Will panic if the stage is not of type [`SystemSchedule`].
     #[inline]
-    pub fn add_system_to_stage<Param, S: IntoSystem<(), (), Param>>(
+    pub fn add_system_to_stage<
+        Param,
+        T: System<In = (), Out = ()> + Send + Sync,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
         &mut self,
         target: &impl Label,
         label: impl Label,
@@ -200,6 +208,28 @@ impl Schedule {
     ) -> &mut Self {
         self.stage(target, move |v: &mut SystemSchedule| {
             v.add_system(label, system)
+        })
+    }
+
+    /// Inserts the given system labeled `label` into the stage with the `target` label.
+    ///
+    /// # Panics
+    ///
+    /// - Will panic if the stage with [`Label`] of `label` does not exist.
+    /// - Will panic if the stage is not of type [`SystemSchedule`].
+    #[inline]
+    pub fn add_exclusive_at_start_system_to_stage<
+        Param,
+        T: System<In = (), Out = ()>,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        target: &impl Label,
+        label: impl Label,
+        system: S,
+    ) -> &mut Self {
+        self.stage(target, move |v: &mut SystemSchedule| {
+            v.add_exclusive_at_start_system(label, system)
         })
     }
 

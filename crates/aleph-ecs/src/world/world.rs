@@ -191,15 +191,20 @@ impl World {
         let mut archetype_map = HashMap::new();
         archetype_map.insert(EntityLayoutBuf::new(), None);
 
-        let out = Self {
+        let resources = Default::default();
+
+        let mut out = Self {
             options,
             component_registry,
             entities,
             archetype_map,
             archetypes,
             archetype_edges,
-            resources: Default::default(),
+            resources,
         };
+
+        // Insert dummy resource
+        out.add_resource(());
 
         Ok(out)
     }

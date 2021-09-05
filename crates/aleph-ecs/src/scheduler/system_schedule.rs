@@ -34,13 +34,21 @@ use aleph_label::Label;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
+use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Default)]
 pub struct SystemSchedule {
-    /// Stores all systems in the schedule along with the label it was registered with
+    /// Stores all exclusive systems in the schedule
+    exclusive_systems: Vec<ExclusiveSystemBox>,
+
+    /// Maps a label to the system it was registered with. Accelerates looking up a system by label
+    /// as well as accelerating duplicate label checks.
+    exclusive_system_label_map: HashMap<Box<dyn Label>, usize>,
+
+    /// Stores all systems in the schedule
     systems: Vec<SystemBox>,
 
     /// Maps a label to the system it was registered with. Accelerates looking up a system by label
@@ -55,7 +63,41 @@ pub struct SystemSchedule {
 }
 
 impl SystemSchedule {
-    pub fn add_system<Param, S: IntoSystem<(), (), Param>>(
+    pub fn add_exclusive_at_start_system<
+        Param,
+        T: System<In = (), Out = ()>,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        label: impl Label,
+        system: S,
+    ) -> &mut Self {
+        self.dirty = true;
+
+        let label: Box<dyn Label> = Box::new(label);
+
+        // Push the new system into the system list, capturing the index it will be inserted into
+        let index = self.systems.len();
+        self.exclusive_systems
+            .push(ExclusiveSystemBox::new(label.clone(), system.system()));
+
+        // Insert the label into the label->index map, checking if the label has already been
+        // registered (triggers a panic)
+        if self
+            .exclusive_system_label_map
+            .insert(label.clone(), index)
+            .is_some()
+        {
+            panic!("System already exists: {:?}.", label);
+        }
+        self
+    }
+
+    pub fn add_system<
+        Param,
+        T: System<In = (), Out = ()> + Send + Sync,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
         &mut self,
         label: impl Label,
         system: S,
@@ -182,13 +224,24 @@ impl SystemSchedule {
             drop(wg);
         }
 
+        let systems = std::mem::take(&mut self.systems);
+
+        // TODO: Actually schedule these rather than just run them in order
+        for system_box in self.exclusive_systems.iter() {
+            let mut system = system_box.system.take().unwrap();
+            system.execute_safe((), world);
+            system_box.system.set(Some(system));
+        }
+
         // Kick off parallel tasks for each of the root systems
         self.root_systems
             .par_iter()
             .copied()
             .for_each(|system_index| {
-                exec_task(&self.systems, &done, &payloads, world, system_index);
+                exec_task(&systems, &done, &payloads, world, system_index);
             });
+
+        self.systems = systems;
 
         // Wait for all of the systems to complete their execution
         wg.wait();
@@ -405,13 +458,22 @@ impl SystemSchedule {
 }
 
 /// Type alias for a boxed system trait object
-type BoxedSystem = Box<dyn System<In = (), Out = ()>>;
+type BoxedSystem = Box<dyn System<In = (), Out = ()> + Send + Sync>;
+
+/// Type alias for a boxed system trait object
+type BoxedExclusiveSystem = Box<dyn System<In = (), Out = ()>>;
 
 /// Type alias for the thread safe slot a system is stored in. The type is very verbose to write.
 ///
 /// We need to double box the system to make sizeof(Option<Box<BoxedSystem>>) == 8 so atomics can
 /// be used. Otherwise global locks would be used to send the systems and that's bad
 type SystemCell = AtomicCell<Option<Box<BoxedSystem>>>;
+
+/// Type alias for the thread safe slot a system is stored in. The type is very verbose to write.
+///
+/// We need to double box the system to make sizeof(Option<Box<BoxedSystem>>) == 8 so atomics can
+/// be used. Otherwise global locks would be used to send the systems and that's bad
+type ExclusiveSystemCell = Cell<Option<Box<BoxedExclusiveSystem>>>;
 
 ///
 /// Internal container for pairing a boxed system with some metadata used to schedule the system
@@ -428,10 +490,38 @@ struct SystemBox {
 }
 
 impl SystemBox {
-    pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
+    pub fn new<S: System<In = (), Out = ()> + Send + Sync>(
+        label: Box<dyn Label>,
+        system: S,
+    ) -> Self {
         assert!(SystemCell::is_lock_free());
         Self {
             system: SystemCell::new(Some(Box::new(Box::new(system)))),
+            access: SystemAccessDescriptor::new(label),
+            edges: GraphEdges::default(),
+        }
+    }
+}
+
+///
+/// Internal container for pairing a boxed system with some metadata used to schedule the system
+///
+struct ExclusiveSystemBox {
+    /// The boxed system, stored in an atomic cell so it can be sent to other threads
+    system: ExclusiveSystemCell,
+
+    /// The accesses declared by the system
+    access: SystemAccessDescriptor,
+
+    /// The edges out of the system's node in the execution graph
+    edges: GraphEdges,
+}
+
+impl ExclusiveSystemBox {
+    pub fn new<S: System<In = (), Out = ()>>(label: Box<dyn Label>, system: S) -> Self {
+        assert!(SystemCell::is_lock_free());
+        Self {
+            system: ExclusiveSystemCell::new(Some(Box::new(Box::new(system)))),
             access: SystemAccessDescriptor::new(label),
             edges: GraphEdges::default(),
         }

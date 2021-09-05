@@ -264,6 +264,19 @@ impl<Param: SystemParam + 'static, F: SystemParamFunction<Param>> IntoSystem<(),
 
 // ============================================================================================== //
 
+impl<T: FnMut() + 'static> System for T {
+    type In = ();
+    type Out = ();
+
+    fn declare_access(&mut self, _access: &mut dyn AccessDescriptor) {}
+
+    unsafe fn execute(&mut self, _input: Self::In, _world: &World) -> Self::Out {
+        (self)()
+    }
+}
+
+// ============================================================================================== //
+
 #[macro_export]
 macro_rules! impl_system_function {
     ($($param: ident),*) => {
