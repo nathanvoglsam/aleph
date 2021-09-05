@@ -27,10 +27,4 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
-
-mod plugin;
-mod schedule_provider;
-mod world_provider;
-
-pub use plugin::PluginCore;
+pub use aleph_ecs::system::*;

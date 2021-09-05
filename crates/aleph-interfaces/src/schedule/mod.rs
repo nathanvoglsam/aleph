@@ -30,6 +30,7 @@
 pub use aleph_ecs::scheduler::*;
 
 use crate::any::IAny;
+use crate::label::Label;
 use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
@@ -129,5 +130,37 @@ impl<'a> Drop for ScheduleScope<'a> {
             let schedule = ManuallyDrop::take(&mut self.schedule);
             self.cell.store(schedule)
         }
+    }
+}
+
+/// This enum provides a [`Label`] type that names the core engine execution stages.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+pub enum CoreStage {
+    /// This stage runs at the very beginning of a frame and should be primarily used for collecting
+    /// input from the keyboard/mouse/controllers/etc...
+    InputCollection,
+
+    /// This stage runs directly before [CoreStage::Update] and has the primary purpose of allowing
+    /// systems to setup engine state before the update stage.
+    PreUpdate,
+
+    /// This is the main update stage where the bulk of all gameplay code should be placed. Any
+    /// other stage will be used almost exclusively by engine systems to make whatever happens in
+    /// the update stage work
+    Update,
+
+    /// This stage runs directly after [CoreStage::Update] and is the counterpart
+    /// [CoreStage::PreUpdate], used for scheduling core to run after the update stage.
+    PostUpdate,
+
+    /// This is the final execution stage that runs after all other stages. This should primarily
+    /// be used by the renderer to drive record and submit GPU work at a stage where all gameplay
+    /// code has finished.
+    Render,
+}
+
+impl Label for CoreStage {
+    fn dyn_clone(&self) -> Box<dyn Label> {
+        Box::new(*self)
     }
 }

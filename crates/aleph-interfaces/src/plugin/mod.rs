@@ -90,48 +90,13 @@ pub trait IPlugin: IAny {
         Box::new(Vec::new())
     }
 
-    ///
-    #[allow(unused_variables)]
-    fn on_input_collection(&mut self, registry: &dyn IRegistryAccessor) {}
-
-    ///
-    #[allow(unused_variables)]
-    fn on_pre_update(&mut self, registry: &dyn IRegistryAccessor) {}
-
     /// Called by the engine runtime exactly once *per iteration* of the main loop
     #[allow(unused_variables)]
     fn on_update(&mut self, registry: &dyn IRegistryAccessor) {}
 
-    ///
-    #[allow(unused_variables)]
-    fn on_post_update(&mut self, registry: &dyn IRegistryAccessor) {}
-
-    ///
-    #[allow(unused_variables)]
-    fn on_render(&mut self, registry: &dyn IRegistryAccessor) {}
-
     /// Called by the engine runtime exactly once during the shutdown phase of the engine
     #[allow(unused_variables)]
     fn on_exit(&mut self, registry: &dyn IRegistryAccessor) {}
-}
-
-impl dyn IPlugin {
-    pub fn update_driver(&mut self, stage: usize, registry: &dyn IRegistryAccessor) {
-        const INPUT_COLLECTION: usize = UpdateStage::InputCollection as usize;
-        const PRE_UPDATE: usize = UpdateStage::PreUpdate as usize;
-        const UPDATE: usize = UpdateStage::Update as usize;
-        const POST_UPDATE: usize = UpdateStage::PostUpdate as usize;
-        const RENDER: usize = UpdateStage::Render as usize;
-
-        match stage {
-            INPUT_COLLECTION => self.on_input_collection(registry),
-            PRE_UPDATE => self.on_pre_update(registry),
-            UPDATE => self.on_update(registry),
-            POST_UPDATE => self.on_post_update(registry),
-            RENDER => self.on_render(registry),
-            _ => panic!("Invalid update stage"),
-        }
-    }
 }
 
 ///
@@ -264,10 +229,10 @@ pub trait IPluginRegistrar: 'static {
     fn __must_init_after(&mut self, requires: TypeId);
 
     /// Object safe implementation of `must_update_after`. See wrapper for more info.
-    fn __must_update_after(&mut self, stage: UpdateStage, requires: TypeId);
+    fn __must_update_after(&mut self, requires: TypeId);
 
-    /// Register that the plugin should have an update function called for the given stage.
-    fn update_stage(&mut self, stage: UpdateStage);
+    /// Register that the plugin should have their update function called.
+    fn should_update(&mut self);
 }
 
 impl dyn IPluginRegistrar {
@@ -292,38 +257,7 @@ impl dyn IPluginRegistrar {
 
     /// Declares that the plugin's update function can only execute *after* the given plugin has had
     /// its own update function execute.
-    pub fn must_update_after<T: IAny + ?Sized>(&mut self, stage: UpdateStage) {
-        self.__must_update_after(stage, TypeId::of::<T>())
+    pub fn must_update_after<T: IAny + ?Sized>(&mut self) {
+        self.__must_update_after(TypeId::of::<T>())
     }
-}
-
-///
-/// An enumeration of all the currently supported execution stages in the update loop
-///
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-#[repr(u32)]
-pub enum UpdateStage {
-    /// The first update stage. Semantically should be used by platform implementations for
-    /// collecting input from the host.
-    InputCollection = 0,
-
-    /// The second update stage. Semantically should be used to run code before the bulk of gameplay
-    /// code will be run.
-    PreUpdate = 1,
-
-    /// The third update stage. Semantically should be used for implementing gameplay logic, like
-    /// player controllers, AI, etc.
-    Update = 2,
-
-    /// The fourth update stage. Semantically should be used for implementing logic that needs to
-    /// run immediately after gameplay logic, but before the rendering stage.
-    PostUpdate = 3,
-
-    /// The fifth update stage. Semantically should be used for implementing rendering logic.
-    Render = 4,
-}
-
-impl UpdateStage {
-    /// The number of distinct execution stages
-    pub const STAGE_COUNT: usize = 5;
 }

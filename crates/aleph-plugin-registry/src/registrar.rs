@@ -27,16 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::interfaces::plugin::{IPluginRegistrar, UpdateStage};
+use crate::interfaces::plugin::IPluginRegistrar;
 use std::any::TypeId;
 use std::collections::BTreeSet;
 
 pub struct PluginRegistrar {
     pub depends_on_list: BTreeSet<TypeId>,
     pub provided_interfaces: BTreeSet<TypeId>,
-    pub init_after_list: Vec<BTreeSet<TypeId>>,
-    pub update_stage_dependencies: Vec<BTreeSet<TypeId>>,
-    pub update_stages: BTreeSet<usize>,
+    pub init_after_list: BTreeSet<TypeId>,
+    pub update_stage_dependencies: BTreeSet<TypeId>,
+    pub should_update: bool,
 }
 
 impl IPluginRegistrar for PluginRegistrar {
@@ -49,17 +49,18 @@ impl IPluginRegistrar for PluginRegistrar {
     }
 
     fn __must_init_after(&mut self, requires: TypeId) {
-        self.init_after_list[0].insert(requires);
+        self.init_after_list.insert(requires);
     }
 
-    fn __must_update_after(&mut self, stage: UpdateStage, requires: TypeId) {
-        if !self.update_stages.contains(&(stage as usize)) {
-            panic!("Declared execution dependency for stage plugin not declared to execute in");
-        }
-        self.update_stage_dependencies[stage as usize].insert(requires);
+    fn __must_update_after(&mut self, requires: TypeId) {
+        assert!(
+            self.should_update,
+            "Declared execution dependency for stage plugin not declared to execute in"
+        );
+        self.update_stage_dependencies.insert(requires);
     }
 
-    fn update_stage(&mut self, stage: UpdateStage) {
-        self.update_stages.insert(stage as usize);
+    fn should_update(&mut self) {
+        self.should_update = true;
     }
 }
