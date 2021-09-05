@@ -36,11 +36,10 @@ use aleph::egui::IEguiContextProvider;
 use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
-use aleph::interfaces::schedule::{IScheduleProvider, CoreStage};
+use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
 
 struct PluginGameLogic();
-
 
 impl PluginGameLogic {
     pub fn new() -> Self {

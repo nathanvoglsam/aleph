@@ -40,15 +40,15 @@ use interfaces::platform::{
     IMouseProvider, IWindowProvider, KeyboardEvent, MouseEvent, WindowEvent,
 };
 use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription, IQuitHandle
+    IInitResponse, IPlugin, IPluginRegistrar, IQuitHandle, IRegistryAccessor, PluginDescription,
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use parking_lot::RwLockWriteGuard;
 use sdl2::mouse::SystemCursor;
 use std::any::TypeId;
+use std::cell::Cell;
 use std::collections::HashMap;
 use std::ops::Deref;
-use std::cell::Cell;
 use std::rc::Rc;
 
 pub struct PluginPlatformSDL2 {
@@ -68,7 +68,7 @@ impl PluginPlatformSDL2 {
             mouse_util: None,
             timer: None,
             window: None,
-            main_ctx
+            main_ctx,
         };
         Self {
             sdl: Rc::new(Cell::new(Some(sdl))),
@@ -79,7 +79,7 @@ impl PluginPlatformSDL2 {
                 keyboard: None,
                 events: None,
                 clipboard: None,
-            })
+            }),
         }
     }
 }
@@ -249,7 +249,11 @@ impl IPlugin for PluginPlatformSDL2 {
 }
 
 impl PluginPlatformSDL2 {
-    fn handle_requests(cursors: &HashMap<Cursor, sdl2::mouse::Cursor>, sdl: &mut SdlObjects, provider: &ProviderImpl) {
+    fn handle_requests(
+        cursors: &HashMap<Cursor, sdl2::mouse::Cursor>,
+        sdl: &mut SdlObjects,
+        provider: &ProviderImpl,
+    ) {
         let mut window = sdl.window.take().unwrap();
         let mouse_utils = sdl.mouse_util.take().unwrap();
         let mut window_state = Self::window_state(provider).unwrap();

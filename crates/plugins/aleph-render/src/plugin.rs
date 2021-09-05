@@ -32,7 +32,7 @@ use dx12::{dxgi, D3D12Object};
 use interfaces::any;
 use interfaces::platform::*;
 use interfaces::plugin::*;
-use interfaces::schedule::{IScheduleProvider, CoreStage};
+use interfaces::schedule::{CoreStage, IScheduleProvider};
 
 struct Data {
     window: any::AnyArc<dyn IWindow>,
@@ -211,8 +211,11 @@ impl IPlugin for PluginRenderDX12 {
                             )
                             .unwrap();
                         data.buffers = data.swap_chain.get_buffers(3).unwrap();
-                        data.renderer
-                            .recreate_swap_resources(&data.device, &data.buffers, dimensions);
+                        data.renderer.recreate_swap_resources(
+                            &data.device,
+                            &data.buffers,
+                            dimensions,
+                        );
                     }
                 }
 
