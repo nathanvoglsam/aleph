@@ -39,9 +39,11 @@ pub use system_access::SystemParamFetch;
 pub use system_access::SystemParamFunction;
 pub use system_access::SystemParamState;
 
-use crate::scheduler::AccessDescriptor;
+use crate::scheduler::{AccessDescriptor, Label};
 use crate::world::World;
 use std::any::Any;
+
+// ============================================================================================== //
 
 ///
 /// The interface expected of a [`System`] object.
@@ -111,12 +113,16 @@ pub trait System: Any + Send + Sync + 'static {
     }
 }
 
+// ============================================================================================== //
+
 /// Generic trait that handles transforming one type into another that implements `System`
 pub trait IntoSystem<In, Out, Params> {
     type System: System<In = In, Out = Out>;
 
     fn system(self) -> Self::System;
 }
+
+// ============================================================================================== //
 
 pub struct AlreadyWasSystem;
 
@@ -129,3 +135,91 @@ impl<In, Out, Sys: System<In = In, Out = Out>> IntoSystem<In, Out, AlreadyWasSys
         self
     }
 }
+
+// ============================================================================================== //
+
+/// This trait provides a generic interface for wrapping systems in one of the [`RunsBeforeSystem`]
+/// or [`RunsAfterSystem`] wrappers.
+///
+/// This allows for providing explicit system ordering requirements by specifying the label of a
+/// system that **must** run before or after another.
+///
+/// This is useful where the results of one system are required by another system but the order
+/// they would otherwise be scheduled in is ambiguous due to non intersecting access masks.
+pub trait ExplicitDependencies {
+    type OutSystem: System;
+
+    /// This adds an explicit dependency where the system `self` will finish executing before
+    /// another system denoted by the [`Label`] `l` can start executing.
+    fn runs_before<L: Label>(self, l: L) -> RunsBeforeSystem<Self::OutSystem, L>;
+
+    /// This adds an explicit dependency where the system `self` will only begin executing after
+    /// another system denoted by the [`Label`] `l` has finished executing.
+    fn runs_after<L: Label>(self, l: L) -> RunsAfterSystem<Self::OutSystem, L>;
+}
+
+impl<S: System + Sized> ExplicitDependencies for S {
+    type OutSystem = S;
+
+    #[inline]
+    fn runs_before<L: Label>(self, l: L) -> RunsBeforeSystem<S, L> {
+        RunsBeforeSystem { s: self, l }
+    }
+
+    #[inline]
+    fn runs_after<L: Label>(self, l: L) -> RunsAfterSystem<S, L> {
+        RunsAfterSystem { s: self, l }
+    }
+}
+
+// ============================================================================================== //
+
+/// A wrapper for some other [`System`] implementation that injects an explicit "runs before"
+/// dependency into [`System::declare_access`].
+pub struct RunsBeforeSystem<S: System + Sized, L: Label> {
+    s: S,
+    l: L,
+}
+
+impl<S: System, L: Label> System for RunsBeforeSystem<S, L> {
+    type In = S::In;
+    type Out = S::Out;
+
+    #[inline]
+    fn declare_access(&mut self, access: &mut dyn AccessDescriptor) {
+        access.runs_before_label(self.l.dyn_clone());
+        self.s.declare_access(access);
+    }
+
+    #[inline]
+    unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out {
+        self.s.execute(input, world)
+    }
+}
+
+// ============================================================================================== //
+
+/// A wrapper for some other [`System`] implementation that injects an explicit "runs after"
+/// dependency into [`System::declare_access`].
+pub struct RunsAfterSystem<S: System + Sized, L: Label> {
+    s: S,
+    l: L,
+}
+
+impl<S: System, L: Label> System for RunsAfterSystem<S, L> {
+    type In = S::In;
+    type Out = S::Out;
+
+    #[inline]
+    fn declare_access(&mut self, access: &mut dyn AccessDescriptor) {
+        access.runs_after_label(self.l.dyn_clone());
+        self.s.declare_access(access);
+    }
+
+    #[inline]
+    unsafe fn execute(&mut self, input: Self::In, world: &World) -> Self::Out {
+        self.s.execute(input, world)
+    }
+}
+
+// ============================================================================================== //
