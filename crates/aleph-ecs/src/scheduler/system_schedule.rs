@@ -133,7 +133,11 @@ impl SystemSchedule {
             system_index: usize,
         ) {
             // Unpack the payload
-            let payload = payloads[system_index].take().unwrap();
+            let payload = if let Some(payload) = payloads[system_index].take() {
+                payload
+            } else {
+                return;
+            };
 
             // Unpack the wait group to explicitly drop it to "use" it
             let wg = payload.wg;
