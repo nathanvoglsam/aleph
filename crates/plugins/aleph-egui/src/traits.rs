@@ -38,7 +38,7 @@ use std::sync::{Mutex, RwLock};
 ///
 /// This interface is used for getting an `egui::CtxRef`.
 ///
-pub trait IEguiContextProvider: IAny {
+pub trait IEguiContextProvider: IAny + Send + Sync {
     /// Gets a `egui::CtxRef` handle.
     fn get_context(&self) -> egui::CtxRef;
 }
