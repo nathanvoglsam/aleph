@@ -28,7 +28,10 @@
 //
 
 use crate::scheduler::system_schedule::system_box::SystemBox;
-use crate::scheduler::system_schedule::system_cell::GenericSystemCell;
+use crate::scheduler::system_schedule::system_cell::{
+    ExclusiveSystemCell, GenericSystemCell, SystemCell,
+};
+use crate::system::{IntoSystem, System};
 use crate::world::{ComponentTypeId, ResourceId, World};
 use aleph_label::Label;
 use crossbeam::atomic::AtomicCell;
@@ -49,6 +52,56 @@ pub struct SystemChannel<T: GenericSystemCell> {
 
     /// This caches the list of root tasks where execution should start from
     pub root_systems: Vec<usize>,
+}
+
+impl SystemChannel<SystemCell> {
+    pub fn add_system<
+        Param,
+        T: System<In = (), Out = ()> + Send + Sync,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        label: impl Label,
+        system: S,
+    ) {
+        let label: Box<dyn Label> = Box::new(label);
+
+        // Push the new system into the system list, capturing the index it will be inserted into
+        let index = self.systems.len();
+        self.systems
+            .push(SystemBox::new(label.clone(), system.system()));
+
+        // Insert the label into the label->index map, checking if the label has already been
+        // registered (triggers a panic)
+        if self.system_label_map.insert(label.clone(), index).is_some() {
+            panic!("System already exists: {:?}.", label);
+        }
+    }
+}
+
+impl SystemChannel<ExclusiveSystemCell> {
+    pub fn add_system<
+        Param,
+        T: System<In = (), Out = ()>,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        label: impl Label,
+        system: S,
+    ) {
+        let label: Box<dyn Label> = Box::new(label);
+
+        // Push the new system into the system list, capturing the index it will be inserted into
+        let index = self.systems.len();
+        self.systems
+            .push(SystemBox::new_exclusive(label.clone(), system.system()));
+
+        // Insert the label into the label->index map, checking if the label has already been
+        // registered (triggers a panic)
+        if self.system_label_map.insert(label.clone(), index).is_some() {
+            panic!("System already exists: {:?}.", label);
+        }
+    }
 }
 
 impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
@@ -160,99 +213,43 @@ impl<C: GenericSystemCell + Send + Sync> SystemChannel<C> {
 
 impl<C: GenericSystemCell> SystemChannel<C> {
     pub fn execute_exclusive(&mut self, world: &mut World) {
-        /// Struct that holds data that needs ownership transferred to the thread that executes the
-        /// matching system
-        struct WorkerPayload {
-            wg: WaitGroup,
-        }
-
-        /// Alias for the container a payload is sent to other threads in
-        ///
-        /// A Box is used to ensure the time in the AtomicCell is pointer sized so it can be sent
-        /// using atomic instructions instead of locks
-        type PayloadCell = AtomicCell<Option<Box<WorkerPayload>>>;
-
-        // Treat a non lock free implementation as an error
-        assert!(PayloadCell::is_lock_free());
-
-        // Root wait group that forces the function to wait for all systems to complete for exiting
-        let wg = WaitGroup::new();
-
         // SoA list of flags that denote whether the matching task has completed, indexed in
         // parallel with self.systems
-        let done: Vec<AtomicBool> = (0..self.systems.len())
-            .into_iter()
-            .map(|_| AtomicBool::new(false))
-            .collect();
+        let mut done: Vec<bool> = (0..self.systems.len()).into_iter().map(|_| false).collect();
 
-        // SoA list of worker payloads, indexed in parallel with self.systems
-        let payloads: Vec<PayloadCell> = (0..self.systems.len())
-            .into_iter()
-            .map(|_| {
-                let payload = WorkerPayload { wg: wg.clone() };
-                AtomicCell::new(Some(Box::new(payload)))
-            })
-            .collect();
+        // Stores the number of systems that have not yet been executed. Once this reaches 0 all
+        // systems are done and we exit the exec loop
+        let mut live_count = self.systems.len();
 
-        // This handles executing a system, then recursively executing the successive tasks
-        fn exec_task<T: GenericSystemCell>(
-            systems: &[SystemBox<T>],
-            done: &[AtomicBool],
-            payloads: &[PayloadCell],
-            world: &mut World,
-            system_index: usize,
-        ) {
-            // Unpack the payload
-            let payload = if let Some(payload) = payloads[system_index].take() {
-                payload
-            } else {
-                return;
-            };
+        while live_count != 0 {
+            for system_index in 0..self.systems.len() {
+                // Skip this system if we've already executed it
+                if done[system_index] {
+                    continue;
+                }
 
-            // Unpack the wait group to explicitly drop it to "use" it
-            let wg = payload.wg;
+                // Skip this system if we haven't executed all the predecessors yet
+                let all_predecessors_done = self.systems[system_index]
+                    .edges
+                    .predecessors
+                    .iter()
+                    .copied()
+                    .all(|predecessor| done[predecessor]);
+                if !all_predecessors_done {
+                    continue;
+                }
 
-            // Execute the system
-            systems[system_index].system.execute_safe(world);
+                // Execute the system
+                self.systems[system_index].system.execute_safe(world);
 
-            // Update the "done" flag now that the system has executed
-            done[system_index].store(true, Ordering::Relaxed);
+                // Update the "done" flag now that the system has executed
+                done[system_index] = true;
 
-            // Spawn new tasks for each successor system and execute it, if all of its predecessors
-            // have completed.
-            systems[system_index]
-                .edges
-                .successors
-                .iter()
-                .copied()
-                .for_each(|successor| {
-                    let successor: usize = successor;
-                    if systems[successor]
-                        .edges
-                        .predecessors
-                        .iter()
-                        .copied()
-                        .all(|predecessor| done[predecessor].load(Ordering::Relaxed))
-                    {
-                        exec_task(systems, done, payloads, world, successor);
-                    }
-                });
-
-            // Explicitly drop the wait group to "use" it according to the compiler.
-            drop(wg);
+                // Decrement the live system count. Once this reaches 0 all systems are done and we
+                // exit the exec loop
+                live_count -= 1;
+            }
         }
-
-        let systems = std::mem::take(&mut self.systems);
-
-        // Kick off parallel tasks for each of the root systems
-        self.root_systems.iter().copied().for_each(|system_index| {
-            exec_task(&systems, &done, &payloads, world, system_index);
-        });
-
-        self.systems = systems;
-
-        // Wait for all of the systems to complete their execution
-        wg.wait();
     }
 
     /// Used for clearing all the edges from all the nodes prior to a graph rebuild

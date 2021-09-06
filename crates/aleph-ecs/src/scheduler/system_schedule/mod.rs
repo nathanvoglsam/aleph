@@ -32,7 +32,6 @@ mod system_box;
 mod system_cell;
 mod system_channel;
 
-use crate::scheduler::system_schedule::system_box::SystemBox;
 use crate::scheduler::system_schedule::system_cell::{ExclusiveSystemCell, SystemCell};
 use crate::scheduler::system_schedule::system_channel::SystemChannel;
 use crate::scheduler::Stage;
@@ -56,6 +55,20 @@ pub struct SystemSchedule {
 }
 
 impl SystemSchedule {
+    pub fn add_exclusive_at_end_system<
+        Param,
+        T: System<In = (), Out = ()>,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        label: impl Label,
+        system: S,
+    ) -> &mut Self {
+        self.dirty = true;
+        self.exclusive_at_end.add_system(label, system);
+        self
+    }
+
     pub fn add_exclusive_at_start_system<
         Param,
         T: System<In = (), Out = ()>,
@@ -66,28 +79,7 @@ impl SystemSchedule {
         system: S,
     ) -> &mut Self {
         self.dirty = true;
-
-        let label: Box<dyn Label> = Box::new(label);
-
-        // Push the new system into the system list, capturing the index it will be inserted into
-        let index = self.exclusive_at_start.systems.len();
-        self.exclusive_at_start
-            .systems
-            .push(SystemBox::<ExclusiveSystemCell>::new_exclusive(
-                label.clone(),
-                system.system(),
-            ));
-
-        // Insert the label into the label->index map, checking if the label has already been
-        // registered (triggers a panic)
-        if self
-            .exclusive_at_start
-            .system_label_map
-            .insert(label.clone(), index)
-            .is_some()
-        {
-            panic!("System already exists: {:?}.", label);
-        }
+        self.exclusive_at_start.add_system(label, system);
         self
     }
 
@@ -101,25 +93,7 @@ impl SystemSchedule {
         system: S,
     ) -> &mut Self {
         self.dirty = true;
-
-        let label: Box<dyn Label> = Box::new(label);
-
-        // Push the new system into the system list, capturing the index it will be inserted into
-        let index = self.parallel_systems.systems.len();
-        self.parallel_systems
-            .systems
-            .push(SystemBox::new(label.clone(), system.system()));
-
-        // Insert the label into the label->index map, checking if the label has already been
-        // registered (triggers a panic)
-        if self
-            .parallel_systems
-            .system_label_map
-            .insert(label.clone(), index)
-            .is_some()
-        {
-            panic!("System already exists: {:?}.", label);
-        }
+        self.parallel_systems.add_system(label, system);
         self
     }
 

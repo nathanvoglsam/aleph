@@ -233,6 +233,28 @@ impl Schedule {
         })
     }
 
+    // Inserts the given system labeled `label` into the stage with the `target` label.
+    ///
+    /// # Panics
+    ///
+    /// - Will panic if the stage with [`Label`] of `label` does not exist.
+    /// - Will panic if the stage is not of type [`SystemSchedule`].
+    #[inline]
+    pub fn add_exclusive_at_end_system_to_stage<
+        Param,
+        T: System<In = (), Out = ()>,
+        S: IntoSystem<(), (), Param, System = T>,
+    >(
+        &mut self,
+        target: &impl Label,
+        label: impl Label,
+        system: S,
+    ) -> &mut Self {
+        self.stage(target, move |v: &mut SystemSchedule| {
+            v.add_exclusive_at_end_system(label, system)
+        })
+    }
+
     /// Looks up the [`Stage`] that was registered with the [`Label`] provided in `label` and passes
     /// a downcasted reference into the closure provided in `func`.
     ///
