@@ -55,17 +55,17 @@ aleph-logger = { path = "../aleph-logger", version = "0.1" }
 aleph-target = { path = "../aleph-target", version = "2" }
 aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
 
-aleph-core = { path = "../plugins/aleph-core", version = "0.1" }
-aleph-egui = { path = "../plugins/aleph-egui", version = "0.1" }
-aleph-sdl2 = { path = "../plugins/aleph-sdl2", version = "0.1", optional = true }
-aleph-headless = { path = "../plugins/aleph-headless", version = "0.1" }
+aleph-core = { path = "../../plugins/aleph-core", version = "0.1" }
+aleph-egui = { path = "../../plugins/aleph-egui", version = "0.1" }
+aleph-sdl2 = { path = "../../plugins/aleph-sdl2", version = "0.1", optional = true }
+aleph-headless = { path = "../../plugins/aleph-headless", version = "0.1" }
 
 raw-cpuid = "9"
 once_cell = "1"
 num_cpus = "1"
 
 [target.'cfg(windows)'.dependencies]
-aleph-render = { path = "../plugins/aleph-render", version = "0.1" }
+aleph-render = { path = "../../plugins/aleph-render", version = "0.1" }
 aleph-windows-raw = { path = "../aleph-windows-raw", version = "0.1" }
 
 utf16_lit = "2"

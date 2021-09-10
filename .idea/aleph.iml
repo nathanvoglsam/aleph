@@ -66,7 +66,6 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/engine/aleph-math/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/utils/aleph-logger/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/engine/aleph-platform-imgui/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/graphics/aleph-render-graph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/utils/aleph-ktx/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/utils/aleph-vk-format/src" isTestSource="false" />
@@ -116,7 +115,6 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-any/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-interfaces/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-plugin-registry/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-headless/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-sys-info/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-schema-parser/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-combine-utils/src" isTestSource="false" />
@@ -125,13 +123,15 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-ecs/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-virtual-buffer/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-label/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-core/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-sdl2/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/plugins/aleph-egui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-egui/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-headless/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-render/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
       <excludeFolder url="file://$MODULE_DIR$/aleph-runtime/target" />
-      <excludeFolder url="file://$MODULE_DIR$/crates/plugins/aleph-render/shaders/out" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
+      <excludeFolder url="file://$MODULE_DIR$/plugins/aleph-render/shaders/out" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

@@ -29,41 +29,22 @@
 
 
 [package]
-name = "aleph-sdl2"
+name = "aleph-egui"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The windowing and input implementation for aleph, based on SDL2"
+description = "Aleph's egui plugin"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-sdl2/"
+documentation = "https://docs.rs/aleph-egui/"
 readme = "README.md"
 ## TODO: keywords = ["macro", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
 
 [dependencies]
-aleph-log = { path = "../../aleph-log", version = "1" }
-aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
-aleph-windows-raw = { path = "../../aleph-windows-raw", version = "0.1" }
-ctrlc = "3"
-once_cell = "1"
-parking_lot = "0.11"
-
-[dependencies.sdl2]
-git = "https://github.com/nathanvoglsam/rust-sdl2.git"
-branch = "custom-raw-window-fork"
-version = "0.34"
-features = ["raw-window-handle"]
-
-[dependencies.raw-window-handle]
-git = "https://github.com/rust-windowing/raw-window-handle.git"
-branch = "master"
-version = "0.4.0-alpha.0"
-
-[build-dependencies]
-cmake = "0.1"
-aleph-compile = { path = "../../aleph-compile", version = "1" }
-aleph-target-build = { path = "../../aleph-target-build", version = "2" }
+aleph-log = { path = "../../crates/aleph-log", version = "1" }
+aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+egui = "0.12"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

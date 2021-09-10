@@ -29,24 +29,23 @@
 
 
 [package]
-name = "aleph-headless"
+name = "aleph-core"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "A platform plugin designed for running headless with minimal dependencies"
+description = "Aleph's core plugin"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-headless/"
+documentation = "https://docs.rs/aleph-core/"
 readme = "README.md"
 ## TODO: keywords = ["macro", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
 edition = "2018"
 
 [dependencies]
-aleph-log = { path = "../../aleph-log", version = "1" }
-aleph-interfaces = { path = "../../aleph-interfaces", version = "0.1" }
-ctrlc = "3"
-once_cell = "1"
-parking_lot = "0.11"
+aleph-label = { path = "../../crates/aleph-label", version = "1" }
+aleph-log = { path = "../../crates/aleph-log", version = "1" }
+aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+crossbeam = "0.8"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
