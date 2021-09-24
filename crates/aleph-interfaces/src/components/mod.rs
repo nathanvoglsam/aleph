@@ -27,16 +27,25 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
-pub extern crate aleph_label as label;
+mod transform {
+    ///
+    /// This component stores an object's transform in world space as position, rotation and scale
+    ///
+    #[derive(Clone, PartialEq, Debug, Default)]
+    #[repr(C)]
+    pub struct Transform {
+        /// This stores the position of the entity in world space using double-precision floating
+        /// point. This makes position "just work" for planet scale worlds
+        pub position: ultraviolet::DVec3,
 
-pub mod archive;
-pub mod asset;
-pub mod components;
-pub mod platform;
-pub mod plugin;
-pub mod schedule;
-pub mod system;
-pub mod world;
+        /// This stores the rotation of the entity in world space using single-precision floating
+        /// point. Rotation will not need more precision than an f32.
+        pub rotation: ultraviolet::Rotor3,
 
-mod utils;
+        /// This stores the scaling component using single-precision floating point. Double
+        /// precision would be wasted here so f32 is chosen instead.
+        pub scale: ultraviolet::Vec3,
+    }
+}
+
+pub use transform::Transform;

@@ -55,6 +55,7 @@ version = "0.4.0-alpha.0"
 [dependencies]
 serde = { version = "1", features = ["derive"], optional = true }
 rkyv = {version = "0.6", optional = true }
+ultraviolet = {version = "0.8", features = ["f64"] }
 thiserror = "1"
 
 [dependencies.aleph-any]
