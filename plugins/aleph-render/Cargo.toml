@@ -53,4 +53,4 @@ aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
 cstr = "0.2"
 once_cell = "1"
-ultraviolet = {version = "0.7", features = ["f64"] }
+ultraviolet = {version = "0.8", features = ["f64"] }
