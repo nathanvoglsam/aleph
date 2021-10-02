@@ -48,4 +48,41 @@ mod transform {
     }
 }
 
+mod camera {
+    ///
+    /// This component attaches camera behavior to an entity. The fields provide the configuration
+    /// for the renderer's projection matrix (except for the aspect ratio, which is derived by the
+    /// renderer from screen resolution).
+    ///
+    /// A [`Camera`] entity requires a [`crate::components::Transform`] component to provide a world
+    /// transform for the camera to render from.
+    ///
+    #[derive(Clone, PartialEq, Debug, Default)]
+    #[repr(C)]
+    pub struct Camera {
+        /// The field of view of the camera.
+        pub fov: f32,
+
+        /// The z distance of the near plane. Must be > 0 and < [`Camera::far`].
+        pub near: f32,
+
+        /// The z distance of the far plane. Must be > 0 and > [`Camera::near`].
+        pub far: f32,
+    }
+}
+
+mod lights {
+    ///
+    ///
+    ///
+    #[derive(Clone, PartialEq, Debug, Default)]
+    #[repr(C)]
+    pub struct PointLight {
+        /// The intensity of the light in lumens
+        pub intensity: f32,
+    }
+}
+
 pub use transform::Transform;
+pub use camera::Camera;
+pub use lights::PointLight;
