@@ -83,6 +83,6 @@ mod lights {
     }
 }
 
-pub use transform::Transform;
 pub use camera::Camera;
 pub use lights::PointLight;
+pub use transform::Transform;
