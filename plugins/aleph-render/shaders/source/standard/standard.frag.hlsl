@@ -32,23 +32,23 @@
 
 ConstantBuffer<CameraLayout> camera_buffer : register(b0);
 
+// Light parameters
+static float3 light_position = float3(5.0,0.5,1.0);
+static float lumens = 1000;
+
+// Material parameters
+static float3 base_colour = float3(0.2,1,1);
+static float metallic = 0.0;
+static float roughness = RemapRoughness(0.01);
+static float reflectance = 0.5;
+
 float4 main(in StaticMeshPixelInput input) : SV_Target0 {
     // Load buffers so auto complete works properly
     const CameraLayout camera = camera_buffer;
-	
-    // Light parameters
-    const float3 light_position = float3(5.0,0.5,1.0);
-    const float lumens = 1000;
 
     // Camera and light vectors
     const float3 camera_to_frag = camera.position - input.position;
     const float3 light_to_frag = input.position - light_position;
-
-    // Material parameters
-    const float3 base_colour = float3(0.2,1,1);
-    const float metallic = 0.0;
-    const float roughness = RemapRoughness(0.01);
-    const float reflectance = 0.5;
 
     // Derived material parameters
     const float3 v = normalize(camera_to_frag);
