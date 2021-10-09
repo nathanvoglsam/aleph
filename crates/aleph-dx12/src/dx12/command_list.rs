@@ -34,6 +34,7 @@ use crate::{
     ResourceBarrier, RootSignature, StreamOutputBufferView, TextureCopyLocation, TileCopyFlags,
     TileRegionSize, TiledResourceCoordinate, VertexBufferView, Viewport,
 };
+use std::borrow::Borrow;
 use std::mem::{align_of, size_of, transmute, MaybeUninit};
 use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use windows_raw::Win32::Direct3D12::{
@@ -292,11 +293,14 @@ impl GraphicsCommandList {
     ///
     /// Prefer `Self::resource_barrier` over this whenever possible
     #[inline]
-    pub unsafe fn resource_barrier_dynamic(&mut self, barriers: &[ResourceBarrier]) {
+    pub unsafe fn resource_barrier_dynamic<T: Borrow<ResourceBarrier>, I: Iterator<Item = T>>(
+        &mut self,
+        barriers: I,
+    ) {
         // Need to heap alloc to translate the type to something FFI compatible. Can't make the
         // wrapper FFI compatible without forcing very non-idiomatic and unsafe code on the user.
         let barriers: Vec<D3D12_RESOURCE_BARRIER> =
-            barriers.into_iter().map(|v| v.get_raw()).collect();
+            barriers.map(|v| v.borrow().get_raw()).collect();
         let num_barriers = barriers.len() as u32;
         let p_barriers = barriers.as_ptr();
         self.0.ResourceBarrier(num_barriers, p_barriers)
