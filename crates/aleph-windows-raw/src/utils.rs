@@ -244,6 +244,28 @@ pub fn optional_ref_to_ptr<T>(option: Option<&T>) -> *const T {
 #[macro_export]
 macro_rules! flags_bitwise_impl {
     ($t:ident) => {
+        impl $t {
+            #[inline]
+            pub fn is_single_flag(&self) -> bool {
+                self.0.count_ones() == 1
+            }
+
+            #[inline]
+            pub fn intersects(&self, other: &Self) -> bool {
+                (*self | *other).0 != 0
+            }
+
+            #[inline]
+            pub fn is_subset_of(&self, other: &Self) -> bool {
+                (*self | *other) == *self
+            }
+
+            #[inline]
+            pub fn is_disjoint_from(&self, other: &Self) -> bool {
+                !self.intersects(other)
+            }
+        }
+
         impl std::ops::BitOr for $t {
             type Output = Self;
 
