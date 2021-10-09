@@ -126,6 +126,7 @@
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-egui/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-headless/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/aleph-render-graph/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
