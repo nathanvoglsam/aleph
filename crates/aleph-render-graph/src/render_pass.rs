@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{BufferCreateDesc, RenderTargetCreateDesc, ResourceAccessDesc, ResourceCreateDesc};
+use crate::{BufferCreateDesc, ResourceAccessDesc, ResourceCreateDesc, TextureCreateDesc};
 use std::collections::HashMap;
 use std::convert::Into;
 
@@ -60,7 +60,7 @@ pub struct RenderPassAccesses {
 impl RenderPassAccesses {
     /// Declare for the current pass that we wish to create a new transient render target with the
     /// provided name and description
-    pub fn create_render_target(&mut self, name: impl Into<String>, desc: RenderTargetCreateDesc) {
+    pub fn create_texture(&mut self, name: impl Into<String>, desc: TextureCreateDesc) {
         assert!(self.creates.insert(name.into(), desc.into()).is_none())
     }
 
@@ -85,16 +85,54 @@ impl RenderPassAccesses {
         result: impl Into<String>,
         access: ResourceAccessDesc,
     ) {
+        let source = source.into();
+        let result = result.into();
+        assert_ne!(source, result);
         assert!(self
             .writes
-            .insert(
-                source.into(),
-                ResourceWrite {
-                    result: result.into(),
-                    access,
-                }
-            )
+            .insert(source, ResourceWrite { result, access })
             .is_none());
+    }
+}
+
+/// Generic implementation of [`IRenderPass`] based around closures
+pub struct CallbackPass<
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+> {
+    data: T,
+    declare_access: Option<D>,
+    record: R,
+}
+
+impl<T, D, R> CallbackPass<T, D, R>
+where
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+{
+    pub fn new(data: T, declare_access: D, record: R) -> Self {
+        Self {
+            data,
+            declare_access: Some(declare_access),
+            record,
+        }
+    }
+}
+
+impl<T, D, R> IRenderPass for CallbackPass<T, D, R>
+where
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+{
+    fn declare_access(&mut self, builder: &mut RenderPassAccesses) {
+        (self.declare_access.take().unwrap())(&mut self.data, builder);
+    }
+
+    fn record(&self, command_list: &mut dx12::GraphicsCommandList) {
+        (self.record)(&self.data, command_list);
     }
 }
 

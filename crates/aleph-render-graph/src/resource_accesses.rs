@@ -29,7 +29,12 @@
 
 use dx12::dxgi;
 
-pub struct RenderTargetCreateDesc {
+pub enum InitialState {
+    Clear,
+    Uninitialized,
+}
+
+pub struct TextureCreateDesc {
     /// The width of the render target in pixels
     pub width: u32,
 
@@ -39,13 +44,13 @@ pub struct RenderTargetCreateDesc {
     /// The pixel format of the render target
     pub format: dxgi::Format,
 
-    /// ?
-    pub initial_state: (),
+    /// The initial state of the render target
+    pub initial_state: InitialState,
 }
 
-impl Into<ResourceCreateDesc> for RenderTargetCreateDesc {
+impl Into<ResourceCreateDesc> for TextureCreateDesc {
     fn into(self) -> ResourceCreateDesc {
-        ResourceCreateDesc::RenderTarget(self)
+        ResourceCreateDesc::Texture(self)
     }
 }
 
@@ -61,7 +66,7 @@ impl Into<ResourceCreateDesc> for BufferCreateDesc {
 }
 
 pub enum ResourceCreateDesc {
-    RenderTarget(RenderTargetCreateDesc),
+    Texture(TextureCreateDesc),
     Buffer(BufferCreateDesc),
 }
 

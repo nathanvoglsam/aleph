@@ -46,9 +46,11 @@ mod resource_accesses;
 
 pub use render_graph::RenderGraph;
 pub use render_graph_builder::RenderGraphBuilder;
+pub use render_pass::CallbackPass;
 pub use render_pass::IRenderPass;
 pub use render_pass::RenderPassAccesses;
 pub use resource_accesses::BufferCreateDesc;
-pub use resource_accesses::RenderTargetCreateDesc;
+pub use resource_accesses::InitialState;
 pub use resource_accesses::ResourceAccessDesc;
 pub use resource_accesses::ResourceCreateDesc;
+pub use resource_accesses::TextureCreateDesc;
