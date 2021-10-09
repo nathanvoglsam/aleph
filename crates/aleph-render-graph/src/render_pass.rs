@@ -31,12 +31,25 @@ use crate::{BufferCreateDesc, RenderTargetCreateDesc, ResourceAccessDesc, Resour
 use std::collections::HashMap;
 use std::convert::Into;
 
+/// The generic interface expected of a render pass.
 pub trait IRenderPass {
+    /// This will be called exactly once during the graph construction phase to declare what
+    /// resources the pass will access.
+    ///
+    /// This information is used to bake resource barriers that the graph will automatically record
+    /// when recording commands.
     fn declare_access(&mut self, builder: &mut RenderPassAccesses);
 
+    /// This will be called once for every time the owning [`crate::RenderGraph`] has its
+    /// [`crate::RenderGraph::record`] function called. Each pass will be recorded single-threaded
+    /// onto a single command list.
+    ///
+    /// Parallel command recording is up to the [`IRenderPass`] implementation to perform using
+    /// bundles. Command list submission must be handled outside of the graph.
     fn record(&self, command_list: &mut dx12::GraphicsCommandList);
 }
 
+/// This object is used by [`IRenderPass`] implementations to record resource accesses for the pass.
 #[derive(Default)]
 pub struct RenderPassAccesses {
     pub(crate) creates: HashMap<String, ResourceCreateDesc>,
