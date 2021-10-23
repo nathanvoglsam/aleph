@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#![cfg(target_os = "windows")]
+
+//!
+//!
+//!
+
 extern crate aleph_dx12 as dx12;
-
-#[cfg(target_os = "windows")]
 extern crate aleph_dx12_alloc as dx12_alloc;
-
-#[cfg(target_os = "windows")]
 extern crate aleph_pix as pix;
 
 extern crate aleph_interfaces as interfaces;

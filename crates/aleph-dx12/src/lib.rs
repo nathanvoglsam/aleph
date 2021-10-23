@@ -27,39 +27,19 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#![cfg(target_os = "windows")]
+
 extern crate aleph_windows_raw as windows_raw;
 
-#[cfg(target_os = "windows")]
-mod dx12;
-
-#[cfg(target_os = "windows")]
 pub mod dxgi;
 
-#[cfg(target_os = "windows")]
+mod dx12;
 mod utils;
-
-#[cfg(not(target_os = "windows"))]
-mod dx12 {}
-
-#[cfg(not(target_os = "windows"))]
-pub mod dxgi {}
-
-#[cfg(not(target_os = "windows"))]
-mod utils {}
 
 pub use dx12::*;
 
-#[cfg(target_os = "windows")]
-mod exports {
-    pub use super::windows_raw::utils::Bool;
-    pub use super::windows_raw::utils::CStrFFI;
-    pub use super::windows_raw::Error;
-    pub use super::windows_raw::ErrorCode;
-    pub use super::windows_raw::Result;
-}
-
-#[cfg(not(target_os = "windows"))]
-mod exports {}
-
-pub use exports::*;
+pub use crate::windows_raw::utils::Bool;
+pub use crate::windows_raw::utils::CStrFFI;
+pub use crate::windows_raw::Error;
+pub use crate::windows_raw::ErrorCode;
+pub use crate::windows_raw::Result;

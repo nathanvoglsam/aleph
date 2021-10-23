@@ -27,11 +27,10 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#![cfg(target_os = "windows")]
+
 extern crate aleph_windows_raw as windows_raw;
 
-#[cfg(target_os = "windows")]
 mod raw;
 
-#[cfg(target_os = "windows")]
 pub use raw::*;

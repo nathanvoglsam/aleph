@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
+#[cfg(target_os = "windows")]
 extern crate aleph_windows_raw as windows_raw;
+
+extern crate aleph_interfaces as interfaces;
 
 mod clipboard;
 mod events;

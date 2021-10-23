@@ -27,34 +27,25 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#![cfg(target_os = "windows")]
+
 pub extern crate windows as windows_rs;
 
-#[cfg(target_os = "windows")]
 pub mod utils;
 
-#[cfg(target_os = "windows")]
 mod raw;
 
-#[cfg(target_os = "windows")]
-mod exports {
-    pub use super::raw::Windows::*;
-    pub use super::utils::name_current_thread;
-    pub use super::windows_rs::initialize_mta;
-    pub use super::windows_rs::initialize_sta;
-    pub use super::windows_rs::Abi;
-    pub use super::windows_rs::Error;
-    pub use super::windows_rs::ErrorCode;
-    pub use super::windows_rs::Guid;
-    pub use super::windows_rs::IUnknown;
-    pub use super::windows_rs::Interface;
-    pub use super::windows_rs::Param;
-    pub use super::windows_rs::RawPtr;
-    pub use super::windows_rs::Result;
-    pub use super::Win32::SystemServices::BOOL;
-}
-
-#[cfg(not(target_os = "windows"))]
-mod exports {}
-
-pub use exports::*;
+pub use crate::raw::Windows::*;
+pub use crate::utils::name_current_thread;
+pub use crate::windows_rs::initialize_mta;
+pub use crate::windows_rs::initialize_sta;
+pub use crate::windows_rs::Abi;
+pub use crate::windows_rs::Error;
+pub use crate::windows_rs::ErrorCode;
+pub use crate::windows_rs::Guid;
+pub use crate::windows_rs::IUnknown;
+pub use crate::windows_rs::Interface;
+pub use crate::windows_rs::Param;
+pub use crate::windows_rs::RawPtr;
+pub use crate::windows_rs::Result;
+pub use crate::Win32::SystemServices::BOOL;

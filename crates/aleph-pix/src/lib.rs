@@ -27,53 +27,37 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
+#![cfg(target_os = "windows")]
+
 extern crate aleph_dx12 as dx12;
-
-#[cfg(target_os = "windows")]
 extern crate aleph_pix_raw as pix_raw;
-
-#[cfg(target_os = "windows")]
 extern crate aleph_windows_raw as windows_raw;
 
-#[cfg(target_os = "windows")]
 mod colour;
-
-#[cfg(target_os = "windows")]
 mod functions;
-
-#[cfg(target_os = "windows")]
 mod scoped;
 
-#[cfg(target_os = "windows")]
-mod exports {
-    pub use super::colour::Colour;
+pub use crate::colour::Colour;
 
-    pub use super::functions::begin_event;
-    pub use super::functions::begin_event_on_list;
-    pub use super::functions::begin_event_on_queue;
+pub use crate::functions::begin_event;
+pub use crate::functions::begin_event_on_list;
+pub use crate::functions::begin_event_on_queue;
 
-    pub use super::functions::begin_event_cstr;
-    pub use super::functions::begin_event_cstr_on_list;
-    pub use super::functions::begin_event_cstr_on_queue;
+pub use crate::functions::begin_event_cstr;
+pub use crate::functions::begin_event_cstr_on_list;
+pub use crate::functions::begin_event_cstr_on_queue;
 
-    pub use super::functions::end_event;
-    pub use super::functions::end_event_on_list;
-    pub use super::functions::end_event_on_queue;
+pub use crate::functions::end_event;
+pub use crate::functions::end_event_on_list;
+pub use crate::functions::end_event_on_queue;
 
-    pub use super::functions::set_marker;
-    pub use super::functions::set_marker_on_list;
-    pub use super::functions::set_marker_on_queue;
+pub use crate::functions::set_marker;
+pub use crate::functions::set_marker_on_list;
+pub use crate::functions::set_marker_on_queue;
 
-    pub use super::functions::set_marker_cstr;
-    pub use super::functions::set_marker_cstr_on_list;
-    pub use super::functions::set_marker_cstr_on_queue;
+pub use crate::functions::set_marker_cstr;
+pub use crate::functions::set_marker_cstr_on_list;
+pub use crate::functions::set_marker_cstr_on_queue;
 
-    pub use super::scoped::RecordScopedEvent;
-    pub use super::scoped::ScopedEvent;
-}
-
-#[cfg(not(target_os = "windows"))]
-mod exports {}
-
-pub use exports::*;
+pub use crate::scoped::RecordScopedEvent;
+pub use crate::scoped::ScopedEvent;

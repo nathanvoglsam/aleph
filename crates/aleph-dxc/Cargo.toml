@@ -44,15 +44,15 @@ edition = "2018"
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
-[dependencies.aleph-dx12]
+[target.'cfg(target_os = "windows")'.dependencies.aleph-dx12]
 path = "../aleph-dx12"
 version = "0.1"
 
-[dependencies.aleph-windows-raw]
+[target.'cfg(target_os = "windows")'.dependencies.aleph-windows-raw]
 path = "../aleph-windows-raw"
 version = "0.1"
 
-[dependencies.aleph-dxc-raw]
+[target.'cfg(target_os = "windows")'.dependencies.aleph-dxc-raw]
 path = "../aleph-dxc-raw"
 version = "0.1"
 
