@@ -49,6 +49,7 @@ impl<'passes> RenderGraphBuilder<'passes> {
         }
     }
 
+    #[inline]
     pub fn add_pass<T: IRenderPass + 'passes>(
         &mut self,
         name: impl Into<String>,
@@ -65,10 +66,12 @@ impl<'passes> RenderGraphBuilder<'passes> {
         assert!(self.pass_names.insert(name.into(), index).is_none());
     }
 
+    #[inline]
     pub fn input_resource(&mut self, name: impl Into<String>) {
         assert!(self.inputs.insert(name.into(), ()).is_none())
     }
 
+    #[inline]
     pub fn output_resource(&mut self, name: impl Into<String>) {
         assert!(self.outputs.insert(name.into(), ()).is_none())
     }
