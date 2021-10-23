@@ -28,9 +28,10 @@
 //
 
 use crate::{IRenderPass, RenderGraphBuilder};
+use std::collections::HashSet;
 
 pub struct RenderGraph<'passes> {
-    pub(crate) pass_storages: Vec<Box<dyn IRenderPass + 'passes>>,
+    pub(crate) pass_storages: Vec<RenderPass<'passes>>,
     pub(crate) pass_entry_barriers: Vec<Vec<dx12::ResourceBarrier>>,
     pub(crate) pass_exit_barriers: Vec<Vec<dx12::ResourceBarrier>>,
     pub(crate) recording_order: Vec<usize>,
@@ -48,7 +49,7 @@ impl<'passes> RenderGraph<'passes> {
                 command_list.resource_barrier_dynamic(self.pass_entry_barriers[i].iter());
             }
 
-            self.pass_storages[i].record(command_list);
+            self.pass_storages[i].pass.record(command_list);
 
             unsafe {
                 command_list.resource_barrier_dynamic(self.pass_exit_barriers[i].iter());
@@ -59,4 +60,13 @@ impl<'passes> RenderGraph<'passes> {
             command_list.resource_barrier_dynamic(self.final_barriers.iter());
         }
     }
+}
+
+///
+/// Internal struct for storing a render pass with its execution dependencies
+///
+pub(crate) struct RenderPass<'passes> {
+    pub pass: Box<dyn IRenderPass + 'passes>,
+    pub predecessors: HashSet<usize>,
+    pub successors: HashSet<usize>,
 }

@@ -27,15 +27,16 @@
 // SOFTWARE.
 //
 
+use crate::render_graph::RenderPass;
 use crate::{IRenderPass, RenderGraph, RenderPassAccesses};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub struct RenderGraphBuilder<'passes> {
     pass_names: HashMap<String, usize>,
-    pass_storage: Vec<Box<dyn IRenderPass + 'passes>>,
+    pass_storage: Vec<RenderPass<'passes>>,
     pass_accesses: Vec<RenderPassAccesses>,
-    inputs: HashMap<String, ()>,
-    outputs: HashMap<String, ()>,
+    imports: HashMap<String, ()>,
+    exports: HashMap<String, ()>,
 }
 
 impl<'passes> RenderGraphBuilder<'passes> {
@@ -44,8 +45,8 @@ impl<'passes> RenderGraphBuilder<'passes> {
             pass_names: HashMap::with_capacity(32),
             pass_storage: Vec::with_capacity(32),
             pass_accesses: Vec::with_capacity(32),
-            inputs: HashMap::with_capacity(4),
-            outputs: HashMap::with_capacity(4),
+            imports: HashMap::with_capacity(4),
+            exports: HashMap::with_capacity(4),
         }
     }
 
@@ -59,7 +60,11 @@ impl<'passes> RenderGraphBuilder<'passes> {
         let index = self.pass_storage.len();
 
         // Box and push the pass
-        self.pass_storage.push(Box::new(pass.into()));
+        self.pass_storage.push(RenderPass {
+            pass: Box::new(pass.into()),
+            predecessors: HashSet::new(),
+            successors: HashSet::new(),
+        });
         self.pass_accesses.push(RenderPassAccesses::default());
 
         // Insert the name mapping
@@ -67,21 +72,22 @@ impl<'passes> RenderGraphBuilder<'passes> {
     }
 
     #[inline]
-    pub fn input_resource(&mut self, name: impl Into<String>) {
-        assert!(self.inputs.insert(name.into(), ()).is_none())
+    pub fn import_resource(&mut self, name: impl Into<String>) {
+        assert!(self.imports.insert(name.into(), ()).is_none())
     }
 
     #[inline]
-    pub fn output_resource(&mut self, name: impl Into<String>) {
-        assert!(self.outputs.insert(name.into(), ()).is_none())
+    pub fn export_resource(&mut self, name: impl Into<String>) {
+        assert!(self.exports.insert(name.into(), ()).is_none())
     }
 
     pub fn build(mut self) -> RenderGraph<'passes> {
+        // Collect the resource access of each render pass
         self.pass_storage
             .iter_mut()
             .zip(self.pass_accesses.iter_mut())
             .for_each(|v| {
-                v.0.declare_access(v.1);
+                v.0.pass.declare_access(v.1);
             });
 
         RenderGraph {
