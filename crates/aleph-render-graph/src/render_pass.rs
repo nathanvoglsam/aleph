@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::{BufferCreateDesc, ResourceAccessDesc, ResourceCreateDesc, TextureCreateDesc};
+use crate::{
+    BufferCreateDesc, ResourceCreateDesc, ResourceReadDesc, ResourceWriteDesc, TextureCreateDesc,
+};
 use std::collections::HashMap;
 use std::convert::Into;
 
@@ -53,37 +55,41 @@ pub trait IRenderPass {
 #[derive(Default)]
 pub struct RenderPassAccesses {
     pub(crate) creates: HashMap<String, ResourceCreateDesc>,
-    pub(crate) reads: HashMap<String, ResourceAccessDesc>,
+    pub(crate) reads: HashMap<String, ResourceReadDesc>,
     pub(crate) writes: HashMap<String, ResourceWrite>,
 }
 
 impl RenderPassAccesses {
     /// Declare for the current pass that we wish to create a new transient render target with the
     /// provided name and description
+    #[inline]
     pub fn create_texture(&mut self, name: impl Into<String>, desc: TextureCreateDesc) {
         assert!(self.creates.insert(name.into(), desc.into()).is_none())
     }
 
     /// Declare for the current pass that we wish to create a new transient buffer with the provided
     /// name and description
+    #[inline]
     pub fn create_buffer(&mut self, name: impl Into<String>, desc: BufferCreateDesc) {
         assert!(self.creates.insert(name.into(), desc.into()).is_none())
     }
 
     /// Declare that the current pass would like to read the resource with the name `input` with
     /// the provided access description
-    pub fn read(&mut self, input: impl Into<String>, access: ResourceAccessDesc) {
+    #[inline]
+    pub fn read(&mut self, input: impl Into<String>, access: ResourceReadDesc) {
         assert!(self.reads.insert(input.into(), access).is_none());
     }
 
     /// Declare that the current pass would like to perform a write operation on `source` and
     /// produce a new handle `result` that refers to the result of the pass's write operation. The
     /// `access` argument provides how the resource will be used.
+    #[inline]
     pub fn write(
         &mut self,
         source: impl Into<String>,
         result: impl Into<String>,
-        access: ResourceAccessDesc,
+        access: ResourceWriteDesc,
     ) {
         let source = source.into();
         let result = result.into();
@@ -95,7 +101,8 @@ impl RenderPassAccesses {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct ResourceWrite {
     pub(crate) result: String,
-    pub(crate) access: ResourceAccessDesc,
+    pub(crate) access: ResourceWriteDesc,
 }

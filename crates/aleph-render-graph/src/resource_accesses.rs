@@ -29,11 +29,11 @@
 
 use dx12::dxgi;
 
-pub enum InitialState {
-    Clear,
-    Uninitialized,
-}
-
+///
+/// Structure that provides the description of a texture resource that will be created by a render
+/// graph
+///
+#[derive(Clone)]
 pub struct TextureCreateDesc {
     /// The width of the render target in pixels
     pub width: u32,
@@ -44,8 +44,8 @@ pub struct TextureCreateDesc {
     /// The pixel format of the render target
     pub format: dxgi::Format,
 
-    /// The initial state of the render target
-    pub initial_state: InitialState,
+    /// The initial state of the resource
+    pub state: dx12::ResourceStates,
 }
 
 impl Into<ResourceCreateDesc> for TextureCreateDesc {
@@ -54,9 +54,17 @@ impl Into<ResourceCreateDesc> for TextureCreateDesc {
     }
 }
 
+///
+/// Structure that provides the description of a buffer resource that will be created by a render
+/// graph
+///
+#[derive(Clone)]
 pub struct BufferCreateDesc {
     /// The size, in bytes, of the buffer
     pub size: u32,
+
+    /// The initial state of the resource
+    pub state: dx12::ResourceStates,
 }
 
 impl Into<ResourceCreateDesc> for BufferCreateDesc {
@@ -65,13 +73,80 @@ impl Into<ResourceCreateDesc> for BufferCreateDesc {
     }
 }
 
+///
+/// A sum type of [`TextureCreateDesc`] and [`BufferCreateDesc`]
+///
+#[derive(Clone)]
 pub enum ResourceCreateDesc {
     Texture(TextureCreateDesc),
     Buffer(BufferCreateDesc),
 }
 
-pub struct ResourceAccessDesc {
+///
+/// Structure that provides the description of the state a resource should be in for read only
+/// access by a render pass in a render graph
+///
+#[derive(Clone)]
+pub struct ResourceReadDesc {
     /// The state that this resource will be used in. This is specified so the render graph can
     /// generate barriers that handle transitioning the resource into the required state.
     pub state: dx12::ResourceStates,
+}
+
+///
+/// Structure that provides the description of the state a resource should be in for read/write
+/// access by a render pass in a render graph
+///
+#[derive(Clone)]
+pub struct ResourceWriteDesc {
+    /// The state that this resource will be used in. This is specified so the render graph can
+    /// generate barriers that handle transitioning the resource into the required state.
+    pub state: dx12::ResourceStates,
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub struct TextureImportDesc {
+    /// The width of the render target in pixels
+    pub width: u32,
+
+    /// The height of the render target in pixels
+    pub height: u32,
+
+    /// The pixel format of the render target
+    pub format: dxgi::Format,
+
+    /// The initial state of the resource
+    pub state: dx12::ResourceStates,
+}
+
+impl Into<ResourceImportDesc> for TextureImportDesc {
+    fn into(self) -> ResourceImportDesc {
+        ResourceImportDesc::Texture(self)
+    }
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub struct BufferImportDesc {
+    /// The size, in bytes, of the buffer
+    pub size: u32,
+
+    /// The initial state of the resource
+    pub state: dx12::ResourceStates,
+}
+
+impl Into<ResourceImportDesc> for BufferImportDesc {
+    fn into(self) -> ResourceImportDesc {
+        ResourceImportDesc::Buffer(self)
+    }
+}
+
+///
+/// A sum type of [`TextureImportDesc`] and [`BufferImportDesc`]
+///
+#[derive(Clone)]
+pub enum ResourceImportDesc {
+    Texture(TextureImportDesc),
+    Buffer(BufferImportDesc),
 }
