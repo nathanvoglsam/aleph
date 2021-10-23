@@ -27,31 +27,45 @@
 // SOFTWARE.
 //
 
-#[cfg(target_os = "windows")]
-extern crate aleph_dx12 as dx12;
+use crate::{IRenderPass, RenderPassAccesses};
 
-#[cfg(target_os = "windows")]
-extern crate aleph_dx12_alloc as dx12_alloc;
+/// Generic implementation of [`IRenderPass`] based around closures
+pub struct CallbackPass<
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+> {
+    data: T,
+    declare_access: Option<D>,
+    record: R,
+}
 
-#[cfg(target_os = "windows")]
-extern crate aleph_pix as pix;
+impl<T, D, R> CallbackPass<T, D, R>
+where
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+{
+    pub fn new(data: T, declare_access: D, record: R) -> Self {
+        Self {
+            data,
+            declare_access: Some(declare_access),
+            record,
+        }
+    }
+}
 
-extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
+impl<T, D, R> IRenderPass for CallbackPass<T, D, R>
+where
+    T: Sized,
+    D: FnOnce(&mut T, &mut RenderPassAccesses),
+    R: Fn(&T, &mut dx12::GraphicsCommandList),
+{
+    fn declare_access(&mut self, builder: &mut RenderPassAccesses) {
+        (self.declare_access.take().unwrap())(&mut self.data, builder);
+    }
 
-mod callback_render_pass;
-mod render_graph;
-mod render_graph_builder;
-mod render_pass;
-mod resource_accesses;
-
-pub use callback_render_pass::CallbackPass;
-pub use render_graph::RenderGraph;
-pub use render_graph_builder::RenderGraphBuilder;
-pub use render_pass::IRenderPass;
-pub use render_pass::RenderPassAccesses;
-pub use resource_accesses::BufferCreateDesc;
-pub use resource_accesses::InitialState;
-pub use resource_accesses::ResourceAccessDesc;
-pub use resource_accesses::ResourceCreateDesc;
-pub use resource_accesses::TextureCreateDesc;
+    fn record(&self, command_list: &mut dx12::GraphicsCommandList) {
+        (self.record)(&self.data, command_list);
+    }
+}

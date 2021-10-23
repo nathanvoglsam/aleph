@@ -95,47 +95,6 @@ impl RenderPassAccesses {
     }
 }
 
-/// Generic implementation of [`IRenderPass`] based around closures
-pub struct CallbackPass<
-    T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
-> {
-    data: T,
-    declare_access: Option<D>,
-    record: R,
-}
-
-impl<T, D, R> CallbackPass<T, D, R>
-where
-    T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
-{
-    pub fn new(data: T, declare_access: D, record: R) -> Self {
-        Self {
-            data,
-            declare_access: Some(declare_access),
-            record,
-        }
-    }
-}
-
-impl<T, D, R> IRenderPass for CallbackPass<T, D, R>
-where
-    T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
-{
-    fn declare_access(&mut self, builder: &mut RenderPassAccesses) {
-        (self.declare_access.take().unwrap())(&mut self.data, builder);
-    }
-
-    fn record(&self, command_list: &mut dx12::GraphicsCommandList) {
-        (self.record)(&self.data, command_list);
-    }
-}
-
 pub(crate) struct ResourceWrite {
     pub(crate) result: String,
     pub(crate) access: ResourceAccessDesc,
