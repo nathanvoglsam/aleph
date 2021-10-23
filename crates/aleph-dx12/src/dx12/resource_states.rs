@@ -112,9 +112,51 @@ impl ResourceStates {
 
     pub const ALL_READ_WRITES: Self =
         Self(Self::UNORDERED_ACCESS.0 | Self::RAYTRACING_ACCELERATION_STRUCTURE.0);
+
+    pub const TEXTURE_USAGES: Self = Self(
+        Self::RENDER_TARGET.0
+            | Self::UNORDERED_ACCESS.0
+            | Self::DEPTH_WRITE.0
+            | Self::DEPTH_READ.0
+            | Self::NON_PIXEL_SHADER_RESOURCE.0
+            | Self::PIXEL_SHADER_RESOURCE.0
+            | Self::COPY_DEST.0
+            | Self::COPY_SOURCE.0
+            | Self::RESOLVE_SOURCE.0
+            | Self::RESOLVE_DEST.0
+            | Self::SHADING_RATE_SOURCE.0,
+    );
+
+    pub const BUFFER_USAGES: Self = Self(
+        Self::VERTEX_AND_CONSTANT_BUFFER.0
+            | Self::INDEX_BUFFER.0
+            | Self::UNORDERED_ACCESS.0
+            | Self::NON_PIXEL_SHADER_RESOURCE.0
+            | Self::PIXEL_SHADER_RESOURCE.0
+            | Self::STREAM_OUT.0
+            | Self::INDIRECT_ARGUMENT.0
+            | Self::COPY_DEST.0
+            | Self::COPY_SOURCE.0
+            | Self::RAYTRACING_ACCELERATION_STRUCTURE.0
+            | Self::PREDICATION.0,
+    );
 }
 
 impl ResourceStates {
+    /// Returns whether all of the states that are enabled in self are compatible with a texture
+    /// resource
+    #[inline]
+    pub fn is_texture_compatible(&self) -> bool {
+        self.is_subset_of(&Self::TEXTURE_USAGES)
+    }
+
+    /// Returns whether all of the states that are enabled in self are compatible with a buffer
+    /// resource
+    #[inline]
+    pub fn is_buffer_compatible(&self) -> bool {
+        self.is_subset_of(&Self::BUFFER_USAGES)
+    }
+
     /// Returns whether the state of `self` represent a purely read-only resource state.
     #[inline]
     pub fn is_read_only(&self) -> bool {
