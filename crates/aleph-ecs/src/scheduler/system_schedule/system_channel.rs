@@ -37,6 +37,7 @@ use aleph_label::Label;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use rayon::prelude::*;
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -342,7 +343,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
     ) {
         let writes = std::mem::take(&mut self.systems[system_index].access.component_writes);
         self.handle_writes_generic(
-            writes.iter().copied(),
+            writes.iter(),
             last_component_write,
             last_component_reads,
             system_index,
@@ -351,7 +352,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
 
         let writes = std::mem::take(&mut self.systems[system_index].access.resource_writes);
         self.handle_writes_generic(
-            writes.iter().copied(),
+            writes.iter(),
             last_resource_write,
             last_resource_reads,
             system_index,
@@ -359,17 +360,21 @@ impl<C: GenericSystemCell> SystemChannel<C> {
         self.systems[system_index].access.resource_writes = writes;
     }
 
-    pub fn handle_writes_generic<T: Copy + Eq + Hash>(
+    pub fn handle_writes_generic<'a, T, TB, I>(
         &mut self,
-        writes: impl Iterator<Item = T>,
+        writes: I,
         last_write: &mut HashMap<T, usize>,
         last_reads: &mut HashMap<T, Vec<usize>>,
         system_index: usize,
-    ) {
+    ) where
+        TB: ToOwned<Owned = T> + ?Sized + Eq + Hash + 'a,
+        T: Eq + Hash + Borrow<TB>,
+        I: Iterator<Item = &'a TB>,
+    {
         for write in writes {
-            last_write.insert(write.clone(), system_index);
+            last_write.insert(write.to_owned(), system_index);
 
-            match last_reads.get_mut(&write) {
+            match last_reads.get_mut(write) {
                 None => {}
                 Some(reads) => {
                     for read in reads.iter().copied() {
@@ -394,7 +399,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
     ) {
         let reads = std::mem::take(&mut self.systems[system_index].access.component_reads);
         self.handle_reads_generic(
-            reads.iter().copied(),
+            reads.iter(),
             last_component_write,
             last_component_reads,
             system_index,
@@ -403,7 +408,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
 
         let reads = std::mem::take(&mut self.systems[system_index].access.resource_reads);
         self.handle_reads_generic(
-            reads.iter().copied(),
+            reads.iter(),
             last_resource_write,
             last_resource_reads,
             system_index,
@@ -411,26 +416,30 @@ impl<C: GenericSystemCell> SystemChannel<C> {
         self.systems[system_index].access.resource_reads = reads;
     }
 
-    pub fn handle_reads_generic<T: Copy + Eq + Hash>(
+    pub fn handle_reads_generic<'a, T, TB, I>(
         &mut self,
-        reads: impl Iterator<Item = T>,
+        reads: I,
         last_write: &mut HashMap<T, usize>,
         last_reads: &mut HashMap<T, Vec<usize>>,
         system_index: usize,
-    ) {
+    ) where
+        TB: ToOwned<Owned = T> + ?Sized + Hash + Eq + 'a,
+        T: Eq + Hash + Borrow<TB>,
+        I: Iterator<Item = &'a TB>,
+    {
         for read in reads {
             match last_reads.get_mut(&read) {
                 None => {
                     let mut vec = Vec::with_capacity(4);
                     vec.push(system_index);
-                    last_reads.insert(read, vec);
+                    last_reads.insert(read.to_owned(), vec);
                 }
                 Some(vec) => {
                     vec.push(system_index);
                 }
             }
 
-            match last_write.get(&read).copied() {
+            match last_write.get(read).copied() {
                 None => {}
                 Some(write) => {
                     if write != system_index {
