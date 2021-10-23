@@ -67,3 +67,7 @@ pub mod c_api {
     pub use crate::world::world::world_register;
     pub use crate::world::world::world_remove_component;
 }
+
+// TODO: CommandBuffers so that world modification commands can be queued by jobs and then resolved
+//       when the execution phase has completed. This completes the functionality of the ECS as
+//       currently it's not really possible to modify the world from within the task graph.

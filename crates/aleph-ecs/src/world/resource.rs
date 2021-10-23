@@ -59,7 +59,8 @@ pub struct ResourceId(u64);
 impl ResourceId {
     /// Returns the [`ResourceId`] of the given resource.
     ///
-    /// TODO: Once there's a stable way to perform a transmute in `const fn` this can become `const`
+    /// TODO: Once there's a stable way to have non Sized bounds in const and call TypeId::of in const
+    ///       this can itself become const
     #[inline]
     pub fn of<T: Resource>() -> Self {
         // SAFETY: Just a bitcast from one wrapped u64 to another wrapped u64
@@ -70,7 +71,8 @@ impl ResourceId {
     /// still return a compile time constant, unlike [`ResourceId::of_any`] which performs a runtime
     /// lookup of the [`ResourceId`].
     ///
-    /// TODO: Once there's a stable way to perform a transmute in `const fn` this can become `const`
+    /// TODO: Once there's a stable way to have non Sized bounds in const and call TypeId::of in const
+    ///       this can itself become const
     pub fn of_val<T: Resource>(_: &T) -> Self {
         Self::of::<T>()
     }
