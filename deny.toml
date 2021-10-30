@@ -2,7 +2,7 @@
 # More documentation for the advisories section can be found here:
 # https://embarkstudios.github.io/cargo-deny/checks/advisories/cfg.html
 [advisories]
-vulnerability = "deny"
+vulnerability = "warn"
 unmaintained = "warn"
 yanked = "warn"
 notice = "warn"
