@@ -44,3 +44,9 @@ impl Into<D3D12_HEAP_TYPE> for HeapType {
         D3D12_HEAP_TYPE(self as i32)
     }
 }
+
+impl Default for HeapType {
+    fn default() -> Self {
+        HeapType::Default
+    }
+}
