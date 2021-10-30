@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::{
-    BufferCreateDesc, ResourceCreateDesc, ResourceReadDesc, ResourceWriteDesc, TextureCreateDesc,
-};
+use crate::{ResourceCreateDesc, ResourceReadDesc, ResourceSlot, ResourceWriteDesc};
+use crossbeam::atomic::AtomicCell;
 use std::collections::HashMap;
 use std::convert::Into;
+use std::sync::Arc;
 
 /// The generic interface expected of a render pass.
 pub trait IRenderPass {
@@ -60,44 +60,55 @@ pub struct RenderPassAccesses {
 }
 
 impl RenderPassAccesses {
-    /// Declare for the current pass that we wish to create a new transient render target with the
+    /// Declare for the current pass that we wish to create a new transient resource with the
     /// provided name and description
     #[inline]
-    pub fn create_texture(&mut self, name: impl Into<String>, desc: TextureCreateDesc) {
-        assert!(self.creates.insert(name.into(), desc.into()).is_none())
-    }
-
-    /// Declare for the current pass that we wish to create a new transient buffer with the provided
-    /// name and description
-    #[inline]
-    pub fn create_buffer(&mut self, name: impl Into<String>, desc: BufferCreateDesc) {
-        assert!(self.creates.insert(name.into(), desc.into()).is_none())
+    pub fn create_resource(
+        &mut self,
+        name: impl Into<String>,
+        desc: impl Into<ResourceCreateDesc>,
+    ) -> ResourceSlot {
+        assert!(self.creates.insert(name.into(), desc.into()).is_none());
+        ResourceSlot {
+            inner: Arc::new(AtomicCell::new(None)),
+        }
     }
 
     /// Declare that the current pass would like to read the resource with the name `input` with
     /// the provided access description
     #[inline]
-    pub fn read(&mut self, input: impl Into<String>, access: ResourceReadDesc) {
-        assert!(self.reads.insert(input.into(), access).is_none());
+    pub fn read_resource(
+        &mut self,
+        input: impl Into<String>,
+        access: impl Into<ResourceReadDesc>,
+    ) -> ResourceSlot {
+        assert!(self.reads.insert(input.into(), access.into()).is_none());
+        ResourceSlot {
+            inner: Arc::new(AtomicCell::new(None)),
+        }
     }
 
     /// Declare that the current pass would like to perform a write operation on `source` and
     /// produce a new handle `result` that refers to the result of the pass's write operation. The
     /// `access` argument provides how the resource will be used.
     #[inline]
-    pub fn write(
+    pub fn write_resource(
         &mut self,
         source: impl Into<String>,
         result: impl Into<String>,
-        access: ResourceWriteDesc,
-    ) {
+        access: impl Into<ResourceWriteDesc>,
+    ) -> ResourceSlot {
         let source = source.into();
         let result = result.into();
+        let access = access.into();
         assert_ne!(source, result);
         assert!(self
             .writes
             .insert(source, ResourceWrite { result, access })
             .is_none());
+        ResourceSlot {
+            inner: Arc::new(AtomicCell::new(None)),
+        }
     }
 }
 
