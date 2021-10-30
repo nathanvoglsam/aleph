@@ -46,6 +46,9 @@ pub struct TextureCreateDesc {
 
     /// The initial state of the resource
     pub state: dx12::ResourceStates,
+
+    /// What type of memory heap should the texture be allocated in
+    pub heap: dx12::HeapType,
 }
 
 impl Into<ResourceCreateDesc> for TextureCreateDesc {
@@ -65,6 +68,9 @@ pub struct BufferCreateDesc {
 
     /// The initial state of the resource
     pub state: dx12::ResourceStates,
+
+    /// What type of memory heap should the buffer be allocated in
+    pub heap: dx12::HeapType,
 }
 
 impl Into<ResourceCreateDesc> for BufferCreateDesc {
