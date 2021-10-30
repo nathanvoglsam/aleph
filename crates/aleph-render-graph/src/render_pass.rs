@@ -48,7 +48,7 @@ pub trait IRenderPass {
     ///
     /// Parallel command recording is up to the [`IRenderPass`] implementation to perform using
     /// bundles. Command list submission must be handled outside of the graph.
-    fn record(&self, command_list: &mut dx12::GraphicsCommandList);
+    fn record(&mut self, command_list: &mut dx12::GraphicsCommandList);
 }
 
 /// This object is used by [`IRenderPass`] implementations to record resource accesses for the pass.

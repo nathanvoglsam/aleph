@@ -32,10 +32,10 @@ use crate::{IRenderPass, RenderPassAccesses};
 /// Generic implementation of [`IRenderPass`] based around closures
 pub struct CallbackPass<
     T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
+    D: FnOnce(&mut RenderPassAccesses) -> T,
+    R: Fn(&mut T, &mut dx12::GraphicsCommandList),
 > {
-    data: T,
+    data: Option<T>,
     declare_access: Option<D>,
     record: R,
 }
@@ -43,12 +43,12 @@ pub struct CallbackPass<
 impl<T, D, R> CallbackPass<T, D, R>
 where
     T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
+    D: FnOnce(&mut RenderPassAccesses) -> T,
+    R: Fn(&mut T, &mut dx12::GraphicsCommandList),
 {
-    pub fn new(data: T, declare_access: D, record: R) -> Self {
+    pub fn new(declare_access: D, record: R) -> Self {
         Self {
-            data,
+            data: None,
             declare_access: Some(declare_access),
             record,
         }
@@ -58,14 +58,15 @@ where
 impl<T, D, R> IRenderPass for CallbackPass<T, D, R>
 where
     T: Sized,
-    D: FnOnce(&mut T, &mut RenderPassAccesses),
-    R: Fn(&T, &mut dx12::GraphicsCommandList),
+    D: FnOnce(&mut RenderPassAccesses) -> T,
+    R: Fn(&mut T, &mut dx12::GraphicsCommandList),
 {
     fn declare_access(&mut self, builder: &mut RenderPassAccesses) {
-        (self.declare_access.take().unwrap())(&mut self.data, builder);
+        let result = (self.declare_access.take().unwrap())(builder);
+        self.data = Some(result);
     }
 
-    fn record(&self, command_list: &mut dx12::GraphicsCommandList) {
-        (self.record)(&self.data, command_list);
+    fn record(&mut self, command_list: &mut dx12::GraphicsCommandList) {
+        (self.record)(self.data.as_mut().unwrap(), command_list);
     }
 }
