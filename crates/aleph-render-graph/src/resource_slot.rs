@@ -27,37 +27,30 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+use crossbeam::atomic::AtomicCell;
+use std::sync::Arc;
 
-//!
-//!
-//!
+///
+/// A slot returned to a render pass during the setup phase for declaring a resource access. The
+/// slot represents the method for delivering the concrete resource to the render pass during the
+/// recording stage.
+///
+pub struct ResourceSlot {
+    pub(crate) inner: Arc<AtomicCell<Option<dx12::Resource>>>,
+}
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc as dx12_alloc;
-extern crate aleph_pix as pix;
+impl ResourceSlot {
+    /// Take the resource from the slot, leaving the slot empty
+    ///
+    /// # Panics
+    ///
+    /// Will panic if the slot is empty, only call this once per render graph recording.
+    pub fn take(&self) -> dx12::Resource {
+        // Ensure we get a lock free implementation of atomic cell. Option<dx12::Resource> should be
+        // a single pointer in size so this should be lock free
+        assert!(AtomicCell::<Option<dx12::Resource>>::is_lock_free());
 
-extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
-
-mod callback_render_pass;
-mod render_graph;
-mod render_graph_builder;
-mod render_pass;
-mod resource_accesses;
-mod resource_slot;
-
-pub use callback_render_pass::CallbackPass;
-pub use render_graph::RenderGraph;
-pub use render_graph_builder::RenderGraphBuilder;
-pub use render_pass::IRenderPass;
-pub use render_pass::RenderPassAccesses;
-pub use resource_accesses::BufferCreateDesc;
-pub use resource_accesses::BufferImportDesc;
-pub use resource_accesses::ResourceCreateDesc;
-pub use resource_accesses::ResourceImportDesc;
-pub use resource_accesses::ResourceReadDesc;
-pub use resource_accesses::ResourceWriteDesc;
-pub use resource_accesses::TextureCreateDesc;
-pub use resource_accesses::TextureImportDesc;
-pub use resource_slot::ResourceSlot;
+        // Take from the slot, panicking if the resource has already been taken///
+        self.inner.take().unwrap()
+    }
+}

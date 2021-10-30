@@ -54,4 +54,5 @@ aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../aleph-log", version = "1" }
 cstr = "0.2"
 once_cell = "1"
+crossbeam = "0.8"
 ultraviolet = {version = "0.8", features = ["f64"] }
