@@ -51,8 +51,8 @@ endif()
 
 target_compile_definitions(vma PUBLIC VMA_STATIC_VULKAN_FUNCTIONS=0)
 
-target_include_directories(vma PUBLIC "../../../../submodules/Vulkan-Headers/include")
-target_include_directories(vma PUBLIC "../../../../submodules/VulkanMemoryAllocator/src")
+target_include_directories(vma PUBLIC "../../../submodules/Vulkan-Headers/include")
+target_include_directories(vma PUBLIC "../../../submodules/VulkanMemoryAllocator/src")
 
 install(
         TARGETS vma
