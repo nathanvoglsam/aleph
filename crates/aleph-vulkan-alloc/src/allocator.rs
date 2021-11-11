@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::defer::{AllocatorDeferList, IntoAllocatorDeferBox};
 use crate::utils;
 use crate::vulkan_functions::VulkanFunctionsBuilder;
 use crate::Allocation;
@@ -133,14 +132,12 @@ impl AllocatorBuilder {
     /// - If not all required function pointers are provided
     /// - If KHR_DEDICATED_ALLOCATION_BIT is set and the required function pointers are not given
     ///
-    pub fn build(mut self, device: &Arc<Device>) -> Result<Arc<Allocator>, AllocatorBuilderError> {
-        self.create_info.device = device.loader().handle.0 as *mut _;
+    pub fn build(mut self, device: &Device) -> Result<Allocator, AllocatorBuilderError> {
+        self.create_info.device = device.handle.0 as *mut _;
         self.create_info.physicalDevice = device.physical_device().0 as *mut _;
 
-        let instance_loader = device.instance().loader();
-        let device_loader = device.loader();
         let functions = VulkanFunctionsBuilder::new()
-            .erupt_tables(&instance_loader, &device_loader)
+            .erupt_tables(device.instance(), device)
             .build();
 
         if !utils::allocator_functions_valid(&functions) {
@@ -170,12 +167,13 @@ impl AllocatorBuilder {
         }
 
         let alloc = Allocator {
-            allocator: raw_alloc,
-            device: device.clone(),
-            defer_list: AllocatorDeferList::new(),
+            inner: Arc::new(Inner {
+                allocator: raw_alloc,
+                device: device.clone(),
+            }),
         };
 
-        Ok(Arc::new(alloc))
+        Ok(alloc)
     }
 }
 
@@ -188,10 +186,9 @@ impl Default for AllocatorBuilder {
 ///
 /// Holds the internal reference to the vma allocator as well as managing correct lifetime
 ///
+#[derive(Clone)]
 pub struct Allocator {
-    allocator: raw::VmaAllocator,
-    device: Arc<Device>,
-    defer_list: AllocatorDeferList,
+    inner: Arc<Inner>,
 }
 
 impl Allocator {
@@ -206,19 +203,7 @@ impl Allocator {
     /// Get the raw VmaAllocator handle
     ///
     pub fn as_raw(&self) -> raw::VmaAllocator {
-        self.allocator
-    }
-
-    ///
-    /// Appends a function to the deferred destruction list. This can be used to defer destruction
-    /// of some items until the `Allocator` it self is being dropped. This can be used to guarantee
-    /// that objects live as long as the allocator as an invariant when dealing with unsafe code.
-    ///
-    /// This should be used to uphold invariants for unsafe code and not as a general purpose tool
-    /// for object destruction.
-    ///
-    pub fn defer_destruction<T: IntoAllocatorDeferBox>(&self, item: T) {
-        self.defer_list.add(item);
+        self.inner.allocator
     }
 
     ///
@@ -231,7 +216,7 @@ impl Allocator {
         let reference_ptr = &mut reference as *mut *const PhysicalDeviceProperties;
         let reference_ptr = reference_ptr as *mut *const raw::VkPhysicalDeviceProperties;
 
-        raw::vmaGetPhysicalDeviceProperties(self.allocator, reference_ptr);
+        raw::vmaGetPhysicalDeviceProperties(self.inner.allocator, reference_ptr);
 
         reference
             .as_ref::<'alloc>()
@@ -248,7 +233,7 @@ impl Allocator {
         let reference_ptr = &mut reference as *mut *const PhysicalDeviceMemoryProperties;
         let reference_ptr = reference_ptr as *mut *const raw::VkPhysicalDeviceMemoryProperties;
 
-        raw::vmaGetMemoryProperties(self.allocator, reference_ptr);
+        raw::vmaGetMemoryProperties(self.inner.allocator, reference_ptr);
 
         reference
             .as_ref::<'alloc>()
@@ -263,7 +248,7 @@ impl Allocator {
         let stats_ptr = &mut stats as *mut Stats;
         let stats_ptr = stats_ptr as *mut raw::VmaStats;
 
-        raw::vmaCalculateStats(self.allocator, stats_ptr);
+        raw::vmaCalculateStats(self.inner.allocator, stats_ptr);
 
         stats
     }
@@ -291,7 +276,7 @@ impl Allocator {
         let mut c_str_ptr: *mut c_char = ptr::null_mut();
 
         raw::vmaBuildStatsString(
-            self.allocator,
+            self.inner.allocator,
             &mut c_str_ptr as *mut *mut c_char,
             if detailed_map { TRUE } else { FALSE },
         );
@@ -304,7 +289,7 @@ impl Allocator {
     ///
     pub unsafe fn free_stats_string(&self, str: &CStr) {
         let c_str_ptr = str.as_ptr();
-        raw::vmaFreeStatsString(self.allocator, c_str_ptr as *mut c_char);
+        raw::vmaFreeStatsString(self.inner.allocator, c_str_ptr as *mut c_char);
     }
 
     ///
@@ -321,7 +306,7 @@ impl Allocator {
         let alloc_ptr = &alloc_create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaFindMemoryTypeIndex(
-            self.allocator,
+            self.inner.allocator,
             memory_type_bits,
             alloc_ptr,
             &mut idx as *mut u32,
@@ -351,7 +336,7 @@ impl Allocator {
         let buffer_ptr = buffer_ptr as *const raw::VkBufferCreateInfo;
 
         let result = raw::vmaFindMemoryTypeIndexForBufferInfo(
-            self.allocator,
+            self.inner.allocator,
             buffer_ptr,
             alloc_ptr,
             &mut idx as *mut u32,
@@ -381,7 +366,7 @@ impl Allocator {
         let image_ptr = image_ptr as *const raw::VkImageCreateInfo;
 
         let result = raw::vmaFindMemoryTypeIndexForImageInfo(
-            self.allocator,
+            self.inner.allocator,
             image_ptr,
             alloc_ptr,
             &mut idx as *mut u32,
@@ -411,7 +396,7 @@ impl Allocator {
         let requirements = requirements as *const raw::VkMemoryRequirements;
 
         let result = raw::vmaAllocateMemory(
-            self.allocator,
+            self.inner.allocator,
             requirements,
             create_info_ptr,
             &mut allocation,
@@ -444,7 +429,7 @@ impl Allocator {
         let requirements = requirements as *const raw::VkMemoryRequirements;
 
         let result = raw::vmaAllocateMemoryPages(
-            self.allocator,
+            self.inner.allocator,
             requirements,
             create_info_ptr,
             allocation_count as _,
@@ -473,7 +458,7 @@ impl Allocator {
         let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaAllocateMemoryForBuffer(
-            self.allocator,
+            self.inner.allocator,
             mem::transmute(buffer),
             create_info_ptr,
             &mut allocation,
@@ -501,7 +486,7 @@ impl Allocator {
         let create_info_ptr = &create_info as *const raw::VmaAllocationCreateInfo;
 
         let result = raw::vmaAllocateMemoryForImage(
-            self.allocator,
+            self.inner.allocator,
             mem::transmute(image),
             create_info_ptr,
             &mut allocation,
@@ -519,7 +504,7 @@ impl Allocator {
     /// vmaFreeMemory
     ///
     pub unsafe fn free_memory(&self, allocation: Allocation) {
-        raw::vmaFreeMemory(self.allocator, allocation.into_raw());
+        raw::vmaFreeMemory(self.inner.allocator, allocation.into_raw());
     }
 
     ///
@@ -530,7 +515,7 @@ impl Allocator {
         let pointer = pointer as *mut Allocation;
         let pointer = pointer as *mut raw::VmaAllocation;
 
-        raw::vmaFreeMemoryPages(self.allocator, allocations.len() as _, pointer)
+        raw::vmaFreeMemoryPages(self.inner.allocator, allocations.len() as _, pointer)
     }
 
     ///
@@ -541,8 +526,11 @@ impl Allocator {
         allocation: &Allocation,
         new_size: DeviceSize,
     ) -> VulkanResult<()> {
-        let result =
-            raw::vmaResizeAllocation(self.allocator, allocation.clone().into_raw(), new_size);
+        let result = raw::vmaResizeAllocation(
+            self.inner.allocator,
+            allocation.clone().into_raw(),
+            new_size,
+        );
 
         if result as i32 == 0 {
             VulkanResult::new_ok(())
@@ -566,7 +554,11 @@ impl Allocator {
         let info_ptr = &mut info as *mut AllocationInfo;
         let info_ptr = info_ptr as *mut raw::VmaAllocationInfo;
 
-        raw::vmaGetAllocationInfo(self.allocator, allocation.clone().into_raw(), info_ptr);
+        raw::vmaGetAllocationInfo(
+            self.inner.allocator,
+            allocation.clone().into_raw(),
+            info_ptr,
+        );
 
         info
     }
@@ -575,7 +567,7 @@ impl Allocator {
     /// vmaTouchAllocation
     ///
     pub unsafe fn touch_allocation(&self, allocation: &Allocation) -> bool {
-        let result = raw::vmaTouchAllocation(self.allocator, allocation.clone().into_raw());
+        let result = raw::vmaTouchAllocation(self.inner.allocator, allocation.clone().into_raw());
 
         result == TRUE
     }
@@ -587,7 +579,10 @@ impl Allocator {
     ///
     pub unsafe fn create_lost_allocation(&self) -> Allocation {
         let mut allocation: raw::VmaAllocation = ptr::null_mut();
-        raw::vmaCreateLostAllocation(self.allocator, &mut allocation as *mut raw::VmaAllocation);
+        raw::vmaCreateLostAllocation(
+            self.inner.allocator,
+            &mut allocation as *mut raw::VmaAllocation,
+        );
 
         let allocation: Allocation = mem::transmute(allocation);
         allocation
@@ -602,7 +597,7 @@ impl Allocator {
         let pointer_pointer = pointer_pointer as *mut *mut c_void;
 
         let result = raw::vmaMapMemory(
-            self.allocator,
+            self.inner.allocator,
             allocation.clone().into_raw(),
             pointer_pointer,
         );
@@ -618,7 +613,7 @@ impl Allocator {
     /// vmaUnmapMemory
     ///
     pub unsafe fn unmap_memory(&self, allocation: &Allocation) {
-        raw::vmaUnmapMemory(self.allocator, allocation.clone().into_raw());
+        raw::vmaUnmapMemory(self.inner.allocator, allocation.clone().into_raw());
     }
 
     ///
@@ -630,7 +625,12 @@ impl Allocator {
         offset: DeviceSize,
         size: DeviceSize,
     ) {
-        raw::vmaFlushAllocation(self.allocator, allocation.clone().into_raw(), offset, size);
+        raw::vmaFlushAllocation(
+            self.inner.allocator,
+            allocation.clone().into_raw(),
+            offset,
+            size,
+        );
     }
     ///
     /// vmaInvalidateAllocation
@@ -641,14 +641,19 @@ impl Allocator {
         offset: DeviceSize,
         size: DeviceSize,
     ) {
-        raw::vmaInvalidateAllocation(self.allocator, allocation.clone().into_raw(), offset, size);
+        raw::vmaInvalidateAllocation(
+            self.inner.allocator,
+            allocation.clone().into_raw(),
+            offset,
+            size,
+        );
     }
 
     ///
     /// vmaCheckCorruption
     ///
     pub unsafe fn check_corruption(&self, memory_type_bits: u32) -> VulkanResult<()> {
-        let result = raw::vmaCheckCorruption(self.allocator, memory_type_bits);
+        let result = raw::vmaCheckCorruption(self.inner.allocator, memory_type_bits);
 
         if result as i32 == 0 {
             VulkanResult::new_ok(())
@@ -670,7 +675,7 @@ impl Allocator {
         buffer: Buffer,
     ) -> VulkanResult<()> {
         let result = raw::vmaBindBufferMemory(
-            self.allocator,
+            self.inner.allocator,
             allocation.clone().into_raw(),
             mem::transmute(buffer),
         );
@@ -691,7 +696,7 @@ impl Allocator {
         image: Image,
     ) -> VulkanResult<()> {
         let result = raw::vmaBindImageMemory(
-            self.allocator,
+            self.inner.allocator,
             allocation.clone().into_raw(),
             mem::transmute(image),
         );
@@ -725,7 +730,7 @@ impl Allocator {
         let allocation_ptr = &mut allocation as *mut raw::VmaAllocation;
 
         let result = raw::vmaCreateBuffer(
-            self.allocator,
+            self.inner.allocator,
             b_create_info_ptr,
             a_create_info_ptr,
             buffer_ptr,
@@ -745,7 +750,7 @@ impl Allocator {
     ///
     pub unsafe fn destroy_buffer(&self, buffer: Buffer, alloc: Allocation) {
         raw::vmaDestroyBuffer(
-            self.allocator,
+            self.inner.allocator,
             mem::transmute(buffer),
             alloc.clone().into_raw(),
         );
@@ -774,7 +779,7 @@ impl Allocator {
         let allocation_ptr = &mut allocation as *mut raw::VmaAllocation;
 
         let result = raw::vmaCreateImage(
-            self.allocator,
+            self.inner.allocator,
             i_create_info_ptr,
             a_create_info_ptr,
             image_ptr,
@@ -794,7 +799,7 @@ impl Allocator {
     ///
     pub unsafe fn destroy_image(&self, buffer: Image, alloc: Allocation) {
         raw::vmaDestroyImage(
-            self.allocator,
+            self.inner.allocator,
             mem::transmute(buffer),
             alloc.clone().into_raw(),
         );
@@ -805,27 +810,31 @@ impl Allocator {
     /// vmaSetCurrentFrameIndex
     ///
     pub unsafe fn set_current_frame_index(self, index: u32) {
-        raw::vmaSetCurrentFrameIndex(self.allocator, index);
+        raw::vmaSetCurrentFrameIndex(self.inner.allocator, index);
     }
 
     ///
     /// Get a reference to the device this allocator was created with
     ///
     pub fn device(&self) -> &Device {
-        &self.device
+        &self.inner.device
     }
+}
+
+struct Inner {
+    allocator: raw::VmaAllocator,
+    device: Device,
 }
 
 //
 // Implementing these is safe because vma internally synchronizes access
 //
-unsafe impl Send for Allocator {}
-unsafe impl Sync for Allocator {}
+unsafe impl Send for Inner {}
+unsafe impl Sync for Inner {}
 
-impl Drop for Allocator {
+impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
-            self.defer_list.consume(self);
             aleph_log::trace!("Destroying Vulkan allocator");
             raw::vmaDestroyAllocator(self.allocator);
         }

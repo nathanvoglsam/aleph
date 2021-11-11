@@ -29,7 +29,6 @@
 
 mod allocation;
 mod allocator;
-mod defer;
 mod pool;
 mod stats;
 mod utils;
