@@ -313,7 +313,7 @@ impl VkFormat {
     /// If this is a block format
     ///
     #[inline]
-    pub fn is_block_format(self) -> bool {
+    pub const fn is_block_format(self) -> bool {
         self.is_bcn() || self.is_etc2() || self.is_eac() || self.is_astc() || self.is_pvrtc()
     }
 
@@ -323,7 +323,7 @@ impl VkFormat {
     ///
     /// This returns if the format can at most represent 1 bit of alpha
     ///
-    pub fn is_1bit_alpha(self) -> bool {
+    pub const fn is_1bit_alpha(self) -> bool {
         match self {
             VkFormat::R5G5B5A1_UNORM_PACK16
             | VkFormat::B5G5R5A1_UNORM_PACK16
@@ -339,7 +339,7 @@ impl VkFormat {
     ///
     /// Returns whether this format has an alpha channel
     ///
-    pub fn has_alpha(self) -> bool {
+    pub const fn has_alpha(self) -> bool {
         match self {
             VkFormat::R4G4B4A4_UNORM_PACK16
             | VkFormat::B4G4R4A4_UNORM_PACK16
@@ -470,7 +470,7 @@ impl VkFormat {
     /// - Self::is_bc7
     ///
     #[inline]
-    pub fn is_bcn(self) -> bool {
+    pub const fn is_bcn(self) -> bool {
         self.is_bc1()
             || self.is_bc2()
             || self.is_bc3()
@@ -484,7 +484,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC1 compressed image formats
     ///
     #[inline]
-    pub fn is_bc1(self) -> bool {
+    pub const fn is_bc1(self) -> bool {
         match self {
             VkFormat::BC1_RGB_SRGB_BLOCK | VkFormat::BC1_RGB_UNORM_BLOCK => true,
             _ => self.is_bc1_alpha(),
@@ -495,7 +495,7 @@ impl VkFormat {
     /// If this format is any one of the BC1 compressed image formats with cutout alpha
     ///
     #[inline]
-    pub fn is_bc1_alpha(self) -> bool {
+    pub const fn is_bc1_alpha(self) -> bool {
         match self {
             VkFormat::BC1_RGBA_SRGB_BLOCK | VkFormat::BC1_RGBA_UNORM_BLOCK => true,
             _ => false,
@@ -506,7 +506,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC2 compressed image formats
     ///
     #[inline]
-    pub fn is_bc2(self) -> bool {
+    pub const fn is_bc2(self) -> bool {
         match self {
             VkFormat::BC2_SRGB_BLOCK | VkFormat::BC2_UNORM_BLOCK => true,
             _ => false,
@@ -517,7 +517,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC3 compressed image formats
     ///
     #[inline]
-    pub fn is_bc3(self) -> bool {
+    pub const fn is_bc3(self) -> bool {
         match self {
             VkFormat::BC3_SRGB_BLOCK | VkFormat::BC3_UNORM_BLOCK => true,
             _ => false,
@@ -528,7 +528,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC4 compressed image formats
     ///
     #[inline]
-    pub fn is_bc4(self) -> bool {
+    pub const fn is_bc4(self) -> bool {
         match self {
             VkFormat::BC4_SNORM_BLOCK | VkFormat::BC4_UNORM_BLOCK => true,
             _ => false,
@@ -539,7 +539,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC5 compressed image formats
     ///
     #[inline]
-    pub fn is_bc5(self) -> bool {
+    pub const fn is_bc5(self) -> bool {
         match self {
             VkFormat::BC5_SNORM_BLOCK | VkFormat::BC5_UNORM_BLOCK => true,
             _ => false,
@@ -550,7 +550,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC6H compressed image formats
     ///
     #[inline]
-    pub fn is_bc6h(self) -> bool {
+    pub const fn is_bc6h(self) -> bool {
         match self {
             VkFormat::BC6H_SFLOAT_BLOCK | VkFormat::BC6H_UFLOAT_BLOCK => true,
             _ => false,
@@ -561,7 +561,7 @@ impl VkFormat {
     /// If this format is any one of the possible BC7 compressed image formats
     ///
     #[inline]
-    pub fn is_bc7(self) -> bool {
+    pub const fn is_bc7(self) -> bool {
         match self {
             VkFormat::BC7_SRGB_BLOCK | VkFormat::BC7_UNORM_BLOCK => true,
             _ => false,
@@ -572,7 +572,7 @@ impl VkFormat {
     /// If this format is any one of the possible ETC2 compressed image formats
     ///
     #[inline]
-    pub fn is_etc2(self) -> bool {
+    pub const fn is_etc2(self) -> bool {
         match self {
             VkFormat::ETC2_R8G8B8_SRGB_BLOCK
             | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
@@ -589,7 +589,7 @@ impl VkFormat {
     /// of 4
     ///
     #[inline]
-    pub fn is_astc_block_width_4(self) -> bool {
+    pub const fn is_astc_block_width_4(self) -> bool {
         match self {
             VkFormat::ASTC_4X4_UNORM_BLOCK
             | VkFormat::ASTC_4X4_SRGB_BLOCK
@@ -603,7 +603,7 @@ impl VkFormat {
     /// of 5
     ///
     #[inline]
-    pub fn is_astc_block_width_5(self) -> bool {
+    pub const fn is_astc_block_width_5(self) -> bool {
         match self {
             VkFormat::ASTC_5X4_UNORM_BLOCK
             | VkFormat::ASTC_5X4_SRGB_BLOCK
@@ -620,7 +620,7 @@ impl VkFormat {
     /// of 6
     ///
     #[inline]
-    pub fn is_astc_block_width_6(self) -> bool {
+    pub const fn is_astc_block_width_6(self) -> bool {
         match self {
             VkFormat::ASTC_6X5_UNORM_BLOCK
             | VkFormat::ASTC_6X5_SRGB_BLOCK
@@ -637,7 +637,7 @@ impl VkFormat {
     /// of 8
     ///
     #[inline]
-    pub fn is_astc_block_width_8(self) -> bool {
+    pub const fn is_astc_block_width_8(self) -> bool {
         match self {
             VkFormat::ASTC_8X5_UNORM_BLOCK
             | VkFormat::ASTC_8X5_SRGB_BLOCK
@@ -657,7 +657,7 @@ impl VkFormat {
     /// of 10
     ///
     #[inline]
-    pub fn is_astc_block_width_10(self) -> bool {
+    pub const fn is_astc_block_width_10(self) -> bool {
         match self {
             VkFormat::ASTC_10X5_UNORM_BLOCK
             | VkFormat::ASTC_10X5_SRGB_BLOCK
@@ -680,7 +680,7 @@ impl VkFormat {
     /// of 12
     ///
     #[inline]
-    pub fn is_astc_block_width_12(self) -> bool {
+    pub const fn is_astc_block_width_12(self) -> bool {
         match self {
             VkFormat::ASTC_12X10_UNORM_BLOCK
             | VkFormat::ASTC_12X10_SRGB_BLOCK
@@ -697,7 +697,7 @@ impl VkFormat {
     /// of 4
     ///
     #[inline]
-    pub fn is_astc_block_height_4(self) -> bool {
+    pub const fn is_astc_block_height_4(self) -> bool {
         match self {
             VkFormat::ASTC_4X4_UNORM_BLOCK
             | VkFormat::ASTC_4X4_SRGB_BLOCK
@@ -714,7 +714,7 @@ impl VkFormat {
     /// of 5
     ///
     #[inline]
-    pub fn is_astc_block_height_5(self) -> bool {
+    pub const fn is_astc_block_height_5(self) -> bool {
         match self {
             VkFormat::ASTC_5X5_UNORM_BLOCK
             | VkFormat::ASTC_5X5_SRGB_BLOCK
@@ -737,7 +737,7 @@ impl VkFormat {
     /// of 6
     ///
     #[inline]
-    pub fn is_astc_block_height_6(self) -> bool {
+    pub const fn is_astc_block_height_6(self) -> bool {
         match self {
             VkFormat::ASTC_6X6_UNORM_BLOCK
             | VkFormat::ASTC_6X6_SRGB_BLOCK
@@ -757,7 +757,7 @@ impl VkFormat {
     /// of 8
     ///
     #[inline]
-    pub fn is_astc_block_height_8(self) -> bool {
+    pub const fn is_astc_block_height_8(self) -> bool {
         match self {
             VkFormat::ASTC_8X8_UNORM_BLOCK
             | VkFormat::ASTC_8X8_SRGB_BLOCK
@@ -774,7 +774,7 @@ impl VkFormat {
     /// of 10
     ///
     #[inline]
-    pub fn is_astc_block_height_10(self) -> bool {
+    pub const fn is_astc_block_height_10(self) -> bool {
         match self {
             VkFormat::ASTC_10X10_UNORM_BLOCK
             | VkFormat::ASTC_10X10_SRGB_BLOCK
@@ -791,7 +791,7 @@ impl VkFormat {
     /// of 12
     ///
     #[inline]
-    pub fn is_astc_block_height_12(self) -> bool {
+    pub const fn is_astc_block_height_12(self) -> bool {
         match self {
             VkFormat::ASTC_12X12_UNORM_BLOCK
             | VkFormat::ASTC_12X12_SRGB_BLOCK
@@ -804,7 +804,7 @@ impl VkFormat {
     /// If this format is any one of the possible ASTC compressed image formats
     ///
     #[inline]
-    pub fn is_astc(self) -> bool {
+    pub const fn is_astc(self) -> bool {
         match self {
             VkFormat::ASTC_4X4_UNORM_BLOCK
             | VkFormat::ASTC_4X4_SRGB_BLOCK
@@ -856,7 +856,7 @@ impl VkFormat {
     /// If this format is any one of the possible PVRTC compressed image formats
     ///
     #[inline]
-    pub fn is_pvrtc(self) -> bool {
+    pub const fn is_pvrtc(self) -> bool {
         self.is_pvrtc1() || self.is_pvrtc2()
     }
 
@@ -864,7 +864,7 @@ impl VkFormat {
     /// If this format is any one of the possible PVRTC1 compressed image formats
     ///
     #[inline]
-    pub fn is_pvrtc1(self) -> bool {
+    pub const fn is_pvrtc1(self) -> bool {
         match self {
             VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
@@ -878,7 +878,7 @@ impl VkFormat {
     /// If this format is any one of the possible PVRTC2 compressed image formats
     ///
     #[inline]
-    pub fn is_pvrtc2(self) -> bool {
+    pub const fn is_pvrtc2(self) -> bool {
         match self {
             VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
@@ -892,7 +892,7 @@ impl VkFormat {
     /// If this format is any one of the possible PVRTC 2bpp formats (2 bits per pixel)
     ///
     #[inline]
-    pub fn is_pvrtc_2bpp(self) -> bool {
+    pub const fn is_pvrtc_2bpp(self) -> bool {
         match self {
             VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
@@ -906,7 +906,7 @@ impl VkFormat {
     /// If this format is any one of the possible PVRTC 4bpp formats (4 bits per pixel)
     ///
     #[inline]
-    pub fn is_pvrtc_4bpp(self) -> bool {
+    pub const fn is_pvrtc_4bpp(self) -> bool {
         match self {
             VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
             | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
@@ -920,7 +920,7 @@ impl VkFormat {
     /// If this format is any one of the possible EAC compressed image formats
     ///
     #[inline]
-    pub fn is_eac(self) -> bool {
+    pub const fn is_eac(self) -> bool {
         match self {
             VkFormat::EAC_R11_SNORM_BLOCK
             | VkFormat::EAC_R11_UNORM_BLOCK
@@ -941,7 +941,7 @@ impl VkFormat {
     /// This will be >1 for any compressed formats.
     ///
     #[inline]
-    pub fn block_width(self) -> u32 {
+    pub const fn block_width(self) -> u32 {
         if self.is_bcn() || self.is_etc2() || self.is_eac() {
             4
         } else if self.is_pvrtc_2bpp() {
@@ -976,7 +976,7 @@ impl VkFormat {
     /// This will be >1 for any compressed formats.
     ///
     #[inline]
-    pub fn block_height(self) -> u32 {
+    pub const fn block_height(self) -> u32 {
         if self.is_bcn() || self.is_etc2() || self.is_eac() {
             4
         } else if self.is_pvrtc() {
@@ -1007,7 +1007,7 @@ impl VkFormat {
     /// of this code being written so we just return 1 here.
     ///
     #[inline]
-    pub fn block_depth(self) -> u32 {
+    pub const fn block_depth(self) -> u32 {
         1
     }
 
@@ -1015,7 +1015,7 @@ impl VkFormat {
     /// Returns whether the format is one of the `SRGB` formats
     ///
     #[inline]
-    pub fn is_srgb(self) -> bool {
+    pub const fn is_srgb(self) -> bool {
         match self {
             // All SRGB formats
             VkFormat::R8_SRGB
@@ -1059,7 +1059,7 @@ impl VkFormat {
     /// Does this format have a depth component
     ///
     #[inline]
-    pub fn is_depth_format(self) -> bool {
+    pub const fn is_depth_format(self) -> bool {
         match self {
             VkFormat::D32_SFLOAT
             | VkFormat::D32_SFLOAT_S8_UINT
@@ -1074,7 +1074,7 @@ impl VkFormat {
     ///
     /// Does this format have a stencil component
     ///
-    pub fn is_stencil_format(self) -> bool {
+    pub const fn is_stencil_format(self) -> bool {
         match self {
             VkFormat::S8_UINT
             | VkFormat::D32_SFLOAT_S8_UINT
@@ -1088,7 +1088,7 @@ impl VkFormat {
     /// If this is a signed format (can represent negative values: SNORM, SINT, SFLOAT, SSCALED)
     ///
     #[inline]
-    pub fn is_signed(self) -> bool {
+    pub const fn is_signed(self) -> bool {
         match self {
             VkFormat::R8_SNORM
             | VkFormat::R8_SSCALED
@@ -1178,7 +1178,7 @@ impl VkFormat {
     /// Is this format one of the floating point formats (SFLOAT, UFLOAT)
     ///
     #[inline]
-    pub fn is_floating_point(self) -> bool {
+    pub const fn is_floating_point(self) -> bool {
         match self {
             VkFormat::R16_SFLOAT
             | VkFormat::R16G16_SFLOAT
@@ -1220,7 +1220,7 @@ impl VkFormat {
     /// Is this format one of the normalized formats (UNORM, SNORM)
     ///
     #[inline]
-    pub fn is_normalized(self) -> bool {
+    pub const fn is_normalized(self) -> bool {
         match self {
             VkFormat::R4G4_UNORM_PACK8
             | VkFormat::R4G4B4A4_UNORM_PACK16
@@ -1387,7 +1387,7 @@ impl VkFormat {
     /// of this crate that is being depended on.
     ///
     #[inline]
-    pub fn is_known(self) -> bool {
+    pub const fn is_known(self) -> bool {
         match self {
             VkFormat::UNDEFINED
             | VkFormat::R4G4_UNORM_PACK8
