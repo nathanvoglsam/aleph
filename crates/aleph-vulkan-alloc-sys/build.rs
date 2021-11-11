@@ -81,7 +81,7 @@ fn generate_bindings(path: &Path) {
 }
 
 fn build_lib() {
-    let mut build = cmake::Config::new("thirdparty/Library");
+    let mut build = cmake::Config::new("library");
 
     if cfg!(feature = "corruption_detection") {
         build.define("FEATURE_VMA_DEBUG_DETECT_CORRUPTION", "1");
