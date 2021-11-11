@@ -160,7 +160,6 @@ impl<'a> ImageSingle2DBuilder<'a> {
             .components(component_mapping)
             .subresource_range(subresource_range);
         let image_view = device
-            .loader()
             .create_image_view(&create_info, None, None)
             .expect("Failed to create BaseImage ImageView");
 
@@ -328,9 +327,7 @@ impl ImageSingle2D {
     /// Destroys the image
     ///
     pub unsafe fn destroy(&self, device: &Device, alloc: &Allocator) {
-        device
-            .loader()
-            .destroy_image_view(Some(self.image_view), None);
+        device.destroy_image_view(Some(self.image_view), None);
         alloc.destroy_image(self.image, self.allocation);
     }
 }

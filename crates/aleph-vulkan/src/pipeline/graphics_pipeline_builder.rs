@@ -187,14 +187,14 @@ impl<'a> GraphicsPipelineBuilder<'a> {
     pub fn build(self, device: &Device) -> VulkanResult<Pipeline> {
         unsafe {
             // Get the `create_graphics_pipelines` function
-            let function = device.loader().create_graphics_pipelines.unwrap();
+            let function = device.create_graphics_pipelines.unwrap();
 
             // Create a spot for the function to write our pipeline handle to
             let mut pipeline = Pipeline::null();
 
             // Call the function to create a single pipeline
             let raw = function(
-                device.loader().handle,
+                device.handle,
                 PipelineCache::get(),
                 1,
                 self.inner.deref() as *const _,

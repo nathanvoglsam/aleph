@@ -415,10 +415,9 @@ impl<'a> ShaderModuleBuilder<'a> {
         // Compiled the module if requested
         let module = if self.compile {
             let device = device.expect("Need a device ref to compile shader");
-            let loader = device.loader();
             let create_info = ShaderModuleCreateInfoBuilder::new().code(words);
             unsafe {
-                let module = loader
+                let module = device
                     .create_shader_module(&create_info, None, None)
                     .expect("Failed to create shader module");
                 if let Some(name) = self.debug_name {
@@ -614,9 +613,7 @@ impl ShaderModule {
     ///
     pub unsafe fn destroy(&self, device: &Device) {
         if !self.module.is_null() {
-            device
-                .loader()
-                .destroy_shader_module(Some(self.module), None)
+            device.destroy_shader_module(Some(self.module), None)
         }
     }
 }

@@ -28,6 +28,7 @@
 //
 
 use aleph_vulkan_core::erupt::vk1_0::PipelineCacheCreateInfoBuilder;
+use aleph_vulkan_core::erupt::DeviceLoader;
 use aleph_vulkan_core::{erupt, DebugName, Device};
 use std::ffi::CStr;
 use std::fs::OpenOptions;
@@ -43,34 +44,21 @@ impl PipelineCache {
     ///
     /// Internal function for loading the pipeline cache data from disk
     ///
-    fn load_file_data() -> Vec<u8> {
+    fn load_file_data() -> std::io::Result<Vec<u8>> {
         aleph_log::trace!("Reading pipeline cache data from disk");
 
-        // Try and open the file if it already exists to read from it
-        match std::fs::OpenOptions::new()
+        // Open the file if it already exists to read from it
+        let mut file = std::fs::OpenOptions::new()
             .create(false)
             .read(true)
             .write(false)
-            .open(CACHE_FILE_NAME)
-        {
-            // Successfully opened the file so read the data from it
-            Ok(mut file) => {
-                let mut buf = Vec::new();
-                file.read_to_end(&mut buf)
-                    .expect("Failed to read from the pipeline cache file");
-                buf
-            }
-            // There was an error when trying to open the file, so...
-            Err(err) => match err.kind() {
-                // Either the file didn't exist or we aren't allowed to open it so rather than
-                // crashing we just send empty data back to the caller. This way the engine wont
-                // crash if the cache hasn't been created yet or can't be created because of
-                // permissions
-                ErrorKind::NotFound | ErrorKind::PermissionDenied => Vec::new(),
-                // Any other error is probably some odd circumstances so just panic
-                _ => panic!("Failed to open the pipeline cache file"),
-            },
-        }
+            .open(CACHE_FILE_NAME)?;
+
+        //
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+
+        Ok(buf)
     }
 
     ///
@@ -78,15 +66,18 @@ impl PipelineCache {
     ///
     pub fn init(device: &Device) {
         aleph_log::trace!("Creating pipeline cache");
-        let initial_data_vec = Self::load_file_data();
-        let initial_data: &[u8] = initial_data_vec.as_slice();
+        let data = Self::load_file_data();
 
-        let create_info = PipelineCacheCreateInfoBuilder::new()
-            .initial_data(initial_data.as_ptr() as *const core::ffi::c_void);
+        let create_info = if let Ok(data) = data.as_ref() {
+            PipelineCacheCreateInfoBuilder::new()
+                .initial_data_size(data.len())
+                .initial_data(data.as_ptr() as *const core::ffi::c_void)
+        } else {
+            PipelineCacheCreateInfoBuilder::new()
+        };
 
         let cache = unsafe {
             device
-                .loader()
                 .create_pipeline_cache(&create_info, None, None)
                 .expect("Failed to create pipeline cache")
         };
@@ -98,31 +89,30 @@ impl PipelineCache {
 
         PIPELINE_CACHE.store(cache.0, Ordering::Relaxed);
 
-        device.defer_destruction(|device: &Device| {
-            aleph_log::trace!("Destroying pipeline cache");
-            Self::store(device);
-
-            unsafe {
-                let pipeline_cache = aleph_vulkan_core::erupt::vk1_0::PipelineCache(
-                    PIPELINE_CACHE.swap(0, Ordering::Relaxed),
-                );
-                device
-                    .loader()
-                    .destroy_pipeline_cache(Some(pipeline_cache), None);
-            }
-        });
+        // TODO: Find a replacement for this
+        // device.defer_destruction(|device: &DeviceLoader| {
+        //     aleph_log::trace!("Destroying pipeline cache");
+        //     Self::store(device);
+        //
+        //     unsafe {
+        //         let pipeline_cache = aleph_vulkan_core::erupt::vk1_0::PipelineCache(
+        //             PIPELINE_CACHE.swap(0, Ordering::Relaxed),
+        //         );
+        //         device
+        //             .destroy_pipeline_cache(Some(pipeline_cache), None);
+        //     }
+        // });
     }
 
     ///
     /// Store the pipeline cache data to a file
     ///
-    pub fn store(device: &Device) {
+    pub fn store(device: &DeviceLoader) {
         aleph_log::trace!("Storing pipeline cache data to disk");
         let data = unsafe {
             let mut data_size = 0;
 
             device
-                .loader()
                 .get_pipeline_cache_data(
                     Self::get(),
                     &mut data_size as *mut _,
@@ -133,7 +123,6 @@ impl PipelineCache {
             let mut data = vec![0u8; data_size];
 
             device
-                .loader()
                 .get_pipeline_cache_data(
                     Self::get(),
                     &mut data_size as *mut _,

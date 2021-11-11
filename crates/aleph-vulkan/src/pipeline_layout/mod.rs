@@ -270,7 +270,6 @@ impl<'a> PipelineLayoutBuilder<'a> {
                 let create_info = DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
                 unsafe {
                     device
-                        .loader()
                         .create_descriptor_set_layout(&create_info, None, None)
                         .expect("Failed to create descriptor set layout")
                 }
@@ -282,7 +281,6 @@ impl<'a> PipelineLayoutBuilder<'a> {
             .set_layouts(&set_layouts);
         let pipeline_layout = unsafe {
             let pipeline_layout = device
-                .loader()
                 .create_pipeline_layout(&create_info, None, None)
                 .expect("Failed to create pipeline layout");
 
@@ -336,13 +334,9 @@ impl PipelineLayout {
     /// Is unsafe because destruction is not synchronized
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device
-            .loader()
-            .destroy_pipeline_layout(Some(self.pipeline_layout), None);
-        self.set_layouts.iter().for_each(|v| {
-            device
-                .loader()
-                .destroy_descriptor_set_layout(Some(*v), None)
-        });
+        device.destroy_pipeline_layout(Some(self.pipeline_layout), None);
+        self.set_layouts
+            .iter()
+            .for_each(|v| device.destroy_descriptor_set_layout(Some(*v), None));
     }
 }
