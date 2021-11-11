@@ -39,7 +39,6 @@ use erupt::vk1_0::{
     ImageSubresourceRangeBuilder, ImageUsageFlags, ImageViewCreateInfoBuilder, ImageViewType,
     Queue, Semaphore, SharingMode,
 };
-use std::sync::Arc;
 use std::time::Duration;
 
 mod acquire_error;
@@ -238,7 +237,7 @@ impl SwapchainBuilder {
     ///
     /// Construct the swapchain
     ///
-    pub fn build(self, device: &Arc<Device>, drawable_size: (u32, u32)) -> Swapchain {
+    pub fn build(self, device: &Device, drawable_size: (u32, u32)) -> Swapchain {
         let mut swap = Swapchain {
             swapchain: SwapchainKHR::null(),
             surface: device.surface(),
@@ -267,7 +266,7 @@ pub struct Swapchain {
     extents: Extent2D,
     target_image_count: u32,
     images: Vec<SwapImage>,
-    device: Arc<Device>,
+    device: Device,
     favour_vsync: bool,
     requires_rebuild: bool,
 }
@@ -348,7 +347,7 @@ impl Swapchain {
         let timeout = timeout.as_nanos() as u64;
 
         let result = unsafe {
-            self.device.loader().acquire_next_image_khr(
+            self.device.acquire_next_image_khr(
                 self.swapchain,
                 timeout,
                 Some(semaphore),
@@ -400,7 +399,7 @@ impl Swapchain {
             .wait_semaphores(wait_semaphores)
             .image_indices(&image_indices);
 
-        let result = unsafe { self.device.loader().queue_present_khr(queue, &present_info) };
+        let result = unsafe { self.device.queue_present_khr(queue, &present_info) };
 
         // Type alias for brevity
         type VkResult = erupt::vk1_0::Result;
@@ -433,7 +432,6 @@ impl Swapchain {
             // be slow no matter what I do and the most sane way to wait for all GPU work to be done
             // before destroying the old one is to put a big fat vkDeviceWaitIdle here
             self.device
-                .loader()
                 .device_wait_idle()
                 .expect("Failed to wait for device to become idle");
         }
@@ -549,7 +547,6 @@ impl Swapchain {
         aleph_log::trace!("Creating new swapchain");
         let swapchain = unsafe {
             self.device
-                .loader()
                 .create_swapchain_khr(&swap_create_info, None, None)
                 .expect("Failed to create swapchain")
         };
@@ -559,7 +556,6 @@ impl Swapchain {
         //
         let images = unsafe {
             self.device
-                .loader()
                 .get_swapchain_images_khr(swapchain, None)
                 .expect("Failed to retrieve swapchain images")
                 .drain(..)
@@ -584,7 +580,6 @@ impl Swapchain {
                         .view_type(ImageViewType::_2D);
                     let image_view = self
                         .device
-                        .loader()
                         .create_image_view(&create_info, None, None)
                         .expect("Failed to create ImageView for swapchain");
                     let image = SwapImage::internal_create(
@@ -611,15 +606,11 @@ impl Swapchain {
             unsafe {
                 aleph_log::trace!("Destroying old swapchain ImageViews");
                 self.images.iter().for_each(|i| {
-                    self.device
-                        .loader()
-                        .destroy_image_view(Some(i.image_view()), None);
+                    self.device.destroy_image_view(Some(i.image_view()), None);
                 });
 
                 aleph_log::trace!("Destroying old swapchain");
-                self.device
-                    .loader()
-                    .destroy_swapchain_khr(Some(old_swapchain), None);
+                self.device.destroy_swapchain_khr(Some(old_swapchain), None);
             }
         }
 
@@ -639,14 +630,11 @@ impl Drop for Swapchain {
         unsafe {
             aleph_log::trace!("Destroying swapchain ImageViews");
             self.images.iter().for_each(|i| {
-                self.device
-                    .loader()
-                    .destroy_image_view(Some(i.image_view()), None);
+                self.device.destroy_image_view(Some(i.image_view()), None);
             });
 
             aleph_log::trace!("Destroying swapchain");
             self.device
-                .loader()
                 .destroy_swapchain_khr(Some(self.swapchain), None);
         }
     }

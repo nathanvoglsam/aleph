@@ -28,30 +28,33 @@
 //
 
 use erupt::utils::loading::EntryLoaderError;
+use std::ops::Deref;
 use std::sync::Arc;
 
 ///
 /// Wrapper around the erupt API for dynamically loading the vulkan library that plays nicer with
 /// the patterns set by other wrappers in this crate
 ///
+#[derive(Clone)]
 pub struct Entry {
-    entry_loader: erupt::DefaultEntryLoader,
+    entry_loader: Arc<erupt::DefaultEntryLoader>,
 }
 
 impl Entry {
-    pub fn new() -> Result<Arc<Self>, EntryLoaderError> {
+    pub fn new() -> Result<Self, EntryLoaderError> {
         aleph_log::trace!("Initializing Vulkan Entry Loader");
         let entry_loader = erupt::DefaultEntryLoader::new()?;
-        let out = Self { entry_loader };
-        Ok(Arc::new(out))
+        let out = Self {
+            entry_loader: Arc::new(entry_loader),
+        };
+        Ok(out)
     }
 }
 
-impl Entry {
-    ///
-    /// Get a reference to the ref-counted loader instance
-    ///
-    pub fn loader(&self) -> &erupt::DefaultEntryLoader {
-        &self.entry_loader
+impl Deref for Entry {
+    type Target = erupt::DefaultEntryLoader;
+
+    fn deref(&self) -> &Self::Target {
+        self.entry_loader.deref()
     }
 }

@@ -35,7 +35,8 @@ use erupt::extensions::ext_debug_utils::{
 use erupt::extensions::khr_surface::SurfaceKHR;
 use erupt::InstanceLoader;
 use raw_window_handle::HasRawWindowHandle;
-use std::ffi::{CStr, CString};
+use std::ffi::CString;
+use std::ops::Deref;
 use std::sync::Arc;
 
 ///
@@ -83,14 +84,14 @@ impl InstanceBuilder {
     ///
     pub fn build(
         self,
-        entry_loader: &Arc<Entry>,
+        entry_loader: &Entry,
         window_handle: &impl HasRawWindowHandle,
         app_info: &AppInfo,
         engine_info: &EngineInfo,
-    ) -> Arc<Instance> {
+    ) -> Instance {
         // Create the vulkan instance
         let (instance_loader, version) = Self::create_instance(
-            entry_loader.loader(),
+            entry_loader,
             app_info,
             engine_info,
             window_handle,
@@ -112,13 +113,15 @@ impl InstanceBuilder {
         };
 
         let instance = Instance {
-            _entry_loader: entry_loader.clone(),
-            instance_loader: Arc::new(instance_loader),
-            surface,
-            version,
-            messenger,
+            inner: Arc::new(Inner {
+                _entry_loader: entry_loader.clone(),
+                instance_loader,
+                surface,
+                version,
+                messenger,
+            }),
         };
-        Arc::new(instance)
+        instance
     }
 
     ///
@@ -243,12 +246,9 @@ impl InstanceBuilder {
 ///
 /// A wrapper for representing a vulkan instance and it's dynamically loaded functions
 ///
+#[derive(Clone)]
 pub struct Instance {
-    _entry_loader: Arc<Entry>,
-    instance_loader: Arc<InstanceLoader>,
-    surface: SurfaceKHR,
-    version: u32,
-    messenger: Option<DebugUtilsMessengerEXT>,
+    inner: Arc<Inner>,
 }
 
 impl Instance {
@@ -260,36 +260,45 @@ impl Instance {
     }
 
     ///
-    /// Get a reference to the instance loader
-    ///
-    pub fn loader(&self) -> &Arc<InstanceLoader> {
-        &self.instance_loader
-    }
-
-    ///
     /// Gets the SurfaceKHR we made when creating the instance
     ///
     pub fn surface(&self) -> SurfaceKHR {
-        self.surface
+        self.inner.surface
     }
 
     /// Returns the major version of the vulkan instance
     pub fn major_version(&self) -> u32 {
-        erupt::vk1_0::version_major(self.version)
+        erupt::vk1_0::version_major(self.inner.version)
     }
 
     /// Returns the minor version of the vulkan instance
     pub fn minor_version(&self) -> u32 {
-        erupt::vk1_0::version_minor(self.version)
+        erupt::vk1_0::version_minor(self.inner.version)
     }
 
     /// Returns the patch version of the vulkan instance
     pub fn patch_version(&self) -> u32 {
-        erupt::vk1_0::version_patch(self.version)
+        erupt::vk1_0::version_patch(self.inner.version)
     }
 }
 
-impl Drop for Instance {
+impl Deref for Instance {
+    type Target = InstanceLoader;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner.instance_loader
+    }
+}
+
+struct Inner {
+    _entry_loader: Entry,
+    instance_loader: InstanceLoader,
+    surface: SurfaceKHR,
+    version: u32,
+    messenger: Option<DebugUtilsMessengerEXT>,
+}
+
+impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
             aleph_log::trace!("Destroying Vulkan surface");

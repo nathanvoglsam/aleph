@@ -27,9 +27,6 @@
 // SOFTWARE.
 //
 
-mod defer;
-
-use crate::device::defer::{DeviceDeferList, IntoDeviceDeferBox};
 use crate::{
     DebugName, GPUInfo, Instance, QueueFamily, QueueFamilyType, SwapChainSupport, VendorID,
 };
@@ -40,6 +37,7 @@ use erupt::vk1_0::{
 };
 use erupt::{DeviceLoader, InstanceLoader};
 use std::ffi::CStr;
+use std::ops::Deref;
 use std::sync::Arc;
 
 ///
@@ -55,14 +53,13 @@ impl DeviceBuilder {
         Self {}
     }
 
-    pub fn build(self, instance: &Arc<Instance>) -> Arc<Device> {
+    pub fn build(self, instance: &Instance) -> Device {
         aleph_log::trace!("Initializing Vulkan device");
-        let instance_loader = instance.loader();
         let surface = instance.surface();
 
         let features = PhysicalDeviceFeatures::default();
         let physical_device = Self::select_device(
-            &instance_loader,
+            instance,
             &features,
             instance.major_version(),
             instance.minor_version(),
@@ -71,8 +68,7 @@ impl DeviceBuilder {
         .expect("Failed to select a physical device");
 
         aleph_log::trace!("Checking swapchain support");
-        let swapchain_support =
-            Self::get_swapchain_support(&instance_loader, physical_device, surface);
+        let swapchain_support = Self::get_swapchain_support(instance, physical_device, surface);
         if swapchain_support.formats.is_empty() {
             panic!("No available swapchain formats");
         }
@@ -81,11 +77,11 @@ impl DeviceBuilder {
         }
 
         aleph_log::trace!("Getting queue families");
-        let queue_families = Self::get_queue_families(&instance_loader, physical_device, surface);
+        let queue_families = Self::get_queue_families(instance, physical_device, surface);
 
         aleph_log::trace!("Getting GPU info");
         let device_props =
-            unsafe { instance_loader.get_physical_device_properties(physical_device, None) };
+            unsafe { instance.get_physical_device_properties(physical_device, None) };
 
         //let extension_props = unsafe {
         //    instance_loader.enumerate_device_extension_properties(physical_device, None, None)
@@ -181,9 +177,8 @@ impl DeviceBuilder {
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
         aleph_log::trace!("Loading device functions");
-        let device_loader =
-            DeviceLoader::new(&instance_loader, physical_device, &device_create_info, None)
-                .expect("Failed to create device and device loader");
+        let device_loader = DeviceLoader::new(instance, physical_device, &device_create_info, None)
+            .expect("Failed to create device and device loader");
 
         aleph_log::trace!("Loading general queue");
         let general_queue =
@@ -199,33 +194,28 @@ impl DeviceBuilder {
             unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
         });
 
-        let device_loader = Arc::new(device_loader);
-
-        let deferred_destruction = DeviceDeferList::new();
-
         let device = Device {
-            info,
-            physical_device,
-            device_loader,
-            general_queue,
-            general_family,
-            compute_queue,
-            compute_family,
-            transfer_queue,
-            transfer_family,
-            instance: instance.clone(),
-            defer_list: deferred_destruction,
+            inner: Arc::new(Inner {
+                info,
+                physical_device,
+                device_loader,
+                general_queue,
+                general_family,
+                compute_queue,
+                compute_family,
+                transfer_queue,
+                transfer_family,
+                instance: instance.clone(),
+            }),
         };
 
         unsafe {
             let name = erupt::cstr!(concat!(module_path!(), "::Device"));
             let name = CStr::from_ptr(name);
-            device.loader().handle.add_debug_name(&device, name);
-            //let name = aleph_macros::cstr!(concat!(module_path!(), "::Instance"));
-            //device.instance().loader().handle.add_debug_name(&device, name, );
+            device.handle.add_debug_name(&device, name);
         }
 
-        Arc::new(device)
+        device
     }
 
     ///
@@ -437,18 +427,9 @@ impl DeviceBuilder {
 ///
 ///
 ///
+#[derive(Clone)]
 pub struct Device {
-    info: GPUInfo,
-    physical_device: PhysicalDevice,
-    device_loader: Arc<DeviceLoader>,
-    general_queue: Queue,
-    general_family: QueueFamily,
-    compute_queue: Option<Queue>,
-    compute_family: Option<QueueFamily>,
-    transfer_queue: Option<Queue>,
-    transfer_family: Option<QueueFamily>,
-    instance: Arc<Instance>,
-    defer_list: DeviceDeferList,
+    inner: Arc<Inner>,
 }
 
 impl Device {
@@ -460,33 +441,26 @@ impl Device {
     }
 
     ///
-    /// Get a reference to the instance loader
-    ///
-    pub fn loader(&self) -> &Arc<DeviceLoader> {
-        &self.device_loader
-    }
-
-    ///
     /// Get the surface this device is working with
     ///
     /// Just calls `Instance::surface` on the instance ref held by the device
     ///
     pub fn surface(&self) -> SurfaceKHR {
-        self.instance.surface()
+        self.inner.instance.surface()
     }
 
     ///
     /// Gets the general queue we're using
     ///
     pub fn general_queue(&self) -> Queue {
-        self.general_queue
+        self.inner.general_queue
     }
 
     ///
     /// Gets the `QueueFamily` of the general queue
     ///
     pub fn general_family(&self) -> &QueueFamily {
-        &self.general_family
+        &self.inner.general_family
     }
 
     ///
@@ -495,14 +469,14 @@ impl Device {
     /// This will not always exist so don't assume it will (Intel iGPUs only have a single queue)
     ///
     pub fn compute_queue(&self) -> Option<Queue> {
-        self.compute_queue
+        self.inner.compute_queue
     }
 
     ///
     /// Gets the `QueueFamily` of the compute queue, if there is one
     ///
     pub fn compute_family(&self) -> Option<&QueueFamily> {
-        self.compute_family.as_ref()
+        self.inner.compute_family.as_ref()
     }
 
     ///
@@ -511,21 +485,21 @@ impl Device {
     /// This will not always exist so don't assume it will (Intel iGPUs only have a single queue)
     ///
     pub fn transfer_queue(&self) -> Option<Queue> {
-        self.transfer_queue
+        self.inner.transfer_queue
     }
 
     ///
     /// Gets the `QueueFamily` of the transfer queue, if there is one
     ///
     pub fn transfer_family(&self) -> Option<&QueueFamily> {
-        self.transfer_family.as_ref()
+        self.inner.transfer_family.as_ref()
     }
 
     ///
     /// Returns the information about the GPU we collected while constructing the device
     ///
     pub fn info(&self) -> &GPUInfo {
-        &self.info
+        &self.inner.info
     }
 
     ///
@@ -533,9 +507,9 @@ impl Device {
     ///
     pub fn swapchain_support(&self) -> SwapChainSupport {
         DeviceBuilder::get_swapchain_support(
-            self.instance.loader(),
-            self.physical_device,
-            self.instance.surface(),
+            &self.inner.instance,
+            self.inner.physical_device,
+            self.inner.instance.surface(),
         )
     }
 
@@ -543,36 +517,44 @@ impl Device {
     /// Returns the physical device handle
     ///
     pub fn physical_device(&self) -> PhysicalDevice {
-        self.physical_device
+        self.inner.physical_device
     }
 
     ///
     /// Get the instance that this device is associated with
     ///
-    pub fn instance(&self) -> &Arc<Instance> {
-        &self.instance
-    }
-
-    ///
-    /// Appends a function to the deferred destruction list. This can be used to defer destruction
-    /// of some items until the `Device` it self is being dropped. This can be used to guarantee
-    /// that objects live as long as the device as an invariant when dealing with unsafe code.
-    ///
-    /// This should be used to uphold invariants for unsafe code and not as a general purpose tool
-    /// for object destruction.
-    ///
-    pub fn defer_destruction<T: IntoDeviceDeferBox>(&self, item: T) {
-        self.defer_list.add(item);
+    pub fn instance(&self) -> &Instance {
+        &self.inner.instance
     }
 }
 
-impl Drop for Device {
+impl Deref for Device {
+    type Target = DeviceLoader;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner.device_loader
+    }
+}
+
+struct Inner {
+    info: GPUInfo,
+    physical_device: PhysicalDevice,
+    device_loader: DeviceLoader,
+    general_queue: Queue,
+    general_family: QueueFamily,
+    compute_queue: Option<Queue>,
+    compute_family: Option<QueueFamily>,
+    transfer_queue: Option<Queue>,
+    transfer_family: Option<QueueFamily>,
+    instance: Instance,
+}
+
+impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
-            self.loader()
+            self.device_loader
                 .device_wait_idle()
                 .expect("Failed to wait for device to be idle");
-            self.defer_list.consume(self);
             aleph_log::trace!("Destroying Vulkan device");
             self.device_loader.destroy_device(None);
         }

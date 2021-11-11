@@ -32,7 +32,6 @@ pub extern crate raw_window_handle;
 
 mod app_info;
 mod debug;
-mod defer;
 mod device;
 mod engine_info;
 mod entry;
@@ -45,8 +44,6 @@ mod vendor;
 
 pub use app_info::AppInfo;
 pub use debug::DebugName;
-pub use defer::DeferBox;
-pub use defer::DeferList;
 pub use device::Device;
 pub use device::DeviceBuilder;
 pub use engine_info::EngineInfo;
