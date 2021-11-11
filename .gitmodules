@@ -4,3 +4,9 @@
 [submodule "submodules/D3D12MemoryAllocator"]
 	path = submodules/D3D12MemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/D3D12MemoryAllocator.git
+[submodule "submodules/Vulkan-Headers"]
+	path = submodules/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
+[submodule "submodules/VulkanMemoryAllocator"]
+	path = submodules/VulkanMemoryAllocator
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
