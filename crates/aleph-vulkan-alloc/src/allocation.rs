@@ -44,98 +44,86 @@ impl AllocationCreateFlag {
     ///
     /// VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT
     ///
-    pub const DEDICATED_MEMORY_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
-    );
+    pub const DEDICATED_MEMORY_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT
     ///
-    pub const NEVER_ALLOCATE_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT,
-    );
+    pub const NEVER_ALLOCATE_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_NEVER_ALLOCATE_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_MAPPED_BIT
     ///
-    pub const MAPPED_BIT: AllocationCreateFlag =
-        AllocationCreateFlag(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_MAPPED_BIT);
+    pub const MAPPED_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT
     ///
-    pub const CAN_BECOME_LOST_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT,
-    );
+    pub const CAN_BECOME_LOST_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_BECOME_LOST_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT
     ///
-    pub const CAN_MAKE_OTHER_LOST_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT,
-    );
+    pub const CAN_MAKE_OTHER_LOST_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_CAN_MAKE_OTHER_LOST_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT
     ///
-    pub const USER_DATA_COPY_STRING_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT,
-    );
+    pub const USER_DATA_COPY_STRING_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_USER_DATA_COPY_STRING_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT
     ///
-    pub const UPPER_ADDRESS_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT,
-    );
+    pub const UPPER_ADDRESS_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_UPPER_ADDRESS_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT
     ///
-    pub const STRATEGY_BEST_FIT_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT,
-    );
+    pub const STRATEGY_BEST_FIT_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_BEST_FIT_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT
     ///
-    pub const STRATEGY_WORST_FIT_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT,
-    );
+    pub const STRATEGY_WORST_FIT_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_WORST_FIT_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT
     ///
-    pub const STRATEGY_FIRST_FIT_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT,
-    );
+    pub const STRATEGY_FIRST_FIT_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_FIRST_FIT_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT
     ///
-    pub const STRATEGY_MIN_MEMORY_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT,
-    );
+    pub const STRATEGY_MIN_MEMORY_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT
     ///
-    pub const STRATEGY_MIN_TIME_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT,
-    );
+    pub const STRATEGY_MIN_TIME_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT
     ///
-    pub const STRATEGY_MIN_FRAGMENTATION_BIT: AllocationCreateFlag = AllocationCreateFlag(
-        raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT,
-    );
+    pub const STRATEGY_MIN_FRAGMENTATION_BIT: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MIN_FRAGMENTATION_BIT);
 
     ///
     /// VMA_ALLOCATION_CREATE_STRATEGY_MASK
     ///
-    pub const STRATEGY_MASK: AllocationCreateFlag =
-        AllocationCreateFlag(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MASK);
+    pub const STRATEGY_MASK: Self =
+        Self(raw::VmaAllocationCreateFlagBits_VMA_ALLOCATION_CREATE_STRATEGY_MASK);
 }
 
 impl From<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
@@ -173,7 +161,7 @@ impl MemoryUsage {
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY => MemoryUsage::CPUOnly,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU => MemoryUsage::CPUToGPU,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU => MemoryUsage::GPUToCPU,
-            _ => panic!("Invalid VmaMemoryUsage variant"),
+            _ => unreachable!("Invalid VmaMemoryUsage variant"),
         }
     }
 

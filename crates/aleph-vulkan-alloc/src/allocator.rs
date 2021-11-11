@@ -59,14 +59,14 @@ impl AllocatorCreateFlag {
     ///
     /// VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT
     ///
-    pub const EXTERNALLY_SYNCHRONIZED_BIT: AllocatorCreateFlag = AllocatorCreateFlag(
+    pub const EXTERNALLY_SYNCHRONIZED_BIT: Self = Self(
         raw::VmaAllocatorCreateFlagBits_VMA_ALLOCATOR_CREATE_EXTERNALLY_SYNCHRONIZED_BIT as u32,
     );
 
     ///
     /// VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT
     ///
-    pub const KHR_DEDICATED_ALLOCATION_BIT: AllocatorCreateFlag = AllocatorCreateFlag(
+    pub const KHR_DEDICATED_ALLOCATION_BIT: Self = Self(
         raw::VmaAllocatorCreateFlagBits_VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT as u32,
     );
 }
