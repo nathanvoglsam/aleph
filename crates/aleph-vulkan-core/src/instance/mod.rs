@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::{AppInfo, Entry};
+use crate::{AppInfo, EngineInfo, Entry};
 use erupt::extensions::ext_debug_utils::{
     DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
@@ -86,11 +86,13 @@ impl InstanceBuilder {
         entry_loader: &Arc<Entry>,
         window_handle: &impl HasRawWindowHandle,
         app_info: &AppInfo,
+        engine_info: &EngineInfo,
     ) -> Arc<Instance> {
         // Create the vulkan instance
         let (instance_loader, version) = Self::create_instance(
             entry_loader.loader(),
             app_info,
+            engine_info,
             window_handle,
             self.debug,
             self.validation,
@@ -125,6 +127,7 @@ impl InstanceBuilder {
     fn create_instance<T>(
         entry_loader: &erupt::EntryLoader<T>,
         app_info: &AppInfo,
+        engine_info: &EngineInfo,
         window_handle: &impl HasRawWindowHandle,
         debug: bool,
         validation: bool,
@@ -138,12 +141,17 @@ impl InstanceBuilder {
             app_info.minor_version,
             app_info.patch_version,
         );
-        let engine_version = erupt::vk1_0::make_version(0, 1, 0);
+        let engine_name_cstr = CString::new(engine_info.name).unwrap();
+        let engine_version = erupt::vk1_0::make_version(
+            engine_info.major_version,
+            engine_info.minor_version,
+            engine_info.patch_version,
+        );
         let api_version = Self::assert_version_supported(entry_loader, 1, 2);
         let app_info = erupt::vk1_0::ApplicationInfoBuilder::new()
             .application_name(&app_name_cstr)
             .application_version(app_version)
-            .engine_name(unsafe { CStr::from_ptr(erupt::cstr!("aleph-engine")) })
+            .engine_name(&engine_name_cstr)
             .engine_version(engine_version)
             .api_version(api_version);
 
