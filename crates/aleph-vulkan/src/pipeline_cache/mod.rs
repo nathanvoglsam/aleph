@@ -78,7 +78,7 @@ impl PipelineCache {
 
         let cache = unsafe {
             device
-                .create_pipeline_cache(&create_info, None, None)
+                .create_pipeline_cache(&create_info, None)
                 .expect("Failed to create pipeline cache")
         };
         unsafe {

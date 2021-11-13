@@ -160,7 +160,7 @@ impl<'a> ImageSingle2DBuilder<'a> {
             .components(component_mapping)
             .subresource_range(subresource_range);
         let image_view = device
-            .create_image_view(&create_info, None, None)
+            .create_image_view(&create_info, None)
             .expect("Failed to create BaseImage ImageView");
 
         if let Some(name) = self.debug_name {

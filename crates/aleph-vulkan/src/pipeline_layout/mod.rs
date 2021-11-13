@@ -270,7 +270,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
                 let create_info = DescriptorSetLayoutCreateInfoBuilder::new().bindings(&bindings);
                 unsafe {
                     device
-                        .create_descriptor_set_layout(&create_info, None, None)
+                        .create_descriptor_set_layout(&create_info, None)
                         .expect("Failed to create descriptor set layout")
                 }
             })
@@ -281,7 +281,7 @@ impl<'a> PipelineLayoutBuilder<'a> {
             .set_layouts(&set_layouts);
         let pipeline_layout = unsafe {
             let pipeline_layout = device
-                .create_pipeline_layout(&create_info, None, None)
+                .create_pipeline_layout(&create_info, None)
                 .expect("Failed to create pipeline layout");
 
             if let Some(name) = self.debug_name {

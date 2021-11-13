@@ -418,7 +418,7 @@ impl<'a> ShaderModuleBuilder<'a> {
             let create_info = ShaderModuleCreateInfoBuilder::new().code(words);
             unsafe {
                 let module = device
-                    .create_shader_module(&create_info, None, None)
+                    .create_shader_module(&create_info, None)
                     .expect("Failed to create shader module");
                 if let Some(name) = self.debug_name {
                     module.add_debug_name(device, name);
