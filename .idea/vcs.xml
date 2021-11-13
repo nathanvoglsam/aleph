@@ -4,5 +4,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/D3D12MemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/submodules/SDL-mirror" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/Vulkan-Headers" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/submodules/VulkanMemoryAllocator" vcs="Git" />
   </component>
 </project>

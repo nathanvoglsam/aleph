@@ -46,7 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [dependencies]
 aleph-log = { path = "../aleph-log", version = "1" }
-erupt = "0.16"
+erupt = "0.20"
 crossbeam = "0.8"
-console = "0.14"
+console = "0.15"
 raw-window-handle = "0.3"

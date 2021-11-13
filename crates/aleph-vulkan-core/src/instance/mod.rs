@@ -128,24 +128,26 @@ impl InstanceBuilder {
     /// Creates a vulkan instance and returns the instance handle
     ///
     fn create_instance<T>(
-        entry_loader: &erupt::EntryLoader<T>,
+        entry_loader: &erupt::CustomEntryLoader<T>,
         app_info: &AppInfo,
         engine_info: &EngineInfo,
         window_handle: &impl HasRawWindowHandle,
         debug: bool,
         validation: bool,
     ) -> (erupt::InstanceLoader, u32) {
-        use erupt::vk1_0::make_version;
+        use erupt::vk1_0::make_api_version;
 
         // Fill out ApplicationInfo for creating a vulkan instance
         let app_name_cstr = CString::new(app_info.name).unwrap();
-        let app_version = make_version(
+        let app_version = make_api_version(
+            0,
             app_info.major_version,
             app_info.minor_version,
             app_info.patch_version,
         );
         let engine_name_cstr = CString::new(engine_info.name).unwrap();
-        let engine_version = erupt::vk1_0::make_version(
+        let engine_version = make_api_version(
+            0,
             engine_info.major_version,
             engine_info.minor_version,
             engine_info.patch_version,
@@ -177,25 +179,27 @@ impl InstanceBuilder {
 
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
-        let instance_loader = erupt::InstanceLoader::new(entry_loader, &create_info, None)
-            .expect("Failed to initialize Vulkan instance loader");
+        let instance_loader = unsafe {
+            erupt::InstanceLoader::new(entry_loader, &create_info, None)
+                .expect("Failed to initialize Vulkan instance loader")
+        };
 
         (instance_loader, api_version)
     }
 
     fn assert_version_supported<T>(
-        entry_loader: &erupt::EntryLoader<T>,
+        entry_loader: &erupt::CustomEntryLoader<T>,
         major_version: u32,
         minor_version: u32,
     ) -> u32 {
         // Get the latest supported API version
         let max_version = unsafe {
             entry_loader
-                .enumerate_instance_version(None)
+                .enumerate_instance_version()
                 .expect("Failed to get the latest supported instance version")
         };
-        let max_version_major = erupt::vk1_0::version_major(max_version);
-        let max_version_minor = erupt::vk1_0::version_minor(max_version);
+        let max_version_major = erupt::vk1_0::api_version_major(max_version);
+        let max_version_minor = erupt::vk1_0::api_version_minor(max_version);
 
         // Check if the major version is supported
         if max_version_major < major_version {
@@ -214,7 +218,7 @@ impl InstanceBuilder {
         }
 
         // Return the packed version
-        erupt::vk1_0::make_version(major_version, minor_version, 0)
+        erupt::vk1_0::make_api_version(0, major_version, minor_version, 0)
     }
 
     ///
@@ -237,7 +241,7 @@ impl InstanceBuilder {
 
         unsafe {
             instance_loader
-                .create_debug_utils_messenger_ext(&create_info, None, None)
+                .create_debug_utils_messenger_ext(&create_info, None)
                 .expect("Failed to install VK_EXT_debug_utils messenger")
         }
     }
@@ -268,17 +272,17 @@ impl Instance {
 
     /// Returns the major version of the vulkan instance
     pub fn major_version(&self) -> u32 {
-        erupt::vk1_0::version_major(self.inner.version)
+        erupt::vk1_0::api_version_major(self.inner.version)
     }
 
     /// Returns the minor version of the vulkan instance
     pub fn minor_version(&self) -> u32 {
-        erupt::vk1_0::version_minor(self.inner.version)
+        erupt::vk1_0::api_version_minor(self.inner.version)
     }
 
     /// Returns the patch version of the vulkan instance
     pub fn patch_version(&self) -> u32 {
-        erupt::vk1_0::version_patch(self.inner.version)
+        erupt::vk1_0::api_version_patch(self.inner.version)
     }
 }
 

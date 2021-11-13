@@ -352,7 +352,6 @@ impl Swapchain {
                 timeout,
                 Some(semaphore),
                 Some(fence),
-                None,
             )
         };
 
@@ -547,7 +546,7 @@ impl Swapchain {
         aleph_log::trace!("Creating new swapchain");
         let swapchain = unsafe {
             self.device
-                .create_swapchain_khr(&swap_create_info, None, None)
+                .create_swapchain_khr(&swap_create_info, None)
                 .expect("Failed to create swapchain")
         };
 
@@ -580,7 +579,7 @@ impl Swapchain {
                         .view_type(ImageViewType::_2D);
                     let image_view = self
                         .device
-                        .create_image_view(&create_info, None, None)
+                        .create_image_view(&create_info, None)
                         .expect("Failed to create ImageView for swapchain");
                     let image = SwapImage::internal_create(
                         image,

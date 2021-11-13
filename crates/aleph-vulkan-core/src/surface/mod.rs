@@ -58,7 +58,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_wayland_surface_khr(&create_info, allocation_callbacks, None)
+            instance_loader.create_wayland_surface_khr(&create_info, allocation_callbacks)
         }
 
         #[cfg(any(
@@ -77,7 +77,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_xlib_surface_khr(&create_info, allocation_callbacks, None)
+            instance_loader.create_xlib_surface_khr(&create_info, allocation_callbacks)
         }
 
         #[cfg(any(
@@ -96,7 +96,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_xcb_surface_khr(&create_info, allocation_callbacks, None)
+            instance_loader.create_xcb_surface_khr(&create_info, allocation_callbacks)
         }
 
         #[cfg(any(target_os = "android"))]
@@ -108,7 +108,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_android_surface_khr(&create_info, allocation_callbacks, None)
+            instance_loader.create_android_surface_khr(&create_info, allocation_callbacks)
         }
 
         #[cfg(any(target_os = "macos"))]
@@ -120,7 +120,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_mac_os_surface_mvk(&create_info, allocation_callbacks, None)
+            instance_loader.create_mac_os_surface_mvk(&create_info, allocation_callbacks)
         }
 
         #[cfg(any(target_os = "ios"))]
@@ -132,7 +132,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_ios_surface_mvk(&create_info, allocation_callbacks, None)
+            instance_loader.create_ios_surface_mvk(&create_info, allocation_callbacks)
         }
 
         #[cfg(target_os = "windows")]
@@ -145,7 +145,7 @@ pub unsafe fn create_surface(
                 ..Default::default()
             };
 
-            instance_loader.create_win32_surface_khr(&create_info, allocation_callbacks, None)
+            instance_loader.create_win32_surface_khr(&create_info, allocation_callbacks)
         }
 
         _ => panic!("Unsupported WSI type"),

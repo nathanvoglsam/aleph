@@ -37,13 +37,13 @@ use std::sync::Arc;
 ///
 #[derive(Clone)]
 pub struct Entry {
-    entry_loader: Arc<erupt::DefaultEntryLoader>,
+    entry_loader: Arc<erupt::EntryLoader>,
 }
 
 impl Entry {
     pub fn new() -> Result<Self, EntryLoaderError> {
         aleph_log::trace!("Initializing Vulkan Entry Loader");
-        let entry_loader = erupt::DefaultEntryLoader::new()?;
+        let entry_loader = erupt::EntryLoader::new()?;
         let out = Self {
             entry_loader: Arc::new(entry_loader),
         };
@@ -52,7 +52,7 @@ impl Entry {
 }
 
 impl Deref for Entry {
-    type Target = erupt::DefaultEntryLoader;
+    type Target = erupt::EntryLoader;
 
     fn deref(&self) -> &Self::Target {
         self.entry_loader.deref()

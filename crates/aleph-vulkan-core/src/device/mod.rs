@@ -80,8 +80,7 @@ impl DeviceBuilder {
         let queue_families = Self::get_queue_families(instance, physical_device, surface);
 
         aleph_log::trace!("Getting GPU info");
-        let device_props =
-            unsafe { instance.get_physical_device_properties(physical_device, None) };
+        let device_props = unsafe { instance.get_physical_device_properties(physical_device) };
 
         //let extension_props = unsafe {
         //    instance_loader.enumerate_device_extension_properties(physical_device, None, None)
@@ -92,9 +91,9 @@ impl DeviceBuilder {
         let device_name = device_props.device_name.as_ptr();
         let device_name = unsafe { CStr::from_ptr(device_name) };
         let device_name = device_name.to_str().unwrap().to_string();
-        let api_version_major = erupt::vk1_0::version_major(device_props.api_version);
-        let api_version_minor = erupt::vk1_0::version_minor(device_props.api_version);
-        let api_version_patch = erupt::vk1_0::version_patch(device_props.api_version);
+        let api_version_major = erupt::vk1_0::api_version_major(device_props.api_version);
+        let api_version_minor = erupt::vk1_0::api_version_minor(device_props.api_version);
+        let api_version_patch = erupt::vk1_0::api_version_patch(device_props.api_version);
         let info = GPUInfo {
             vendor_id,
             device_name,
@@ -177,21 +176,23 @@ impl DeviceBuilder {
             .enabled_extension_names(&enabled_extensions)
             .queue_create_infos(&queue_create_infos);
         aleph_log::trace!("Loading device functions");
-        let device_loader = DeviceLoader::new(instance, physical_device, &device_create_info, None)
-            .expect("Failed to create device and device loader");
+        let device_loader = unsafe {
+            DeviceLoader::new(instance, physical_device, &device_create_info, None)
+                .expect("Failed to create device and device loader")
+        };
 
         aleph_log::trace!("Loading general queue");
         let general_queue =
-            unsafe { device_loader.get_device_queue(general_queue.queue_family_index, 0, None) };
+            unsafe { device_loader.get_device_queue(general_queue.queue_family_index, 0) };
 
         let compute_queue = compute_queue.map(|queue| {
             aleph_log::trace!("Loading async compute queue");
-            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
+            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0) }
         });
 
         let transfer_queue = transfer_queue.map(|queue| {
             aleph_log::trace!("Loading transfer queue");
-            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0, None) }
+            unsafe { device_loader.get_device_queue(queue.queue_family_index, 0) }
         });
 
         let device = Device {
@@ -243,8 +244,8 @@ impl DeviceBuilder {
             let score = scores.last_mut().unwrap();
 
             let (props, feats, extns) = unsafe {
-                let props = instance.get_physical_device_properties(*device, None);
-                let feats = instance.get_physical_device_features(*device, None);
+                let props = instance.get_physical_device_properties(*device);
+                let feats = instance.get_physical_device_features(*device);
                 let extns = instance
                     .enumerate_device_extension_properties(*device, None, None)
                     .expect("Failed to list extension properties");
@@ -289,8 +290,8 @@ impl DeviceBuilder {
                 continue;
             }
 
-            let device_major_version = erupt::vk1_0::version_major(props.api_version);
-            let device_minor_version = erupt::vk1_0::version_minor(props.api_version);
+            let device_major_version = erupt::vk1_0::api_version_major(props.api_version);
+            let device_minor_version = erupt::vk1_0::api_version_minor(props.api_version);
 
             if device_major_version < major_version {
                 score.1 = -100_000;
@@ -348,18 +349,20 @@ impl DeviceBuilder {
     ) -> SwapChainSupport {
         let capabilities = unsafe {
             instance
-                .get_physical_device_surface_capabilities_khr(physical_device, surface, None)
+                .get_physical_device_surface_capabilities_khr(physical_device, surface)
                 .expect("Failed to retrieve surface capabilities")
         };
         let formats = unsafe {
             instance
                 .get_physical_device_surface_formats_khr(physical_device, surface, None)
                 .expect("Failed to retrieve supported surface formats")
+                .to_vec()
         };
         let present_modes = unsafe {
             instance
                 .get_physical_device_surface_present_modes_khr(physical_device, surface, None)
                 .expect("Failed to retrieve support present modes")
+                .to_vec()
         };
 
         SwapChainSupport {
@@ -394,7 +397,6 @@ impl DeviceBuilder {
                             physical_device,
                             queue_family_index as u32,
                             surface,
-                            None,
                         )
                         .expect("Failed to check for surface support")
                     {
