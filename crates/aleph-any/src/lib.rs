@@ -117,12 +117,12 @@ macro_rules! declare_interfaces (
             fn __query_interface(&self, target: ::core::any::TypeId) -> Option<$crate::TraitObject> {
                 unsafe {
                     $(
-                    if target == ::core::any::TypeId::of::<$iface>() {
-                        return Some(::core::mem::transmute(self as &$iface));
+                    if target == ::core::any::TypeId::of::<dyn $iface>() {
+                        return Some(::core::mem::transmute(self as &dyn $iface));
                     }
                     )*
-                    if target == ::core::any::TypeId::of::<$crate::IAny>() {
-                        return Some(::core::mem::transmute(self as &$crate::IAny));
+                    if target == ::core::any::TypeId::of::<dyn $crate::IAny>() {
+                        return Some(::core::mem::transmute(self as &dyn $crate::IAny));
                     }
                 }
                 unsafe {

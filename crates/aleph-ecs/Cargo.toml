@@ -39,7 +39,7 @@ documentation = "https://docs.rs/aleph-ecs/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "vulkan", "game"]
 ## TODO: categories = ["game-engines"]
-edition = "2018"
+edition = "2021"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

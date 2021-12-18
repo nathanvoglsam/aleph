@@ -39,7 +39,7 @@ documentation = "https://docs.rs/aleph-logger/"
 readme = "README.md"
 ## TODO: keywords = ["macro", "utility"]
 ## TODO: categories = ["development-tools::build-utils"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 aleph-log = { path = "../aleph-log", version = "1" }

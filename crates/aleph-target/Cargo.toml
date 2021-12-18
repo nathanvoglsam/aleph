@@ -37,7 +37,7 @@ repository = "https://github.com/nathanvoglsam/aleph"
 documentation = "https://docs.rs/aleph-target/"
 readme = "README.md"
 keywords = ["platform-detection", "platform", "build", "build-script", "const"]
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 
 [badges]
