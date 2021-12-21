@@ -161,13 +161,13 @@ impl DeviceBuilder {
         queue_create_infos.push(general_queue);
 
         // Create an async compute queue if we can
-        if compute_queue.is_some() {
-            queue_create_infos.push(compute_queue.unwrap());
+        if let Some(compute_queue) = compute_queue {
+            queue_create_infos.push(compute_queue);
         }
 
         // Create a transfer queue if we can
-        if transfer_queue.is_some() {
-            queue_create_infos.push(transfer_queue.unwrap());
+        if let Some(transfer_queue) = transfer_queue {
+            queue_create_infos.push(transfer_queue);
         }
 
         aleph_log::trace!("Creating Vulkan device");
