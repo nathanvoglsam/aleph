@@ -29,8 +29,7 @@
 
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::platform::{
-    Event, HasRawWindowHandle, IWindow, IWindowEventsLock, RawWindowHandle, TrustedWindowHandle,
-    WindowEvent,
+    Event, HasRawWindowHandle, IWindow, IWindowEventsLock, RawWindowHandle, WindowEvent,
 };
 use parking_lot::{Mutex, RwLock, RwLockReadGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -448,10 +447,11 @@ impl IWindow for WindowImpl {
         let lock = WindowEventsLockImpl(self.events.read());
         Box::new(lock)
     }
+}
 
-    fn raw_window_handle(&self) -> TrustedWindowHandle {
-        // SAFETY: The handle will always be a valid handle as the implementation ensures this
-        unsafe { TrustedWindowHandle::new(self.state.read().handle) }
+unsafe impl HasRawWindowHandle for WindowImpl {
+    fn raw_window_handle(&self) -> RawWindowHandle {
+        self.state.read().handle
     }
 }
 

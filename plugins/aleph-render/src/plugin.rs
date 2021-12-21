@@ -33,6 +33,7 @@ use interfaces::any;
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
+use std::ops::Deref;
 
 struct Data {
     window: any::AnyArc<dyn IWindow>,
@@ -84,7 +85,7 @@ impl IPlugin for PluginRenderDX12 {
         // Get the raw window handle from the window
         let window_provider = registry.get_interface::<dyn IWindowProvider>().unwrap();
         let window = window_provider.get_window().unwrap();
-        let window_handle = window.raw_window_handle();
+        let window_ref = window.deref();
 
         // Get the render data slot for egui
         let render_data = registry
@@ -145,7 +146,7 @@ impl IPlugin for PluginRenderDX12 {
             .usage_flags(dxgi::UsageFlags::RENDER_TARGET_OUTPUT)
             .build();
         let mut swap_chain = dxgi_factory
-            .create_swap_chain(&queue, &window_handle, &desc)
+            .create_swap_chain(&queue, &window_ref, &desc)
             .unwrap();
         let buffers = swap_chain.get_buffers(3).unwrap();
         buffers.iter().for_each(|v| {

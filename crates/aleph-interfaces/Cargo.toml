@@ -47,12 +47,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [features]
 default = ["serde", "rkyv"]
 
-[dependencies.raw-window-handle]
-git = "https://github.com/rust-windowing/raw-window-handle.git"
-branch = "master"
-version = "0.4.0-alpha.0"
-
 [dependencies]
+raw-window-handle = "0.4"
 serde = { version = "1", features = ["derive"], optional = true }
 rkyv = {version = "0.6", optional = true }
 ultraviolet = {version = "0.8", features = ["f64"] }

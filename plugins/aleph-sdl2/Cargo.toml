@@ -48,20 +48,16 @@ aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
 ctrlc = "3"
 once_cell = "1"
 parking_lot = "0.11"
+raw-window-handle = "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows-raw = { path = "../../crates/aleph-windows-raw", version = "0.1" }
 
 [dependencies.sdl2]
 git = "https://github.com/nathanvoglsam/rust-sdl2.git"
-branch = "custom-raw-window-fork"
-version = "0.34"
+version = "0.35"
+rev = "9859558aee401dfe6dda0077d15d1e66913b2358"
 features = ["raw-window-handle"]
-
-[dependencies.raw-window-handle]
-git = "https://github.com/rust-windowing/raw-window-handle.git"
-branch = "master"
-version = "0.4.0-alpha.0"
 
 [build-dependencies]
 cmake = "0.1"
