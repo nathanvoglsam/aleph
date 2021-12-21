@@ -54,9 +54,9 @@ raw-window-handle = "0.4"
 aleph-windows-raw = { path = "../../crates/aleph-windows-raw", version = "0.1" }
 
 [dependencies.sdl2]
-git = "https://github.com/nathanvoglsam/rust-sdl2.git"
+git = "https://github.com/Rust-SDL2/rust-sdl2.git"
 version = "0.35"
-rev = "9859558aee401dfe6dda0077d15d1e66913b2358"
+rev = "cfdb4359892f2ddc46147db8e3ea3f1f6ab5d977"
 features = ["raw-window-handle"]
 
 [build-dependencies]
