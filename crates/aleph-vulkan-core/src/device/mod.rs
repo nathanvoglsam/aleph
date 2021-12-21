@@ -211,8 +211,7 @@ impl DeviceBuilder {
         };
 
         unsafe {
-            let name = erupt::cstr!(concat!(module_path!(), "::Device"));
-            let name = CStr::from_ptr(name);
+            let name = crate::cstr!(concat!(module_path!(), "::Device"));
             device.handle.add_debug_name(&device, name);
         }
 

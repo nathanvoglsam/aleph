@@ -60,3 +60,35 @@ pub use swapchain::SwapImage;
 pub use swapchain::Swapchain;
 pub use swapchain::SwapchainBuilder;
 pub use vendor::VendorID;
+
+#[inline]
+#[allow(dead_code)]
+pub unsafe fn str_to_cstr(string: &'static str) -> &'static std::ffi::CStr {
+    std::mem::transmute(string)
+}
+
+#[macro_export]
+macro_rules! cstr {
+    ($strval:expr) => {{
+        fn caster(string: &'static str) -> &'static std::ffi::CStr {
+            unsafe { $crate::str_to_cstr(string) }
+        }
+        caster(concat!($strval, "\0"))
+    }};
+}
+
+#[inline]
+#[allow(dead_code)]
+pub unsafe fn str_to_cstr_raw(string: &'static str) -> *const std::os::raw::c_char {
+    string.as_ptr() as *const _
+}
+
+#[macro_export]
+macro_rules! cstr_ptr {
+    ($strval:expr) => {{
+        fn caster(string: &'static str) -> *const std::os::raw::c_char {
+            unsafe { $crate::str_to_cstr_raw(string) }
+        }
+        caster(concat!($strval, "\0"))
+    }};
+}

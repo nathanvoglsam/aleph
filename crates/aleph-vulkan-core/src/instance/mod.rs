@@ -168,7 +168,7 @@ impl InstanceBuilder {
 
         let mut layers = Vec::new();
         if validation {
-            layers.push(erupt::cstr!("VK_LAYER_KHRONOS_validation"));
+            layers.push(crate::cstr_ptr!("VK_LAYER_KHRONOS_validation"));
         }
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
