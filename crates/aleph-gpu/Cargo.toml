@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-render-graph"
+name = "aleph-gpu"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "The aleph-engine renderer"
+description = "The aleph-engine GPU interface"
 license = "MIT"
 repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-render-graph/"
+documentation = "https://docs.rs/aleph-gpu/"
 readme = "README.md"
 ## keywords = ["engine", "graphics", "vulkan", "game"]
 ## categories = ["game-engines"]
@@ -50,9 +50,12 @@ aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../aleph-pix", version = "0.1" }
 
 [dependencies]
+aleph-vulkan-core = { path = "../aleph-vulkan-core", version = "0.1" }
+aleph-vulkan-alloc = { path = "../aleph-vulkan-alloc", version = "0.1" }
 aleph-interfaces = { path = "../aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../aleph-log", version = "1" }
 cstr = "0.2"
 once_cell = "1"
 crossbeam = "0.8"
+bitflags = "1.3"
 ultraviolet = {version = "0.8", features = ["f64"] }

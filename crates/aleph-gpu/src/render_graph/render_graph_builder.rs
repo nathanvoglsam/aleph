@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::render_graph::{
+use crate::render_graph::internals::{
     ImportedResource, RenderPass, ResourceUsage, TransientResource, TransientResourceType,
 };
-use crate::{IRenderPass, RenderGraph, RenderPassAccesses, ResourceImportDesc};
+use crate::render_graph::{IRenderPass, RenderGraph, RenderPassAccesses, ResourceImportDesc};
 use std::collections::{HashMap, HashSet};
 
 pub struct RenderGraphBuilder {
@@ -43,10 +43,10 @@ pub struct RenderGraphBuilder {
 impl RenderGraphBuilder {
     pub fn new() -> Self {
         Self {
-            pass_names: HashMap::with_capacity(8),
-            pass_storage: Vec::with_capacity(8),
-            imports: HashMap::with_capacity(4),
-            exports: HashMap::with_capacity(4),
+            pass_names: HashMap::new(),
+            pass_storage: Vec::new(),
+            imports: HashMap::new(),
+            exports: HashMap::new(),
         }
     }
 
@@ -165,19 +165,15 @@ impl RenderGraphBuilder {
         self.pass_storage.iter().enumerate().for_each(|(i, v)| {
             v.accesses.writes.iter().for_each(|v| {
                 let name = &v.1.result;
-                let is_duplicate = transients
-                    .insert(
-                        name.clone(),
-                        TransientResource {
-                            creator: i,
-                            usage: ResourceUsage::default(),
-                            r#type: TransientResourceType::Derived {
-                                derived_from: v.0.clone(),
-                                desc: v.1.access.clone(),
-                            },
-                        },
-                    )
-                    .is_some();
+                let transient = TransientResource {
+                    creator: i,
+                    usage: ResourceUsage::default(),
+                    r#type: TransientResourceType::Derived {
+                        derived_from: v.0.clone(),
+                        desc: v.1.access.clone(),
+                    },
+                };
+                let is_duplicate = transients.insert(name.clone(), transient).is_some();
 
                 // A derived resource's result name can not clash with the names of any imported
                 // resources as all names must be unique

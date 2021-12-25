@@ -27,7 +27,8 @@
 // SOFTWARE.
 //
 
-use crate::{ResourceCreateDesc, ResourceReadDesc, ResourceSlot, ResourceWriteDesc};
+use crate::command_buffer::CommandBuffer;
+use crate::render_graph::{ResourceCreateDesc, ResourceReadDesc, ResourceSlot, ResourceWriteDesc};
 use crossbeam::atomic::AtomicCell;
 use std::collections::HashMap;
 use std::convert::Into;
@@ -48,7 +49,7 @@ pub trait IRenderPass {
     ///
     /// Parallel command recording is up to the [`IRenderPass`] implementation to perform using
     /// bundles. Command list submission must be handled outside of the graph.
-    fn record(&mut self, command_list: &mut dx12::GraphicsCommandList);
+    fn record(&mut self, command_list: CommandBuffer);
 }
 
 /// This object is used by [`IRenderPass`] implementations to record resource accesses for the pass.

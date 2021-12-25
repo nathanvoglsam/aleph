@@ -27,37 +27,14 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+pub struct ImageResource {}
 
-//!
-//!
-//!
+#[derive(Clone)]
+pub enum ImageAccessType {
+    General,
+    ColorAttachmentRead,
+    Present,
+}
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc as dx12_alloc;
-extern crate aleph_pix as pix;
-
-extern crate aleph_interfaces as interfaces;
-extern crate aleph_log as log;
-
-mod callback_render_pass;
-mod render_graph;
-mod render_graph_builder;
-mod render_pass;
-mod resource_accesses;
-mod resource_slot;
-
-pub use callback_render_pass::CallbackPass;
-pub use render_graph::RenderGraph;
-pub use render_graph_builder::RenderGraphBuilder;
-pub use render_pass::IRenderPass;
-pub use render_pass::RenderPassAccesses;
-pub use resource_accesses::BufferCreateDesc;
-pub use resource_accesses::BufferImportDesc;
-pub use resource_accesses::ResourceCreateDesc;
-pub use resource_accesses::ResourceImportDesc;
-pub use resource_accesses::ResourceReadDesc;
-pub use resource_accesses::ResourceWriteDesc;
-pub use resource_accesses::TextureCreateDesc;
-pub use resource_accesses::TextureImportDesc;
-pub use resource_slot::ResourceSlot;
+#[derive(Clone)]
+pub enum ImageFormat {}

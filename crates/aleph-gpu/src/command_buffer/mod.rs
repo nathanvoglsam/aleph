@@ -27,30 +27,4 @@
 // SOFTWARE.
 //
 
-use crossbeam::atomic::AtomicCell;
-use std::sync::Arc;
-
-///
-/// A slot returned to a render pass during the setup phase for declaring a resource access. The
-/// slot represents the method for delivering the concrete resource to the render pass during the
-/// recording stage.
-///
-pub struct ResourceSlot {
-    pub(crate) inner: Arc<AtomicCell<Option<dx12::Resource>>>,
-}
-
-impl ResourceSlot {
-    /// Take the resource from the slot, leaving the slot empty
-    ///
-    /// # Panics
-    ///
-    /// Will panic if the slot is empty, only call this once per render graph recording.
-    pub fn take(&self) -> dx12::Resource {
-        // Ensure we get a lock free implementation of atomic cell. Option<dx12::Resource> should be
-        // a single pointer in size so this should be lock free
-        assert!(AtomicCell::<Option<dx12::Resource>>::is_lock_free());
-
-        // Take from the slot, panicking if the resource has already been taken///
-        self.inner.take().unwrap()
-    }
-}
+pub struct CommandBuffer {}

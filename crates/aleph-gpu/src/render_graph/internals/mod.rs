@@ -27,40 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{
-    IRenderPass, RenderGraphBuilder, RenderPassAccesses, ResourceCreateDesc, ResourceImportDesc,
-    ResourceWriteDesc,
+use crate::render_graph::{
+    IRenderPass, RenderPassAccesses, ResourceCreateDesc, ResourceImportDesc, ResourceWriteDesc,
 };
-use std::collections::{HashMap, HashSet};
-
-///
-/// A `RenderGraph` represents a grouped container of `IRenderPass` objects that are defined against
-/// that together represent a graph of GPU work.
-///
-/// All dependencies specified by the render passes are specified in terms of this
-///
-pub struct RenderGraph {
-    /// Maps the name of a render pass to the index in the pass_storage array that contains it
-    pub(crate) pass_names: HashMap<String, usize>,
-
-    /// Storage array for all render passes
-    pub(crate) pass_storage: Vec<RenderPass>,
-
-    /// The set of all transient resources used by this render graph
-    pub(crate) transients: HashMap<String, TransientResource>,
-
-    /// The set of all resources imported into this render graph
-    pub(crate) imports: HashMap<String, ImportedResource>,
-
-    /// The set of all resources exported from this render graph
-    pub(crate) exports: HashMap<String, ()>,
-}
-
-impl RenderGraph {
-    pub fn builder() -> RenderGraphBuilder {
-        RenderGraphBuilder::new()
-    }
-}
+use std::collections::HashSet;
 
 ///
 /// Internal struct for storing a render pass with its execution dependencies

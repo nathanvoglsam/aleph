@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use dx12::dxgi;
+use crate::resource::{BufferAccessType, ImageAccessType, ImageFormat};
 
 ///
 /// Structure that provides the description of a texture resource that will be created by a render
@@ -42,13 +42,9 @@ pub struct TextureCreateDesc {
     pub height: u32,
 
     /// The pixel format of the render target
-    pub format: dxgi::Format,
-
-    /// The initial state of the resource
-    pub state: dx12::ResourceStates,
-
-    /// What type of memory heap should the texture be allocated in
-    pub heap: dx12::HeapType,
+    pub format: ImageFormat,
+    // /// What type of memory heap should the texture be allocated in
+    // pub memory_usage: vma::MemoryUsage,
 }
 
 impl Into<ResourceCreateDesc> for TextureCreateDesc {
@@ -65,12 +61,8 @@ impl Into<ResourceCreateDesc> for TextureCreateDesc {
 pub struct BufferCreateDesc {
     /// The size, in bytes, of the buffer
     pub size: u32,
-
-    /// The initial state of the resource
-    pub state: dx12::ResourceStates,
-
-    /// What type of memory heap should the buffer be allocated in
-    pub heap: dx12::HeapType,
+    // /// What type of memory heap should the buffer be allocated in
+    // pub memory_usage: vma::MemoryUsage,
 }
 
 impl Into<ResourceCreateDesc> for BufferCreateDesc {
@@ -88,26 +80,42 @@ pub enum ResourceCreateDesc {
     Buffer(BufferCreateDesc),
 }
 
-///
-/// Structure that provides the description of the state a resource should be in for read only
-/// access by a render pass in a render graph
-///
+/// TODO: Docs
 #[derive(Clone)]
-pub struct ResourceReadDesc {
-    /// The state that this resource will be used in. This is specified so the render graph can
-    /// generate barriers that handle transitioning the resource into the required state.
-    pub state: dx12::ResourceStates,
+pub struct BufferReadDesc {
+    pub usage: BufferAccessType,
 }
 
-///
-/// Structure that provides the description of the state a resource should be in for read/write
-/// access by a render pass in a render graph
-///
+/// TODO: Docs
 #[derive(Clone)]
-pub struct ResourceWriteDesc {
-    /// The state that this resource will be used in. This is specified so the render graph can
-    /// generate barriers that handle transitioning the resource into the required state.
-    pub state: dx12::ResourceStates,
+pub struct BufferWriteDesc {
+    pub usage: BufferAccessType,
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub struct TextureReadDesc {
+    pub usage: ImageAccessType,
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub struct TextureWriteDesc {
+    pub usage: ImageAccessType,
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub enum ResourceReadDesc {
+    Buffer(BufferReadDesc),
+    Texture(TextureReadDesc),
+}
+
+/// TODO: Docs
+#[derive(Clone)]
+pub enum ResourceWriteDesc {
+    Buffer(BufferWriteDesc),
+    Texture(TextureWriteDesc),
 }
 
 /// TODO: Docs
@@ -120,10 +128,10 @@ pub struct TextureImportDesc {
     pub height: u32,
 
     /// The pixel format of the render target
-    pub format: dxgi::Format,
+    pub format: ImageFormat,
 
     /// The initial state of the resource
-    pub state: dx12::ResourceStates,
+    pub layout: ImageAccessType,
 }
 
 impl Into<ResourceImportDesc> for TextureImportDesc {
@@ -137,9 +145,6 @@ impl Into<ResourceImportDesc> for TextureImportDesc {
 pub struct BufferImportDesc {
     /// The size, in bytes, of the buffer
     pub size: u32,
-
-    /// The initial state of the resource
-    pub state: dx12::ResourceStates,
 }
 
 impl Into<ResourceImportDesc> for BufferImportDesc {
