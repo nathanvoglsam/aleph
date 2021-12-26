@@ -28,25 +28,22 @@
 //
 
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
+use crate::windows::core::Interface;
 use crate::{CommandQueue, FeatureLevel};
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
 use std::mem::{transmute, transmute_copy};
 use utf16_lit::utf16_null;
-use windows_raw::utils::DynamicLoadCell;
-use windows_raw::Win32::Direct3D12::ID3D12Device4;
-use windows_raw::Win32::Dxgi::{
-    IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain1, IDXGISwapChain4,
-    DXGI_ADAPTER_DESC1, DXGI_ADAPTER_FLAG, DXGI_GPU_PREFERENCE, DXGI_SWAP_CHAIN_DESC1,
+use windows::core::{IInspectable, IUnknown, GUID};
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Foundation::HWND;
+use windows::Win32::Graphics::Direct3D12::ID3D12Device4;
+use windows::Win32::Graphics::Dxgi::{
+    IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain4, DXGI_ADAPTER_FLAG_SOFTWARE,
+    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, DXGI_SWAP_CHAIN_DESC1,
 };
-use windows_raw::Win32::WinRT::IInspectable;
-use windows_raw::Win32::WindowsAndMessaging::HWND;
-use windows_raw::{Abi, Interface};
 
-type CreateFn = extern "system" fn(
-    u32,
-    *const windows_raw::Guid,
-    *mut *mut ::std::ffi::c_void,
-) -> crate::ErrorCode;
+type CreateFn =
+    extern "system" fn(u32, *const GUID, *mut *mut ::std::ffi::c_void) -> windows::core::HRESULT;
 
 static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
@@ -56,12 +53,15 @@ pub struct Factory(pub(crate) IDXGIFactory2);
 
 impl Factory {
     #[inline]
-    pub fn new(debug: bool) -> crate::Result<Factory> {
+    pub fn new(debug: bool) -> windows::core::Result<Factory> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
             let flags = if debug { 0x1 } else { 0x0 };
             let mut dxgi_factory: Option<IDXGIFactory2> = None;
-            create_fn(flags, &IDXGIFactory2::IID, dxgi_factory.set_abi())
+            let ptr = &mut dxgi_factory;
+            let ptr = ptr as *mut Option<IDXGIFactory2>;
+            let ptr = ptr as *mut *mut ::std::ffi::c_void;
+            create_fn(flags, &IDXGIFactory2::IID, ptr)
                 .and_some(dxgi_factory)
                 .map(|v| Self(v))
         }
@@ -72,7 +72,7 @@ impl Factory {
         queue: &CommandQueue,
         window_handle: &impl HasRawWindowHandle,
         swap_chain_desc: &SwapChainDesc1,
-    ) -> crate::Result<SwapChain> {
+    ) -> windows::core::Result<SwapChain> {
         unsafe {
             let desc = swap_chain_desc.clone();
             let desc = transmute(desc);
@@ -83,7 +83,6 @@ impl Factory {
                 RawWindowHandle::Win32(hwnd) => {
                     assert!(!hwnd.hwnd.is_null());
                     let hwnd = hwnd.hwnd as isize;
-                    let hwnd = HWND(hwnd);
                     self.create_swap_chain_for_hwnd(queue, hwnd, desc)?
                 }
                 RawWindowHandle::WinRt(core_window) => {
@@ -105,19 +104,10 @@ impl Factory {
         queue: &CommandQueue,
         hwnd: HWND,
         desc: DXGI_SWAP_CHAIN_DESC1,
-    ) -> crate::Result<IDXGISwapChain4> {
-        let mut swapchain: Option<IDXGISwapChain1> = None;
-        let swapchain = self
-            .0
-            .CreateSwapChainForHwnd(
-                queue.as_raw(),
-                hwnd,
-                &desc,
-                std::ptr::null(),
-                None,
-                &mut swapchain,
-            )
-            .and_some(swapchain)?;
+    ) -> windows::core::Result<IDXGISwapChain4> {
+        let swapchain =
+            self.0
+                .CreateSwapChainForHwnd(queue.as_raw(), hwnd, &desc, std::ptr::null(), None)?;
         swapchain.cast::<IDXGISwapChain4>()
     }
 
@@ -127,17 +117,16 @@ impl Factory {
         queue: &CommandQueue,
         core_window: IInspectable,
         desc: DXGI_SWAP_CHAIN_DESC1,
-    ) -> crate::Result<IDXGISwapChain4> {
-        let mut swapchain: Option<IDXGISwapChain1> = None;
-        let swapchain = self
-            .0
-            .CreateSwapChainForCoreWindow(queue.as_raw(), core_window, &desc, None, &mut swapchain)
-            .and_some(swapchain)?;
+    ) -> windows::core::Result<IDXGISwapChain4> {
+        let core_window = core_window.cast::<IUnknown>()?;
+        let swapchain =
+            self.0
+                .CreateSwapChainForCoreWindow(queue.as_raw(), core_window, &desc, None)?;
         swapchain.cast::<IDXGISwapChain4>()
     }
 
     #[inline]
-    pub fn enumerate_adapters(&mut self, i: u32) -> crate::Result<Adapter> {
+    pub fn enumerate_adapters(&mut self, i: u32) -> windows::core::Result<Adapter> {
         unsafe { Self::enum_edapter_old(&self.0, i).map(|v| Adapter(v)) }
     }
 
@@ -149,9 +138,10 @@ impl Factory {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
 
-            let create_fn = *crate::dx12::device::CREATE_FN
+            let create_fn = crate::dx12::device::CREATE_FN
                 .get()
-                .expect("Failed to load dxgi.dll");
+                .expect("Failed to load dxgi.dll")
+                .unwrap();
 
             // Loop over all the available adapters
             let mut i = 0;
@@ -167,11 +157,10 @@ impl Factory {
                 // a big error or enumerated all of them already
                 if let Ok(adapter) = adapter {
                     // Get the adapter description so we can decide if we want to use it or not
-                    let mut desc = DXGI_ADAPTER_DESC1::default();
-                    adapter.GetDesc1(&mut desc).unwrap();
+                    let desc = adapter.GetDesc1().unwrap();
 
                     // We want to skip software adapters as they're going to be *very* slow
-                    if (desc.Flags & DXGI_ADAPTER_FLAG::DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
+                    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0 {
                         i += 1;
                         continue;
                     }
@@ -202,23 +191,18 @@ impl Factory {
 
 impl Factory {
     #[inline]
-    unsafe fn enum_edapter_new(factory: &IDXGIFactory6, i: u32) -> crate::Result<IDXGIAdapter1> {
-        let mut ppv_adapter: Option<IDXGIAdapter1> = None;
-        factory
-            .EnumAdapterByGpuPreference(
-                i,
-                DXGI_GPU_PREFERENCE::DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-                &IDXGIAdapter1::IID,
-                ppv_adapter.set_abi(),
-            )
-            .and_some(ppv_adapter)
+    unsafe fn enum_edapter_new(
+        factory: &IDXGIFactory6,
+        i: u32,
+    ) -> windows::core::Result<IDXGIAdapter1> {
+        factory.EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE)
     }
 
     #[inline]
-    unsafe fn enum_edapter_old(factory: &IDXGIFactory2, i: u32) -> crate::Result<IDXGIAdapter1> {
-        let mut pp_adapter: Option<IDXGIAdapter1> = None;
-        factory
-            .EnumAdapters1(i, &mut pp_adapter)
-            .and_some(pp_adapter)
+    unsafe fn enum_edapter_old(
+        factory: &IDXGIFactory2,
+        i: u32,
+    ) -> windows::core::Result<IDXGIAdapter1> {
+        factory.EnumAdapters1(i)
     }
 }

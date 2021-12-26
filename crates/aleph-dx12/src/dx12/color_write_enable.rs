@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_COLOR_WRITE_ENABLE;
+use windows::Win32::Graphics::Direct3D12::D3D12_COLOR_WRITE_ENABLE;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct ColorWriteEnable(pub u8);
@@ -52,11 +52,11 @@ impl Default for ColorWriteEnable {
     }
 }
 
-windows_raw::flags_bitwise_impl!(ColorWriteEnable);
+windows::flags_bitwise_impl!(ColorWriteEnable);
 
 impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
     #[inline]
     fn into(self) -> D3D12_COLOR_WRITE_ENABLE {
-        D3D12_COLOR_WRITE_ENABLE(self.0 as i32)
+        self.0 as i32
     }
 }

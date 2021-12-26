@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_BLEND;
+use windows::Win32::Graphics::Direct3D12::D3D12_BLEND;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -54,6 +54,6 @@ pub enum Blend {
 impl Into<D3D12_BLEND> for Blend {
     #[inline]
     fn into(self) -> D3D12_BLEND {
-        D3D12_BLEND(self as i32)
+        self as i32
     }
 }

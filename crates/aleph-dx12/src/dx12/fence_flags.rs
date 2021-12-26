@@ -27,16 +27,16 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_FENCE_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_FENCE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct FenceFlags(pub i32);
+pub struct FenceFlags(pub u32);
 
 impl FenceFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const SHARED: Self = Self(1i32);
-    pub const SHARED_CROSS_ADAPTER: Self = Self(2i32);
-    pub const NON_MONITORED: Self = Self(4i32);
+    pub const NONE: Self = Self(0);
+    pub const SHARED: Self = Self(1);
+    pub const SHARED_CROSS_ADAPTER: Self = Self(2);
+    pub const NON_MONITORED: Self = Self(4);
 }
 
 impl Default for FenceFlags {
@@ -46,11 +46,11 @@ impl Default for FenceFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(FenceFlags);
+windows::flags_bitwise_impl!(FenceFlags);
 
 impl Into<D3D12_FENCE_FLAGS> for FenceFlags {
     #[inline]
     fn into(self) -> D3D12_FENCE_FLAGS {
-        D3D12_FENCE_FLAGS(self.0)
+        self.0
     }
 }

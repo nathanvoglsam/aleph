@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12CommandSignature;
+use windows::Win32::Graphics::Direct3D12::ID3D12CommandSignature;
 
 #[repr(transparent)]
 pub struct CommandSignature(pub(crate) ID3D12CommandSignature);
@@ -37,4 +37,4 @@ impl CommandSignature {}
 crate::object_impl!(CommandSignature);
 crate::device_child_impl!(CommandSignature);
 crate::shared_object!(CommandSignature);
-windows_raw::deref_impl!(CommandSignature, ID3D12CommandSignature);
+windows::deref_impl!(CommandSignature, ID3D12CommandSignature);

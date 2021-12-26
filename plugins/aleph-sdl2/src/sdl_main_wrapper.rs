@@ -29,13 +29,13 @@
 
 #[cfg(target_vendor = "uwp")]
 mod uwp {
-    use aleph_windows_raw::Win32::SystemServices::{
-        ConvertFiberToThread, ConvertThreadToFiberEx, CreateFiberEx, DeleteFiber, SwitchToFiber,
-    };
     use once_cell::sync::OnceCell;
     use std::ffi::c_void;
     use std::os::raw::{c_char, c_int};
     use std::ptr::NonNull;
+    use windows::Win32::System::Threading::{
+        ConvertFiberToThread, ConvertThreadToFiberEx, CreateFiberEx, DeleteFiber, SwitchToFiber,
+    };
 
     type RTMain = unsafe extern "C" fn(c_int, *const *const c_char) -> c_int;
 

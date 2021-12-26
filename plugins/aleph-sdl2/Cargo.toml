@@ -51,7 +51,7 @@ parking_lot = "0.11"
 raw-window-handle = "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]
-aleph-windows-raw = { path = "../../crates/aleph-windows-raw", version = "0.1" }
+aleph-windows = { path = "../../crates/aleph-windows", version = "0.1" }
 
 [dependencies.sdl2]
 git = "https://github.com/Rust-SDL2/rust-sdl2.git"

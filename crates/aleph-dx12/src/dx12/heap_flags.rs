@@ -27,28 +27,28 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_HEAP_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_HEAP_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct HeapFlags(pub i32);
+pub struct HeapFlags(pub u32);
 
 impl HeapFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const SHARED: Self = Self(1i32);
-    pub const DENY_BUFFERS: Self = Self(4i32);
-    pub const ALLOW_DISPLAY: Self = Self(8i32);
-    pub const SHARED_CROSS_ADAPTER: Self = Self(32i32);
-    pub const DENY_RT_DS_TEXTURES: Self = Self(64i32);
-    pub const DENY_NON_RT_DS_TEXTURES: Self = Self(128i32);
-    pub const HARDWARE_PROTECTED: Self = Self(256i32);
-    pub const ALLOW_WRITE_WATCH: Self = Self(512i32);
-    pub const ALLOW_SHADER_ATOMICS: Self = Self(1024i32);
-    pub const CREATE_NOT_RESIDENT: Self = Self(2048i32);
-    pub const CREATE_NOT_ZEROED: Self = Self(4096i32);
-    pub const ALLOW_ALL_BUFFERS_AND_TEXTURES: Self = Self(0i32);
-    pub const ALLOW_ONLY_BUFFERS: Self = Self(192i32);
-    pub const ALLOW_ONLY_NON_RT_DS_TEXTURES: Self = Self(68i32);
-    pub const ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132i32);
+    pub const NONE: Self = Self(0);
+    pub const SHARED: Self = Self(1);
+    pub const DENY_BUFFERS: Self = Self(4);
+    pub const ALLOW_DISPLAY: Self = Self(8);
+    pub const SHARED_CROSS_ADAPTER: Self = Self(32);
+    pub const DENY_RT_DS_TEXTURES: Self = Self(64);
+    pub const DENY_NON_RT_DS_TEXTURES: Self = Self(128);
+    pub const HARDWARE_PROTECTED: Self = Self(256);
+    pub const ALLOW_WRITE_WATCH: Self = Self(512);
+    pub const ALLOW_SHADER_ATOMICS: Self = Self(1024);
+    pub const CREATE_NOT_RESIDENT: Self = Self(2048);
+    pub const CREATE_NOT_ZEROED: Self = Self(4096);
+    pub const ALLOW_ALL_BUFFERS_AND_TEXTURES: Self = Self(0);
+    pub const ALLOW_ONLY_BUFFERS: Self = Self(192);
+    pub const ALLOW_ONLY_NON_RT_DS_TEXTURES: Self = Self(68);
+    pub const ALLOW_ONLY_RT_DS_TEXTURES: Self = Self(132);
 }
 
 impl Default for HeapFlags {
@@ -58,11 +58,11 @@ impl Default for HeapFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(HeapFlags);
+windows::flags_bitwise_impl!(HeapFlags);
 
 impl Into<D3D12_HEAP_FLAGS> for HeapFlags {
     #[inline]
     fn into(self) -> D3D12_HEAP_FLAGS {
-        D3D12_HEAP_FLAGS(self.0)
+        self.0
     }
 }

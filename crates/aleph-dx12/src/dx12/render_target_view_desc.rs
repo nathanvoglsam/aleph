@@ -29,8 +29,12 @@
 
 use crate::dxgi;
 use std::mem::transmute;
-use windows_raw::Win32::Direct3D12::{
-    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RTV_DIMENSION,
+use windows::Win32::Graphics::Direct3D12::{
+    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RENDER_TARGET_VIEW_DESC_0, D3D12_RTV_DIMENSION_BUFFER,
+    D3D12_RTV_DIMENSION_TEXTURE1D, D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
+    D3D12_RTV_DIMENSION_TEXTURE2D, D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
+    D3D12_RTV_DIMENSION_TEXTURE2DMS, D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
+    D3D12_RTV_DIMENSION_TEXTURE3D,
 };
 
 #[derive(Clone, Debug)]
@@ -74,7 +78,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
         match self {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_BUFFER,
+                ViewDimension: D3D12_RTV_DIMENSION_BUFFER,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Buffer: unsafe { transmute(buffer) },
                 },
@@ -82,7 +86,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture1D { format, texture_1d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     Format: format.into(),
-                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1D,
+                    ViewDimension: D3D12_RTV_DIMENSION_TEXTURE1D,
                     Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                         Texture1D: unsafe { transmute(texture_1d) },
                     },
@@ -93,7 +97,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_1d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture1DArray: unsafe { transmute(texture_1d_array) },
                 },
@@ -101,7 +105,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture2D { format, texture_2d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     Format: format.into(),
-                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2D,
+                    ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
                     Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                         Texture2D: unsafe { transmute(texture_2d) },
                     },
@@ -112,7 +116,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2d_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2DArray: unsafe { transmute(texture_2d_array) },
                 },
@@ -122,7 +126,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2dms,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMS,
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2DMS,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2DMS: unsafe { transmute(texture_2dms) },
                 },
@@ -132,7 +136,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
                 texture_2dms_array,
             } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2DMSArray: unsafe { transmute(texture_2dms_array) },
                 },
@@ -140,7 +144,7 @@ impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
             RenderTargetViewDesc::Texture3D { format, texture_3d } => {
                 D3D12_RENDER_TARGET_VIEW_DESC {
                     Format: format.into(),
-                    ViewDimension: D3D12_RTV_DIMENSION::D3D12_RTV_DIMENSION_TEXTURE3D,
+                    ViewDimension: D3D12_RTV_DIMENSION_TEXTURE3D,
                     Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                         Texture3D: unsafe { transmute(texture_3d) },
                     },

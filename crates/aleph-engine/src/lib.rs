@@ -65,11 +65,14 @@ impl EngineBuilder {
     pub fn new() -> Self {
         // Initialize COM with MTA
         #[cfg(target_os = "windows")]
-        aleph_windows_raw::initialize_mta().unwrap();
+        unsafe {
+            use aleph_windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
+            CoInitializeEx(std::ptr::null(), COINIT_MULTITHREADED).unwrap();
+        }
 
         #[cfg(target_os = "windows")]
         unsafe {
-            aleph_windows_raw::name_current_thread(&utf16_lit::utf16_null!("MainThread"));
+            aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread"));
         }
 
         // First thing we do is initialize the log backend so everything can log from now on

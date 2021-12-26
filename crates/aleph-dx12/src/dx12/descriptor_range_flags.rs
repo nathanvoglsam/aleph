@@ -27,18 +27,18 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_DESCRIPTOR_RANGE_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_DESCRIPTOR_RANGE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct DescriptorRangeFlags(pub i32);
+pub struct DescriptorRangeFlags(pub u32);
 
 impl DescriptorRangeFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const DESCRIPTORS_VOLATILE: Self = Self(1i32);
-    pub const DATA_VOLATILE: Self = Self(2i32);
-    pub const DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
-    pub const DATA_STATIC: Self = Self(8i32);
-    pub const DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS: Self = Self(65536i32);
+    pub const NONE: Self = Self(0);
+    pub const DESCRIPTORS_VOLATILE: Self = Self(1);
+    pub const DATA_VOLATILE: Self = Self(2);
+    pub const DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4);
+    pub const DATA_STATIC: Self = Self(8);
+    pub const DESCRIPTORS_STATIC_KEEPING_BUFFER_BOUNDS_CHECKS: Self = Self(65536);
 }
 
 impl Default for DescriptorRangeFlags {
@@ -48,11 +48,11 @@ impl Default for DescriptorRangeFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(DescriptorRangeFlags);
+windows::flags_bitwise_impl!(DescriptorRangeFlags);
 
 impl Into<D3D12_DESCRIPTOR_RANGE_FLAGS> for DescriptorRangeFlags {
     #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_RANGE_FLAGS {
-        D3D12_DESCRIPTOR_RANGE_FLAGS(self.0)
+        self.0
     }
 }

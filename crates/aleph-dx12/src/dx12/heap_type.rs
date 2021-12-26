@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_HEAP_TYPE;
+use windows::Win32::Graphics::Direct3D12::D3D12_HEAP_TYPE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -41,7 +41,7 @@ pub enum HeapType {
 impl Into<D3D12_HEAP_TYPE> for HeapType {
     #[inline]
     fn into(self) -> D3D12_HEAP_TYPE {
-        D3D12_HEAP_TYPE(self as i32)
+        self as i32
     }
 }
 

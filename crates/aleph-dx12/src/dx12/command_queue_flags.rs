@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_COMMAND_QUEUE_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_COMMAND_QUEUE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct CommandQueueFlags(pub i32);
+pub struct CommandQueueFlags(pub u32);
 
 impl CommandQueueFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const DISABLE_GPU_TIMEOUT: Self = Self(1i32);
+    pub const NONE: Self = Self(0);
+    pub const DISABLE_GPU_TIMEOUT: Self = Self(1);
 }
 
 impl Default for CommandQueueFlags {
@@ -44,11 +44,11 @@ impl Default for CommandQueueFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(CommandQueueFlags);
+windows::flags_bitwise_impl!(CommandQueueFlags);
 
 impl Into<D3D12_COMMAND_QUEUE_FLAGS> for CommandQueueFlags {
     #[inline]
     fn into(self) -> D3D12_COMMAND_QUEUE_FLAGS {
-        D3D12_COMMAND_QUEUE_FLAGS(self.0)
+        self.0
     }
 }

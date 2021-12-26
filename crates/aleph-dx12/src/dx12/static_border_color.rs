@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_STATIC_BORDER_COLOR;
+use windows::Win32::Graphics::Direct3D12::D3D12_STATIC_BORDER_COLOR;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -40,6 +40,6 @@ pub enum StaticBorderColor {
 impl Into<D3D12_STATIC_BORDER_COLOR> for StaticBorderColor {
     #[inline]
     fn into(self) -> D3D12_STATIC_BORDER_COLOR {
-        D3D12_STATIC_BORDER_COLOR(self as i32)
+        self as i32
     }
 }

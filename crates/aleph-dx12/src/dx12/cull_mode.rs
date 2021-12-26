@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_CULL_MODE;
+use windows::Win32::Graphics::Direct3D12::D3D12_CULL_MODE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -40,6 +40,6 @@ pub enum CullMode {
 impl Into<D3D12_CULL_MODE> for CullMode {
     #[inline]
     fn into(self) -> D3D12_CULL_MODE {
-        D3D12_CULL_MODE(self as i32)
+        self as i32
     }
 }

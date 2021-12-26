@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_RESOURCE_STATES;
+use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_STATES;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 #[repr(transparent)]
-pub struct ResourceStates(pub i32);
+pub struct ResourceStates(pub u32);
 
 impl ResourceStates {
     // ----
@@ -202,11 +202,11 @@ impl Default for ResourceStates {
     }
 }
 
-windows_raw::flags_bitwise_impl!(ResourceStates);
+windows::flags_bitwise_impl!(ResourceStates);
 
 impl Into<D3D12_RESOURCE_STATES> for ResourceStates {
     #[inline]
     fn into(self) -> D3D12_RESOURCE_STATES {
-        D3D12_RESOURCE_STATES(self.0)
+        self.0
     }
 }

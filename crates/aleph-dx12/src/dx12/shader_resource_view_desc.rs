@@ -29,8 +29,13 @@
 
 use crate::{dxgi, ComponentMapping};
 use std::mem::transmute;
-use windows_raw::Win32::Direct3D12::{
-    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION,
+use windows::Win32::Graphics::Direct3D12::{
+    D3D12_SHADER_RESOURCE_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC_0, D3D12_SRV_DIMENSION_BUFFER,
+    D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE, D3D12_SRV_DIMENSION_TEXTURE1D,
+    D3D12_SRV_DIMENSION_TEXTURE1DARRAY, D3D12_SRV_DIMENSION_TEXTURE2D,
+    D3D12_SRV_DIMENSION_TEXTURE2DARRAY, D3D12_SRV_DIMENSION_TEXTURE2DMS,
+    D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY, D3D12_SRV_DIMENSION_TEXTURE3D,
+    D3D12_SRV_DIMENSION_TEXTURECUBE, D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
 };
 
 #[derive(Clone, Debug)]
@@ -101,7 +106,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 buffer,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_BUFFER,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Buffer: unsafe { transmute(buffer) },
@@ -113,7 +118,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_1d,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1D,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE1D,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture1D: unsafe { transmute(texture_1d) },
@@ -125,7 +130,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_1d_array,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture1DArray: unsafe { transmute(texture_1d_array) },
@@ -137,7 +142,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_2d,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2D: unsafe { transmute(texture_2d) },
@@ -149,7 +154,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_2d_array,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2DArray: unsafe { transmute(texture_2d_array) },
@@ -161,7 +166,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_2dms,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMS,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2DMS,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2DMS: unsafe { transmute(texture_2dms) },
@@ -173,7 +178,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_2dms_array,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2DMSARRAY,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture2DMSArray: unsafe { transmute(texture_2dms_array) },
@@ -185,7 +190,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_3d,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE3D,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURE3D,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     Texture3D: unsafe { transmute(texture_3d) },
@@ -197,7 +202,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_cube,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURECUBE,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURECUBE,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     TextureCube: unsafe { transmute(texture_cube) },
@@ -209,7 +214,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 texture_cube_array,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension: D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
+                ViewDimension: D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     TextureCubeArray: unsafe { transmute(texture_cube_array) },
@@ -221,8 +226,7 @@ impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
                 raytracing_acceleration_structure,
             } => D3D12_SHADER_RESOURCE_VIEW_DESC {
                 Format: format.into(),
-                ViewDimension:
-                    D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
+                ViewDimension: D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
                 Shader4ComponentMapping: component_mapping.into(),
                 Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                     RaytracingAccelerationStructure: unsafe {
@@ -245,11 +249,11 @@ pub struct BufferSrv {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct BufferSrvFlags(pub i32);
+pub struct BufferSrvFlags(pub u32);
 
 impl BufferSrvFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const RAW: Self = Self(1i32);
+    pub const NONE: Self = Self(0);
+    pub const RAW: Self = Self(1);
 }
 
 impl Default for BufferSrvFlags {
@@ -259,7 +263,7 @@ impl Default for BufferSrvFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(BufferSrvFlags);
+windows::flags_bitwise_impl!(BufferSrvFlags);
 
 #[repr(C)]
 #[derive(Clone, Default, PartialEq, Debug)]

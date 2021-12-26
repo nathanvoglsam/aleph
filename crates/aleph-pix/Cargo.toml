@@ -48,8 +48,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 path = "../aleph-dx12"
 version = "0.1"
 
-[target.'cfg(target_os = "windows")'.dependencies.aleph-windows-raw]
-path = "../aleph-windows-raw"
+[target.'cfg(target_os = "windows")'.dependencies.aleph-windows]
+path = "../aleph-windows"
 version = "0.1"
 
 [target.'cfg(target_os = "windows")'.dependencies.aleph-pix-raw]

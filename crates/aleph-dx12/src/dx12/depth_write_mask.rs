@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_DEPTH_WRITE_MASK;
+use windows::Win32::Graphics::Direct3D12::D3D12_DEPTH_WRITE_MASK;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -39,6 +39,6 @@ pub enum DepthWriteMask {
 impl Into<D3D12_DEPTH_WRITE_MASK> for DepthWriteMask {
     #[inline]
     fn into(self) -> D3D12_DEPTH_WRITE_MASK {
-        D3D12_DEPTH_WRITE_MASK(self as i32)
+        self as i32
     }
 }

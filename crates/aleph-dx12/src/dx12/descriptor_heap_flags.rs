@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_DESCRIPTOR_HEAP_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_DESCRIPTOR_HEAP_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct DescriptorHeapFlags(pub i32);
+pub struct DescriptorHeapFlags(pub u32);
 
 impl DescriptorHeapFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const SHADER_VISIBLE: Self = Self(1i32);
+    pub const NONE: Self = Self(0);
+    pub const SHADER_VISIBLE: Self = Self(1);
 }
 
 impl Default for DescriptorHeapFlags {
@@ -44,11 +44,11 @@ impl Default for DescriptorHeapFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(DescriptorHeapFlags);
+windows::flags_bitwise_impl!(DescriptorHeapFlags);
 
 impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
     #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
-        D3D12_DESCRIPTOR_HEAP_FLAGS(self.0)
+        self.0
     }
 }

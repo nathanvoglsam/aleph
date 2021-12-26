@@ -27,33 +27,11 @@
 // SOFTWARE.
 //
 
-use utf16_lit::utf16_null;
-use windows_raw::utils::DynamicLoadCell;
-use windows_raw::{Abi, Interface};
+#![cfg(target_os = "windows")]
 
-static CREATE_FN: DynamicLoadCell<dxc_raw::DxcCreateInstanceProc> =
-    DynamicLoadCell::new(&utf16_null!("dxcompiler.dll"), "DxcCreateInstance\0");
+extern crate windows;
 
-#[derive(Clone, Debug)]
-pub enum DxcCompilerCreateError {
-    FailedToLoadLibrary,
-    CreateCallFailed(dx12::Error),
-}
+pub use windows::*;
 
-#[repr(transparent)]
-pub struct DxcCompiler(pub(crate) dxc_raw::IDxcCompiler);
-
-impl DxcCompiler {
-    pub unsafe fn new() -> Result<Self, DxcCompilerCreateError> {
-        let create_fn = CREATE_FN
-            .get()
-            .ok_or(DxcCompilerCreateError::FailedToLoadLibrary)?;
-        let clsid = windows_raw::Guid::from(dxc_raw::CLSID_DxcCompiler);
-        let riid = &dxc_raw::IDxcCompiler::IID;
-        let mut out: Option<dxc_raw::IDxcCompiler> = None;
-        create_fn(&clsid, riid, out.set_abi())
-            .and_some(out)
-            .map(|v| Self(v))
-            .map_err(|v| DxcCompilerCreateError::CreateCallFailed(v))
-    }
-}
+pub mod utils;
+pub use crate::utils::name_current_thread;

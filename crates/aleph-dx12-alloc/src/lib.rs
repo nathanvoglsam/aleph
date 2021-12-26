@@ -31,7 +31,7 @@
 
 extern crate aleph_dx12 as dx12;
 extern crate aleph_dx12_alloc_raw as alloc_raw;
-extern crate aleph_windows_raw as windows_raw;
+extern crate aleph_windows as windows;
 
 mod allocation;
 mod allocation_desc;

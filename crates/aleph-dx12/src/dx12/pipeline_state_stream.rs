@@ -29,7 +29,7 @@
 
 use std::ffi::c_void;
 use std::mem::ManuallyDrop;
-use windows_raw::Win32::Direct3D12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
+use windows::Win32::Graphics::Direct3D12::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
 
 #[repr(transparent)]
 pub(crate) struct PackedPipelineStateStreamObject<T>(AlignmentWrapper<Packed<T>>);

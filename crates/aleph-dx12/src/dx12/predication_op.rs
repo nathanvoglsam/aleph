@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_PREDICATION_OP;
+use windows::Win32::Graphics::Direct3D12::D3D12_PREDICATION_OP;
 
 /// Wrapper for `D3D12_PREDICATION_OP`
 #[repr(i32)]
@@ -40,6 +40,6 @@ pub enum PredicationOp {
 impl Into<D3D12_PREDICATION_OP> for PredicationOp {
     #[inline]
     fn into(self) -> D3D12_PREDICATION_OP {
-        D3D12_PREDICATION_OP(self as i32)
+        self as i32
     }
 }

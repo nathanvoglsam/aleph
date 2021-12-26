@@ -31,8 +31,8 @@ use crate::GPUDescriptorHandle;
 use std::num::NonZeroU64;
 use std::ops::Range;
 use std::ptr::NonNull;
-use windows_raw::utils::optional_ref_to_ptr;
-use windows_raw::Win32::Direct3D12::{ID3D12Resource, D3D12_RANGE};
+use windows::utils::optional_ref_to_ptr;
+use windows::Win32::Graphics::Direct3D12::{ID3D12Resource, D3D12_RANGE};
 
 #[repr(transparent)]
 pub struct Resource(pub(crate) ID3D12Resource);
@@ -54,19 +54,17 @@ impl Resource {
         src_data: &[u8],
         src_row_pitch: u32,
         src_depth_pitch: u32,
-    ) -> crate::Result<()> {
+    ) -> windows::core::Result<()> {
         // TODO: input size validation on src_row_pitch and src_depth_pitch
         unsafe {
             let dst_box = optional_ref_to_ptr(dst_box);
-            self.0
-                .WriteToSubresource(
-                    dst_subresource,
-                    dst_box as *const _,
-                    src_data.as_ptr() as *const _,
-                    src_row_pitch,
-                    src_depth_pitch,
-                )
-                .ok()
+            self.0.WriteToSubresource(
+                dst_subresource,
+                dst_box as *const _,
+                src_data.as_ptr() as *const _,
+                src_row_pitch,
+                src_depth_pitch,
+            )
         }
     }
 
@@ -78,19 +76,17 @@ impl Resource {
         dst_depth_pitch: u32,
         src_subresource: u32,
         src_box: Option<&crate::Box>,
-    ) -> crate::Result<()> {
+    ) -> windows::core::Result<()> {
         // TODO: input size validation on dst_row_pitch and dst_depth_pitch
         unsafe {
             let src_box = optional_ref_to_ptr(src_box);
-            self.0
-                .ReadFromSubresource(
-                    dst_data.as_mut_ptr() as *mut _,
-                    dst_row_pitch,
-                    dst_depth_pitch,
-                    src_subresource,
-                    src_box as *const _,
-                )
-                .ok()
+            self.0.ReadFromSubresource(
+                dst_data.as_mut_ptr() as *mut _,
+                dst_row_pitch,
+                dst_depth_pitch,
+                src_subresource,
+                src_box as *const _,
+            )
         }
     }
 
@@ -99,7 +95,7 @@ impl Resource {
         &self,
         subresource: u32,
         read_range: Option<Range<usize>>,
-    ) -> crate::Result<Option<NonNull<u8>>> {
+    ) -> windows::core::Result<Option<NonNull<u8>>> {
         unsafe {
             let mut out = std::ptr::null_mut();
             if let Some(read_range) = read_range {
@@ -109,12 +105,10 @@ impl Resource {
                 };
                 self.0
                     .Map(subresource, &read_range, &mut out)
-                    .ok()
                     .map(|_| NonNull::new(out as *mut u8))
             } else {
                 self.0
                     .Map(subresource, std::ptr::null(), &mut out)
-                    .ok()
                     .map(|_| NonNull::new(out as *mut u8))
             }
         }
@@ -139,4 +133,4 @@ impl Resource {
 crate::object_impl!(Resource);
 crate::device_child_impl!(Resource);
 crate::shared_object!(Resource);
-windows_raw::deref_impl!(Resource, ID3D12Resource);
+windows::deref_impl!(Resource, ID3D12Resource);

@@ -28,25 +28,21 @@
 //
 
 use crate::Event;
-use windows_raw::Win32::Direct3D12::ID3D12Fence;
-use windows_raw::Win32::SystemServices::HANDLE;
+use windows::Win32::Foundation::HANDLE;
+use windows::Win32::Graphics::Direct3D12::ID3D12Fence;
 
 #[repr(transparent)]
 pub struct Fence(pub(crate) ID3D12Fence);
 
 impl Fence {
     #[inline]
-    pub fn signal(&self, value: u64) -> crate::Result<()> {
-        unsafe { self.0.Signal(value).ok() }
+    pub fn signal(&self, value: u64) -> windows::core::Result<()> {
+        unsafe { self.0.Signal(value) }
     }
 
     #[inline]
-    pub fn set_event_on_completion(&self, value: u64, event: &Event) -> crate::Result<()> {
-        unsafe {
-            self.0
-                .SetEventOnCompletion(value, HANDLE(event.0.get()))
-                .ok()
-        }
+    pub fn set_event_on_completion(&self, value: u64, event: &Event) -> windows::core::Result<()> {
+        unsafe { self.0.SetEventOnCompletion(value, HANDLE(event.0.get())) }
     }
 }
 

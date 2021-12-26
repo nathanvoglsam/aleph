@@ -27,16 +27,16 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_TILE_COPY_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_TILE_COPY_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct TileCopyFlags(pub i32);
+pub struct TileCopyFlags(pub u32);
 
 impl TileCopyFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const NO_HAZARD: Self = Self(1i32);
-    pub const LINEAR_BUFFER_TO_SWIZZLED_TILED_RESOURCE: Self = Self(2i32);
-    pub const SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4i32);
+    pub const NONE: Self = Self(0);
+    pub const NO_HAZARD: Self = Self(1);
+    pub const LINEAR_BUFFER_TO_SWIZZLED_TILED_RESOURCE: Self = Self(2);
+    pub const SWIZZLED_TILED_RESOURCE_TO_LINEAR_BUFFER: Self = Self(4);
 }
 
 impl Default for TileCopyFlags {
@@ -46,11 +46,11 @@ impl Default for TileCopyFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(TileCopyFlags);
+windows::flags_bitwise_impl!(TileCopyFlags);
 
 impl Into<D3D12_TILE_COPY_FLAGS> for TileCopyFlags {
     #[inline]
     fn into(self) -> D3D12_TILE_COPY_FLAGS {
-        D3D12_TILE_COPY_FLAGS(self.0)
+        self.0
     }
 }

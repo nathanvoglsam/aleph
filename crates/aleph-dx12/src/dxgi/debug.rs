@@ -28,15 +28,16 @@
 //
 
 use utf16_lit::utf16_null;
-use windows_raw::utils::DynamicLoadCell;
-use windows_raw::Win32::Dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
-use windows_raw::{Abi, Interface};
+use windows::core::Interface;
+use windows::core::{GUID, HRESULT};
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Graphics::Dxgi::{IDXGIDebug1, DXGI_DEBUG_RLO_FLAGS};
 
 type CreateFn = extern "system" fn(
     //flags: u32,
-    riid: *const windows_raw::Guid,
+    riid: *const GUID,
     p_debug: *mut *mut ::std::ffi::c_void,
-) -> crate::ErrorCode;
+) -> HRESULT;
 
 static CREATE_FN: DynamicLoadCell<CreateFn> =
     DynamicLoadCell::new(&utf16_null!("dxgidebug.dll"), "DXGIGetDebugInterface\0");
@@ -46,11 +47,14 @@ pub struct Debug(pub(crate) IDXGIDebug1);
 
 impl Debug {
     #[inline]
-    pub fn new() -> crate::Result<Debug> {
+    pub fn new() -> windows::core::Result<Debug> {
         unsafe {
             let create_fn = *CREATE_FN.get().expect("Failed to load dxgidebug.dll");
             let mut dxgi_debug: Option<IDXGIDebug1> = None;
-            create_fn(&IDXGIDebug1::IID, dxgi_debug.set_abi())
+            let ptr = &mut dxgi_debug;
+            let ptr = ptr as *mut Option<IDXGIDebug1>;
+            let ptr = ptr as *mut *mut ::std::ffi::c_void;
+            create_fn(&IDXGIDebug1::IID, ptr)
                 .and_some(dxgi_debug)
                 .map(|v| Self(v))
         }
@@ -61,9 +65,9 @@ impl Debug {
         &mut self,
         debug_id: DebugID,
         flags: DebugRLOFlags,
-    ) -> crate::Result<()> {
-        let debug_id: windows_raw::Guid = debug_id.into();
-        unsafe { self.0.ReportLiveObjects(debug_id, flags.into()).ok() }
+    ) -> crate::windows::core::Result<()> {
+        let debug_id: GUID = debug_id.into();
+        unsafe { self.0.ReportLiveObjects(debug_id, flags.into()) }
     }
 }
 
@@ -77,35 +81,35 @@ pub enum DebugID {
     Direct3D11,
 }
 
-impl Into<windows_raw::Guid> for DebugID {
+impl Into<GUID> for DebugID {
     #[inline]
-    fn into(self) -> windows_raw::Guid {
+    fn into(self) -> GUID {
         match self {
-            DebugID::All => windows_raw::Guid::from_values(
+            DebugID::All => GUID::from_values(
                 0xe48ae283,
                 0xda80,
                 0x490b,
                 [0x87, 0xe6, 0x43, 0xe9, 0xa9, 0xcf, 0xda, 0x8],
             ),
-            DebugID::DirectX => windows_raw::Guid::from_values(
+            DebugID::DirectX => GUID::from_values(
                 0x35cdd7fc,
                 0x13b2,
                 0x421d,
                 [0xa5, 0xd7, 0x7e, 0x44, 0x51, 0x28, 0x7d, 0x64],
             ),
-            DebugID::DXGI => windows_raw::Guid::from_values(
+            DebugID::DXGI => GUID::from_values(
                 0x25cddaa4,
                 0xb1c6,
                 0x47e1,
                 [0xac, 0x3e, 0x98, 0x87, 0x5b, 0x5a, 0x2e, 0x2a],
             ),
-            DebugID::App => windows_raw::Guid::from_values(
+            DebugID::App => GUID::from_values(
                 0x6cd6e01,
                 0x4219,
                 0x4ebd,
                 [0x87, 0x9, 0x27, 0xed, 0x23, 0x36, 0xc, 0x62],
             ),
-            DebugID::Direct3D11 => windows_raw::Guid::from_values(
+            DebugID::Direct3D11 => GUID::from_values(
                 0x4b99317b,
                 0xac39,
                 0x4aa6,
@@ -117,21 +121,21 @@ impl Into<windows_raw::Guid> for DebugID {
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct DebugRLOFlags(pub i32);
+pub struct DebugRLOFlags(pub u32);
 
-windows_raw::flags_bitwise_impl!(DebugRLOFlags);
+windows::flags_bitwise_impl!(DebugRLOFlags);
 
 impl DebugRLOFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const SUMMARY: Self = Self(1i32);
-    pub const DETAIL: Self = Self(2i32);
-    pub const IGNORE_INTERNAL: Self = Self(4i32);
-    pub const ALL: Self = Self(7i32);
+    pub const NONE: Self = Self(0u32);
+    pub const SUMMARY: Self = Self(1u32);
+    pub const DETAIL: Self = Self(2u32);
+    pub const IGNORE_INTERNAL: Self = Self(4u32);
+    pub const ALL: Self = Self(7u32);
 }
 
 impl Into<DXGI_DEBUG_RLO_FLAGS> for DebugRLOFlags {
     #[inline]
     fn into(self) -> DXGI_DEBUG_RLO_FLAGS {
-        DXGI_DEBUG_RLO_FLAGS(self.0)
+        self.0
     }
 }

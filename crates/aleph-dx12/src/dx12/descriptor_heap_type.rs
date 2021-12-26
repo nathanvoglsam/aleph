@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_DESCRIPTOR_HEAP_TYPE;
+use windows::Win32::Graphics::Direct3D12::D3D12_DESCRIPTOR_HEAP_TYPE;
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[repr(i32)]
@@ -42,6 +42,6 @@ pub enum DescriptorHeapType {
 impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
     #[inline]
     fn into(self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
-        D3D12_DESCRIPTOR_HEAP_TYPE(self as i32)
+        self as i32
     }
 }

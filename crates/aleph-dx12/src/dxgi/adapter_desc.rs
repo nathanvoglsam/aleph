@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Kernel::LUID;
+use windows::Win32::Foundation::LUID;
 
 #[repr(C)]
 #[derive(Clone)]

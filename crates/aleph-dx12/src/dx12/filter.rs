@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_FILTER;
+use windows::Win32::Graphics::Direct3D12::D3D12_FILTER;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -73,6 +73,6 @@ pub enum Filter {
 impl Into<D3D12_FILTER> for Filter {
     #[inline]
     fn into(self) -> D3D12_FILTER {
-        D3D12_FILTER(self as i32)
+        self as i32
     }
 }

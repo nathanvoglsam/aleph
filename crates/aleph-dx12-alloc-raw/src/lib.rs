@@ -29,7 +29,7 @@
 
 #![cfg(target_os = "windows")]
 
-extern crate aleph_windows_raw as windows_raw;
+extern crate aleph_windows as windows;
 
 mod raw;
 

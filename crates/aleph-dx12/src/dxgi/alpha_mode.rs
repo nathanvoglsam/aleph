@@ -28,7 +28,10 @@
 //
 
 use std::convert::TryFrom;
-use windows_raw::Win32::Dxgi::DXGI_ALPHA_MODE;
+use windows::Win32::Graphics::Dxgi::Common::{
+    DXGI_ALPHA_MODE, DXGI_ALPHA_MODE_IGNORE, DXGI_ALPHA_MODE_PREMULTIPLIED,
+    DXGI_ALPHA_MODE_STRAIGHT, DXGI_ALPHA_MODE_UNSPECIFIED,
+};
 
 #[repr(u32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -45,10 +48,10 @@ impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
     #[inline]
     fn try_from(value: DXGI_ALPHA_MODE) -> Result<Self, Self::Error> {
         match value {
-            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_UNSPECIFIED => Ok(AlphaMode::Unspecified),
-            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_PREMULTIPLIED => Ok(AlphaMode::PreMultiplied),
-            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_STRAIGHT => Ok(AlphaMode::Straight),
-            DXGI_ALPHA_MODE::DXGI_ALPHA_MODE_IGNORE => Ok(AlphaMode::Ignore),
+            DXGI_ALPHA_MODE_UNSPECIFIED => Ok(AlphaMode::Unspecified),
+            DXGI_ALPHA_MODE_PREMULTIPLIED => Ok(AlphaMode::PreMultiplied),
+            DXGI_ALPHA_MODE_STRAIGHT => Ok(AlphaMode::Straight),
+            DXGI_ALPHA_MODE_IGNORE => Ok(AlphaMode::Ignore),
             _ => Err(()),
         }
     }
@@ -57,6 +60,6 @@ impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
 impl Into<DXGI_ALPHA_MODE> for AlphaMode {
     #[inline]
     fn into(self) -> DXGI_ALPHA_MODE {
-        DXGI_ALPHA_MODE(self as u32)
+        self as u32
     }
 }

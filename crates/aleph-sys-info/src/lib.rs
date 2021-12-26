@@ -64,7 +64,7 @@ static SYSTEM_MEMORY: Lazy<Option<u64>> = Lazy::new(get_memory);
 
 #[cfg(target_os = "windows")]
 fn get_memory() -> Option<u64> {
-    use aleph_windows_raw::Win32::SystemServices::GetPhysicallyInstalledSystemMemory;
+    use aleph_windows::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
 
     unsafe {
         let mut memory = 0;

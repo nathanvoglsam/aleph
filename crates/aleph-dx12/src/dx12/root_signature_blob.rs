@@ -30,11 +30,10 @@
 use crate::dx12::versioned_root_signature_desc::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as MyDesc;
 use crate::VersionedRootSignatureDesc;
 use utf16_lit::utf16_null;
-use windows_raw::utils::DynamicLoadCell;
-use windows_raw::Abi;
-use windows_raw::Win32::Direct3D11::ID3DBlob;
-use windows_raw::Win32::Direct3D12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
-use windows_raw::Win32::Direct3D12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Graphics::Direct3D::ID3DBlob;
+use windows::Win32::Graphics::Direct3D12::D3D12_VERSIONED_ROOT_SIGNATURE_DESC as Desc;
+use windows::Win32::Graphics::Direct3D12::PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE;
 
 pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
     DynamicLoadCell::new(
@@ -47,14 +46,14 @@ pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
 impl RootSignatureBlob {
     #[inline]
-    pub unsafe fn new(desc: &VersionedRootSignatureDesc) -> crate::Result<Self> {
+    pub unsafe fn new(desc: &VersionedRootSignatureDesc) -> windows::core::Result<Self> {
         let desc: MyDesc = desc.clone().into();
         let desc_ptr = &desc as *const MyDesc as *const Desc;
 
-        let create_fn = *CREATE_FN.get().expect("Failed to load d3d12.dll");
+        let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
         let mut blob: Option<ID3DBlob> = None;
         let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
-        create_fn(desc_ptr, blob.set_abi(), err.set_abi())
+        create_fn(desc_ptr, &mut blob, &mut err)
             .and_some(blob)
             .map(|v| RootSignatureBlob(v))
     }

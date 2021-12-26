@@ -29,15 +29,26 @@
 
 use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
 use std::mem::transmute;
-use windows_raw::Win32::Direct3D12::{
+use windows::Win32::Graphics::Direct3D12::{
     ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
-    D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, D3D12_PRIMITIVE_TOPOLOGY_TYPE,
+    D3D12_PIPELINE_STATE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
+    D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK, D3D12_PRIMITIVE_TOPOLOGY_TYPE,
     D3D12_RASTERIZER_DESC, D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT,
 };
-use windows_raw::Win32::Dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct MeshShaderPipelineStateDesc {
     pub root_signature: Option<ID3D12RootSignature>,
     pub amplification_shader: D3D12_SHADER_BYTECODE,
@@ -59,70 +70,68 @@ pub struct MeshShaderPipelineStateDesc {
 
 impl MeshShaderPipelineStateDesc {
     pub fn into_pipeline_state_stream(self) -> [u8; std::mem::size_of::<packed::Packed>()] {
-        type T = D3D12_PIPELINE_STATE_SUBOBJECT_TYPE;
-
         let packed = packed::Packed {
             root_signature: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
                 unsafe { transmute(self.root_signature) },
             ),
             amplification_shader: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_AS,
                 self.amplification_shader,
             ),
             mesh_shader: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_MS,
                 self.mesh_shader,
             ),
             pixel_shader: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,
                 self.pixel_shader,
             ),
             blend_state: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
                 self.blend_state,
             ),
             sample_mask: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
                 self.sample_mask,
             ),
             rasterizer_state: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
                 self.rasterizer_state,
             ),
             depth_stencil_state: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
                 self.depth_stencil_state,
             ),
             primitive_topology_type: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,
                 self.primitive_topology_type,
             ),
             render_targets: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
                 D3D12_RT_FORMAT_ARRAY {
                     RTFormats: self.rtv_formats,
                     NumRenderTargets: self.num_render_targets,
                 },
             ),
             dsv_format: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
                 self.dsv_format,
             ),
             sample_desc: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
                 self.sample_desc,
             ),
             node_mask: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
                 self.node_mask,
             ),
             cached_pso: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,
                 self.cached_pso,
             ),
             flags: PackedPipelineStateStreamObject::new(
-                T::D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS,
+                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS,
                 self.flags,
             ),
         };
@@ -134,12 +143,12 @@ impl MeshShaderPipelineStateDesc {
 mod packed {
     use crate::dx12::pipeline_state_stream::PackedPipelineStateStreamObject;
     use std::ffi::c_void;
-    use windows_raw::Win32::Direct3D12::{
+    use windows::Win32::Graphics::Direct3D12::{
         D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE, D3D12_DEPTH_STENCIL_DESC,
         D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
         D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE,
     };
-    use windows_raw::Win32::Dxgi::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
 
     pub(crate) type RootSignature = PackedPipelineStateStreamObject<*mut c_void>;
     pub(crate) type AmplificationShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;

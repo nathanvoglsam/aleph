@@ -28,21 +28,15 @@
 //
 
 use crate::dxgi::AdapterDesc;
-use windows_raw::Win32::Dxgi::{IDXGIAdapter1, DXGI_ADAPTER_DESC1};
+use windows::Win32::Graphics::Dxgi::IDXGIAdapter1;
 
 #[repr(transparent)]
 pub struct Adapter(pub(crate) IDXGIAdapter1);
 
 impl Adapter {
     #[inline]
-    pub fn get_adapter_desc(&self) -> crate::Result<AdapterDesc> {
-        unsafe {
-            let mut desc = DXGI_ADAPTER_DESC1::default();
-            self.0
-                .GetDesc1(&mut desc)
-                .ok()
-                .map(|_| std::mem::transmute(desc))
-        }
+    pub fn get_adapter_desc(&self) -> windows::core::Result<AdapterDesc> {
+        unsafe { self.0.GetDesc1().map(|v| std::mem::transmute(v)) }
     }
 }
 

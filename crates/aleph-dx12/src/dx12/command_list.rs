@@ -36,11 +36,11 @@ use crate::{
 };
 use std::borrow::Borrow;
 use std::mem::{align_of, size_of, transmute, MaybeUninit};
-use windows_raw::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
-use windows_raw::Win32::Direct3D12::{
+use windows::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
+use windows::Win32::Graphics::Direct3D12::{
     ID3D12GraphicsCommandList, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
 };
-use windows_raw::Win32::Direct3D12::{
+use windows::Win32::Graphics::Direct3D12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
     D3D12_STREAM_OUTPUT_BUFFER_VIEW, D3D12_TILE_REGION_SIZE, D3D12_VERTEX_BUFFER_VIEW,
 };
@@ -54,10 +54,8 @@ impl GraphicsCommandList {
         &mut self,
         allocator: &CommandAllocator,
         initial_state: &T,
-    ) -> crate::Result<()> {
-        self.0
-            .Reset(&allocator.0, initial_state.clone().into().0)
-            .ok()
+    ) -> windows::core::Result<()> {
+        self.0.Reset(&allocator.0, initial_state.clone().into().0)
     }
 
     /// `ID3D12GraphicsCommandList::ClearState`
@@ -846,8 +844,8 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::Close`
     #[inline]
-    pub unsafe fn close(&mut self) -> crate::Result<()> {
-        self.0.Close().ok()
+    pub unsafe fn close(&mut self) -> windows::core::Result<()> {
+        self.0.Close()
     }
 
     /// `ID3D12GraphicsCommandList::GetType`
@@ -860,4 +858,4 @@ impl GraphicsCommandList {
 crate::object_impl!(GraphicsCommandList);
 crate::device_child_impl!(GraphicsCommandList);
 crate::owned_object!(GraphicsCommandList);
-windows_raw::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);
+windows::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);

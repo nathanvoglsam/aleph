@@ -29,15 +29,15 @@
 
 use crate::{Fence, GraphicsCommandList};
 use std::ffi::c_void;
-use windows_raw::Win32::Direct3D12::ID3D12CommandQueue;
+use windows::Win32::Graphics::Direct3D12::ID3D12CommandQueue;
 
 #[repr(transparent)]
 pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
     #[inline]
-    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> crate::Result<()> {
-        self.0.Signal(&fence.0, value).ok()
+    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> windows::core::Result<()> {
+        self.0.Signal(&fence.0, value)
     }
 
     #[inline]
@@ -85,4 +85,4 @@ impl CommandQueue {
 crate::object_impl!(CommandQueue);
 crate::device_child_impl!(CommandQueue);
 crate::shared_object!(CommandQueue);
-windows_raw::deref_impl!(CommandQueue, ID3D12CommandQueue);
+windows::deref_impl!(CommandQueue, ID3D12CommandQueue);

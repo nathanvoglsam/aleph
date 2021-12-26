@@ -29,7 +29,7 @@
 
 use crate::{dxgi, DepthStencilValue};
 use std::mem::transmute;
-use windows_raw::Win32::Direct3D12::{D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0};
+use windows::Win32::Graphics::Direct3D12::{D3D12_CLEAR_VALUE, D3D12_CLEAR_VALUE_0};
 
 #[derive(Clone, Debug)]
 pub enum ClearValue {

@@ -28,11 +28,11 @@
 //
 
 use crate::{Resource, ResourceBarrierFlags, ResourceStates};
-use std::mem::transmute_copy;
-use windows_raw::Win32::Direct3D12::{
-    D3D12_RESOURCE_ALIASING_BARRIER_abi, D3D12_RESOURCE_TRANSITION_BARRIER_abi,
-    D3D12_RESOURCE_UAV_BARRIER_abi, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0,
-    D3D12_RESOURCE_BARRIER_TYPE,
+use std::mem::{transmute_copy, ManuallyDrop};
+use windows::Win32::Graphics::Direct3D12::{
+    D3D12_RESOURCE_ALIASING_BARRIER, D3D12_RESOURCE_BARRIER, D3D12_RESOURCE_BARRIER_0,
+    D3D12_RESOURCE_BARRIER_TYPE_ALIASING, D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+    D3D12_RESOURCE_BARRIER_TYPE_UAV, D3D12_RESOURCE_TRANSITION_BARRIER, D3D12_RESOURCE_UAV_BARRIER,
 };
 
 #[derive(Clone)]
@@ -65,15 +65,15 @@ impl ResourceBarrier {
                 state_before,
                 state_after,
             } => D3D12_RESOURCE_BARRIER {
-                Type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
+                Type: D3D12_RESOURCE_BARRIER_TYPE_TRANSITION,
                 Flags: flags.clone().into(),
                 Anonymous: D3D12_RESOURCE_BARRIER_0 {
-                    Transition: D3D12_RESOURCE_TRANSITION_BARRIER_abi {
+                    Transition: ManuallyDrop::new(D3D12_RESOURCE_TRANSITION_BARRIER {
                         pResource: unsafe { transmute_copy(resource) },
                         Subresource: *subresource,
                         StateBefore: state_before.clone().into(),
                         StateAfter: state_after.clone().into(),
-                    },
+                    }),
                 },
             },
             ResourceBarrier::Aliasing {
@@ -81,22 +81,22 @@ impl ResourceBarrier {
                 resource_before,
                 resource_after,
             } => D3D12_RESOURCE_BARRIER {
-                Type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_ALIASING,
+                Type: D3D12_RESOURCE_BARRIER_TYPE_ALIASING,
                 Flags: flags.clone().into(),
                 Anonymous: D3D12_RESOURCE_BARRIER_0 {
-                    Aliasing: D3D12_RESOURCE_ALIASING_BARRIER_abi {
+                    Aliasing: ManuallyDrop::new(D3D12_RESOURCE_ALIASING_BARRIER {
                         pResourceBefore: unsafe { transmute_copy(resource_before) },
                         pResourceAfter: unsafe { transmute_copy(resource_after) },
-                    },
+                    }),
                 },
             },
             ResourceBarrier::UAV { flags, resource } => D3D12_RESOURCE_BARRIER {
-                Type: D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV,
+                Type: D3D12_RESOURCE_BARRIER_TYPE_UAV,
                 Flags: flags.clone().into(),
                 Anonymous: D3D12_RESOURCE_BARRIER_0 {
-                    UAV: D3D12_RESOURCE_UAV_BARRIER_abi {
+                    UAV: ManuallyDrop::new(D3D12_RESOURCE_UAV_BARRIER {
                         pResource: unsafe { transmute_copy(resource) },
-                    },
+                    }),
                 },
             },
         }

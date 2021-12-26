@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D11::D3D_FEATURE_LEVEL;
+use windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL;
 
 /// Maps to `D3D_FEATURE_LEVEL`
 ///
@@ -54,6 +54,6 @@ pub enum FeatureLevel {
 impl Into<D3D_FEATURE_LEVEL> for FeatureLevel {
     #[inline]
     fn into(self) -> D3D_FEATURE_LEVEL {
-        D3D_FEATURE_LEVEL(self as i32)
+        self as i32
     }
 }

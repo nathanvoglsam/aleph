@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12Heap;
+use windows::Win32::Graphics::Direct3D12::ID3D12Heap;
 
 #[repr(transparent)]
 pub struct Heap(pub(crate) ID3D12Heap);
@@ -37,4 +37,4 @@ impl Heap {}
 crate::object_impl!(Heap);
 crate::device_child_impl!(Heap);
 crate::shared_object!(Heap);
-windows_raw::deref_impl!(Heap, ID3D12Heap);
+windows::deref_impl!(Heap, ID3D12Heap);

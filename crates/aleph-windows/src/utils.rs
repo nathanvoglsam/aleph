@@ -27,12 +27,12 @@
 // SOFTWARE.
 //
 
-use crate::Win32::Direct3D12::D3D12_CACHED_PIPELINE_STATE;
-use crate::Win32::Direct3D12::D3D12_SHADER_BYTECODE;
-use crate::Win32::SystemServices::GetProcAddress;
-use crate::Win32::SystemServices::LoadLibraryW;
-use crate::Win32::SystemServices::PSTR;
-use crate::Win32::SystemServices::PWSTR;
+use crate::Win32::Foundation::PSTR;
+use crate::Win32::Foundation::PWSTR;
+use crate::Win32::Graphics::Direct3D12::D3D12_CACHED_PIPELINE_STATE;
+use crate::Win32::Graphics::Direct3D12::D3D12_SHADER_BYTECODE;
+use crate::Win32::System::LibraryLoader::GetProcAddress;
+use crate::Win32::System::LibraryLoader::LoadLibraryW;
 use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
@@ -172,8 +172,8 @@ impl<T: Sized> DynamicLoadCell<T> {
 ///
 #[inline]
 pub unsafe fn name_current_thread(name: &[u16]) {
-    use crate::Win32::SystemServices::GetCurrentThread;
-    use crate::Win32::SystemServices::SetThreadDescription;
+    use crate::Win32::System::Threading::GetCurrentThread;
+    use crate::Win32::System::Threading::SetThreadDescription;
 
     let handle = GetCurrentThread();
     let _ = SetThreadDescription(handle, PWSTR(name.as_ptr() as *mut u16));

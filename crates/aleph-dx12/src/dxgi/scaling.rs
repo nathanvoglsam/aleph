@@ -28,7 +28,9 @@
 //
 
 use std::convert::TryFrom;
-use windows_raw::Win32::Dxgi::DXGI_SCALING;
+use windows::Win32::Graphics::Dxgi::{
+    DXGI_SCALING, DXGI_SCALING_ASPECT_RATIO_STRETCH, DXGI_SCALING_NONE, DXGI_SCALING_STRETCH,
+};
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -44,9 +46,9 @@ impl TryFrom<DXGI_SCALING> for Scaling {
     #[inline]
     fn try_from(value: DXGI_SCALING) -> Result<Self, Self::Error> {
         match value {
-            DXGI_SCALING::DXGI_SCALING_STRETCH => Ok(Scaling::Stretch),
-            DXGI_SCALING::DXGI_SCALING_NONE => Ok(Scaling::None),
-            DXGI_SCALING::DXGI_SCALING_ASPECT_RATIO_STRETCH => Ok(Scaling::AspectRatioStretch),
+            DXGI_SCALING_STRETCH => Ok(Scaling::Stretch),
+            DXGI_SCALING_NONE => Ok(Scaling::None),
+            DXGI_SCALING_ASPECT_RATIO_STRETCH => Ok(Scaling::AspectRatioStretch),
             _ => Err(()),
         }
     }
@@ -55,6 +57,6 @@ impl TryFrom<DXGI_SCALING> for Scaling {
 impl Into<DXGI_SCALING> for Scaling {
     #[inline]
     fn into(self) -> DXGI_SCALING {
-        DXGI_SCALING(self as i32)
+        self as i32
     }
 }

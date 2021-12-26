@@ -31,7 +31,7 @@
 pub trait D3D12Object {
     /// A simple function that takes a native rust string. This will allocate to convert it into a
     /// UTF16 string to pass to the underlying d3d12 API
-    fn set_name(&self, name: &str) -> crate::Result<()> {
+    fn set_name(&self, name: &str) -> windows::core::Result<()> {
         unsafe {
             let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
             self.set_name_raw(&utf16)
@@ -40,10 +40,10 @@ pub trait D3D12Object {
 
     /// A lower level version of `set_name` which allows for manually supplying a null terminated
     /// UTF16 string
-    unsafe fn set_name_raw(&self, name: &[u16]) -> crate::Result<()>;
+    unsafe fn set_name_raw(&self, name: &[u16]) -> windows::core::Result<()>;
 }
 
 /// Represents the `ID3D12DeviceChild` interface mapped to a rust trait
 pub trait D3D12DeviceChild {
-    unsafe fn get_device(&self) -> crate::Result<crate::Device>;
+    unsafe fn get_device(&self) -> windows::core::Result<crate::Device>;
 }

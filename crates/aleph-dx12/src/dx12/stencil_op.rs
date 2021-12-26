@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_STENCIL_OP;
+use windows::Win32::Graphics::Direct3D12::D3D12_STENCIL_OP;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -45,6 +45,6 @@ pub enum StencilOp {
 impl Into<D3D12_STENCIL_OP> for StencilOp {
     #[inline]
     fn into(self) -> D3D12_STENCIL_OP {
-        D3D12_STENCIL_OP(self as i32)
+        self as i32
     }
 }

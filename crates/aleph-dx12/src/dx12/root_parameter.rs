@@ -32,9 +32,11 @@ use crate::{
     ShaderVisibility,
 };
 use std::mem::transmute_copy;
-use windows_raw::Win32::Direct3D12::{
+use windows::Win32::Graphics::Direct3D12::{
     D3D12_ROOT_DESCRIPTOR_TABLE, D3D12_ROOT_DESCRIPTOR_TABLE1, D3D12_ROOT_PARAMETER1_0,
-    D3D12_ROOT_PARAMETER_0, D3D12_ROOT_PARAMETER_TYPE, D3D12_SHADER_VISIBILITY,
+    D3D12_ROOT_PARAMETER_0, D3D12_ROOT_PARAMETER_TYPE, D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+    D3D12_ROOT_PARAMETER_TYPE_CBV, D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+    D3D12_ROOT_PARAMETER_TYPE_SRV, D3D12_ROOT_PARAMETER_TYPE_UAV, D3D12_SHADER_VISIBILITY,
 };
 
 #[derive(Clone, Debug, Hash)]
@@ -65,15 +67,11 @@ impl<'a> RootParameter<'a> {
     #[inline]
     pub(crate) fn get_parameter_type(&self) -> D3D12_ROOT_PARAMETER_TYPE {
         match self {
-            RootParameter::DescriptorTable { .. } => {
-                D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
-            }
-            RootParameter::Constants { .. } => {
-                D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
-            }
-            RootParameter::CBV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
-            RootParameter::SRV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV,
-            RootParameter::UAV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV,
+            RootParameter::DescriptorTable { .. } => D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+            RootParameter::Constants { .. } => D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+            RootParameter::CBV { .. } => D3D12_ROOT_PARAMETER_TYPE_CBV,
+            RootParameter::SRV { .. } => D3D12_ROOT_PARAMETER_TYPE_SRV,
+            RootParameter::UAV { .. } => D3D12_ROOT_PARAMETER_TYPE_UAV,
         }
     }
 
@@ -152,15 +150,11 @@ impl<'a> RootParameter1<'a> {
     #[inline]
     pub(crate) fn get_parameter_type(&self) -> D3D12_ROOT_PARAMETER_TYPE {
         match self {
-            RootParameter1::DescriptorTable { .. } => {
-                D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE
-            }
-            RootParameter1::Constants { .. } => {
-                D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS
-            }
-            RootParameter1::CBV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_CBV,
-            RootParameter1::SRV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_SRV,
-            RootParameter1::UAV { .. } => D3D12_ROOT_PARAMETER_TYPE::D3D12_ROOT_PARAMETER_TYPE_UAV,
+            RootParameter1::DescriptorTable { .. } => D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+            RootParameter1::Constants { .. } => D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+            RootParameter1::CBV { .. } => D3D12_ROOT_PARAMETER_TYPE_CBV,
+            RootParameter1::SRV { .. } => D3D12_ROOT_PARAMETER_TYPE_SRV,
+            RootParameter1::UAV { .. } => D3D12_ROOT_PARAMETER_TYPE_UAV,
         }
     }
 

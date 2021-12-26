@@ -27,15 +27,15 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_CLEAR_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_CLEAR_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct ClearFlags(pub i32);
+pub struct ClearFlags(pub u32);
 
 impl ClearFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const DEPTH: Self = Self(1i32);
-    pub const STENCIL: Self = Self(2i32);
+    pub const NONE: Self = Self(0);
+    pub const DEPTH: Self = Self(1);
+    pub const STENCIL: Self = Self(2);
 
     #[inline]
     pub fn all() -> Self {
@@ -50,11 +50,11 @@ impl Default for ClearFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(ClearFlags);
+windows::flags_bitwise_impl!(ClearFlags);
 
 impl Into<D3D12_CLEAR_FLAGS> for ClearFlags {
     #[inline]
     fn into(self) -> D3D12_CLEAR_FLAGS {
-        D3D12_CLEAR_FLAGS(self.0)
+        self.0
     }
 }

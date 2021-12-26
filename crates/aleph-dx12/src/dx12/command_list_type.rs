@@ -27,7 +27,12 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_COMMAND_LIST_TYPE;
+use windows::Win32::Graphics::Direct3D12::{
+    D3D12_COMMAND_LIST_TYPE, D3D12_COMMAND_LIST_TYPE_BUNDLE, D3D12_COMMAND_LIST_TYPE_COMPUTE,
+    D3D12_COMMAND_LIST_TYPE_COPY, D3D12_COMMAND_LIST_TYPE_DIRECT,
+    D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE, D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE,
+    D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS,
+};
 
 /// Wrapper for `D3D12_COMMAND_LIST_TYPE`
 #[repr(i32)]
@@ -45,15 +50,14 @@ pub enum CommandListType {
 impl CommandListType {
     #[inline]
     pub(crate) fn from_raw(v: D3D12_COMMAND_LIST_TYPE) -> Option<CommandListType> {
-        type T = D3D12_COMMAND_LIST_TYPE;
         match v {
-            T::D3D12_COMMAND_LIST_TYPE_DIRECT => Some(CommandListType::Direct),
-            T::D3D12_COMMAND_LIST_TYPE_BUNDLE => Some(CommandListType::Bundle),
-            T::D3D12_COMMAND_LIST_TYPE_COMPUTE => Some(CommandListType::Compute),
-            T::D3D12_COMMAND_LIST_TYPE_COPY => Some(CommandListType::Copy),
-            T::D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE => Some(CommandListType::VideoDecode),
-            T::D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS => Some(CommandListType::VideoProcess),
-            T::D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE => Some(CommandListType::VideoEncode),
+            D3D12_COMMAND_LIST_TYPE_DIRECT => Some(CommandListType::Direct),
+            D3D12_COMMAND_LIST_TYPE_BUNDLE => Some(CommandListType::Bundle),
+            D3D12_COMMAND_LIST_TYPE_COMPUTE => Some(CommandListType::Compute),
+            D3D12_COMMAND_LIST_TYPE_COPY => Some(CommandListType::Copy),
+            D3D12_COMMAND_LIST_TYPE_VIDEO_DECODE => Some(CommandListType::VideoDecode),
+            D3D12_COMMAND_LIST_TYPE_VIDEO_PROCESS => Some(CommandListType::VideoProcess),
+            D3D12_COMMAND_LIST_TYPE_VIDEO_ENCODE => Some(CommandListType::VideoEncode),
             _ => None,
         }
     }
@@ -62,6 +66,6 @@ impl CommandListType {
 impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
     #[inline]
     fn into(self) -> D3D12_COMMAND_LIST_TYPE {
-        D3D12_COMMAND_LIST_TYPE(self as i32)
+        self as i32
     }
 }

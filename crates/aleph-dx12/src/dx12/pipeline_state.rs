@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12PipelineState;
+use windows::Win32::Graphics::Direct3D12::ID3D12PipelineState;
 
 #[repr(transparent)]
 pub struct PipelineState(pub(crate) ID3D12PipelineState);
@@ -35,7 +35,7 @@ pub struct PipelineState(pub(crate) ID3D12PipelineState);
 crate::object_impl!(PipelineState);
 crate::device_child_impl!(PipelineState);
 crate::shared_object!(PipelineState);
-windows_raw::deref_impl!(PipelineState, ID3D12PipelineState);
+windows::deref_impl!(PipelineState, ID3D12PipelineState);
 
 #[repr(transparent)]
 pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
@@ -50,7 +50,7 @@ impl Into<PipelineState> for GraphicsPipelineState {
 crate::object_impl!(GraphicsPipelineState);
 crate::device_child_impl!(GraphicsPipelineState);
 crate::shared_object!(GraphicsPipelineState);
-windows_raw::deref_impl!(GraphicsPipelineState, ID3D12PipelineState);
+windows::deref_impl!(GraphicsPipelineState, ID3D12PipelineState);
 
 #[repr(transparent)]
 pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
@@ -65,4 +65,4 @@ impl Into<PipelineState> for ComputePipelineState {
 crate::object_impl!(ComputePipelineState);
 crate::device_child_impl!(ComputePipelineState);
 crate::shared_object!(ComputePipelineState);
-windows_raw::deref_impl!(ComputePipelineState, ID3D12PipelineState);
+windows::deref_impl!(ComputePipelineState, ID3D12PipelineState);

@@ -28,7 +28,10 @@
 //
 
 use std::convert::TryFrom;
-use windows_raw::Win32::Dxgi::DXGI_SWAP_EFFECT;
+use windows::Win32::Graphics::Dxgi::{
+    DXGI_SWAP_EFFECT, DXGI_SWAP_EFFECT_DISCARD, DXGI_SWAP_EFFECT_FLIP_DISCARD,
+    DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL, DXGI_SWAP_EFFECT_SEQUENTIAL,
+};
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -45,10 +48,10 @@ impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
     #[inline]
     fn try_from(value: DXGI_SWAP_EFFECT) -> Result<Self, Self::Error> {
         match value {
-            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD => Ok(SwapEffect::Discard),
-            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_SEQUENTIAL => Ok(SwapEffect::Sequential),
-            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL => Ok(SwapEffect::FlipSequential),
-            DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_FLIP_DISCARD => Ok(SwapEffect::FlipDiscard),
+            DXGI_SWAP_EFFECT_DISCARD => Ok(SwapEffect::Discard),
+            DXGI_SWAP_EFFECT_SEQUENTIAL => Ok(SwapEffect::Sequential),
+            DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL => Ok(SwapEffect::FlipSequential),
+            DXGI_SWAP_EFFECT_FLIP_DISCARD => Ok(SwapEffect::FlipDiscard),
             _ => Err(()),
         }
     }
@@ -57,6 +60,6 @@ impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
 impl Into<DXGI_SWAP_EFFECT> for SwapEffect {
     #[inline]
     fn into(self) -> DXGI_SWAP_EFFECT {
-        DXGI_SWAP_EFFECT(self as i32)
+        self as i32
     }
 }

@@ -27,21 +27,21 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_RESOURCE_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_FLAGS;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct ResourceFlags(pub i32);
+pub struct ResourceFlags(pub u32);
 
 impl ResourceFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const ALLOW_RENDER_TARGET: Self = Self(1i32);
-    pub const ALLOW_DEPTH_STENCIL: Self = Self(2i32);
-    pub const ALLOW_UNORDERED_ACCESS: Self = Self(4i32);
-    pub const DENY_SHADER_RESOURCE: Self = Self(8i32);
-    pub const ALLOW_CROSS_ADAPTER: Self = Self(16i32);
-    pub const ALLOW_SIMULTANEOUS_ACCESS: Self = Self(32i32);
-    pub const VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64i32);
+    pub const NONE: Self = Self(0);
+    pub const ALLOW_RENDER_TARGET: Self = Self(1);
+    pub const ALLOW_DEPTH_STENCIL: Self = Self(2);
+    pub const ALLOW_UNORDERED_ACCESS: Self = Self(4);
+    pub const DENY_SHADER_RESOURCE: Self = Self(8);
+    pub const ALLOW_CROSS_ADAPTER: Self = Self(16);
+    pub const ALLOW_SIMULTANEOUS_ACCESS: Self = Self(32);
+    pub const VIDEO_DECODE_REFERENCE_ONLY: Self = Self(64);
 }
 
 impl Default for ResourceFlags {
@@ -51,11 +51,11 @@ impl Default for ResourceFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(ResourceFlags);
+windows::flags_bitwise_impl!(ResourceFlags);
 
 impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {
     #[inline]
     fn into(self) -> D3D12_RESOURCE_FLAGS {
-        D3D12_RESOURCE_FLAGS(self.0)
+        self.0
     }
 }

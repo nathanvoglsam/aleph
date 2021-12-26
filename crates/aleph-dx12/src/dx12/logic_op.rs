@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_LOGIC_OP;
+use windows::Win32::Graphics::Direct3D12::D3D12_LOGIC_OP;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -53,6 +53,6 @@ pub enum LogicOp {
 impl Into<D3D12_LOGIC_OP> for LogicOp {
     #[inline]
     fn into(self) -> D3D12_LOGIC_OP {
-        D3D12_LOGIC_OP(self as i32)
+        self as i32
     }
 }

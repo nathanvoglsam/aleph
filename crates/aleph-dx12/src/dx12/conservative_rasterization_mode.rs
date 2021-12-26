@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_CONSERVATIVE_RASTERIZATION_MODE;
+use windows::Win32::Graphics::Direct3D12::D3D12_CONSERVATIVE_RASTERIZATION_MODE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -39,6 +39,6 @@ pub enum ConservativeRasterizationMode {
 impl Into<D3D12_CONSERVATIVE_RASTERIZATION_MODE> for ConservativeRasterizationMode {
     #[inline]
     fn into(self) -> D3D12_CONSERVATIVE_RASTERIZATION_MODE {
-        D3D12_CONSERVATIVE_RASTERIZATION_MODE(self as i32)
+        self as i32
     }
 }

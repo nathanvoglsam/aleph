@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12QueryHeap;
+use windows::Win32::Graphics::Direct3D12::ID3D12QueryHeap;
 
 #[repr(transparent)]
 pub struct QueryHeap(pub(crate) ID3D12QueryHeap);
@@ -37,4 +37,4 @@ impl QueryHeap {}
 crate::object_impl!(QueryHeap);
 crate::device_child_impl!(QueryHeap);
 crate::shared_object!(QueryHeap);
-windows_raw::deref_impl!(QueryHeap, ID3D12QueryHeap);
+windows::deref_impl!(QueryHeap, ID3D12QueryHeap);

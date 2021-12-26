@@ -29,7 +29,7 @@
 
 use std::convert::TryFrom;
 use std::num::NonZeroUsize;
-use windows_raw::Win32::Direct3D12::D3D12_CPU_DESCRIPTOR_HANDLE;
+use windows::Win32::Graphics::Direct3D12::D3D12_CPU_DESCRIPTOR_HANDLE;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]

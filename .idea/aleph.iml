@@ -109,7 +109,6 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-dx12-alloc-raw/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-dxc-raw/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-pix-raw/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/aleph-windows-raw/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-dx12-alloc/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-dxc/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-any/src" isTestSource="false" />
@@ -131,6 +130,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-vulkan-core/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-gpu/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/aleph-windows/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

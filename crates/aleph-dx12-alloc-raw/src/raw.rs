@@ -30,16 +30,15 @@
 #![allow(non_camel_case_types)]
 
 use std::ffi::c_void;
-use windows_raw::ErrorCode;
-use windows_raw::Guid;
-use windows_raw::Win32::Direct3D12::{
+use windows::core::{GUID, HRESULT};
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Direct3D12::{
     ID3D12Device, ID3D12Heap, ID3D12ProtectedResourceSession, ID3D12Resource, D3D12_CLEAR_VALUE,
     D3D12_FEATURE_DATA_D3D12_OPTIONS, D3D12_HEAP_FLAGS, D3D12_HEAP_TYPE,
     D3D12_RESOURCE_ALLOCATION_INFO, D3D12_RESOURCE_DESC, D3D12_RESOURCE_DESC1,
     D3D12_RESOURCE_STATES,
 };
-use windows_raw::Win32::Dxgi::IDXGIAdapter;
-use windows_raw::BOOL;
+use windows::Win32::Graphics::Dxgi::IDXGIAdapter;
 
 macro_rules! flags_bitwise_impl {
     ($t:ident) => {
@@ -225,7 +224,7 @@ extern "C" {
     //
     pub fn D3D12MA_Pool_Release(this: ThisPtr);
     pub fn D3D12MA_Pool_GetDesc(this: ThisPtrConst) -> D3D12MA_POOL_DESC;
-    pub fn D3D12MA_Pool_SetMinBytes(this: ThisPtr, min_bytes: u64) -> ErrorCode;
+    pub fn D3D12MA_Pool_SetMinBytes(this: ThisPtr, min_bytes: u64) -> HRESULT;
     pub fn D3D12MA_Pool_CalculateStats(this: ThisPtr, p_stats: *mut D3D12MA_STAT_INFO);
     pub fn D3D12MA_Pool_SetName(this: ThisPtr, name: *const u16);
     pub fn D3D12MA_Pool_GetName(this: ThisPtrConst) -> *const u16;
@@ -236,7 +235,7 @@ extern "C" {
     pub fn D3D12MA_Allocator_CreateAllocator(
         p_desc: *const D3D12MA_ALLOCATOR_DESC,
         pp_allocator: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_Release(this: ThisPtr);
     pub fn D3D12MA_Allocator_GetD3D12Options(
         this: ThisPtrConst,
@@ -248,9 +247,9 @@ extern "C" {
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         pp_allocation: *mut *mut c_void,
-        riid_resource: *const Guid,
+        riid_resource: *const GUID,
         ppv_resource: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_CreateResource1(
         this: ThisPtr,
         p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
@@ -259,9 +258,9 @@ extern "C" {
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
-        riid_resource: *const Guid,
+        riid_resource: *const GUID,
         ppv_resource: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_CreateResource2(
         this: ThisPtr,
         p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
@@ -270,22 +269,22 @@ extern "C" {
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
-        riid_resource: *const Guid,
+        riid_resource: *const GUID,
         ppv_resource: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_AllocateMemory(
         this: ThisPtr,
         p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_alloc_info: *const D3D12_RESOURCE_ALLOCATION_INFO,
         pp_allocation: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_AllocateMemory1(
         this: ThisPtr,
         p_alloc_desc: *const D3D12MA_ALLOCATION_DESC,
         p_alloc_info: *const D3D12_RESOURCE_ALLOCATION_INFO,
         p_protected_session: ID3D12ProtectedResourceSession,
         pp_allocation: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_CreateAliasingResource(
         this: ThisPtr,
         p_allocation: *mut c_void,
@@ -293,20 +292,20 @@ extern "C" {
         p_resource_desc: *const D3D12_RESOURCE_DESC,
         initial_resource_state: D3D12_RESOURCE_STATES,
         p_optimized_clear_value: *const D3D12_CLEAR_VALUE,
-        riid_resource: *const Guid,
+        riid_resource: *const GUID,
         ppv_resource: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_CreatePool(
         this: ThisPtr,
         p_pool_desc: *const D3D12MA_POOL_DESC,
         pp_pool: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_SetDefaultHeapMinBytes(
         this: ThisPtr,
         heap_type: D3D12_HEAP_TYPE,
         heap_flags: D3D12_HEAP_FLAGS,
         min_bytes: u64,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_Allocator_SetCurrentFrameIndex(this: ThisPtr, frame_index: u32);
     pub fn D3D12MA_Allocator_CalculateStats(this: ThisPtr, p_stats: *mut D3D12MA_STATS);
     pub fn D3D12MA_Allocator_GetBudget(
@@ -327,7 +326,7 @@ extern "C" {
     pub fn D3D12MA_VirtualBlock_CreateAllocator(
         p_desc: *const D3D12MA_VIRTUAL_BLOCK_DESC,
         pp_allocator: *mut *mut c_void,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_VirtualBlock_Release(this: ThisPtr);
     pub fn D3D12MA_VirtualBlock_IsEmpty(this: ThisPtrConst) -> BOOL;
     pub fn D3D12MA_VirtualBlock_GetAllocationInfo(
@@ -339,7 +338,7 @@ extern "C" {
         this: ThisPtr,
         p_desc: *const D3D12MA_VIRTUAL_ALLOCATION_DESC,
         p_offset: *mut u64,
-    ) -> ErrorCode;
+    ) -> HRESULT;
     pub fn D3D12MA_VirtualBlock_FreeAllocation(this: ThisPtr, offset: u64);
     pub fn D3D12MA_VirtualBlock_Clear(this: ThisPtr);
     pub fn D3D12MA_VirtualBlock_SetAllocationUserData(

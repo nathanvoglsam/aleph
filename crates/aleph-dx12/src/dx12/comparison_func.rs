@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_COMPARISON_FUNC;
+use windows::Win32::Graphics::Direct3D12::D3D12_COMPARISON_FUNC;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -45,6 +45,6 @@ pub enum ComparisonFunc {
 impl Into<D3D12_COMPARISON_FUNC> for ComparisonFunc {
     #[inline]
     fn into(self) -> D3D12_COMPARISON_FUNC {
-        D3D12_COMPARISON_FUNC(self as i32)
+        self as i32
     }
 }

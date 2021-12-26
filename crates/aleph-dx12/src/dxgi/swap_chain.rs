@@ -30,12 +30,10 @@
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
 use crate::CommandQueue;
 use std::mem::transmute;
-use windows_raw::IUnknown;
-use windows_raw::Win32::Direct3D12::ID3D12Resource;
-use windows_raw::Win32::Dxgi::{
+use windows::core::IUnknown;
+use windows::Win32::Graphics::Dxgi::{
     IDXGISwapChain4, DXGI_MAX_SWAP_CHAIN_BUFFERS, DXGI_PRESENT_PARAMETERS,
 };
-use windows_raw::{Abi, Interface};
 
 #[repr(transparent)]
 pub struct SwapChain(pub(crate) IDXGISwapChain4);
@@ -51,7 +49,7 @@ impl SwapChain {
         flags: SwapChainFlags,
         node_masks: Option<&[u32]>,
         queues: &[CommandQueue],
-    ) -> crate::Result<()> {
+    ) -> windows::core::Result<()> {
         // Input validation
         assert!(
             queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
@@ -93,22 +91,24 @@ impl SwapChain {
         let pp_present_queue = queues.as_ptr() as *mut CommandQueue;
         let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
 
-        self.0
-            .ResizeBuffers1(
-                buffer_count,
-                width,
-                height,
-                format,
-                swap_chain_flags,
-                p_creation_node_mask,
-                pp_present_queue,
-            )
-            .ok()
+        self.0.ResizeBuffers1(
+            buffer_count,
+            width,
+            height,
+            format,
+            swap_chain_flags,
+            p_creation_node_mask,
+            pp_present_queue,
+        )
     }
 
     /// `IDXGISwapChain1::Present1`
     #[inline]
-    pub unsafe fn present(&mut self, sync_interval: u32, present_flags: u32) -> crate::Result<()> {
+    pub unsafe fn present(
+        &mut self,
+        sync_interval: u32,
+        present_flags: u32,
+    ) -> windows::core::Result<()> {
         let presentation_params = DXGI_PRESENT_PARAMETERS {
             DirtyRectsCount: 0,
             pDirtyRects: std::ptr::null_mut(),
@@ -117,7 +117,6 @@ impl SwapChain {
         };
         self.0
             .Present1(sync_interval, present_flags, &presentation_params)
-            .ok()
     }
 
     /// `IDXGISwapChain3::GetCurrentBackBufferIndex`
@@ -127,7 +126,10 @@ impl SwapChain {
     }
 
     #[inline]
-    pub fn get_buffers(&mut self, buffer_count: u32) -> crate::Result<Vec<crate::Resource>> {
+    pub fn get_buffers(
+        &mut self,
+        buffer_count: u32,
+    ) -> windows::core::Result<Vec<crate::Resource>> {
         let mut out = Vec::with_capacity(buffer_count as usize);
         for i in 0..buffer_count {
             out.push(self.get_buffer(i)?);
@@ -136,21 +138,12 @@ impl SwapChain {
     }
 
     #[inline]
-    pub fn get_buffer(&mut self, buffer: u32) -> crate::Result<crate::Resource> {
-        unsafe {
-            let mut resource: Option<ID3D12Resource> = None;
-            self.0
-                .GetBuffer(buffer, &ID3D12Resource::IID, resource.set_abi())
-                .and_some(resource)
-                .map(|v| crate::Resource(v))
-        }
+    pub fn get_buffer(&mut self, buffer: u32) -> windows::core::Result<crate::Resource> {
+        unsafe { self.0.GetBuffer(buffer).map(|v| crate::Resource(v)) }
     }
 
     #[inline]
-    pub fn get_description(&mut self) -> crate::Result<SwapChainDesc1> {
-        unsafe {
-            let mut desc = Default::default();
-            self.0.GetDesc1(&mut desc).ok().map(|_| transmute(desc))
-        }
+    pub fn get_description(&mut self) -> windows::core::Result<SwapChainDesc1> {
+        unsafe { self.0.GetDesc1().map(|v| transmute(v)) }
     }
 }

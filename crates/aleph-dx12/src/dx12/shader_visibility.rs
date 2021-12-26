@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_SHADER_VISIBILITY;
+use windows::Win32::Graphics::Direct3D12::D3D12_SHADER_VISIBILITY;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -45,6 +45,6 @@ pub enum ShaderVisibility {
 impl Into<D3D12_SHADER_VISIBILITY> for ShaderVisibility {
     #[inline]
     fn into(self) -> D3D12_SHADER_VISIBILITY {
-        D3D12_SHADER_VISIBILITY(self as i32)
+        self as i32
     }
 }

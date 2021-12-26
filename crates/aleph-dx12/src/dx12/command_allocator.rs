@@ -27,19 +27,19 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12CommandAllocator;
+use windows::Win32::Graphics::Direct3D12::ID3D12CommandAllocator;
 
 #[repr(transparent)]
 pub struct CommandAllocator(pub(crate) ID3D12CommandAllocator);
 
 impl CommandAllocator {
     #[inline]
-    pub unsafe fn reset(&self) -> crate::Result<()> {
-        self.0.Reset().ok()
+    pub unsafe fn reset(&self) -> windows::core::Result<()> {
+        self.0.Reset()
     }
 }
 
 crate::object_impl!(CommandAllocator);
 crate::device_child_impl!(CommandAllocator);
 crate::owned_object!(CommandAllocator);
-windows_raw::deref_impl!(CommandAllocator, ID3D12CommandAllocator);
+windows::deref_impl!(CommandAllocator, ID3D12CommandAllocator);

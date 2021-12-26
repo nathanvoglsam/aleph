@@ -28,8 +28,8 @@
 //
 
 use crate::Rect;
-use windows_raw::utils::optional_slice_to_num_ptr_pair;
-use windows_raw::Win32::Direct3D12::D3D12_DISCARD_REGION;
+use windows::utils::optional_slice_to_num_ptr_pair;
+use windows::Win32::Graphics::Direct3D12::D3D12_DISCARD_REGION;
 
 #[derive(Clone, Debug)]
 #[repr(C)]

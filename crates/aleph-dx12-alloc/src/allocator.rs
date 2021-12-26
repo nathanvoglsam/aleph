@@ -35,7 +35,7 @@ use std::ffi::c_void;
 use std::mem::{align_of, size_of, transmute};
 use std::ptr::NonNull;
 use std::sync::Arc;
-use windows_raw::Win32::Direct3D12::D3D12_CLEAR_VALUE;
+use windows::Win32::Graphics::Direct3D12::D3D12_CLEAR_VALUE;
 
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);

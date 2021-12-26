@@ -27,23 +27,23 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_ROOT_SIGNATURE_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_ROOT_SIGNATURE_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct RootSignatureFlags(pub i32);
+pub struct RootSignatureFlags(pub u32);
 
 impl RootSignatureFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT: Self = Self(1i32);
-    pub const DENY_VERTEX_SHADER_ROOT_ACCESS: Self = Self(2i32);
-    pub const DENY_HULL_SHADER_ROOT_ACCESS: Self = Self(4i32);
-    pub const DENY_DOMAIN_SHADER_ROOT_ACCESS: Self = Self(8i32);
-    pub const DENY_GEOMETRY_SHADER_ROOT_ACCESS: Self = Self(16i32);
-    pub const DENY_PIXEL_SHADER_ROOT_ACCESS: Self = Self(32i32);
-    pub const ALLOW_STREAM_OUTPUT: Self = Self(64i32);
-    pub const LOCAL_ROOT_SIGNATURE: Self = Self(128i32);
-    pub const DENY_AMPLIFICATION_SHADER_ROOT_ACCESS: Self = Self(256i32);
-    pub const DENY_MESH_SHADER_ROOT_ACCESS: Self = Self(512i32);
+    pub const NONE: Self = Self(0);
+    pub const ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT: Self = Self(1);
+    pub const DENY_VERTEX_SHADER_ROOT_ACCESS: Self = Self(2);
+    pub const DENY_HULL_SHADER_ROOT_ACCESS: Self = Self(4);
+    pub const DENY_DOMAIN_SHADER_ROOT_ACCESS: Self = Self(8);
+    pub const DENY_GEOMETRY_SHADER_ROOT_ACCESS: Self = Self(16);
+    pub const DENY_PIXEL_SHADER_ROOT_ACCESS: Self = Self(32);
+    pub const ALLOW_STREAM_OUTPUT: Self = Self(64);
+    pub const LOCAL_ROOT_SIGNATURE: Self = Self(128);
+    pub const DENY_AMPLIFICATION_SHADER_ROOT_ACCESS: Self = Self(256);
+    pub const DENY_MESH_SHADER_ROOT_ACCESS: Self = Self(512);
 }
 
 impl Default for RootSignatureFlags {
@@ -53,11 +53,11 @@ impl Default for RootSignatureFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(RootSignatureFlags);
+windows::flags_bitwise_impl!(RootSignatureFlags);
 
 impl Into<D3D12_ROOT_SIGNATURE_FLAGS> for RootSignatureFlags {
     #[inline]
     fn into(self) -> D3D12_ROOT_SIGNATURE_FLAGS {
-        D3D12_ROOT_SIGNATURE_FLAGS(self.0)
+        self.0
     }
 }

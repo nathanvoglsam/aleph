@@ -29,24 +29,23 @@
 
 #![allow(unused)]
 
-use aleph_windows_raw as windows;
-
-use windows::Win32::SystemServices::{VirtualAlloc, VirtualFree};
+use aleph_windows as windows;
+use windows::Win32::System::Memory::{
+    VirtualAlloc, VirtualFree, MEM_COMMIT, MEM_DECOMMIT, MEM_RELEASE, MEM_RESERVE, PAGE_READWRITE,
+    PAGE_TYPE,
+};
 
 use crate::VirtualBuffer;
-use aleph_windows_raw::Win32::SystemServices::{
-    VirtualAlloc_flAllocationType, VirtualFree_dwFreeType, PAGE_TYPE,
-};
 
 #[inline]
 pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuffer> {
-    let alloc_type = VirtualAlloc_flAllocationType::MEM_RESERVE;
-    let page_type = PAGE_TYPE::PAGE_READWRITE;
+    let alloc_type = MEM_RESERVE;
+    let page_type = PAGE_READWRITE;
 
     let result = VirtualAlloc(
         std::ptr::null_mut(),
         pages * page_size(),
-        alloc_type,
+        MEM_RESERVE,
         page_type,
     );
 
@@ -62,7 +61,7 @@ pub unsafe fn reserve_virtual_buffer(pages: usize) -> std::io::Result<VirtualBuf
 
 #[inline]
 pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> std::io::Result<()> {
-    let free_type = VirtualFree_dwFreeType::MEM_RELEASE;
+    let free_type = MEM_RELEASE;
 
     // The number of pages to free isn't needed on the windows implementation
     if VirtualFree(base as _, 0, free_type).as_bool() {
@@ -74,8 +73,8 @@ pub unsafe fn free_virtual_buffer(base: *mut u8, _pages: usize) -> std::io::Resu
 
 #[inline]
 pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let alloc_type = VirtualAlloc_flAllocationType::MEM_COMMIT;
-    let page_type = PAGE_TYPE::PAGE_READWRITE;
+    let alloc_type = MEM_COMMIT;
+    let page_type = PAGE_READWRITE;
 
     let result = VirtualAlloc(base as _, pages * page_size(), alloc_type, page_type);
 
@@ -88,7 +87,7 @@ pub unsafe fn commit_virtual_address_range(base: *mut u8, pages: usize) -> std::
 
 #[inline]
 pub unsafe fn release_virtual_address_range(base: *mut u8, pages: usize) -> std::io::Result<()> {
-    let free_type = VirtualFree_dwFreeType::MEM_DECOMMIT;
+    let free_type = MEM_DECOMMIT;
 
     if VirtualFree(base as _, pages * page_size(), free_type).as_bool() {
         Ok(())

@@ -29,7 +29,7 @@
 
 #![cfg(target_os = "windows")]
 
-extern crate aleph_windows_raw as windows_raw;
+extern crate aleph_windows as windows;
 
 pub mod dxgi;
 
@@ -38,8 +38,6 @@ mod utils;
 
 pub use dx12::*;
 
-pub use crate::windows_raw::utils::Bool;
-pub use crate::windows_raw::utils::CStrFFI;
-pub use crate::windows_raw::Error;
-pub use crate::windows_raw::ErrorCode;
-pub use crate::windows_raw::Result;
+pub use crate::windows::core::Result;
+pub use crate::windows::utils::Bool;
+pub use crate::windows::utils::CStrFFI;

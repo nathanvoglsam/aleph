@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE;
+use windows::Win32::Graphics::Direct3D12::D3D12_INDEX_BUFFER_STRIP_CUT_VALUE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -47,6 +47,6 @@ impl Default for IndexBufferStripCutValue {
 impl Into<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE> for IndexBufferStripCutValue {
     #[inline]
     fn into(self) -> D3D12_INDEX_BUFFER_STRIP_CUT_VALUE {
-        D3D12_INDEX_BUFFER_STRIP_CUT_VALUE(self as i32)
+        self as i32
     }
 }

@@ -33,7 +33,7 @@ use crate::{
 };
 use std::marker::PhantomData;
 use std::mem::{align_of, size_of, transmute};
-use windows_raw::Win32::Direct3D12::{
+use windows::Win32::Graphics::Direct3D12::{
     D3D12_DESCRIPTOR_RANGE, D3D12_DESCRIPTOR_RANGE1, D3D12_ROOT_PARAMETER, D3D12_ROOT_PARAMETER1,
     D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1, D3D12_STATIC_SAMPLER_DESC,
 };
@@ -94,9 +94,9 @@ impl<'a> RootSignatureDescBuilder<'a> {
     #[inline]
     pub fn build(&'a self) -> RootSignatureDesc<'a> {
         let (num_parameters, p_parameters) =
-            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
+            windows::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
         let (num_static_samplers, p_static_samplers) =
-            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
+            windows::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
         RootSignatureDesc {
             inner: D3D12_ROOT_SIGNATURE_DESC {
                 NumParameters: num_parameters,
@@ -164,9 +164,9 @@ impl<'a> RootSignatureDesc1Builder<'a> {
     #[inline]
     pub fn build(&self) -> RootSignatureDesc1<'a> {
         let (num_parameters, p_parameters) =
-            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
+            windows::utils::optional_slice_to_num_ptr_pair(Some(&self.parameters));
         let (num_static_samplers, p_static_samplers) =
-            windows_raw::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
+            windows::utils::optional_slice_to_num_ptr_pair(Some(self.static_samplers));
         RootSignatureDesc1 {
             inner: D3D12_ROOT_SIGNATURE_DESC1 {
                 NumParameters: num_parameters,
@@ -180,7 +180,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RootSignatureDesc<'a> {
     pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC,
     phantom: PhantomData<&'a ()>,
@@ -200,7 +200,7 @@ impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RootSignatureDesc1<'a> {
     pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC1,
     phantom: PhantomData<&'a ()>,

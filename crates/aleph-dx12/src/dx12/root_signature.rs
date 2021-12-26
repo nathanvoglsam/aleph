@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::ID3D12RootSignature;
+use windows::Win32::Graphics::Direct3D12::ID3D12RootSignature;
 
 #[repr(transparent)]
 pub struct RootSignature(pub(crate) ID3D12RootSignature);
@@ -37,4 +37,4 @@ impl RootSignature {}
 crate::object_impl!(RootSignature);
 crate::device_child_impl!(RootSignature);
 crate::shared_object!(RootSignature);
-windows_raw::deref_impl!(RootSignature, ID3D12RootSignature);
+windows::deref_impl!(RootSignature, ID3D12RootSignature);

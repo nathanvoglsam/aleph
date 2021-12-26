@@ -27,15 +27,15 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_RESOURCE_BARRIER_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_RESOURCE_BARRIER_FLAGS;
 
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct ResourceBarrierFlags(pub i32);
+pub struct ResourceBarrierFlags(pub u32);
 
 impl ResourceBarrierFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const BEGIN_ONLY: Self = Self(1i32);
-    pub const END_ONLY: Self = Self(2i32);
+    pub const NONE: Self = Self(0);
+    pub const BEGIN_ONLY: Self = Self(1);
+    pub const END_ONLY: Self = Self(2);
 }
 
 impl Default for ResourceBarrierFlags {
@@ -45,11 +45,11 @@ impl Default for ResourceBarrierFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(ResourceBarrierFlags);
+windows::flags_bitwise_impl!(ResourceBarrierFlags);
 
 impl Into<D3D12_RESOURCE_BARRIER_FLAGS> for ResourceBarrierFlags {
     #[inline]
     fn into(self) -> D3D12_RESOURCE_BARRIER_FLAGS {
-        D3D12_RESOURCE_BARRIER_FLAGS(self.0)
+        self.0
     }
 }

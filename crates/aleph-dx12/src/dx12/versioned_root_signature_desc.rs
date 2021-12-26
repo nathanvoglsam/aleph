@@ -29,11 +29,12 @@
 
 use crate::{RootSignatureDesc, RootSignatureDesc1};
 use std::mem::ManuallyDrop;
-use windows_raw::Win32::Direct3D12::{
+use windows::Win32::Graphics::Direct3D12::{
     D3D12_ROOT_SIGNATURE_DESC, D3D12_ROOT_SIGNATURE_DESC1, D3D_ROOT_SIGNATURE_VERSION,
+    D3D_ROOT_SIGNATURE_VERSION_1_0, D3D_ROOT_SIGNATURE_VERSION_1_1,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum VersionedRootSignatureDesc<'a> {
     Desc(RootSignatureDesc<'a>),
     Desc1(RootSignatureDesc1<'a>),
@@ -44,13 +45,13 @@ impl<'a> Into<D3D12_VERSIONED_ROOT_SIGNATURE_DESC> for VersionedRootSignatureDes
     fn into(self) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
         match self {
             VersionedRootSignatureDesc::Desc(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-                version: D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_0,
+                version: D3D_ROOT_SIGNATURE_VERSION_1_0,
                 desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
                     version_1_0: ManuallyDrop::new(v.inner),
                 },
             },
             VersionedRootSignatureDesc::Desc1(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-                version: D3D_ROOT_SIGNATURE_VERSION::D3D_ROOT_SIGNATURE_VERSION_1_1,
+                version: D3D_ROOT_SIGNATURE_VERSION_1_1,
                 desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {
                     version_1_1: ManuallyDrop::new(v.inner),
                 },

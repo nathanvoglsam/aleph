@@ -27,17 +27,17 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_ROOT_DESCRIPTOR_FLAGS;
+use windows::Win32::Graphics::Direct3D12::D3D12_ROOT_DESCRIPTOR_FLAGS;
 
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct RootDescriptorFlags(pub i32);
+pub struct RootDescriptorFlags(pub u32);
 
 impl RootDescriptorFlags {
-    pub const NONE: Self = Self(0i32);
-    pub const DATA_VOLATILE: Self = Self(2i32);
-    pub const DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4i32);
-    pub const DATA_STATIC: Self = Self(8i32);
+    pub const NONE: Self = Self(0);
+    pub const DATA_VOLATILE: Self = Self(2);
+    pub const DATA_STATIC_WHILE_SET_AT_EXECUTE: Self = Self(4);
+    pub const DATA_STATIC: Self = Self(8);
 }
 
 impl Default for RootDescriptorFlags {
@@ -47,11 +47,11 @@ impl Default for RootDescriptorFlags {
     }
 }
 
-windows_raw::flags_bitwise_impl!(RootDescriptorFlags);
+windows::flags_bitwise_impl!(RootDescriptorFlags);
 
 impl Into<D3D12_ROOT_DESCRIPTOR_FLAGS> for RootDescriptorFlags {
     #[inline]
     fn into(self) -> D3D12_ROOT_DESCRIPTOR_FLAGS {
-        D3D12_ROOT_DESCRIPTOR_FLAGS(self.0)
+        self.0
     }
 }

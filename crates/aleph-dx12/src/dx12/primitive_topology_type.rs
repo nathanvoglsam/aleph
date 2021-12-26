@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_PRIMITIVE_TOPOLOGY_TYPE;
+use windows::Win32::Graphics::Direct3D12::D3D12_PRIMITIVE_TOPOLOGY_TYPE;
 
 #[repr(i32)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
@@ -49,6 +49,6 @@ impl Default for PrimitiveTopologyType {
 impl Into<D3D12_PRIMITIVE_TOPOLOGY_TYPE> for PrimitiveTopologyType {
     #[inline]
     fn into(self) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE {
-        D3D12_PRIMITIVE_TOPOLOGY_TYPE(self as i32)
+        self as i32
     }
 }

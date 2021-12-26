@@ -28,11 +28,10 @@
 //
 
 use std::num::NonZeroIsize;
-use windows_raw::Win32::SystemServices::{
-    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, BOOL, HANDLE, PWSTR,
-    WAIT_RETURN_CAUSE,
+use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, PWSTR, WAIT_FAILED, WAIT_TIMEOUT};
+use windows::Win32::System::Threading::{
+    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, WAIT_ABANDONED_0, WAIT_OBJECT_0,
 };
-use windows_raw::Win32::WindowsProgramming::CloseHandle;
 
 /// Wrapper around the return value of `WaitForSingleObject`
 #[repr(u32)]
@@ -63,11 +62,6 @@ impl SingleWaitResponse {
             _ => Err(()),
         }
     }
-
-    #[inline]
-    fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
-        Self::from_u32(v.0)
-    }
 }
 
 /// Wrapper around the return value of `WaitForMultipleObjects` with bWaitAll as true
@@ -93,11 +87,6 @@ impl MultipleWaitAllResponse {
             _ => Err(()),
         }
     }
-
-    #[inline]
-    fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
-        Self::from_u32(v.0)
-    }
 }
 
 /// Wrapper around the return value of `WaitForMultipleObjects` with bWaitAll as false
@@ -117,30 +106,25 @@ pub enum MultipleWaitAnyResponse {
 impl MultipleWaitAnyResponse {
     #[inline]
     fn from_u32(v: u32) -> Result<Self, ()> {
-        if v == WAIT_RETURN_CAUSE::WAIT_TIMEOUT.0 {
+        if v == WAIT_TIMEOUT {
             return Ok(MultipleWaitAnyResponse::Timeout);
         }
 
-        let signaled_index = v - WAIT_RETURN_CAUSE::WAIT_OBJECT_0.0;
+        let signaled_index = v - WAIT_OBJECT_0;
         if signaled_index <= 64 {
             return Ok(MultipleWaitAnyResponse::Signaled(signaled_index as usize));
         }
 
-        let abandoned_index = v - WAIT_RETURN_CAUSE::WAIT_ABANDONED_0.0;
+        let abandoned_index = v - WAIT_ABANDONED_0;
         if abandoned_index <= 64 {
             return Ok(MultipleWaitAnyResponse::Abandoned(abandoned_index as usize));
         }
 
-        if v == WAIT_RETURN_CAUSE::WAIT_FAILED.0 {
+        if v == WAIT_FAILED {
             return Err(());
         }
 
         unreachable!()
-    }
-
-    #[inline]
-    fn from_cause(v: WAIT_RETURN_CAUSE) -> Result<Self, ()> {
-        Self::from_u32(v.0)
     }
 }
 
@@ -169,7 +153,7 @@ impl Event {
         } else {
             unsafe { WaitForSingleObject(HANDLE(self.0.get()), 4294967295) }
         };
-        SingleWaitResponse::from_cause(ret)
+        SingleWaitResponse::from_u32(ret)
     }
 }
 
@@ -177,10 +161,7 @@ impl Drop for Event {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            assert_ne!(
-                CloseHandle(HANDLE(self.0.get())),
-                windows_raw::BOOL::from(false)
-            );
+            assert_ne!(CloseHandle(HANDLE(self.0.get())).as_bool(), false);
         }
     }
 }
@@ -216,7 +197,7 @@ impl WaitAll for [Event] {
                 )
             }
         };
-        MultipleWaitAllResponse::from_cause(ret)
+        MultipleWaitAllResponse::from_u32(ret)
     }
 
     #[inline]
@@ -243,6 +224,6 @@ impl WaitAll for [Event] {
                 )
             }
         };
-        MultipleWaitAnyResponse::from_cause(ret)
+        MultipleWaitAnyResponse::from_u32(ret)
     }
 }

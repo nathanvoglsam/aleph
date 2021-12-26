@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use windows_raw::Win32::Direct3D12::D3D12_QUERY_TYPE;
+use windows::Win32::Graphics::Direct3D12::D3D12_QUERY_TYPE;
 
 /// Wrapper for `D3D12_QUERY_TYPE`
 #[repr(i32)]
@@ -47,6 +47,6 @@ pub enum QueryType {
 impl Into<D3D12_QUERY_TYPE> for QueryType {
     #[inline]
     fn into(self) -> D3D12_QUERY_TYPE {
-        D3D12_QUERY_TYPE(self as i32)
+        self as i32
     }
 }
