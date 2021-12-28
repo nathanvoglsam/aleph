@@ -182,6 +182,7 @@ pub use interfaces::D3D12DeviceChild;
 pub use interfaces::D3D12Object;
 pub use logic_op::LogicOp;
 pub use mesh_shader_pipeline_desc::MeshShaderPipelineStateDesc;
+pub use pipeline_state::AsPipelineState;
 pub use pipeline_state::ComputePipelineState;
 pub use pipeline_state::GraphicsPipelineState;
 pub use pipeline_state::PipelineState;

@@ -66,3 +66,25 @@ crate::object_impl!(ComputePipelineState);
 crate::device_child_impl!(ComputePipelineState);
 crate::shared_object!(ComputePipelineState);
 windows::deref_impl!(ComputePipelineState, ID3D12PipelineState);
+
+pub unsafe trait AsPipelineState {
+    fn as_pipeline_state(&self) -> &ID3D12PipelineState;
+}
+
+unsafe impl AsPipelineState for PipelineState {
+    fn as_pipeline_state(&self) -> &ID3D12PipelineState {
+        &self.0
+    }
+}
+
+unsafe impl AsPipelineState for GraphicsPipelineState {
+    fn as_pipeline_state(&self) -> &ID3D12PipelineState {
+        &self.0
+    }
+}
+
+unsafe impl AsPipelineState for ComputePipelineState {
+    fn as_pipeline_state(&self) -> &ID3D12PipelineState {
+        &self.0
+    }
+}

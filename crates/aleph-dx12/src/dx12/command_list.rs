@@ -28,11 +28,11 @@
 //
 
 use crate::{
-    dxgi, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType, CommandSignature,
-    DescriptorHeap, DescriptorHeapType, DiscardRegion, GPUDescriptorHandle, IndexBufferView,
-    PipelineState, PredicationOp, PrimitiveTopology, QueryHeap, QueryType, Rect, Resource,
-    ResourceBarrier, RootSignature, StreamOutputBufferView, TextureCopyLocation, TileCopyFlags,
-    TileRegionSize, TiledResourceCoordinate, VertexBufferView, Viewport,
+    dxgi, AsPipelineState, CPUDescriptorHandle, ClearFlags, CommandAllocator, CommandListType,
+    CommandSignature, DescriptorHeap, DescriptorHeapType, DiscardRegion, GPUDescriptorHandle,
+    IndexBufferView, PipelineState, PredicationOp, PrimitiveTopology, QueryHeap, QueryType, Rect,
+    Resource, ResourceBarrier, RootSignature, StreamOutputBufferView, TextureCopyLocation,
+    TileCopyFlags, TileRegionSize, TiledResourceCoordinate, VertexBufferView, Viewport,
 };
 use std::borrow::Borrow;
 use std::mem::{align_of, size_of, transmute, MaybeUninit};
@@ -50,12 +50,15 @@ pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 
 impl GraphicsCommandList {
     #[inline]
-    pub unsafe fn reset<T: Into<PipelineState> + Clone>(
+    pub unsafe fn reset<'a, T: AsPipelineState + 'a, I: Into<Option<&'a T>>>(
         &mut self,
         allocator: &CommandAllocator,
-        initial_state: &T,
+        initial_state: I,
     ) -> windows::core::Result<()> {
-        self.0.Reset(&allocator.0, initial_state.clone().into().0)
+        match initial_state.into() {
+            None => self.0.Reset(&allocator.0, None),
+            Some(v) => self.0.Reset(&allocator.0, v.as_pipeline_state()),
+        }
     }
 
     /// `ID3D12GraphicsCommandList::ClearState`
