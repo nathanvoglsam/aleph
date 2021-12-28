@@ -32,63 +32,46 @@ mod image;
 pub use image::ImageFormat;
 
 pub struct Resource<T: ResourceType> {
-    inner: (),
     state: T,
 }
 
 impl Resource<Any> {
     #[inline]
     pub fn to_buffer(self) -> Result<Resource<Buffer>, Self> {
-        if self.is_buffer() {
-            Ok(Resource::<Buffer> {
-                inner: self.inner,
-                state: Buffer(),
-            })
-        } else {
-            Err(self)
+        match self.state.0 {
+            ResourceTypes::Buffer(v) => Ok(v),
+            ResourceTypes::Image(_) => Err(self),
         }
     }
 
     #[inline]
     pub fn to_image(self) -> Result<Resource<Image>, Self> {
-        if self.is_image() {
-            Ok(Resource::<Image> {
-                inner: self.inner,
-                state: Image(),
-            })
-        } else {
-            Err(self)
+        match self.state.0 {
+            ResourceTypes::Buffer(_) => Err(self),
+            ResourceTypes::Image(v) => Ok(v),
         }
     }
 
     #[inline]
     pub fn to_type(self) -> ResourceTypes {
-        match self.state.0 {
-            PrivateResourceTypes::Buffer => ResourceTypes::Buffer(Resource::<Buffer> {
-                inner: self.inner,
-                state: Buffer(),
-            }),
-            PrivateResourceTypes::Image => ResourceTypes::Image(Resource::<Image> {
-                inner: self.inner,
-                state: Image(),
-            }),
-        }
+        self.state.0
     }
 
     #[inline]
     pub fn is_buffer(&self) -> bool {
-        matches!(self.state.0, PrivateResourceTypes::Buffer)
+        matches!(self.state.0, ResourceTypes::Buffer(_))
     }
 
     #[inline]
     pub fn is_image(&self) -> bool {
-        matches!(self.state.0, PrivateResourceTypes::Image)
+        matches!(self.state.0, ResourceTypes::Image(_))
     }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 #[repr(u32)]
 pub enum ResourceAccessType {
+    /*--  BEGIN READ ACCESSES  --*/
     /// Read as an indirect buffer for drawing or dispatch
     IndirectBuffer = FIRST_READ_DISCRIMINATOR,
 
@@ -230,7 +213,7 @@ pub enum ResourceAccessType {
     /// Read by conditional rendering
     ConditionalRenderingRead,
 
-    /// On Vulkan requires `VK_NV_ray_tracing` to be enabled
+    /// On Vulkan requires `VK_NV_ray_tracing` or `VK_KHR_acceleration_structure` to be enabled
     /// Read by a ray tracing shader as an acceleration structure
     RayTracingShaderAccelerationStructureRead,
 
@@ -238,6 +221,11 @@ pub enum ResourceAccessType {
     /// Read as an acceleration structure during a build
     AccelerationStructureBuildRead,
 
+    /// On Vulkan requires `VK_NV_ray_tracing` or `VK_KHR_ray_tracing_pipeline` to be enabled
+    /// Read as shader binding table
+    ShaderBindingTable,
+
+    /*--  BEGIN WRITE ACCESSES  --*/
     /// Requires `VK_NV_device_generated_commands` to be enabled
     /// Command buffer write operation
     CommandBufferWrite = FIRST_WRITE_DISCRIMINATOR,
@@ -304,7 +292,7 @@ pub enum ResourceAccessType {
     /// Written on the host
     HostWrite,
 
-    /// On Vulkan requires `VK_NV_ray_tracing` to be enabled
+    /// On Vulkan requires `VK_NV_ray_tracing` or `VK_KHR_acceleration_structure` to be enabled
     /// Written as an acceleration structure during a build
     AccelerationStructureBuildWrite,
 
@@ -328,6 +316,42 @@ impl ResourceAccessType {
     }
 }
 
+/// Typed wrapper that holds a [ResourceAccessType] that is guaranteed to hold a write access
+/// type
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+pub struct WriteResourceAccessType(ResourceAccessType);
+
+impl TryFrom<ResourceAccessType> for WriteResourceAccessType {
+    type Error = ();
+
+    fn try_from(value: ResourceAccessType) -> Result<Self, Self::Error> {
+        if value.is_write() {
+            Ok(Self(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
+/// Typed wrapper that holds a [ResourceAccessType] that is guaranteed to hold a read-only access
+/// type
+#[repr(transparent)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+pub struct ReadResourceAccessType(ResourceAccessType);
+
+impl TryFrom<ResourceAccessType> for ReadResourceAccessType {
+    type Error = ();
+
+    fn try_from(value: ResourceAccessType) -> Result<Self, Self::Error> {
+        if value.is_read() {
+            Ok(Self(value))
+        } else {
+            Err(())
+        }
+    }
+}
+
 /// Discriminator base used for read-only accesses
 ///
 /// Allows for checking read-only access by integer comparison
@@ -348,7 +372,7 @@ pub struct Buffer();
 pub struct Image();
 
 /// Marker + state used for a resource of any type
-pub struct Any(PrivateResourceTypes);
+pub struct Any(ResourceTypes);
 
 impl ResourceType for Buffer {}
 impl ResourceType for Image {}
@@ -358,11 +382,4 @@ impl ResourceType for Any {}
 pub enum ResourceTypes {
     Buffer(Resource<Buffer>),
     Image(Resource<Image>),
-}
-
-/// Internal enum used by Any resource type for holding what type the resource is
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
-enum PrivateResourceTypes {
-    Buffer,
-    Image,
 }

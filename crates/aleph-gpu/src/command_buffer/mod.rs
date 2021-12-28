@@ -28,7 +28,6 @@
 //
 
 pub struct CommandBuffer<T: CommandBufferState> {
-    inner: (),
     state: T,
 }
 
@@ -49,46 +48,31 @@ impl CommandBuffer<Open> {
 impl CommandBuffer<Any> {
     #[inline]
     pub fn to_open(self) -> Result<CommandBuffer<Open>, Self> {
-        if self.is_open() {
-            Ok(CommandBuffer::<Open> {
-                inner: self.inner,
-                state: Open(),
-            })
-        } else {
-            Err(self)
+        match self.state.0 {
+            CommandBufferStates::Open(v) => Ok(v),
+            CommandBufferStates::Closed(_) => Err(self),
         }
     }
 
     #[inline]
     pub fn to_closed(self) -> Result<CommandBuffer<Closed>, Self> {
-        if self.is_closed() {
-            Ok(CommandBuffer::<Closed> {
-                inner: self.inner,
-                state: Closed(),
-            })
-        } else {
-            Err(self)
+        match self.state.0 {
+            CommandBufferStates::Open(_) => Err(self),
+            CommandBufferStates::Closed(v) => Ok(v),
         }
     }
 
     #[inline]
     pub fn to_state(self) -> CommandBufferStates {
-        if self.is_open() {
-            CommandBufferStates::Open(CommandBuffer::<Open> {
-                inner: self.inner,
-                state: Open(),
-            })
-        } else {
-            CommandBufferStates::Closed(CommandBuffer::<Closed> {
-                inner: self.inner,
-                state: Closed(),
-            })
-        }
+        self.state.0
     }
 
     #[inline]
     pub fn is_open(&self) -> bool {
-        self.state.0
+        match self.state.0 {
+            CommandBufferStates::Open(_) => true,
+            CommandBufferStates::Closed(_) => false,
+        }
     }
 
     #[inline]
@@ -107,7 +91,7 @@ pub struct Open();
 pub struct Closed();
 
 /// Marker type and state for a command buffer with dynamic state tracking
-pub struct Any(bool);
+pub struct Any(CommandBufferStates);
 
 impl CommandBufferState for Open {}
 impl CommandBufferState for Closed {}
