@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::resource::{BufferAccessType, ImageAccessType, ImageFormat};
+use crate::resource::{ImageFormat, ResourceAccessType};
 
 ///
 /// Structure that provides the description of a texture resource that will be created by a render
@@ -83,25 +83,25 @@ pub enum ResourceCreateDesc {
 /// TODO: Docs
 #[derive(Clone)]
 pub struct BufferReadDesc {
-    pub usage: BufferAccessType,
+    pub usage: ResourceAccessType,
 }
 
 /// TODO: Docs
 #[derive(Clone)]
 pub struct BufferWriteDesc {
-    pub usage: BufferAccessType,
+    pub usage: ResourceAccessType,
 }
 
 /// TODO: Docs
 #[derive(Clone)]
 pub struct TextureReadDesc {
-    pub usage: ImageAccessType,
+    pub usage: ResourceAccessType,
 }
 
 /// TODO: Docs
 #[derive(Clone)]
 pub struct TextureWriteDesc {
-    pub usage: ImageAccessType,
+    pub usage: ResourceAccessType,
 }
 
 /// TODO: Docs
@@ -131,7 +131,7 @@ pub struct TextureImportDesc {
     pub format: ImageFormat,
 
     /// The initial state of the resource
-    pub layout: ImageAccessType,
+    pub access_type: ResourceAccessType,
 }
 
 impl Into<ResourceImportDesc> for TextureImportDesc {

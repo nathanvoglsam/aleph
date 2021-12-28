@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::resource::Resource;
+use crate::resource::{Any, Resource};
 use crossbeam::atomic::AtomicCell;
 use std::sync::Arc;
 
@@ -37,7 +37,7 @@ use std::sync::Arc;
 /// recording stage.
 ///
 pub struct ResourceSlot {
-    pub(crate) inner: Arc<AtomicCell<Option<Resource>>>,
+    pub(crate) inner: Arc<AtomicCell<Option<Resource<Any>>>>,
 }
 
 impl ResourceSlot {
@@ -46,10 +46,10 @@ impl ResourceSlot {
     /// # Panics
     ///
     /// Will panic if the slot is empty, only call this once per render graph recording.
-    pub fn take(&self) -> Resource {
+    pub fn take(&self) -> Resource<Any> {
         // Ensure we get a lock free implementation of atomic cell. Option<dx12::Resource> should be
         // a single pointer in size so this should be lock free
-        assert!(AtomicCell::<Option<Resource>>::is_lock_free());
+        assert!(AtomicCell::<Option<Resource<Any>>>::is_lock_free());
 
         // Take from the slot, panicking if the resource has already been taken///
         self.inner.take().unwrap()

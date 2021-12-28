@@ -27,14 +27,5 @@
 // SOFTWARE.
 //
 
-pub struct ImageResource {}
-
-#[derive(Clone)]
-pub enum ImageAccessType {
-    General,
-    ColorAttachmentRead,
-    Present,
-}
-
 #[derive(Clone)]
 pub enum ImageFormat {}
