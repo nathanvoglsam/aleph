@@ -27,4 +27,94 @@
 // SOFTWARE.
 //
 
-pub struct CommandBuffer {}
+pub struct CommandBuffer<T: CommandBufferState> {
+    inner: (),
+    state: T,
+}
+
+impl CommandBuffer<Closed> {
+    #[inline]
+    pub fn open(self) -> CommandBuffer<Open> {
+        todo!()
+    }
+}
+
+impl CommandBuffer<Open> {
+    #[inline]
+    pub fn close(self) -> CommandBuffer<Closed> {
+        todo!()
+    }
+}
+
+impl CommandBuffer<Any> {
+    #[inline]
+    pub fn to_open(self) -> Result<CommandBuffer<Open>, Self> {
+        if self.is_open() {
+            Ok(CommandBuffer::<Open> {
+                inner: self.inner,
+                state: Open(),
+            })
+        } else {
+            Err(self)
+        }
+    }
+
+    #[inline]
+    pub fn to_closed(self) -> Result<CommandBuffer<Closed>, Self> {
+        if self.is_closed() {
+            Ok(CommandBuffer::<Closed> {
+                inner: self.inner,
+                state: Closed(),
+            })
+        } else {
+            Err(self)
+        }
+    }
+
+    #[inline]
+    pub fn to_state(self) -> CommandBufferStates {
+        if self.is_open() {
+            CommandBufferStates::Open(CommandBuffer::<Open> {
+                inner: self.inner,
+                state: Open(),
+            })
+        } else {
+            CommandBufferStates::Closed(CommandBuffer::<Closed> {
+                inner: self.inner,
+                state: Closed(),
+            })
+        }
+    }
+
+    #[inline]
+    pub fn is_open(&self) -> bool {
+        self.state.0
+    }
+
+    #[inline]
+    pub fn is_closed(&self) -> bool {
+        !self.is_open()
+    }
+}
+
+/// Trait used for restricting set of markers used for command buffer state
+pub trait CommandBufferState {}
+
+/// Marker type for an open command buffer
+pub struct Open();
+
+/// Marker type for a closed command buffer
+pub struct Closed();
+
+/// Marker type and state for a command buffer with dynamic state tracking
+pub struct Any(bool);
+
+impl CommandBufferState for Open {}
+impl CommandBufferState for Closed {}
+impl CommandBufferState for Any {}
+
+/// Enumeration of all possible command buffer states
+pub enum CommandBufferStates {
+    Open(CommandBuffer<Open>),
+    Closed(CommandBuffer<Closed>),
+}
