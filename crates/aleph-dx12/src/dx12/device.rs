@@ -51,14 +51,14 @@ pub struct Device(pub(crate) ID3D12Device4);
 
 impl Device {
     #[inline]
-    pub fn new(
-        adapter: Option<&dxgi::Adapter>,
+    pub fn new<'a>(
+        adapter: impl Into<Option<&'a dxgi::Adapter>>,
         minimum_feature_level: FeatureLevel,
     ) -> windows::core::Result<Device> {
         unsafe {
             let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
             let mut device: Option<ID3D12Device4> = None;
-            let adapter: Option<IDXGIAdapter1> = adapter.map(|v| v.0.clone());
+            let adapter: Option<IDXGIAdapter1> = adapter.into().map(|v| v.0.clone());
             let ptr = &mut device;
             let ptr = ptr as *mut Option<ID3D12Device4>;
             let ptr = ptr as *mut *mut ::std::ffi::c_void;
