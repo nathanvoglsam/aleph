@@ -98,7 +98,7 @@ impl IPlugin for PluginRenderDX12 {
             .unwrap();
 
         log::trace!("Creating DXGIFactory");
-        let mut dxgi_factory = dxgi::Factory::new(true).expect("Failed to create DXGI factory");
+        let dxgi_factory = dxgi::Factory::new(true).expect("Failed to create DXGI factory");
 
         log::trace!("Selecting DXGIAdatper");
         let dxgi_adapter = dxgi_factory

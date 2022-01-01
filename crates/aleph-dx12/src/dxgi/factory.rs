@@ -69,7 +69,7 @@ impl Factory {
     }
 
     pub fn create_swap_chain(
-        &mut self,
+        &self,
         queue: &CommandQueue,
         window_handle: &impl HasRawWindowHandle,
         swap_chain_desc: &SwapChainDesc1,
@@ -101,7 +101,7 @@ impl Factory {
 
     #[inline]
     unsafe fn create_swap_chain_for_hwnd(
-        &mut self,
+        &self,
         queue: &CommandQueue,
         hwnd: HWND,
         desc: DXGI_SWAP_CHAIN_DESC1,
@@ -114,7 +114,7 @@ impl Factory {
 
     #[inline]
     unsafe fn create_swap_chain_for_core_window(
-        &mut self,
+        &self,
         queue: &CommandQueue,
         core_window: IInspectable,
         desc: DXGI_SWAP_CHAIN_DESC1,
@@ -132,7 +132,7 @@ impl Factory {
     }
 
     pub fn select_hardware_adapter(
-        &mut self,
+        &self,
         minimum_feature_level: FeatureLevel,
         gpu_preference: GpuPreference,
     ) -> Option<Adapter> {
@@ -207,5 +207,11 @@ impl Factory {
         i: u32,
     ) -> windows::core::Result<IDXGIAdapter1> {
         factory.EnumAdapters1(i)
+    }
+}
+
+impl Clone for Factory {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
