@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::dxgi::gpu_preference::GpuPreference;
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
 use crate::windows::core::Interface;
 use crate::{CommandQueue, FeatureLevel};
@@ -39,7 +40,7 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct3D12::ID3D12Device4;
 use windows::Win32::Graphics::Dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain4, DXGI_ADAPTER_FLAG_SOFTWARE,
-    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, DXGI_SWAP_CHAIN_DESC1,
+    DXGI_SWAP_CHAIN_DESC1,
 };
 
 type CreateFn =
@@ -133,6 +134,7 @@ impl Factory {
     pub fn select_hardware_adapter(
         &mut self,
         minimum_feature_level: FeatureLevel,
+        gpu_preference: GpuPreference,
     ) -> Option<Adapter> {
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
@@ -148,7 +150,7 @@ impl Factory {
             loop {
                 // Use the newest available interface to enumerate the adapter
                 let adapter = if let Some(factory) = factory_6.as_ref() {
-                    Self::enum_edapter_new(factory, i)
+                    Self::enum_edapter_new(factory, i, gpu_preference)
                 } else {
                     Self::enum_edapter_old(&self.0, i)
                 };
@@ -194,8 +196,9 @@ impl Factory {
     unsafe fn enum_edapter_new(
         factory: &IDXGIFactory6,
         i: u32,
+        gpu_preference: GpuPreference,
     ) -> windows::core::Result<IDXGIAdapter1> {
-        factory.EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE)
+        factory.EnumAdapterByGpuPreference(i, gpu_preference.into())
     }
 
     #[inline]

@@ -102,7 +102,10 @@ impl IPlugin for PluginRenderDX12 {
 
         log::trace!("Selecting DXGIAdatper");
         let dxgi_adapter = dxgi_factory
-            .select_hardware_adapter(dx12::FeatureLevel::Level_11_0)
+            .select_hardware_adapter(
+                dx12::FeatureLevel::Level_11_0,
+                dxgi::GpuPreference::HighPerformance,
+            )
             .expect("Failed to find capable GPU");
 
         // Enable debug layers if requested

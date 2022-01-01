@@ -27,34 +27,21 @@
 // SOFTWARE.
 //
 
-mod adapter;
-mod adapter_desc;
-mod alpha_mode;
-mod debug;
-mod factory;
-mod format;
-mod gpu_preference;
-mod sample_desc;
-mod scaling;
-mod swap_chain;
-mod swap_chain_desc;
-mod swap_chain_flags;
-mod swap_effect;
-mod usage_flags;
+use windows::Win32::Graphics::Dxgi::{
+    DXGI_GPU_PREFERENCE, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, DXGI_GPU_PREFERENCE_MINIMUM_POWER,
+    DXGI_GPU_PREFERENCE_UNSPECIFIED,
+};
 
-pub use adapter::Adapter;
-pub use adapter_desc::AdapterDesc;
-pub use alpha_mode::AlphaMode;
-pub use debug::Debug;
-pub use debug::DebugID;
-pub use debug::DebugRLOFlags;
-pub use factory::Factory;
-pub use format::Format;
-pub use gpu_preference::GpuPreference;
-pub use sample_desc::SampleDesc;
-pub use scaling::Scaling;
-pub use swap_chain::SwapChain;
-pub use swap_chain_desc::SwapChainDesc1;
-pub use swap_chain_flags::SwapChainFlags;
-pub use swap_effect::SwapEffect;
-pub use usage_flags::UsageFlags;
+#[repr(i32)]
+#[derive(Copy, Clone, Debug, Hash)]
+pub enum GpuPreference {
+    NoPreference = DXGI_GPU_PREFERENCE_UNSPECIFIED,
+    MinimumPower = DXGI_GPU_PREFERENCE_MINIMUM_POWER,
+    HighPerformance = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+}
+
+impl Into<DXGI_GPU_PREFERENCE> for GpuPreference {
+    fn into(self) -> DXGI_GPU_PREFERENCE {
+        self as i32
+    }
+}
