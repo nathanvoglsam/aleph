@@ -98,6 +98,11 @@ impl EngineBuilder {
     pub fn default_plugins(&mut self, headless: bool) -> &mut Self {
         self.plugin(core::PluginCore::new());
 
+        if !headless {
+            #[cfg(target_os = "windows")]
+            self.plugin(aleph_gpu_dx12::PluginGpuDX12::new());
+        }
+
         self.platform(headless);
 
         // This only makes sense to load on platforms we have a renderer for, and only if we're not
@@ -110,7 +115,7 @@ impl EngineBuilder {
         // This only makes sense to load on windows and not headless
         if !headless {
             #[cfg(target_os = "windows")]
-            self.plugin(aleph_render::PluginRenderDX12::new());
+            self.plugin(aleph_render::PluginRender::new());
         }
 
         self
