@@ -27,9 +27,16 @@
 // SOFTWARE.
 //
 
+use crate::dx12::{dxgi, D3D12Object};
 use crate::renderer::EguiRenderer;
-use dx12::{dxgi, D3D12Object};
+use crate::{dx12, dx12_alloc};
+use aleph_gpu_dx12::{IGpuAdapterExt, IGpuDeviceExt, IGpuSwapChainExt};
 use interfaces::any;
+use interfaces::any::QueryInterfaceBox;
+use interfaces::gpu::{
+    AdapterRequestOptions, ContextOptions, IGpuContextProvider, PresentationMode,
+    SwapChainConfiguration, TextureFormat,
+};
 use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
@@ -49,15 +56,15 @@ struct Data {
     renderer: EguiRenderer,
 }
 
-pub struct PluginRenderDX12();
+pub struct PluginRender();
 
-impl PluginRenderDX12 {
+impl PluginRender {
     pub fn new() -> Self {
         Self()
     }
 }
 
-impl IPlugin for PluginRenderDX12 {
+impl IPlugin for PluginRender {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
             name: "PluginRenderDX12".to_string(),
@@ -69,6 +76,9 @@ impl IPlugin for PluginRenderDX12 {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.depends_on::<dyn IGpuContextProvider>();
+        registrar.must_init_after::<dyn IGpuContextProvider>();
+
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
 
@@ -87,6 +97,36 @@ impl IPlugin for PluginRenderDX12 {
         let window = window_provider.get_window().unwrap();
         let window_ref = window.deref();
 
+        // Get our context provider for creating graphics API context
+        let gpu_context_provider = registry.get_interface::<dyn IGpuContextProvider>().unwrap();
+
+        // Create our GPU context
+        let options = ContextOptions { validation: true };
+        let mut gpu_context = gpu_context_provider.make_context(&options).unwrap();
+
+        // Create a surface for the window we want to render with
+        let gpu_surface = gpu_context.create_surface(&window_ref);
+
+        // Get an adapter compatible with the requested surface
+        let options = AdapterRequestOptions {
+            surface: Some(gpu_surface.clone()),
+            ..Default::default()
+        };
+        let mut gpu_adapter = gpu_context.request_adapter(&options).unwrap();
+
+        // Create our device
+        let gpu_device = gpu_adapter.request_device().unwrap();
+        let gpu_device_ext = gpu_device.query_interface::<dyn IGpuDeviceExt>().unwrap();
+
+        let gpu_adapter_ext = gpu_adapter
+            .query_interface::<dyn IGpuAdapterExt>()
+            .ok()
+            .unwrap();
+
+        let adapter = gpu_adapter_ext.get_raw_handle().clone();
+        let device = gpu_device_ext.get_raw_handle().clone();
+        let queue = gpu_device_ext.get_queue().clone();
+
         // Get the render data slot for egui
         let render_data = registry
             .get_interface::<dyn egui::IEguiRenderData>()
@@ -97,60 +137,37 @@ impl IPlugin for PluginRenderDX12 {
             .get_interface::<dyn egui::IEguiContextProvider>()
             .unwrap();
 
-        log::trace!("Creating DXGIFactory");
-        let dxgi_factory = dxgi::Factory::new(true).expect("Failed to create DXGI factory");
-
-        log::trace!("Selecting DXGIAdatper");
-        let dxgi_adapter = dxgi_factory
-            .select_hardware_adapter(
-                dx12::FeatureLevel::Level_11_0,
-                dxgi::GpuPreference::HighPerformance,
-            )
-            .expect("Failed to find capable GPU");
-
-        // Enable debug layers if requested
-        let _debug = unsafe {
-            setup_debug_layer(true, false);
-        };
-
-        log::trace!("Creating D3D12Device");
-        let device = dx12::Device::new(Some(&dxgi_adapter), dx12::FeatureLevel::Level_11_0)
-            .expect("Failed to create D3D12 device");
-
-        //let _compiler = unsafe { dx12::DxcCompiler::new().unwrap() };
-        //let _validator = unsafe { dx12::DxcValidator::new().unwrap() };
-
         aleph_log::info!("");
-        Self::log_gpu_info(&dxgi_adapter);
+        Self::log_gpu_info(&adapter);
         aleph_log::info!("");
-
-        let allocator_desc = dx12_alloc::AllocatorDesc::builder()
-            .device(device.clone())
-            .adapter(dxgi_adapter.clone())
-            .build();
-        let allocator = dx12_alloc::Allocator::new(&allocator_desc).unwrap();
-
-        let desc = dx12::CommandQueueDesc::builder()
-            .queue_type(dx12::CommandListType::Direct)
-            .priority(0)
-            .build();
-        let queue = device.create_command_queue(&desc).unwrap();
 
         let event = dx12::Event::new().unwrap();
         let fence = device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
 
-        let drawable_size = window.drawable_size();
-        let desc = dxgi::SwapChainDesc1::builder()
-            .width(drawable_size.0)
-            .height(drawable_size.1)
-            .format(dxgi::Format::R8G8B8A8Unorm)
-            .buffer_count(3)
-            .usage_flags(dxgi::UsageFlags::BACK_BUFFER)
-            .usage_flags(dxgi::UsageFlags::RENDER_TARGET_OUTPUT)
+        let allocator_desc = dx12_alloc::AllocatorDesc::builder()
+            .device(device.clone())
+            .adapter(adapter.clone())
             .build();
-        let mut swap_chain = dxgi_factory
-            .create_swap_chain(&queue, &window_ref, &desc)
+        let allocator = dx12_alloc::Allocator::new(&allocator_desc).unwrap();
+
+        let drawable_size = window.drawable_size();
+        let config = SwapChainConfiguration {
+            usage: (),
+            format: TextureFormat::Rgba8Unorm,
+            width: drawable_size.0,
+            height: drawable_size.1,
+            present_mode: PresentationMode::Mailbox,
+        };
+        let gpu_swap_chain = gpu_surface
+            .create_swap_chain(gpu_device.deref(), &config)
             .unwrap();
+        let gpu_swap_chain = gpu_swap_chain
+            .query_interface::<dyn IGpuSwapChainExt>()
+            .ok()
+            .unwrap();
+
+        let swap_chain = gpu_swap_chain.get_raw_handle().clone();
+
         let buffers = swap_chain.get_buffers(3).unwrap();
         buffers.iter().for_each(|v| {
             v.set_name("SwapChainImage").unwrap();
@@ -249,9 +266,9 @@ impl IPlugin for PluginRenderDX12 {
     }
 }
 
-any::declare_interfaces!(PluginRenderDX12, [IPlugin]);
+any::declare_interfaces!(PluginRender, [IPlugin]);
 
-impl PluginRenderDX12 {
+impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
@@ -268,28 +285,5 @@ impl PluginRenderDX12 {
         aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
         aleph_log::info!("GPU Name      : {}", gpu_name);
         aleph_log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem)
-    }
-}
-
-unsafe fn setup_debug_layer(gpu_debug: bool, gpu_validation: bool) -> Option<dx12::Debug> {
-    if gpu_debug {
-        log::trace!("D3D12 debug layers requested");
-        if let Ok(debug) = dx12::Debug::new() {
-            debug.enable_debug_layer();
-            log::trace!("D3D12 debug layers enabled");
-            if gpu_validation {
-                log::trace!("D3D12 gpu validation requested");
-                if debug.set_enable_gpu_validation(true).is_ok() {
-                    log::trace!("D3D12 gpu validation enabled");
-                } else {
-                    log::trace!("D3D12 gpu validation not enabled");
-                }
-            }
-            Some(debug)
-        } else {
-            None
-        }
-    } else {
-        None
     }
 }

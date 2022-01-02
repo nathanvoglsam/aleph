@@ -31,7 +31,8 @@ mod frame;
 mod global;
 mod swap;
 
-use dx12::dxgi;
+use crate::dx12::dxgi;
+use crate::{dx12, dx12_alloc};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use std::mem::transmute;

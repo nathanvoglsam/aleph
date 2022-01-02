@@ -27,9 +27,10 @@
 // SOFTWARE.
 //
 
+use crate::dx12::{dxgi, D3D12Object};
+use crate::pix::RecordScopedEvent;
 use crate::renderer::GlobalObjects;
-use dx12::{dxgi, D3D12Object};
-use pix::RecordScopedEvent;
+use crate::{dx12, dx12_alloc, pix};
 
 pub struct PerFrameObjects {
     pub vtx_buffer: dx12_alloc::Allocation,

@@ -29,16 +29,17 @@
 
 #![cfg(target_os = "windows")]
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc as dx12_alloc;
 extern crate aleph_egui as egui;
 extern crate aleph_interfaces as interfaces;
 extern crate aleph_log as log;
-extern crate aleph_pix as pix;
 extern crate cstr;
+
+pub(crate) use aleph_gpu_dx12::dx12;
+pub(crate) use aleph_gpu_dx12::dx12_alloc;
+pub(crate) use aleph_gpu_dx12::pix;
 
 mod plugin;
 mod renderer;
 mod shaders;
 
-pub use plugin::PluginRenderDX12;
+pub use plugin::PluginRender;

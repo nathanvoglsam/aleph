@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use crate::dx12;
+use crate::dx12::dxgi;
 use crate::renderer::GlobalObjects;
-use dx12::dxgi;
 
 pub struct SwapDependentObjects {
     pub rtv_cpu: dx12::CPUDescriptorHandle,

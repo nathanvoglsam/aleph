@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
-use dx12::dxgi;
-use dx12::D3D12Object;
+use crate::dx12;
+use crate::dx12::dxgi;
+use crate::dx12::D3D12Object;
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
