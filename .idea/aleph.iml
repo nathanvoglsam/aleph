@@ -132,6 +132,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-gpu/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-windows/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/aleph-windows-x86_64_msvc_uwp/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-gpu-dx12/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

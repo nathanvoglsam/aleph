@@ -27,49 +27,30 @@
 ## SOFTWARE.
 ##
 
-## Uncomment on an absolute final release build to maximize the compiler's optimization ability
-##[profile.release]
-##lto = "fat"
-##panic = 'unwind'
-##codegen-units = 1
 
-[workspace]
+[package]
+name = "aleph-gpu-dx12"
+version = "0.1.0"
+authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
+description = "The aleph-engine dx12 RHI backend"
+license = "MIT"
+repository = "https://github.com/nathanvoglsam/aleph"
+documentation = "https://docs.rs/aleph-gpu-dx12/"
+readme = "README.md"
+keywords = ["engine", "graphics", "game"]
+categories = ["game-engines"]
+edition = "2021"
 
-members = [
-    "crates/aleph-any",
-    "crates/aleph-compile",
-    "crates/aleph-combine-utils",
-    "crates/aleph-dx12",
-    "crates/aleph-dx12-alloc",
-    "crates/aleph-dx12-alloc-raw",
-    "crates/aleph-ecs",
-    "crates/aleph-engine",
-    "crates/aleph-gpu",
-    "crates/aleph-interfaces",
-    "crates/aleph-ktx",
-    "crates/aleph-label",
-    "crates/aleph-log",
-    "crates/aleph-logger",
-    "crates/aleph-pix",
-    "crates/aleph-pix-raw",
-    "crates/aleph-plugin-registry",
-    "crates/aleph-schema",
-    "crates/aleph-sexpr",
-    "crates/aleph-sys-info",
-    "crates/aleph-target",
-    "crates/aleph-target-build",
-    "crates/aleph-virtual-buffer",
-    "crates/aleph-vk-format",
-    "crates/aleph-vulkan",
-    "crates/aleph-vulkan-alloc",
-    "crates/aleph-vulkan-alloc-sys",
-    "crates/aleph-vulkan-core",
-    "crates/aleph-windows",
-    "plugins/aleph-core",
-    "plugins/aleph-egui",
-    "plugins/aleph-gpu-dx12",
-    "plugins/aleph-headless",
-    "plugins/aleph-render",
-    "plugins/aleph-sdl2",
-    "game/aleph-test",
-]
+[badges]
+azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
+
+[dependencies]
+aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
+aleph-log = { path = "../../crates/aleph-log", version = "1" }
+cstr = "0.2"
+# once_cell = "1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+aleph-dx12 = { path = "../../crates/aleph-dx12", version = "0.1" }
+aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
+aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
