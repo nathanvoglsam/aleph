@@ -33,6 +33,7 @@ pub extern crate aleph_label as label;
 pub mod archive;
 pub mod asset;
 pub mod components;
+pub mod gpu;
 pub mod platform;
 pub mod plugin;
 pub mod schedule;
