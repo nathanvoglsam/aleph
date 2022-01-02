@@ -245,6 +245,5 @@ pub enum TextureFormat {
     Rgba32Sint,
     Rgba32Float,
     Depth32Float,
-    Depth24Plus,
-    Depth24PlusStencil8,
+    Depth24Stencil8,
 }

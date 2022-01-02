@@ -75,7 +75,6 @@ pub fn texture_format_to_dxgi(format: TextureFormat) -> dxgi::Format {
         TextureFormat::Rgba32Sint => dxgi::Format::R32G32B32A32Sint,
         TextureFormat::Rgba32Float => dxgi::Format::R32G32B32A32Float,
         TextureFormat::Depth32Float => dxgi::Format::D32Float,
-        TextureFormat::Depth24Plus => dxgi::Format::D24UnormS8Uint,
-        TextureFormat::Depth24PlusStencil8 => dxgi::Format::D24UnormS8Uint,
+        TextureFormat::Depth24Stencil8 => dxgi::Format::D24UnormS8Uint,
     }
 }
