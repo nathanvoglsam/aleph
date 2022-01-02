@@ -31,6 +31,10 @@ use any::{AnyArc, IAny};
 use raw_window_handle::HasRawWindowHandle;
 use std::fmt::Debug;
 
+pub const API_VERSION_MAJOR: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
+pub const API_VERSION_MINOR: &'static str = env!("CARGO_PKG_VERSION_MINOR");
+pub const API_VERSION_PATCH: &'static str = env!("CARGO_PKG_VERSION_PATCH");
+
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
 pub trait IGpuContextProvider: IAny + 'static {
