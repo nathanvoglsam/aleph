@@ -41,7 +41,7 @@ pub struct SwapChain(pub(crate) IDXGISwapChain4);
 impl SwapChain {
     /// `IDXGISwapChain3::ResizeBuffers1`
     pub unsafe fn resize_buffers(
-        &mut self,
+        &self,
         buffer_count: u32,
         width: u32,
         height: u32,
@@ -105,7 +105,7 @@ impl SwapChain {
     /// `IDXGISwapChain1::Present1`
     #[inline]
     pub unsafe fn present(
-        &mut self,
+        &self,
         sync_interval: u32,
         present_flags: u32,
     ) -> windows::core::Result<()> {
@@ -121,15 +121,12 @@ impl SwapChain {
 
     /// `IDXGISwapChain3::GetCurrentBackBufferIndex`
     #[inline]
-    pub fn get_current_back_buffer_index(&mut self) -> u32 {
+    pub fn get_current_back_buffer_index(&self) -> u32 {
         unsafe { self.0.GetCurrentBackBufferIndex() }
     }
 
     #[inline]
-    pub fn get_buffers(
-        &mut self,
-        buffer_count: u32,
-    ) -> windows::core::Result<Vec<crate::Resource>> {
+    pub fn get_buffers(&self, buffer_count: u32) -> windows::core::Result<Vec<crate::Resource>> {
         let mut out = Vec::with_capacity(buffer_count as usize);
         for i in 0..buffer_count {
             out.push(self.get_buffer(i)?);
@@ -138,12 +135,18 @@ impl SwapChain {
     }
 
     #[inline]
-    pub fn get_buffer(&mut self, buffer: u32) -> windows::core::Result<crate::Resource> {
+    pub fn get_buffer(&self, buffer: u32) -> windows::core::Result<crate::Resource> {
         unsafe { self.0.GetBuffer(buffer).map(|v| crate::Resource(v)) }
     }
 
     #[inline]
-    pub fn get_description(&mut self) -> windows::core::Result<SwapChainDesc1> {
+    pub fn get_description(&self) -> windows::core::Result<SwapChainDesc1> {
         unsafe { self.0.GetDesc1().map(|v| transmute(v)) }
+    }
+}
+
+impl Clone for SwapChain {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
     }
 }
