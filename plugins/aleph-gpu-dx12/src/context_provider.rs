@@ -66,9 +66,7 @@ impl IGpuContextProvider for ContextProvider {
                     ContextCreateError::Platform(e)
                 })?;
 
-                let debug = unsafe {
-                    setup_debug_layer(options.validation, true)
-                };
+                let debug = unsafe { setup_debug_layer(options.validation, true) };
 
                 let out = Context {
                     _debug: debug,
