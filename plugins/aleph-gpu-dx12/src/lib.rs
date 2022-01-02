@@ -45,12 +45,52 @@ mod format;
 mod surface;
 mod swap_chain;
 
-mod plugin;
-
-pub use plugin::PluginGpuDX12;
-
 pub use adapter::IGpuAdapterExt;
 pub use context::IGpuContextExt;
 pub use device::IGpuDeviceExt;
 pub use surface::IGpuSurfaceExt;
 pub use swap_chain::IGpuSwapChainExt;
+
+use crate::context_provider::ContextProvider;
+use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::gpu::IGpuContextProvider;
+use interfaces::plugin::{
+    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+};
+use std::any::TypeId;
+
+pub struct PluginGpuDX12();
+
+impl PluginGpuDX12 {
+    pub fn new() -> Self {
+        Self()
+    }
+}
+
+impl IPlugin for PluginGpuDX12 {
+    fn get_description(&self) -> PluginDescription {
+        PluginDescription {
+            name: "PluginGpuDX12".to_string(),
+            description: "The aleph-engine dx12 RHI backend".to_string(),
+            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+        }
+    }
+
+    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+        registrar.provides_interface::<dyn IGpuContextProvider>();
+    }
+
+    fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+        let context_provider = ContextProvider::new();
+
+        let response = vec![(
+            TypeId::of::<dyn IGpuContextProvider>(),
+            AnyArc::into_any(AnyArc::new(context_provider)),
+        )];
+        Box::new(response)
+    }
+}
+
+declare_interfaces!(PluginGpuDX12, [IPlugin]);
