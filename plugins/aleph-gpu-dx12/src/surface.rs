@@ -32,7 +32,7 @@ use crate::format::texture_format_to_dxgi;
 use crate::swap_chain::SwapChain;
 use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
-use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     IGpuDevice, IGpuSurface, IGpuSwapChain, PresentationMode, SwapChainConfiguration,
     SwapChainCreateError,
@@ -49,7 +49,7 @@ impl IGpuSurface for Surface {
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError> {
+    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
         let (buffer_count, flags) = match config.present_mode {
@@ -79,8 +79,8 @@ impl IGpuSurface for Surface {
                 SwapChainCreateError::Platform(e)
             })?;
         let swap_chain = SwapChain { swap_chain };
-        let swap_chain = AnyArc::new(swap_chain);
-        Ok(swap_chain.query_interface().unwrap())
+        let swap_chain = Box::new(swap_chain);
+        Ok(swap_chain.query_interface().ok().unwrap())
     }
 }
 
@@ -89,6 +89,10 @@ unsafe impl HasRawWindowHandle for Surface {
         self.handle
     }
 }
+
+// SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
+//         consume it. The consumer constrains thread sharing so this is safe.
+unsafe impl Send for Surface {}
 
 pub trait IGpuSurfaceExt: IGpuSurface {
     fn get_raw_handle(&self) -> dxgi::Factory;

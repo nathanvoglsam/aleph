@@ -34,7 +34,7 @@ use erupt::vk::{
     make_api_version, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
 };
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IGpuContext, IGpuContextProvider};
 use std::ffi::CStr;
@@ -93,7 +93,7 @@ impl IGpuContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IGpuContext>, ContextCreateError> {
+    ) -> Result<Box<dyn IGpuContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -127,8 +127,8 @@ impl IGpuContextProvider for ContextProvider {
                     instance_loader,
                     messenger,
                 };
-                let context = AnyArc::new(context);
-                Ok(context.query_interface().unwrap())
+                let context = Box::new(context);
+                Ok(context.query_interface().ok().unwrap())
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

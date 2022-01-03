@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use any::{AnyArc, IAny};
+use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
 use std::fmt::Debug;
 
@@ -43,33 +43,36 @@ pub trait IGpuContextProvider: IAny + 'static {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IGpuContext>, ContextCreateError>;
+    ) -> Result<Box<dyn IGpuContext>, ContextCreateError>;
 }
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving
-pub trait IGpuContext: IAny + 'static {
+///
+/// TODO: This doesn't need to be kept alive as the implementation should handle extending the
+///       lifetime until all objects are destroyed
+pub trait IGpuContext: IAny + Send + 'static {
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>>;
 
     /// Create a surface from the provided window handle.
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface>;
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn IGpuSurface>;
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IGpuAdapter: IAny + 'static {
+pub trait IGpuAdapter: IAny + Send + 'static {
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&mut self) -> AdapterDescription;
-    fn request_device(&mut self) -> Result<AnyArc<dyn IGpuDevice>, RequestDeviceError>;
+    fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError>;
 }
 
-pub trait IGpuSurface: IAny + 'static {
+pub trait IGpuSurface: IAny + Send + 'static {
     fn create_swap_chain(
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError>;
+    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError>;
 }
 
 pub trait IGpuSwapChain: IAny + 'static {}
@@ -140,12 +143,12 @@ pub enum RequestDeviceError {
     Platform(Box<dyn Debug>),
 }
 
-pub struct AdapterRequestOptions {
+pub struct AdapterRequestOptions<'a> {
     /// A handle to an [ISurface] which the device adapter must be able to render and present to.
     ///
     /// Can be set to `None` to indicate we aren't going to present. Useful for compute-only
     /// workloads.
-    pub surface: Option<AnyArc<dyn IGpuSurface>>,
+    pub surface: Option<&'a dyn IGpuSurface>,
 
     /// Specifies the preferred power class of the adapter the context should return. See
     /// [AdapterPowerClass] for the meaning of each power class.
@@ -159,7 +162,7 @@ pub struct AdapterRequestOptions {
     pub power_class: AdapterPowerClass,
 }
 
-impl Default for AdapterRequestOptions {
+impl<'a> Default for AdapterRequestOptions<'a> {
     fn default() -> Self {
         Self {
             // We can't make a "default" surface so just default to no surface.

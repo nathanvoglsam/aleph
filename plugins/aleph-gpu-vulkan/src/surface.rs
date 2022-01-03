@@ -30,7 +30,7 @@
 use crate::device::Device;
 use crate::format::texture_format_to_vk;
 use crate::swap_chain::SwapChain;
-use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use interfaces::any::declare_interfaces;
 use interfaces::gpu::{
     IGpuDevice, IGpuSurface, IGpuSwapChain, PresentationMode, SwapChainConfiguration,
     SwapChainCreateError,
@@ -46,7 +46,7 @@ impl IGpuSurface for Surface {
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError> {
+    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError> {
         todo!()
     }
 }
@@ -56,6 +56,10 @@ unsafe impl HasRawWindowHandle for Surface {
         self.handle
     }
 }
+
+// SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
+//         consume it. The consumer constrains thread sharing so this is safe.
+unsafe impl Send for Surface {}
 
 pub trait IGpuSurfaceExt: IGpuSurface {}
 

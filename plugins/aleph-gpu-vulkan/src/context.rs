@@ -30,7 +30,7 @@
 use crate::adapter::Adapter;
 use crate::surface::Surface;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::declare_interfaces;
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, IGpuAdapter, IGpuContext, IGpuSurface,
 };
@@ -46,7 +46,7 @@ impl IGpuContext for Context {
         todo!()
     }
 
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn IGpuSurface> {
         todo!()
     }
 }

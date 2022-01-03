@@ -30,7 +30,7 @@
 use crate::adapter::Adapter;
 use crate::surface::Surface;
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, IGpuAdapter, IGpuContext, IGpuSurface,
 };
@@ -105,16 +105,20 @@ impl IGpuContext for Context {
         }
     }
 
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn IGpuSurface> {
         let surface = Surface {
             factory: self.factory.clone(),
             handle: window.raw_window_handle(),
         };
 
-        let surface = AnyArc::new(surface);
-        surface.query_interface().unwrap()
+        let surface = Box::new(surface);
+        surface.query_interface().ok().unwrap()
     }
 }
+
+// SAFETY: Can't be auto marked because of the COM pointers. COM pointers are just Arc, which is
+// fine to send across thread boundaries
+unsafe impl Send for Context {}
 
 pub trait IGpuContextExt: IGpuContext {
     fn get_raw_handle(&self) -> &dxgi::Factory;

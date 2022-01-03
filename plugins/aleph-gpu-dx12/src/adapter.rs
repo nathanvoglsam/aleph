@@ -29,7 +29,7 @@
 
 use crate::device::Device;
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu::{AdapterDescription, IGpuAdapter, IGpuDevice, RequestDeviceError};
 
 pub struct Adapter {
@@ -42,7 +42,7 @@ impl IGpuAdapter for Adapter {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<AnyArc<dyn IGpuDevice>, RequestDeviceError> {
+    fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError> {
         // Create the actual d3d12 device
         let device =
             dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0).map_err(|e| {
@@ -62,8 +62,8 @@ impl IGpuAdapter for Adapter {
 
         // Bundle and return the device
         let device = Device { device, queue };
-        let device = AnyArc::new(device);
-        Ok(device.query_interface().unwrap())
+        let device = Box::new(device);
+        Ok(device.query_interface().ok().unwrap())
     }
 }
 

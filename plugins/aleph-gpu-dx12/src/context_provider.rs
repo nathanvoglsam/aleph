@@ -29,7 +29,7 @@
 
 use crate::context::Context;
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu::{ContextCreateError, ContextOptions, IGpuContext, IGpuContextProvider};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -55,7 +55,7 @@ impl IGpuContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<AnyArc<dyn IGpuContext>, ContextCreateError> {
+    ) -> Result<Box<dyn IGpuContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -72,7 +72,7 @@ impl IGpuContextProvider for ContextProvider {
                     _debug: debug,
                     factory: dxgi_factory,
                 };
-                Ok(AnyArc::new(out).query_interface().unwrap())
+                Ok(Box::new(out).query_interface().ok().unwrap())
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

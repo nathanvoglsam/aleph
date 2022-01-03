@@ -44,7 +44,7 @@ impl IGpuAdapter for Adapter {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<AnyArc<dyn IGpuDevice>, RequestDeviceError> {
+    fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError> {
         todo!()
     }
 }
