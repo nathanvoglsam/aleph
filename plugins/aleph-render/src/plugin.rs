@@ -166,7 +166,6 @@ impl IPlugin for PluginRender {
             .unwrap();
         let gpu_swap_chain = gpu_swap_chain
             .query_interface::<dyn IGpuSwapChainExt>()
-            .ok()
             .unwrap();
 
         let swap_chain = gpu_swap_chain.get_raw_handle().clone();

@@ -48,7 +48,7 @@ impl Context {
     /// There's no other way to check if the surface can be used on the device so we just eat some
     /// overhead at init time to do this.
     fn check_surface_compatibility(
-        &mut self,
+        &self,
         adapter: &dxgi::Adapter,
         surface: &Surface,
     ) -> Option<()> {
@@ -79,7 +79,7 @@ impl Context {
 }
 
 impl IGpuContext for Context {
-    fn request_adapter(&mut self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>> {
         let power_preference = match options.power_class {
             AdapterPowerClass::LowPower => dxgi::GpuPreference::MinimumPower,
             AdapterPowerClass::HighPower => dxgi::GpuPreference::HighPerformance,
@@ -105,7 +105,7 @@ impl IGpuContext for Context {
         }
     }
 
-    fn create_surface(&mut self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
         let surface = Surface {
             factory: self.factory.clone(),
             handle: window.raw_window_handle(),

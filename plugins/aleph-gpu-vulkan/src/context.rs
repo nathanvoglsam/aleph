@@ -42,11 +42,11 @@ pub struct Context {
 }
 
 impl IGpuContext for Context {
-    fn request_adapter(&mut self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>> {
         todo!()
     }
 
-    fn create_surface(&mut self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface> {
         todo!()
     }
 }

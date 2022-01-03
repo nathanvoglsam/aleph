@@ -43,7 +43,7 @@ pub trait IGpuContextProvider: IAny + 'static {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<Box<dyn IGpuContext>, ContextCreateError>;
+    ) -> Result<AnyArc<dyn IGpuContext>, ContextCreateError>;
 }
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
@@ -51,10 +51,10 @@ pub trait IGpuContextProvider: IAny + 'static {
 pub trait IGpuContext: IAny + 'static {
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
-    fn request_adapter(&mut self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>>;
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>>;
 
     /// Create a surface from the provided window handle.
-    fn create_surface(&mut self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface>;
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> AnyArc<dyn IGpuSurface>;
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
@@ -69,7 +69,7 @@ pub trait IGpuSurface: IAny + 'static {
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError>;
+    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError>;
 }
 
 pub trait IGpuSwapChain: IAny + 'static {}

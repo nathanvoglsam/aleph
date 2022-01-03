@@ -32,7 +32,7 @@ use crate::format::texture_format_to_dxgi;
 use crate::swap_chain::SwapChain;
 use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
-use interfaces::any::{declare_interfaces, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     IGpuDevice, IGpuSurface, IGpuSwapChain, PresentationMode, SwapChainConfiguration,
     SwapChainCreateError,
@@ -49,7 +49,7 @@ impl IGpuSurface for Surface {
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError> {
+    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
         let (buffer_count, flags) = match config.present_mode {
@@ -79,8 +79,8 @@ impl IGpuSurface for Surface {
                 SwapChainCreateError::Platform(e)
             })?;
         let swap_chain = SwapChain { swap_chain };
-        let swap_chain = Box::new(swap_chain);
-        Ok(swap_chain)
+        let swap_chain = AnyArc::new(swap_chain);
+        Ok(swap_chain.query_interface().unwrap())
     }
 }
 

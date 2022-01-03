@@ -30,7 +30,7 @@
 use crate::device::Device;
 use crate::format::texture_format_to_vk;
 use crate::swap_chain::SwapChain;
-use interfaces::any::{declare_interfaces, QueryInterface};
+use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     IGpuDevice, IGpuSurface, IGpuSwapChain, PresentationMode, SwapChainConfiguration,
     SwapChainCreateError,
@@ -46,7 +46,7 @@ impl IGpuSurface for Surface {
         &self,
         device: &dyn IGpuDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError> {
+    ) -> Result<AnyArc<dyn IGpuSwapChain>, SwapChainCreateError> {
         todo!()
     }
 }
