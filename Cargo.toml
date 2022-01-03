@@ -68,6 +68,7 @@ members = [
     "plugins/aleph-core",
     "plugins/aleph-egui",
     "plugins/aleph-gpu-dx12",
+    "plugins/aleph-gpu-vulkan",
     "plugins/aleph-headless",
     "plugins/aleph-render",
     "plugins/aleph-sdl2",
