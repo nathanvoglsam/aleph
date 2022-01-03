@@ -101,8 +101,11 @@ impl IPlugin for PluginRender {
         let gpu_context_provider = registry.get_interface::<dyn IGpuContextProvider>().unwrap();
 
         // Create our GPU context
-        let options = ContextOptions { validation: true };
-        let mut gpu_context = gpu_context_provider.make_context(&options).unwrap();
+        let options = ContextOptions {
+            validation: true,
+            debug: true,
+        };
+        let gpu_context = gpu_context_provider.make_context(&options).unwrap();
 
         // Create a surface for the window we want to render with
         let gpu_surface = gpu_context.create_surface(&window_ref);

@@ -63,6 +63,7 @@ impl ContextProvider {
         debug: bool,
         validation: bool,
     ) -> Result<(erupt::InstanceLoader, u32), ContextCreateError> {
+        let debug = if validation { true } else { debug };
         let extensions = instance_extensions(entry_loader, debug)?;
         let layers = instance_layers(entry_loader, validation)?;
         let app_info = app_and_engine_info(entry_loader)?;
@@ -104,7 +105,7 @@ impl IGpuContextProvider for ContextProvider {
                 })?;
 
                 let (instance_loader, _version) =
-                    Self::create_instance(&entry_loader, options.validation, options.validation)?;
+                    Self::create_instance(&entry_loader, options.debug, options.validation)?;
 
                 let messenger = if options.validation {
                     match install_debug_messenger(&instance_loader) {

@@ -85,7 +85,10 @@ pub trait IGpuMemoryPool: IAny + 'static {
 
 /// Options provided when a context is created
 pub struct ContextOptions {
-    /// Whether a debug context should be created.
+    /// Whether backend API validation should be enabled.
+    ///
+    /// Will implicitly force the `debug` option to true if `validation` is also true as on some
+    /// backends the `validation` option requires loading the same `debug` utilities to function.
     ///
     /// This flag requests that the backend should enable their backend specific API validation.
     ///
@@ -101,11 +104,23 @@ pub struct ContextOptions {
     ///
     /// For Direct3D 12 this will enable API validation.
     pub validation: bool,
+
+    /// Whether backend debug utilities should be enabled. This enables debug integrations for
+    /// naming objects and marking code sections to the backend's API for markup in debug tools.
+    ///
+    /// # Detail
+    ///
+    /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
+    /// validation layers.
+    pub debug: bool,
 }
 
 impl Default for ContextOptions {
     fn default() -> Self {
-        Self { validation: false }
+        Self {
+            validation: false,
+            debug: false,
+        }
     }
 }
 

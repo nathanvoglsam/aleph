@@ -81,13 +81,13 @@ impl IGpuContextProvider for ContextProvider {
 
 declare_interfaces!(ContextProvider, [IGpuContextProvider]);
 
-unsafe fn setup_debug_layer(gpu_debug: bool, gpu_validation: bool) -> Option<dx12::Debug> {
-    if gpu_debug {
+unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<dx12::Debug> {
+    if want_debug {
         log::trace!("D3D12 debug layers requested");
         if let Ok(debug) = dx12::Debug::new() {
             debug.enable_debug_layer();
             log::trace!("D3D12 debug layers enabled");
-            if gpu_validation {
+            if gpu_assisted {
                 log::trace!("D3D12 gpu validation requested");
                 if debug.set_enable_gpu_validation(true).is_ok() {
                     log::trace!("D3D12 gpu validation enabled");
