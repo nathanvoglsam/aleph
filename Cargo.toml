@@ -38,6 +38,7 @@
 members = [
     "crates/aleph-any",
     "crates/aleph-compile",
+    "crates/aleph-console",
     "crates/aleph-combine-utils",
     "crates/aleph-dx12",
     "crates/aleph-dx12-alloc",
