@@ -37,4 +37,4 @@ edition = "2021"
 
 [dependencies]
 aleph-engine = { path = "../../crates/aleph-engine", version = "0.1.0", features = ["default", "remote-console"] }
-egui_demo_lib = "0.12"
+egui_demo_lib = "0.16"

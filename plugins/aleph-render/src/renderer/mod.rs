@@ -110,7 +110,7 @@ impl EguiRenderer {
         index: usize,
         command_list: &mut dx12::GraphicsCommandList,
         buffers: &[dx12::Resource],
-        egui_ctx: &::egui::CtxRef,
+        egui_ctx: &egui::CtxRef,
         jobs: Vec<aleph_egui::ClippedMesh>,
     ) {
         // Clear the command allocator
@@ -129,7 +129,7 @@ impl EguiRenderer {
         let needs_reupload = self.frames[index].update_texture_data(
             &self.device,
             &self.allocator,
-            &egui_ctx.fonts().texture(),
+            egui_ctx.font_image(),
         );
 
         // If a reupload is needed we record into the command buffer the commands required to do so

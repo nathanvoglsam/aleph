@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
-use egui::paint::ClippedShape;
-use egui::{ClippedMesh, Output, RawInput};
+use egui::epaint::ClippedShape;
+use egui::{ClippedMesh, FontData, Output, RawInput};
 use interfaces::any::IAny;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -134,18 +134,41 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     let emoji_icons = crate::fonts::emoji_icon_font();
 
     let monospace_name = if jetbrains {
+        let font = FontData {
+            font: Cow::Borrowed(jetbrains_mono),
+            index: 0
+        };
         font_data.insert(
             jetbrains_mono_name.to_owned(),
-            Cow::Borrowed(jetbrains_mono),
+            font,
         );
         jetbrains_mono_name
     } else {
-        font_data.insert(cascadia_code_name.to_owned(), Cow::Borrowed(cascadia_code));
+        let font = FontData {
+            font: Cow::Borrowed(cascadia_code),
+            index: 0
+        };
+        font_data.insert(cascadia_code_name.to_owned(), font);
         cascadia_code_name
     };
-    font_data.insert(noto_sans_name.to_owned(), Cow::Borrowed(noto_sans));
-    font_data.insert(noto_emoji_name.to_owned(), Cow::Borrowed(noto_emoji));
-    font_data.insert(emoji_icons_name.to_owned(), Cow::Borrowed(emoji_icons));
+
+    let font = FontData {
+        font: Cow::Borrowed(noto_sans),
+        index: 0
+    };
+    font_data.insert(noto_sans_name.to_owned(), font);
+
+    let font = FontData {
+        font: Cow::Borrowed(noto_emoji),
+        index: 0
+    };
+    font_data.insert(noto_emoji_name.to_owned(), font);
+
+    let font = FontData {
+        font: Cow::Borrowed(emoji_icons),
+        index: 0
+    };
+    font_data.insert(emoji_icons_name.to_owned(), font);
 
     fonts_for_family.insert(
         egui::FontFamily::Monospace,

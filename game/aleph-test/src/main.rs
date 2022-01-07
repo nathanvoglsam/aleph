@@ -98,15 +98,14 @@ impl IPlugin for PluginGameLogic {
 
                     aleph::egui::Window::new("Colour Test")
                         .collapsible(false)
-                        .scroll(true)
+                        .hscroll(true)
                         .show(&egui_ctx, |ui| {
-                            let mut tex_allocator = None;
-                            colour_test.ui(ui, &mut tex_allocator);
+                            colour_test.ui(ui, None);
                         });
 
                     aleph::egui::Window::new("Settings")
                         .collapsible(false)
-                        .scroll(true)
+                        .hscroll(true)
                         .show(&egui_ctx, |ui| {
                             egui_ctx.settings_ui(ui);
                         });

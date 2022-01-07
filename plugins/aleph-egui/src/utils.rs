@@ -34,14 +34,11 @@ use interfaces::platform::{
 
 pub fn get_egui_input(
     window: &dyn IWindow,
-    mouse: &dyn IMouse,
     keyboard: &dyn IKeyboard,
     frame_timer: &dyn IFrameTimer,
     events: &dyn IEvents,
 ) -> egui::RawInput {
     let window_size = window.size();
-
-    let scroll_delta = get_egui_scroll_delta(mouse);
 
     let screen_rect = egui::Pos2::new(window_size.0 as f32, window_size.1 as f32);
     let screen_rect = Some(egui::Rect::from_min_max(Default::default(), screen_rect));
@@ -58,7 +55,6 @@ pub fn get_egui_input(
     let events = get_egui_events(events, &modifiers);
 
     egui::RawInput {
-        scroll_delta,
         screen_rect,
         pixels_per_point,
         time,
@@ -86,28 +82,6 @@ pub fn process_egui_output(output: egui::Output, mouse: &dyn IMouse, clipboard: 
         egui::CursorIcon::Grabbing => mouse.set_cursor(Cursor::Arrow),
         _ => mouse.set_cursor(Cursor::Arrow),
     }
-}
-
-pub fn get_egui_scroll_delta(mouse: &dyn IMouse) -> egui::Vec2 {
-    let mouse_events = mouse.events();
-    let mut delta = egui::Vec2::new(0.0, 0.0);
-
-    for event in mouse_events.events() {
-        match event {
-            MouseEvent::MouseWheel(e) => {
-                if matches!(e.direction, MouseWheelDirection::Normal) {
-                    delta.x += e.x as f32;
-                    delta.y += e.y as f32;
-                } else {
-                    delta.x -= e.x as f32;
-                    delta.y -= e.y as f32;
-                }
-            }
-            _ => {}
-        }
-    }
-
-    delta
 }
 
 pub fn get_egui_events(events: &dyn IEvents, modifiers: &egui::Modifiers) -> Vec<egui::Event> {
@@ -216,7 +190,15 @@ pub fn translate_mouse_event(
             };
             Some(event)
         }
-        _ => None,
+        MouseEvent::MouseWheel(e) => {
+            let scroll = if matches!(e.direction, MouseWheelDirection::Normal) {
+                egui::Vec2::new(e.x as f32, e.y as f32)
+            } else {
+                egui::Vec2::new(-e.x as f32, -e.y as f32)
+            };
+            let event = egui::Event::Scroll(scroll);
+            Some(event)
+        }
     }
 }
 

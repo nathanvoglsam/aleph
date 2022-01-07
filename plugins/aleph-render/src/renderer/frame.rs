@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use std::sync::Arc;
 use crate::dx12::{dxgi, D3D12Object};
 use crate::pix::RecordScopedEvent;
 use crate::renderer::GlobalObjects;
@@ -146,7 +147,7 @@ impl PerFrameObjects {
         &mut self,
         device: &dx12::Device,
         allocator: &dx12_alloc::Allocator,
-        texture: &egui::Texture,
+        texture: Arc<egui::FontImage>,
     ) -> bool {
         debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
 

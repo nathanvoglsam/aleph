@@ -28,7 +28,7 @@
 //
 
 extern crate aleph_interfaces as interfaces;
-pub extern crate egui;
+extern crate egui;
 
 mod fonts;
 mod plugin;

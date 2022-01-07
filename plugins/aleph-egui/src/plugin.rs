@@ -123,7 +123,6 @@ impl IPlugin for PluginEgui {
             .get_clipboard()
             .unwrap();
 
-        let pre_update_mouse = mouse.clone();
         let pre_update_ctx = context_provider.clone();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::PreUpdate,
@@ -132,13 +131,12 @@ impl IPlugin for PluginEgui {
                 let context_provider = pre_update_ctx.deref();
 
                 let window = window.deref();
-                let mouse = pre_update_mouse.deref();
                 let keyboard = keyboard.deref();
                 let frame_timer = frame_timer.deref();
                 let events = events.deref();
 
                 let input =
-                    crate::utils::get_egui_input(window, mouse, keyboard, frame_timer, events);
+                    crate::utils::get_egui_input(window, keyboard, frame_timer, events);
                 context_provider.begin_frame(input);
             },
         );
