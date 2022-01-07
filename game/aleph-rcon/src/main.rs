@@ -210,13 +210,11 @@ impl ProgramState {
 
                     let sender = sender.clone();
                     let mut stream = BufReader::new(stream);
-                    std::thread::spawn(move || {
-                        loop {
-                            let mut buffer = Vec::new();
-                            stream.read_until('{' as u8, &mut buffer).unwrap();
-                            stream.read_until('}' as u8, &mut buffer).unwrap();
-                            sender.send(buffer).unwrap();
-                        }
+                    std::thread::spawn(move || loop {
+                        let mut buffer = Vec::new();
+                        stream.read_until('{' as u8, &mut buffer).unwrap();
+                        stream.read_until('}' as u8, &mut buffer).unwrap();
+                        sender.send(buffer).unwrap();
                     });
 
                     remote_sender.send(()).unwrap();
