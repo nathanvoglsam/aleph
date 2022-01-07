@@ -58,6 +58,10 @@ thiserror = "1"
 path = "../aleph-any"
 version = "0.1"
 
+[dependencies.aleph-console]
+path = "../aleph-console"
+version = "0.1"
+
 [dependencies.aleph-ecs]
 path = "../aleph-ecs"
 version = "0.1"

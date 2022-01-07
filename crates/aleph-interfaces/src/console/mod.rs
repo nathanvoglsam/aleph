@@ -27,18 +27,11 @@
 // SOFTWARE.
 //
 
-pub extern crate aleph_any as any;
-pub extern crate aleph_label as label;
+use any::IAny;
 
-pub mod archive;
-pub mod asset;
-pub mod components;
-pub mod console;
-pub mod gpu;
-pub mod platform;
-pub mod plugin;
-pub mod schedule;
-pub mod system;
-pub mod world;
+pub use aleph_console::DebugConsole;
+pub use aleph_console::Logger;
 
-mod utils;
+pub trait IDebugConsoleProvider: IAny + 'static {
+    fn get(&self) -> Option<aleph_console::DebugConsole>;
+}
