@@ -46,6 +46,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [features]
 default = ["serde", "rkyv"]
+remote-console = ["aleph-console/remote"]
 
 [dependencies]
 raw-window-handle = "0.4"

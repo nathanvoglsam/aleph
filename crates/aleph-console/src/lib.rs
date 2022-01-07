@@ -43,11 +43,14 @@ extern crate env_logger;
 extern crate rhai;
 extern crate smartstring;
 
-use log::{Metadata, Record};
+use log::{Level, Metadata, Record};
 use rhai::RegisterNativeFunction;
 use smartstring::{LazyCompact, SmartString};
 use std::cell::RefCell;
+use std::io::Write;
+use std::net::TcpStream;
 use std::rc::Rc;
+use std::sync::Mutex;
 
 /// A ref-counted handle to a debug console.
 #[derive(Clone)]
@@ -133,25 +136,131 @@ impl DebugConsole {
 ///
 pub struct Logger {
     env_logger: env_logger::Logger,
+    remote: Option<Mutex<TcpStream>>,
 }
 
 impl Logger {
     /// Consumes `self`, installing this logger as the global logger instance
-    pub fn install(self) {
+    pub fn install(mut self) {
+        let remote = Self::listen_for_and_connect_to_remote().ok().flatten();
+
+        // Add our remote, if we found one
+        self.remote = remote;
+
         let level = self.env_logger.filter();
         log::set_boxed_logger(Box::new(self)).expect("Attempting to install logger");
         log::set_max_level(level);
+    }
+
+    #[cfg(feature = "remote")]
+    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<Mutex<TcpStream>>> {
+        let remote = Self::find_listener()?;
+        if let Some(remote) = remote {
+            let socket = Self::connect_to_listener(remote)?;
+            Ok(Some(Mutex::new(socket)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[cfg(not(feature = "remote"))]
+    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<Mutex<TcpStream>>> {
+        Ok(None)
+    }
+
+    #[cfg(feature = "remote")]
+    fn connect_to_listener(mut addr: std::net::SocketAddr) -> std::io::Result<TcpStream> {
+        use std::io::{Error, ErrorKind, Read};
+        use std::time::Duration;
+
+        // The convention is to use the port immediately after the advertisement port
+        addr.set_port(addr.port() + 1);
+
+        // Connect to the remote that advertised itself as available
+        let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(2))?;
+
+        // We can't wait for the socket indefinitely while reading here so set a timeout
+        stream.set_read_timeout(Some(Duration::from_secs(2)))?;
+
+        // Write a magic string so the remote can identify us as a valid client
+        stream.write("I_AM_AN_ALEPH_APP".as_bytes())?;
+
+        // Try to read the exact bytes for the expected handshake response
+        let mut buffer = [0u8; 22];
+        stream.read_exact(&mut buffer)?;
+
+        // Verify the handshake response is correct, if not return an error
+        let text =
+            std::str::from_utf8(&buffer).map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+        if text == "I_AM_AN_ALEPH_LISTENER" {
+            // Remove the timeout
+            stream.set_read_timeout(None)?;
+            Ok(stream)
+        } else {
+            Err(Error::new(
+                ErrorKind::InvalidData,
+                "Remote sent incorrect handshake response",
+            ))
+        }
+    }
+
+    #[cfg(feature = "remote")]
+    fn find_listener() -> std::io::Result<Option<std::net::SocketAddr>> {
+        use std::io::ErrorKind;
+        use std::net::UdpSocket;
+        use std::time::{Duration, Instant};
+
+        // Bind our socket and listen for UDP packets on port 42056
+        let socket = UdpSocket::bind("0.0.0.0:0")?;
+
+        // Enforce a read time out so we don't wait forever
+        socket.set_read_timeout(Duration::from_secs(2).into())?;
+
+        // Listen for remote log outputs for 2 seconds
+        let start_time = Instant::now();
+        while Instant::now().duration_since(start_time).as_secs() < 2 {
+            // Wait for packets and write the contents into the buffer
+            let mut buffer = [0u8; 128];
+            let result = socket.recv_from(&mut buffer);
+
+            // Handle errors and unwrap our socket read
+            let (bytes, from) = match result {
+                Ok(v) => v,
+                Err(e) => {
+                    if matches!(e.kind(), ErrorKind::TimedOut) {
+                        // A timeout is a valid error here so we just restart the loop
+                        continue;
+                    } else {
+                        // Any other error is actually an error so we yield the error
+                        return Err(e);
+                    }
+                }
+            };
+
+            // Get a slice of just the bytes written in the packet and check if it matches our magic
+            // string
+            let slice = &buffer[0..bytes];
+            if let Some("I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR") = std::str::from_utf8(slice).ok() {
+                return Ok(Some(from));
+            }
+        }
+
+        Ok(None)
     }
 }
 
 impl From<env_logger::Logger> for Logger {
     fn from(env_logger: env_logger::Logger) -> Self {
-        Self { env_logger }
+        Self {
+            env_logger,
+            remote: None,
+        }
     }
 }
 
 impl log::Log for Logger {
     fn enabled(&self, metadata: &Metadata) -> bool {
+        // We rely on env_logger for our log filtering
         self.env_logger.enabled(metadata)
     }
 
@@ -159,10 +268,47 @@ impl log::Log for Logger {
         if !self.enabled(record.metadata()) {
             return;
         }
+
+        // First we log to the env logger
         self.env_logger.log(record);
+
+        // Then we log to our remote target, if we have one
+        if let Some(remote) = self.remote.as_ref() {
+            // Convert error level to integer
+            let level = match record.level() {
+                Level::Error => 0,
+                Level::Warn => 1,
+                Level::Info => 2,
+                Level::Debug => 3,
+                Level::Trace => 4,
+            };
+
+            // Get log target
+            let module = record.target();
+            let payload = format!(
+                "{{ \"mod\":\"{}\",\"lvl\": {},\"msg\":\"{}\"}}",
+                module,
+                level,
+                record.args()
+            );
+
+            // TODO: Handle remote disconnects
+            remote
+                .lock()
+                .unwrap()
+                .write_all(payload.as_bytes())
+                .unwrap();
+        }
     }
 
     fn flush(&self) {
+        // First flush the env logger
         self.env_logger.flush();
+
+        // Then flush the socket, if we have one
+        if let Some(remote) = self.remote.as_ref() {
+            // TODO: Handle remote disconnects
+            remote.lock().unwrap().flush().unwrap();
+        }
     }
 }
