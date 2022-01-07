@@ -135,8 +135,7 @@ impl IPlugin for PluginEgui {
                 let frame_timer = frame_timer.deref();
                 let events = events.deref();
 
-                let input =
-                    crate::utils::get_egui_input(window, keyboard, frame_timer, events);
+                let input = crate::utils::get_egui_input(window, keyboard, frame_timer, events);
                 context_provider.begin_frame(input);
             },
         );

@@ -136,17 +136,14 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     let monospace_name = if jetbrains {
         let font = FontData {
             font: Cow::Borrowed(jetbrains_mono),
-            index: 0
+            index: 0,
         };
-        font_data.insert(
-            jetbrains_mono_name.to_owned(),
-            font,
-        );
+        font_data.insert(jetbrains_mono_name.to_owned(), font);
         jetbrains_mono_name
     } else {
         let font = FontData {
             font: Cow::Borrowed(cascadia_code),
-            index: 0
+            index: 0,
         };
         font_data.insert(cascadia_code_name.to_owned(), font);
         cascadia_code_name
@@ -154,19 +151,19 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
 
     let font = FontData {
         font: Cow::Borrowed(noto_sans),
-        index: 0
+        index: 0,
     };
     font_data.insert(noto_sans_name.to_owned(), font);
 
     let font = FontData {
         font: Cow::Borrowed(noto_emoji),
-        index: 0
+        index: 0,
     };
     font_data.insert(noto_emoji_name.to_owned(), font);
 
     let font = FontData {
         font: Cow::Borrowed(emoji_icons),
-        index: 0
+        index: 0,
     };
     font_data.insert(emoji_icons_name.to_owned(), font);
 

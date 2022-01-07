@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use std::sync::Arc;
 use crate::dx12::{dxgi, D3D12Object};
 use crate::pix::RecordScopedEvent;
 use crate::renderer::GlobalObjects;
 use crate::{dx12, dx12_alloc, pix};
+use std::sync::Arc;
 
 pub struct PerFrameObjects {
     pub vtx_buffer: dx12_alloc::Allocation,
