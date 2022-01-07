@@ -33,6 +33,7 @@ extern crate aleph_engine as aleph;
 extern crate egui_demo_lib;
 
 use aleph::egui::IEguiContextProvider;
+use aleph::interfaces::console::IDebugConsoleProvider;
 use aleph::interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -62,6 +63,9 @@ impl IPlugin for PluginGameLogic {
         registrar.depends_on::<dyn IScheduleProvider>();
         registrar.must_init_after::<dyn IScheduleProvider>();
 
+        registrar.depends_on::<dyn IDebugConsoleProvider>();
+        registrar.must_init_after::<dyn IDebugConsoleProvider>();
+
         //registrar.depends_on::<dyn IEguiContextProvider>();
         registrar.must_init_after::<dyn IEguiContextProvider>();
     }
@@ -71,6 +75,13 @@ impl IPlugin for PluginGameLogic {
         let mut colour_test = egui_demo_lib::ColorTest::default();
 
         let egui_provider = registry.get_interface::<dyn IEguiContextProvider>();
+
+        let debug_console_provider = registry
+            .get_interface::<dyn IDebugConsoleProvider>()
+            .unwrap();
+        let debug_console = debug_console_provider.get().unwrap();
+
+        debug_console.eval("2 + 2");
 
         let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
         let schedule_cell = schedule_provider.get();
