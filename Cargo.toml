@@ -50,7 +50,6 @@ members = [
     "crates/aleph-ktx",
     "crates/aleph-label",
     "crates/aleph-log",
-    "crates/aleph-logger",
     "crates/aleph-pix",
     "crates/aleph-pix-raw",
     "crates/aleph-plugin-registry",

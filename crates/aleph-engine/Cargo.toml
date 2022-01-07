@@ -51,7 +51,6 @@ platform_sdl2 = ["aleph-sdl2"]
 [dependencies]
 aleph-plugin-registry = { path = "../aleph-plugin-registry", version = "0.1" }
 aleph-log = { path = "../aleph-log", version = "1" }
-aleph-logger = { path = "../aleph-logger", version = "0.1" }
 aleph-target = { path = "../aleph-target", version = "2" }
 aleph-sys-info = { path = "../aleph-sys-info", version = "0.1" }
 
