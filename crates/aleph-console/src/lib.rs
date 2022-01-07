@@ -174,7 +174,7 @@ impl Logger {
         use std::time::Duration;
 
         // The convention is to use the port immediately after the advertisement port
-        addr.set_port(addr.port() + 1);
+        addr.set_port(42057);
 
         // Connect to the remote that advertised itself as available
         let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(2))?;
@@ -211,7 +211,7 @@ impl Logger {
         use std::time::{Duration, Instant};
 
         // Bind our socket and listen for UDP packets on port 42056
-        let socket = UdpSocket::bind("0.0.0.0:0")?;
+        let socket = UdpSocket::bind("0.0.0.0:42056")?;
 
         // Enforce a read time out so we don't wait forever
         socket.set_read_timeout(Duration::from_secs(2).into())?;
@@ -286,7 +286,7 @@ impl log::Log for Logger {
             // Get log target
             let module = record.target();
             let payload = format!(
-                "{{ \"mod\":\"{}\",\"lvl\": {},\"msg\":\"{}\"}}",
+                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}",
                 module,
                 level,
                 record.args()
