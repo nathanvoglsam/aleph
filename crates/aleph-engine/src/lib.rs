@@ -75,21 +75,6 @@ impl EngineBuilder {
             aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread"));
         }
 
-        // First thing we do is initialize the log backend so everything can log from now on
-        aleph_logger::init();
-        aleph_log::info!("");
-        aleph_log::info!("Aleph Engine Starting");
-
-        // Print engine info to the log so we know what engine version we're running on
-        aleph_log::info!("");
-        Engine::log_engine_info();
-        aleph_log::info!("");
-
-        // Print some system info to the log so we know what we were running on
-        aleph_log::info!("");
-        Engine::log_cpu_info();
-        aleph_log::info!("");
-
         Self {
             registry: PluginRegistry::builder(),
         }
@@ -127,6 +112,19 @@ impl EngineBuilder {
     }
 
     pub fn build(self) -> Engine {
+        // Print engine info to the log so we know what engine version we're running on
+        // First thing we do is initialize the log backend so everything can log from now on
+        aleph_log::info!("");
+        aleph_log::info!("Aleph Engine Starting");
+        aleph_log::info!("");
+        Engine::log_engine_info();
+        aleph_log::info!("");
+
+        // Print some system info to the log so we know what we were running on
+        aleph_log::info!("");
+        Engine::log_cpu_info();
+        aleph_log::info!("");
+
         Engine {
             registry: self.registry.build(),
         }

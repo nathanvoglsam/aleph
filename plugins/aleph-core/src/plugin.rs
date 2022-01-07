@@ -27,9 +27,12 @@
 // SOFTWARE.
 //
 
+use crate::console_provider::ConsoleProvider;
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
+use aleph_log::LevelFilter;
 use interfaces::any::AnyArc;
+use interfaces::console::IDebugConsoleProvider;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -40,10 +43,18 @@ use std::any::TypeId;
 pub struct PluginCore {
     world_provider: AnyArc<WorldProvider>,
     schedule_provider: AnyArc<ScheduleProvider>,
+    console_provider: AnyArc<ConsoleProvider>,
 }
 
 impl PluginCore {
     pub fn new() -> Self {
+        // This will be one of the earliest pieces of code to run in aleph engine so initialize the
+        // logger here. By initializing it here then this plugin remains optional (technically)
+        let env_logger = env_logger::Builder::from_default_env()
+            .filter_level(LevelFilter::Trace)
+            .build();
+        interfaces::console::Logger::from(env_logger).install();
+
         let mut schedule = Schedule::default();
         schedule.add_stage(CoreStage::InputCollection, SystemSchedule::default());
         schedule.add_stage(CoreStage::PreUpdate, SystemSchedule::default());
@@ -53,9 +64,11 @@ impl PluginCore {
 
         let world_provider = AnyArc::new(WorldProvider::new());
         let schedule_provider = AnyArc::new(ScheduleProvider::new(schedule));
+        let console_provider = AnyArc::new(ConsoleProvider::new());
         Self {
             world_provider,
             schedule_provider,
+            console_provider,
         }
     }
 }
@@ -78,6 +91,7 @@ impl IPlugin for PluginCore {
         // We export two interfaces
         registrar.provides_interface::<dyn IWorldProvider>();
         registrar.provides_interface::<dyn IScheduleProvider>();
+        registrar.provides_interface::<dyn IDebugConsoleProvider>();
     }
 
     fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
@@ -89,6 +103,10 @@ impl IPlugin for PluginCore {
             (
                 TypeId::of::<dyn IScheduleProvider>(),
                 AnyArc::into_any(self.schedule_provider.clone()),
+            ),
+            (
+                TypeId::of::<dyn IDebugConsoleProvider>(),
+                AnyArc::into_any(self.console_provider.clone()),
             ),
         ];
         Box::new(response)

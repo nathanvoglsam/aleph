@@ -27,11 +27,24 @@
 // SOFTWARE.
 //
 
-extern crate aleph_interfaces as interfaces;
+use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 
-mod console_provider;
-mod plugin;
-mod schedule_provider;
-mod world_provider;
+pub struct ConsoleProvider {
+    console: DebugConsole,
+}
 
-pub use plugin::PluginCore;
+impl ConsoleProvider {
+    pub fn new() -> Self {
+        Self {
+            console: DebugConsole::new(),
+        }
+    }
+}
+
+impl IDebugConsoleProvider for ConsoleProvider {
+    fn get(&self) -> Option<DebugConsole> {
+        Some(self.console.clone())
+    }
+}
+
+interfaces::any::declare_interfaces!(ConsoleProvider, [IDebugConsoleProvider]);
