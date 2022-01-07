@@ -39,12 +39,8 @@
 //!
 
 extern crate aleph_log as log;
-extern crate env_logger;
-extern crate rhai;
-extern crate smartstring;
 
 use log::{Level, Metadata, Record};
-use rhai::RegisterNativeFunction;
 use smartstring::{LazyCompact, SmartString};
 use std::cell::RefCell;
 use std::io::{ErrorKind, Write};
@@ -56,6 +52,7 @@ use std::sync::Mutex;
 /// A ref-counted handle to a debug console.
 #[derive(Clone)]
 pub struct DebugConsole {
+    #[cfg(feature = "console")]
     inner: Rc<RefCell<rhai::Engine>>,
 }
 
@@ -66,13 +63,14 @@ impl DebugConsole {
     /// an [Rc]. Only once all [DebugConsole] handles pointing to a console instance are dropped
     /// will the console be dropped.
     pub fn new() -> Self {
-        let engine = rhai::Engine::new();
         let out = Self {
-            inner: Rc::new(RefCell::new(engine)),
+            #[cfg(feature = "console")]
+            inner: Rc::new(RefCell::new(rhai::Engine::new())),
         };
         out
     }
 
+    #[cfg(feature = "rhai")]
     /// Register a custom function with the [`DebugConsole`].
     ///
     /// # Example
@@ -100,11 +98,12 @@ impl DebugConsole {
     pub fn register_fn<N, A, F>(&self, name: N, func: F)
     where
         N: AsRef<str> + Into<SmartString<LazyCompact>>,
-        F: RegisterNativeFunction<A, ()>,
+        F: rhai::RegisterNativeFunction<A, ()>,
     {
         self.inner.borrow_mut().register_fn(name, func);
     }
 
+    #[cfg(feature = "console")]
     /// Evaluate a string containing an expression.
     ///
     /// # Example

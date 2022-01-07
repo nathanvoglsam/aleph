@@ -47,6 +47,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [features]
 default = ["platform-sdl2"]
 platform-sdl2 = ["aleph-sdl2"]
+console = ["aleph-interfaces/console"]
 remote-console = ["aleph-interfaces/remote-console"]
 
 [dependencies]

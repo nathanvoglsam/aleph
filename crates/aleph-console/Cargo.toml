@@ -45,10 +45,11 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-rhai = "1"
+rhai = { version = "1", optional = true }
 smartstring = "0.2"
 env_logger = "0.9"
 aleph-log = { path = "../aleph-log", version = "1" }
 
 [features]
 remote = []
+console = ["rhai"]
