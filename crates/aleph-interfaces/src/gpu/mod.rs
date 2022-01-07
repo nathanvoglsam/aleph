@@ -51,7 +51,7 @@ pub trait IGpuContextProvider: IAny + 'static {
 ///
 /// TODO: This doesn't need to be kept alive as the implementation should handle extending the
 ///       lifetime until all objects are destroyed
-pub trait IGpuContext: IAny + Send + 'static {
+pub trait IGpuContext: IAny + 'static {
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>>;
@@ -67,7 +67,7 @@ pub trait IGpuAdapter: IAny + Send + 'static {
     fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError>;
 }
 
-pub trait IGpuSurface: IAny + Send + 'static {
+pub trait IGpuSurface: IAny + 'static {
     fn create_swap_chain(
         &self,
         device: &dyn IGpuDevice,
