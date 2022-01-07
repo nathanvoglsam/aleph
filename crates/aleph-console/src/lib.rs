@@ -47,9 +47,10 @@ use log::{Level, Metadata, Record};
 use rhai::RegisterNativeFunction;
 use smartstring::{LazyCompact, SmartString};
 use std::cell::RefCell;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::net::TcpStream;
 use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 /// A ref-counted handle to a debug console.
@@ -136,7 +137,8 @@ impl DebugConsole {
 ///
 pub struct Logger {
     env_logger: env_logger::Logger,
-    remote: Option<Mutex<TcpStream>>,
+    remote: Mutex<Option<TcpStream>>,
+    has_remote: AtomicBool,
 }
 
 impl Logger {
@@ -145,7 +147,8 @@ impl Logger {
         let remote = Self::listen_for_and_connect_to_remote().ok().flatten();
 
         // Add our remote, if we found one
-        self.remote = remote;
+        self.has_remote.store(remote.is_some(), Ordering::Relaxed);
+        self.remote = Mutex::new(remote);
 
         let level = self.env_logger.filter();
         log::set_boxed_logger(Box::new(self)).expect("Attempting to install logger");
@@ -153,24 +156,24 @@ impl Logger {
     }
 
     #[cfg(feature = "remote")]
-    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<Mutex<TcpStream>>> {
+    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<TcpStream>> {
         let remote = Self::find_listener()?;
         if let Some(remote) = remote {
             let socket = Self::connect_to_listener(remote)?;
-            Ok(Some(Mutex::new(socket)))
+            Ok(Some(socket))
         } else {
             Ok(None)
         }
     }
 
     #[cfg(not(feature = "remote"))]
-    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<Mutex<TcpStream>>> {
+    fn listen_for_and_connect_to_remote() -> std::io::Result<Option<TcpStream>> {
         Ok(None)
     }
 
     #[cfg(feature = "remote")]
     fn connect_to_listener(mut addr: std::net::SocketAddr) -> std::io::Result<TcpStream> {
-        use std::io::{Error, ErrorKind, Read};
+        use std::io::{Error, Read};
         use std::time::Duration;
 
         // The convention is to use the port immediately after the advertisement port
@@ -206,7 +209,6 @@ impl Logger {
 
     #[cfg(feature = "remote")]
     fn find_listener() -> std::io::Result<Option<std::net::SocketAddr>> {
-        use std::io::ErrorKind;
         use std::net::UdpSocket;
         use std::time::{Duration, Instant};
 
@@ -253,7 +255,8 @@ impl From<env_logger::Logger> for Logger {
     fn from(env_logger: env_logger::Logger) -> Self {
         Self {
             env_logger,
-            remote: None,
+            remote: Mutex::new(None),
+            has_remote: Default::default()
         }
     }
 }
@@ -273,7 +276,7 @@ impl log::Log for Logger {
         self.env_logger.log(record);
 
         // Then we log to our remote target, if we have one
-        if let Some(remote) = self.remote.as_ref() {
+        if self.has_remote.load(Ordering::Relaxed) {
             // Convert error level to integer
             let level = match record.level() {
                 Level::Error => 0,
@@ -293,11 +296,24 @@ impl log::Log for Logger {
             );
 
             // TODO: Handle remote disconnects
-            remote
+            let mut lock = self.remote
                 .lock()
-                .unwrap()
-                .write_all(payload.as_bytes())
                 .unwrap();
+
+            match lock.as_ref().unwrap().write_all(payload.as_bytes()) {
+                Ok(_) => {}
+                Err(e) => {
+                    match e.kind() {
+                        ErrorKind::ConnectionReset
+                        | ErrorKind::ConnectionAborted
+                        | ErrorKind::TimedOut => {
+                            self.has_remote.store(false, Ordering::Relaxed);
+                            *lock = None;
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 
@@ -306,9 +322,26 @@ impl log::Log for Logger {
         self.env_logger.flush();
 
         // Then flush the socket, if we have one
-        if let Some(remote) = self.remote.as_ref() {
-            // TODO: Handle remote disconnects
-            remote.lock().unwrap().flush().unwrap();
+        if self.has_remote.load(Ordering::Relaxed) {
+            // Then flush the socket, if we have one
+            let mut lock = self.remote
+                .lock()
+                .unwrap();
+
+            match lock.as_ref().unwrap().flush() {
+                Ok(_) => {}
+                Err(e) => {
+                    match e.kind() {
+                        ErrorKind::ConnectionReset
+                        | ErrorKind::ConnectionAborted
+                        | ErrorKind::TimedOut => {
+                            self.has_remote.store(false, Ordering::Relaxed);
+                            *lock = None;
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     }
 }
