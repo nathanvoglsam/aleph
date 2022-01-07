@@ -255,7 +255,7 @@ impl From<env_logger::Logger> for Logger {
         Self {
             env_logger,
             remote: Mutex::new(None),
-            has_remote: Default::default()
+            has_remote: Default::default(),
         }
     }
 }
@@ -274,44 +274,52 @@ impl log::Log for Logger {
         // First we log to the env logger
         self.env_logger.log(record);
 
+        // Convert error level to integer
+        let level = match record.level() {
+            Level::Error => 0,
+            Level::Warn => 1,
+            Level::Info => 2,
+            Level::Debug => 3,
+            Level::Trace => 4,
+        };
+
+        // Get log target
+        let module = record.target();
+        let payload = format!(
+            "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}\0",
+            module,
+            level,
+            record.args()
+        );
+
+        #[cfg(all(target_os = "windows", debug_assertions))]
+        unsafe {
+            let v = aleph_windows::Win32::Foundation::PSTR(payload.as_ptr() as *mut _);
+            aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA(v);
+
+            let v = aleph_windows::Win32::Foundation::PSTR("\0\r\n".as_ptr() as *mut _);
+            aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA(v);
+        }
+
         // Then we log to our remote target, if we have one
         if self.has_remote.load(Ordering::Relaxed) {
-            // Convert error level to integer
-            let level = match record.level() {
-                Level::Error => 0,
-                Level::Warn => 1,
-                Level::Info => 2,
-                Level::Debug => 3,
-                Level::Trace => 4,
-            };
+            let mut lock = self.remote.lock().unwrap();
 
-            // Get log target
-            let module = record.target();
-            let payload = format!(
-                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}",
-                module,
-                level,
-                record.args()
-            );
-
-            // TODO: Handle remote disconnects
-            let mut lock = self.remote
-                .lock()
-                .unwrap();
-
-            match lock.as_ref().unwrap().write_all(payload.as_bytes()) {
+            match lock
+                .as_ref()
+                .unwrap()
+                .write_all(&payload.as_bytes()[0..payload.len() - 1])
+            {
                 Ok(_) => {}
-                Err(e) => {
-                    match e.kind() {
-                        ErrorKind::ConnectionReset
-                        | ErrorKind::ConnectionAborted
-                        | ErrorKind::TimedOut => {
-                            self.has_remote.store(false, Ordering::Relaxed);
-                            *lock = None;
-                        }
-                        _ => {}
+                Err(e) => match e.kind() {
+                    ErrorKind::ConnectionReset
+                    | ErrorKind::ConnectionAborted
+                    | ErrorKind::TimedOut => {
+                        self.has_remote.store(false, Ordering::Relaxed);
+                        *lock = None;
                     }
-                }
+                    _ => {}
+                },
             }
         }
     }
@@ -323,23 +331,19 @@ impl log::Log for Logger {
         // Then flush the socket, if we have one
         if self.has_remote.load(Ordering::Relaxed) {
             // Then flush the socket, if we have one
-            let mut lock = self.remote
-                .lock()
-                .unwrap();
+            let mut lock = self.remote.lock().unwrap();
 
             match lock.as_ref().unwrap().flush() {
                 Ok(_) => {}
-                Err(e) => {
-                    match e.kind() {
-                        ErrorKind::ConnectionReset
-                        | ErrorKind::ConnectionAborted
-                        | ErrorKind::TimedOut => {
-                            self.has_remote.store(false, Ordering::Relaxed);
-                            *lock = None;
-                        }
-                        _ => {}
+                Err(e) => match e.kind() {
+                    ErrorKind::ConnectionReset
+                    | ErrorKind::ConnectionAborted
+                    | ErrorKind::TimedOut => {
+                        self.has_remote.store(false, Ordering::Relaxed);
+                        *lock = None;
                     }
-                }
+                    _ => {}
+                },
             }
         }
     }

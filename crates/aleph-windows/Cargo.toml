@@ -62,6 +62,7 @@ features = [
     "Win32_System_Services",
     "Win32_System_Threading",
     "Win32_System_LibraryLoader",
+    "Win32_System_Diagnostics_Debug",
     "Win32_System_SystemInformation",
     "Win32_System_WindowsProgramming",
     "Win32_Storage_StructuredStorage",
