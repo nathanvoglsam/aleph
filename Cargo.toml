@@ -52,7 +52,6 @@ members = [
     "crates/aleph-log",
     "crates/aleph-pix",
     "crates/aleph-pix-raw",
-    "crates/aleph-plugin-registry",
     "crates/aleph-schema",
     "crates/aleph-sexpr",
     "crates/aleph-sys-info",

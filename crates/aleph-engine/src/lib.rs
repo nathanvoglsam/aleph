@@ -32,22 +32,20 @@
 // =================================================================================================
 
 // Re-export useful crates
-pub extern crate aleph_core as core;
+extern crate aleph_core;
 pub extern crate aleph_egui as egui;
+pub extern crate aleph_interfaces as interfaces;
 pub extern crate aleph_log as log;
 pub extern crate aleph_target as target;
 
-pub mod plugin_registry {
-    pub use aleph_plugin_registry::PluginRegistry;
-    pub use aleph_plugin_registry::PluginRegistryBuilder;
+pub mod plugin_registry;
+
+pub mod core {
+    pub use aleph_core::*;
 }
 
 pub mod any {
-    pub use aleph_plugin_registry::any::*;
-}
-
-pub mod interfaces {
-    pub use aleph_plugin_registry::interfaces::*;
+    pub use interfaces::any::*;
 }
 
 // =================================================================================================

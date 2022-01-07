@@ -28,9 +28,9 @@
 //
 
 use crate::interfaces::plugin::IPlugin;
-use crate::quit_handle::QuitHandleImpl;
-use crate::registrar::PluginRegistrar;
-use crate::PluginRegistry;
+use crate::plugin_registry::quit_handle::QuitHandleImpl;
+use crate::plugin_registry::registrar::PluginRegistrar;
+use crate::plugin_registry::PluginRegistry;
 use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, BTreeSet};
 
