@@ -104,12 +104,12 @@ impl IPlugin for PluginGameLogic {
                     let payload: Message = serde_json::from_str(text).unwrap();
 
                     let level = match payload.lvl {
-                        0 => "ERROR ",
-                        1 => "WARN  ",
-                        2 => "INFO  ",
-                        3 => "DEBUG ",
-                        4 => "TRACE ",
-                        _ => "????? ",
+                        0 => "ERROR",
+                        1 => "WARN ",
+                        2 => "INFO ",
+                        3 => "DEBUG",
+                        4 => "TRACE",
+                        _ => "?????",
                     };
                     let module = payload.r#mod;
                     let message = payload.msg;

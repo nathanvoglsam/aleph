@@ -275,11 +275,11 @@ impl log::Log for Logger {
         #[cfg(target_vendor = "uwp")]
         unsafe {
             let level = match record.level() {
-                Level::Error => "ERROR ",
-                Level::Warn => "WARN  ",
-                Level::Info => "INFO  ",
-                Level::Debug => "DEBUG ",
-                Level::Trace => "TRACE ",
+                Level::Error => "ERROR",
+                Level::Warn => "WARN ",
+                Level::Info => "INFO ",
+                Level::Debug => "DEBUG",
+                Level::Trace => "TRACE",
             };
             let module = record.target();
 
