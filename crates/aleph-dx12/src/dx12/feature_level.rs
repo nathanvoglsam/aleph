@@ -49,6 +49,7 @@ pub enum FeatureLevel {
     Level_11_1 = 45312,
     Level_12_0 = 49152,
     Level_12_1 = 49408,
+    Level_12_2 = 49664,
 }
 
 impl Into<D3D_FEATURE_LEVEL> for FeatureLevel {
