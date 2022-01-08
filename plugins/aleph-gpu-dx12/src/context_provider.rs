@@ -66,7 +66,9 @@ impl IGpuContextProvider for ContextProvider {
                     ContextCreateError::Platform(e)
                 })?;
 
-                let debug = unsafe { setup_debug_layer(options.validation, true) };
+                let is_uwp = cfg!(target_vendor = "uwp");
+                let gpu_assisted = !is_uwp;
+                let debug = unsafe { setup_debug_layer(options.validation, gpu_assisted) };
 
                 let out = Context {
                     _debug: debug,
