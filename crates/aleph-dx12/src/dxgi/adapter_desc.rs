@@ -52,15 +52,15 @@ impl AdapterDesc {
     }
 
     #[inline]
-    pub fn vendor_id_string(&self) -> Option<&'static str> {
+    pub fn vendor_id_string(&self) -> String {
         if self.vendor_id == 0x10DE {
-            Some("NVIDIA")
+            "NVIDIA".to_string()
         } else if self.vendor_id == 0x1002 {
-            Some("AMD")
+            "AMD".to_string()
         } else if self.vendor_id == 0x8086 {
-            Some("INTEL")
+            "INTEL".to_string()
         } else {
-            None
+            format!("{:#X}", self.vendor_id)
         }
     }
 }

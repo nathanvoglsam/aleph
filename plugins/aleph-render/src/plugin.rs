@@ -281,7 +281,7 @@ impl PluginRender {
     fn log_gpu_info(adapter: &dxgi::Adapter) {
         let info = adapter.get_adapter_desc().unwrap();
 
-        let gpu_vendor = info.vendor_id_string().unwrap_or("Unknown");
+        let gpu_vendor = info.vendor_id_string();
         let gpu_name = info.description_string().unwrap_or("Unknown".to_string());
         let dvmem = info.dedicated_video_memory / 1_000_000;
         let dsmem = info.dedicated_system_memory / 1_000_000;
