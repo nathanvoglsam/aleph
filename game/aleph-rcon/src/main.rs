@@ -38,11 +38,12 @@ use aleph::interfaces::plugin::{
 use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
 use std::cell::RefCell;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{BufRead, BufReader, Read};
 use std::net::{SocketAddr, TcpListener, UdpSocket};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
+use serde::Deserialize;
 
 struct PluginGameLogic();
 
@@ -97,10 +98,24 @@ impl IPlugin for PluginGameLogic {
                 }
 
                 while let Ok(msg) = state.message_stream.try_recv() {
+                    use std::fmt::Write;
+
                     let text = std::str::from_utf8(&msg).unwrap();
+                    let payload: Message = serde_json::from_str(text).unwrap();
+
+                    let level = match payload.lvl {
+                        0 => "ERROR ",
+                        1 => "WARN  ",
+                        2 => "INFO  ",
+                        3 => "DEBUG ",
+                        4 => "TRACE ",
+                        _ => "????? ",
+                    };
+                    let module = payload.r#mod;
+                    let message = payload.msg;
+
                     let mut buffer_borrow = state.buffer.borrow_mut();
-                    buffer_borrow.push_str(text);
-                    buffer_borrow.push('\n');
+                    writeln!(&mut buffer_borrow, "[{} {}] {}", level, module, message).unwrap();
                 }
             },
         );
@@ -187,6 +202,8 @@ impl ProgramState {
 
         let sender = message_sender.clone();
         std::thread::spawn(move || {
+            use std::io::Write;
+
             let listener = TcpListener::bind("0.0.0.0:42057").unwrap();
 
             while let Ok((mut stream, from)) = listener.accept() {
@@ -208,6 +225,8 @@ impl ProgramState {
                         .write_all("I_AM_AN_ALEPH_LISTENER".as_bytes())
                         .unwrap();
 
+                    remote_sender.send(()).unwrap();
+
                     let sender = sender.clone();
                     let mut stream = BufReader::new(stream);
                     std::thread::spawn(move || loop {
@@ -216,12 +235,8 @@ impl ProgramState {
                         stream.read_until('}' as u8, &mut buffer).unwrap();
                         sender.send(buffer).unwrap();
                     });
-
-                    remote_sender.send(()).unwrap();
-                    continue;
                 } else {
                     aleph::log::warn!("Handshake data is invalid, connection will be dropped");
-                    continue;
                 }
             }
         });
@@ -235,4 +250,11 @@ impl ProgramState {
             remote_stream,
         })
     }
+}
+
+#[derive(Deserialize)]
+struct Message<'a> {
+    r#mod: &'a str,
+    r#lvl: i32,
+    r#msg: &'a str,
 }
