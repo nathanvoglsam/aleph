@@ -204,7 +204,7 @@ fn egui_font_definitions(jetbrains: bool) -> egui::FontDefinitions {
     );
     family_and_size.insert(
         egui::TextStyle::Monospace,
-        (egui::FontFamily::Monospace, 14.0),
+        (egui::FontFamily::Monospace, 16.0),
     );
 
     egui::FontDefinitions {

@@ -140,12 +140,18 @@ impl IPlugin for PluginGameLogic {
 
                     let fill = egui_ctx.style().visuals.extreme_bg_color;
                     let frame = egui::Frame::none().fill(fill);
+                    let text_borrow = state.buffer.borrow();
+                    let mut text = text_borrow.as_str();
                     egui::CentralPanel::default()
                         .frame(frame)
                         .show(&egui_ctx, |ui| {
-                            let text_borrow = state.buffer.borrow();
-                            let mut text = text_borrow.as_str();
-                            ui.add_sized(ui.available_size(), egui::TextEdit::multiline(&mut text))
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                ui.add(
+                                    egui::TextEdit::multiline(&mut text)
+                                        .text_style(egui::TextStyle::Monospace)
+                                        .desired_width(f32::INFINITY),
+                                );
+                            });
                         });
                 }
             },
