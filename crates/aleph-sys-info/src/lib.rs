@@ -62,7 +62,7 @@ static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
 #[allow(clippy::identity_op)]
 static SYSTEM_MEMORY: Lazy<Option<u64>> = Lazy::new(get_memory);
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", target_vendor = "pc"))]
 fn get_memory() -> Option<u64> {
     use aleph_windows::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
 
@@ -72,6 +72,21 @@ fn get_memory() -> Option<u64> {
             Some(memory * 1024)
         } else {
             None
+        }
+    }
+}
+
+#[cfg(all(target_os = "windows", target_vendor = "uwp"))]
+fn get_memory() -> Option<u64> {
+    use aleph_windows::Win32::System::SystemInformation::GetPhysicallyInstalledSystemMemory;
+
+    unsafe {
+        let mut memory = 0;
+        if GetPhysicallyInstalledSystemMemory(&mut memory) != false {
+            Some(memory * 1024)
+        } else {
+            use aleph_windows::System::MemoryManager;
+            MemoryManager::AppMemoryUsageLimit().ok()
         }
     }
 }
