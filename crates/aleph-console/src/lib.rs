@@ -41,11 +41,8 @@
 extern crate aleph_log as log;
 
 use log::{Level, Metadata, Record};
-use smartstring::{LazyCompact, SmartString};
-use std::cell::RefCell;
 use std::io::{ErrorKind, Write};
 use std::net::TcpStream;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
@@ -53,7 +50,7 @@ use std::sync::Mutex;
 #[derive(Clone)]
 pub struct DebugConsole {
     #[cfg(feature = "console")]
-    inner: Rc<RefCell<rhai::Engine>>,
+    inner: std::rc::Rc<std::cell::RefCell<rhai::Engine>>,
 }
 
 impl DebugConsole {
@@ -65,7 +62,7 @@ impl DebugConsole {
     pub fn new() -> Self {
         let out = Self {
             #[cfg(feature = "console")]
-            inner: Rc::new(RefCell::new(rhai::Engine::new())),
+            inner: std::rc::Rc::new(std::cell::RefCell::new(rhai::Engine::new())),
         };
         out
     }
@@ -97,7 +94,7 @@ impl DebugConsole {
     /// ```
     pub fn register_fn<N, A, F>(&self, name: N, func: F)
     where
-        N: AsRef<str> + Into<SmartString<LazyCompact>>,
+        N: AsRef<str> + Into<smartstring::SmartString<smartstring::LazyCompact>>,
         F: rhai::RegisterNativeFunction<A, ()>,
     {
         self.inner.borrow_mut().register_fn(name, func);
@@ -272,37 +269,46 @@ impl log::Log for Logger {
         }
 
         // First we log to the env logger
+        #[cfg(not(target_vendor = "uwp"))]
         self.env_logger.log(record);
 
-        // Convert error level to integer
-        let level = match record.level() {
-            Level::Error => 0,
-            Level::Warn => 1,
-            Level::Info => 2,
-            Level::Debug => 3,
-            Level::Trace => 4,
-        };
-
-        // Get log target
-        let module = record.target();
-        let payload = format!(
-            "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}\0",
-            module,
-            level,
-            record.args()
-        );
-
-        #[cfg(all(target_os = "windows", debug_assertions))]
+        #[cfg(target_vendor = "uwp")]
         unsafe {
-            let v = aleph_windows::Win32::Foundation::PSTR(payload.as_ptr() as *mut _);
-            aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA(v);
+            let level = match record.level() {
+                Level::Error => "ERROR ",
+                Level::Warn => "WARN  ",
+                Level::Info => "INFO  ",
+                Level::Debug => "DEBUG ",
+                Level::Trace => "TRACE ",
+            };
+            let module = record.target();
 
-            let v = aleph_windows::Win32::Foundation::PSTR("\0\r\n".as_ptr() as *mut _);
+            let payload = format!("[{} {}] {}\r\n\0", level, module, record.args());
+
+            let v = aleph_windows::Win32::Foundation::PSTR(payload.as_ptr() as *mut _);
             aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA(v);
         }
 
         // Then we log to our remote target, if we have one
         if self.has_remote.load(Ordering::Relaxed) {
+            // Convert error level to integer
+            let level = match record.level() {
+                Level::Error => 0,
+                Level::Warn => 1,
+                Level::Info => 2,
+                Level::Debug => 3,
+                Level::Trace => 4,
+            };
+
+            // Get log target
+            let module = record.target();
+            let payload = format!(
+                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}\0",
+                module,
+                level,
+                record.args()
+            );
+
             let mut lock = self.remote.lock().unwrap();
 
             match lock
