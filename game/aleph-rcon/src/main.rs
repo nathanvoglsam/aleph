@@ -37,13 +37,13 @@ use aleph::interfaces::plugin::{
 };
 use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
+use serde::Deserialize;
 use std::cell::RefCell;
 use std::io::{BufRead, BufReader, Read};
 use std::net::{SocketAddr, TcpListener, UdpSocket};
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Arc;
-use serde::Deserialize;
 
 struct PluginGameLogic();
 
@@ -237,9 +237,18 @@ impl ProgramState {
                     let mut stream = BufReader::new(stream);
                     std::thread::spawn(move || loop {
                         let mut buffer = Vec::new();
-                        stream.read_until('{' as u8, &mut buffer).unwrap();
-                        stream.read_until('}' as u8, &mut buffer).unwrap();
-                        sender.send(buffer).unwrap();
+                        let result = stream
+                            .read_until('{' as u8, &mut buffer)
+                            .and_then(|_| stream.read_until('}' as u8, &mut buffer));
+                        match result {
+                            Ok(_) => {
+                                sender.send(buffer).unwrap();
+                            }
+                            Err(e) => {
+                                aleph::log::warn!("Failed to read incoming message '{}'", e);
+                                return;
+                            }
+                        }
                     });
                 } else {
                     aleph::log::warn!("Handshake data is invalid, connection will be dropped");

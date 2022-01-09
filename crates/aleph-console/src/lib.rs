@@ -41,7 +41,7 @@
 extern crate aleph_log as log;
 
 use log::{Level, Metadata, Record};
-use std::io::{ErrorKind, Write};
+use std::io::{BufWriter, Write};
 use std::net::TcpStream;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
@@ -133,22 +133,37 @@ impl DebugConsole {
 ///
 pub struct Logger {
     env_logger: env_logger::Logger,
-    remote: Mutex<Option<TcpStream>>,
+    remote: Option<Mutex<BufWriter<TcpStream>>>,
     has_remote: AtomicBool,
 }
 
 impl Logger {
     /// Consumes `self`, installing this logger as the global logger instance
-    pub fn install(mut self) {
+    pub fn install(mut self) -> Option<TcpStream> {
         let remote = Self::listen_for_and_connect_to_remote().ok().flatten();
 
-        // Add our remote, if we found one
-        self.has_remote.store(remote.is_some(), Ordering::Relaxed);
-        self.remote = Mutex::new(remote);
+        let remote = if let Some(remote) = remote {
+            if let Ok(cloned) = remote.try_clone() {
+                // Flag that we have successfully created a remote connection
+                self.has_remote.store(true, Ordering::Relaxed);
+
+                // Construct our fully wrapper writer and add it to the logger.
+                let writer = BufWriter::new(cloned);
+                self.remote = Some(Mutex::new(writer));
+
+                Some(remote)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         let level = self.env_logger.filter();
         log::set_boxed_logger(Box::new(self)).expect("Attempting to install logger");
         log::set_max_level(level);
+
+        remote
     }
 
     #[cfg(feature = "remote")]
@@ -169,7 +184,7 @@ impl Logger {
 
     #[cfg(feature = "remote")]
     fn connect_to_listener(mut addr: std::net::SocketAddr) -> std::io::Result<TcpStream> {
-        use std::io::{Error, Read};
+        use std::io::{Error, ErrorKind, Read};
         use std::time::Duration;
 
         // The convention is to use the port immediately after the advertisement port
@@ -205,6 +220,7 @@ impl Logger {
 
     #[cfg(feature = "remote")]
     fn find_listener() -> std::io::Result<Option<std::net::SocketAddr>> {
+        use std::io::ErrorKind;
         use std::net::UdpSocket;
         use std::time::{Duration, Instant};
 
@@ -251,7 +267,7 @@ impl From<env_logger::Logger> for Logger {
     fn from(env_logger: env_logger::Logger) -> Self {
         Self {
             env_logger,
-            remote: Mutex::new(None),
+            remote: None,
             has_remote: Default::default(),
         }
     }
@@ -303,29 +319,23 @@ impl log::Log for Logger {
             // Get log target
             let module = record.target();
             let payload = format!(
-                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}\0",
+                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}",
                 module,
                 level,
                 record.args()
             );
 
-            let mut lock = self.remote.lock().unwrap();
+            if let Some(remote) = self.remote.as_ref() {
+                // Lock and write our payload
+                let mut lock = remote.lock().unwrap();
+                let result = lock
+                    .write_all(&payload.as_bytes())
+                    .and_then(|_| lock.flush());
 
-            match lock
-                .as_ref()
-                .unwrap()
-                .write_all(&payload.as_bytes()[0..payload.len() - 1])
-            {
-                Ok(_) => {}
-                Err(e) => match e.kind() {
-                    ErrorKind::ConnectionReset
-                    | ErrorKind::ConnectionAborted
-                    | ErrorKind::TimedOut => {
-                        self.has_remote.store(false, Ordering::Relaxed);
-                        *lock = None;
-                    }
-                    _ => {}
-                },
+                // If we encounter any error we assume we've lost the socket
+                if result.is_err() {
+                    self.has_remote.store(false, Ordering::Relaxed);
+                }
             }
         }
     }
@@ -336,20 +346,15 @@ impl log::Log for Logger {
 
         // Then flush the socket, if we have one
         if self.has_remote.load(Ordering::Relaxed) {
-            // Then flush the socket, if we have one
-            let mut lock = self.remote.lock().unwrap();
+            if let Some(remote) = self.remote.as_ref() {
+                // Lock and write our payload
+                let mut lock = remote.lock().unwrap();
+                let result = lock.flush();
 
-            match lock.as_ref().unwrap().flush() {
-                Ok(_) => {}
-                Err(e) => match e.kind() {
-                    ErrorKind::ConnectionReset
-                    | ErrorKind::ConnectionAborted
-                    | ErrorKind::TimedOut => {
-                        self.has_remote.store(false, Ordering::Relaxed);
-                        *lock = None;
-                    }
-                    _ => {}
-                },
+                // If we encounter any error we assume we've lost the socket
+                if result.is_err() {
+                    self.has_remote.store(false, Ordering::Relaxed);
+                }
             }
         }
     }
