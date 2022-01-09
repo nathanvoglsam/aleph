@@ -67,7 +67,7 @@ impl DebugConsole {
         out
     }
 
-    #[cfg(feature = "rhai")]
+    #[cfg(feature = "console")]
     /// Register a custom function with the [`DebugConsole`].
     ///
     /// # Example
@@ -100,7 +100,6 @@ impl DebugConsole {
         self.inner.borrow_mut().register_fn(name, func);
     }
 
-    #[cfg(feature = "console")]
     /// Evaluate a string containing an expression.
     ///
     /// # Example
@@ -113,6 +112,11 @@ impl DebugConsole {
     /// console.eval("40 + 2");
     /// ```
     pub fn eval(&self, expr: &str) {
+        self.eval_inner(expr)
+    }
+
+    #[cfg(feature = "console")]
+    fn eval_inner(&self, expr: &str) {
         let v: Result<rhai::Dynamic, Box<rhai::EvalAltResult>> =
             self.inner.borrow().eval_expression::<rhai::Dynamic>(expr);
 
@@ -125,6 +129,9 @@ impl DebugConsole {
             }
         }
     }
+
+    #[cfg(not(feature = "console"))]
+    fn eval_inner(&self, _expr: &str) {}
 }
 
 ///
