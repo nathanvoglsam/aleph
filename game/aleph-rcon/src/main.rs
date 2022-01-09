@@ -40,9 +40,10 @@ use aleph::Engine;
 use serde::Deserialize;
 use std::cell::RefCell;
 use std::io::{BufRead, BufReader, Read};
-use std::net::{SocketAddr, TcpListener, UdpSocket};
+use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::rc::Rc;
 use std::str::FromStr;
+use std::sync::mpsc::SyncSender;
 use std::sync::Arc;
 
 struct PluginGameLogic();
@@ -233,23 +234,9 @@ impl ProgramState {
 
                     remote_sender.send(()).unwrap();
 
-                    let sender = sender.clone();
-                    let mut stream = BufReader::new(stream);
-                    std::thread::spawn(move || loop {
-                        let mut buffer = Vec::new();
-                        let result = stream
-                            .read_until('{' as u8, &mut buffer)
-                            .and_then(|_| stream.read_until('}' as u8, &mut buffer));
-                        match result {
-                            Ok(_) => {
-                                sender.send(buffer).unwrap();
-                            }
-                            Err(e) => {
-                                aleph::log::warn!("Failed to read incoming message '{}'", e);
-                                return;
-                            }
-                        }
-                    });
+                    let channel = sender.clone();
+                    let stream = BufReader::new(stream);
+                    std::thread::spawn(move || receiver_thread(channel, stream));
                 } else {
                     aleph::log::warn!("Handshake data is invalid, connection will be dropped");
                 }
@@ -272,4 +259,13 @@ struct Message<'a> {
     r#mod: &'a str,
     r#lvl: i32,
     r#msg: &'a str,
+}
+
+fn receiver_thread(channel: Arc<SyncSender<Vec<u8>>>, mut stream: BufReader<TcpStream>) {
+    loop {
+        let mut buffer = Vec::new();
+        stream.read_until('{' as u8, &mut buffer).unwrap();
+        stream.read_until('}' as u8, &mut buffer).unwrap();
+        channel.send(buffer).unwrap();
+    }
 }
