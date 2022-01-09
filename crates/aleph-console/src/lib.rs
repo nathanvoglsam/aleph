@@ -314,6 +314,15 @@ impl log::Log for Logger {
 
         // Then we log to our remote target, if we have one
         if self.has_remote.load(Ordering::Relaxed) {
+            use serde::Serialize;
+
+            #[derive(Serialize)]
+            struct Message<'a> {
+                r#mod: &'a str,
+                r#lvl: i32,
+                r#msg: &'a str,
+            }
+
             // Convert error level to integer
             let level = match record.level() {
                 Level::Error => 0,
@@ -325,12 +334,16 @@ impl log::Log for Logger {
 
             // Get log target
             let module = record.target();
-            let payload = format!(
-                "{{\"mod\":\"{}\",\"lvl\":{},\"msg\":\"{}\"}}",
-                module,
-                level,
-                record.args()
-            );
+
+            // Resolve message
+            let message = format!("{}", record.args());
+
+            let payload = Message {
+                r#mod: module,
+                lvl: level,
+                msg: &message,
+            };
+            let payload = serde_json::to_string(&payload).unwrap();
 
             if let Some(remote) = self.remote.as_ref() {
                 // Lock and write our payload
