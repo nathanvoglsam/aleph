@@ -35,6 +35,8 @@
 
 [workspace]
 
+resolver = "2"
+
 members = [
     "crates/aleph-any",
     "crates/aleph-compile",
