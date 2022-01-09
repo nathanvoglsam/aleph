@@ -171,18 +171,20 @@ impl IPlugin for PluginGameLogic {
                                             .desired_width(f32::INFINITY),
                                     );
                                 });
-                            ui.horizontal(|ui| {
-                                ui.text_edit_singleline(&mut command_buffer);
-                                if ui.button("Send").clicked() && !command_buffer.is_empty() {
-                                    let remote_cell = remote.take();
-                                    if let Some(r) = remote_cell.as_ref() {
-                                        r.send(command_buffer.clone()).unwrap();
-                                        command_buffer.clear();
-                                    }
-                                    remote.set(remote_cell);
-                                }
-                            })
                         });
+                    egui::TopBottomPanel::bottom("input_bar").show(&egui_ctx, |ui| {
+                        ui.horizontal(|ui| {
+                            ui.text_edit_singleline(&mut command_buffer);
+                            if ui.button("Send").clicked() && !command_buffer.is_empty() {
+                                let remote_cell = remote.take();
+                                if let Some(r) = remote_cell.as_ref() {
+                                    r.send(command_buffer.clone()).unwrap();
+                                    command_buffer.clear();
+                                }
+                                remote.set(remote_cell);
+                            }
+                        });
+                    });
                 }
             },
         );
