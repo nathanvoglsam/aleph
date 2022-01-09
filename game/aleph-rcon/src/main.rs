@@ -39,11 +39,11 @@ use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
 use serde::Deserialize;
 use std::cell::RefCell;
-use std::io::{BufRead, BufReader, Read};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::rc::Rc;
 use std::str::FromStr;
-use std::sync::mpsc::SyncSender;
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::Arc;
 
 struct PluginGameLogic();
@@ -84,21 +84,30 @@ impl IPlugin for PluginGameLogic {
         let program_state = ProgramState::new();
 
         let state = program_state.clone();
-        let mut has_remote = false;
+        let mut remote = None;
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::Update,
             "aleph_rcon::update",
             move || {
-                if !has_remote {
-                    state.broadcast_queue.send(()).unwrap();
+                // Every frame we don't have a remote send a broadcast packet and check for any
+                // remotes who have connected
+                if remote.is_none() {
+                    // Queue up another broadcast packet
+                    state.broadcast_sender.send(()).unwrap();
+
+                    // Poll for a new remote
+                    if let Ok(v) = state.remote_receiver.try_recv() {
+                        // Store the remote channel into the slot so we stop broadcasting and
+                        // polling
+                        remote = Some(v);
+
+                        // Clear the log buffer in case we're starting a new session. This clears
+                        // out the old log data from any previous sessions
+                        state.buffer.borrow_mut().clear();
+                    }
                 }
 
-                if let Ok(_) = state.remote_stream.try_recv() {
-                    has_remote = true;
-                    state.buffer.borrow_mut().clear();
-                }
-
-                while let Ok(msg) = state.message_stream.try_recv() {
+                while let Ok(msg) = state.message_receiver.try_recv() {
                     use std::fmt::Write;
 
                     let text = std::str::from_utf8(&msg).unwrap();
@@ -165,11 +174,8 @@ impl IPlugin for PluginGameLogic {
 aleph::any::declare_interfaces!(PluginGameLogic, [IPlugin]);
 
 fn main() {
-    let platform = aleph::target::build::target_platform();
-    let headless = !platform.is_windows();
-
     let mut engine = Engine::builder();
-    engine.default_plugins(headless);
+    engine.default_plugins(false);
     engine.plugin(PluginGameLogic::new());
     engine.build().run()
 }
@@ -178,78 +184,37 @@ struct ProgramState {
     buffer: RefCell<String>,
     // broadcast_thread: std::thread::JoinHandle<()>,
     // listener_thread: std::thread::JoinHandle<()>,
-    message_stream: std::sync::mpsc::Receiver<Vec<u8>>,
-    broadcast_queue: std::sync::mpsc::SyncSender<()>,
-    remote_stream: std::sync::mpsc::Receiver<()>,
+    /// Channel where all received log messages are published to
+    message_receiver: std::sync::mpsc::Receiver<Vec<u8>>,
+
+    /// Channel that will trigger sending a broadcast packet when published to
+    broadcast_sender: std::sync::mpsc::SyncSender<()>,
+
+    /// Channel which will be published to when a remote connection is successfully established
+    remote_receiver: std::sync::mpsc::Receiver<SyncSender<String>>,
 }
 
 impl ProgramState {
     pub fn new() -> Rc<Self> {
-        let (remote_sender, remote_stream) = std::sync::mpsc::sync_channel(16);
-        let (broadcast_queue, broadcast_stream) = std::sync::mpsc::sync_channel(256);
-        let (message_sender, message_stream) = std::sync::mpsc::sync_channel(1024);
-        let message_sender = Arc::new(message_sender);
+        let (remote_sender, remote_receiver) = std::sync::mpsc::sync_channel(16);
+        let (broadcast_sender, broadcast_receiver) = std::sync::mpsc::sync_channel(256);
+        let (message_sender, message_receiver) = std::sync::mpsc::sync_channel(1024);
 
-        std::thread::spawn(move || {
-            let bind_address = SocketAddr::from_str("0.0.0.0:0").unwrap();
-            let send_address = SocketAddr::from_str("255.255.255.255:42056").unwrap();
-            let socket = UdpSocket::bind(bind_address).unwrap();
-            socket.set_broadcast(true).unwrap();
-            socket.connect(send_address).unwrap();
+        // Spawn persistent thread that handles sending UDP broadcast packets to announce the RCON
+        // is available to connect to
+        std::thread::spawn(move || broadcaster_thread(broadcast_receiver));
 
-            while let Ok(_) = broadcast_stream.recv() {
-                let text = "I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR";
-
-                let bytes = socket.send(text.as_bytes()).unwrap();
-                if bytes != text.len() {
-                    panic!("Sent wrong byte count");
-                }
-            }
-        });
-
-        let sender = message_sender.clone();
-        std::thread::spawn(move || {
-            use std::io::Write;
-
-            let listener = TcpListener::bind("0.0.0.0:42057").unwrap();
-
-            while let Ok((mut stream, from)) = listener.accept() {
-                aleph::log::info!("New remote connected with address: {:?}", from);
-
-                // Read the remote's handshake
-                let mut shake = [0u8; 17];
-                if stream.read_exact(&mut shake).is_err() {
-                    aleph::log::warn!(
-                        "Failed to read handshake request, connection will be dropped"
-                    );
-                    continue;
-                }
-
-                // Read the remote's
-                if let Ok("I_AM_AN_ALEPH_APP") = std::str::from_utf8(&shake) {
-                    // Write the response
-                    stream
-                        .write_all("I_AM_AN_ALEPH_LISTENER".as_bytes())
-                        .unwrap();
-
-                    remote_sender.send(()).unwrap();
-
-                    let channel = sender.clone();
-                    let stream = BufReader::new(stream);
-                    std::thread::spawn(move || receiver_thread(channel, stream));
-                } else {
-                    aleph::log::warn!("Handshake data is invalid, connection will be dropped");
-                }
-            }
-        });
+        // Spawn persistent thread that handles listening on a TCP socket for new connections and
+        // creating threads for any remotes that connect
+        std::thread::spawn(move || listener_thread(remote_sender, Arc::new(message_sender)));
 
         Rc::new(Self {
             buffer: RefCell::new(String::new()),
             // broadcast_thread,
             // listener_thread,
-            message_stream,
-            broadcast_queue,
-            remote_stream,
+            message_receiver,
+            broadcast_sender,
+            remote_receiver,
         })
     }
 }
@@ -267,5 +232,70 @@ fn receiver_thread(channel: Arc<SyncSender<Vec<u8>>>, mut stream: BufReader<TcpS
         stream.read_until('{' as u8, &mut buffer).unwrap();
         stream.read_until('}' as u8, &mut buffer).unwrap();
         channel.send(buffer).unwrap();
+    }
+}
+
+fn sender_thread(channel: Receiver<String>, mut stream: BufWriter<TcpStream>) {
+    while let Ok(command) = channel.recv() {
+        stream.write(&[0]).unwrap();
+        stream.write(command.as_bytes()).unwrap();
+        stream.write(&[0]).unwrap();
+        stream.flush().unwrap();
+    }
+}
+
+fn broadcaster_thread(broadcast_receiver: Receiver<()>) {
+    let bind_address = SocketAddr::from_str("0.0.0.0:0").unwrap();
+    let send_address = SocketAddr::from_str("255.255.255.255:42056").unwrap();
+    let socket = UdpSocket::bind(bind_address).unwrap();
+    socket.set_broadcast(true).unwrap();
+    socket.connect(send_address).unwrap();
+
+    while let Ok(_) = broadcast_receiver.recv() {
+        let text = "I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR";
+
+        let bytes = socket.send(text.as_bytes()).unwrap();
+        if bytes != text.len() {
+            panic!("Sent wrong byte count");
+        }
+    }
+}
+
+fn listener_thread(
+    remote_sender: SyncSender<SyncSender<String>>,
+    message_sender: Arc<SyncSender<Vec<u8>>>,
+) {
+    let listener = TcpListener::bind("0.0.0.0:42057").unwrap();
+
+    while let Ok((mut stream, from)) = listener.accept() {
+        aleph::log::info!("New remote connected with address: {:?}", from);
+
+        // Read the remote's handshake
+        let mut shake = [0u8; 17];
+        if stream.read_exact(&mut shake).is_err() {
+            aleph::log::warn!("Failed to read handshake request, connection will be dropped");
+            continue;
+        }
+
+        // Read the remote's
+        if let Ok("I_AM_AN_ALEPH_APP") = std::str::from_utf8(&shake) {
+            // Write the response
+            let response = "I_AM_AN_ALEPH_LISTENER";
+            stream.write_all(response.as_bytes()).unwrap();
+
+            // Setup and spawn receiver thread
+            let message_sender = message_sender.clone();
+            let recv_stream = BufReader::new(stream.try_clone().unwrap());
+            std::thread::spawn(move || receiver_thread(message_sender, recv_stream));
+
+            // Setup and spawn sender thread
+            let (command_sender, command_receiver) = std::sync::mpsc::sync_channel(1024);
+            let send_stream = BufWriter::new(stream);
+            std::thread::spawn(move || sender_thread(command_receiver, send_stream));
+
+            remote_sender.send(command_sender).unwrap();
+        } else {
+            aleph::log::warn!("Handshake data is invalid, connection will be dropped");
+        }
     }
 }
