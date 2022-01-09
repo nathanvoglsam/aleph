@@ -30,15 +30,18 @@
 use crate::console_provider::ConsoleProvider;
 use crate::schedule_provider::ScheduleProvider;
 use crate::world_provider::WorldProvider;
+use aleph_label::Label;
 use aleph_log::LevelFilter;
 use interfaces::any::AnyArc;
-use interfaces::console::IDebugConsoleProvider;
+use interfaces::console::{DebugConsole, IDebugConsoleProvider};
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
 use interfaces::schedule::{CoreStage, IScheduleProvider, Schedule, Stage, SystemSchedule};
 use interfaces::world::IWorldProvider;
 use std::any::TypeId;
+use std::io::BufReader;
+use std::net::TcpStream;
 
 pub struct PluginCore {
     world_provider: AnyArc<WorldProvider>,
@@ -53,9 +56,48 @@ impl PluginCore {
         let env_logger = env_logger::Builder::from_default_env()
             .filter_level(LevelFilter::Trace)
             .build();
-        interfaces::console::Logger::from(env_logger).install();
+        let command_stream = interfaces::console::Logger::from(env_logger).install();
+
+        // Construct the debug console. If the console feature is disabled then this will just make
+        // an empty object so we don't need to be conditional here
+        let debug_console = DebugConsole::new();
+
+        // Construct a thread that handles reading messages from the remote console and publishes
+        // complete command messages to a channel which can be read by the main thread.
+        //
+        // This transparently handles when the "remote" feature is disabled as Logger::install will
+        // just always return None and so this code will never execute.
+        let channel = if let Some(command_stream) = command_stream {
+            // Construct our channel
+            let (channel, receiver) = std::sync::mpsc::sync_channel(1024);
+
+            // Build the persistent thread, sending the channel and command stream over
+            std::thread::spawn(move || receiver_thread(channel, BufReader::new(command_stream)));
+
+            Some(receiver)
+        } else {
+            None
+        };
+
+        let mut core_schedule = SystemSchedule::default();
+
+        // Add a system that runs at the absolute very start of the frame for handling rcon
+        // commands. No feature gating is needed here as when "remote" is disabled the channel will
+        // never be constructed so this will never execute.
+        if let Some(channel) = channel {
+            let console = debug_console.clone();
+            core_schedule.add_exclusive_at_start_system(
+                "aleph_core::internal_core_stage",
+                move || {
+                    while let Ok(message) = channel.try_recv() {
+                        console.eval(&message);
+                    }
+                },
+            );
+        }
 
         let mut schedule = Schedule::default();
+        schedule.add_stage(InternalStage::Core, core_schedule);
         schedule.add_stage(CoreStage::InputCollection, SystemSchedule::default());
         schedule.add_stage(CoreStage::PreUpdate, SystemSchedule::default());
         schedule.add_stage(CoreStage::Update, SystemSchedule::default());
@@ -64,7 +106,7 @@ impl PluginCore {
 
         let world_provider = AnyArc::new(WorldProvider::new());
         let schedule_provider = AnyArc::new(ScheduleProvider::new(schedule));
-        let console_provider = AnyArc::new(ConsoleProvider::new());
+        let console_provider = AnyArc::new(ConsoleProvider::new(debug_console));
         Self {
             world_provider,
             schedule_provider,
@@ -123,3 +165,39 @@ impl IPlugin for PluginCore {
 }
 
 interfaces::any::declare_interfaces!(PluginCore, [IPlugin]);
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
+enum InternalStage {
+    Core,
+}
+
+impl Label for InternalStage {
+    fn dyn_clone(&self) -> Box<dyn Label> {
+        Box::new(*self)
+    }
+}
+
+fn receiver_thread(channel: std::sync::mpsc::SyncSender<String>, mut stream: BufReader<TcpStream>) {
+    use std::io::BufRead;
+
+    let mut buffer = Vec::new();
+    loop {
+        // Clear the buffer from last iteration
+        buffer.clear();
+
+        // All commands are delimited by null bytes, this will read a single well formed message
+        // into buffer.
+        stream.read_until('\0' as u8, &mut buffer).unwrap();
+        stream.read_until('\0' as u8, &mut buffer).unwrap();
+
+        // Buffer will contain the delimiters so we strip them
+        let slice = buffer.strip_prefix(&[0]).unwrap();
+        let slice = slice.strip_suffix(&[0]).unwrap();
+
+        // Then verify the message is valid UTF8
+        let string = std::str::from_utf8(slice).unwrap();
+
+        // Finally we can send the command onto the channel
+        channel.send(string.to_string()).unwrap();
+    }
+}

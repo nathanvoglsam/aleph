@@ -34,10 +34,8 @@ pub struct ConsoleProvider {
 }
 
 impl ConsoleProvider {
-    pub fn new() -> Self {
-        Self {
-            console: DebugConsole::new(),
-        }
+    pub fn new(console: DebugConsole) -> Self {
+        Self { console }
     }
 }
 
