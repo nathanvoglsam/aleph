@@ -38,7 +38,7 @@ use aleph::interfaces::plugin::{
 use aleph::interfaces::schedule::{CoreStage, IScheduleProvider};
 use aleph::Engine;
 use serde::Deserialize;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 use std::net::{SocketAddr, TcpListener, TcpStream, UdpSocket};
 use std::rc::Rc;
@@ -82,16 +82,19 @@ impl IPlugin for PluginGameLogic {
         let mut schedule = schedule_cell.get();
 
         let program_state = ProgramState::new();
+        let remote_connection = Rc::new(Cell::new(None));
 
         let state = program_state.clone();
-        let mut remote = None;
+        let remote = remote_connection.clone();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::Update,
             "aleph_rcon::update",
             move || {
+                let mut remote_cell = remote.take();
+
                 // Every frame we don't have a remote send a broadcast packet and check for any
                 // remotes who have connected
-                if remote.is_none() {
+                if remote_cell.is_none() {
                     // Queue up another broadcast packet
                     state.broadcast_sender.send(()).unwrap();
 
@@ -99,7 +102,7 @@ impl IPlugin for PluginGameLogic {
                     if let Ok(v) = state.remote_receiver.try_recv() {
                         // Store the remote channel into the slot so we stop broadcasting and
                         // polling
-                        remote = Some(v);
+                        remote_cell = Some(v);
 
                         // Clear the log buffer in case we're starting a new session. This clears
                         // out the old log data from any previous sessions
@@ -127,10 +130,14 @@ impl IPlugin for PluginGameLogic {
                     let mut buffer_borrow = state.buffer.borrow_mut();
                     writeln!(&mut buffer_borrow, "[{} {}] {}", level, module, message).unwrap();
                 }
+
+                remote.set(remote_cell);
             },
         );
 
         let state = program_state.clone();
+        let remote = remote_connection.clone();
+        let mut command_buffer = String::new();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::Render,
             "aleph_rcon::render",
@@ -155,13 +162,26 @@ impl IPlugin for PluginGameLogic {
                     egui::CentralPanel::default()
                         .frame(frame)
                         .show(&egui_ctx, |ui| {
-                            egui::ScrollArea::vertical().show(ui, |ui| {
-                                ui.add(
-                                    egui::TextEdit::multiline(&mut text)
-                                        .text_style(egui::TextStyle::Monospace)
-                                        .desired_width(f32::INFINITY),
-                                );
-                            });
+                            egui::ScrollArea::vertical()
+                                .max_height(f32::INFINITY)
+                                .show(ui, |ui| {
+                                    ui.add(
+                                        egui::TextEdit::multiline(&mut text)
+                                            .text_style(egui::TextStyle::Monospace)
+                                            .desired_width(f32::INFINITY),
+                                    );
+                                });
+                            ui.horizontal(|ui| {
+                                ui.text_edit_singleline(&mut command_buffer);
+                                if ui.button("Send").clicked() && !command_buffer.is_empty() {
+                                    let remote_cell = remote.take();
+                                    if let Some(r) = remote_cell.as_ref() {
+                                        r.send(command_buffer.clone()).unwrap();
+                                        command_buffer.clear();
+                                    }
+                                    remote.set(remote_cell);
+                                }
+                            })
                         });
                 }
             },
@@ -181,9 +201,9 @@ fn main() {
 }
 
 struct ProgramState {
+    /// Buffer that log messages are written into for display in the UI
     buffer: RefCell<String>,
-    // broadcast_thread: std::thread::JoinHandle<()>,
-    // listener_thread: std::thread::JoinHandle<()>,
+
     /// Channel where all received log messages are published to
     message_receiver: std::sync::mpsc::Receiver<Vec<u8>>,
 
@@ -223,7 +243,7 @@ impl ProgramState {
 struct Message<'a> {
     r#mod: &'a str,
     r#lvl: i32,
-    r#msg: &'a str,
+    r#msg: String,
 }
 
 fn receiver_thread(channel: Arc<SyncSender<Vec<u8>>>, mut stream: BufReader<TcpStream>) {
