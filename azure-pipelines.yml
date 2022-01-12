@@ -3,7 +3,7 @@ jobs:
     pool:
       vmImage: "windows-latest"
     steps:
-      - template: "ci/rust-ci.yml"
+      - template: ".ci/rust-ci.yml"
         parameters:
           setupSteps:
             - powershell: |
