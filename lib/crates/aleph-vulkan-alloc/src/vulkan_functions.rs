@@ -44,6 +44,7 @@ impl VulkanFunctionsBuilder {
     ///
     /// Construct a new VulkanFunctionsBuilder
     ///
+    #[inline]
     pub fn new() -> Self {
         let functions = raw::VmaVulkanFunctions {
             vkGetPhysicalDeviceProperties: None,
@@ -73,6 +74,7 @@ impl VulkanFunctionsBuilder {
     ///
     /// Fill out the function pointers from erupt's function pointer tables
     ///
+    #[inline]
     pub fn erupt_tables(
         mut self,
         instance_loader: &InstanceLoader,
@@ -202,6 +204,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_physical_device_properties(
         mut self,
         f: raw::PFN_vkGetPhysicalDeviceProperties,
@@ -213,6 +216,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_physical_device_memory_properties(
         mut self,
         f: raw::PFN_vkGetPhysicalDeviceMemoryProperties,
@@ -224,6 +228,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn allocate_memory(mut self, f: raw::PFN_vkAllocateMemory) -> Self {
         self.functions.vkAllocateMemory = f;
         self
@@ -232,6 +237,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn free_memory(mut self, f: raw::PFN_vkFreeMemory) -> Self {
         self.functions.vkFreeMemory = f;
         self
@@ -240,6 +246,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn map_memory(mut self, f: raw::PFN_vkMapMemory) -> Self {
         self.functions.vkMapMemory = f;
         self
@@ -248,6 +255,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn unmap_memory(mut self, f: raw::PFN_vkUnmapMemory) -> Self {
         self.functions.vkUnmapMemory = f;
         self
@@ -256,6 +264,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn flush_mapped_memory_ranges(mut self, f: raw::PFN_vkFlushMappedMemoryRanges) -> Self {
         self.functions.vkFlushMappedMemoryRanges = f;
         self
@@ -264,6 +273,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn invalidate_mapped_memory_ranges(
         mut self,
         f: raw::PFN_vkInvalidateMappedMemoryRanges,
@@ -275,6 +285,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn bind_buffer_memory(mut self, f: raw::PFN_vkBindBufferMemory) -> Self {
         self.functions.vkBindBufferMemory = f;
         self
@@ -283,6 +294,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn bind_image_memory(mut self, f: raw::PFN_vkBindImageMemory) -> Self {
         self.functions.vkBindImageMemory = f;
         self
@@ -291,6 +303,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_buffer_memory_requirements(
         mut self,
         f: raw::PFN_vkGetBufferMemoryRequirements,
@@ -302,6 +315,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_image_memory_requirements(
         mut self,
         f: raw::PFN_vkGetImageMemoryRequirements,
@@ -313,6 +327,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn create_buffer(mut self, f: raw::PFN_vkCreateBuffer) -> Self {
         self.functions.vkCreateBuffer = f;
         self
@@ -321,6 +336,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn destroy_buffer(mut self, f: raw::PFN_vkDestroyBuffer) -> Self {
         self.functions.vkDestroyBuffer = f;
         self
@@ -329,6 +345,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn create_image(mut self, f: raw::PFN_vkCreateImage) -> Self {
         self.functions.vkCreateImage = f;
         self
@@ -337,6 +354,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn destroy_image(mut self, f: raw::PFN_vkDestroyImage) -> Self {
         self.functions.vkDestroyImage = f;
         self
@@ -345,6 +363,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn cmd_copy_buffer(mut self, f: raw::PFN_vkCmdCopyBuffer) -> Self {
         self.functions.vkCmdCopyBuffer = f;
         self
@@ -353,6 +372,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_buffer_memory_requirements2_khr(
         mut self,
         f: raw::PFN_vkGetBufferMemoryRequirements2KHR,
@@ -364,6 +384,7 @@ impl VulkanFunctionsBuilder {
     ///
     ///
     ///
+    #[inline]
     pub fn get_image_memory_requirements2_khr(
         mut self,
         f: raw::PFN_vkGetImageMemoryRequirements2KHR,
@@ -375,12 +396,13 @@ impl VulkanFunctionsBuilder {
     ///
     /// Return the VmaVulkanFunctions struct if it is valid, otherwise return None
     ///
-    pub fn build(self) -> raw::VmaVulkanFunctions {
+    pub const fn build(self) -> raw::VmaVulkanFunctions {
         self.functions
     }
 }
 
 impl Default for VulkanFunctionsBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

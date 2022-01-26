@@ -91,11 +91,11 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         PoolBuilder {
             create_info: PoolCreateInfo {
                 memory_type_index: 0,
-                flags: PoolCreateFlag::from(0u32),
+                flags: PoolCreateFlag(0u32),
                 block_size: 0,
                 min_block_count: 0,
                 max_block_count: 0,
@@ -107,7 +107,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn memory_type_index(mut self, index: u32) -> Self {
+    pub const fn memory_type_index(mut self, index: u32) -> Self {
         self.create_info.memory_type_index = index;
         self
     }
@@ -115,7 +115,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn flags(mut self, flags: PoolCreateFlag) -> Self {
+    pub const fn flags(mut self, flags: PoolCreateFlag) -> Self {
         self.create_info.flags = flags;
         self
     }
@@ -123,7 +123,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn block_size(mut self, size: DeviceSize) -> Self {
+    pub const fn block_size(mut self, size: DeviceSize) -> Self {
         self.create_info.block_size = size;
         self
     }
@@ -131,7 +131,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn min_block_count(mut self, count: usize) -> Self {
+    pub const fn min_block_count(mut self, count: usize) -> Self {
         self.create_info.min_block_count = count;
         self
     }
@@ -139,7 +139,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn max_block_count(mut self, count: usize) -> Self {
+    pub const fn max_block_count(mut self, count: usize) -> Self {
         self.create_info.max_block_count = count;
         self
     }
@@ -147,7 +147,7 @@ impl PoolBuilder {
     ///
     ///
     ///
-    pub fn frame_in_use_count(mut self, count: u32) -> Self {
+    pub const fn frame_in_use_count(mut self, count: u32) -> Self {
         self.create_info.frame_in_use_count = count;
         self
     }
@@ -155,6 +155,7 @@ impl PoolBuilder {
     ///
     /// vmaCreatePool
     ///
+    #[inline]
     pub unsafe fn build(self, allocator: &Arc<Allocator>) -> VulkanResult<Arc<Pool>> {
         let mut pool: raw::VmaPool = ptr::null_mut();
 
@@ -203,13 +204,14 @@ impl Pool {
     ///
     /// Returns the underlying raw::VmaPool for use with raw function calls
     ///
-    pub fn get_raw(&self) -> raw::VmaPool {
+    pub const fn get_raw(&self) -> raw::VmaPool {
         self.pool
     }
 
     ///
     /// vmaGetPoolStats
     ///
+    #[inline]
     pub unsafe fn get_pool_stats(&self) -> raw::VmaPoolStats {
         let mut stats = raw::VmaPoolStats {
             size: 0,
@@ -232,6 +234,7 @@ impl Pool {
     ///
     /// vmaMakePoolAllocationsLost
     ///
+    #[inline]
     pub unsafe fn make_pool_allocations_lost(&self) -> usize {
         let mut out = 0usize;
 
@@ -244,6 +247,7 @@ impl Pool {
         out
     }
 
+    #[inline]
     pub unsafe fn check_pool_corruption(&self) -> VulkanResult<()> {
         let result = raw::vmaCheckPoolCorruption(self.allocator.as_raw(), self.pool);
 
@@ -256,6 +260,7 @@ impl Pool {
 }
 
 impl Drop for Pool {
+    #[inline]
     fn drop(&mut self) {
         unsafe {
             raw::vmaDestroyPool(self.allocator.as_raw(), self.pool);

@@ -154,21 +154,21 @@ impl MemoryUsage {
     ///
     /// Convert a raw VmaMemoryUsage enum into our nice rust wrapper
     ///
-    pub fn from_raw(memory_usage: raw::VmaMemoryUsage) -> Self {
+    pub const fn from_raw(memory_usage: raw::VmaMemoryUsage) -> Self {
         match memory_usage {
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN => MemoryUsage::Unknown,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY => MemoryUsage::GPUOnly,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_ONLY => MemoryUsage::CPUOnly,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_CPU_TO_GPU => MemoryUsage::CPUToGPU,
             raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_TO_CPU => MemoryUsage::GPUToCPU,
-            _ => unreachable!("Invalid VmaMemoryUsage variant"),
+            _ => panic!("Invalid VmaMemoryUsage variant"),
         }
     }
 
     ///
     /// Convert our enum back into the raw VmaMemoryUsage value
     ///
-    pub fn into_raw(self) -> raw::VmaMemoryUsage {
+    pub const fn into_raw(self) -> raw::VmaMemoryUsage {
         match self {
             MemoryUsage::Unknown => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_UNKNOWN,
             MemoryUsage::GPUOnly => raw::VmaMemoryUsage_VMA_MEMORY_USAGE_GPU_ONLY,
@@ -193,21 +193,24 @@ impl Allocation {
     ///
     /// Must have a lifetime shorter than it's parent allocator
     ///
-    pub fn from_raw(allocation: raw::VmaAllocation) -> Self {
+    pub const fn from_raw(allocation: raw::VmaAllocation) -> Self {
         Allocation { allocation }
     }
 
     ///
     /// Gets a "null" allocation
     ///
-    pub fn null() -> Self {
-        Self::default()
+    #[inline]
+    pub const fn null() -> Self {
+        Self {
+            allocation: ptr::null_mut(),
+        }
     }
 
     ///
     /// Returns the underlying raw::VmaAllocation for use with raw function calls
     ///
-    pub fn into_raw(self) -> raw::VmaAllocation {
+    pub const fn into_raw(self) -> raw::VmaAllocation {
         self.allocation
     }
 
@@ -249,11 +252,11 @@ pub struct AllocationCreateInfo {
 }
 
 impl AllocationCreateInfo {
-    pub fn builder() -> AllocationCreateInfoBuilder {
+    pub const fn builder() -> AllocationCreateInfoBuilder {
         AllocationCreateInfoBuilder::new()
     }
 
-    pub(crate) fn into_raw(self) -> raw::VmaAllocationCreateInfo {
+    pub(crate) const fn into_raw(self) -> raw::VmaAllocationCreateInfo {
         raw::VmaAllocationCreateInfo {
             flags: self.flags.0 as u32,
             usage: self.usage.into_raw(),
@@ -277,9 +280,9 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         let info = AllocationCreateInfo {
-            flags: AllocationCreateFlag::from(0),
+            flags: AllocationCreateFlag(0),
             usage: MemoryUsage::Unknown,
             required_flags: MemoryPropertyFlags::empty(),
             preferred_flags: MemoryPropertyFlags::empty(),
@@ -293,7 +296,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn flags(mut self, flags: AllocationCreateFlag) -> Self {
+    pub const fn flags(mut self, flags: AllocationCreateFlag) -> Self {
         self.info.flags = flags;
         self
     }
@@ -301,7 +304,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn required_flags(mut self, flags: MemoryPropertyFlags) -> Self {
+    pub const fn required_flags(mut self, flags: MemoryPropertyFlags) -> Self {
         self.info.required_flags = flags;
         self
     }
@@ -309,7 +312,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn preferred_flags(mut self, flags: MemoryPropertyFlags) -> Self {
+    pub const fn preferred_flags(mut self, flags: MemoryPropertyFlags) -> Self {
         self.info.preferred_flags = flags;
         self
     }
@@ -317,7 +320,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn usage(mut self, usage: MemoryUsage) -> Self {
+    pub const fn usage(mut self, usage: MemoryUsage) -> Self {
         self.info.usage = usage;
         self
     }
@@ -325,7 +328,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn pool(mut self, pool: &Pool) -> Self {
+    pub const fn pool(mut self, pool: &Pool) -> Self {
         self.info.pool = pool.get_raw();
         self
     }
@@ -333,7 +336,7 @@ impl AllocationCreateInfoBuilder {
     ///
     ///
     ///
-    pub fn build(self) -> AllocationCreateInfo {
+    pub const fn build(self) -> AllocationCreateInfo {
         self.info
     }
 }

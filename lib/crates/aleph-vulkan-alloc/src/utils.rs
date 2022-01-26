@@ -32,6 +32,7 @@ use aleph_vulkan_alloc_sys::raw;
 ///
 /// Checks for the minimum required functions for vma allocator
 ///
+#[inline]
 pub fn allocator_functions_valid(funcs: &raw::VmaVulkanFunctions) -> bool {
     if funcs.vkGetPhysicalDeviceProperties.is_none() {
         return false;

@@ -49,6 +49,7 @@ pub struct StatInfo {
 }
 
 impl Default for StatInfo {
+    #[inline]
     fn default() -> Self {
         StatInfo {
             block_count: 0,
@@ -78,6 +79,7 @@ pub struct Stats {
 }
 
 impl Default for Stats {
+    #[inline]
     fn default() -> Self {
         Stats {
             memory_type: [StatInfo::default(); 32],
@@ -102,6 +104,7 @@ pub struct PoolStats {
 }
 
 impl Default for PoolStats {
+    #[inline]
     fn default() -> Self {
         PoolStats {
             size: 0,
