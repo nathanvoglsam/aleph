@@ -130,66 +130,46 @@ impl Platform {
     /// Is this platform any of the win32 (non universal) windows platforms {
     ///
     pub const fn is_win32(self) -> bool {
-        match self {
-            Platform::WindowsMSVC | Platform::WindowsGNU => true,
-            _ => false,
-        }
+        matches!(self, Platform::WindowsMSVC | Platform::WindowsGNU)
     }
 
     /// Is this platform any of the windows or universal windows platforms
     pub const fn is_windows(self) -> bool {
-        match self {
+        matches!(
+            self,
             Platform::WindowsMSVC
-            | Platform::WindowsGNU
-            | Platform::UniversalWindowsGNU
-            | Platform::UniversalWindowsMSVC => true,
-            _ => false,
-        }
+                | Platform::WindowsGNU
+                | Platform::UniversalWindowsGNU
+                | Platform::UniversalWindowsMSVC
+        )
     }
 
     /// Is this platform any of the universal windows platforms
     pub const fn is_uwp(self) -> bool {
-        match self {
-            Platform::UniversalWindowsGNU | Platform::UniversalWindowsMSVC => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Platform::UniversalWindowsGNU | Platform::UniversalWindowsMSVC
+        )
     }
 
     pub const fn is_linux(self) -> bool {
-        match self {
-            Platform::Linux => true,
-            _ => false,
-        }
+        matches!(self, Platform::Linux)
     }
 
     pub const fn is_msvc(self) -> bool {
-        match self {
-            Platform::WindowsMSVC => true,
-            Platform::UniversalWindowsMSVC => true,
-            _ => false,
-        }
+        matches!(self, Platform::WindowsMSVC | Platform::UniversalWindowsMSVC)
     }
 
     pub const fn is_gnu(self) -> bool {
-        match self {
-            Platform::WindowsGNU => true,
-            Platform::UniversalWindowsGNU => true,
-            _ => false,
-        }
+        matches!(self, Platform::WindowsGNU | Platform::UniversalWindowsGNU)
     }
 
     pub const fn is_android(self) -> bool {
-        match self {
-            Platform::Android => true,
-            _ => false,
-        }
+        matches!(self, Platform::Android)
     }
 
     pub const fn is_unknown(self) -> bool {
-        match self {
-            Platform::Unknown => true,
-            _ => false,
-        }
+        matches!(self, Platform::Unknown)
     }
 }
 

@@ -86,20 +86,14 @@ impl Architecture {
     /// Are we building for x86-64
     ///
     pub const fn is_x86_64(self) -> bool {
-        match self {
-            Architecture::X8664 => true,
-            _ => false,
-        }
+        matches!(self, Architecture::X8664)
     }
 
     ///
     /// Are we building for aarch64 (ARM 64bit)
     ///
     pub const fn is_aarch64(self) -> bool {
-        match self {
-            Architecture::AARCH64 => true,
-            _ => false,
-        }
+        matches!(self, Architecture::AARCH64)
     }
 }
 

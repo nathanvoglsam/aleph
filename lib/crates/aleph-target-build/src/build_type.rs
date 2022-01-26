@@ -86,24 +86,15 @@ impl BuildType {
     }
 
     pub const fn is_release(self) -> bool {
-        match self {
-            BuildType::Release => true,
-            _ => false,
-        }
+        matches!(self, BuildType::Release)
     }
 
     pub const fn is_debug(self) -> bool {
-        match self {
-            BuildType::Debug => true,
-            _ => false,
-        }
+        matches!(self, BuildType::Debug)
     }
 
     pub const fn is_unknown(self) -> bool {
-        match self {
-            BuildType::Unknown => true,
-            _ => false,
-        }
+        matches!(self, BuildType::Unknown)
     }
 }
 
