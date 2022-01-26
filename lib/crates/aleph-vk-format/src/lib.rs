@@ -324,134 +324,134 @@ impl VkFormat {
     /// This returns if the format can at most represent 1 bit of alpha
     ///
     pub const fn is_1bit_alpha(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::R5G5B5A1_UNORM_PACK16
-            | VkFormat::B5G5R5A1_UNORM_PACK16
-            | VkFormat::A1R5G5B5_UNORM_PACK16
-            | VkFormat::BC1_RGBA_UNORM_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK => true,
-            _ => false,
-        }
+                | VkFormat::B5G5R5A1_UNORM_PACK16
+                | VkFormat::A1R5G5B5_UNORM_PACK16
+                | VkFormat::BC1_RGBA_UNORM_BLOCK
+                | VkFormat::BC1_RGBA_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+        )
     }
 
     ///
     /// Returns whether this format has an alpha channel
     ///
     pub const fn has_alpha(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::R4G4B4A4_UNORM_PACK16
-            | VkFormat::B4G4R4A4_UNORM_PACK16
-            | VkFormat::R5G5B5A1_UNORM_PACK16
-            | VkFormat::B5G5R5A1_UNORM_PACK16
-            | VkFormat::A1R5G5B5_UNORM_PACK16
-            | VkFormat::R8G8B8A8_UNORM
-            | VkFormat::R8G8B8A8_SNORM
-            | VkFormat::R8G8B8A8_USCALED
-            | VkFormat::R8G8B8A8_SSCALED
-            | VkFormat::R8G8B8A8_UINT
-            | VkFormat::R8G8B8A8_SINT
-            | VkFormat::R8G8B8A8_SRGB
-            | VkFormat::B8G8R8A8_UNORM
-            | VkFormat::B8G8R8A8_SNORM
-            | VkFormat::B8G8R8A8_USCALED
-            | VkFormat::B8G8R8A8_SSCALED
-            | VkFormat::B8G8R8A8_UINT
-            | VkFormat::B8G8R8A8_SINT
-            | VkFormat::B8G8R8A8_SRGB
-            | VkFormat::A8B8G8R8_UNORM_PACK32
-            | VkFormat::A8B8G8R8_SNORM_PACK32
-            | VkFormat::A8B8G8R8_USCALED_PACK32
-            | VkFormat::A8B8G8R8_SSCALED_PACK32
-            | VkFormat::A8B8G8R8_UINT_PACK32
-            | VkFormat::A8B8G8R8_SINT_PACK32
-            | VkFormat::A8B8G8R8_SRGB_PACK32
-            | VkFormat::A2R10G10B10_UNORM_PACK32
-            | VkFormat::A2R10G10B10_SNORM_PACK32
-            | VkFormat::A2R10G10B10_USCALED_PACK32
-            | VkFormat::A2R10G10B10_SSCALED_PACK32
-            | VkFormat::A2R10G10B10_UINT_PACK32
-            | VkFormat::A2R10G10B10_SINT_PACK32
-            | VkFormat::A2B10G10R10_UNORM_PACK32
-            | VkFormat::A2B10G10R10_SNORM_PACK32
-            | VkFormat::A2B10G10R10_USCALED_PACK32
-            | VkFormat::A2B10G10R10_SSCALED_PACK32
-            | VkFormat::A2B10G10R10_UINT_PACK32
-            | VkFormat::A2B10G10R10_SINT_PACK32
-            | VkFormat::R16G16B16A16_UNORM
-            | VkFormat::R16G16B16A16_SNORM
-            | VkFormat::R16G16B16A16_USCALED
-            | VkFormat::R16G16B16A16_SSCALED
-            | VkFormat::R16G16B16A16_UINT
-            | VkFormat::R16G16B16A16_SINT
-            | VkFormat::R16G16B16A16_SFLOAT
-            | VkFormat::R32G32B32A32_UINT
-            | VkFormat::R32G32B32A32_SINT
-            | VkFormat::R32G32B32A32_SFLOAT
-            | VkFormat::R64G64B64A64_UINT
-            | VkFormat::R64G64B64A64_SINT
-            | VkFormat::R64G64B64A64_SFLOAT
-            | VkFormat::BC1_RGBA_UNORM_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
-            | VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
-            | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
-            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::B4G4R4A4_UNORM_PACK16
+                | VkFormat::R5G5B5A1_UNORM_PACK16
+                | VkFormat::B5G5R5A1_UNORM_PACK16
+                | VkFormat::A1R5G5B5_UNORM_PACK16
+                | VkFormat::R8G8B8A8_UNORM
+                | VkFormat::R8G8B8A8_SNORM
+                | VkFormat::R8G8B8A8_USCALED
+                | VkFormat::R8G8B8A8_SSCALED
+                | VkFormat::R8G8B8A8_UINT
+                | VkFormat::R8G8B8A8_SINT
+                | VkFormat::R8G8B8A8_SRGB
+                | VkFormat::B8G8R8A8_UNORM
+                | VkFormat::B8G8R8A8_SNORM
+                | VkFormat::B8G8R8A8_USCALED
+                | VkFormat::B8G8R8A8_SSCALED
+                | VkFormat::B8G8R8A8_UINT
+                | VkFormat::B8G8R8A8_SINT
+                | VkFormat::B8G8R8A8_SRGB
+                | VkFormat::A8B8G8R8_UNORM_PACK32
+                | VkFormat::A8B8G8R8_SNORM_PACK32
+                | VkFormat::A8B8G8R8_USCALED_PACK32
+                | VkFormat::A8B8G8R8_SSCALED_PACK32
+                | VkFormat::A8B8G8R8_UINT_PACK32
+                | VkFormat::A8B8G8R8_SINT_PACK32
+                | VkFormat::A8B8G8R8_SRGB_PACK32
+                | VkFormat::A2R10G10B10_UNORM_PACK32
+                | VkFormat::A2R10G10B10_SNORM_PACK32
+                | VkFormat::A2R10G10B10_USCALED_PACK32
+                | VkFormat::A2R10G10B10_SSCALED_PACK32
+                | VkFormat::A2R10G10B10_UINT_PACK32
+                | VkFormat::A2R10G10B10_SINT_PACK32
+                | VkFormat::A2B10G10R10_UNORM_PACK32
+                | VkFormat::A2B10G10R10_SNORM_PACK32
+                | VkFormat::A2B10G10R10_USCALED_PACK32
+                | VkFormat::A2B10G10R10_SSCALED_PACK32
+                | VkFormat::A2B10G10R10_UINT_PACK32
+                | VkFormat::A2B10G10R10_SINT_PACK32
+                | VkFormat::R16G16B16A16_UNORM
+                | VkFormat::R16G16B16A16_SNORM
+                | VkFormat::R16G16B16A16_USCALED
+                | VkFormat::R16G16B16A16_SSCALED
+                | VkFormat::R16G16B16A16_UINT
+                | VkFormat::R16G16B16A16_SINT
+                | VkFormat::R16G16B16A16_SFLOAT
+                | VkFormat::R32G32B32A32_UINT
+                | VkFormat::R32G32B32A32_SINT
+                | VkFormat::R32G32B32A32_SFLOAT
+                | VkFormat::R64G64B64A64_UINT
+                | VkFormat::R64G64B64A64_SINT
+                | VkFormat::R64G64B64A64_SFLOAT
+                | VkFormat::BC1_RGBA_UNORM_BLOCK
+                | VkFormat::BC1_RGBA_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+                | VkFormat::ASTC_4X4_UNORM_BLOCK
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
+                | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -496,10 +496,10 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc1_alpha(self) -> bool {
-        match self {
-            VkFormat::BC1_RGBA_SRGB_BLOCK | VkFormat::BC1_RGBA_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            VkFormat::BC1_RGBA_SRGB_BLOCK | VkFormat::BC1_RGBA_UNORM_BLOCK
+        )
     }
 
     ///
@@ -507,10 +507,7 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc2(self) -> bool {
-        match self {
-            VkFormat::BC2_SRGB_BLOCK | VkFormat::BC2_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(self, VkFormat::BC2_SRGB_BLOCK | VkFormat::BC2_UNORM_BLOCK)
     }
 
     ///
@@ -518,10 +515,7 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc3(self) -> bool {
-        match self {
-            VkFormat::BC3_SRGB_BLOCK | VkFormat::BC3_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(self, VkFormat::BC3_SRGB_BLOCK | VkFormat::BC3_UNORM_BLOCK)
     }
 
     ///
@@ -529,10 +523,7 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc4(self) -> bool {
-        match self {
-            VkFormat::BC4_SNORM_BLOCK | VkFormat::BC4_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(self, VkFormat::BC4_SNORM_BLOCK | VkFormat::BC4_UNORM_BLOCK)
     }
 
     ///
@@ -540,10 +531,7 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc5(self) -> bool {
-        match self {
-            VkFormat::BC5_SNORM_BLOCK | VkFormat::BC5_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(self, VkFormat::BC5_SNORM_BLOCK | VkFormat::BC5_UNORM_BLOCK)
     }
 
     ///
@@ -551,10 +539,10 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc6h(self) -> bool {
-        match self {
-            VkFormat::BC6H_SFLOAT_BLOCK | VkFormat::BC6H_UFLOAT_BLOCK => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            VkFormat::BC6H_SFLOAT_BLOCK | VkFormat::BC6H_UFLOAT_BLOCK
+        )
     }
 
     ///
@@ -562,10 +550,7 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_bc7(self) -> bool {
-        match self {
-            VkFormat::BC7_SRGB_BLOCK | VkFormat::BC7_UNORM_BLOCK => true,
-            _ => false,
-        }
+        matches!(self, VkFormat::BC7_SRGB_BLOCK | VkFormat::BC7_UNORM_BLOCK)
     }
 
     ///
@@ -573,15 +558,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_etc2(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ETC2_R8G8B8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK => true,
-            _ => false,
-        }
+                | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+        )
     }
 
     ///
@@ -590,12 +575,12 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_4(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -604,15 +589,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_5(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -621,15 +606,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_6(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -638,18 +623,18 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_8(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -658,21 +643,21 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_10(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -681,15 +666,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_width_12(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -698,15 +683,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_4(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -715,21 +700,21 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_5(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -738,18 +723,18 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_6(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -758,15 +743,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_8(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -775,15 +760,15 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_10(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -792,12 +777,12 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc_block_height_12(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -805,51 +790,51 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_astc(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -865,13 +850,13 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_pvrtc1(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -879,13 +864,13 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_pvrtc2(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -893,13 +878,13 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_pvrtc_2bpp(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -907,13 +892,13 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_pvrtc_4bpp(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -921,13 +906,13 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_eac(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::EAC_R11_SNORM_BLOCK
-            | VkFormat::EAC_R11_UNORM_BLOCK
-            | VkFormat::EAC_R11G11_SNORM_BLOCK
-            | VkFormat::EAC_R11G11_UNORM_BLOCK => true,
-            _ => false,
-        }
+                | VkFormat::EAC_R11_UNORM_BLOCK
+                | VkFormat::EAC_R11G11_SNORM_BLOCK
+                | VkFormat::EAC_R11G11_UNORM_BLOCK
+        )
     }
 
     ///
@@ -946,9 +931,7 @@ impl VkFormat {
             4
         } else if self.is_pvrtc_2bpp() {
             8
-        } else if self.is_pvrtc_4bpp() {
-            4
-        } else if self.is_astc_block_width_4() {
+        } else if self.is_pvrtc_4bpp() || self.is_astc_block_width_4() {
             4
         } else if self.is_astc_block_width_5() {
             5
@@ -977,11 +960,12 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn block_height(self) -> u32 {
-        if self.is_bcn() || self.is_etc2() || self.is_eac() {
-            4
-        } else if self.is_pvrtc() {
-            4
-        } else if self.is_astc_block_height_4() {
+        if self.is_bcn()
+            || self.is_etc2()
+            || self.is_eac()
+            || self.is_pvrtc()
+            || self.is_astc_block_height_4()
+        {
             4
         } else if self.is_astc_block_height_5() {
             5
@@ -1016,43 +1000,42 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_srgb(self) -> bool {
-        match self {
-            // All SRGB formats
+        matches!(
+            self,
             VkFormat::R8_SRGB
-            | VkFormat::R8G8_SRGB
-            | VkFormat::R8G8B8_SRGB
-            | VkFormat::B8G8R8_SRGB
-            | VkFormat::R8G8B8A8_SRGB
-            | VkFormat::B8G8R8A8_SRGB
-            | VkFormat::A8B8G8R8_SRGB_PACK32
-            | VkFormat::BC1_RGB_SRGB_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::BC2_SRGB_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::BC3_SRGB_BLOCK
-            | VkFormat::BC7_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK => true,
-            _ => false,
-        }
+                | VkFormat::R8G8_SRGB
+                | VkFormat::R8G8B8_SRGB
+                | VkFormat::B8G8R8_SRGB
+                | VkFormat::R8G8B8A8_SRGB
+                | VkFormat::B8G8R8A8_SRGB
+                | VkFormat::A8B8G8R8_SRGB_PACK32
+                | VkFormat::BC1_RGB_SRGB_BLOCK
+                | VkFormat::BC1_RGBA_SRGB_BLOCK
+                | VkFormat::BC2_SRGB_BLOCK
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::BC3_SRGB_BLOCK
+                | VkFormat::BC7_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+        )
     }
 
     ///
@@ -1060,28 +1043,28 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_depth_format(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::D32_SFLOAT
-            | VkFormat::D32_SFLOAT_S8_UINT
-            | VkFormat::D24_UNORM_S8_UINT
-            | VkFormat::D16_UNORM_S8_UINT
-            | VkFormat::D16_UNORM
-            | VkFormat::X8_D24_UNORM_PACK32 => true,
-            _ => false,
-        }
+                | VkFormat::D32_SFLOAT_S8_UINT
+                | VkFormat::D24_UNORM_S8_UINT
+                | VkFormat::D16_UNORM_S8_UINT
+                | VkFormat::D16_UNORM
+                | VkFormat::X8_D24_UNORM_PACK32
+        )
     }
 
     ///
     /// Does this format have a stencil component
     ///
     pub const fn is_stencil_format(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::S8_UINT
-            | VkFormat::D32_SFLOAT_S8_UINT
-            | VkFormat::D24_UNORM_S8_UINT
-            | VkFormat::D16_UNORM_S8_UINT => true,
-            _ => false,
-        }
+                | VkFormat::D32_SFLOAT_S8_UINT
+                | VkFormat::D24_UNORM_S8_UINT
+                | VkFormat::D16_UNORM_S8_UINT
+        )
     }
 
     ///
@@ -1089,89 +1072,89 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_signed(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::R8_SNORM
-            | VkFormat::R8_SSCALED
-            | VkFormat::R8_SINT
-            | VkFormat::R8G8_SNORM
-            | VkFormat::R8G8_SSCALED
-            | VkFormat::R8G8_SINT
-            | VkFormat::R8G8B8_SNORM
-            | VkFormat::R8G8B8_SSCALED
-            | VkFormat::R8G8B8_SINT
-            | VkFormat::B8G8R8_SNORM
-            | VkFormat::B8G8R8_SSCALED
-            | VkFormat::B8G8R8_SINT
-            | VkFormat::R8G8B8A8_SNORM
-            | VkFormat::R8G8B8A8_SSCALED
-            | VkFormat::R8G8B8A8_SINT
-            | VkFormat::B8G8R8A8_SNORM
-            | VkFormat::B8G8R8A8_SSCALED
-            | VkFormat::B8G8R8A8_SINT
-            | VkFormat::A8B8G8R8_SNORM_PACK32
-            | VkFormat::A8B8G8R8_SSCALED_PACK32
-            | VkFormat::A8B8G8R8_SINT_PACK32
-            | VkFormat::A2R10G10B10_SNORM_PACK32
-            | VkFormat::A2R10G10B10_SSCALED_PACK32
-            | VkFormat::A2R10G10B10_SINT_PACK32
-            | VkFormat::A2B10G10R10_SNORM_PACK32
-            | VkFormat::A2B10G10R10_SSCALED_PACK32
-            | VkFormat::A2B10G10R10_SINT_PACK32
-            | VkFormat::R16_SNORM
-            | VkFormat::R16_SSCALED
-            | VkFormat::R16_SINT
-            | VkFormat::R16_SFLOAT
-            | VkFormat::R16G16_SNORM
-            | VkFormat::R16G16_SSCALED
-            | VkFormat::R16G16_SINT
-            | VkFormat::R16G16_SFLOAT
-            | VkFormat::R16G16B16_SNORM
-            | VkFormat::R16G16B16_SSCALED
-            | VkFormat::R16G16B16_SINT
-            | VkFormat::R16G16B16_SFLOAT
-            | VkFormat::R16G16B16A16_SNORM
-            | VkFormat::R16G16B16A16_SSCALED
-            | VkFormat::R16G16B16A16_SINT
-            | VkFormat::R16G16B16A16_SFLOAT
-            | VkFormat::R32_SINT
-            | VkFormat::R32_SFLOAT
-            | VkFormat::R32G32_SINT
-            | VkFormat::R32G32_SFLOAT
-            | VkFormat::R32G32B32_SINT
-            | VkFormat::R32G32B32_SFLOAT
-            | VkFormat::R32G32B32A32_SINT
-            | VkFormat::R32G32B32A32_SFLOAT
-            | VkFormat::R64_SINT
-            | VkFormat::R64_SFLOAT
-            | VkFormat::R64G64_SINT
-            | VkFormat::R64G64_SFLOAT
-            | VkFormat::R64G64B64_SINT
-            | VkFormat::R64G64B64_SFLOAT
-            | VkFormat::R64G64B64A64_SINT
-            | VkFormat::R64G64B64A64_SFLOAT
-            | VkFormat::D32_SFLOAT
-            | VkFormat::D32_SFLOAT_S8_UINT
-            | VkFormat::BC4_SNORM_BLOCK
-            | VkFormat::BC5_SNORM_BLOCK
-            | VkFormat::BC6H_SFLOAT_BLOCK
-            | VkFormat::EAC_R11_SNORM_BLOCK
-            | VkFormat::EAC_R11G11_SNORM_BLOCK
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::R8_SSCALED
+                | VkFormat::R8_SINT
+                | VkFormat::R8G8_SNORM
+                | VkFormat::R8G8_SSCALED
+                | VkFormat::R8G8_SINT
+                | VkFormat::R8G8B8_SNORM
+                | VkFormat::R8G8B8_SSCALED
+                | VkFormat::R8G8B8_SINT
+                | VkFormat::B8G8R8_SNORM
+                | VkFormat::B8G8R8_SSCALED
+                | VkFormat::B8G8R8_SINT
+                | VkFormat::R8G8B8A8_SNORM
+                | VkFormat::R8G8B8A8_SSCALED
+                | VkFormat::R8G8B8A8_SINT
+                | VkFormat::B8G8R8A8_SNORM
+                | VkFormat::B8G8R8A8_SSCALED
+                | VkFormat::B8G8R8A8_SINT
+                | VkFormat::A8B8G8R8_SNORM_PACK32
+                | VkFormat::A8B8G8R8_SSCALED_PACK32
+                | VkFormat::A8B8G8R8_SINT_PACK32
+                | VkFormat::A2R10G10B10_SNORM_PACK32
+                | VkFormat::A2R10G10B10_SSCALED_PACK32
+                | VkFormat::A2R10G10B10_SINT_PACK32
+                | VkFormat::A2B10G10R10_SNORM_PACK32
+                | VkFormat::A2B10G10R10_SSCALED_PACK32
+                | VkFormat::A2B10G10R10_SINT_PACK32
+                | VkFormat::R16_SNORM
+                | VkFormat::R16_SSCALED
+                | VkFormat::R16_SINT
+                | VkFormat::R16_SFLOAT
+                | VkFormat::R16G16_SNORM
+                | VkFormat::R16G16_SSCALED
+                | VkFormat::R16G16_SINT
+                | VkFormat::R16G16_SFLOAT
+                | VkFormat::R16G16B16_SNORM
+                | VkFormat::R16G16B16_SSCALED
+                | VkFormat::R16G16B16_SINT
+                | VkFormat::R16G16B16_SFLOAT
+                | VkFormat::R16G16B16A16_SNORM
+                | VkFormat::R16G16B16A16_SSCALED
+                | VkFormat::R16G16B16A16_SINT
+                | VkFormat::R16G16B16A16_SFLOAT
+                | VkFormat::R32_SINT
+                | VkFormat::R32_SFLOAT
+                | VkFormat::R32G32_SINT
+                | VkFormat::R32G32_SFLOAT
+                | VkFormat::R32G32B32_SINT
+                | VkFormat::R32G32B32_SFLOAT
+                | VkFormat::R32G32B32A32_SINT
+                | VkFormat::R32G32B32A32_SFLOAT
+                | VkFormat::R64_SINT
+                | VkFormat::R64_SFLOAT
+                | VkFormat::R64G64_SINT
+                | VkFormat::R64G64_SFLOAT
+                | VkFormat::R64G64B64_SINT
+                | VkFormat::R64G64B64_SFLOAT
+                | VkFormat::R64G64B64A64_SINT
+                | VkFormat::R64G64B64A64_SFLOAT
+                | VkFormat::D32_SFLOAT
+                | VkFormat::D32_SFLOAT_S8_UINT
+                | VkFormat::BC4_SNORM_BLOCK
+                | VkFormat::BC5_SNORM_BLOCK
+                | VkFormat::BC6H_SFLOAT_BLOCK
+                | VkFormat::EAC_R11_SNORM_BLOCK
+                | VkFormat::EAC_R11G11_SNORM_BLOCK
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -1179,41 +1162,41 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_floating_point(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::R16_SFLOAT
-            | VkFormat::R16G16_SFLOAT
-            | VkFormat::R16G16B16_SFLOAT
-            | VkFormat::R16G16B16A16_SFLOAT
-            | VkFormat::R32_SFLOAT
-            | VkFormat::R32G32_SFLOAT
-            | VkFormat::R32G32B32_SFLOAT
-            | VkFormat::R32G32B32A32_SFLOAT
-            | VkFormat::R64_SFLOAT
-            | VkFormat::R64G64_SFLOAT
-            | VkFormat::R64G64B64_SFLOAT
-            | VkFormat::R64G64B64A64_SFLOAT
-            | VkFormat::B10G11R11_UFLOAT_PACK32
-            | VkFormat::E5B9G9R9_UFLOAT_PACK32
-            | VkFormat::D32_SFLOAT
-            | VkFormat::D32_SFLOAT_S8_UINT
-            | VkFormat::BC6H_UFLOAT_BLOCK
-            | VkFormat::BC6H_SFLOAT_BLOCK
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT => true,
-            _ => false,
-        }
+                | VkFormat::R16G16_SFLOAT
+                | VkFormat::R16G16B16_SFLOAT
+                | VkFormat::R16G16B16A16_SFLOAT
+                | VkFormat::R32_SFLOAT
+                | VkFormat::R32G32_SFLOAT
+                | VkFormat::R32G32B32_SFLOAT
+                | VkFormat::R32G32B32A32_SFLOAT
+                | VkFormat::R64_SFLOAT
+                | VkFormat::R64G64_SFLOAT
+                | VkFormat::R64G64B64_SFLOAT
+                | VkFormat::R64G64B64A64_SFLOAT
+                | VkFormat::B10G11R11_UFLOAT_PACK32
+                | VkFormat::E5B9G9R9_UFLOAT_PACK32
+                | VkFormat::D32_SFLOAT
+                | VkFormat::D32_SFLOAT_S8_UINT
+                | VkFormat::BC6H_UFLOAT_BLOCK
+                | VkFormat::BC6H_SFLOAT_BLOCK
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+        )
     }
 
     ///
@@ -1221,148 +1204,148 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_normalized(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::R4G4_UNORM_PACK8
-            | VkFormat::R4G4B4A4_UNORM_PACK16
-            | VkFormat::B4G4R4A4_UNORM_PACK16
-            | VkFormat::R5G6B5_UNORM_PACK16
-            | VkFormat::B5G6R5_UNORM_PACK16
-            | VkFormat::R5G5B5A1_UNORM_PACK16
-            | VkFormat::B5G5R5A1_UNORM_PACK16
-            | VkFormat::A1R5G5B5_UNORM_PACK16
-            | VkFormat::R8_UNORM
-            | VkFormat::R8_SNORM
-            | VkFormat::R8_SRGB
-            | VkFormat::R8G8_UNORM
-            | VkFormat::R8G8_SNORM
-            | VkFormat::R8G8_SRGB
-            | VkFormat::R8G8B8_UNORM
-            | VkFormat::R8G8B8_SNORM
-            | VkFormat::R8G8B8_SRGB
-            | VkFormat::B8G8R8_UNORM
-            | VkFormat::B8G8R8_SNORM
-            | VkFormat::B8G8R8_SRGB
-            | VkFormat::R8G8B8A8_UNORM
-            | VkFormat::R8G8B8A8_SNORM
-            | VkFormat::R8G8B8A8_SRGB
-            | VkFormat::B8G8R8A8_UNORM
-            | VkFormat::B8G8R8A8_SNORM
-            | VkFormat::B8G8R8A8_SRGB
-            | VkFormat::A8B8G8R8_UNORM_PACK32
-            | VkFormat::A8B8G8R8_SNORM_PACK32
-            | VkFormat::A8B8G8R8_SRGB_PACK32
-            | VkFormat::A2R10G10B10_UNORM_PACK32
-            | VkFormat::A2R10G10B10_SNORM_PACK32
-            | VkFormat::A2B10G10R10_UNORM_PACK32
-            | VkFormat::A2B10G10R10_SNORM_PACK32
-            | VkFormat::R16_UNORM
-            | VkFormat::R16_SNORM
-            | VkFormat::R16G16_UNORM
-            | VkFormat::R16G16_SNORM
-            | VkFormat::R16G16B16_UNORM
-            | VkFormat::R16G16B16_SNORM
-            | VkFormat::R16G16B16A16_UNORM
-            | VkFormat::R16G16B16A16_SNORM
-            | VkFormat::D16_UNORM
-            | VkFormat::X8_D24_UNORM_PACK32
-            | VkFormat::D16_UNORM_S8_UINT
-            | VkFormat::D24_UNORM_S8_UINT
-            | VkFormat::BC1_RGB_UNORM_BLOCK
-            | VkFormat::BC1_RGB_SRGB_BLOCK
-            | VkFormat::BC1_RGBA_UNORM_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::BC2_UNORM_BLOCK
-            | VkFormat::BC2_SRGB_BLOCK
-            | VkFormat::BC3_UNORM_BLOCK
-            | VkFormat::BC3_SRGB_BLOCK
-            | VkFormat::BC4_UNORM_BLOCK
-            | VkFormat::BC4_SNORM_BLOCK
-            | VkFormat::BC5_UNORM_BLOCK
-            | VkFormat::BC5_SNORM_BLOCK
-            | VkFormat::BC7_UNORM_BLOCK
-            | VkFormat::BC7_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
-            | VkFormat::EAC_R11_UNORM_BLOCK
-            | VkFormat::EAC_R11_SNORM_BLOCK
-            | VkFormat::EAC_R11G11_UNORM_BLOCK
-            | VkFormat::EAC_R11G11_SNORM_BLOCK
-            | VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::G8B8G8R8_422_UNORM
-            | VkFormat::B8G8R8G8_422_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_420_UNORM
-            | VkFormat::G8_B8R8_2PLANE_420_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_422_UNORM
-            | VkFormat::G8_B8R8_2PLANE_422_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_444_UNORM
-            | VkFormat::R10X6_UNORM_PACK16
-            | VkFormat::R10X6G10X6_UNORM_2PACK16
-            | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
-            | VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
-            | VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
-            | VkFormat::R12X4_UNORM_PACK16
-            | VkFormat::R12X4G12X4_UNORM_2PACK16
-            | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
-            | VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
-            | VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
-            | VkFormat::G16B16G16R16_422_UNORM
-            | VkFormat::B16G16R16G16_422_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_420_UNORM
-            | VkFormat::G16_B16R16_2PLANE_420_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_422_UNORM
-            | VkFormat::G16_B16R16_2PLANE_422_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_444_UNORM
-            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::R4G4B4A4_UNORM_PACK16
+                | VkFormat::B4G4R4A4_UNORM_PACK16
+                | VkFormat::R5G6B5_UNORM_PACK16
+                | VkFormat::B5G6R5_UNORM_PACK16
+                | VkFormat::R5G5B5A1_UNORM_PACK16
+                | VkFormat::B5G5R5A1_UNORM_PACK16
+                | VkFormat::A1R5G5B5_UNORM_PACK16
+                | VkFormat::R8_UNORM
+                | VkFormat::R8_SNORM
+                | VkFormat::R8_SRGB
+                | VkFormat::R8G8_UNORM
+                | VkFormat::R8G8_SNORM
+                | VkFormat::R8G8_SRGB
+                | VkFormat::R8G8B8_UNORM
+                | VkFormat::R8G8B8_SNORM
+                | VkFormat::R8G8B8_SRGB
+                | VkFormat::B8G8R8_UNORM
+                | VkFormat::B8G8R8_SNORM
+                | VkFormat::B8G8R8_SRGB
+                | VkFormat::R8G8B8A8_UNORM
+                | VkFormat::R8G8B8A8_SNORM
+                | VkFormat::R8G8B8A8_SRGB
+                | VkFormat::B8G8R8A8_UNORM
+                | VkFormat::B8G8R8A8_SNORM
+                | VkFormat::B8G8R8A8_SRGB
+                | VkFormat::A8B8G8R8_UNORM_PACK32
+                | VkFormat::A8B8G8R8_SNORM_PACK32
+                | VkFormat::A8B8G8R8_SRGB_PACK32
+                | VkFormat::A2R10G10B10_UNORM_PACK32
+                | VkFormat::A2R10G10B10_SNORM_PACK32
+                | VkFormat::A2B10G10R10_UNORM_PACK32
+                | VkFormat::A2B10G10R10_SNORM_PACK32
+                | VkFormat::R16_UNORM
+                | VkFormat::R16_SNORM
+                | VkFormat::R16G16_UNORM
+                | VkFormat::R16G16_SNORM
+                | VkFormat::R16G16B16_UNORM
+                | VkFormat::R16G16B16_SNORM
+                | VkFormat::R16G16B16A16_UNORM
+                | VkFormat::R16G16B16A16_SNORM
+                | VkFormat::D16_UNORM
+                | VkFormat::X8_D24_UNORM_PACK32
+                | VkFormat::D16_UNORM_S8_UINT
+                | VkFormat::D24_UNORM_S8_UINT
+                | VkFormat::BC1_RGB_UNORM_BLOCK
+                | VkFormat::BC1_RGB_SRGB_BLOCK
+                | VkFormat::BC1_RGBA_UNORM_BLOCK
+                | VkFormat::BC1_RGBA_SRGB_BLOCK
+                | VkFormat::BC2_UNORM_BLOCK
+                | VkFormat::BC2_SRGB_BLOCK
+                | VkFormat::BC3_UNORM_BLOCK
+                | VkFormat::BC3_SRGB_BLOCK
+                | VkFormat::BC4_UNORM_BLOCK
+                | VkFormat::BC4_SNORM_BLOCK
+                | VkFormat::BC5_UNORM_BLOCK
+                | VkFormat::BC5_SNORM_BLOCK
+                | VkFormat::BC7_UNORM_BLOCK
+                | VkFormat::BC7_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+                | VkFormat::EAC_R11_UNORM_BLOCK
+                | VkFormat::EAC_R11_SNORM_BLOCK
+                | VkFormat::EAC_R11G11_UNORM_BLOCK
+                | VkFormat::EAC_R11G11_SNORM_BLOCK
+                | VkFormat::ASTC_4X4_UNORM_BLOCK
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::G8B8G8R8_422_UNORM
+                | VkFormat::B8G8R8G8_422_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_420_UNORM
+                | VkFormat::G8_B8R8_2PLANE_420_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_422_UNORM
+                | VkFormat::G8_B8R8_2PLANE_422_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_444_UNORM
+                | VkFormat::R10X6_UNORM_PACK16
+                | VkFormat::R10X6G10X6_UNORM_2PACK16
+                | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
+                | VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
+                | VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
+                | VkFormat::R12X4_UNORM_PACK16
+                | VkFormat::R12X4G12X4_UNORM_2PACK16
+                | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
+                | VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
+                | VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
+                | VkFormat::G16B16G16R16_422_UNORM
+                | VkFormat::B16G16R16G16_422_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_420_UNORM
+                | VkFormat::G16_B16R16_2PLANE_420_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_422_UNORM
+                | VkFormat::G16_B16R16_2PLANE_422_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_444_UNORM
+                | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+        )
     }
 
     ///
@@ -1388,525 +1371,525 @@ impl VkFormat {
     ///
     #[inline]
     pub const fn is_known(self) -> bool {
-        match self {
+        matches!(
+            self,
             VkFormat::UNDEFINED
-            | VkFormat::R4G4_UNORM_PACK8
-            | VkFormat::R4G4B4A4_UNORM_PACK16
-            | VkFormat::B4G4R4A4_UNORM_PACK16
-            | VkFormat::R5G6B5_UNORM_PACK16
-            | VkFormat::B5G6R5_UNORM_PACK16
-            | VkFormat::R5G5B5A1_UNORM_PACK16
-            | VkFormat::B5G5R5A1_UNORM_PACK16
-            | VkFormat::A1R5G5B5_UNORM_PACK16
-            | VkFormat::R8_UNORM
-            | VkFormat::R8_SNORM
-            | VkFormat::R8_USCALED
-            | VkFormat::R8_SSCALED
-            | VkFormat::R8_UINT
-            | VkFormat::R8_SINT
-            | VkFormat::R8_SRGB
-            | VkFormat::R8G8_UNORM
-            | VkFormat::R8G8_SNORM
-            | VkFormat::R8G8_USCALED
-            | VkFormat::R8G8_SSCALED
-            | VkFormat::R8G8_UINT
-            | VkFormat::R8G8_SINT
-            | VkFormat::R8G8_SRGB
-            | VkFormat::R8G8B8_UNORM
-            | VkFormat::R8G8B8_SNORM
-            | VkFormat::R8G8B8_USCALED
-            | VkFormat::R8G8B8_SSCALED
-            | VkFormat::R8G8B8_UINT
-            | VkFormat::R8G8B8_SINT
-            | VkFormat::R8G8B8_SRGB
-            | VkFormat::B8G8R8_UNORM
-            | VkFormat::B8G8R8_SNORM
-            | VkFormat::B8G8R8_USCALED
-            | VkFormat::B8G8R8_SSCALED
-            | VkFormat::B8G8R8_UINT
-            | VkFormat::B8G8R8_SINT
-            | VkFormat::B8G8R8_SRGB
-            | VkFormat::R8G8B8A8_UNORM
-            | VkFormat::R8G8B8A8_SNORM
-            | VkFormat::R8G8B8A8_USCALED
-            | VkFormat::R8G8B8A8_SSCALED
-            | VkFormat::R8G8B8A8_UINT
-            | VkFormat::R8G8B8A8_SINT
-            | VkFormat::R8G8B8A8_SRGB
-            | VkFormat::B8G8R8A8_UNORM
-            | VkFormat::B8G8R8A8_SNORM
-            | VkFormat::B8G8R8A8_USCALED
-            | VkFormat::B8G8R8A8_SSCALED
-            | VkFormat::B8G8R8A8_UINT
-            | VkFormat::B8G8R8A8_SINT
-            | VkFormat::B8G8R8A8_SRGB
-            | VkFormat::A8B8G8R8_UNORM_PACK32
-            | VkFormat::A8B8G8R8_SNORM_PACK32
-            | VkFormat::A8B8G8R8_USCALED_PACK32
-            | VkFormat::A8B8G8R8_SSCALED_PACK32
-            | VkFormat::A8B8G8R8_UINT_PACK32
-            | VkFormat::A8B8G8R8_SINT_PACK32
-            | VkFormat::A8B8G8R8_SRGB_PACK32
-            | VkFormat::A2R10G10B10_UNORM_PACK32
-            | VkFormat::A2R10G10B10_SNORM_PACK32
-            | VkFormat::A2R10G10B10_USCALED_PACK32
-            | VkFormat::A2R10G10B10_SSCALED_PACK32
-            | VkFormat::A2R10G10B10_UINT_PACK32
-            | VkFormat::A2R10G10B10_SINT_PACK32
-            | VkFormat::A2B10G10R10_UNORM_PACK32
-            | VkFormat::A2B10G10R10_SNORM_PACK32
-            | VkFormat::A2B10G10R10_USCALED_PACK32
-            | VkFormat::A2B10G10R10_SSCALED_PACK32
-            | VkFormat::A2B10G10R10_UINT_PACK32
-            | VkFormat::A2B10G10R10_SINT_PACK32
-            | VkFormat::R16_UNORM
-            | VkFormat::R16_SNORM
-            | VkFormat::R16_USCALED
-            | VkFormat::R16_SSCALED
-            | VkFormat::R16_UINT
-            | VkFormat::R16_SINT
-            | VkFormat::R16_SFLOAT
-            | VkFormat::R16G16_UNORM
-            | VkFormat::R16G16_SNORM
-            | VkFormat::R16G16_USCALED
-            | VkFormat::R16G16_SSCALED
-            | VkFormat::R16G16_UINT
-            | VkFormat::R16G16_SINT
-            | VkFormat::R16G16_SFLOAT
-            | VkFormat::R16G16B16_UNORM
-            | VkFormat::R16G16B16_SNORM
-            | VkFormat::R16G16B16_USCALED
-            | VkFormat::R16G16B16_SSCALED
-            | VkFormat::R16G16B16_UINT
-            | VkFormat::R16G16B16_SINT
-            | VkFormat::R16G16B16_SFLOAT
-            | VkFormat::R16G16B16A16_UNORM
-            | VkFormat::R16G16B16A16_SNORM
-            | VkFormat::R16G16B16A16_USCALED
-            | VkFormat::R16G16B16A16_SSCALED
-            | VkFormat::R16G16B16A16_UINT
-            | VkFormat::R16G16B16A16_SINT
-            | VkFormat::R16G16B16A16_SFLOAT
-            | VkFormat::R32_UINT
-            | VkFormat::R32_SINT
-            | VkFormat::R32_SFLOAT
-            | VkFormat::R32G32_UINT
-            | VkFormat::R32G32_SINT
-            | VkFormat::R32G32_SFLOAT
-            | VkFormat::R32G32B32_UINT
-            | VkFormat::R32G32B32_SINT
-            | VkFormat::R32G32B32_SFLOAT
-            | VkFormat::R32G32B32A32_UINT
-            | VkFormat::R32G32B32A32_SINT
-            | VkFormat::R32G32B32A32_SFLOAT
-            | VkFormat::R64_UINT
-            | VkFormat::R64_SINT
-            | VkFormat::R64_SFLOAT
-            | VkFormat::R64G64_UINT
-            | VkFormat::R64G64_SINT
-            | VkFormat::R64G64_SFLOAT
-            | VkFormat::R64G64B64_UINT
-            | VkFormat::R64G64B64_SINT
-            | VkFormat::R64G64B64_SFLOAT
-            | VkFormat::R64G64B64A64_UINT
-            | VkFormat::R64G64B64A64_SINT
-            | VkFormat::R64G64B64A64_SFLOAT
-            | VkFormat::B10G11R11_UFLOAT_PACK32
-            | VkFormat::E5B9G9R9_UFLOAT_PACK32
-            | VkFormat::D16_UNORM
-            | VkFormat::X8_D24_UNORM_PACK32
-            | VkFormat::D32_SFLOAT
-            | VkFormat::S8_UINT
-            | VkFormat::D16_UNORM_S8_UINT
-            | VkFormat::D24_UNORM_S8_UINT
-            | VkFormat::D32_SFLOAT_S8_UINT
-            | VkFormat::BC1_RGB_UNORM_BLOCK
-            | VkFormat::BC1_RGB_SRGB_BLOCK
-            | VkFormat::BC1_RGBA_UNORM_BLOCK
-            | VkFormat::BC1_RGBA_SRGB_BLOCK
-            | VkFormat::BC2_UNORM_BLOCK
-            | VkFormat::BC2_SRGB_BLOCK
-            | VkFormat::BC3_UNORM_BLOCK
-            | VkFormat::BC3_SRGB_BLOCK
-            | VkFormat::BC4_UNORM_BLOCK
-            | VkFormat::BC4_SNORM_BLOCK
-            | VkFormat::BC5_UNORM_BLOCK
-            | VkFormat::BC5_SNORM_BLOCK
-            | VkFormat::BC6H_UFLOAT_BLOCK
-            | VkFormat::BC6H_SFLOAT_BLOCK
-            | VkFormat::BC7_UNORM_BLOCK
-            | VkFormat::BC7_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
-            | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
-            | VkFormat::EAC_R11_UNORM_BLOCK
-            | VkFormat::EAC_R11_SNORM_BLOCK
-            | VkFormat::EAC_R11G11_UNORM_BLOCK
-            | VkFormat::EAC_R11G11_SNORM_BLOCK
-            | VkFormat::ASTC_4X4_UNORM_BLOCK
-            | VkFormat::ASTC_4X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X4_UNORM_BLOCK
-            | VkFormat::ASTC_5X4_SRGB_BLOCK
-            | VkFormat::ASTC_5X5_UNORM_BLOCK
-            | VkFormat::ASTC_5X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X5_UNORM_BLOCK
-            | VkFormat::ASTC_6X5_SRGB_BLOCK
-            | VkFormat::ASTC_6X6_UNORM_BLOCK
-            | VkFormat::ASTC_6X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X5_UNORM_BLOCK
-            | VkFormat::ASTC_8X5_SRGB_BLOCK
-            | VkFormat::ASTC_8X6_UNORM_BLOCK
-            | VkFormat::ASTC_8X6_SRGB_BLOCK
-            | VkFormat::ASTC_8X8_UNORM_BLOCK
-            | VkFormat::ASTC_8X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X5_UNORM_BLOCK
-            | VkFormat::ASTC_10X5_SRGB_BLOCK
-            | VkFormat::ASTC_10X6_UNORM_BLOCK
-            | VkFormat::ASTC_10X6_SRGB_BLOCK
-            | VkFormat::ASTC_10X8_UNORM_BLOCK
-            | VkFormat::ASTC_10X8_SRGB_BLOCK
-            | VkFormat::ASTC_10X10_UNORM_BLOCK
-            | VkFormat::ASTC_10X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X10_UNORM_BLOCK
-            | VkFormat::ASTC_12X10_SRGB_BLOCK
-            | VkFormat::ASTC_12X12_UNORM_BLOCK
-            | VkFormat::ASTC_12X12_SRGB_BLOCK
-            | VkFormat::G8B8G8R8_422_UNORM
-            | VkFormat::B8G8R8G8_422_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_420_UNORM
-            | VkFormat::G8_B8R8_2PLANE_420_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_422_UNORM
-            | VkFormat::G8_B8R8_2PLANE_422_UNORM
-            | VkFormat::G8_B8_R8_3PLANE_444_UNORM
-            | VkFormat::R10X6_UNORM_PACK16
-            | VkFormat::R10X6G10X6_UNORM_2PACK16
-            | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
-            | VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
-            | VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
-            | VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
-            | VkFormat::R12X4_UNORM_PACK16
-            | VkFormat::R12X4G12X4_UNORM_2PACK16
-            | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
-            | VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
-            | VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
-            | VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
-            | VkFormat::G16B16G16R16_422_UNORM
-            | VkFormat::B16G16R16G16_422_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_420_UNORM
-            | VkFormat::G16_B16R16_2PLANE_420_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_422_UNORM
-            | VkFormat::G16_B16R16_2PLANE_422_UNORM
-            | VkFormat::G16_B16_R16_3PLANE_444_UNORM
-            | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
-            | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
-            | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
-            | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
-            | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG => true,
-            _ => false,
-        }
+                | VkFormat::R4G4_UNORM_PACK8
+                | VkFormat::R4G4B4A4_UNORM_PACK16
+                | VkFormat::B4G4R4A4_UNORM_PACK16
+                | VkFormat::R5G6B5_UNORM_PACK16
+                | VkFormat::B5G6R5_UNORM_PACK16
+                | VkFormat::R5G5B5A1_UNORM_PACK16
+                | VkFormat::B5G5R5A1_UNORM_PACK16
+                | VkFormat::A1R5G5B5_UNORM_PACK16
+                | VkFormat::R8_UNORM
+                | VkFormat::R8_SNORM
+                | VkFormat::R8_USCALED
+                | VkFormat::R8_SSCALED
+                | VkFormat::R8_UINT
+                | VkFormat::R8_SINT
+                | VkFormat::R8_SRGB
+                | VkFormat::R8G8_UNORM
+                | VkFormat::R8G8_SNORM
+                | VkFormat::R8G8_USCALED
+                | VkFormat::R8G8_SSCALED
+                | VkFormat::R8G8_UINT
+                | VkFormat::R8G8_SINT
+                | VkFormat::R8G8_SRGB
+                | VkFormat::R8G8B8_UNORM
+                | VkFormat::R8G8B8_SNORM
+                | VkFormat::R8G8B8_USCALED
+                | VkFormat::R8G8B8_SSCALED
+                | VkFormat::R8G8B8_UINT
+                | VkFormat::R8G8B8_SINT
+                | VkFormat::R8G8B8_SRGB
+                | VkFormat::B8G8R8_UNORM
+                | VkFormat::B8G8R8_SNORM
+                | VkFormat::B8G8R8_USCALED
+                | VkFormat::B8G8R8_SSCALED
+                | VkFormat::B8G8R8_UINT
+                | VkFormat::B8G8R8_SINT
+                | VkFormat::B8G8R8_SRGB
+                | VkFormat::R8G8B8A8_UNORM
+                | VkFormat::R8G8B8A8_SNORM
+                | VkFormat::R8G8B8A8_USCALED
+                | VkFormat::R8G8B8A8_SSCALED
+                | VkFormat::R8G8B8A8_UINT
+                | VkFormat::R8G8B8A8_SINT
+                | VkFormat::R8G8B8A8_SRGB
+                | VkFormat::B8G8R8A8_UNORM
+                | VkFormat::B8G8R8A8_SNORM
+                | VkFormat::B8G8R8A8_USCALED
+                | VkFormat::B8G8R8A8_SSCALED
+                | VkFormat::B8G8R8A8_UINT
+                | VkFormat::B8G8R8A8_SINT
+                | VkFormat::B8G8R8A8_SRGB
+                | VkFormat::A8B8G8R8_UNORM_PACK32
+                | VkFormat::A8B8G8R8_SNORM_PACK32
+                | VkFormat::A8B8G8R8_USCALED_PACK32
+                | VkFormat::A8B8G8R8_SSCALED_PACK32
+                | VkFormat::A8B8G8R8_UINT_PACK32
+                | VkFormat::A8B8G8R8_SINT_PACK32
+                | VkFormat::A8B8G8R8_SRGB_PACK32
+                | VkFormat::A2R10G10B10_UNORM_PACK32
+                | VkFormat::A2R10G10B10_SNORM_PACK32
+                | VkFormat::A2R10G10B10_USCALED_PACK32
+                | VkFormat::A2R10G10B10_SSCALED_PACK32
+                | VkFormat::A2R10G10B10_UINT_PACK32
+                | VkFormat::A2R10G10B10_SINT_PACK32
+                | VkFormat::A2B10G10R10_UNORM_PACK32
+                | VkFormat::A2B10G10R10_SNORM_PACK32
+                | VkFormat::A2B10G10R10_USCALED_PACK32
+                | VkFormat::A2B10G10R10_SSCALED_PACK32
+                | VkFormat::A2B10G10R10_UINT_PACK32
+                | VkFormat::A2B10G10R10_SINT_PACK32
+                | VkFormat::R16_UNORM
+                | VkFormat::R16_SNORM
+                | VkFormat::R16_USCALED
+                | VkFormat::R16_SSCALED
+                | VkFormat::R16_UINT
+                | VkFormat::R16_SINT
+                | VkFormat::R16_SFLOAT
+                | VkFormat::R16G16_UNORM
+                | VkFormat::R16G16_SNORM
+                | VkFormat::R16G16_USCALED
+                | VkFormat::R16G16_SSCALED
+                | VkFormat::R16G16_UINT
+                | VkFormat::R16G16_SINT
+                | VkFormat::R16G16_SFLOAT
+                | VkFormat::R16G16B16_UNORM
+                | VkFormat::R16G16B16_SNORM
+                | VkFormat::R16G16B16_USCALED
+                | VkFormat::R16G16B16_SSCALED
+                | VkFormat::R16G16B16_UINT
+                | VkFormat::R16G16B16_SINT
+                | VkFormat::R16G16B16_SFLOAT
+                | VkFormat::R16G16B16A16_UNORM
+                | VkFormat::R16G16B16A16_SNORM
+                | VkFormat::R16G16B16A16_USCALED
+                | VkFormat::R16G16B16A16_SSCALED
+                | VkFormat::R16G16B16A16_UINT
+                | VkFormat::R16G16B16A16_SINT
+                | VkFormat::R16G16B16A16_SFLOAT
+                | VkFormat::R32_UINT
+                | VkFormat::R32_SINT
+                | VkFormat::R32_SFLOAT
+                | VkFormat::R32G32_UINT
+                | VkFormat::R32G32_SINT
+                | VkFormat::R32G32_SFLOAT
+                | VkFormat::R32G32B32_UINT
+                | VkFormat::R32G32B32_SINT
+                | VkFormat::R32G32B32_SFLOAT
+                | VkFormat::R32G32B32A32_UINT
+                | VkFormat::R32G32B32A32_SINT
+                | VkFormat::R32G32B32A32_SFLOAT
+                | VkFormat::R64_UINT
+                | VkFormat::R64_SINT
+                | VkFormat::R64_SFLOAT
+                | VkFormat::R64G64_UINT
+                | VkFormat::R64G64_SINT
+                | VkFormat::R64G64_SFLOAT
+                | VkFormat::R64G64B64_UINT
+                | VkFormat::R64G64B64_SINT
+                | VkFormat::R64G64B64_SFLOAT
+                | VkFormat::R64G64B64A64_UINT
+                | VkFormat::R64G64B64A64_SINT
+                | VkFormat::R64G64B64A64_SFLOAT
+                | VkFormat::B10G11R11_UFLOAT_PACK32
+                | VkFormat::E5B9G9R9_UFLOAT_PACK32
+                | VkFormat::D16_UNORM
+                | VkFormat::X8_D24_UNORM_PACK32
+                | VkFormat::D32_SFLOAT
+                | VkFormat::S8_UINT
+                | VkFormat::D16_UNORM_S8_UINT
+                | VkFormat::D24_UNORM_S8_UINT
+                | VkFormat::D32_SFLOAT_S8_UINT
+                | VkFormat::BC1_RGB_UNORM_BLOCK
+                | VkFormat::BC1_RGB_SRGB_BLOCK
+                | VkFormat::BC1_RGBA_UNORM_BLOCK
+                | VkFormat::BC1_RGBA_SRGB_BLOCK
+                | VkFormat::BC2_UNORM_BLOCK
+                | VkFormat::BC2_SRGB_BLOCK
+                | VkFormat::BC3_UNORM_BLOCK
+                | VkFormat::BC3_SRGB_BLOCK
+                | VkFormat::BC4_UNORM_BLOCK
+                | VkFormat::BC4_SNORM_BLOCK
+                | VkFormat::BC5_UNORM_BLOCK
+                | VkFormat::BC5_SNORM_BLOCK
+                | VkFormat::BC6H_UFLOAT_BLOCK
+                | VkFormat::BC6H_SFLOAT_BLOCK
+                | VkFormat::BC7_UNORM_BLOCK
+                | VkFormat::BC7_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A1_SRGB_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_UNORM_BLOCK
+                | VkFormat::ETC2_R8G8B8A8_SRGB_BLOCK
+                | VkFormat::EAC_R11_UNORM_BLOCK
+                | VkFormat::EAC_R11_SNORM_BLOCK
+                | VkFormat::EAC_R11G11_UNORM_BLOCK
+                | VkFormat::EAC_R11G11_SNORM_BLOCK
+                | VkFormat::ASTC_4X4_UNORM_BLOCK
+                | VkFormat::ASTC_4X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X4_UNORM_BLOCK
+                | VkFormat::ASTC_5X4_SRGB_BLOCK
+                | VkFormat::ASTC_5X5_UNORM_BLOCK
+                | VkFormat::ASTC_5X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X5_UNORM_BLOCK
+                | VkFormat::ASTC_6X5_SRGB_BLOCK
+                | VkFormat::ASTC_6X6_UNORM_BLOCK
+                | VkFormat::ASTC_6X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X5_UNORM_BLOCK
+                | VkFormat::ASTC_8X5_SRGB_BLOCK
+                | VkFormat::ASTC_8X6_UNORM_BLOCK
+                | VkFormat::ASTC_8X6_SRGB_BLOCK
+                | VkFormat::ASTC_8X8_UNORM_BLOCK
+                | VkFormat::ASTC_8X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X5_UNORM_BLOCK
+                | VkFormat::ASTC_10X5_SRGB_BLOCK
+                | VkFormat::ASTC_10X6_UNORM_BLOCK
+                | VkFormat::ASTC_10X6_SRGB_BLOCK
+                | VkFormat::ASTC_10X8_UNORM_BLOCK
+                | VkFormat::ASTC_10X8_SRGB_BLOCK
+                | VkFormat::ASTC_10X10_UNORM_BLOCK
+                | VkFormat::ASTC_10X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X10_UNORM_BLOCK
+                | VkFormat::ASTC_12X10_SRGB_BLOCK
+                | VkFormat::ASTC_12X12_UNORM_BLOCK
+                | VkFormat::ASTC_12X12_SRGB_BLOCK
+                | VkFormat::G8B8G8R8_422_UNORM
+                | VkFormat::B8G8R8G8_422_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_420_UNORM
+                | VkFormat::G8_B8R8_2PLANE_420_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_422_UNORM
+                | VkFormat::G8_B8R8_2PLANE_422_UNORM
+                | VkFormat::G8_B8_R8_3PLANE_444_UNORM
+                | VkFormat::R10X6_UNORM_PACK16
+                | VkFormat::R10X6G10X6_UNORM_2PACK16
+                | VkFormat::R10X6G10X6B10X6A10X6_UNORM_4PACK16
+                | VkFormat::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16
+                | VkFormat::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16
+                | VkFormat::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16
+                | VkFormat::R12X4_UNORM_PACK16
+                | VkFormat::R12X4G12X4_UNORM_2PACK16
+                | VkFormat::R12X4G12X4B12X4A12X4_UNORM_4PACK16
+                | VkFormat::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16
+                | VkFormat::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16
+                | VkFormat::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16
+                | VkFormat::G16B16G16R16_422_UNORM
+                | VkFormat::B16G16R16G16_422_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_420_UNORM
+                | VkFormat::G16_B16R16_2PLANE_420_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_422_UNORM
+                | VkFormat::G16_B16R16_2PLANE_422_UNORM
+                | VkFormat::G16_B16_R16_3PLANE_444_UNORM
+                | VkFormat::ASTC_4X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X4_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_5X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_6X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_8X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X5_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X6_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X8_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_10X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X10_SFLOAT_BLOCK_EXT
+                | VkFormat::ASTC_12X12_SFLOAT_BLOCK_EXT
+                | VkFormat::PVRTC1_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_UNORM_BLOCK_IMG
+                | VkFormat::PVRTC1_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC1_4BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_2BPP_SRGB_BLOCK_IMG
+                | VkFormat::PVRTC2_4BPP_SRGB_BLOCK_IMG
+        )
     }
 }
 
 impl std::fmt::Debug for VkFormat {
     fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
-        fmt.write_str(match self {
-            &Self::UNDEFINED => "UNDEFINED",
-            &Self::R4G4_UNORM_PACK8 => "R4G4_UNORM_PACK8",
-            &Self::R4G4B4A4_UNORM_PACK16 => "R4G4B4A4_UNORM_PACK16",
-            &Self::B4G4R4A4_UNORM_PACK16 => "B4G4R4A4_UNORM_PACK16",
-            &Self::R5G6B5_UNORM_PACK16 => "R5G6B5_UNORM_PACK16",
-            &Self::B5G6R5_UNORM_PACK16 => "B5G6R5_UNORM_PACK16",
-            &Self::R5G5B5A1_UNORM_PACK16 => "R5G5B5A1_UNORM_PACK16",
-            &Self::B5G5R5A1_UNORM_PACK16 => "B5G5R5A1_UNORM_PACK16",
-            &Self::A1R5G5B5_UNORM_PACK16 => "A1R5G5B5_UNORM_PACK16",
-            &Self::R8_UNORM => "R8_UNORM",
-            &Self::R8_SNORM => "R8_SNORM",
-            &Self::R8_USCALED => "R8_USCALED",
-            &Self::R8_SSCALED => "R8_SSCALED",
-            &Self::R8_UINT => "R8_UINT",
-            &Self::R8_SINT => "R8_SINT",
-            &Self::R8_SRGB => "R8_SRGB",
-            &Self::R8G8_UNORM => "R8G8_UNORM",
-            &Self::R8G8_SNORM => "R8G8_SNORM",
-            &Self::R8G8_USCALED => "R8G8_USCALED",
-            &Self::R8G8_SSCALED => "R8G8_SSCALED",
-            &Self::R8G8_UINT => "R8G8_UINT",
-            &Self::R8G8_SINT => "R8G8_SINT",
-            &Self::R8G8_SRGB => "R8G8_SRGB",
-            &Self::R8G8B8_UNORM => "R8G8B8_UNORM",
-            &Self::R8G8B8_SNORM => "R8G8B8_SNORM",
-            &Self::R8G8B8_USCALED => "R8G8B8_USCALED",
-            &Self::R8G8B8_SSCALED => "R8G8B8_SSCALED",
-            &Self::R8G8B8_UINT => "R8G8B8_UINT",
-            &Self::R8G8B8_SINT => "R8G8B8_SINT",
-            &Self::R8G8B8_SRGB => "R8G8B8_SRGB",
-            &Self::B8G8R8_UNORM => "B8G8R8_UNORM",
-            &Self::B8G8R8_SNORM => "B8G8R8_SNORM",
-            &Self::B8G8R8_USCALED => "B8G8R8_USCALED",
-            &Self::B8G8R8_SSCALED => "B8G8R8_SSCALED",
-            &Self::B8G8R8_UINT => "B8G8R8_UINT",
-            &Self::B8G8R8_SINT => "B8G8R8_SINT",
-            &Self::B8G8R8_SRGB => "B8G8R8_SRGB",
-            &Self::R8G8B8A8_UNORM => "R8G8B8A8_UNORM",
-            &Self::R8G8B8A8_SNORM => "R8G8B8A8_SNORM",
-            &Self::R8G8B8A8_USCALED => "R8G8B8A8_USCALED",
-            &Self::R8G8B8A8_SSCALED => "R8G8B8A8_SSCALED",
-            &Self::R8G8B8A8_UINT => "R8G8B8A8_UINT",
-            &Self::R8G8B8A8_SINT => "R8G8B8A8_SINT",
-            &Self::R8G8B8A8_SRGB => "R8G8B8A8_SRGB",
-            &Self::B8G8R8A8_UNORM => "B8G8R8A8_UNORM",
-            &Self::B8G8R8A8_SNORM => "B8G8R8A8_SNORM",
-            &Self::B8G8R8A8_USCALED => "B8G8R8A8_USCALED",
-            &Self::B8G8R8A8_SSCALED => "B8G8R8A8_SSCALED",
-            &Self::B8G8R8A8_UINT => "B8G8R8A8_UINT",
-            &Self::B8G8R8A8_SINT => "B8G8R8A8_SINT",
-            &Self::B8G8R8A8_SRGB => "B8G8R8A8_SRGB",
-            &Self::A8B8G8R8_UNORM_PACK32 => "A8B8G8R8_UNORM_PACK32",
-            &Self::A8B8G8R8_SNORM_PACK32 => "A8B8G8R8_SNORM_PACK32",
-            &Self::A8B8G8R8_USCALED_PACK32 => "A8B8G8R8_USCALED_PACK32",
-            &Self::A8B8G8R8_SSCALED_PACK32 => "A8B8G8R8_SSCALED_PACK32",
-            &Self::A8B8G8R8_UINT_PACK32 => "A8B8G8R8_UINT_PACK32",
-            &Self::A8B8G8R8_SINT_PACK32 => "A8B8G8R8_SINT_PACK32",
-            &Self::A8B8G8R8_SRGB_PACK32 => "A8B8G8R8_SRGB_PACK32",
-            &Self::A2R10G10B10_UNORM_PACK32 => "A2R10G10B10_UNORM_PACK32",
-            &Self::A2R10G10B10_SNORM_PACK32 => "A2R10G10B10_SNORM_PACK32",
-            &Self::A2R10G10B10_USCALED_PACK32 => "A2R10G10B10_USCALED_PACK32",
-            &Self::A2R10G10B10_SSCALED_PACK32 => "A2R10G10B10_SSCALED_PACK32",
-            &Self::A2R10G10B10_UINT_PACK32 => "A2R10G10B10_UINT_PACK32",
-            &Self::A2R10G10B10_SINT_PACK32 => "A2R10G10B10_SINT_PACK32",
-            &Self::A2B10G10R10_UNORM_PACK32 => "A2B10G10R10_UNORM_PACK32",
-            &Self::A2B10G10R10_SNORM_PACK32 => "A2B10G10R10_SNORM_PACK32",
-            &Self::A2B10G10R10_USCALED_PACK32 => "A2B10G10R10_USCALED_PACK32",
-            &Self::A2B10G10R10_SSCALED_PACK32 => "A2B10G10R10_SSCALED_PACK32",
-            &Self::A2B10G10R10_UINT_PACK32 => "A2B10G10R10_UINT_PACK32",
-            &Self::A2B10G10R10_SINT_PACK32 => "A2B10G10R10_SINT_PACK32",
-            &Self::R16_UNORM => "R16_UNORM",
-            &Self::R16_SNORM => "R16_SNORM",
-            &Self::R16_USCALED => "R16_USCALED",
-            &Self::R16_SSCALED => "R16_SSCALED",
-            &Self::R16_UINT => "R16_UINT",
-            &Self::R16_SINT => "R16_SINT",
-            &Self::R16_SFLOAT => "R16_SFLOAT",
-            &Self::R16G16_UNORM => "R16G16_UNORM",
-            &Self::R16G16_SNORM => "R16G16_SNORM",
-            &Self::R16G16_USCALED => "R16G16_USCALED",
-            &Self::R16G16_SSCALED => "R16G16_SSCALED",
-            &Self::R16G16_UINT => "R16G16_UINT",
-            &Self::R16G16_SINT => "R16G16_SINT",
-            &Self::R16G16_SFLOAT => "R16G16_SFLOAT",
-            &Self::R16G16B16_UNORM => "R16G16B16_UNORM",
-            &Self::R16G16B16_SNORM => "R16G16B16_SNORM",
-            &Self::R16G16B16_USCALED => "R16G16B16_USCALED",
-            &Self::R16G16B16_SSCALED => "R16G16B16_SSCALED",
-            &Self::R16G16B16_UINT => "R16G16B16_UINT",
-            &Self::R16G16B16_SINT => "R16G16B16_SINT",
-            &Self::R16G16B16_SFLOAT => "R16G16B16_SFLOAT",
-            &Self::R16G16B16A16_UNORM => "R16G16B16A16_UNORM",
-            &Self::R16G16B16A16_SNORM => "R16G16B16A16_SNORM",
-            &Self::R16G16B16A16_USCALED => "R16G16B16A16_USCALED",
-            &Self::R16G16B16A16_SSCALED => "R16G16B16A16_SSCALED",
-            &Self::R16G16B16A16_UINT => "R16G16B16A16_UINT",
-            &Self::R16G16B16A16_SINT => "R16G16B16A16_SINT",
-            &Self::R16G16B16A16_SFLOAT => "R16G16B16A16_SFLOAT",
-            &Self::R32_UINT => "R32_UINT",
-            &Self::R32_SINT => "R32_SINT",
-            &Self::R32_SFLOAT => "R32_SFLOAT",
-            &Self::R32G32_UINT => "R32G32_UINT",
-            &Self::R32G32_SINT => "R32G32_SINT",
-            &Self::R32G32_SFLOAT => "R32G32_SFLOAT",
-            &Self::R32G32B32_UINT => "R32G32B32_UINT",
-            &Self::R32G32B32_SINT => "R32G32B32_SINT",
-            &Self::R32G32B32_SFLOAT => "R32G32B32_SFLOAT",
-            &Self::R32G32B32A32_UINT => "R32G32B32A32_UINT",
-            &Self::R32G32B32A32_SINT => "R32G32B32A32_SINT",
-            &Self::R32G32B32A32_SFLOAT => "R32G32B32A32_SFLOAT",
-            &Self::R64_UINT => "R64_UINT",
-            &Self::R64_SINT => "R64_SINT",
-            &Self::R64_SFLOAT => "R64_SFLOAT",
-            &Self::R64G64_UINT => "R64G64_UINT",
-            &Self::R64G64_SINT => "R64G64_SINT",
-            &Self::R64G64_SFLOAT => "R64G64_SFLOAT",
-            &Self::R64G64B64_UINT => "R64G64B64_UINT",
-            &Self::R64G64B64_SINT => "R64G64B64_SINT",
-            &Self::R64G64B64_SFLOAT => "R64G64B64_SFLOAT",
-            &Self::R64G64B64A64_UINT => "R64G64B64A64_UINT",
-            &Self::R64G64B64A64_SINT => "R64G64B64A64_SINT",
-            &Self::R64G64B64A64_SFLOAT => "R64G64B64A64_SFLOAT",
-            &Self::B10G11R11_UFLOAT_PACK32 => "B10G11R11_UFLOAT_PACK32",
-            &Self::E5B9G9R9_UFLOAT_PACK32 => "E5B9G9R9_UFLOAT_PACK32",
-            &Self::D16_UNORM => "D16_UNORM",
-            &Self::X8_D24_UNORM_PACK32 => "X8_D24_UNORM_PACK32",
-            &Self::D32_SFLOAT => "D32_SFLOAT",
-            &Self::S8_UINT => "S8_UINT",
-            &Self::D16_UNORM_S8_UINT => "D16_UNORM_S8_UINT",
-            &Self::D24_UNORM_S8_UINT => "D24_UNORM_S8_UINT",
-            &Self::D32_SFLOAT_S8_UINT => "D32_SFLOAT_S8_UINT",
-            &Self::BC1_RGB_UNORM_BLOCK => "BC1_RGB_UNORM_BLOCK",
-            &Self::BC1_RGB_SRGB_BLOCK => "BC1_RGB_SRGB_BLOCK",
-            &Self::BC1_RGBA_UNORM_BLOCK => "BC1_RGBA_UNORM_BLOCK",
-            &Self::BC1_RGBA_SRGB_BLOCK => "BC1_RGBA_SRGB_BLOCK",
-            &Self::BC2_UNORM_BLOCK => "BC2_UNORM_BLOCK",
-            &Self::BC2_SRGB_BLOCK => "BC2_SRGB_BLOCK",
-            &Self::BC3_UNORM_BLOCK => "BC3_UNORM_BLOCK",
-            &Self::BC3_SRGB_BLOCK => "BC3_SRGB_BLOCK",
-            &Self::BC4_UNORM_BLOCK => "BC4_UNORM_BLOCK",
-            &Self::BC4_SNORM_BLOCK => "BC4_SNORM_BLOCK",
-            &Self::BC5_UNORM_BLOCK => "BC5_UNORM_BLOCK",
-            &Self::BC5_SNORM_BLOCK => "BC5_SNORM_BLOCK",
-            &Self::BC6H_UFLOAT_BLOCK => "BC6H_UFLOAT_BLOCK",
-            &Self::BC6H_SFLOAT_BLOCK => "BC6H_SFLOAT_BLOCK",
-            &Self::BC7_UNORM_BLOCK => "BC7_UNORM_BLOCK",
-            &Self::BC7_SRGB_BLOCK => "BC7_SRGB_BLOCK",
-            &Self::ETC2_R8G8B8_UNORM_BLOCK => "ETC2_R8G8B8_UNORM_BLOCK",
-            &Self::ETC2_R8G8B8_SRGB_BLOCK => "ETC2_R8G8B8_SRGB_BLOCK",
-            &Self::ETC2_R8G8B8A1_UNORM_BLOCK => "ETC2_R8G8B8A1_UNORM_BLOCK",
-            &Self::ETC2_R8G8B8A1_SRGB_BLOCK => "ETC2_R8G8B8A1_SRGB_BLOCK",
-            &Self::ETC2_R8G8B8A8_UNORM_BLOCK => "ETC2_R8G8B8A8_UNORM_BLOCK",
-            &Self::ETC2_R8G8B8A8_SRGB_BLOCK => "ETC2_R8G8B8A8_SRGB_BLOCK",
-            &Self::EAC_R11_UNORM_BLOCK => "EAC_R11_UNORM_BLOCK",
-            &Self::EAC_R11_SNORM_BLOCK => "EAC_R11_SNORM_BLOCK",
-            &Self::EAC_R11G11_UNORM_BLOCK => "EAC_R11G11_UNORM_BLOCK",
-            &Self::EAC_R11G11_SNORM_BLOCK => "EAC_R11G11_SNORM_BLOCK",
-            &Self::ASTC_4X4_UNORM_BLOCK => "ASTC_4X4_UNORM_BLOCK",
-            &Self::ASTC_4X4_SRGB_BLOCK => "ASTC_4X4_SRGB_BLOCK",
-            &Self::ASTC_5X4_UNORM_BLOCK => "ASTC_5X4_UNORM_BLOCK",
-            &Self::ASTC_5X4_SRGB_BLOCK => "ASTC_5X4_SRGB_BLOCK",
-            &Self::ASTC_5X5_UNORM_BLOCK => "ASTC_5X5_UNORM_BLOCK",
-            &Self::ASTC_5X5_SRGB_BLOCK => "ASTC_5X5_SRGB_BLOCK",
-            &Self::ASTC_6X5_UNORM_BLOCK => "ASTC_6X5_UNORM_BLOCK",
-            &Self::ASTC_6X5_SRGB_BLOCK => "ASTC_6X5_SRGB_BLOCK",
-            &Self::ASTC_6X6_UNORM_BLOCK => "ASTC_6X6_UNORM_BLOCK",
-            &Self::ASTC_6X6_SRGB_BLOCK => "ASTC_6X6_SRGB_BLOCK",
-            &Self::ASTC_8X5_UNORM_BLOCK => "ASTC_8X5_UNORM_BLOCK",
-            &Self::ASTC_8X5_SRGB_BLOCK => "ASTC_8X5_SRGB_BLOCK",
-            &Self::ASTC_8X6_UNORM_BLOCK => "ASTC_8X6_UNORM_BLOCK",
-            &Self::ASTC_8X6_SRGB_BLOCK => "ASTC_8X6_SRGB_BLOCK",
-            &Self::ASTC_8X8_UNORM_BLOCK => "ASTC_8X8_UNORM_BLOCK",
-            &Self::ASTC_8X8_SRGB_BLOCK => "ASTC_8X8_SRGB_BLOCK",
-            &Self::ASTC_10X5_UNORM_BLOCK => "ASTC_10X5_UNORM_BLOCK",
-            &Self::ASTC_10X5_SRGB_BLOCK => "ASTC_10X5_SRGB_BLOCK",
-            &Self::ASTC_10X6_UNORM_BLOCK => "ASTC_10X6_UNORM_BLOCK",
-            &Self::ASTC_10X6_SRGB_BLOCK => "ASTC_10X6_SRGB_BLOCK",
-            &Self::ASTC_10X8_UNORM_BLOCK => "ASTC_10X8_UNORM_BLOCK",
-            &Self::ASTC_10X8_SRGB_BLOCK => "ASTC_10X8_SRGB_BLOCK",
-            &Self::ASTC_10X10_UNORM_BLOCK => "ASTC_10X10_UNORM_BLOCK",
-            &Self::ASTC_10X10_SRGB_BLOCK => "ASTC_10X10_SRGB_BLOCK",
-            &Self::ASTC_12X10_UNORM_BLOCK => "ASTC_12X10_UNORM_BLOCK",
-            &Self::ASTC_12X10_SRGB_BLOCK => "ASTC_12X10_SRGB_BLOCK",
-            &Self::ASTC_12X12_UNORM_BLOCK => "ASTC_12X12_UNORM_BLOCK",
-            &Self::ASTC_12X12_SRGB_BLOCK => "ASTC_12X12_SRGB_BLOCK",
-            &Self::G8B8G8R8_422_UNORM => "G8B8G8R8_422_UNORM",
-            &Self::B8G8R8G8_422_UNORM => "B8G8R8G8_422_UNORM",
-            &Self::G8_B8_R8_3PLANE_420_UNORM => "G8_B8_R8_3PLANE_420_UNORM",
-            &Self::G8_B8R8_2PLANE_420_UNORM => "G8_B8R8_2PLANE_420_UNORM",
-            &Self::G8_B8_R8_3PLANE_422_UNORM => "G8_B8_R8_3PLANE_422_UNORM",
-            &Self::G8_B8R8_2PLANE_422_UNORM => "G8_B8R8_2PLANE_422_UNORM",
-            &Self::G8_B8_R8_3PLANE_444_UNORM => "G8_B8_R8_3PLANE_444_UNORM",
-            &Self::R10X6_UNORM_PACK16 => "R10X6_UNORM_PACK16",
-            &Self::R10X6G10X6_UNORM_2PACK16 => "R10X6G10X6_UNORM_2PACK16",
-            &Self::R10X6G10X6B10X6A10X6_UNORM_4PACK16 => "R10X6G10X6B10X6A10X6_UNORM_4PACK16",
-            &Self::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 => {
+        fmt.write_str(match *self {
+            Self::UNDEFINED => "UNDEFINED",
+            Self::R4G4_UNORM_PACK8 => "R4G4_UNORM_PACK8",
+            Self::R4G4B4A4_UNORM_PACK16 => "R4G4B4A4_UNORM_PACK16",
+            Self::B4G4R4A4_UNORM_PACK16 => "B4G4R4A4_UNORM_PACK16",
+            Self::R5G6B5_UNORM_PACK16 => "R5G6B5_UNORM_PACK16",
+            Self::B5G6R5_UNORM_PACK16 => "B5G6R5_UNORM_PACK16",
+            Self::R5G5B5A1_UNORM_PACK16 => "R5G5B5A1_UNORM_PACK16",
+            Self::B5G5R5A1_UNORM_PACK16 => "B5G5R5A1_UNORM_PACK16",
+            Self::A1R5G5B5_UNORM_PACK16 => "A1R5G5B5_UNORM_PACK16",
+            Self::R8_UNORM => "R8_UNORM",
+            Self::R8_SNORM => "R8_SNORM",
+            Self::R8_USCALED => "R8_USCALED",
+            Self::R8_SSCALED => "R8_SSCALED",
+            Self::R8_UINT => "R8_UINT",
+            Self::R8_SINT => "R8_SINT",
+            Self::R8_SRGB => "R8_SRGB",
+            Self::R8G8_UNORM => "R8G8_UNORM",
+            Self::R8G8_SNORM => "R8G8_SNORM",
+            Self::R8G8_USCALED => "R8G8_USCALED",
+            Self::R8G8_SSCALED => "R8G8_SSCALED",
+            Self::R8G8_UINT => "R8G8_UINT",
+            Self::R8G8_SINT => "R8G8_SINT",
+            Self::R8G8_SRGB => "R8G8_SRGB",
+            Self::R8G8B8_UNORM => "R8G8B8_UNORM",
+            Self::R8G8B8_SNORM => "R8G8B8_SNORM",
+            Self::R8G8B8_USCALED => "R8G8B8_USCALED",
+            Self::R8G8B8_SSCALED => "R8G8B8_SSCALED",
+            Self::R8G8B8_UINT => "R8G8B8_UINT",
+            Self::R8G8B8_SINT => "R8G8B8_SINT",
+            Self::R8G8B8_SRGB => "R8G8B8_SRGB",
+            Self::B8G8R8_UNORM => "B8G8R8_UNORM",
+            Self::B8G8R8_SNORM => "B8G8R8_SNORM",
+            Self::B8G8R8_USCALED => "B8G8R8_USCALED",
+            Self::B8G8R8_SSCALED => "B8G8R8_SSCALED",
+            Self::B8G8R8_UINT => "B8G8R8_UINT",
+            Self::B8G8R8_SINT => "B8G8R8_SINT",
+            Self::B8G8R8_SRGB => "B8G8R8_SRGB",
+            Self::R8G8B8A8_UNORM => "R8G8B8A8_UNORM",
+            Self::R8G8B8A8_SNORM => "R8G8B8A8_SNORM",
+            Self::R8G8B8A8_USCALED => "R8G8B8A8_USCALED",
+            Self::R8G8B8A8_SSCALED => "R8G8B8A8_SSCALED",
+            Self::R8G8B8A8_UINT => "R8G8B8A8_UINT",
+            Self::R8G8B8A8_SINT => "R8G8B8A8_SINT",
+            Self::R8G8B8A8_SRGB => "R8G8B8A8_SRGB",
+            Self::B8G8R8A8_UNORM => "B8G8R8A8_UNORM",
+            Self::B8G8R8A8_SNORM => "B8G8R8A8_SNORM",
+            Self::B8G8R8A8_USCALED => "B8G8R8A8_USCALED",
+            Self::B8G8R8A8_SSCALED => "B8G8R8A8_SSCALED",
+            Self::B8G8R8A8_UINT => "B8G8R8A8_UINT",
+            Self::B8G8R8A8_SINT => "B8G8R8A8_SINT",
+            Self::B8G8R8A8_SRGB => "B8G8R8A8_SRGB",
+            Self::A8B8G8R8_UNORM_PACK32 => "A8B8G8R8_UNORM_PACK32",
+            Self::A8B8G8R8_SNORM_PACK32 => "A8B8G8R8_SNORM_PACK32",
+            Self::A8B8G8R8_USCALED_PACK32 => "A8B8G8R8_USCALED_PACK32",
+            Self::A8B8G8R8_SSCALED_PACK32 => "A8B8G8R8_SSCALED_PACK32",
+            Self::A8B8G8R8_UINT_PACK32 => "A8B8G8R8_UINT_PACK32",
+            Self::A8B8G8R8_SINT_PACK32 => "A8B8G8R8_SINT_PACK32",
+            Self::A8B8G8R8_SRGB_PACK32 => "A8B8G8R8_SRGB_PACK32",
+            Self::A2R10G10B10_UNORM_PACK32 => "A2R10G10B10_UNORM_PACK32",
+            Self::A2R10G10B10_SNORM_PACK32 => "A2R10G10B10_SNORM_PACK32",
+            Self::A2R10G10B10_USCALED_PACK32 => "A2R10G10B10_USCALED_PACK32",
+            Self::A2R10G10B10_SSCALED_PACK32 => "A2R10G10B10_SSCALED_PACK32",
+            Self::A2R10G10B10_UINT_PACK32 => "A2R10G10B10_UINT_PACK32",
+            Self::A2R10G10B10_SINT_PACK32 => "A2R10G10B10_SINT_PACK32",
+            Self::A2B10G10R10_UNORM_PACK32 => "A2B10G10R10_UNORM_PACK32",
+            Self::A2B10G10R10_SNORM_PACK32 => "A2B10G10R10_SNORM_PACK32",
+            Self::A2B10G10R10_USCALED_PACK32 => "A2B10G10R10_USCALED_PACK32",
+            Self::A2B10G10R10_SSCALED_PACK32 => "A2B10G10R10_SSCALED_PACK32",
+            Self::A2B10G10R10_UINT_PACK32 => "A2B10G10R10_UINT_PACK32",
+            Self::A2B10G10R10_SINT_PACK32 => "A2B10G10R10_SINT_PACK32",
+            Self::R16_UNORM => "R16_UNORM",
+            Self::R16_SNORM => "R16_SNORM",
+            Self::R16_USCALED => "R16_USCALED",
+            Self::R16_SSCALED => "R16_SSCALED",
+            Self::R16_UINT => "R16_UINT",
+            Self::R16_SINT => "R16_SINT",
+            Self::R16_SFLOAT => "R16_SFLOAT",
+            Self::R16G16_UNORM => "R16G16_UNORM",
+            Self::R16G16_SNORM => "R16G16_SNORM",
+            Self::R16G16_USCALED => "R16G16_USCALED",
+            Self::R16G16_SSCALED => "R16G16_SSCALED",
+            Self::R16G16_UINT => "R16G16_UINT",
+            Self::R16G16_SINT => "R16G16_SINT",
+            Self::R16G16_SFLOAT => "R16G16_SFLOAT",
+            Self::R16G16B16_UNORM => "R16G16B16_UNORM",
+            Self::R16G16B16_SNORM => "R16G16B16_SNORM",
+            Self::R16G16B16_USCALED => "R16G16B16_USCALED",
+            Self::R16G16B16_SSCALED => "R16G16B16_SSCALED",
+            Self::R16G16B16_UINT => "R16G16B16_UINT",
+            Self::R16G16B16_SINT => "R16G16B16_SINT",
+            Self::R16G16B16_SFLOAT => "R16G16B16_SFLOAT",
+            Self::R16G16B16A16_UNORM => "R16G16B16A16_UNORM",
+            Self::R16G16B16A16_SNORM => "R16G16B16A16_SNORM",
+            Self::R16G16B16A16_USCALED => "R16G16B16A16_USCALED",
+            Self::R16G16B16A16_SSCALED => "R16G16B16A16_SSCALED",
+            Self::R16G16B16A16_UINT => "R16G16B16A16_UINT",
+            Self::R16G16B16A16_SINT => "R16G16B16A16_SINT",
+            Self::R16G16B16A16_SFLOAT => "R16G16B16A16_SFLOAT",
+            Self::R32_UINT => "R32_UINT",
+            Self::R32_SINT => "R32_SINT",
+            Self::R32_SFLOAT => "R32_SFLOAT",
+            Self::R32G32_UINT => "R32G32_UINT",
+            Self::R32G32_SINT => "R32G32_SINT",
+            Self::R32G32_SFLOAT => "R32G32_SFLOAT",
+            Self::R32G32B32_UINT => "R32G32B32_UINT",
+            Self::R32G32B32_SINT => "R32G32B32_SINT",
+            Self::R32G32B32_SFLOAT => "R32G32B32_SFLOAT",
+            Self::R32G32B32A32_UINT => "R32G32B32A32_UINT",
+            Self::R32G32B32A32_SINT => "R32G32B32A32_SINT",
+            Self::R32G32B32A32_SFLOAT => "R32G32B32A32_SFLOAT",
+            Self::R64_UINT => "R64_UINT",
+            Self::R64_SINT => "R64_SINT",
+            Self::R64_SFLOAT => "R64_SFLOAT",
+            Self::R64G64_UINT => "R64G64_UINT",
+            Self::R64G64_SINT => "R64G64_SINT",
+            Self::R64G64_SFLOAT => "R64G64_SFLOAT",
+            Self::R64G64B64_UINT => "R64G64B64_UINT",
+            Self::R64G64B64_SINT => "R64G64B64_SINT",
+            Self::R64G64B64_SFLOAT => "R64G64B64_SFLOAT",
+            Self::R64G64B64A64_UINT => "R64G64B64A64_UINT",
+            Self::R64G64B64A64_SINT => "R64G64B64A64_SINT",
+            Self::R64G64B64A64_SFLOAT => "R64G64B64A64_SFLOAT",
+            Self::B10G11R11_UFLOAT_PACK32 => "B10G11R11_UFLOAT_PACK32",
+            Self::E5B9G9R9_UFLOAT_PACK32 => "E5B9G9R9_UFLOAT_PACK32",
+            Self::D16_UNORM => "D16_UNORM",
+            Self::X8_D24_UNORM_PACK32 => "X8_D24_UNORM_PACK32",
+            Self::D32_SFLOAT => "D32_SFLOAT",
+            Self::S8_UINT => "S8_UINT",
+            Self::D16_UNORM_S8_UINT => "D16_UNORM_S8_UINT",
+            Self::D24_UNORM_S8_UINT => "D24_UNORM_S8_UINT",
+            Self::D32_SFLOAT_S8_UINT => "D32_SFLOAT_S8_UINT",
+            Self::BC1_RGB_UNORM_BLOCK => "BC1_RGB_UNORM_BLOCK",
+            Self::BC1_RGB_SRGB_BLOCK => "BC1_RGB_SRGB_BLOCK",
+            Self::BC1_RGBA_UNORM_BLOCK => "BC1_RGBA_UNORM_BLOCK",
+            Self::BC1_RGBA_SRGB_BLOCK => "BC1_RGBA_SRGB_BLOCK",
+            Self::BC2_UNORM_BLOCK => "BC2_UNORM_BLOCK",
+            Self::BC2_SRGB_BLOCK => "BC2_SRGB_BLOCK",
+            Self::BC3_UNORM_BLOCK => "BC3_UNORM_BLOCK",
+            Self::BC3_SRGB_BLOCK => "BC3_SRGB_BLOCK",
+            Self::BC4_UNORM_BLOCK => "BC4_UNORM_BLOCK",
+            Self::BC4_SNORM_BLOCK => "BC4_SNORM_BLOCK",
+            Self::BC5_UNORM_BLOCK => "BC5_UNORM_BLOCK",
+            Self::BC5_SNORM_BLOCK => "BC5_SNORM_BLOCK",
+            Self::BC6H_UFLOAT_BLOCK => "BC6H_UFLOAT_BLOCK",
+            Self::BC6H_SFLOAT_BLOCK => "BC6H_SFLOAT_BLOCK",
+            Self::BC7_UNORM_BLOCK => "BC7_UNORM_BLOCK",
+            Self::BC7_SRGB_BLOCK => "BC7_SRGB_BLOCK",
+            Self::ETC2_R8G8B8_UNORM_BLOCK => "ETC2_R8G8B8_UNORM_BLOCK",
+            Self::ETC2_R8G8B8_SRGB_BLOCK => "ETC2_R8G8B8_SRGB_BLOCK",
+            Self::ETC2_R8G8B8A1_UNORM_BLOCK => "ETC2_R8G8B8A1_UNORM_BLOCK",
+            Self::ETC2_R8G8B8A1_SRGB_BLOCK => "ETC2_R8G8B8A1_SRGB_BLOCK",
+            Self::ETC2_R8G8B8A8_UNORM_BLOCK => "ETC2_R8G8B8A8_UNORM_BLOCK",
+            Self::ETC2_R8G8B8A8_SRGB_BLOCK => "ETC2_R8G8B8A8_SRGB_BLOCK",
+            Self::EAC_R11_UNORM_BLOCK => "EAC_R11_UNORM_BLOCK",
+            Self::EAC_R11_SNORM_BLOCK => "EAC_R11_SNORM_BLOCK",
+            Self::EAC_R11G11_UNORM_BLOCK => "EAC_R11G11_UNORM_BLOCK",
+            Self::EAC_R11G11_SNORM_BLOCK => "EAC_R11G11_SNORM_BLOCK",
+            Self::ASTC_4X4_UNORM_BLOCK => "ASTC_4X4_UNORM_BLOCK",
+            Self::ASTC_4X4_SRGB_BLOCK => "ASTC_4X4_SRGB_BLOCK",
+            Self::ASTC_5X4_UNORM_BLOCK => "ASTC_5X4_UNORM_BLOCK",
+            Self::ASTC_5X4_SRGB_BLOCK => "ASTC_5X4_SRGB_BLOCK",
+            Self::ASTC_5X5_UNORM_BLOCK => "ASTC_5X5_UNORM_BLOCK",
+            Self::ASTC_5X5_SRGB_BLOCK => "ASTC_5X5_SRGB_BLOCK",
+            Self::ASTC_6X5_UNORM_BLOCK => "ASTC_6X5_UNORM_BLOCK",
+            Self::ASTC_6X5_SRGB_BLOCK => "ASTC_6X5_SRGB_BLOCK",
+            Self::ASTC_6X6_UNORM_BLOCK => "ASTC_6X6_UNORM_BLOCK",
+            Self::ASTC_6X6_SRGB_BLOCK => "ASTC_6X6_SRGB_BLOCK",
+            Self::ASTC_8X5_UNORM_BLOCK => "ASTC_8X5_UNORM_BLOCK",
+            Self::ASTC_8X5_SRGB_BLOCK => "ASTC_8X5_SRGB_BLOCK",
+            Self::ASTC_8X6_UNORM_BLOCK => "ASTC_8X6_UNORM_BLOCK",
+            Self::ASTC_8X6_SRGB_BLOCK => "ASTC_8X6_SRGB_BLOCK",
+            Self::ASTC_8X8_UNORM_BLOCK => "ASTC_8X8_UNORM_BLOCK",
+            Self::ASTC_8X8_SRGB_BLOCK => "ASTC_8X8_SRGB_BLOCK",
+            Self::ASTC_10X5_UNORM_BLOCK => "ASTC_10X5_UNORM_BLOCK",
+            Self::ASTC_10X5_SRGB_BLOCK => "ASTC_10X5_SRGB_BLOCK",
+            Self::ASTC_10X6_UNORM_BLOCK => "ASTC_10X6_UNORM_BLOCK",
+            Self::ASTC_10X6_SRGB_BLOCK => "ASTC_10X6_SRGB_BLOCK",
+            Self::ASTC_10X8_UNORM_BLOCK => "ASTC_10X8_UNORM_BLOCK",
+            Self::ASTC_10X8_SRGB_BLOCK => "ASTC_10X8_SRGB_BLOCK",
+            Self::ASTC_10X10_UNORM_BLOCK => "ASTC_10X10_UNORM_BLOCK",
+            Self::ASTC_10X10_SRGB_BLOCK => "ASTC_10X10_SRGB_BLOCK",
+            Self::ASTC_12X10_UNORM_BLOCK => "ASTC_12X10_UNORM_BLOCK",
+            Self::ASTC_12X10_SRGB_BLOCK => "ASTC_12X10_SRGB_BLOCK",
+            Self::ASTC_12X12_UNORM_BLOCK => "ASTC_12X12_UNORM_BLOCK",
+            Self::ASTC_12X12_SRGB_BLOCK => "ASTC_12X12_SRGB_BLOCK",
+            Self::G8B8G8R8_422_UNORM => "G8B8G8R8_422_UNORM",
+            Self::B8G8R8G8_422_UNORM => "B8G8R8G8_422_UNORM",
+            Self::G8_B8_R8_3PLANE_420_UNORM => "G8_B8_R8_3PLANE_420_UNORM",
+            Self::G8_B8R8_2PLANE_420_UNORM => "G8_B8R8_2PLANE_420_UNORM",
+            Self::G8_B8_R8_3PLANE_422_UNORM => "G8_B8_R8_3PLANE_422_UNORM",
+            Self::G8_B8R8_2PLANE_422_UNORM => "G8_B8R8_2PLANE_422_UNORM",
+            Self::G8_B8_R8_3PLANE_444_UNORM => "G8_B8_R8_3PLANE_444_UNORM",
+            Self::R10X6_UNORM_PACK16 => "R10X6_UNORM_PACK16",
+            Self::R10X6G10X6_UNORM_2PACK16 => "R10X6G10X6_UNORM_2PACK16",
+            Self::R10X6G10X6B10X6A10X6_UNORM_4PACK16 => "R10X6G10X6B10X6A10X6_UNORM_4PACK16",
+            Self::G10X6B10X6G10X6R10X6_422_UNORM_4PACK16 => {
                 "G10X6B10X6G10X6R10X6_422_UNORM_4PACK16"
             }
-            &Self::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 => {
+            Self::B10X6G10X6R10X6G10X6_422_UNORM_4PACK16 => {
                 "B10X6G10X6R10X6G10X6_422_UNORM_4PACK16"
             }
-            &Self::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 => {
+            Self::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16 => {
                 "G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16"
             }
-            &Self::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 => {
+            Self::G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16 => {
                 "G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16"
             }
-            &Self::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 => {
+            Self::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16 => {
                 "G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16"
             }
-            &Self::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 => {
+            Self::G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16 => {
                 "G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16"
             }
-            &Self::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 => {
+            Self::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16 => {
                 "G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16"
             }
-            &Self::R12X4_UNORM_PACK16 => "R12X4_UNORM_PACK16",
-            &Self::R12X4G12X4_UNORM_2PACK16 => "R12X4G12X4_UNORM_2PACK16",
-            &Self::R12X4G12X4B12X4A12X4_UNORM_4PACK16 => "R12X4G12X4B12X4A12X4_UNORM_4PACK16",
-            &Self::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 => {
+            Self::R12X4_UNORM_PACK16 => "R12X4_UNORM_PACK16",
+            Self::R12X4G12X4_UNORM_2PACK16 => "R12X4G12X4_UNORM_2PACK16",
+            Self::R12X4G12X4B12X4A12X4_UNORM_4PACK16 => "R12X4G12X4B12X4A12X4_UNORM_4PACK16",
+            Self::G12X4B12X4G12X4R12X4_422_UNORM_4PACK16 => {
                 "G12X4B12X4G12X4R12X4_422_UNORM_4PACK16"
             }
-            &Self::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 => {
+            Self::B12X4G12X4R12X4G12X4_422_UNORM_4PACK16 => {
                 "B12X4G12X4R12X4G12X4_422_UNORM_4PACK16"
             }
-            &Self::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 => {
+            Self::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16 => {
                 "G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16"
             }
-            &Self::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 => {
+            Self::G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16 => {
                 "G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16"
             }
-            &Self::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 => {
+            Self::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16 => {
                 "G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16"
             }
-            &Self::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 => {
+            Self::G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16 => {
                 "G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16"
             }
-            &Self::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 => {
+            Self::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16 => {
                 "G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16"
             }
-            &Self::G16B16G16R16_422_UNORM => "G16B16G16R16_422_UNORM",
-            &Self::B16G16R16G16_422_UNORM => "B16G16R16G16_422_UNORM",
-            &Self::G16_B16_R16_3PLANE_420_UNORM => "G16_B16_R16_3PLANE_420_UNORM",
-            &Self::G16_B16R16_2PLANE_420_UNORM => "G16_B16R16_2PLANE_420_UNORM",
-            &Self::G16_B16_R16_3PLANE_422_UNORM => "G16_B16_R16_3PLANE_422_UNORM",
-            &Self::G16_B16R16_2PLANE_422_UNORM => "G16_B16R16_2PLANE_422_UNORM",
-            &Self::G16_B16_R16_3PLANE_444_UNORM => "G16_B16_R16_3PLANE_444_UNORM",
-            &Self::ASTC_4X4_SFLOAT_BLOCK_EXT => "ASTC_4X4_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_5X4_SFLOAT_BLOCK_EXT => "ASTC_5X4_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_5X5_SFLOAT_BLOCK_EXT => "ASTC_5X5_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_6X5_SFLOAT_BLOCK_EXT => "ASTC_6X5_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_6X6_SFLOAT_BLOCK_EXT => "ASTC_6X6_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_8X5_SFLOAT_BLOCK_EXT => "ASTC_8X5_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_8X6_SFLOAT_BLOCK_EXT => "ASTC_8X6_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_8X8_SFLOAT_BLOCK_EXT => "ASTC_8X8_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_10X5_SFLOAT_BLOCK_EXT => "ASTC_10X5_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_10X6_SFLOAT_BLOCK_EXT => "ASTC_10X6_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_10X8_SFLOAT_BLOCK_EXT => "ASTC_10X8_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_10X10_SFLOAT_BLOCK_EXT => "ASTC_10X10_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_12X10_SFLOAT_BLOCK_EXT => "ASTC_12X10_SFLOAT_BLOCK_EXT",
-            &Self::ASTC_12X12_SFLOAT_BLOCK_EXT => "ASTC_12X12_SFLOAT_BLOCK_EXT",
-            &Self::PVRTC1_2BPP_UNORM_BLOCK_IMG => "PVRTC1_2BPP_UNORM_BLOCK_IMG",
-            &Self::PVRTC1_4BPP_UNORM_BLOCK_IMG => "PVRTC1_4BPP_UNORM_BLOCK_IMG",
-            &Self::PVRTC2_2BPP_UNORM_BLOCK_IMG => "PVRTC2_2BPP_UNORM_BLOCK_IMG",
-            &Self::PVRTC2_4BPP_UNORM_BLOCK_IMG => "PVRTC2_4BPP_UNORM_BLOCK_IMG",
-            &Self::PVRTC1_2BPP_SRGB_BLOCK_IMG => "PVRTC1_2BPP_SRGB_BLOCK_IMG",
-            &Self::PVRTC1_4BPP_SRGB_BLOCK_IMG => "PVRTC1_4BPP_SRGB_BLOCK_IMG",
-            &Self::PVRTC2_2BPP_SRGB_BLOCK_IMG => "PVRTC2_2BPP_SRGB_BLOCK_IMG",
-            &Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => "PVRTC2_4BPP_SRGB_BLOCK_IMG",
+            Self::G16B16G16R16_422_UNORM => "G16B16G16R16_422_UNORM",
+            Self::B16G16R16G16_422_UNORM => "B16G16R16G16_422_UNORM",
+            Self::G16_B16_R16_3PLANE_420_UNORM => "G16_B16_R16_3PLANE_420_UNORM",
+            Self::G16_B16R16_2PLANE_420_UNORM => "G16_B16R16_2PLANE_420_UNORM",
+            Self::G16_B16_R16_3PLANE_422_UNORM => "G16_B16_R16_3PLANE_422_UNORM",
+            Self::G16_B16R16_2PLANE_422_UNORM => "G16_B16R16_2PLANE_422_UNORM",
+            Self::G16_B16_R16_3PLANE_444_UNORM => "G16_B16_R16_3PLANE_444_UNORM",
+            Self::ASTC_4X4_SFLOAT_BLOCK_EXT => "ASTC_4X4_SFLOAT_BLOCK_EXT",
+            Self::ASTC_5X4_SFLOAT_BLOCK_EXT => "ASTC_5X4_SFLOAT_BLOCK_EXT",
+            Self::ASTC_5X5_SFLOAT_BLOCK_EXT => "ASTC_5X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_6X5_SFLOAT_BLOCK_EXT => "ASTC_6X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_6X6_SFLOAT_BLOCK_EXT => "ASTC_6X6_SFLOAT_BLOCK_EXT",
+            Self::ASTC_8X5_SFLOAT_BLOCK_EXT => "ASTC_8X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_8X6_SFLOAT_BLOCK_EXT => "ASTC_8X6_SFLOAT_BLOCK_EXT",
+            Self::ASTC_8X8_SFLOAT_BLOCK_EXT => "ASTC_8X8_SFLOAT_BLOCK_EXT",
+            Self::ASTC_10X5_SFLOAT_BLOCK_EXT => "ASTC_10X5_SFLOAT_BLOCK_EXT",
+            Self::ASTC_10X6_SFLOAT_BLOCK_EXT => "ASTC_10X6_SFLOAT_BLOCK_EXT",
+            Self::ASTC_10X8_SFLOAT_BLOCK_EXT => "ASTC_10X8_SFLOAT_BLOCK_EXT",
+            Self::ASTC_10X10_SFLOAT_BLOCK_EXT => "ASTC_10X10_SFLOAT_BLOCK_EXT",
+            Self::ASTC_12X10_SFLOAT_BLOCK_EXT => "ASTC_12X10_SFLOAT_BLOCK_EXT",
+            Self::ASTC_12X12_SFLOAT_BLOCK_EXT => "ASTC_12X12_SFLOAT_BLOCK_EXT",
+            Self::PVRTC1_2BPP_UNORM_BLOCK_IMG => "PVRTC1_2BPP_UNORM_BLOCK_IMG",
+            Self::PVRTC1_4BPP_UNORM_BLOCK_IMG => "PVRTC1_4BPP_UNORM_BLOCK_IMG",
+            Self::PVRTC2_2BPP_UNORM_BLOCK_IMG => "PVRTC2_2BPP_UNORM_BLOCK_IMG",
+            Self::PVRTC2_4BPP_UNORM_BLOCK_IMG => "PVRTC2_4BPP_UNORM_BLOCK_IMG",
+            Self::PVRTC1_2BPP_SRGB_BLOCK_IMG => "PVRTC1_2BPP_SRGB_BLOCK_IMG",
+            Self::PVRTC1_4BPP_SRGB_BLOCK_IMG => "PVRTC1_4BPP_SRGB_BLOCK_IMG",
+            Self::PVRTC2_2BPP_SRGB_BLOCK_IMG => "PVRTC2_2BPP_SRGB_BLOCK_IMG",
+            Self::PVRTC2_4BPP_SRGB_BLOCK_IMG => "PVRTC2_4BPP_SRGB_BLOCK_IMG",
             _ => "(unknown)",
         })
     }
