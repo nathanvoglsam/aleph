@@ -66,6 +66,12 @@ impl<'a> AllocationDescBuilder<'a> {
     }
 }
 
+impl<'a> Default for AllocationDescBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct AllocationDesc<'a> {
     pub flags: AllocationFlags,
     pub heap_type: dx12::HeapType,
@@ -90,12 +96,12 @@ impl<'a> Default for AllocationDesc<'a> {
     }
 }
 
-impl<'a> Into<D3D12MA_ALLOCATION_DESC> for &AllocationDesc<'a> {
-    fn into(self) -> D3D12MA_ALLOCATION_DESC {
-        D3D12MA_ALLOCATION_DESC {
-            flags: self.flags,
-            heap_type: self.heap_type.into(),
-            extra_heap_flags: self.extra_heap_flags.into(),
+impl<'a> From<&AllocationDesc<'a>> for D3D12MA_ALLOCATION_DESC {
+    fn from(v: &AllocationDesc<'a>) -> Self {
+        Self {
+            flags: v.flags,
+            heap_type: v.heap_type.into(),
+            extra_heap_flags: v.extra_heap_flags.into(),
             pool: std::ptr::null_mut(),
         }
     }

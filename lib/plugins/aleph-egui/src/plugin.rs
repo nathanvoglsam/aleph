@@ -176,4 +176,10 @@ impl IPlugin for PluginEgui {
     }
 }
 
+impl Default for PluginEgui {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 interfaces::any::declare_interfaces!(PluginEgui, [IPlugin]);

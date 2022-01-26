@@ -89,3 +89,9 @@ impl ComponentRegistry {
         }
     }
 }
+
+impl Default for ComponentRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}

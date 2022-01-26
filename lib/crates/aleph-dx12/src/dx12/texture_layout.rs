@@ -38,9 +38,9 @@ pub enum TextureLayout {
     StandardSwizzle64KB = 3,
 }
 
-impl Into<D3D12_TEXTURE_LAYOUT> for TextureLayout {
+impl From<TextureLayout> for D3D12_TEXTURE_LAYOUT {
     #[inline]
-    fn into(self) -> D3D12_TEXTURE_LAYOUT {
-        self as i32
+    fn from(v: TextureLayout) -> Self {
+        v as _
     }
 }

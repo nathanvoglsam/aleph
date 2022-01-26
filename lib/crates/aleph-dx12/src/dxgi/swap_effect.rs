@@ -57,9 +57,9 @@ impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
     }
 }
 
-impl Into<DXGI_SWAP_EFFECT> for SwapEffect {
+impl From<SwapEffect> for DXGI_SWAP_EFFECT {
     #[inline]
-    fn into(self) -> DXGI_SWAP_EFFECT {
-        self as i32
+    fn from(v: SwapEffect) -> Self {
+        v as _
     }
 }

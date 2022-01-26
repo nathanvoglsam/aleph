@@ -72,14 +72,14 @@ impl TryFrom<u64> for AssetLocalID {
     }
 }
 
-impl Into<NonZeroU64> for AssetLocalID {
-    fn into(self) -> NonZeroU64 {
-        self.0
+impl From<AssetLocalID> for NonZeroU64 {
+    fn from(v: AssetLocalID) -> Self {
+        v.0
     }
 }
 
-impl Into<u64> for AssetLocalID {
-    fn into(self) -> u64 {
-        self.0.get()
+impl From<AssetLocalID> for u64 {
+    fn from(v: AssetLocalID) -> Self {
+        v.0.get()
     }
 }

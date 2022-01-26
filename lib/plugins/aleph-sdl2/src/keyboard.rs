@@ -119,7 +119,7 @@ impl KeyboardImpl {
                 keyboard_state.keys[event.scan_code as usize] = true;
                 let event = KeyboardEvent::KeyDown(event);
                 keyboard_events.push(event.clone());
-                all_events.push(Event::KeyboardEvent(event.clone()));
+                all_events.push(Event::KeyboardEvent(event));
             }
             sdl2::event::Event::KeyUp {
                 scancode,
@@ -135,13 +135,13 @@ impl KeyboardImpl {
                 keyboard_state.keys[event.scan_code as usize] = false;
                 let event = KeyboardEvent::KeyUp(event);
                 keyboard_events.push(event.clone());
-                all_events.push(Event::KeyboardEvent(event.clone()));
+                all_events.push(Event::KeyboardEvent(event));
             }
             sdl2::event::Event::TextInput { text, .. } => {
                 let event = TextInputEvent { text };
                 let event = KeyboardEvent::TextInput(event);
                 keyboard_events.push(event.clone());
-                all_events.push(Event::KeyboardEvent(event.clone()));
+                all_events.push(Event::KeyboardEvent(event));
             }
             _ => {}
         }

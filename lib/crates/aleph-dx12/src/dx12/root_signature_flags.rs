@@ -55,9 +55,9 @@ impl Default for RootSignatureFlags {
 
 windows::flags_bitwise_impl!(RootSignatureFlags);
 
-impl Into<D3D12_ROOT_SIGNATURE_FLAGS> for RootSignatureFlags {
+impl From<RootSignatureFlags> for D3D12_ROOT_SIGNATURE_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_ROOT_SIGNATURE_FLAGS {
-        self.0
+    fn from(v: RootSignatureFlags) -> Self {
+        v.0
     }
 }

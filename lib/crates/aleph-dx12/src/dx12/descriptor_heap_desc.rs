@@ -83,6 +83,12 @@ impl DescriptorHeapDescBuilder {
     }
 }
 
+impl Default for DescriptorHeapDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DescriptorHeapDesc {

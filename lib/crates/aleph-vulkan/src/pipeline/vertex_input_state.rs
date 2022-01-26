@@ -42,7 +42,7 @@ impl VertexInputState {
     /// Creates a new PipelineVertexInputStateCreateInfo from the given list of bindings and
     /// attributes
     ///
-    pub fn new<'a>(
+    pub fn builder<'a>(
         bindings: &'a [VertexInputBindingDescriptionBuilder<'static>],
         attributes: &'a [VertexInputAttributeDescriptionBuilder<'static>],
     ) -> PipelineVertexInputStateCreateInfoBuilder<'a> {

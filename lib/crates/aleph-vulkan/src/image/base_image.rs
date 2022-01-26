@@ -183,6 +183,12 @@ impl<'a> ImageSingle2DBuilder<'a> {
     }
 }
 
+impl<'a> Default for ImageSingle2DBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 ///
 /// Represents an image that will be used as a render target
 ///

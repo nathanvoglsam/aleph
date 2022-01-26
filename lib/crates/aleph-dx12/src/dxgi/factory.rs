@@ -64,7 +64,7 @@ impl Factory {
             let ptr = ptr as *mut *mut ::std::ffi::c_void;
             create_fn(flags, &IDXGIFactory2::IID, ptr)
                 .and_some(dxgi_factory)
-                .map(|v| Self(v))
+                .map(Self)
         }
     }
 
@@ -128,7 +128,7 @@ impl Factory {
 
     #[inline]
     pub fn enumerate_adapters(&mut self, i: u32) -> windows::core::Result<Adapter> {
-        unsafe { Self::enum_edapter_old(&self.0, i).map(|v| Adapter(v)) }
+        unsafe { Self::enum_edapter_old(&self.0, i).map(Adapter) }
     }
 
     pub fn select_hardware_adapter(

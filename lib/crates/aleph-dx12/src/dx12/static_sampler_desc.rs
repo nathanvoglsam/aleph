@@ -125,6 +125,12 @@ impl StaticSamplerDescBuilder {
     }
 }
 
+impl Default for StaticSamplerDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct StaticSamplerDesc {

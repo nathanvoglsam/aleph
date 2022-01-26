@@ -107,6 +107,12 @@ impl ResourceDescBuilder {
     }
 }
 
+impl Default for ResourceDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct ResourceDesc {

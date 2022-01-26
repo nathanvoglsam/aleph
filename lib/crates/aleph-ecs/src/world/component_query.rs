@@ -45,6 +45,7 @@ pub trait ComponentQuery: Send + Sync {
 /// Once rust offers generic associated types, this will be moved into [`Query`].
 pub type ComponentQueryItem<'a, Q> = <<Q as ComponentQuery>::Fetch as Fetch<'a>>::Item;
 
+#[allow(clippy::missing_safety_doc)]
 /// Very thin interface over a pointer bumping based iterator.
 ///
 /// This is a super unsafe library internal detail that must be public to allow for library users

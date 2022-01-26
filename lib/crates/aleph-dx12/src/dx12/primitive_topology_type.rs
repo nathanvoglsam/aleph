@@ -46,9 +46,9 @@ impl Default for PrimitiveTopologyType {
     }
 }
 
-impl Into<D3D12_PRIMITIVE_TOPOLOGY_TYPE> for PrimitiveTopologyType {
+impl From<PrimitiveTopologyType> for D3D12_PRIMITIVE_TOPOLOGY_TYPE {
     #[inline]
-    fn into(self) -> D3D12_PRIMITIVE_TOPOLOGY_TYPE {
-        self as i32
+    fn from(v: PrimitiveTopologyType) -> Self {
+        v as _
     }
 }

@@ -95,23 +95,23 @@ impl From<u64> for EntityId {
 
         Self {
             generation: Generation::from_raw(second),
-            index: NonZeroU32::new(first).map(|v| EntityIndex(v)),
+            index: NonZeroU32::new(first).map(EntityIndex),
         }
     }
 }
 
-impl Into<u64> for EntityId {
+impl From<EntityId> for u64 {
     /// Theoretically this whole thing should compile to a no-op as we're just manually spelling out
     /// the semantics of something that could be implemented with a mem::transmute.
     ///
     /// No point adding extra unsafe if it can be avoided
     #[inline]
-    fn into(self) -> u64 {
+    fn from(v: EntityId) -> Self {
         // Convert the generation index into the low 32 bits of a u64
-        let first = self.generation.into_inner() as u64;
+        let first = v.generation.into_inner() as u64;
 
         // Convert the entity index into the high 32 bits of a u64
-        let second = self.index.map(|v| v.0.get()).unwrap_or(0) as u64;
+        let second = v.index.map(|v| v.0.get()).unwrap_or(0) as u64;
         let second = second << 32;
 
         // Combine the two haves to create a whole u64 id and return it

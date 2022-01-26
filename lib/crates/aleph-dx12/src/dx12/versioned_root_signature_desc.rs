@@ -40,10 +40,10 @@ pub enum VersionedRootSignatureDesc<'a> {
     Desc1(RootSignatureDesc1<'a>),
 }
 
-impl<'a> Into<D3D12_VERSIONED_ROOT_SIGNATURE_DESC> for VersionedRootSignatureDesc<'a> {
+impl<'a> From<VersionedRootSignatureDesc<'a>> for D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
     #[inline]
-    fn into(self) -> D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
-        match self {
+    fn from(v: VersionedRootSignatureDesc<'a>) -> Self {
+        match v {
             VersionedRootSignatureDesc::Desc(v) => D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
                 version: D3D_ROOT_SIGNATURE_VERSION_1_0,
                 desc: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_VERSIONS {

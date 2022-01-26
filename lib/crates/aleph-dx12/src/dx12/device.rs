@@ -69,7 +69,7 @@ impl Device {
                 ptr,
             )
             .and_some(device)
-            .map(|v| Self(v))
+            .map(Self)
         }
     }
 
@@ -79,11 +79,7 @@ impl Device {
         initial_value: u64,
         flags: FenceFlags,
     ) -> windows::core::Result<Fence> {
-        unsafe {
-            self.0
-                .CreateFence(initial_value, flags.into())
-                .map(|v| Fence(v))
-        }
+        unsafe { self.0.CreateFence(initial_value, flags.into()).map(Fence) }
     }
 
     #[inline]
@@ -94,7 +90,7 @@ impl Device {
         unsafe {
             self.0
                 .CreateCommandAllocator(list_type.into())
-                .map(|v| CommandAllocator(v))
+                .map(CommandAllocator)
         }
     }
 
@@ -106,7 +102,7 @@ impl Device {
         unsafe {
             self.0
                 .CreateCommandList1(0, list_type.into(), Default::default())
-                .map(|v| GraphicsCommandList(v))
+                .map(GraphicsCommandList)
         }
     }
 
@@ -120,9 +116,7 @@ impl Device {
                 SizeInBytes: state_stream.len(),
                 pPipelineStateSubobjectStream: state_stream.as_ptr() as *mut u8 as *mut _,
             };
-            self.0
-                .CreatePipelineState(&desc)
-                .map(|v| GraphicsPipelineState(v))
+            self.0.CreatePipelineState(&desc).map(GraphicsPipelineState)
         }
     }
 
@@ -138,7 +132,7 @@ impl Device {
                     root_signature_blob.0.GetBufferPointer(),
                     root_signature_blob.0.GetBufferSize(),
                 )
-                .map(|v| RootSignature(v))
+                .map(RootSignature)
         }
     }
 
@@ -149,9 +143,7 @@ impl Device {
     ) -> windows::core::Result<DescriptorHeap> {
         unsafe {
             let desc = transmute(descriptor_heap_desc.clone());
-            self.0
-                .CreateDescriptorHeap(&desc)
-                .map(|v| DescriptorHeap(v))
+            self.0.CreateDescriptorHeap(&desc).map(DescriptorHeap)
         }
     }
 
@@ -162,7 +154,7 @@ impl Device {
     ) -> windows::core::Result<CommandQueue> {
         unsafe {
             let desc = transmute(command_queue_desc.clone());
-            self.0.CreateCommandQueue(&desc).map(|v| CommandQueue(v))
+            self.0.CreateCommandQueue(&desc).map(CommandQueue)
         }
     }
 

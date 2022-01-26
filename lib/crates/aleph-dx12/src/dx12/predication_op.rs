@@ -37,9 +37,9 @@ pub enum PredicationOp {
     NotEqualZero = 1,
 }
 
-impl Into<D3D12_PREDICATION_OP> for PredicationOp {
+impl From<PredicationOp> for D3D12_PREDICATION_OP {
     #[inline]
-    fn into(self) -> D3D12_PREDICATION_OP {
-        self as i32
+    fn from(v: PredicationOp) -> Self {
+        v as _
     }
 }

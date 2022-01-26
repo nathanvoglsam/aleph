@@ -138,6 +138,12 @@ impl<'a> ColourImageBuilder<'a> {
     }
 }
 
+impl<'a> Default for ColourImageBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 ///
 /// Represents an image that will be used as a colour image
 ///

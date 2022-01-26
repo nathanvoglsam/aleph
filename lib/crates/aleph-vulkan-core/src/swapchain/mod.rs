@@ -258,6 +258,12 @@ impl SwapchainBuilder {
     }
 }
 
+impl Default for SwapchainBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Swapchain {
     swapchain: SwapchainKHR,
     surface: SurfaceKHR,
@@ -403,11 +409,7 @@ impl Swapchain {
         // Type alias for brevity
         type VkResult = erupt::vk1_0::Result;
 
-        if result.raw == VkResult::SUCCESS {
-            return;
-        } else if result.raw == VkResult::SUBOPTIMAL_KHR
-            || result.raw == VkResult::ERROR_OUT_OF_DATE_KHR
-        {
+        if result.raw == VkResult::SUBOPTIMAL_KHR || result.raw == VkResult::ERROR_OUT_OF_DATE_KHR {
             self.requires_rebuild = true;
         } else {
             // Any other result is probably unrecoverable in a reasonable fashion so just panic and
@@ -448,7 +450,7 @@ impl Swapchain {
 
         // If any of these are zero than the window is minimized. We can't create a swap chain for
         // a minimized window as the extents are invalid so we error out and let the user handle it.
-        if capabilities.max_image_extent.width == 0 || capabilities.max_image_extent.width == 0 {
+        if capabilities.max_image_extent.width == 0 || capabilities.max_image_extent.height == 0 {
             aleph_log::error!("Swapchain max extent 0 when rebuilding swapchain");
             return Err(RebuildError::ExtentsZero);
         }
@@ -467,9 +469,10 @@ impl Swapchain {
             let (w, h) = drawable_size;
 
             // Convert it to an extent
-            let mut actual = Extent2D::default();
-            actual.width = w;
-            actual.height = h;
+            let mut actual = Extent2D {
+                width: w,
+                height: h,
+            };
 
             // Now we need to clamp it to fit inside the limits imposed by the surface capabilities
             // we queried earlier. We just clamp to be >= than the minimum and <= than the maximum
@@ -515,7 +518,7 @@ impl Swapchain {
         aleph_log::trace!("Present Mode  : {:#?}", present_mode);
 
         let formats = &support.formats;
-        let surface_format = select_surface_format(&formats);
+        let surface_format = select_surface_format(formats);
         aleph_log::trace!("Format        : {:?}", surface_format);
 
         let image_count = {

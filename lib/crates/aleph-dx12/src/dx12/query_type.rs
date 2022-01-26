@@ -44,9 +44,9 @@ pub enum QueryType {
     VideoDecodeStatistics = 8,
 }
 
-impl Into<D3D12_QUERY_TYPE> for QueryType {
+impl From<QueryType> for D3D12_QUERY_TYPE {
     #[inline]
-    fn into(self) -> D3D12_QUERY_TYPE {
-        self as i32
+    fn from(v: QueryType) -> Self {
+        v as _
     }
 }

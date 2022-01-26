@@ -72,6 +72,12 @@ impl BlendDescBuilder {
     }
 }
 
+impl Default for BlendDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct BlendDesc {

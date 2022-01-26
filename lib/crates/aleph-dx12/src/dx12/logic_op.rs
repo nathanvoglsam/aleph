@@ -50,9 +50,9 @@ pub enum LogicOp {
     OrInverted = 15,
 }
 
-impl Into<D3D12_LOGIC_OP> for LogicOp {
+impl From<LogicOp> for D3D12_LOGIC_OP {
     #[inline]
-    fn into(self) -> D3D12_LOGIC_OP {
-        self as i32
+    fn from(v: LogicOp) -> Self {
+        v as _
     }
 }

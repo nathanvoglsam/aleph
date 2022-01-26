@@ -204,9 +204,9 @@ impl Default for ResourceStates {
 
 windows::flags_bitwise_impl!(ResourceStates);
 
-impl Into<D3D12_RESOURCE_STATES> for ResourceStates {
+impl From<ResourceStates> for D3D12_RESOURCE_STATES {
     #[inline]
-    fn into(self) -> D3D12_RESOURCE_STATES {
-        self.0
+    fn from(v: ResourceStates) -> Self {
+        v.0
     }
 }

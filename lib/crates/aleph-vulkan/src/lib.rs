@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::missing_safety_doc)]
+
 pub extern crate spirv_reflect;
 
 pub mod image;

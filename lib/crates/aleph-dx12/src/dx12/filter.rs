@@ -70,9 +70,9 @@ pub enum Filter {
     MaximumAnisotropic = 469,
 }
 
-impl Into<D3D12_FILTER> for Filter {
+impl From<Filter> for D3D12_FILTER {
     #[inline]
-    fn into(self) -> D3D12_FILTER {
-        self as i32
+    fn from(v: Filter) -> Self {
+        v as _
     }
 }

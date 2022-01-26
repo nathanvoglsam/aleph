@@ -63,9 +63,9 @@ impl CommandListType {
     }
 }
 
-impl Into<D3D12_COMMAND_LIST_TYPE> for CommandListType {
+impl From<CommandListType> for D3D12_COMMAND_LIST_TYPE {
     #[inline]
-    fn into(self) -> D3D12_COMMAND_LIST_TYPE {
-        self as i32
+    fn from(v: CommandListType) -> Self {
+        v as _
     }
 }

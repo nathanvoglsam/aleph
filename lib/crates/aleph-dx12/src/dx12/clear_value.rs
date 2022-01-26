@@ -53,10 +53,10 @@ impl ClearValue {
     }
 }
 
-impl Into<D3D12_CLEAR_VALUE> for ClearValue {
+impl From<ClearValue> for D3D12_CLEAR_VALUE {
     #[inline]
-    fn into(self) -> D3D12_CLEAR_VALUE {
-        match self {
+    fn from(v: ClearValue) -> Self {
+        match v {
             ClearValue::Color { format, color } => {
                 assert!(!format.is_depth_stencil());
                 D3D12_CLEAR_VALUE {

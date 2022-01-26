@@ -68,9 +68,15 @@ impl<'input> ListBuilder<'input> {
     }
 }
 
-impl<'input> Into<List<'input>> for ListBuilder<'input> {
+impl<'input> From<ListBuilder<'input>> for List<'input> {
     #[inline]
-    fn into(self) -> List<'input> {
-        self.inner
+    fn from(v: ListBuilder<'input>) -> Self {
+        v.inner
+    }
+}
+
+impl<'input> Default for ListBuilder<'input> {
+    fn default() -> Self {
+        Self::new()
     }
 }

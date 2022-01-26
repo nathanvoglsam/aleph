@@ -42,9 +42,9 @@ pub enum StencilOp {
     Decrement = 8,
 }
 
-impl Into<D3D12_STENCIL_OP> for StencilOp {
+impl From<StencilOp> for D3D12_STENCIL_OP {
     #[inline]
-    fn into(self) -> D3D12_STENCIL_OP {
-        self as i32
+    fn from(v: StencilOp) -> Self {
+        v as _
     }
 }

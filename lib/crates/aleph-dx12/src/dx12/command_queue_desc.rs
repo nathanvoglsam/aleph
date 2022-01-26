@@ -76,6 +76,12 @@ impl CommandQueueDescBuilder {
     }
 }
 
+impl Default for CommandQueueDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct CommandQueueDesc {

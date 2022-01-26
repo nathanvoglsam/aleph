@@ -39,9 +39,9 @@ pub enum ResourceDimension {
     Texture3D = 4,
 }
 
-impl Into<D3D12_RESOURCE_DIMENSION> for ResourceDimension {
+impl From<ResourceDimension> for D3D12_RESOURCE_DIMENSION {
     #[inline]
-    fn into(self) -> D3D12_RESOURCE_DIMENSION {
-        self as i32
+    fn from(v: ResourceDimension) -> Self {
+        v as _
     }
 }

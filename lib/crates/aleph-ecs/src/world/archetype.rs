@@ -139,6 +139,12 @@ impl Archetype {
     pub fn len(&self) -> u32 {
         self.len
     }
+
+    /// Returns if there are no entities in the archetype
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
 }
 
 /// Internal implementations
@@ -508,8 +514,7 @@ impl Archetype {
         unsafe {
             let ptr = self.entity_ids.as_ptr() as *mut EntityId;
             let ptr = ptr.add(1);
-            let ptr = NonNull::new(ptr).unwrap();
-            ptr
+            NonNull::new(ptr).unwrap()
         }
     }
 }
@@ -539,6 +544,7 @@ impl Drop for Archetype {
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_component_descriptions(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
@@ -553,6 +559,7 @@ pub unsafe extern "C" fn archetype_get_component_descriptions(
     ptr
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_component_index(
     archetype: NonNull<Archetype>,
     component: ComponentTypeId,
@@ -566,6 +573,7 @@ pub unsafe extern "C" fn archetype_get_component_index(
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_storage_by_index(
     mut archetype: NonNull<Archetype>,
     index: usize,
@@ -574,6 +582,7 @@ pub unsafe extern "C" fn archetype_get_storage_by_index(
     NonNull::new_unchecked(storage.as_mut_ptr())
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_entity_layout(
     archetype: NonNull<Archetype>,
     out_len: &mut usize,
@@ -589,11 +598,13 @@ pub unsafe extern "C" fn archetype_get_entity_layout(
 }
 
 /// `Archetype::len`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_len(archetype: NonNull<Archetype>) -> u32 {
     archetype.as_ref().len()
 }
 
 /// `Archetype::len`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_get_capacity(archetype: NonNull<Archetype>) -> u32 {
     archetype.as_ref().capacity()
 }

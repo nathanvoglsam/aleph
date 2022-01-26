@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::missing_safety_doc)]
+
 pub extern crate erupt;
 pub extern crate raw_window_handle;
 

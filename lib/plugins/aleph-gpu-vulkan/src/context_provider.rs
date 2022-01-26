@@ -153,10 +153,8 @@ fn instance_extensions<T>(
     };
 
     // Get surface extensions
-    let mut extensions = Vec::new();
-
     // Push the base surface extension
-    extensions.push(khr_surface::KHR_SURFACE_EXTENSION_NAME);
+    let mut extensions = vec![khr_surface::KHR_SURFACE_EXTENSION_NAME];
 
     // Push all possible WSI extensions for the underlying platform
     if cfg!(all(

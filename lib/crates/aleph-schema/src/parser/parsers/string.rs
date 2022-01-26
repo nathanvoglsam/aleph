@@ -271,7 +271,7 @@ impl<'input> StringLiteralParser<'input> {
         let begin = span_start + 3;
         let end = i;
         let sequence = &self.input[begin..end];
-        let num = u32::from_str_radix(&sequence, 16).unwrap();
+        let num = u32::from_str_radix(sequence, 16).unwrap();
         if let Some(result) = char::from_u32(num) {
             self.chars.next().unwrap();
             Some(Ok((span_start, result, i)))

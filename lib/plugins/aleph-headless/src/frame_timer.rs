@@ -79,9 +79,7 @@ impl IFrameTimer for FrameTimerImpl {
         // Rescale to seconds
         let delta_micros = delta.as_micros() as f64;
         let delta_millis = delta_micros / 1000f64;
-        let delta_seconds = delta_millis / 1000f64;
-
-        delta_seconds
+        delta_millis / 1000f64
     }
 
     fn elapsed_time(&self) -> f64 {
@@ -93,9 +91,7 @@ impl IFrameTimer for FrameTimerImpl {
         // Rescale to seconds
         let elapsed_micros = elapsed.as_micros() as f64;
         let elapsed_millis = elapsed_micros / 1000f64;
-        let elapsed_seconds = elapsed_millis / 1000f64;
-
-        elapsed_seconds
+        elapsed_millis / 1000f64
     }
 }
 

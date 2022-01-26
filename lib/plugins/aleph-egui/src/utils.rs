@@ -175,7 +175,7 @@ pub fn translate_mouse_event(
                 pos,
                 button,
                 pressed: true,
-                modifiers: modifiers.clone(),
+                modifiers: *modifiers,
             };
             Some(event)
         }
@@ -186,7 +186,7 @@ pub fn translate_mouse_event(
                 pos,
                 button,
                 pressed: false,
-                modifiers: modifiers.clone(),
+                modifiers: *modifiers,
             };
             Some(event)
         }

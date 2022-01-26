@@ -97,4 +97,10 @@ impl IPlugin for PluginPlatformHeadless {
     }
 }
 
+impl Default for PluginPlatformHeadless {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 interfaces::any::declare_interfaces!(PluginPlatformHeadless, [IPlugin]);

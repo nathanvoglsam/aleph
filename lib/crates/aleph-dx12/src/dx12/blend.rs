@@ -51,9 +51,9 @@ pub enum Blend {
     Src1AlphaInv = 19,
 }
 
-impl Into<D3D12_BLEND> for Blend {
+impl From<Blend> for D3D12_BLEND {
     #[inline]
-    fn into(self) -> D3D12_BLEND {
-        self as i32
+    fn from(v: Blend) -> Self {
+        v as _
     }
 }

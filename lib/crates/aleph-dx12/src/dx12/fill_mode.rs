@@ -36,9 +36,9 @@ pub enum FillMode {
     Solid = 3,
 }
 
-impl Into<D3D12_FILL_MODE> for FillMode {
+impl From<FillMode> for D3D12_FILL_MODE {
     #[inline]
-    fn into(self) -> D3D12_FILL_MODE {
-        self as i32
+    fn from(v: FillMode) -> Self {
+        v as _
     }
 }

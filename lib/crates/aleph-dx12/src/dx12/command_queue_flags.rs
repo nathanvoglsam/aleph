@@ -46,9 +46,9 @@ impl Default for CommandQueueFlags {
 
 windows::flags_bitwise_impl!(CommandQueueFlags);
 
-impl Into<D3D12_COMMAND_QUEUE_FLAGS> for CommandQueueFlags {
+impl From<CommandQueueFlags> for D3D12_COMMAND_QUEUE_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_COMMAND_QUEUE_FLAGS {
-        self.0
+    fn from(v: CommandQueueFlags) -> Self {
+        v.0
     }
 }

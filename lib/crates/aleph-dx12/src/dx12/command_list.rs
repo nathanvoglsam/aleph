@@ -275,7 +275,7 @@ impl GraphicsCommandList {
         const VAL: MaybeUninit<D3D12_RESOURCE_BARRIER> = MaybeUninit::uninit();
         let mut list: [MaybeUninit<D3D12_RESOURCE_BARRIER>; NUM] = [VAL; NUM];
 
-        barriers.into_iter().enumerate().for_each(|(i, v)| {
+        barriers.iter().enumerate().for_each(|(i, v)| {
             list[i].as_mut_ptr().write(v.get_raw());
         });
 

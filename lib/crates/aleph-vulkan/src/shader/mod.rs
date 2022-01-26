@@ -267,7 +267,7 @@ impl<'a> ShaderModuleBuilder<'a> {
             if push_constants.len() != 1 {
                 return Err(ShaderModuleBuildError::MoreThanOnePushConstantBlock);
             }
-            let push_constants = push_constants.drain(..).nth(0).unwrap();
+            let push_constants = push_constants.drain(..).next().unwrap();
 
             let push_constants = PushConstantReflection::reflect(push_constants)?;
             let push_constants = Box::new(push_constants);
@@ -342,17 +342,16 @@ impl<'a> ShaderModuleBuilder<'a> {
         }
 
         // Extract the single expected entry point
-        let mut entry_point = entry_point.drain(..).nth(0).unwrap();
+        let mut entry_point = entry_point.drain(..).next().unwrap();
 
         // Extract the shader stage of the entry point
         let stage_flags = entry_point.shader_stage;
 
         // If we've specified an expected shader stage assert this shader is of the right type.
         // otherwise the shader stage will just be set by reflection information
-        if self.stage_flags != ReflectShaderStageFlags::UNDEFINED {
-            if self.stage_flags != stage_flags {
-                return Err(ShaderModuleBuildError::ExpectedDifferentModuleStage);
-            }
+        if self.stage_flags != ReflectShaderStageFlags::UNDEFINED && self.stage_flags != stage_flags
+        {
+            return Err(ShaderModuleBuildError::ExpectedDifferentModuleStage);
         }
 
         // Map the internal shader stage flags to vulkan form
@@ -443,6 +442,12 @@ impl<'a> ShaderModuleBuilder<'a> {
     }
 }
 
+impl<'a> Default for ShaderModuleBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 ///
 /// Represents a higher level wrapper around a shader module that can hold reflected information
 /// about a shader module
@@ -530,7 +535,7 @@ impl ShaderModule {
     pub fn push_constants(&self) -> Option<&PushConstantReflection> {
         match &self.push_constants {
             None => None,
-            Some(push_constants) => Some(&push_constants),
+            Some(push_constants) => Some(push_constants),
         }
     }
 
@@ -544,7 +549,7 @@ impl ShaderModule {
     pub fn vertex_layout(&self) -> Option<&VertexLayoutReflection> {
         match &self.vertex_layout {
             None => None,
-            Some(vertex_layout) => Some(&vertex_layout),
+            Some(vertex_layout) => Some(vertex_layout),
         }
     }
 
@@ -610,6 +615,11 @@ impl ShaderModule {
     ///
     /// Destroys a compiled module. Will do nothing if the module wasn't compiled but is marked
     /// unsafe because the destroy is not synchronized
+    ///
+    /// # Safety
+    ///
+    /// This doesn't perform any synchronization for destroying the underlying VkShaderModule. The
+    /// caller must ensure it is safe to destroy the shader module.
     ///
     pub unsafe fn destroy(&self, device: &Device) {
         if !self.module.is_null() {

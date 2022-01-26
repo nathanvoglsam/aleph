@@ -35,6 +35,7 @@ use windows::Win32::Graphics::Direct3D12::D3D12_CPU_DESCRIPTOR_HANDLE;
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct CPUDescriptorHandle(NonZeroUsize);
 
+#[allow(clippy::should_implement_trait)]
 impl CPUDescriptorHandle {
     #[inline]
     pub fn offset(self, offset: isize) -> Self {
@@ -66,10 +67,10 @@ impl CPUDescriptorHandle {
     }
 }
 
-impl Into<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
+impl From<CPUDescriptorHandle> for D3D12_CPU_DESCRIPTOR_HANDLE {
     #[inline]
-    fn into(self) -> D3D12_CPU_DESCRIPTOR_HANDLE {
-        D3D12_CPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
+    fn from(v: CPUDescriptorHandle) -> Self {
+        D3D12_CPU_DESCRIPTOR_HANDLE { ptr: v.0.get() }
     }
 }
 

@@ -54,9 +54,9 @@ impl TryFrom<DXGI_SCALING> for Scaling {
     }
 }
 
-impl Into<DXGI_SCALING> for Scaling {
+impl From<Scaling> for DXGI_SCALING {
     #[inline]
-    fn into(self) -> DXGI_SCALING {
-        self as i32
+    fn from(v: Scaling) -> Self {
+        v as _
     }
 }

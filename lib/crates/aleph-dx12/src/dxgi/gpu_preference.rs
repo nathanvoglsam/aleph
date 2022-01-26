@@ -40,8 +40,8 @@ pub enum GpuPreference {
     HighPerformance = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
 }
 
-impl Into<DXGI_GPU_PREFERENCE> for GpuPreference {
-    fn into(self) -> DXGI_GPU_PREFERENCE {
-        self as i32
+impl From<GpuPreference> for DXGI_GPU_PREFERENCE {
+    fn from(v: GpuPreference) -> Self {
+        v as _
     }
 }

@@ -31,9 +31,9 @@ use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
 use std::fmt::Debug;
 
-pub const API_VERSION_MAJOR: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
-pub const API_VERSION_MINOR: &'static str = env!("CARGO_PKG_VERSION_MINOR");
-pub const API_VERSION_PATCH: &'static str = env!("CARGO_PKG_VERSION_PATCH");
+pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
+pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
+pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
@@ -87,6 +87,7 @@ pub trait IGpuMemoryPool: IAny + 'static {
 }
 
 /// Options provided when a context is created
+#[derive(Default)]
 pub struct ContextOptions {
     /// Whether backend API validation should be enabled.
     ///
@@ -116,15 +117,6 @@ pub struct ContextOptions {
     /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
     /// validation layers.
     pub debug: bool,
-}
-
-impl Default for ContextOptions {
-    fn default() -> Self {
-        Self {
-            validation: false,
-            debug: false,
-        }
-    }
 }
 
 /// Set of errors that can occur when creating an [IContext]

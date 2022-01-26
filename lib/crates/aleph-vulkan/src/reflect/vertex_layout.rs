@@ -274,7 +274,7 @@ impl VertexAttributeReflection {
             | Format::R64_SINT
             | Format::R64_UINT => Ok(()),
             _ => Err(AttributeCompatibilityError::IncompatibleFormat(
-                AttributeType::Scalar(scalar.clone()),
+                AttributeType::Scalar(*scalar),
                 attr.format,
             )),
         }

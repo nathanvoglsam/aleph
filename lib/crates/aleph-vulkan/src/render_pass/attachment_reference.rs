@@ -38,7 +38,7 @@ impl AttachmentReference {
     ///
     /// Creates a new attachment reference object with the given values
     ///
-    pub fn new(attachment: u32, layout: ImageLayout) -> AttachmentReferenceBuilder<'static> {
+    pub fn builder(attachment: u32, layout: ImageLayout) -> AttachmentReferenceBuilder<'static> {
         AttachmentReferenceBuilder::new()
             .attachment(attachment)
             .layout(layout)
@@ -49,7 +49,7 @@ impl AttachmentReference {
     /// the given attachment index
     ///
     pub fn color(attachment: u32) -> AttachmentReferenceBuilder<'static> {
-        Self::new(attachment, ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+        Self::builder(attachment, ImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     }
 
     ///
@@ -57,7 +57,7 @@ impl AttachmentReference {
     /// attachment with the given attachment index
     ///
     pub fn depth_stencil(attachment: u32) -> AttachmentReferenceBuilder<'static> {
-        Self::new(attachment, ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+        Self::builder(attachment, ImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
     }
 
     ///
@@ -65,6 +65,6 @@ impl AttachmentReference {
     /// attachment with the given attachment index
     ///
     pub fn shader_read_only(attachment: u32) -> AttachmentReferenceBuilder<'static> {
-        Self::new(attachment, ImageLayout::SHADER_READ_ONLY_OPTIMAL)
+        Self::builder(attachment, ImageLayout::SHADER_READ_ONLY_OPTIMAL)
     }
 }

@@ -42,9 +42,9 @@ pub enum ComparisonFunc {
     Always = 8,
 }
 
-impl Into<D3D12_COMPARISON_FUNC> for ComparisonFunc {
+impl From<ComparisonFunc> for D3D12_COMPARISON_FUNC {
     #[inline]
-    fn into(self) -> D3D12_COMPARISON_FUNC {
-        self as i32
+    fn from(v: ComparisonFunc) -> Self {
+        v as _
     }
 }

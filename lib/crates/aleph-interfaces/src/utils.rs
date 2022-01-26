@@ -36,9 +36,9 @@ macro_rules! flags_impl {
             }
         }
 
-        impl ::core::convert::Into<$u> for $t {
-            fn into(self) -> $u {
-                self.0
+        impl ::core::convert::From<$t> for $u {
+            fn from(v: $t) -> Self {
+                v.0
             }
         }
 

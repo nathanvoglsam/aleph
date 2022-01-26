@@ -38,9 +38,9 @@ pub enum DescriptorRangeType {
     Sampler = 3,
 }
 
-impl Into<D3D12_DESCRIPTOR_RANGE_TYPE> for DescriptorRangeType {
+impl From<DescriptorRangeType> for D3D12_DESCRIPTOR_RANGE_TYPE {
     #[inline]
-    fn into(self) -> D3D12_DESCRIPTOR_RANGE_TYPE {
-        self as i32
+    fn from(v: DescriptorRangeType) -> Self {
+        v as _
     }
 }

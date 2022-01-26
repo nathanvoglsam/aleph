@@ -31,6 +31,8 @@ extern crate aleph_combine_utils as combine_utils;
 
 pub mod ast;
 pub mod lexer;
+
+#[allow(clippy::all)]
 pub mod parser;
 
 #[cfg(test)]

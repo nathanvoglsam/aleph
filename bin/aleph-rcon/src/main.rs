@@ -135,8 +135,8 @@ impl IPlugin for PluginGameLogic {
             },
         );
 
-        let state = program_state.clone();
-        let remote = remote_connection.clone();
+        let state = program_state;
+        let remote = remote_connection;
         let mut command_buffer = String::new();
         schedule.add_exclusive_at_start_system_to_stage(
             &CoreStage::Render,
@@ -251,17 +251,17 @@ struct Message<'a> {
 fn receiver_thread(channel: Arc<SyncSender<Vec<u8>>>, mut stream: BufReader<TcpStream>) {
     loop {
         let mut buffer = Vec::new();
-        stream.read_until('{' as u8, &mut buffer).unwrap();
-        stream.read_until('}' as u8, &mut buffer).unwrap();
+        stream.read_until(b'{', &mut buffer).unwrap();
+        stream.read_until(b'}', &mut buffer).unwrap();
         channel.send(buffer).unwrap();
     }
 }
 
 fn sender_thread(channel: Receiver<String>, mut stream: BufWriter<TcpStream>) {
     while let Ok(command) = channel.recv() {
-        stream.write(&[0]).unwrap();
-        stream.write(command.as_bytes()).unwrap();
-        stream.write(&[0]).unwrap();
+        stream.write_all(&[0]).unwrap();
+        stream.write_all(command.as_bytes()).unwrap();
+        stream.write_all(&[0]).unwrap();
         stream.flush().unwrap();
     }
 }
@@ -273,7 +273,7 @@ fn broadcaster_thread(broadcast_receiver: Receiver<()>) {
     socket.set_broadcast(true).unwrap();
     socket.connect(send_address).unwrap();
 
-    while let Ok(_) = broadcast_receiver.recv() {
+    while broadcast_receiver.recv().is_ok() {
         let text = "I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR";
 
         let bytes = socket.send(text.as_bytes()).unwrap();

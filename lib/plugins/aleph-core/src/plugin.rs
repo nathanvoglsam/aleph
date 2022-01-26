@@ -115,6 +115,12 @@ impl PluginCore {
     }
 }
 
+impl Default for PluginCore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IPlugin for PluginCore {
     fn get_description(&self) -> PluginDescription {
         PluginDescription {
@@ -187,8 +193,8 @@ fn receiver_thread(channel: std::sync::mpsc::SyncSender<String>, mut stream: Buf
 
         // All commands are delimited by null bytes, this will read a single well formed message
         // into buffer.
-        stream.read_until('\0' as u8, &mut buffer).unwrap();
-        stream.read_until('\0' as u8, &mut buffer).unwrap();
+        stream.read_until(b'\0', &mut buffer).unwrap();
+        stream.read_until(b'\0', &mut buffer).unwrap();
 
         // Buffer will contain the delimiters so we strip them
         let slice = buffer.strip_prefix(&[0]).unwrap();

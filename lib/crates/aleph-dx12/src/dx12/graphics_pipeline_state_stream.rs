@@ -237,7 +237,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
 
     #[inline]
     pub fn cached_pso(mut self, cached_pso: &'a [u8]) -> Self {
-        self.cached_pso = Some(cached_pso.into());
+        self.cached_pso = Some(cached_pso);
         self
     }
 
@@ -250,8 +250,8 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
     pub fn build(self) -> GraphicsPipelineStateStream<'a> {
         // Build the render target format array
         let mut rt_formats = [DXGI_FORMAT::default(); 8];
-        for i in 0..self.rtv_formats.len() {
-            rt_formats[i] = self.rtv_formats[i].into();
+        for (i, item) in self.rtv_formats.iter().enumerate() {
+            rt_formats[i] = (*item).into();
         }
 
         // Get the input layout array
@@ -368,6 +368,12 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
             packed,
             phantom: Default::default(),
         }
+    }
+}
+
+impl<'a> Default for GraphicsPipelineStateStreamBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

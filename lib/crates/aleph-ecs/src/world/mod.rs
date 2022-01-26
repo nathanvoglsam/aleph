@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::module_inception)]
+
 pub(crate) mod archetype;
 pub(crate) mod archetype_filter;
 pub(crate) mod component;

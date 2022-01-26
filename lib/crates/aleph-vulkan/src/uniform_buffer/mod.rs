@@ -162,7 +162,7 @@ impl Member {
                     MatrixLayout::ColumnMajor => Self::write_scalars(src.as_slice(), dest),
                     MatrixLayout::RowMajor => {
                         let src = src.transposed();
-                        Self::write_scalars(&src.as_slice(), dest)
+                        Self::write_scalars(src.as_slice(), dest)
                     }
                 }
             } else {
@@ -374,7 +374,7 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
     ///
     pub fn finalize(mut self) -> Result<(), WriterFinalizeError> {
         for b in self.member_written.iter() {
-            if *b == false {
+            if !(*b) {
                 return Err(WriterFinalizeError::NotAllMembersWritten);
             }
         }
@@ -389,7 +389,7 @@ impl<'binding, 'buffer> UniformBufferWriter<'binding, 'buffer> {
 impl<'binding, 'buffer> Drop for UniformBufferWriter<'binding, 'buffer> {
     fn drop(&mut self) {
         for b in self.member_written.iter() {
-            if *b == false {
+            if !(*b) {
                 panic!("Didn't write all uniform buffer members");
             }
         }

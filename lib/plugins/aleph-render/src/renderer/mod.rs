@@ -35,7 +35,6 @@ use crate::dx12::dxgi;
 use crate::{dx12, dx12_alloc};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-use std::mem::transmute;
 pub(crate) use swap::SwapDependentObjects;
 
 pub struct EguiRenderer {
@@ -261,7 +260,7 @@ impl EguiRenderer {
         let height_pixels = self.global.swap_height as f32;
         let width_points = width_pixels / self.pixels_per_point;
         let height_points = height_pixels / self.pixels_per_point;
-        let values = [transmute(width_points), transmute(height_points)];
+        let values = [width_points.to_bits(), height_points.to_bits()];
         command_list.set_graphics_root_32bit_constants(1, &values, 0);
 
         command_list.ia_set_primitive_topology(dx12::PrimitiveTopology::TriangleList);

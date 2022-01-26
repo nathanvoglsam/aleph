@@ -59,22 +59,22 @@ impl<'a> From<&'a CStr> for CStrFFI<'a> {
 
 impl<'a> CStrFFI<'a> {
     #[inline]
-    pub unsafe fn as_cstr(&self) -> &CStr {
-        CStr::from_ptr(self.ptr)
+    pub fn as_cstr(&self) -> &CStr {
+        unsafe { CStr::from_ptr(self.ptr) }
     }
 }
 
 impl<'a> Hash for CStrFFI<'a> {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
-        unsafe { self.as_cstr().hash(state) }
+        self.as_cstr().hash(state)
     }
 }
 
 impl<'a> Debug for CStrFFI<'a> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        unsafe { self.as_cstr().fmt(f) }
+        self.as_cstr().fmt(f)
     }
 }
 
@@ -89,9 +89,9 @@ impl PartialEq<bool> for Bool {
     }
 }
 
-impl Into<u32> for Bool {
-    fn into(self) -> u32 {
-        self.0
+impl From<Bool> for u32 {
+    fn from(v: Bool) -> Self {
+        v.0
     }
 }
 
@@ -106,14 +106,10 @@ impl From<u32> for Bool {
     }
 }
 
-impl Into<bool> for Bool {
+impl From<Bool> for bool {
     #[inline]
-    fn into(self) -> bool {
-        if self.0 != 0 {
-            true
-        } else {
-            false
-        }
+    fn from(v: Bool) -> bool {
+        v.0 != 0
     }
 }
 
@@ -139,6 +135,14 @@ impl<T: Sized> DynamicLoadCell<T> {
         }
     }
 
+    ///
+    /// # Safety
+    ///
+    /// This function does not check, nor have any way to check, the type of what is pointed to by
+    /// the result of the GetProcAddress call. This function will blindly assume the pointer points
+    /// to something with type `T`. It is the caller's responsibility to decide whether the type
+    /// of `T` is correct.
+    ///
     #[inline]
     pub unsafe fn get(&self) -> Option<&T> {
         self.cell
@@ -165,7 +169,7 @@ impl<T: Sized> DynamicLoadCell<T> {
 ///
 /// Useful for getting descriptive names in debuggers and profilers.
 ///
-/// # SAFETY
+/// # Safety
 ///
 /// `name` must be a null terminated wchar string. If the null terminator is missing the behavior is
 /// undefined.

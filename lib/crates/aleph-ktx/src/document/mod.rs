@@ -501,8 +501,7 @@ impl<R: Read + Seek> KTXDocument<R> {
                 let distance_from_alignment = current_pos % 4;
                 let aligned_pos = if distance_from_alignment != 0 {
                     let aligned_down = current_pos & (!3);
-                    let aligned_up = aligned_down + 4;
-                    aligned_up
+                    aligned_down + 4
                 } else {
                     current_pos
                 };

@@ -116,6 +116,12 @@ impl RasterizerDescBuilder {
     }
 }
 
+impl Default for RasterizerDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct RasterizerDesc {

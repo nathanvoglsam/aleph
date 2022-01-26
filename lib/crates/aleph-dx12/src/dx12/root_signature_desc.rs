@@ -110,6 +110,12 @@ impl<'a> RootSignatureDescBuilder<'a> {
     }
 }
 
+impl<'a> Default for RootSignatureDescBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct RootSignatureDesc1Builder<'a> {
     parameters: Vec<D3D12_ROOT_PARAMETER1>,
     static_samplers: &'a [D3D12_STATIC_SAMPLER_DESC],
@@ -180,6 +186,12 @@ impl<'a> RootSignatureDesc1Builder<'a> {
     }
 }
 
+impl<'a> Default for RootSignatureDesc1Builder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone)]
 pub struct RootSignatureDesc<'a> {
     pub(crate) inner: D3D12_ROOT_SIGNATURE_DESC,
@@ -193,10 +205,10 @@ impl<'a> RootSignatureDesc<'a> {
     }
 }
 
-impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc<'a> {
+impl<'a> From<RootSignatureDesc<'a>> for VersionedRootSignatureDesc<'a> {
     #[inline]
-    fn into(self) -> VersionedRootSignatureDesc<'a> {
-        VersionedRootSignatureDesc::Desc(self)
+    fn from(v: RootSignatureDesc<'a>) -> Self {
+        VersionedRootSignatureDesc::Desc(v)
     }
 }
 
@@ -213,9 +225,9 @@ impl<'a> RootSignatureDesc1<'a> {
     }
 }
 
-impl<'a> Into<VersionedRootSignatureDesc<'a>> for RootSignatureDesc1<'a> {
+impl<'a> From<RootSignatureDesc1<'a>> for VersionedRootSignatureDesc<'a> {
     #[inline]
-    fn into(self) -> VersionedRootSignatureDesc<'a> {
-        VersionedRootSignatureDesc::Desc1(self)
+    fn from(v: RootSignatureDesc1<'a>) -> Self {
+        VersionedRootSignatureDesc::Desc1(v)
     }
 }

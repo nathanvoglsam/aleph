@@ -113,11 +113,11 @@ impl<'a> RootParameter<'a> {
     #[inline]
     pub(crate) fn get_shader_visibility(&self) -> D3D12_SHADER_VISIBILITY {
         match self {
-            RootParameter::DescriptorTable { visibility, .. } => visibility.clone().into(),
-            RootParameter::Constants { visibility, .. } => visibility.clone().into(),
-            RootParameter::CBV { visibility, .. } => visibility.clone().into(),
-            RootParameter::SRV { visibility, .. } => visibility.clone().into(),
-            RootParameter::UAV { visibility, .. } => visibility.clone().into(),
+            RootParameter::DescriptorTable { visibility, .. } => (*visibility).into(),
+            RootParameter::Constants { visibility, .. } => (*visibility).into(),
+            RootParameter::CBV { visibility, .. } => (*visibility).into(),
+            RootParameter::SRV { visibility, .. } => (*visibility).into(),
+            RootParameter::UAV { visibility, .. } => (*visibility).into(),
         }
     }
 }
@@ -196,11 +196,11 @@ impl<'a> RootParameter1<'a> {
     #[inline]
     pub(crate) fn get_shader_visibility(&self) -> D3D12_SHADER_VISIBILITY {
         match self {
-            RootParameter1::DescriptorTable { visibility, .. } => visibility.clone().into(),
-            RootParameter1::Constants { visibility, .. } => visibility.clone().into(),
-            RootParameter1::CBV { visibility, .. } => visibility.clone().into(),
-            RootParameter1::SRV { visibility, .. } => visibility.clone().into(),
-            RootParameter1::UAV { visibility, .. } => visibility.clone().into(),
+            RootParameter1::DescriptorTable { visibility, .. } => (*visibility).into(),
+            RootParameter1::Constants { visibility, .. } => (*visibility).into(),
+            RootParameter1::CBV { visibility, .. } => (*visibility).into(),
+            RootParameter1::SRV { visibility, .. } => (*visibility).into(),
+            RootParameter1::UAV { visibility, .. } => (*visibility).into(),
         }
     }
 }

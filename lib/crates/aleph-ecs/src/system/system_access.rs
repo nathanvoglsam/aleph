@@ -79,12 +79,14 @@ pub trait SystemParam: Sized {
 
 // ============================================================================================== //
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe trait SystemParamState: Send + Sync + 'static {
     fn init(access: &mut dyn AccessDescriptor) -> Self;
 }
 
 // ============================================================================================== //
 
+#[allow(clippy::missing_safety_doc)]
 pub trait SystemParamFetch<'a>: SystemParamState {
     type Item;
 
@@ -207,6 +209,8 @@ impl<'w, Q: ComponentQuery + 'static> SystemParamFetch<'w> for QueryState<Q> {
 
     #[inline]
     unsafe fn get_param(_state: &'w mut Self, world: &'w World) -> Self::Item {
+        // TODO: This is probably UB but no easy fix. I guess issues from aliasing?
+        #[allow(clippy::cast_ref_to_mut)]
         let world = &mut *(world as *const World as *mut World);
         Query::new(world)
     }
@@ -219,6 +223,7 @@ impl<'w, Q: ComponentQuery + 'static> SystemParamFetch<'w> for QueryState<Q> {
 ///
 /// This is essentially just a wrapper around `FnMut(Params)` that allows setting up the parameters
 /// for the underlying function before calling said function.
+#[allow(clippy::missing_safety_doc)]
 pub trait SystemParamFunction<Param: SystemParam>: Send + Sync + 'static {
     unsafe fn run(&mut self, state: &mut Param::Fetch, world: &World);
 }

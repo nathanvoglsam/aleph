@@ -76,9 +76,9 @@ impl From<u32> for AllocatorCreateFlag {
     }
 }
 
-impl Into<u32> for AllocatorCreateFlag {
-    fn into(self) -> u32 {
-        self.0
+impl From<AllocatorCreateFlag> for u32 {
+    fn from(v: AllocatorCreateFlag) -> u32 {
+        v.0
     }
 }
 
@@ -544,11 +544,8 @@ impl Allocator {
         allocation: &Allocation,
         new_size: DeviceSize,
     ) -> VulkanResult<()> {
-        let result = raw::vmaResizeAllocation(
-            self.inner.allocator,
-            allocation.clone().into_raw(),
-            new_size,
-        );
+        let result =
+            raw::vmaResizeAllocation(self.inner.allocator, allocation.into_raw(), new_size);
 
         if result as i32 == 0 {
             VulkanResult::new_ok(())
@@ -573,11 +570,7 @@ impl Allocator {
         let info_ptr = &mut info as *mut AllocationInfo;
         let info_ptr = info_ptr as *mut raw::VmaAllocationInfo;
 
-        raw::vmaGetAllocationInfo(
-            self.inner.allocator,
-            allocation.clone().into_raw(),
-            info_ptr,
-        );
+        raw::vmaGetAllocationInfo(self.inner.allocator, allocation.into_raw(), info_ptr);
 
         info
     }
@@ -587,7 +580,7 @@ impl Allocator {
     ///
     #[inline]
     pub unsafe fn touch_allocation(&self, allocation: &Allocation) -> bool {
-        let result = raw::vmaTouchAllocation(self.inner.allocator, allocation.clone().into_raw());
+        let result = raw::vmaTouchAllocation(self.inner.allocator, allocation.into_raw());
 
         result == TRUE
     }
@@ -618,11 +611,8 @@ impl Allocator {
         let pointer_pointer = &mut pointer as *mut *mut u8;
         let pointer_pointer = pointer_pointer as *mut *mut c_void;
 
-        let result = raw::vmaMapMemory(
-            self.inner.allocator,
-            allocation.clone().into_raw(),
-            pointer_pointer,
-        );
+        let result =
+            raw::vmaMapMemory(self.inner.allocator, allocation.into_raw(), pointer_pointer);
 
         if result as i32 == 0 {
             VulkanResult::new_ok(pointer)
@@ -636,7 +626,7 @@ impl Allocator {
     ///
     #[inline]
     pub unsafe fn unmap_memory(&self, allocation: &Allocation) {
-        raw::vmaUnmapMemory(self.inner.allocator, allocation.clone().into_raw());
+        raw::vmaUnmapMemory(self.inner.allocator, allocation.into_raw());
     }
 
     ///
@@ -649,12 +639,7 @@ impl Allocator {
         offset: DeviceSize,
         size: DeviceSize,
     ) {
-        raw::vmaFlushAllocation(
-            self.inner.allocator,
-            allocation.clone().into_raw(),
-            offset,
-            size,
-        );
+        raw::vmaFlushAllocation(self.inner.allocator, allocation.into_raw(), offset, size);
     }
     ///
     /// vmaInvalidateAllocation
@@ -666,12 +651,7 @@ impl Allocator {
         offset: DeviceSize,
         size: DeviceSize,
     ) {
-        raw::vmaInvalidateAllocation(
-            self.inner.allocator,
-            allocation.clone().into_raw(),
-            offset,
-            size,
-        );
+        raw::vmaInvalidateAllocation(self.inner.allocator, allocation.into_raw(), offset, size);
     }
 
     ///
@@ -703,7 +683,7 @@ impl Allocator {
     ) -> VulkanResult<()> {
         let result = raw::vmaBindBufferMemory(
             self.inner.allocator,
-            allocation.clone().into_raw(),
+            allocation.into_raw(),
             mem::transmute(buffer),
         );
 
@@ -725,7 +705,7 @@ impl Allocator {
     ) -> VulkanResult<()> {
         let result = raw::vmaBindImageMemory(
             self.inner.allocator,
-            allocation.clone().into_raw(),
+            allocation.into_raw(),
             mem::transmute(image),
         );
 
@@ -782,9 +762,8 @@ impl Allocator {
         raw::vmaDestroyBuffer(
             self.inner.allocator,
             mem::transmute(buffer),
-            alloc.clone().into_raw(),
+            alloc.into_raw(),
         );
-        drop(alloc);
     }
 
     ///
@@ -833,9 +812,8 @@ impl Allocator {
         raw::vmaDestroyImage(
             self.inner.allocator,
             mem::transmute(buffer),
-            alloc.clone().into_raw(),
+            alloc.into_raw(),
         );
-        drop(alloc);
     }
 
     ///

@@ -76,8 +76,7 @@ impl Allocator {
             .ok()
             .map(|_| {
                 let out = AllocatorInner(NonNull::new(out).unwrap());
-                let out = Allocator(Arc::new(out));
-                out
+                Allocator(Arc::new(out))
             })
         }
     }
@@ -110,8 +109,7 @@ impl Allocator {
                 .ok()
                 .map(|_| {
                     let allocation = AllocationInner(NonNull::new(allocation).unwrap());
-                    let allocation = Allocation(Arc::new(allocation));
-                    allocation
+                    Allocation(Arc::new(allocation))
                 })
             } else {
                 alloc_raw::D3D12MA_Allocator_CreateResource(
@@ -127,8 +125,7 @@ impl Allocator {
                 .ok()
                 .map(|_| {
                     let allocation = AllocationInner(NonNull::new(allocation).unwrap());
-                    let allocation = Allocation(Arc::new(allocation));
-                    allocation
+                    Allocation(Arc::new(allocation))
                 })
             }
         }
@@ -142,8 +139,7 @@ impl Allocator {
                 .ok()
                 .map(|_| {
                     let pool = PoolInner(NonNull::new(pool).unwrap());
-                    let pool = Pool(Arc::new(pool));
-                    pool
+                    Pool(Arc::new(pool))
                 })
         }
     }

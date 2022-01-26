@@ -349,9 +349,9 @@ impl TryFrom<DXGI_FORMAT> for Format {
     }
 }
 
-impl Into<DXGI_FORMAT> for Format {
+impl From<Format> for DXGI_FORMAT {
     #[inline]
-    fn into(self) -> DXGI_FORMAT {
-        self as u32
+    fn from(v: Format) -> Self {
+        v as _
     }
 }

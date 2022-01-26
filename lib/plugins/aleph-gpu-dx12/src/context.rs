@@ -90,13 +90,15 @@ impl IGpuContext for Context {
         {
             if let Some(surface) = options.surface.as_ref() {
                 let surface = surface.query_interface::<Surface>().unwrap();
-                self.check_surface_compatibility(&adapter, &surface)?;
+                self.check_surface_compatibility(&adapter, surface)?;
             }
 
             let desc = adapter
                 .get_adapter_desc()
                 .expect("Failed to get adapter description. Something very wrong");
-            let name = desc.description_string().unwrap_or("Unknown".to_string());
+            let name = desc
+                .description_string()
+                .unwrap_or_else(|| "Unknown".to_string());
             let adapter = Adapter { name, adapter };
             let adapter = Box::new(adapter);
             Some(adapter)

@@ -129,6 +129,12 @@ impl SwapChainDesc1Builder {
     }
 }
 
+impl Default for SwapChainDesc1Builder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct SwapChainDesc1 {

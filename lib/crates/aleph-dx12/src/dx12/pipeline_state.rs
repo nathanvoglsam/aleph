@@ -40,10 +40,10 @@ windows::deref_impl!(PipelineState, ID3D12PipelineState);
 #[repr(transparent)]
 pub struct GraphicsPipelineState(pub(crate) ID3D12PipelineState);
 
-impl Into<PipelineState> for GraphicsPipelineState {
+impl From<GraphicsPipelineState> for PipelineState {
     #[inline]
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+    fn from(v: GraphicsPipelineState) -> Self {
+        PipelineState(v.0)
     }
 }
 
@@ -55,10 +55,10 @@ windows::deref_impl!(GraphicsPipelineState, ID3D12PipelineState);
 #[repr(transparent)]
 pub struct ComputePipelineState(pub(crate) ID3D12PipelineState);
 
-impl Into<PipelineState> for ComputePipelineState {
+impl From<ComputePipelineState> for PipelineState {
     #[inline]
-    fn into(self) -> PipelineState {
-        PipelineState(self.0)
+    fn from(v: ComputePipelineState) -> Self {
+        PipelineState(v.0)
     }
 }
 

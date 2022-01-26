@@ -132,9 +132,9 @@ impl From<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
     }
 }
 
-impl Into<raw::VmaAllocationCreateFlagBits> for AllocationCreateFlag {
-    fn into(self) -> raw::VmaAllocationCreateFlagBits {
-        self.0
+impl From<AllocationCreateFlag> for raw::VmaAllocationCreateFlagBits {
+    fn from(v: AllocationCreateFlag) -> raw::VmaAllocationCreateFlagBits {
+        v.0
     }
 }
 

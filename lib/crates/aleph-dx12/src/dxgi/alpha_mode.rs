@@ -57,9 +57,9 @@ impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
     }
 }
 
-impl Into<DXGI_ALPHA_MODE> for AlphaMode {
+impl From<AlphaMode> for DXGI_ALPHA_MODE {
     #[inline]
-    fn into(self) -> DXGI_ALPHA_MODE {
-        self as u32
+    fn from(v: AlphaMode) -> Self {
+        v as _
     }
 }

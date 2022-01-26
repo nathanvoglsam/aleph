@@ -66,6 +66,12 @@ impl AllocatorDescBuilder {
     }
 }
 
+impl Default for AllocatorDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 pub struct AllocatorDesc {
     pub flags: AllocatorFlags,

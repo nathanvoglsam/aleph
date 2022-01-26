@@ -122,9 +122,9 @@ impl BitXorAssign for QueueFamilyType {
     }
 }
 
-impl Into<u8> for QueueFamilyType {
-    fn into(self) -> u8 {
-        self.0
+impl From<QueueFamilyType> for u8 {
+    fn from(v: QueueFamilyType) -> u8 {
+        v.0
     }
 }
 

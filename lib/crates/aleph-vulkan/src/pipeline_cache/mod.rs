@@ -36,7 +36,7 @@ use std::io::{ErrorKind, Read, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static PIPELINE_CACHE: AtomicU64 = AtomicU64::new(0);
-static CACHE_FILE_NAME: &'static str = "shader_cache.bin";
+static CACHE_FILE_NAME: &str = "shader_cache.bin";
 
 pub struct PipelineCache {}
 

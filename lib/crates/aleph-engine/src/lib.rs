@@ -146,6 +146,12 @@ impl EngineBuilder {
     }
 }
 
+impl Default for EngineBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct Engine {
     registry: PluginRegistry,
 }

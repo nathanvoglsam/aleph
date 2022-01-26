@@ -107,6 +107,12 @@ impl RenderTargetBlendDescBuilder {
     }
 }
 
+impl Default for RenderTargetBlendDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct RenderTargetBlendDesc {

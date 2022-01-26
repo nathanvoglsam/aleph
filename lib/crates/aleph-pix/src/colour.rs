@@ -47,8 +47,8 @@ impl From<u64> for Colour {
     }
 }
 
-impl Into<u64> for Colour {
-    fn into(self) -> u64 {
-        self.0
+impl From<Colour> for u64 {
+    fn from(v: Colour) -> Self {
+        v.0
     }
 }

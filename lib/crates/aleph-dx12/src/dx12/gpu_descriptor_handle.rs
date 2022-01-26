@@ -35,6 +35,7 @@ use windows::Win32::Graphics::Direct3D12::D3D12_GPU_DESCRIPTOR_HANDLE;
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
 pub struct GPUDescriptorHandle(pub(crate) NonZeroU64);
 
+#[allow(clippy::should_implement_trait)]
 impl GPUDescriptorHandle {
     #[inline]
     pub fn offset(self, offset: i64) -> Self {
@@ -66,10 +67,10 @@ impl GPUDescriptorHandle {
     }
 }
 
-impl Into<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
+impl From<GPUDescriptorHandle> for D3D12_GPU_DESCRIPTOR_HANDLE {
     #[inline]
-    fn into(self) -> D3D12_GPU_DESCRIPTOR_HANDLE {
-        D3D12_GPU_DESCRIPTOR_HANDLE { ptr: self.0.get() }
+    fn from(v: GPUDescriptorHandle) -> Self {
+        D3D12_GPU_DESCRIPTOR_HANDLE { ptr: v.0.get() }
     }
 }
 

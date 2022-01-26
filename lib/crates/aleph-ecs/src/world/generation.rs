@@ -34,7 +34,7 @@
 /// set of valid indices to alive or dead indices respectively.
 ///
 #[repr(transparent)]
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 pub struct Generation(u32);
 
 impl Generation {
@@ -75,12 +75,5 @@ impl Generation {
     #[inline]
     pub fn increment_assign(&mut self) {
         *self = self.increment()
-    }
-}
-
-impl Default for Generation {
-    #[inline]
-    fn default() -> Self {
-        Generation(0)
     }
 }

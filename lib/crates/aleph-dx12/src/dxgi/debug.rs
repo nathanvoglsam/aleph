@@ -56,7 +56,7 @@ impl Debug {
             let ptr = ptr as *mut *mut ::std::ffi::c_void;
             create_fn(&IDXGIDebug1::IID, ptr)
                 .and_some(dxgi_debug)
-                .map(|v| Self(v))
+                .map(Self)
         }
     }
 
@@ -81,10 +81,10 @@ pub enum DebugID {
     Direct3D11,
 }
 
-impl Into<GUID> for DebugID {
+impl From<DebugID> for GUID {
     #[inline]
-    fn into(self) -> GUID {
-        match self {
+    fn from(v: DebugID) -> Self {
+        match v {
             DebugID::All => GUID::from_values(
                 0xe48ae283,
                 0xda80,
@@ -133,9 +133,9 @@ impl DebugRLOFlags {
     pub const ALL: Self = Self(7u32);
 }
 
-impl Into<DXGI_DEBUG_RLO_FLAGS> for DebugRLOFlags {
+impl From<DebugRLOFlags> for DXGI_DEBUG_RLO_FLAGS {
     #[inline]
-    fn into(self) -> DXGI_DEBUG_RLO_FLAGS {
-        self.0
+    fn from(v: DebugRLOFlags) -> Self {
+        v.0
     }
 }

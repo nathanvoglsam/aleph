@@ -51,6 +51,7 @@ impl RawDataFormatDescriptor {
     ///
     /// Reads the next 7 words out of the reader and unpacks them to a raw DFD struct
     ///
+    #[allow(clippy::identity_op)]
     pub fn from_reader(reader: &mut (impl Read + Seek)) -> Result<Self, std::io::Error> {
         //
         // Read off the next 7 words of the DFD and unpack them into the different parts

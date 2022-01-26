@@ -49,9 +49,9 @@ impl Default for RootDescriptorFlags {
 
 windows::flags_bitwise_impl!(RootDescriptorFlags);
 
-impl Into<D3D12_ROOT_DESCRIPTOR_FLAGS> for RootDescriptorFlags {
+impl From<RootDescriptorFlags> for D3D12_ROOT_DESCRIPTOR_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_ROOT_DESCRIPTOR_FLAGS {
-        self.0
+    fn from(v: RootDescriptorFlags) -> Self {
+        v.0
     }
 }

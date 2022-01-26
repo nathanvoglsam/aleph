@@ -55,7 +55,7 @@ impl RootSignatureBlob {
         let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
         create_fn(desc_ptr, &mut blob, &mut err)
             .and_some(blob)
-            .map(|v| RootSignatureBlob(v))
+            .map(RootSignatureBlob)
     }
 }
 

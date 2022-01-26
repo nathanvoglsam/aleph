@@ -70,14 +70,14 @@ impl TryFrom<u64> for ArchiveID {
     }
 }
 
-impl Into<NonZeroU64> for ArchiveID {
-    fn into(self) -> NonZeroU64 {
-        self.0
+impl From<ArchiveID> for NonZeroU64 {
+    fn from(v: ArchiveID) -> Self {
+        v.0
     }
 }
 
-impl Into<u64> for ArchiveID {
-    fn into(self) -> u64 {
-        self.0.get()
+impl From<ArchiveID> for u64 {
+    fn from(v: ArchiveID) -> Self {
+        v.0.get()
     }
 }

@@ -81,6 +81,11 @@ impl<T> VirtualVec<T> {
         self.len
     }
 
+    /// Returns whether the len is 0
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
     /// Returns the number of items that the `VirtualVec` has memory committed for.
     #[inline]
     pub fn committed(&self) -> usize {
@@ -350,8 +355,8 @@ impl<T> VirtualVec<T> {
         // Safe as we've guaranteed the memory to be accessible with the above reserve call
         unsafe {
             let base = self.ptr_mut().add(self.len);
-            for i in 0..sli.len() {
-                base.add(i).write(sli[i].clone())
+            for (i, item) in sli.iter().enumerate() {
+                base.add(i).write(item.clone())
             }
         };
 

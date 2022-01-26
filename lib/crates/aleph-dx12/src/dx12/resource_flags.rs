@@ -53,9 +53,9 @@ impl Default for ResourceFlags {
 
 windows::flags_bitwise_impl!(ResourceFlags);
 
-impl Into<D3D12_RESOURCE_FLAGS> for ResourceFlags {
+impl From<ResourceFlags> for D3D12_RESOURCE_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_RESOURCE_FLAGS {
-        self.0
+    fn from(v: ResourceFlags) -> Self {
+        v.0
     }
 }

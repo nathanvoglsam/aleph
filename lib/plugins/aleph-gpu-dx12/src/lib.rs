@@ -93,4 +93,10 @@ impl IPlugin for PluginGpuDX12 {
     }
 }
 
+impl Default for PluginGpuDX12 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 declare_interfaces!(PluginGpuDX12, [IPlugin]);

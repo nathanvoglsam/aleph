@@ -39,9 +39,9 @@ pub enum BlendOp {
     Max = 5,
 }
 
-impl Into<D3D12_BLEND_OP> for BlendOp {
+impl From<BlendOp> for D3D12_BLEND_OP {
     #[inline]
-    fn into(self) -> D3D12_BLEND_OP {
-        self as i32
+    fn from(v: BlendOp) -> Self {
+        v as _
     }
 }

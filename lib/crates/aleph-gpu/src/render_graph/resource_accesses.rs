@@ -47,9 +47,9 @@ pub struct TextureCreateDesc {
     // pub memory_usage: vma::MemoryUsage,
 }
 
-impl Into<ResourceCreateDesc> for TextureCreateDesc {
-    fn into(self) -> ResourceCreateDesc {
-        ResourceCreateDesc::Texture(self)
+impl From<TextureCreateDesc> for ResourceCreateDesc {
+    fn from(v: TextureCreateDesc) -> Self {
+        ResourceCreateDesc::Texture(v)
     }
 }
 
@@ -65,9 +65,9 @@ pub struct BufferCreateDesc {
     // pub memory_usage: vma::MemoryUsage,
 }
 
-impl Into<ResourceCreateDesc> for BufferCreateDesc {
-    fn into(self) -> ResourceCreateDesc {
-        ResourceCreateDesc::Buffer(self)
+impl From<BufferCreateDesc> for ResourceCreateDesc {
+    fn from(v: BufferCreateDesc) -> Self {
+        ResourceCreateDesc::Buffer(v)
     }
 }
 
@@ -134,9 +134,9 @@ pub struct TextureImportDesc {
     pub access_type: ResourceAccessType,
 }
 
-impl Into<ResourceImportDesc> for TextureImportDesc {
-    fn into(self) -> ResourceImportDesc {
-        ResourceImportDesc::Texture(self)
+impl From<TextureImportDesc> for ResourceImportDesc {
+    fn from(v: TextureImportDesc) -> Self {
+        ResourceImportDesc::Texture(v)
     }
 }
 
@@ -147,9 +147,9 @@ pub struct BufferImportDesc {
     pub size: u32,
 }
 
-impl Into<ResourceImportDesc> for BufferImportDesc {
-    fn into(self) -> ResourceImportDesc {
-        ResourceImportDesc::Buffer(self)
+impl From<BufferImportDesc> for ResourceImportDesc {
+    fn from(v: BufferImportDesc) -> Self {
+        ResourceImportDesc::Buffer(v)
     }
 }
 

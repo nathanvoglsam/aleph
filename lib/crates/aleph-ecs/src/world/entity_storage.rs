@@ -145,6 +145,12 @@ impl EntityStorage {
         self.count
     }
 
+    /// Returns whether there are no live entities in this storage.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+
     /// Looks up the location of the entity with the given ID.
     ///
     /// Will return None if the ID is invalid (dangling)
@@ -156,8 +162,7 @@ impl EntityStorage {
         if self.entities[index].generation == id.generation && id.generation.is_alive() {
             // SAFETY: The location field will always be the current live field if the generation
             //         is alive so accessing this is sound.
-            let location = unsafe { self.entities[index].data.location };
-            location
+            unsafe { self.entities[index].data.location }
         } else {
             None
         }

@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::module_inception)]
+
 mod archive;
 mod archive_id;
 mod asset_id;

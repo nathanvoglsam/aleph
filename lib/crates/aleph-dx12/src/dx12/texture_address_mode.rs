@@ -39,9 +39,9 @@ pub enum TextureAddressMode {
     MirrorOnce = 5,
 }
 
-impl Into<D3D12_TEXTURE_ADDRESS_MODE> for TextureAddressMode {
+impl From<TextureAddressMode> for D3D12_TEXTURE_ADDRESS_MODE {
     #[inline]
-    fn into(self) -> D3D12_TEXTURE_ADDRESS_MODE {
-        self as i32
+    fn from(v: TextureAddressMode) -> Self {
+        v as _
     }
 }

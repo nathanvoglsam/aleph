@@ -65,9 +65,7 @@ impl IFrameTimer for FrameTimerImpl {
         let freq = self.freq.load(Ordering::Relaxed) as f64;
 
         let delta = current - last;
-        let delta = delta / freq;
-
-        delta
+        delta / freq
     }
 
     fn elapsed_time(&self) -> f64 {
@@ -76,9 +74,7 @@ impl IFrameTimer for FrameTimerImpl {
         let freq = self.freq.load(Ordering::Relaxed) as f64;
 
         let elapsed = current - first;
-        let elapsed = elapsed / freq;
-
-        elapsed
+        elapsed / freq
     }
 }
 

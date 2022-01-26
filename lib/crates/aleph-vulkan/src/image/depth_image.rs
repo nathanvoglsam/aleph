@@ -136,6 +136,12 @@ impl<'a> DepthImageBuilder<'a> {
     }
 }
 
+impl<'a> Default for DepthImageBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 ///
 /// Represents an image that will be used as a depth/stencil render target
 ///

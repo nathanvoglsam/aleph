@@ -124,9 +124,9 @@ impl Default for ComponentMapping {
     }
 }
 
-impl Into<u32> for ComponentMapping {
+impl From<ComponentMapping> for u32 {
     #[inline]
-    fn into(self) -> u32 {
-        self.0
+    fn from(v: ComponentMapping) -> Self {
+        v.0
     }
 }

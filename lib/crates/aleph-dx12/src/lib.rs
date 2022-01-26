@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::missing_safety_doc)]
 #![cfg(target_os = "windows")]
 
 extern crate aleph_windows as windows;

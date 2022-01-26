@@ -56,10 +56,10 @@ impl TextureCopyLocation {
     }
 }
 
-impl Into<D3D12_TEXTURE_COPY_LOCATION> for TextureCopyLocation {
+impl From<TextureCopyLocation> for D3D12_TEXTURE_COPY_LOCATION {
     #[inline]
-    fn into(self) -> D3D12_TEXTURE_COPY_LOCATION {
-        match self {
+    fn from(v: TextureCopyLocation) -> Self {
+        match v {
             TextureCopyLocation::Placed {
                 resource,
                 placed_footprint,

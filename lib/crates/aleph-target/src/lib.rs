@@ -55,14 +55,12 @@ pub mod build {
                 } else {
                     aleph_target::Platform::Unknown
                 }
+            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
+                aleph_target::Platform::WindowsMSVC
+            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
+                aleph_target::Platform::WindowsGNU
             } else {
-                if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
-                    aleph_target::Platform::WindowsMSVC
-                } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
-                    aleph_target::Platform::WindowsGNU
-                } else {
-                    aleph_target::Platform::Unknown
-                }
+                aleph_target::Platform::Unknown
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_android) {
             aleph_target::Platform::Android
@@ -112,14 +110,12 @@ pub mod build {
                 } else {
                     aleph_target::Platform::Unknown
                 }
+            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+                aleph_target::Platform::WindowsMSVC
+            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+                aleph_target::Platform::WindowsGNU
             } else {
-                if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
-                    aleph_target::Platform::WindowsMSVC
-                } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
-                    aleph_target::Platform::WindowsGNU
-                } else {
-                    aleph_target::Platform::Unknown
-                }
+                aleph_target::Platform::Unknown
             }
         } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_android) {
             aleph_target::Platform::Android

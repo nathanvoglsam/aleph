@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::missing_safety_doc)]
+
 mod allocation;
 mod allocator;
 mod pool;

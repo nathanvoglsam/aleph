@@ -52,9 +52,9 @@ pub enum FeatureLevel {
     Level_12_2 = 49664,
 }
 
-impl Into<D3D_FEATURE_LEVEL> for FeatureLevel {
+impl From<FeatureLevel> for D3D_FEATURE_LEVEL {
     #[inline]
-    fn into(self) -> D3D_FEATURE_LEVEL {
-        self as i32
+    fn from(v: FeatureLevel) -> Self {
+        v as _
     }
 }

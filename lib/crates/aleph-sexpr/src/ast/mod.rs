@@ -53,13 +53,6 @@ impl<'input> PartialEq for Item<'input> {
         // used for generating error messages
         self.item.eq(&other.item)
     }
-
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        // The default implementation ignores the position as it has no semantic meaning and is only
-        // used for generating error messages
-        self.item.ne(&other.item)
-    }
 }
 
 impl<'input> Eq for Item<'input> {}
@@ -86,7 +79,7 @@ impl<'input> Item<'input> {
     #[inline]
     pub fn atom<A: Into<Atom<'input>>>(atom: A, span: Option<Range<usize>>) -> Item<'input> {
         Item {
-            span: span.unwrap_or(Range::default()),
+            span: span.unwrap_or_default(),
             item: ItemVariant::Atom(atom.into()),
         }
     }
@@ -94,7 +87,7 @@ impl<'input> Item<'input> {
     #[inline]
     pub fn list<L: Into<List<'input>>>(list: L, span: Option<Range<usize>>) -> Item<'input> {
         Item {
-            span: span.unwrap_or(Range::default()),
+            span: span.unwrap_or_default(),
             item: ItemVariant::List(list.into()),
         }
     }
@@ -211,10 +204,10 @@ impl<'input> Atom<'input> {
     }
 }
 
-impl<'input> Into<ItemVariant<'input>> for Atom<'input> {
+impl<'input> From<Atom<'input>> for ItemVariant<'input> {
     #[inline]
-    fn into(self) -> ItemVariant<'input> {
-        ItemVariant::Atom(self)
+    fn from(v: Atom<'input>) -> ItemVariant<'input> {
+        ItemVariant::Atom(v)
     }
 }
 

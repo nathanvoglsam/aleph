@@ -130,6 +130,13 @@ impl VirtualBuffer {
     }
 
     ///
+    /// Returns whether the len is 0
+    ///
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
+
+    ///
     /// Commits the entire address range and emits a new-type wrapper that can allow for more
     /// powerful operations to be done entirely in safe code
     ///
@@ -141,7 +148,7 @@ impl VirtualBuffer {
     ///
     /// Returns a slice over the whole address range
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// The entire address range is not guaranteed to be committed so creating a slice of it is
     /// not safe as it could lead to safe code de-referencing un-commited memory.
@@ -156,7 +163,7 @@ impl VirtualBuffer {
     ///
     /// Returns a slice over the whole address range
     ///
-    /// # SAFETY
+    /// # Safety
     ///
     /// The entire address range is not guaranteed to be committed so creating a slice of it is
     /// not safe as it could lead to safe code de-referencing un-commited memory.
@@ -205,7 +212,7 @@ impl VirtualBuffer {
 
         // Find the number of pages the address intersects
         let pages = end - base; // Get the size of the range in bytes from the new base
-        let pages = pages + mask & !mask; // Round up to the next page size
+        let pages = (pages + mask) & !mask; // Round up to the next page size
         let pages = pages / implementation::page_size(); // Division should optimize to shift
 
         unsafe { (data.add(base), pages) }

@@ -57,6 +57,7 @@ impl SampleInfo {
     ///
     /// Unpacks the sample info from 4 words (should have been read from a file)
     ///
+    #[allow(clippy::identity_op)]
     pub fn unpack_from(words: &[u32; 4]) -> Self {
         let bit_offset = ((words[0] >> 0) & 0xFFFF) as u16;
         let bit_length = ((words[0] >> 16) & 0xFF) as u8;
@@ -571,13 +572,13 @@ impl SampleInfo {
         if !format.is_block_format() {
             Self::for_non_block_format(format, sample_infos)
         } else if format.is_bc1() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             sample_infos[0] = Self::for_bc1();
             Some(1)
         } else if format.is_bc1_alpha() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             sample_infos[0] = Self::for_bc1_alpha();
@@ -599,7 +600,7 @@ impl SampleInfo {
             sample_infos[1] = info[1].clone();
             Some(2)
         } else if format.is_bc4() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             if format.is_signed() {
@@ -625,7 +626,7 @@ impl SampleInfo {
                 Some(2)
             }
         } else if format.is_bc6h() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             if format.is_signed() {
@@ -636,13 +637,13 @@ impl SampleInfo {
                 Some(1)
             }
         } else if format.is_bc7() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             sample_infos[0] = Self::for_bc7();
             Some(1)
         } else if format.is_astc() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             if format.is_floating_point() {
@@ -653,13 +654,13 @@ impl SampleInfo {
                 Some(1)
             }
         } else if format.is_pvrtc1() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             sample_infos[0] = Self::for_pvrtc();
             Some(1)
         } else if format.is_pvrtc2() {
-            if sample_infos.len() < 1 {
+            if sample_infos.is_empty() {
                 return None;
             }
             sample_infos[0] = Self::for_pvrtc2();
@@ -679,7 +680,7 @@ impl SampleInfo {
                     Some(2)
                 }
             } else {
-                if sample_infos.len() < 1 {
+                if sample_infos.is_empty() {
                     return None;
                 }
                 sample_infos[0] = Self::for_etc2_color();

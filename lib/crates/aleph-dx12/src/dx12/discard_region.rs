@@ -39,15 +39,15 @@ pub struct DiscardRegion<'a> {
     pub num_subresources: u32,
 }
 
-impl<'a> Into<D3D12_DISCARD_REGION> for DiscardRegion<'a> {
+impl<'a> From<DiscardRegion<'a>> for D3D12_DISCARD_REGION {
     #[inline]
-    fn into(self) -> D3D12_DISCARD_REGION {
-        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(self.rects);
-        D3D12_DISCARD_REGION {
+    fn from(v: DiscardRegion<'a>) -> Self {
+        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(v.rects);
+        Self {
             NumRects: num_rects,
             pRects: p_rects as *mut _,
-            FirstSubresource: self.first_subresource,
-            NumSubresources: self.num_subresources,
+            FirstSubresource: v.first_subresource,
+            NumSubresources: v.num_subresources,
         }
     }
 }

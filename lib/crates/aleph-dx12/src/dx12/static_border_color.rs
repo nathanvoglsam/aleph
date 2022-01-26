@@ -37,9 +37,9 @@ pub enum StaticBorderColor {
     OpaqueWhite = 2,
 }
 
-impl Into<D3D12_STATIC_BORDER_COLOR> for StaticBorderColor {
+impl From<StaticBorderColor> for D3D12_STATIC_BORDER_COLOR {
     #[inline]
-    fn into(self) -> D3D12_STATIC_BORDER_COLOR {
-        self as i32
+    fn from(v: StaticBorderColor) -> Self {
+        v as _
     }
 }

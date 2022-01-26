@@ -152,7 +152,7 @@ impl IPlugin for PluginRender {
 
         let allocator_desc = dx12_alloc::AllocatorDesc::builder()
             .device(device.clone())
-            .adapter(adapter.clone())
+            .adapter(adapter)
             .build();
         let allocator = dx12_alloc::Allocator::new(&allocator_desc).unwrap();
 
@@ -189,7 +189,7 @@ impl IPlugin for PluginRender {
 
         let renderer = EguiRenderer::new(
             device.clone(),
-            allocator.clone(),
+            allocator,
             &buffers,
             drawable_size.0,
             drawable_size.1,
@@ -257,7 +257,7 @@ impl IPlugin for PluginRender {
                         data.render_data.take(),
                     );
 
-                    data.queue.execute_command_lists(&[&command_list]);
+                    data.queue.execute_command_lists(&[command_list]);
 
                     data.swap_chain.present(0, 0).unwrap();
 
@@ -272,6 +272,12 @@ impl IPlugin for PluginRender {
     }
 }
 
+impl Default for PluginRender {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 any::declare_interfaces!(PluginRender, [IPlugin]);
 
 impl PluginRender {
@@ -282,7 +288,9 @@ impl PluginRender {
         let info = adapter.get_adapter_desc().unwrap();
 
         let gpu_vendor = info.vendor_id_string();
-        let gpu_name = info.description_string().unwrap_or("Unknown".to_string());
+        let gpu_name = info
+            .description_string()
+            .unwrap_or_else(|| "Unknown".to_string());
         let dvmem = info.dedicated_video_memory / 1_000_000;
         let dsmem = info.dedicated_system_memory / 1_000_000;
         let ssmem = info.shared_system_memory / 1_000_000;

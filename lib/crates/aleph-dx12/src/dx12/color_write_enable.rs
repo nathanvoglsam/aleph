@@ -54,9 +54,9 @@ impl Default for ColorWriteEnable {
 
 windows::flags_bitwise_impl!(ColorWriteEnable);
 
-impl Into<D3D12_COLOR_WRITE_ENABLE> for ColorWriteEnable {
+impl From<ColorWriteEnable> for D3D12_COLOR_WRITE_ENABLE {
     #[inline]
-    fn into(self) -> D3D12_COLOR_WRITE_ENABLE {
-        self.0 as i32
+    fn from(v: ColorWriteEnable) -> Self {
+        v.0 as i32
     }
 }

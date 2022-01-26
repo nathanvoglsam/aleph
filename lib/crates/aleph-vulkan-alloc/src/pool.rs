@@ -74,9 +74,9 @@ impl From<u32> for PoolCreateFlag {
     }
 }
 
-impl Into<u32> for PoolCreateFlag {
-    fn into(self) -> u32 {
-        self.0
+impl From<PoolCreateFlag> for u32 {
+    fn from(v: PoolCreateFlag) -> u32 {
+        v.0
     }
 }
 
@@ -164,7 +164,7 @@ impl PoolBuilder {
 
         let result = raw::vmaCreatePool(allocator.as_raw(), create_ptr, &mut pool as *mut _);
 
-        debug_assert!(pool != ptr::null_mut(), "Pool should not be null");
+        debug_assert!(pool.is_null(), "Pool should not be null");
 
         if result as i32 == 0 {
             let pool = Pool {

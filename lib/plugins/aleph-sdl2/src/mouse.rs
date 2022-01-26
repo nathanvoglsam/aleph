@@ -136,7 +136,7 @@ impl MouseImpl {
                 };
                 let event = MouseEvent::MouseMotion(event);
                 mouse_events.push(event.clone());
-                all_events.push(Event::MouseEvent(event.clone()));
+                all_events.push(Event::MouseEvent(event));
             }
             sdl2::event::Event::MouseButtonDown {
                 mouse_btn,
@@ -161,7 +161,7 @@ impl MouseImpl {
                 };
                 let event = MouseEvent::MouseButtonDown(event);
                 mouse_events.push(event.clone());
-                all_events.push(Event::MouseEvent(event.clone()));
+                all_events.push(Event::MouseEvent(event));
             }
             sdl2::event::Event::MouseButtonUp {
                 mouse_btn,
@@ -186,7 +186,7 @@ impl MouseImpl {
                 };
                 let event = MouseEvent::MouseButtonUp(event);
                 mouse_events.push(event.clone());
-                all_events.push(Event::MouseEvent(event.clone()));
+                all_events.push(Event::MouseEvent(event));
             }
             sdl2::event::Event::MouseWheel {
                 x, y, direction, ..
@@ -199,7 +199,7 @@ impl MouseImpl {
                 let event = MouseWheelEvent { x, y, direction };
                 let event = MouseEvent::MouseWheel(event);
                 mouse_events.push(event.clone());
-                all_events.push(Event::MouseEvent(event.clone()));
+                all_events.push(Event::MouseEvent(event));
             }
             _ => {}
         }

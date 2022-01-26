@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+#![allow(clippy::missing_safety_doc)]
+
 use crate::Colour;
 use pix_raw::*;
 use std::ffi::{CStr, CString};

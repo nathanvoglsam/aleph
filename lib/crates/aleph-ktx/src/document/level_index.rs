@@ -90,11 +90,11 @@ impl LevelIndex {
     ) -> Result<u64, KTXReadError> {
         let size_uncompressed = reader.read_u64::<LittleEndian>()?;
 
-        if compression == SuperCompressionScheme::BASIS_LZ && size_uncompressed != 0 {
-            Err(KTXReadError::InvalidLevelIndexUncompressedSize)
-        } else if compression == SuperCompressionScheme::NONE && size_uncompressed != size {
-            Err(KTXReadError::InvalidLevelIndexUncompressedSize)
-        } else if size_uncompressed % (face_num as u64 * layer_num as u64) != 0 {
+        let invalid_basis =
+            compression == SuperCompressionScheme::BASIS_LZ && size_uncompressed != 0;
+        let invalid_none = compression == SuperCompressionScheme::NONE && size_uncompressed != size;
+        let invalid_other = size_uncompressed % (face_num as u64 * layer_num as u64) != 0;
+        if invalid_basis || invalid_none || invalid_other {
             Err(KTXReadError::InvalidLevelIndexUncompressedSize)
         } else {
             Ok(size_uncompressed)

@@ -286,6 +286,12 @@ impl RenderGraphBuilder {
     }
 }
 
+impl Default for RenderGraphBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Utility for looking up a resource by name across all types
 fn lookup_resource_usage<'a, 'b>(
     imported: &'a mut HashMap<String, ImportedResource>,

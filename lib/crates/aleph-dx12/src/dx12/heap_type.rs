@@ -38,10 +38,10 @@ pub enum HeapType {
     Custom = 4,
 }
 
-impl Into<D3D12_HEAP_TYPE> for HeapType {
+impl From<HeapType> for D3D12_HEAP_TYPE {
     #[inline]
-    fn into(self) -> D3D12_HEAP_TYPE {
-        self as i32
+    fn from(v: HeapType) -> Self {
+        v as _
     }
 }
 

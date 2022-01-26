@@ -119,8 +119,7 @@ impl GlobalObjects {
         let desc = desc_builder.build();
         let desc = dx12::VersionedRootSignatureDesc::Desc(desc);
         let root_signature_blob = unsafe { dx12::RootSignatureBlob::new(&desc).unwrap() };
-        let root_signature = device.create_root_signature(&root_signature_blob).unwrap();
-        root_signature
+        device.create_root_signature(&root_signature_blob).unwrap()
     }
 
     pub fn create_pipeline_state(
@@ -198,10 +197,8 @@ impl GlobalObjects {
             .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
             .build();
 
-        let pipeline_state = device
+        device
             .create_graphics_pipeline_state(&state_stream)
-            .unwrap();
-
-        pipeline_state
+            .unwrap()
     }
 }

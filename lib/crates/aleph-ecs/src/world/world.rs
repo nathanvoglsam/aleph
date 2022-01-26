@@ -54,7 +54,7 @@ pub unsafe trait IntoComponentSource {
 /// Interface expected of a type that is a source of component data for inserting entities into
 /// an ECS world.
 ///
-/// # Safe
+/// # Safety
 ///
 /// This trait is marked as unsafe because any non-trivial implementation is going to use a lot of
 /// unsafe code anyway. The entire interface is based around type-erasure and copying data of
@@ -214,6 +214,11 @@ impl World {
         self.entities.len() as u32
     }
 
+    /// Returns if there are no entities in the `World`
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
     /// Register's a rust component type with this ECS world so that it can be used as a component
     #[inline]
     pub fn register<T: Component>(&mut self) -> ComponentTypeDescription {
@@ -275,7 +280,7 @@ impl World {
         );
 
         // Locate the archetype and allocate space in the archetype for the new entities
-        let archetype_index = self.find_or_create_archetype(&layout);
+        let archetype_index = self.find_or_create_archetype(layout);
         let archetype = &mut self.archetypes[archetype_index.0.get() as usize];
         let archetype_entity_base = archetype.allocate_entities(ids.len() as u32);
 
@@ -575,10 +580,8 @@ impl World {
                 if let Some(index) = edge.add {
                     return Some(index);
                 }
-            } else {
-                if let Some(index) = edge.remove {
-                    return Some(index);
-                }
+            } else if let Some(index) = edge.remove {
+                return Some(index);
             }
         }
 
@@ -590,15 +593,13 @@ impl World {
         // Create the destination layout, returning None if the component we're following a link
         // for doesn't change the layout (i.e trying to go from src->src).
         let source_layout = self.archetypes[source].entity_layout().to_owned();
-        let mut destination_layout = source_layout.clone();
+        let mut destination_layout = source_layout;
         if ADD {
             if destination_layout.add_component_type(component) {
                 return None;
             }
-        } else {
-            if !destination_layout.remove_component_type(component) {
-                return None;
-            }
+        } else if !destination_layout.remove_component_type(component) {
+            return None;
         }
 
         // Lookup the archetype and update the graph edge in source
@@ -938,6 +939,7 @@ impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K);
 impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L);
 impl_component_source_for_tuple!(A, B, C, D, E, F, G, H, I, J, K, L, M);
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn world_register(
     mut world: NonNull<World>,
     description: &ComponentTypeDescription,
@@ -945,6 +947,7 @@ pub unsafe extern "C" fn world_register(
     world.as_mut().register_dynamic(description)
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn world_add_component(
     mut world: NonNull<World>,
     entity: EntityId,
@@ -963,6 +966,7 @@ pub unsafe extern "C" fn world_add_component(
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn world_remove_component(
     mut world: NonNull<World>,
     entity: EntityId,
@@ -975,6 +979,7 @@ pub unsafe extern "C" fn world_remove_component(
     }
 }
 
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn world_has_component(
     world: NonNull<World>,
     entity: EntityId,
@@ -992,6 +997,7 @@ pub unsafe extern "C" fn world_has_component(
 }
 
 #[inline]
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn world_get_component_ptr(
     world: NonNull<World>,
     entity: EntityId,

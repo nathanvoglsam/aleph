@@ -101,13 +101,13 @@ impl PerFrameObjects {
             .unwrap();
 
         let font_staging_allocation =
-            unsafe { Self::create_font_staging_allocation(&allocator, (4096, 4096)) };
+            unsafe { Self::create_font_staging_allocation(allocator, (4096, 4096)) };
         let font_staging_resource = font_staging_allocation.get_resource().unwrap();
         font_staging_resource
             .set_name("egui::FontStagingBuffer")
             .unwrap();
 
-        let font_staged_pool = unsafe { Self::create_staged_pool(&allocator, (4096, 4096)) };
+        let font_staged_pool = unsafe { Self::create_staged_pool(allocator, (4096, 4096)) };
 
         let size = device.get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav);
         let font_cpu_srv = global
@@ -292,10 +292,9 @@ impl PerFrameObjects {
             .width(size as _)
             .build();
         let initial_resource_state = dx12::ResourceStates::GENERIC_READ;
-        let allocation = allocator
+        allocator
             .create_resource(&alloc_desc, &resource_desc, initial_resource_state, None)
-            .unwrap();
-        allocation
+            .unwrap()
     }
 
     unsafe fn create_staged_pool(
@@ -312,9 +311,7 @@ impl PerFrameObjects {
             .max_block_count(1)
             .build();
 
-        let pool = allocator.create_pool(&pool_desc).unwrap();
-
-        pool
+        allocator.create_pool(&pool_desc).unwrap()
     }
 
     pub fn vertex_buffer_size() -> usize {

@@ -46,6 +46,11 @@ pub struct EntityLayout {
 impl EntityLayout {
     /// An unsafe function similar to `Self::from_inner`. This function skips checking the
     /// requirements and so is marked as unsafe.
+    ///
+    /// # Safety
+    ///
+    /// It is up to the caller to check the constraints documented on [EntityLayout::from_inner].
+    ///
     #[inline]
     pub unsafe fn from_inner_unchecked(components: &[ComponentTypeId]) -> &Self {
         // SAFETY: EntityLayout is just a wrapper of [ComponentTypeId],
@@ -178,7 +183,7 @@ impl EntityLayout {
 
     /// An iterator over the components in this layout
     #[inline]
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = ComponentTypeId> + 'a {
+    pub fn iter(&'_ self) -> impl Iterator<Item = ComponentTypeId> + '_ {
         self.components.iter().cloned()
     }
 

@@ -92,4 +92,10 @@ impl IPlugin for PluginGpuVulkan {
     }
 }
 
+impl Default for PluginGpuVulkan {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 declare_interfaces!(PluginGpuVulkan, [IPlugin]);

@@ -161,9 +161,7 @@ impl ColorModel {
             Some(ColorModel::BC6H)
         } else if format.is_bc7() {
             Some(ColorModel::BC7)
-        } else if format.is_etc2() {
-            Some(ColorModel::ETC2)
-        } else if format.is_eac() {
+        } else if format.is_etc2() || format.is_eac() {
             Some(ColorModel::ETC2)
         } else if format.is_astc() {
             Some(ColorModel::ASTC)

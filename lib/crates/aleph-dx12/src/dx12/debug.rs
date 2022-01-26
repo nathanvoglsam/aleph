@@ -48,9 +48,7 @@ impl Debug {
         let ptr = &mut debug;
         let ptr = ptr as *mut Option<ID3D12Debug>;
         let ptr = ptr as *mut *mut ::std::ffi::c_void;
-        create_fn(&ID3D12Debug::IID, ptr)
-            .and_some(debug)
-            .map(|v| Self(v))
+        create_fn(&ID3D12Debug::IID, ptr).and_some(debug).map(Self)
     }
 
     #[inline]

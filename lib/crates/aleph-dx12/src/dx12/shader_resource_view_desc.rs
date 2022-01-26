@@ -97,9 +97,9 @@ pub enum ShaderResourceViewDesc {
     },
 }
 
-impl Into<D3D12_SHADER_RESOURCE_VIEW_DESC> for ShaderResourceViewDesc {
-    fn into(self) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
-        match self {
+impl From<ShaderResourceViewDesc> for D3D12_SHADER_RESOURCE_VIEW_DESC {
+    fn from(v: ShaderResourceViewDesc) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
+        match v {
             ShaderResourceViewDesc::Buffer {
                 format,
                 component_mapping,

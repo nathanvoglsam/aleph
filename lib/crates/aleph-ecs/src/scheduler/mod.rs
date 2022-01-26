@@ -332,9 +332,8 @@ impl Stage for Schedule {
             }
 
             // Execute the system and bail if it decides we should not run the schedule
-            match system.execute_safe((), world) {
-                ShouldRun::No => return,
-                _ => {}
+            if system.execute_safe((), world) == ShouldRun::No {
+                return;
             }
         }
 

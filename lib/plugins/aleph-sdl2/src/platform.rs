@@ -84,6 +84,12 @@ impl PluginPlatformSDL2 {
     }
 }
 
+impl Default for PluginPlatformSDL2 {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Drop for PluginPlatformSDL2 {
     fn drop(&mut self) {
         let mut sdl = self.sdl.take().unwrap();
@@ -260,7 +266,7 @@ impl PluginPlatformSDL2 {
 
         Self::mouse(provider)
             .unwrap()
-            .process_mouse_requests(&window, &mouse_utils, &cursors);
+            .process_mouse_requests(&window, &mouse_utils, cursors);
         Self::window(provider)
             .unwrap()
             .process_window_requests(&mut window, &mut window_state);
@@ -389,19 +395,19 @@ impl PluginPlatformSDL2 {
     }
 
     fn mouse(provider: &ProviderImpl) -> Option<&MouseImpl> {
-        provider.mouse.as_ref().map(|v| v.deref())
+        provider.mouse.as_deref()
     }
 
     fn window(provider: &ProviderImpl) -> Option<&WindowImpl> {
-        provider.window.as_ref().map(|v| v.deref())
+        provider.window.as_deref()
     }
 
     fn keyboard(provider: &ProviderImpl) -> Option<&KeyboardImpl> {
-        provider.keyboard.as_ref().map(|v| v.deref())
+        provider.keyboard.as_deref()
     }
 
     fn frame_timer(provider: &ProviderImpl) -> Option<&FrameTimerImpl> {
-        provider.frame_timer.as_ref().map(|v| v.deref())
+        provider.frame_timer.as_deref()
     }
 }
 

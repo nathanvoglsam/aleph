@@ -48,9 +48,9 @@ impl Default for FenceFlags {
 
 windows::flags_bitwise_impl!(FenceFlags);
 
-impl Into<D3D12_FENCE_FLAGS> for FenceFlags {
+impl From<FenceFlags> for D3D12_FENCE_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_FENCE_FLAGS {
-        self.0
+    fn from(v: FenceFlags) -> Self {
+        v.0
     }
 }

@@ -112,7 +112,7 @@ impl InstanceBuilder {
                 .expect("Failed to create surface")
         };
 
-        let instance = Instance {
+        Instance {
             inner: Arc::new(Inner {
                 _entry_loader: entry_loader.clone(),
                 instance_loader,
@@ -120,8 +120,7 @@ impl InstanceBuilder {
                 version,
                 messenger,
             }),
-        };
-        instance
+        }
     }
 
     ///
@@ -244,6 +243,12 @@ impl InstanceBuilder {
                 .create_debug_utils_messenger_ext(&create_info, None)
                 .expect("Failed to install VK_EXT_debug_utils messenger")
         }
+    }
+}
+
+impl Default for InstanceBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

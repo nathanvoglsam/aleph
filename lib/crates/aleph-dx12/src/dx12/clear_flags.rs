@@ -52,9 +52,9 @@ impl Default for ClearFlags {
 
 windows::flags_bitwise_impl!(ClearFlags);
 
-impl Into<D3D12_CLEAR_FLAGS> for ClearFlags {
+impl From<ClearFlags> for D3D12_CLEAR_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_CLEAR_FLAGS {
-        self.0
+    fn from(v: ClearFlags) -> Self {
+        v.0
     }
 }

@@ -40,6 +40,7 @@ pub struct SwapChain(pub(crate) IDXGISwapChain4);
 
 impl SwapChain {
     /// `IDXGISwapChain3::ResizeBuffers1`
+    #[allow(clippy::too_many_arguments)]
     pub unsafe fn resize_buffers(
         &self,
         buffer_count: u32,
@@ -136,7 +137,7 @@ impl SwapChain {
 
     #[inline]
     pub fn get_buffer(&self, buffer: u32) -> windows::core::Result<crate::Resource> {
-        unsafe { self.0.GetBuffer(buffer).map(|v| crate::Resource(v)) }
+        unsafe { self.0.GetBuffer(buffer).map(crate::Resource) }
     }
 
     #[inline]

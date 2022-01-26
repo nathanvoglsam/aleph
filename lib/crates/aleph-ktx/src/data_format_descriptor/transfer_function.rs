@@ -70,11 +70,10 @@ impl TransferFunction {
     pub fn is_compatible_with_format(self, format: VkFormat) -> bool {
         let is_srgb = format.is_srgb();
         let allowed = !is_format_unsupported(format) && !is_format_prohibited(format);
-        match (allowed, is_srgb, self) {
-            (true, true, TransferFunction::SRGB) => true,
-            (true, false, TransferFunction::Linear) => true,
-            _ => false,
-        }
+        matches!(
+            (allowed, is_srgb, self),
+            (true, true, TransferFunction::SRGB) | (true, false, TransferFunction::Linear)
+        )
     }
 
     ///

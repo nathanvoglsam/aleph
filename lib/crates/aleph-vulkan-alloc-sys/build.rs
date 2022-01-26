@@ -30,8 +30,6 @@
 extern crate aleph_compile as compile;
 extern crate aleph_target_build as target;
 
-use cmake;
-
 #[cfg(feature = "generate_bindings")]
 use bindgen;
 

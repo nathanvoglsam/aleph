@@ -58,23 +58,20 @@ impl SuperCompressionScheme {
     /// Is this compression scheme supported by our implementation
     ///
     pub fn is_supported(self) -> bool {
-        match self {
-            SuperCompressionScheme::NONE => true,
-            _ => false,
-        }
+        matches!(self, SuperCompressionScheme::NONE)
     }
 
     ///
     /// Is this a compression scheme provided by the KTX 2.0 spec itself
     ///
     pub fn is_core_scheme(self) -> bool {
-        match self {
+        matches!(
+            self,
             SuperCompressionScheme::NONE
-            | SuperCompressionScheme::BASIS_LZ
-            | SuperCompressionScheme::ZSTD
-            | SuperCompressionScheme::ZLIB => true,
-            _ => false,
-        }
+                | SuperCompressionScheme::BASIS_LZ
+                | SuperCompressionScheme::ZSTD
+                | SuperCompressionScheme::ZLIB
+        )
     }
 
     ///
@@ -99,13 +96,13 @@ impl SuperCompressionScheme {
     /// reasons, but for any new compression schemes that may be added
     ///
     pub fn is_known(self) -> bool {
-        match self {
+        matches!(
+            self,
             SuperCompressionScheme::NONE
-            | SuperCompressionScheme::BASIS_LZ
-            | SuperCompressionScheme::ZSTD
-            | SuperCompressionScheme::ZLIB => true,
-            _ => false,
-        }
+                | SuperCompressionScheme::BASIS_LZ
+                | SuperCompressionScheme::ZSTD
+                | SuperCompressionScheme::ZLIB
+        )
     }
 
     ///
@@ -137,11 +134,11 @@ impl SuperCompressionScheme {
 
 impl Debug for SuperCompressionScheme {
     fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
-        fmt.write_str(match self {
-            &Self::NONE => "NONE",
-            &Self::BASIS_LZ => "BASIS_LZ",
-            &Self::ZSTD => "ZSTD",
-            &Self::ZLIB => "ZLIB",
+        fmt.write_str(match *self {
+            Self::NONE => "NONE",
+            Self::BASIS_LZ => "BASIS_LZ",
+            Self::ZSTD => "ZSTD",
+            Self::ZLIB => "ZLIB",
             _ => {
                 if self.is_in_ktx_reserved() {
                     "(unknown):KTX_RESERVED"

@@ -36,9 +36,9 @@ pub enum ConservativeRasterizationMode {
     On = 1,
 }
 
-impl Into<D3D12_CONSERVATIVE_RASTERIZATION_MODE> for ConservativeRasterizationMode {
+impl From<ConservativeRasterizationMode> for D3D12_CONSERVATIVE_RASTERIZATION_MODE {
     #[inline]
-    fn into(self) -> D3D12_CONSERVATIVE_RASTERIZATION_MODE {
-        self as i32
+    fn from(v: ConservativeRasterizationMode) -> Self {
+        v as _
     }
 }

@@ -37,9 +37,9 @@ pub enum CullMode {
     Back = 3,
 }
 
-impl Into<D3D12_CULL_MODE> for CullMode {
+impl From<CullMode> for D3D12_CULL_MODE {
     #[inline]
-    fn into(self) -> D3D12_CULL_MODE {
-        self as i32
+    fn from(v: CullMode) -> Self {
+        v as _
     }
 }

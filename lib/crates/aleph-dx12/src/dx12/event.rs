@@ -143,10 +143,12 @@ impl Event {
             )
         };
 
-        NonZeroIsize::new(event.0).map(|v| Self(v))
+        NonZeroIsize::new(event.0).map(Self)
     }
 
     #[inline]
+    #[allow(clippy::result_unit_err)]
+    // TODO: Actual Error return instead of ()
     pub fn wait(&self, timeout: Option<u32>) -> Result<SingleWaitResponse, ()> {
         let ret = if let Some(timeout) = timeout {
             unsafe { WaitForSingleObject(HANDLE(self.0.get()), timeout) }
@@ -161,7 +163,7 @@ impl Drop for Event {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            assert_ne!(CloseHandle(HANDLE(self.0.get())).as_bool(), false);
+            assert!(CloseHandle(HANDLE(self.0.get())).as_bool());
         }
     }
 }

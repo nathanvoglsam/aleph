@@ -41,6 +41,7 @@ pub fn display_id(f: &mut Formatter<'_>, val: NonZeroU64) -> Result {
     ))
 }
 
+#[allow(clippy::identity_op)]
 fn chunks(val: u64) -> [u16; 4] {
     let b7 = ((val >> 56) & 0xFF) as u16;
     let b6 = ((val >> 48) & 0xFF) as u16;

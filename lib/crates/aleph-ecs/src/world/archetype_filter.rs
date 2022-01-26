@@ -118,17 +118,15 @@ impl ArchetypeFilter {
 
         // Search our candidate set for the next matching archetype
         let next_match = candidates.iter().enumerate().find(|(_, v)| {
-            self.matching_components.is_subset_of(&v.entity_layout())
-                && self
-                    .excluded_components
-                    .is_disjoint_from(&v.entity_layout())
+            self.matching_components.is_subset_of(v.entity_layout())
+                && self.excluded_components.is_disjoint_from(v.entity_layout())
         });
 
         // Based on our search result update the iterator and flag if we've found another matching
         // archetype
         if let Some((index, _)) = next_match {
             let index = NonZeroU32::new(index as u32);
-            let index = index.map(|v| ArchetypeIndex(v));
+            let index = index.map(ArchetypeIndex);
             self.current = index;
             true
         } else {
@@ -164,6 +162,7 @@ impl ArchetypeFilter {
 }
 
 /// `RawArchetypeQuery::new`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_filter_new(
     matching: NonNull<ComponentTypeId>,
     matching_len: usize,
@@ -188,6 +187,7 @@ pub unsafe extern "C" fn archetype_filter_new(
 }
 
 /// `RawArchetypeQuery::next`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_filter_next(
     mut query: NonNull<ArchetypeFilter>,
     world: NonNull<World>,
@@ -201,6 +201,7 @@ pub unsafe extern "C" fn archetype_filter_next(
 }
 
 /// `RawArchetypeQuery::current_ptr`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_filter_current(
     query: NonNull<ArchetypeFilter>,
     world: NonNull<World>,
@@ -209,8 +210,8 @@ pub unsafe extern "C" fn archetype_filter_current(
 }
 
 /// `RawArchetypeQuery::drop`
+#[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_filter_destroy(query: NonNull<ArchetypeFilter>) {
     // Recreate and drop the box to call cleanup code
     Box::from_raw(query.as_ptr());
-    drop(query)
 }

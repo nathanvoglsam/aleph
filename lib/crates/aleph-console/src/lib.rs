@@ -60,11 +60,10 @@ impl DebugConsole {
     /// an [Rc]. Only once all [DebugConsole] handles pointing to a console instance are dropped
     /// will the console be dropped.
     pub fn new() -> Self {
-        let out = Self {
+        Self {
             #[cfg(feature = "console")]
             inner: std::rc::Rc::new(std::cell::RefCell::new(rhai::Engine::new())),
-        };
-        out
+        }
     }
 
     #[cfg(feature = "console")]
@@ -132,6 +131,12 @@ impl DebugConsole {
 
     #[cfg(not(feature = "console"))]
     fn eval_inner(&self, _expr: &str) {}
+}
+
+impl Default for DebugConsole {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 ///
@@ -204,7 +209,7 @@ impl Logger {
         stream.set_read_timeout(Some(Duration::from_secs(2)))?;
 
         // Write a magic string so the remote can identify us as a valid client
-        stream.write("I_AM_AN_ALEPH_APP".as_bytes())?;
+        stream.write_all("I_AM_AN_ALEPH_APP".as_bytes())?;
 
         // Try to read the exact bytes for the expected handshake response
         let mut buffer = [0u8; 22];
@@ -261,7 +266,7 @@ impl Logger {
             // Get a slice of just the bytes written in the packet and check if it matches our magic
             // string
             let slice = &buffer[0..bytes];
-            if let Some("I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR") = std::str::from_utf8(slice).ok() {
+            if let Ok("I_AM_AN_ALEPH_LOG_LISTENER_I_SWEAR") = std::str::from_utf8(slice) {
                 return Ok(Some(from));
             }
         }
@@ -349,7 +354,7 @@ impl log::Log for Logger {
                 // Lock and write our payload
                 let mut lock = remote.lock().unwrap();
                 let result = lock
-                    .write_all(&payload.as_bytes())
+                    .write_all(payload.as_bytes())
                     .and_then(|_| lock.flush());
 
                 // If we encounter any error we assume we've lost the socket

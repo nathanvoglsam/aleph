@@ -72,6 +72,12 @@ impl PoolDescBuilder {
     }
 }
 
+impl Default for PoolDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug)]
 pub struct PoolDesc {
@@ -100,8 +106,8 @@ impl Default for PoolDesc {
     }
 }
 
-impl Into<D3D12MA_POOL_DESC> for PoolDesc {
-    fn into(self) -> D3D12MA_POOL_DESC {
-        unsafe { transmute(self) }
+impl From<PoolDesc> for D3D12MA_POOL_DESC {
+    fn from(v: PoolDesc) -> D3D12MA_POOL_DESC {
+        unsafe { transmute(v) }
     }
 }

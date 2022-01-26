@@ -59,20 +59,20 @@ impl PluginRegistryBuilder {
     pub fn build(mut self) -> PluginRegistry {
         // First we handle registering the plugins. Here we call `IPlugin::register` for each
         // plugin and collect their responses so we can schedule their execution phases.
-        let (
-            mut dependencies,
+        let SchedulerState {
+            dependencies,
             mut init_dependencies,
             mut update_dependencies,
             mut provided_interfaces,
             mut should_update,
-        ) = self.handle_plugin_registration();
+        } = self.handle_plugin_registration();
 
         // Then we need a resolution phase
         self.resolve_dependencies(
-            &mut dependencies,
+            &dependencies,
             &mut init_dependencies,
             &mut update_dependencies,
-            &mut provided_interfaces,
+            &provided_interfaces,
         );
 
         let (init_order, update_order, exit_order) = self.schedule_plugin_execution(
@@ -99,15 +99,7 @@ impl PluginRegistryBuilder {
         registry
     }
 
-    fn handle_plugin_registration(
-        &mut self,
-    ) -> (
-        Vec<BTreeSet<TypeId>>,
-        Vec<BTreeSet<TypeId>>,
-        Vec<BTreeSet<TypeId>>,
-        Vec<BTreeSet<TypeId>>,
-        Vec<bool>,
-    ) {
+    fn handle_plugin_registration(&mut self) -> SchedulerState {
         // Construct our registrar with empty sets
         let mut registrar = PluginRegistrar {
             depends_on_list: Default::default(),
@@ -137,21 +129,21 @@ impl PluginRegistryBuilder {
             provided_interfaces.push(std::mem::take(&mut registrar.provided_interfaces));
             should_update.push(registrar.should_update);
         });
-        (
+        SchedulerState {
             dependencies,
             init_dependencies,
             update_dependencies,
             provided_interfaces,
             should_update,
-        )
+        }
     }
 
     fn resolve_dependencies(
         &self,
-        dependencies: &Vec<BTreeSet<TypeId>>,
+        dependencies: &[BTreeSet<TypeId>],
         init_dependencies: &mut Vec<BTreeSet<TypeId>>,
         update_dependencies: &mut Vec<BTreeSet<TypeId>>,
-        provided_interfaces: &Vec<BTreeSet<TypeId>>,
+        provided_interfaces: &[BTreeSet<TypeId>],
     ) {
         // Collect a flattened set of all interfaces that are mandatory for the full set of plugins
         // to work
@@ -228,17 +220,11 @@ impl PluginRegistryBuilder {
         //
         // Clone the unscheduled set as we need it multiple times and the mem copy is faster than
         // constructing the set multiple times.
-        let init_order = self.build_execution_order(
-            unscheduled.clone(),
-            &init_dependencies,
-            &provided_interfaces,
-        );
+        let init_order =
+            self.build_execution_order(unscheduled, init_dependencies, provided_interfaces);
 
-        let update_orders = self.build_update_exec_orders(
-            &update_dependencies,
-            &provided_interfaces,
-            &should_update,
-        );
+        let update_orders =
+            self.build_update_exec_orders(update_dependencies, provided_interfaces, should_update);
 
         // Build the exit execution order
         //
@@ -264,13 +250,11 @@ impl PluginRegistryBuilder {
             .filter(|(index, _)| should_update[*index])
             .map(|v| v.0)
             .collect();
-        let order = self.build_execution_order(
+        self.build_execution_order(
             unscheduled,
-            &execution_dependencies,
+            execution_dependencies,
             provided_implementations,
-        );
-
-        order
+        )
     }
 
     fn build_execution_order(
@@ -332,5 +316,19 @@ impl PluginRegistryBuilder {
         }
 
         order
+    }
+}
+
+struct SchedulerState {
+    dependencies: Vec<BTreeSet<TypeId>>,
+    init_dependencies: Vec<BTreeSet<TypeId>>,
+    update_dependencies: Vec<BTreeSet<TypeId>>,
+    provided_interfaces: Vec<BTreeSet<TypeId>>,
+    should_update: Vec<bool>,
+}
+
+impl Default for PluginRegistryBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }

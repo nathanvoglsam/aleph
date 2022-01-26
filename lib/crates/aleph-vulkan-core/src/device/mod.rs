@@ -104,8 +104,8 @@ impl DeviceBuilder {
 
         let enabled_features = PhysicalDeviceFeatures::default();
 
-        let mut enabled_extensions = Vec::new();
-        enabled_extensions.push(erupt::extensions::khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME);
+        let enabled_extensions =
+            vec![erupt::extensions::khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME];
 
         // We're just going have a pre-allocated chunk of priorities bigger than we're ever going to
         // need to slice from to send to vulkan. Saves allocating when we don't need to
@@ -157,8 +157,7 @@ impl DeviceBuilder {
         }
 
         // Build the list of queues to create
-        let mut queue_create_infos = Vec::new();
-        queue_create_infos.push(general_queue);
+        let mut queue_create_infos = vec![general_queue];
 
         // Create an async compute queue if we can
         if let Some(compute_queue) = compute_queue {
@@ -422,6 +421,12 @@ impl DeviceBuilder {
                 })
                 .collect()
         }
+    }
+}
+
+impl Default for DeviceBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

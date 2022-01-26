@@ -215,3 +215,9 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         }
     }
 }
+
+impl<'a> Default for GraphicsPipelineBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}

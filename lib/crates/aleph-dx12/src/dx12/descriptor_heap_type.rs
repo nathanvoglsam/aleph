@@ -39,9 +39,9 @@ pub enum DescriptorHeapType {
     DepthStencilView = 3,
 }
 
-impl Into<D3D12_DESCRIPTOR_HEAP_TYPE> for DescriptorHeapType {
+impl From<DescriptorHeapType> for D3D12_DESCRIPTOR_HEAP_TYPE {
     #[inline]
-    fn into(self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
-        self as i32
+    fn from(v: DescriptorHeapType) -> Self {
+        v as _
     }
 }

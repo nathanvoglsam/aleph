@@ -46,9 +46,9 @@ impl Default for DescriptorHeapFlags {
 
 windows::flags_bitwise_impl!(DescriptorHeapFlags);
 
-impl Into<D3D12_DESCRIPTOR_HEAP_FLAGS> for DescriptorHeapFlags {
+impl From<DescriptorHeapFlags> for D3D12_DESCRIPTOR_HEAP_FLAGS {
     #[inline]
-    fn into(self) -> D3D12_DESCRIPTOR_HEAP_FLAGS {
-        self.0
+    fn from(v: DescriptorHeapFlags) -> Self {
+        v.0
     }
 }

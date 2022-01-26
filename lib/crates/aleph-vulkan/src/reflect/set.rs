@@ -197,7 +197,7 @@ impl DescriptorSetReflection {
         entry_point
             .descriptor_sets
             .drain(..)
-            .map(|d| Self::reflect_internal(d))
+            .map(Self::reflect_internal)
             .collect()
     }
 
@@ -244,8 +244,6 @@ impl DescriptorSetReflection {
             .collect();
 
         let set = set.set;
-        let out_set = DescriptorSetReflection { set, bindings };
-
-        out_set
+        DescriptorSetReflection { set, bindings }
     }
 }

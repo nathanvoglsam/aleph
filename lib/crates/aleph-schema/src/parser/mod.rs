@@ -187,7 +187,7 @@ impl<'input> Parser<'input> {
             attributes: std::mem::take(attributes),
         };
 
-        Self::parse_struct_like(&mut v.fields, attributes, input, span.clone())?;
+        Self::parse_struct_like(&mut v.fields, attributes, input, span)?;
 
         let v = ModuleItem::Struct(v);
         into.children.push((name, v));
@@ -302,7 +302,7 @@ impl<'input> Parser<'input> {
             attributes: std::mem::take(attributes),
         };
 
-        Self::parse_enum_like(&mut v.variants, attributes, input, span.clone())?;
+        Self::parse_enum_like(&mut v.variants, attributes, input, span)?;
 
         let v = ModuleItem::Enum(v);
         into.children.push((name, v));
@@ -413,7 +413,7 @@ impl<'input> Parser<'input> {
     }
 
     fn parse_type_name(input: &str) -> FieldType {
-        let output = match input {
+        match input {
             "u8" => FieldType::Primitive(PrimitiveType::U8),
             "u16" => FieldType::Primitive(PrimitiveType::U16),
             "u32" => FieldType::Primitive(PrimitiveType::U32),
@@ -426,8 +426,7 @@ impl<'input> Parser<'input> {
             "f64" => FieldType::Primitive(PrimitiveType::F64),
             "bool" => FieldType::Primitive(PrimitiveType::Bool),
             _ => FieldType::StructRef(CompactString::from(input)),
-        };
-        output
+        }
     }
 
     fn try_parse_attribute(
@@ -452,7 +451,7 @@ impl<'input> Parser<'input> {
         span: Range<usize>,
         index: usize,
     ) -> Result<(Range<usize>, &'input str), Error> {
-        let first = list.get(index).ok_or_else(|| Error::ExpectedWord {
+        let first = list.get(index).ok_or(Error::ExpectedWord {
             span: span.end..span.end,
         })?;
         let atom = first.item.atom().ok_or_else(|| Error::ExpectedWord {
@@ -496,7 +495,7 @@ impl<'input> Parser<'input> {
                 span: name.span.clone(),
                 duplicate,
             };
-            return Err(error);
+            Err(error)
         } else {
             names.insert(name);
             Ok(())

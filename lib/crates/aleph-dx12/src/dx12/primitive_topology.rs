@@ -83,9 +83,9 @@ impl Default for PrimitiveTopology {
     }
 }
 
-impl Into<D3D_PRIMITIVE_TOPOLOGY> for PrimitiveTopology {
+impl From<PrimitiveTopology> for D3D_PRIMITIVE_TOPOLOGY {
     #[inline]
-    fn into(self) -> D3D_PRIMITIVE_TOPOLOGY {
-        self as i32
+    fn from(v: PrimitiveTopology) -> Self {
+        v as _
     }
 }

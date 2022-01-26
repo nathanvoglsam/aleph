@@ -95,6 +95,12 @@ impl DepthStencilDescBuilder {
     }
 }
 
+impl Default for DepthStencilDescBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Debug, Hash)]
 pub struct DepthStencilDesc {

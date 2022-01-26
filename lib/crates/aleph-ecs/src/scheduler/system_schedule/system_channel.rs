@@ -428,7 +428,7 @@ impl<C: GenericSystemCell> SystemChannel<C> {
         I: Iterator<Item = &'a TB>,
     {
         for read in reads {
-            match last_reads.get_mut(&read) {
+            match last_reads.get_mut(read) {
                 None => {
                     let mut vec = Vec::with_capacity(4);
                     vec.push(system_index);

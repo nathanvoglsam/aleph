@@ -73,9 +73,9 @@ pub enum RenderTargetViewDesc {
     },
 }
 
-impl Into<D3D12_RENDER_TARGET_VIEW_DESC> for RenderTargetViewDesc {
-    fn into(self) -> D3D12_RENDER_TARGET_VIEW_DESC {
-        match self {
+impl From<RenderTargetViewDesc> for D3D12_RENDER_TARGET_VIEW_DESC {
+    fn from(v: RenderTargetViewDesc) -> Self {
+        match v {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),
                 ViewDimension: D3D12_RTV_DIMENSION_BUFFER,

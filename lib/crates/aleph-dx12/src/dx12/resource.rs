@@ -42,7 +42,7 @@ impl Resource {
     pub fn get_gpu_virtual_address(&self) -> Option<GPUDescriptorHandle> {
         unsafe {
             let ptr = self.0.GetGPUVirtualAddress();
-            NonZeroU64::new(ptr).map(|v| GPUDescriptorHandle(v))
+            NonZeroU64::new(ptr).map(GPUDescriptorHandle)
         }
     }
 

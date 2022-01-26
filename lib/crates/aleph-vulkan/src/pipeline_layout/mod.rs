@@ -298,6 +298,12 @@ impl<'a> PipelineLayoutBuilder<'a> {
     }
 }
 
+impl<'a> Default for PipelineLayoutBuilder<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 ///
 ///
 ///

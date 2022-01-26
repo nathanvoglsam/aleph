@@ -36,7 +36,7 @@ use unicode_width::UnicodeWidthStr;
 //noinspection RsSelfConvention
 pub trait CharExtensions {
     /// Returns whether the char is the list open char
-    fn is_list_open(self) -> bool;
+    fn is_list_open(&self) -> bool;
 
     /// Returns the list open char
     fn list_open() -> char {
@@ -44,7 +44,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the list close char
-    fn is_list_close(self) -> bool;
+    fn is_list_close(&self) -> bool;
 
     /// Returns the list close char
     fn list_close() -> char {
@@ -52,7 +52,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the quote char (for string literal)
-    fn is_quote(self) -> bool;
+    fn is_quote(&self) -> bool;
 
     /// Returns the quote char
     fn quote() -> char {
@@ -60,7 +60,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the negation prefix (for negative number literals)
-    fn is_negation_prefix(self) -> bool;
+    fn is_negation_prefix(&self) -> bool;
 
     /// Returns the negation prefix char
     fn negation_prefix() -> char {
@@ -68,7 +68,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the escape prefix (for escape sequence in string literal)
-    fn is_escape_prefix(self) -> bool;
+    fn is_escape_prefix(&self) -> bool;
 
     /// Returns the negation prefix char
     fn escape_prefix() -> char {
@@ -76,7 +76,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the decimal point char
-    fn is_decimal_point(self) -> bool;
+    fn is_decimal_point(&self) -> bool;
 
     /// Returns the decimal point char
     fn decimal_point() -> char {
@@ -84,7 +84,7 @@ pub trait CharExtensions {
     }
 
     /// Returns whether the char is the thousands separator
-    fn is_thousands_separator(self) -> bool;
+    fn is_thousands_separator(&self) -> bool;
 
     /// Returns the thousands separator
     fn thousands_separator() -> char {
@@ -92,59 +92,60 @@ pub trait CharExtensions {
     }
 
     /// Returns whether this character is the beginning of an item
-    fn is_item_token(self) -> bool;
+    fn is_item_token(&self) -> bool;
 
     /// Assuming the char is a hex digit, convert the digit to the corresponding number the digit
     /// represents
-    fn hex_value(self) -> u8;
+    fn hex_value(&self) -> u8;
 }
 
 impl CharExtensions for char {
     #[inline]
-    fn is_list_open(self) -> bool {
-        self == char::list_open()
+    fn is_list_open(&self) -> bool {
+        *self == char::list_open()
     }
 
     #[inline]
-    fn is_list_close(self) -> bool {
-        self == char::list_close()
+    fn is_list_close(&self) -> bool {
+        *self == char::list_close()
     }
 
     #[inline]
-    fn is_quote(self) -> bool {
-        self == char::quote()
+    fn is_quote(&self) -> bool {
+        *self == char::quote()
     }
 
     #[inline]
-    fn is_negation_prefix(self) -> bool {
-        self == char::negation_prefix()
+    fn is_negation_prefix(&self) -> bool {
+        *self == char::negation_prefix()
     }
 
     #[inline]
-    fn is_escape_prefix(self) -> bool {
-        self == char::escape_prefix()
+    fn is_escape_prefix(&self) -> bool {
+        *self == char::escape_prefix()
     }
 
     #[inline]
-    fn is_decimal_point(self) -> bool {
-        self == char::decimal_point()
+    fn is_decimal_point(&self) -> bool {
+        *self == char::decimal_point()
     }
 
-    fn is_thousands_separator(self) -> bool {
-        self == char::thousands_separator()
+    fn is_thousands_separator(&self) -> bool {
+        *self == char::thousands_separator()
     }
 
     #[inline]
-    fn is_item_token(self) -> bool {
+    fn is_item_token(&self) -> bool {
         const SPECIAL_CHARS: [char; 26] = [
             '!', '@', '#', '$', '%', '^', '&', '*', '[', ']', '{', '}', '<', '>', '.', ',', ':',
             ';', '+', '=', '-', '_', '~', '`', '?', '|',
         ];
-        self.is_ascii_alphanumeric() || SPECIAL_CHARS.contains(&self)
+        self.is_ascii_alphanumeric() || SPECIAL_CHARS.contains(self)
     }
 
-    fn hex_value(self) -> u8 {
-        match self {
+    #[inline]
+    fn hex_value(&self) -> u8 {
+        match *self {
             '0' => 0x0,
             '1' => 0x1,
             '2' => 0x2,
@@ -278,7 +279,7 @@ pub fn highlight_code(
         )?;
 
         // Print the marker
-        writeln!(&mut output, "{}{}", space, '^')?;
+        writeln!(&mut output, "{}^", space)?;
 
         // Write out the highlighted line and column, +1 to use 1 indexing not 0 indexing
         highlighted_line = line_number + 1;
