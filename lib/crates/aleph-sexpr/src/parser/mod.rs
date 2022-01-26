@@ -1,4 +1,4 @@
-// auto-generated: "lalrpop 0.19.6"
+// auto-generated: "lalrpop 0.19.7"
 // sha3: 7d8f586ff4902e25e72a4934c2289356d9f8e13b3bb97d37cb016a7aa702c
 #[allow(unused_extern_crates)]
 extern crate lalrpop_util as __lalrpop_util;
@@ -9,7 +9,7 @@ extern crate core;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __parse__Atom {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
+    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -787,7 +787,7 @@ pub use self::__parse__Atom::AtomParser;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __parse__File {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
+    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -1631,7 +1631,7 @@ pub use self::__parse__File::FileParser;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __parse__Item {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
+    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
@@ -2458,7 +2458,7 @@ pub use self::__parse__Item::ItemParser;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 mod __parse__List {
-    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens)]
+    #![allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables, unused_imports, unused_parens, clippy::all)]
 
     #[allow(unused_extern_crates)]
     extern crate lalrpop_util as __lalrpop_util;
