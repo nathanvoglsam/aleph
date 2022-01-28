@@ -858,6 +858,7 @@ impl GraphicsCommandList {
     }
 }
 
+crate::as_weak_ref_impl!(GraphicsCommandList);
 crate::object_impl!(GraphicsCommandList);
 crate::device_child_impl!(GraphicsCommandList);
 crate::owned_object!(GraphicsCommandList);

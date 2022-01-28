@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::dx12::{dxgi, D3D12Object};
+use crate::dx12::{dxgi, D3D12Object, AsWeakRef};
 use crate::renderer::EguiRenderer;
 use crate::{dx12, dx12_alloc};
 use aleph_gpu_dx12::{IGpuAdapterExt, IGpuDeviceExt, IGpuSwapChainExt};
@@ -257,7 +257,7 @@ impl IPlugin for PluginRender {
                         data.render_data.take(),
                     );
 
-                    data.queue.execute_command_lists(&[command_list]);
+                    data.queue.execute_command_lists(&[command_list.as_weak()]);
 
                     data.swap_chain.present(0, 0).unwrap();
 

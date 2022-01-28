@@ -42,3 +42,6 @@ pub use dx12::*;
 pub use crate::windows::core::Result;
 pub use crate::windows::utils::Bool;
 pub use crate::windows::utils::CStrFFI;
+
+pub use utils::WeakRef;
+pub use utils::AsWeakRef;

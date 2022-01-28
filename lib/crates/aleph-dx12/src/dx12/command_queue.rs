@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::utils::WeakRef;
 use crate::{Fence, GraphicsCommandList};
-use std::ffi::c_void;
 use windows::Win32::Graphics::Direct3D12::ID3D12CommandQueue;
 
 #[repr(transparent)]
@@ -41,44 +41,12 @@ impl CommandQueue {
     }
 
     #[inline]
-    pub unsafe fn execute_command_lists<const NUM: usize>(
-        &mut self,
-        command_lists: &[&GraphicsCommandList; NUM],
-    ) {
-        // We need an array to put the ID3D12GraphicsCommandList pointers into
-        let mut lists: [*mut c_void; NUM] = [std::ptr::null_mut(); NUM];
-
-        // Iterate over the given set of lists, accessing and storing the locks and putting the
-        // ID3D12GraphicsCommandList pointer into their respective arrays
-        for (i, list) in command_lists.iter().enumerate() {
-            let list = list.as_raw();
-
-            // First we store the pointer in the list we pass to `ExecuteCommandLists`
-            lists[i] = std::mem::transmute_copy(list);
-        }
-
+    pub unsafe fn execute_command_lists(&mut self, command_lists: &[WeakRef<GraphicsCommandList>]) {
         // The actual call to ExecuteCommandLists
-        self.0
-            .ExecuteCommandLists(NUM as u32, lists.as_mut_ptr() as *mut _);
-    }
-
-    #[inline]
-    pub unsafe fn execute_command_lists_dynamic(&mut self, command_lists: &[&GraphicsCommandList]) {
-        // We need an array to put the ID3D12GraphicsCommandList pointers into
-        let mut lists: Vec<*mut c_void> = Vec::new();
-
-        // Iterate over the given set of lists, accessing and storing the locks and putting the
-        // ID3D12GraphicsCommandList pointer into their respective arrays
-        for list in command_lists.iter() {
-            let list = list.as_raw();
-
-            // First we store the pointer in the list we pass to `ExecuteCommandLists`
-            lists.push(std::mem::transmute_copy(list));
-        }
-
-        // The actual call to ExecuteCommandLists
-        self.0
-            .ExecuteCommandLists(command_lists.len() as u32, lists.as_mut_ptr() as *mut _);
+        self.0.ExecuteCommandLists(
+            command_lists.len() as u32,
+            command_lists.as_ptr() as *const _,
+        );
     }
 }
 
