@@ -45,14 +45,11 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [features]
-default = ["serde", "rkyv"]
 console = ["aleph-console/console"]
 remote-console = ["aleph-console/remote"]
 
 [dependencies]
 raw-window-handle = "0.4"
-serde = { version = "1", features = ["derive"], optional = true }
-rkyv = {version = "0.6", optional = true }
 ultraviolet = {version = "0.8", features = ["f64"] }
 thiserror = "1"
 

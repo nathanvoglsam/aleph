@@ -30,8 +30,6 @@
 pub extern crate aleph_any as any;
 pub extern crate aleph_label as label;
 
-pub mod archive;
-pub mod asset;
 pub mod components;
 pub mod console;
 pub mod gpu;

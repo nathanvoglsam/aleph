@@ -50,7 +50,6 @@
       <sourceFolder url="file://$MODULE_DIR$/bin/aleph-rcon/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/bin/aleph-test/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-any/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-combine-utils/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-compile/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-console/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-dx12-alloc-raw/src" isTestSource="false" />
@@ -62,7 +61,6 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-engine/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-gpu/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-interfaces/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-ktx/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-label/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-log/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-logger/src" isTestSource="false" />
@@ -70,17 +68,13 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-pix/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-plugin-registry/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-schema-parser/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-schema/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-sexpr/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-sys-info/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-target-build/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-target/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-virtual-buffer/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vk-format/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vulkan-alloc-sys/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vulkan-alloc/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vulkan-core/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-windows-x86_64_msvc_uwp/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-windows/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/config/aleph-app-info/src" isTestSource="false" />
@@ -136,6 +130,12 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-dx12/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-gpu-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-headless/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-combine-utils/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-ktx/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-schema/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-sexpr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-vk-format/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />
