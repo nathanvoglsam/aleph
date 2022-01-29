@@ -34,8 +34,7 @@ use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
 use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    IGpuDevice, IGpuSurface, IGpuSwapChain, PresentationMode, SwapChainConfiguration,
-    SwapChainCreateError,
+    IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 
@@ -44,12 +43,12 @@ pub struct Surface {
     pub(crate) handle: RawWindowHandle,
 }
 
-impl IGpuSurface for Surface {
+impl ISurface for Surface {
     fn create_swap_chain(
         &self,
-        device: &dyn IGpuDevice,
+        device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn IGpuSwapChain>, SwapChainCreateError> {
+    ) -> Result<Box<dyn ISwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
         let (buffer_count, flags) = match config.present_mode {
@@ -94,14 +93,14 @@ unsafe impl HasRawWindowHandle for Surface {
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
 
-pub trait IGpuSurfaceExt: IGpuSurface {
+pub trait ISurfaceExt: ISurface {
     fn get_raw_handle(&self) -> dxgi::Factory;
 }
 
-impl IGpuSurfaceExt for Surface {
+impl ISurfaceExt for Surface {
     fn get_raw_handle(&self) -> dxgi::Factory {
         self.factory.clone()
     }
 }
 
-declare_interfaces!(Surface, [IGpuSurface, IGpuSurfaceExt]);
+declare_interfaces!(Surface, [ISurface, ISurfaceExt]);

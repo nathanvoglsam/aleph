@@ -28,14 +28,14 @@
 //
 
 use interfaces::any::declare_interfaces;
-use interfaces::gpu::IGpuSwapChain;
+use interfaces::gpu::ISwapChain;
 
 pub struct SwapChain {}
 
-impl IGpuSwapChain for SwapChain {}
+impl ISwapChain for SwapChain {}
 
-pub trait IGpuSwapChainExt: IGpuSwapChain {}
+pub trait ISwapChainExt: ISwapChain {}
 
-impl IGpuSwapChainExt for SwapChain {}
+impl ISwapChainExt for SwapChain {}
 
-declare_interfaces!(SwapChain, [IGpuSwapChain, IGpuSwapChainExt]);
+declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);

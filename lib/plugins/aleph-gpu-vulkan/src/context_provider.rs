@@ -36,7 +36,7 @@ use erupt::vk::{
 };
 use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu;
-use interfaces::gpu::{ContextCreateError, ContextOptions, IGpuContext, IGpuContextProvider};
+use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
@@ -89,11 +89,11 @@ impl ContextProvider {
     }
 }
 
-impl IGpuContextProvider for ContextProvider {
+impl IContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<Box<dyn IGpuContext>, ContextCreateError> {
+    ) -> Result<Box<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -135,7 +135,7 @@ impl IGpuContextProvider for ContextProvider {
     }
 }
 
-declare_interfaces!(ContextProvider, [IGpuContextProvider]);
+declare_interfaces!(ContextProvider, [IContextProvider]);
 
 fn instance_extensions<T>(
     entry_loader: &erupt::CustomEntryLoader<T>,

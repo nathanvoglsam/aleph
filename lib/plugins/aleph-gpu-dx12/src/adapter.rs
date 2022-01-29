@@ -30,19 +30,19 @@
 use crate::device::Device;
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, QueryInterfaceBox};
-use interfaces::gpu::{AdapterDescription, IGpuAdapter, IGpuDevice, RequestDeviceError};
+use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 
 pub struct Adapter {
     pub(crate) name: String,
     pub(crate) adapter: dxgi::Adapter,
 }
 
-impl IGpuAdapter for Adapter {
+impl IAdapter for Adapter {
     fn description(&mut self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError> {
+    fn request_device(&mut self) -> Result<Box<dyn IDevice>, RequestDeviceError> {
         // Create the actual d3d12 device
         let device =
             dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0).map_err(|e| {
@@ -67,14 +67,14 @@ impl IGpuAdapter for Adapter {
     }
 }
 
-pub trait IGpuAdapterExt: IGpuAdapter {
+pub trait IAdapterExt: IAdapter {
     fn get_raw_handle(&self) -> &dxgi::Adapter;
 }
 
-impl IGpuAdapterExt for Adapter {
+impl IAdapterExt for Adapter {
     fn get_raw_handle(&self) -> &dxgi::Adapter {
         &self.adapter
     }
 }
 
-declare_interfaces!(Adapter, [IGpuAdapter, IGpuAdapterExt]);
+declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);

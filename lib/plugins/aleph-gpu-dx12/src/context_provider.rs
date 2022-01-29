@@ -30,7 +30,7 @@
 use crate::context::Context;
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, QueryInterfaceBox};
-use interfaces::gpu::{ContextCreateError, ContextOptions, IGpuContext, IGpuContextProvider};
+use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -51,11 +51,11 @@ impl ContextProvider {
     }
 }
 
-impl IGpuContextProvider for ContextProvider {
+impl IContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<Box<dyn IGpuContext>, ContextCreateError> {
+    ) -> Result<Box<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -81,7 +81,7 @@ impl IGpuContextProvider for ContextProvider {
     }
 }
 
-declare_interfaces!(ContextProvider, [IGpuContextProvider]);
+declare_interfaces!(ContextProvider, [IContextProvider]);
 
 unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<dx12::Debug> {
     if want_debug {

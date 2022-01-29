@@ -31,9 +31,7 @@ use crate::adapter::Adapter;
 use crate::surface::Surface;
 use erupt::vk;
 use interfaces::any::declare_interfaces;
-use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, IGpuAdapter, IGpuContext, IGpuSurface,
-};
+use interfaces::gpu::{AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface};
 use interfaces::platform::HasRawWindowHandle;
 
 pub struct Context {
@@ -41,18 +39,18 @@ pub struct Context {
     pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
 
-impl IGpuContext for Context {
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IGpuAdapter>> {
+impl IContext for Context {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IAdapter>> {
         todo!()
     }
 
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn IGpuSurface> {
+    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn ISurface> {
         todo!()
     }
 }
 
-pub trait IGpuContextExt: IGpuContext {}
+pub trait IContextExt: IContext {}
 
-impl IGpuContextExt for Context {}
+impl IContextExt for Context {}
 
-declare_interfaces!(Context, [IGpuContext, IGpuContextExt]);
+declare_interfaces!(Context, [IContext, IContextExt]);

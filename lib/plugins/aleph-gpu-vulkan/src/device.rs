@@ -28,18 +28,18 @@
 //
 
 use interfaces::any::declare_interfaces;
-use interfaces::gpu::IGpuDevice;
+use interfaces::gpu::IDevice;
 
 pub struct Device {}
 
-impl IGpuDevice for Device {
+impl IDevice for Device {
     fn create_sampler(&self) {
         todo!()
     }
 }
 
-pub trait IGpuDeviceExt: IGpuDevice {}
+pub trait IDeviceExt: IDevice {}
 
-impl IGpuDeviceExt for Device {}
+impl IDeviceExt for Device {}
 
-declare_interfaces!(Device, [IGpuDevice, IGpuDeviceExt]);
+declare_interfaces!(Device, [IDevice, IDeviceExt]);

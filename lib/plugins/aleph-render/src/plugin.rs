@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::dx12::{dxgi, D3D12Object, AsWeakRef};
+use crate::dx12::{dxgi, AsWeakRef, D3D12Object};
 use crate::renderer::EguiRenderer;
 use crate::{dx12, dx12_alloc};
-use aleph_gpu_dx12::{IGpuAdapterExt, IGpuDeviceExt, IGpuSwapChainExt};
+use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt};
 use interfaces::any;
 use interfaces::any::{QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, IGpuContextProvider, PresentationMode,
+    AdapterRequestOptions, ContextOptions, IContextProvider, PresentationMode,
     SwapChainConfiguration, TextureFormat,
 };
 use interfaces::platform::*;
@@ -76,8 +76,8 @@ impl IPlugin for PluginRender {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.depends_on::<dyn IGpuContextProvider>();
-        registrar.must_init_after::<dyn IGpuContextProvider>();
+        registrar.depends_on::<dyn IContextProvider>();
+        registrar.must_init_after::<dyn IContextProvider>();
 
         registrar.depends_on::<dyn IWindowProvider>();
         registrar.must_init_after::<dyn IWindowProvider>();
@@ -98,7 +98,7 @@ impl IPlugin for PluginRender {
         let window_ref = window.deref();
 
         // Get our context provider for creating graphics API context
-        let gpu_context_provider = registry.get_interface::<dyn IGpuContextProvider>().unwrap();
+        let gpu_context_provider = registry.get_interface::<dyn IContextProvider>().unwrap();
 
         // Create our GPU context
         let options = ContextOptions {
@@ -121,11 +121,11 @@ impl IPlugin for PluginRender {
         let gpu_device = gpu_adapter.request_device().unwrap();
         let gpu_device_ext = gpu_device
             .deref()
-            .query_interface::<dyn IGpuDeviceExt>()
+            .query_interface::<dyn IDeviceExt>()
             .unwrap();
 
         let gpu_adapter_ext = gpu_adapter
-            .query_interface::<dyn IGpuAdapterExt>()
+            .query_interface::<dyn IAdapterExt>()
             .ok()
             .unwrap();
 
@@ -169,7 +169,7 @@ impl IPlugin for PluginRender {
             .unwrap();
         let gpu_swap_chain_ext = gpu_swap_chain
             .deref()
-            .query_interface::<dyn IGpuSwapChainExt>()
+            .query_interface::<dyn ISwapChainExt>()
             .unwrap();
 
         let swap_chain = gpu_swap_chain_ext.get_raw_handle().clone();

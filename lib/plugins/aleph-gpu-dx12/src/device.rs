@@ -29,25 +29,25 @@
 
 use crate::dx12::CommandQueue;
 use interfaces::any::declare_interfaces;
-use interfaces::gpu::IGpuDevice;
+use interfaces::gpu::IDevice;
 
 pub struct Device {
     pub(crate) device: dx12::Device,
     pub(crate) queue: dx12::CommandQueue,
 }
 
-impl IGpuDevice for Device {
+impl IDevice for Device {
     fn create_sampler(&self) {
         todo!()
     }
 }
 
-pub trait IGpuDeviceExt: IGpuDevice {
+pub trait IDeviceExt: IDevice {
     fn get_raw_handle(&self) -> &dx12::Device;
     fn get_queue(&self) -> &dx12::CommandQueue;
 }
 
-impl IGpuDeviceExt for Device {
+impl IDeviceExt for Device {
     fn get_raw_handle(&self) -> &dx12::Device {
         &self.device
     }
@@ -57,4 +57,4 @@ impl IGpuDeviceExt for Device {
     }
 }
 
-declare_interfaces!(Device, [IGpuDevice, IGpuDeviceExt]);
+declare_interfaces!(Device, [IDevice, IDeviceExt]);

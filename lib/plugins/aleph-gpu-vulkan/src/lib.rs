@@ -44,15 +44,15 @@ mod internal;
 mod surface;
 mod swap_chain;
 
-pub use adapter::IGpuAdapterExt;
-pub use context::IGpuContextExt;
-pub use device::IGpuDeviceExt;
-pub use surface::IGpuSurfaceExt;
-pub use swap_chain::IGpuSwapChainExt;
+pub use adapter::IAdapterExt;
+pub use context::IContextExt;
+pub use device::IDeviceExt;
+pub use surface::ISurfaceExt;
+pub use swap_chain::ISwapChainExt;
 
 use crate::context_provider::ContextProvider;
 use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::gpu::IGpuContextProvider;
+use interfaces::gpu::IContextProvider;
 use interfaces::plugin::{
     IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
 };
@@ -78,14 +78,14 @@ impl IPlugin for PluginGpuVulkan {
     }
 
     fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.provides_interface::<dyn IGpuContextProvider>();
+        registrar.provides_interface::<dyn IContextProvider>();
     }
 
     fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
         let context_provider = ContextProvider::new();
 
         let response = vec![(
-            TypeId::of::<dyn IGpuContextProvider>(),
+            TypeId::of::<dyn IContextProvider>(),
             AnyArc::into_any(AnyArc::new(context_provider)),
         )];
         Box::new(response)

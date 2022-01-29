@@ -29,22 +29,22 @@
 
 use dx12::dxgi;
 use interfaces::any::declare_interfaces;
-use interfaces::gpu::IGpuSwapChain;
+use interfaces::gpu::ISwapChain;
 
 pub struct SwapChain {
     pub(crate) swap_chain: dxgi::SwapChain,
 }
 
-impl IGpuSwapChain for SwapChain {}
+impl ISwapChain for SwapChain {}
 
-pub trait IGpuSwapChainExt: IGpuSwapChain {
+pub trait ISwapChainExt: ISwapChain {
     fn get_raw_handle(&self) -> &dxgi::SwapChain;
 }
 
-impl IGpuSwapChainExt for SwapChain {
+impl ISwapChainExt for SwapChain {
     fn get_raw_handle(&self) -> &dxgi::SwapChain {
         &self.swap_chain
     }
 }
 
-declare_interfaces!(SwapChain, [IGpuSwapChain, IGpuSwapChainExt]);
+declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);

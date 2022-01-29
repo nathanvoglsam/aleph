@@ -31,7 +31,7 @@ use crate::context::Context;
 use crate::device::Device;
 use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::gpu::{AdapterDescription, IGpuAdapter, IGpuDevice, RequestDeviceError};
+use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 
 pub struct Adapter {
     pub(crate) name: String,
@@ -39,18 +39,18 @@ pub struct Adapter {
     pub(crate) context: AnyArc<Context>,
 }
 
-impl IGpuAdapter for Adapter {
+impl IAdapter for Adapter {
     fn description(&mut self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<Box<dyn IGpuDevice>, RequestDeviceError> {
+    fn request_device(&mut self) -> Result<Box<dyn IDevice>, RequestDeviceError> {
         todo!()
     }
 }
 
-pub trait IGpuAdapterExt: IGpuAdapter {}
+pub trait IAdapterExt: IAdapter {}
 
-impl IGpuAdapterExt for Adapter {}
+impl IAdapterExt for Adapter {}
 
-declare_interfaces!(Adapter, [IGpuAdapter, IGpuAdapterExt]);
+declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
