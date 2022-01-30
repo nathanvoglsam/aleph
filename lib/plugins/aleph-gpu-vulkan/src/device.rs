@@ -30,7 +30,9 @@
 use interfaces::any::declare_interfaces;
 use interfaces::gpu::IDevice;
 
-pub struct Device {}
+pub struct Device {
+    pub(crate) device_loader: erupt::DeviceLoader,
+}
 
 impl IDevice for Device {
     fn create_sampler(&self) {

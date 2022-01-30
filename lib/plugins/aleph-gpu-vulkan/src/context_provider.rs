@@ -63,18 +63,43 @@ impl ContextProvider {
         debug: bool,
         validation: bool,
     ) -> Result<(erupt::InstanceLoader, u32), ContextCreateError> {
+        // If validation is requested we must force debug on as we require debug extensions to log
+        // the validation messages
         let debug = if validation { true } else { debug };
-        let extensions = instance_extensions(entry_loader, debug)?;
-        let layers = instance_layers(entry_loader, validation)?;
-        let app_info = app_and_engine_info(entry_loader)?;
 
-        let api_version = app_info.api_version;
+        // Select the set of extensions that we want to load
+        let wanted_extensions = get_wanted_extensions(debug);
+
+        // Strip all unsupported extensions from the list of wanted extensions
+        let supported_extensions =
+            strip_unsupported_extensions(entry_loader, wanted_extensions.clone());
+
+        // Log all unsupported extensions and error if we can't continue with the set of extensions
+        // available
+        check_all_extensions_supported(&wanted_extensions, &supported_extensions)?;
+
+        // Select the set of layers we want to load
+        let wanted_layers = get_wanted_layers(validation);
+
+        // Strip all unsupported layers from the list of wanted layers
+        let supported_layers = strip_unsupported_layers(entry_loader, wanted_layers.clone());
+
+        // Log all unsupported layers and error if we can't continue with the set of layers
+        // available
+        check_all_layers_supported(&wanted_layers, &supported_layers)?;
+
+        // We require at least vulkan 1.2. Get the API version the current system supports and assert
+        // that the version is at least 1.2
+        let api_version = assert_version_supported(entry_loader, 1, 2)?;
+
+        // Mandatory description we must give vulkan about our app
+        let app_info = app_and_engine_info(api_version);
 
         // Fill out InstanceCreateInfo for creating a vulkan instance
         let create_info = erupt::vk1_0::InstanceCreateInfoBuilder::new()
             .application_info(&app_info)
-            .enabled_extension_names(&extensions)
-            .enabled_layer_names(&layers);
+            .enabled_extension_names(&supported_extensions)
+            .enabled_layer_names(&supported_layers);
 
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
@@ -137,20 +162,8 @@ impl IContextProvider for ContextProvider {
 
 declare_interfaces!(ContextProvider, [IContextProvider]);
 
-fn instance_extensions<T>(
-    entry_loader: &erupt::CustomEntryLoader<T>,
-    debug: bool,
-) -> Result<Vec<*const c_char>, ContextCreateError> {
+fn get_wanted_extensions(debug: bool) -> Vec<*const c_char> {
     use erupt::extensions::*;
-
-    let supported_instance_extensions = unsafe {
-        entry_loader
-            .enumerate_instance_extension_properties(None, None)
-            .map_err(|e| {
-                let e = Box::new(e);
-                ContextCreateError::Platform(e)
-            })?
-    };
 
     // Get surface extensions
     // Push the base surface extension
@@ -182,6 +195,20 @@ fn instance_extensions<T>(
         extensions.push(ext_debug_utils::EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
+    extensions
+}
+
+fn strip_unsupported_extensions<T>(
+    entry_loader: &erupt::CustomEntryLoader<T>,
+    mut extensions: Vec<*const c_char>,
+) -> Vec<*const c_char> {
+    let supported_instance_extensions = unsafe {
+        entry_loader
+            .enumerate_instance_extension_properties(None, None)
+            .result()
+            .unwrap_or_default()
+    };
+
     // Strip all unsupported extensions
     extensions.retain(|v| {
         // SAFETY: Everything is guaranteed to be a C string here
@@ -195,39 +222,44 @@ fn instance_extensions<T>(
                 .any(|s| v == s)
         }
     });
-
-    unsafe {
-        let debug_extensions = CStr::from_ptr(ext_debug_utils::EXT_DEBUG_UTILS_EXTENSION_NAME);
-        let debug_loaded = supported_instance_extensions
-            .iter()
-            .map(|s| CStr::from_ptr(s.extension_name.as_ptr()))
-            .any(|s| debug_extensions == s);
-        if debug && !debug_loaded {
-            aleph_log::warn!("Debug context requested but debug extensions failed to load");
-        }
-    }
-
-    Ok(extensions)
+    extensions
 }
 
-fn instance_layers<T>(
-    entry_loader: &erupt::CustomEntryLoader<T>,
-    validation: bool,
-) -> Result<Vec<*const c_char>, ContextCreateError> {
-    let supported_instance_layers = unsafe {
-        entry_loader
-            .enumerate_instance_layer_properties(None)
-            .map_err(|e| {
-                let e = Box::new(e);
-                ContextCreateError::Platform(e)
-            })?
-    };
+fn check_all_layers_supported(
+    wanted_extensions: &[*const c_char],
+    supported_extensions: &[*const c_char],
+) -> Result<(), ContextCreateError> {
+    let mut missing_extensions = diff_lists(wanted_extensions, supported_extensions).peekable();
+    if missing_extensions.peek().is_some() {
+        for missing in missing_extensions {
+            log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
+        }
+        let e = Box::new("Unsupported extension is required by runtime");
+        return Err(ContextCreateError::Platform(e));
+    }
+    Ok(())
+}
 
+fn get_wanted_layers(validation: bool) -> Vec<*const c_char> {
     let mut layers = Vec::new();
     if validation {
         layers.push(crate::cstr_ptr!("VK_LAYER_KHRONOS_validation"));
     }
+    layers
+}
 
+fn strip_unsupported_layers<T>(
+    entry_loader: &erupt::CustomEntryLoader<T>,
+    mut layers: Vec<*const c_char>,
+) -> Vec<*const c_char> {
+    let supported_instance_layers = unsafe {
+        entry_loader
+            .enumerate_instance_layer_properties(None)
+            .result()
+            .unwrap_or_default()
+    };
+
+    // Strip all unsupported layers
     layers.retain(|v| {
         // SAFETY: Everything is guaranteed to be a C string here
         unsafe {
@@ -240,26 +272,46 @@ fn instance_layers<T>(
                 .any(|s| v == s)
         }
     });
-
-    unsafe {
-        let validation_layer = crate::cstr!("VK_LAYER_KHRONOS_validation");
-        let validation_loaded = supported_instance_layers
-            .iter()
-            .map(|s| CStr::from_ptr(s.layer_name.as_ptr()))
-            .any(|s| validation_layer == s);
-        if validation && !validation_loaded {
-            aleph_log::warn!("Validation context requested but no validation layers are available");
-        }
-    }
-
-    Ok(layers)
+    layers
 }
 
-fn app_and_engine_info<T>(
-    entry_loader: &erupt::CustomEntryLoader<T>,
-) -> Result<vk::ApplicationInfoBuilder, ContextCreateError> {
-    let api_version = assert_version_supported(entry_loader, 1, 2)?;
-    let info = vk::ApplicationInfoBuilder::new()
+fn check_all_extensions_supported(
+    wanted_layers: &[*const c_char],
+    supported_layers: &[*const c_char],
+) -> Result<(), ContextCreateError> {
+    let mut missing_layers = diff_lists(wanted_layers, supported_layers).peekable();
+    if missing_layers.peek().is_some() {
+        for missing in missing_layers {
+            log::error!("Runtime requested unsupported layer '{:#?}'.", missing);
+        }
+        let e = Box::new("Unsupported layer is required by runtime");
+        return Err(ContextCreateError::Platform(e));
+    }
+    Ok(())
+}
+
+fn diff_lists<'a>(
+    list_a: &'a [*const c_char],
+    list_b: &'a [*const c_char],
+) -> impl Iterator<Item = &'a CStr> {
+    unsafe {
+        list_a
+            .iter()
+            .copied()
+            .map(|v| CStr::from_ptr(v))
+            .filter(|a| {
+                let in_both = list_b
+                    .iter()
+                    .copied()
+                    .map(|v| CStr::from_ptr(v))
+                    .any(|b| *a == b);
+                !in_both
+            })
+    }
+}
+
+fn app_and_engine_info<'a>(api_version: u32) -> vk::ApplicationInfoBuilder<'a> {
+    vk::ApplicationInfoBuilder::new()
         .application_name(crate::cstr!("aleph-gpu"))
         .application_version(make_api_version(
             0,
@@ -274,8 +326,7 @@ fn app_and_engine_info<T>(
             env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
             env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
         ))
-        .api_version(api_version);
-    Ok(info)
+        .api_version(api_version)
 }
 
 fn assert_version_supported<T>(

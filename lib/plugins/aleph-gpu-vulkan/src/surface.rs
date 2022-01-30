@@ -30,6 +30,7 @@
 use crate::device::Device;
 use crate::format::texture_format_to_vk;
 use crate::swap_chain::SwapChain;
+use erupt::vk;
 use interfaces::any::declare_interfaces;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
@@ -37,7 +38,7 @@ use interfaces::gpu::{
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 
 pub struct Surface {
-    pub(crate) handle: RawWindowHandle,
+    pub(crate) surface: vk::SurfaceKHR,
 }
 
 impl ISurface for Surface {
@@ -47,12 +48,6 @@ impl ISurface for Surface {
         config: &SwapChainConfiguration,
     ) -> Result<Box<dyn ISwapChain>, SwapChainCreateError> {
         todo!()
-    }
-}
-
-unsafe impl HasRawWindowHandle for Surface {
-    fn raw_window_handle(&self) -> RawWindowHandle {
-        self.handle
     }
 }
 
