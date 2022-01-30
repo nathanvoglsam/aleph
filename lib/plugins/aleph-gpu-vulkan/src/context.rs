@@ -44,7 +44,10 @@ impl IContext for Context {
         todo!()
     }
 
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn ISurface> {
+    fn create_surface(
+        &self,
+        window: &dyn HasRawWindowHandle,
+    ) -> Result<Box<dyn ISurface>, SurfaceCreateError> {
         todo!()
     }
 }

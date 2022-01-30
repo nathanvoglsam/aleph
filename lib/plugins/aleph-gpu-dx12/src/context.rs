@@ -31,7 +31,9 @@ use crate::adapter::Adapter;
 use crate::surface::Surface;
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
-use interfaces::gpu::{AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface};
+use interfaces::gpu::{
+    AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
+};
 use interfaces::platform::HasRawWindowHandle;
 
 pub struct Context {
@@ -105,14 +107,17 @@ impl IContext for Context {
         }
     }
 
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn ISurface> {
+    fn create_surface(
+        &self,
+        window: &dyn HasRawWindowHandle,
+    ) -> Result<Box<dyn ISurface>, SurfaceCreateError> {
         let surface = Surface {
             factory: self.factory.clone(),
             handle: window.raw_window_handle(),
         };
 
         let surface = Box::new(surface);
-        surface.query_interface().ok().unwrap()
+        Ok(surface.query_interface().ok().unwrap())
     }
 }
 

@@ -108,7 +108,7 @@ impl IPlugin for PluginRender {
         let gpu_context = gpu_context_provider.make_context(&options).unwrap();
 
         // Create a surface for the window we want to render with
-        let gpu_surface = gpu_context.create_surface(&window_ref);
+        let gpu_surface = gpu_context.create_surface(&window_ref).unwrap();
 
         // Get an adapter compatible with the requested surface
         let options = AdapterRequestOptions {

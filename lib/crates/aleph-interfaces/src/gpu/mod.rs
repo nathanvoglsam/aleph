@@ -57,7 +57,10 @@ pub trait IContext: IAny + 'static {
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IAdapter>>;
 
     /// Create a surface from the provided window handle.
-    fn create_surface(&self, window: &dyn HasRawWindowHandle) -> Box<dyn ISurface>;
+    fn create_surface(
+        &self,
+        window: &dyn HasRawWindowHandle,
+    ) -> Result<Box<dyn ISurface>, SurfaceCreateError>;
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
@@ -131,9 +134,17 @@ pub enum ContextCreateError {
     Platform(Box<dyn Debug>),
 }
 
+/// Set of errors that can occur when creating an [IDevice]
 #[derive(Debug)]
 pub enum RequestDeviceError {
     /// Some platform error occurred while creating the device.
+    Platform(Box<dyn Debug>),
+}
+
+/// Set of errors that can occur when creating an [ISurface]
+#[derive(Debug)]
+pub enum SurfaceCreateError {
+    /// Some platform error occurred while creating the surface.
     Platform(Box<dyn Debug>),
 }
 
