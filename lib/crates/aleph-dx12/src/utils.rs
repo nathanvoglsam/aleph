@@ -43,6 +43,13 @@ pub struct WeakRef<'a, T> {
     pub(crate) phantom: PhantomData<&'a T>,
 }
 
+impl<'a, T: Clone> WeakRef<'a, T> {
+    /// Promotes the weak COM reference to a strong reference
+    pub fn to_strong(&self) -> T {
+        self.v.deref().clone()
+    }
+}
+
 impl<'a, T: Clone> Deref for WeakRef<'a, T> {
     type Target = T;
 

@@ -50,6 +50,7 @@ impl CommandQueue {
     }
 }
 
+crate::as_weak_ref_impl!(CommandQueue);
 crate::object_impl!(CommandQueue);
 crate::device_child_impl!(CommandQueue);
 crate::shared_object!(CommandQueue);
