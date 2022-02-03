@@ -131,7 +131,7 @@ impl IPlugin for PluginRender {
 
         let adapter = gpu_adapter_ext.get_raw_handle().clone();
         let device = gpu_device_ext.get_raw_handle().clone();
-        let queue = gpu_device_ext.get_queue().clone();
+        let queue = gpu_device_ext.get_raw_general_queue().unwrap().to_strong();
 
         // Get the render data slot for egui
         let render_data = registry

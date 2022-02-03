@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::{Device, Queues};
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
@@ -35,6 +35,19 @@ use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError}
 pub struct Adapter {
     pub(crate) name: String,
     pub(crate) adapter: dxgi::Adapter,
+}
+
+impl Adapter {
+    fn create_queue(
+        device: &dx12::Device,
+        queue_type: dx12::CommandListType,
+    ) -> Option<dx12::CommandQueue> {
+        let desc = dx12::CommandQueueDesc::builder()
+            .queue_type(queue_type)
+            .priority(0)
+            .build();
+        device.create_command_queue(&desc).ok()
+    }
 }
 
 impl IAdapter for Adapter {
@@ -50,18 +63,15 @@ impl IAdapter for Adapter {
                 RequestDeviceError::Platform(e)
             })?;
 
-        // Create a single direct queue
-        let desc = dx12::CommandQueueDesc::builder()
-            .queue_type(dx12::CommandListType::Direct)
-            .priority(0)
-            .build();
-        let queue = device.create_command_queue(&desc).map_err(|e| {
-            let e = Box::new(e);
-            RequestDeviceError::Platform(e)
-        })?;
+        // Load our 3 queues
+        let queues = Queues {
+            general: Adapter::create_queue(&device, dx12::CommandListType::Direct),
+            compute: Adapter::create_queue(&device, dx12::CommandListType::Compute),
+            transfer: Adapter::create_queue(&device, dx12::CommandListType::Copy),
+        };
 
         // Bundle and return the device
-        let device = Device { device, queue };
+        let device = Device { device, queues };
         let device = Box::new(device);
         Ok(device.query_interface().ok().unwrap())
     }

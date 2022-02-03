@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::dx12::CommandQueue;
+use dx12::{AsWeakRef, CommandQueue, WeakRef};
 use interfaces::any::declare_interfaces;
 use interfaces::gpu::IDevice;
 
 pub struct Device {
     pub(crate) device: dx12::Device,
-    pub(crate) queue: dx12::CommandQueue,
+    pub(crate) queues: Queues,
 }
 
 impl IDevice for Device {
@@ -44,7 +44,9 @@ impl IDevice for Device {
 
 pub trait IDeviceExt: IDevice {
     fn get_raw_handle(&self) -> &dx12::Device;
-    fn get_queue(&self) -> &dx12::CommandQueue;
+    fn get_raw_general_queue(&self) -> Option<WeakRef<CommandQueue>>;
+    fn get_raw_compute_queue(&self) -> Option<WeakRef<CommandQueue>>;
+    fn get_raw_transfer_queue(&self) -> Option<WeakRef<CommandQueue>>;
 }
 
 impl IDeviceExt for Device {
@@ -52,9 +54,23 @@ impl IDeviceExt for Device {
         &self.device
     }
 
-    fn get_queue(&self) -> &CommandQueue {
-        &self.queue
+    fn get_raw_general_queue(&self) -> Option<WeakRef<CommandQueue>> {
+        self.queues.general.as_ref().map(|v| v.as_weak())
+    }
+
+    fn get_raw_compute_queue(&self) -> Option<WeakRef<CommandQueue>> {
+        self.queues.compute.as_ref().map(|v| v.as_weak())
+    }
+
+    fn get_raw_transfer_queue(&self) -> Option<WeakRef<CommandQueue>> {
+        self.queues.transfer.as_ref().map(|v| v.as_weak())
     }
 }
 
 declare_interfaces!(Device, [IDevice, IDeviceExt]);
+
+pub(crate) struct Queues {
+    pub general: Option<CommandQueue>,
+    pub compute: Option<CommandQueue>,
+    pub transfer: Option<CommandQueue>,
+}

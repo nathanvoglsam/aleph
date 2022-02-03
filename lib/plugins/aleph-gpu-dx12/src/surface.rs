@@ -72,7 +72,7 @@ impl ISurface for Surface {
             .build();
         let swap_chain = self
             .factory
-            .create_swap_chain(&device.queue, self, &desc)
+            .create_swap_chain(device.queues.general.as_ref().unwrap(), self, &desc)
             .map_err(|e| {
                 let e = Box::new(e);
                 SwapChainCreateError::Platform(e)
