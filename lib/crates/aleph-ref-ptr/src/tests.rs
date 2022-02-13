@@ -108,7 +108,7 @@ pub fn weak_test_1() {
     // Get our object casted to another interface
     let weak = obj.as_weak();
     let test = weak.query_interface::<dyn ITest>().unwrap();
-    let test_other = test.query_interface::<dyn ITestOther>().unwrap();
+    let test_other = test.query_interface::<TestObject>().unwrap();
 
     test.test_fn();
     assert_eq!(counter.load(Ordering::Relaxed), 1);

@@ -399,15 +399,21 @@ macro_rules! ref_ptr_object {
 
                 let table = TABLE.get_or_init(|| {
                     let table = VIRTUAL_TABLE.get_or_init(|| {
+                        use std::ptr::NonNull;
+                        use std::any::TypeId;
+
                         #[allow(unused_mut)]
                         let mut table = Vec::new();
+
+                        let id = TypeId::of::<$obj_name>();
+                        let ptr = NonNull::dangling();
+                        let pair = PointerTypePair::new(id, ptr);
+                        table.push(pair);
 
                         $(
                         $(
                         unsafe {
                             use $crate::layout::TraitObject;
-                            use std::ptr::NonNull;
-                            use std::any::TypeId;
 
                             let trait_object = NonNull::<$obj_name>::dangling().as_ref() as &dyn $impl_name;
                             let trait_object = &trait_object as *const &dyn $impl_name;
