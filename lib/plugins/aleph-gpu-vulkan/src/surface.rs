@@ -27,26 +27,32 @@
 // SOFTWARE.
 //
 
+use crate::context::Context;
 use crate::device::Device;
 use crate::format::texture_format_to_vk;
 use crate::swap_chain::SwapChain;
 use erupt::vk;
+use erupt::vk::SurfaceKHR;
 use interfaces::any::declare_interfaces;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
+use interfaces::ref_ptr::{ref_ptr_object, RefPtr, WeakRefPtr};
 
-pub struct Surface {
-    pub(crate) surface: vk::SurfaceKHR,
+ref_ptr_object! {
+    pub struct Surface: ISurface, ISurfaceExt {
+        pub(crate) surface: vk::SurfaceKHR,
+        pub(crate) context: RefPtr<Context>,
+    }
 }
 
 impl ISurface for Surface {
     fn create_swap_chain(
         &self,
-        device: &dyn IDevice,
+        device: WeakRefPtr<dyn IDevice>,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
         todo!()
     }
 }
@@ -55,8 +61,14 @@ impl ISurface for Surface {
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
 
-pub trait ISurfaceExt: ISurface {}
+pub trait ISurfaceExt: ISurface {
+    fn get_raw_handle(&self) -> vk::SurfaceKHR;
+}
 
-impl ISurfaceExt for Surface {}
+impl ISurfaceExt for Surface {
+    fn get_raw_handle(&self) -> SurfaceKHR {
+        self.surface
+    }
+}
 
 declare_interfaces!(Surface, [ISurface, ISurfaceExt]);

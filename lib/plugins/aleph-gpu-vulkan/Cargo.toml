@@ -47,8 +47,10 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies]
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
+aleph-vulkan-alloc = { path = "../../crates/aleph-vulkan-alloc", version = "0.1" }
+bitflags = "1"
 cstr = "0.2"
 console = "0.15"
-# once_cell = "1"
+#crossbeam = "0.8"
 erupt = "0.20"
-aleph-vulkan-alloc = { path = "../../crates/aleph-vulkan-alloc", version = "0.1" }
+once_cell = "1"

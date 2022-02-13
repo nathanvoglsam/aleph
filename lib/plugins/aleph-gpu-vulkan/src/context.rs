@@ -28,18 +28,21 @@
 //
 
 use crate::adapter::Adapter;
+use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use crate::surface::Surface;
 use erupt::vk;
-use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ffi::CStr;
 
-pub struct Context {
-    pub(crate) instance_loader: erupt::InstanceLoader,
-    pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
+ref_ptr_object! {
+    pub struct Context: IContext, IContextExt {
+        pub(crate) instance_loader: erupt::InstanceLoader,
+        pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
+    }
 }
 
 impl Context {
@@ -209,34 +212,36 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>> {
         let surface = options
             .surface
+            .as_ref()
             .and_then(|v| v.query_interface::<Surface>())
             .map(|v| v.surface);
         Context::select_device(
             &self.instance_loader,
-            todo!(),
-            todo!(),
+            VK_MAJOR_VERSION,
+            VK_MINOR_VERSION,
             surface,
             options.power_class,
         )
         .map(|(name, physical_device)| {
-            Box::new(Adapter {
-                name,
-                physical_device,
-                context: todo!(),
-            })
-            .query_interface()
-            .ok()
-            .unwrap()
+            let adapter = ref_ptr_init! {
+                Adapter {
+                    name: name,
+                    physical_device: physical_device,
+                    context: self.as_ref_ptr(),
+                }
+            };
+            let adapter: RefPtr<Adapter> = RefPtr::new(adapter);
+            adapter.query_interface().unwrap()
         })
     }
 
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
-    ) -> Result<Box<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError> {
         let result = unsafe {
             match window.raw_window_handle() {
                 #[cfg(any(
@@ -353,14 +358,24 @@ impl IContext for Context {
         let surface = result
             .result()
             .map_err(|v| SurfaceCreateError::Platform(Box::new(v)))?;
-        let surface = Surface { surface };
 
-        Ok(Box::new(surface))
+        let surface = ref_ptr_init! {
+            Surface {
+                surface: surface,
+                context: self.as_ref_ptr(),
+            }
+        };
+        let surface: RefPtr<Surface> = RefPtr::new(surface);
+        Ok(surface.query_interface().unwrap())
     }
 }
 
-pub trait IContextExt: IContext {}
+pub trait IContextExt: IContext {
+    fn get_raw_handle(&self) -> &erupt::InstanceLoader;
+}
 
-impl IContextExt for Context {}
-
-declare_interfaces!(Context, [IContext, IContextExt]);
+impl IContextExt for Context {
+    fn get_raw_handle(&self) -> &erupt::InstanceLoader {
+        &self.instance_loader
+    }
+}

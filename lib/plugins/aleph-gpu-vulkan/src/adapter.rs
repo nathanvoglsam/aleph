@@ -29,28 +29,231 @@
 
 use crate::context::Context;
 use crate::device::Device;
+use crate::internal::queues::{QueueInfo, Queues};
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc};
+use erupt::vk1_0::PhysicalDevice;
+use interfaces::any::declare_interfaces;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
-pub struct Adapter {
-    pub(crate) name: String,
-    pub(crate) physical_device: vk::PhysicalDevice,
-    pub(crate) context: AnyArc<Context>,
+ref_ptr_object! {
+    pub struct Adapter: IAdapter, IAdapterExt {
+        pub(crate) name: String,
+        pub(crate) physical_device: vk::PhysicalDevice,
+        pub(crate) context: RefPtr<Context>,
+    }
+}
+
+impl Adapter {
+    #[inline]
+    fn get_queue_families(queue_families: &[vk::QueueFamilyProperties]) -> FoundQueueFamilies {
+        let mut general = None;
+        let mut compute = None;
+        let mut transfer = None;
+
+        for (index, family) in queue_families.iter().enumerate() {
+            let create_info = vk::DeviceQueueCreateInfoBuilder::new()
+                .queue_family_index(index as u32)
+                .queue_priorities(&PRIORITIES[0..1]);
+
+            if general.is_none() && Self::is_general_family(family) {
+                general = Some(QueueFamily {
+                    queue_info: QueueInfo::new(index as u32, family),
+                    create_info,
+                });
+                continue;
+            }
+
+            if compute.is_none() && Self::is_async_compute_family(family) {
+                compute = Some(QueueFamily {
+                    queue_info: QueueInfo::new(index as u32, family),
+                    create_info,
+                });
+                continue;
+            }
+
+            if transfer.is_none() && Self::is_dedicated_transfer_family(family) {
+                transfer = Some(QueueFamily {
+                    queue_info: QueueInfo::new(index as u32, family),
+                    create_info,
+                });
+                continue;
+            }
+        }
+
+        FoundQueueFamilies {
+            general,
+            compute,
+            transfer,
+        }
+    }
+
+    #[inline]
+    fn is_general_family(family: &vk::QueueFamilyProperties) -> bool {
+        /// The mask of queue requirements for a general queue
+        const GENERAL_MASK: vk::QueueFlags = vk::QueueFlags::from_bits_truncate(
+            vk::QueueFlags::GRAPHICS.bits()
+                | vk::QueueFlags::COMPUTE.bits()
+                | vk::QueueFlags::TRANSFER.bits(),
+        );
+
+        // For general
+        family.queue_flags.contains(GENERAL_MASK)
+    }
+
+    #[inline]
+    fn is_async_compute_family(family: &vk::QueueFamilyProperties) -> bool {
+        /// The mask of queue requirements for a compute queue
+        const COMPUTE_MASK: vk::QueueFlags = vk::QueueFlags::from_bits_truncate(
+            vk::QueueFlags::COMPUTE.bits() | vk::QueueFlags::TRANSFER.bits(),
+        );
+
+        // For async compute we specifically want the non graphics queues so check for
+        // compute+transfer and no graphics
+        family.queue_flags.contains(COMPUTE_MASK)
+            && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
+    }
+
+    #[inline]
+    fn is_dedicated_transfer_family(family: &vk::QueueFamilyProperties) -> bool {
+        /// The mask of queue requirements for a transfer queue
+        const TRANSFER_MASK: vk::QueueFlags = vk::QueueFlags::TRANSFER;
+
+        // For transfer we specifically want a queue that only supports transfer operations so check
+        // for transfer and nothing else
+        family.queue_flags.contains(TRANSFER_MASK)
+            && !family.queue_flags.contains(vk::QueueFlags::GRAPHICS)
+            && !family.queue_flags.contains(vk::QueueFlags::COMPUTE)
+    }
 }
 
 impl IAdapter for Adapter {
-    fn description(&mut self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<Box<dyn IDevice>, RequestDeviceError> {
-        todo!()
+    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError> {
+        use erupt::extensions::*;
+
+        let enabled_features = vk::PhysicalDeviceFeatures::default();
+        let enabled_extensions = vec![khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME];
+
+        let queue_families = unsafe {
+            self.context
+                .instance_loader
+                .get_physical_device_queue_family_properties(self.physical_device, None)
+        };
+
+        // Find our general, async compute and transfer queue families
+        let found_families = Adapter::get_queue_families(&queue_families);
+        let queue_create_infos = found_families.build_create_info_list();
+
+        let device_create_info = vk::DeviceCreateInfoBuilder::new()
+            .enabled_features(&enabled_features)
+            .enabled_extension_names(&enabled_extensions)
+            .queue_create_infos(&queue_create_infos);
+        let device_loader = unsafe {
+            erupt::DeviceLoader::new(
+                &self.context.instance_loader,
+                self.physical_device,
+                &device_create_info,
+                None,
+            )
+            .map_err(|v| RequestDeviceError::Platform(Box::new(v)))?
+        };
+
+        // TODO: Query queue swap chain support
+        let surface_support = Default::default();
+
+        let queues = unsafe { found_families.build_queues_object(&device_loader) };
+
+        let device = ref_ptr_init! {
+            Device {
+                device_loader: device_loader,
+                queues: queues,
+                adapter: self.as_ref_ptr(),
+                context: self.context.clone(),
+                surface_support: surface_support,
+            }
+        };
+        let device: RefPtr<Device> = RefPtr::new(device);
+
+        Ok(device.query_interface().unwrap())
     }
 }
 
-pub trait IAdapterExt: IAdapter {}
+pub trait IAdapterExt: IAdapter {
+    fn get_raw_handle(&self) -> vk::PhysicalDevice;
+}
 
-impl IAdapterExt for Adapter {}
+impl IAdapterExt for Adapter {
+    fn get_raw_handle(&self) -> PhysicalDevice {
+        self.physical_device
+    }
+}
 
 declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
+
+// We're just going have a pre-allocated chunk of priorities bigger than we're ever going to
+// need to slice from to send to vulkan. Saves allocating when we don't need to
+static PRIORITIES: [f32; 128] = [1.0f32; 128];
+
+struct FoundQueueFamilies<'a> {
+    general: Option<QueueFamily<'a>>,
+    compute: Option<QueueFamily<'a>>,
+    transfer: Option<QueueFamily<'a>>,
+}
+
+impl<'a> FoundQueueFamilies<'a> {
+    fn build_create_info_list(&self) -> Vec<vk::DeviceQueueCreateInfoBuilder> {
+        // List to flatten the set of queue create infos into so we can pass it into vkCreateDevice
+        let mut queue_create_infos = Vec::with_capacity(4);
+
+        if let Some(info) = self.general.as_ref() {
+            queue_create_infos.push(info.create_info);
+        }
+        if let Some(info) = self.compute.as_ref() {
+            queue_create_infos.push(info.create_info);
+        }
+        if let Some(info) = self.transfer.as_ref() {
+            queue_create_infos.push(info.create_info);
+        }
+
+        queue_create_infos
+    }
+
+    unsafe fn build_queues_object(&self, device: &erupt::DeviceLoader) -> Queues {
+        // Internal storage for our 3 queues and info about them
+        let mut queues = Queues {
+            general: None,
+            compute: None,
+            transfer: None,
+        };
+
+        if let Some(info) = self.general.as_ref() {
+            let queue = device.get_device_queue(info.queue_info.index, 0);
+            let mut queue_info = info.queue_info.clone();
+            queue_info.queue = queue;
+            queues.general = Some(queue_info);
+        }
+        if let Some(info) = self.compute.as_ref() {
+            let queue = device.get_device_queue(info.queue_info.index, 0);
+            let mut queue_info = info.queue_info.clone();
+            queue_info.queue = queue;
+            queues.compute = Some(queue_info);
+        }
+        if let Some(info) = self.transfer.as_ref() {
+            let queue = device.get_device_queue(info.queue_info.index, 0);
+            let mut queue_info = info.queue_info.clone();
+            queue_info.queue = queue;
+            queues.transfer = Some(queue_info);
+        }
+
+        queues
+    }
+}
+
+struct QueueFamily<'a> {
+    queue_info: QueueInfo,
+    create_info: vk::DeviceQueueCreateInfoBuilder<'a>,
+}

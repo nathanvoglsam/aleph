@@ -27,11 +27,24 @@
 // SOFTWARE.
 //
 
-use interfaces::any::declare_interfaces;
+use crate::adapter::Adapter;
+use crate::context::Context;
+use crate::internal::queue_present_support::QueuePresentSupportFlags;
+use crate::internal::queues::Queues;
+use crate::surface::Surface;
+use erupt::vk;
 use interfaces::gpu::IDevice;
+use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
+use std::collections::HashMap;
 
-pub struct Device {
-    pub(crate) device_loader: erupt::DeviceLoader,
+ref_ptr_object! {
+    pub struct Device: IDevice, IDeviceExt {
+        pub(crate) device_loader: erupt::DeviceLoader,
+        pub(crate) queues: Queues,
+        pub(crate) adapter: RefPtr<Adapter>,
+        pub(crate) context: RefPtr<Context>,
+        pub(crate) surface_support: HashMap<usize, QueuePresentSupportFlags>,
+    }
 }
 
 impl IDevice for Device {
@@ -40,8 +53,27 @@ impl IDevice for Device {
     }
 }
 
-pub trait IDeviceExt: IDevice {}
+pub trait IDeviceExt: IDevice {
+    fn get_raw_handle(&self) -> &erupt::DeviceLoader;
+    fn get_raw_general_queue(&self) -> Option<vk::Queue>;
+    fn get_raw_compute_queue(&self) -> Option<vk::Queue>;
+    fn get_raw_transfer_queue(&self) -> Option<vk::Queue>;
+}
 
-impl IDeviceExt for Device {}
+impl IDeviceExt for Device {
+    fn get_raw_handle(&self) -> &erupt::DeviceLoader {
+        &self.device_loader
+    }
 
-declare_interfaces!(Device, [IDevice, IDeviceExt]);
+    fn get_raw_general_queue(&self) -> Option<vk::Queue> {
+        self.queues.general.as_ref().map(|v| v.queue)
+    }
+
+    fn get_raw_compute_queue(&self) -> Option<vk::Queue> {
+        self.queues.compute.as_ref().map(|v| v.queue)
+    }
+
+    fn get_raw_transfer_queue(&self) -> Option<vk::Queue> {
+        self.queues.transfer.as_ref().map(|v| v.queue)
+    }
+}

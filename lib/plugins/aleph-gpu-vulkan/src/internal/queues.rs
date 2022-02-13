@@ -27,18 +27,32 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use interfaces::gpu::ISwapChain;
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
+use erupt::vk;
 
-ref_ptr_object! {
-    pub struct SwapChain {
-        device: RefPtr<Device>,
-    }
+#[derive(Clone)]
+pub struct Queues {
+    pub general: Option<QueueInfo>,
+    pub compute: Option<QueueInfo>,
+    pub transfer: Option<QueueInfo>,
 }
 
-impl ISwapChain for SwapChain {}
+#[derive(Clone)]
+pub struct QueueInfo {
+    pub queue: vk::Queue,
+    pub index: u32,
+    pub min_image_transfer_granularity: vk::Extent3D,
+    pub timestamp_valid_bits: u32,
+    pub sparse_binding: bool,
+}
 
-pub trait ISwapChainExt: ISwapChain {}
-
-impl ISwapChainExt for SwapChain {}
+impl QueueInfo {
+    pub fn new(index: u32, family: &vk::QueueFamilyProperties) -> Self {
+        Self {
+            queue: Default::default(),
+            index,
+            min_image_transfer_granularity: family.min_image_transfer_granularity,
+            timestamp_valid_bits: family.timestamp_valid_bits,
+            sparse_binding: family.queue_flags.contains(vk::QueueFlags::SPARSE_BINDING),
+        }
+    }
+}

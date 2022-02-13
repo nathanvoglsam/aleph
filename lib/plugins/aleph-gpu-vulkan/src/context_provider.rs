@@ -29,14 +29,16 @@
 
 use crate::context::Context;
 use crate::internal::messenger::vulkan_debug_messenger;
+use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use erupt::vk;
 use erupt::vk::{
     make_api_version, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
 };
-use interfaces::any::{declare_interfaces, QueryInterfaceBox};
+use interfaces::any::declare_interfaces;
 use interfaces::gpu;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
+use interfaces::ref_ptr::{ref_ptr_init, RefPtr};
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
@@ -90,7 +92,8 @@ impl ContextProvider {
 
         // We require at least vulkan 1.2. Get the API version the current system supports and assert
         // that the version is at least 1.2
-        let api_version = assert_version_supported(entry_loader, 1, 2)?;
+        let api_version =
+            assert_version_supported(entry_loader, VK_MAJOR_VERSION, VK_MINOR_VERSION)?;
 
         // Mandatory description we must give vulkan about our app
         let app_info = app_and_engine_info(api_version);
@@ -118,7 +121,7 @@ impl IContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<Box<dyn IContext>, ContextCreateError> {
+    ) -> Result<RefPtr<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -148,12 +151,14 @@ impl IContextProvider for ContextProvider {
                     None
                 };
 
-                let context = Context {
-                    instance_loader,
-                    messenger,
+                let context = ref_ptr_init! {
+                    Context {
+                        instance_loader: instance_loader,
+                        messenger: messenger,
+                    }
                 };
-                let context = Box::new(context);
-                Ok(context.query_interface().ok().unwrap())
+                let context: RefPtr<Context> = RefPtr::new(context);
+                Ok(context.query_interface().unwrap())
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

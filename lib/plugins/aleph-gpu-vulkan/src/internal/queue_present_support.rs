@@ -27,18 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use interfaces::gpu::ISwapChain;
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
-
-ref_ptr_object! {
-    pub struct SwapChain {
-        device: RefPtr<Device>,
+bitflags::bitflags! {
+    /// Internal bitflags used for flagging which queues support present operations
+    pub struct QueuePresentSupportFlags: u32 {
+        const GENERAL = 0b00000001;
+        const COMPUTE = 0b00000010;
+        const TRANSFER = 0b00000100;
     }
 }
-
-impl ISwapChain for SwapChain {}
-
-pub trait ISwapChainExt: ISwapChain {}
-
-impl ISwapChainExt for SwapChain {}
