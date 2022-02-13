@@ -27,14 +27,16 @@
 // SOFTWARE.
 //
 
+use crate::adapter::Adapter;
 use dx12::{AsWeakRef, CommandQueue, WeakRef};
 use interfaces::gpu::IDevice;
-use interfaces::ref_ptr::ref_ptr_object;
+use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 
 ref_ptr_object! {
     pub struct Device: IDevice, IDeviceExt {
         pub(crate) device: dx12::Device,
         pub(crate) queues: Queues,
+        pub(crate) adapter: RefPtr<Adapter>,
     }
 }
 
@@ -68,6 +70,9 @@ impl IDeviceExt for Device {
         self.queues.transfer.as_ref().map(|v| v.as_weak())
     }
 }
+
+unsafe impl Send for Device {}
+unsafe impl Sync for Device {}
 
 pub struct Queues {
     pub general: Option<CommandQueue>,

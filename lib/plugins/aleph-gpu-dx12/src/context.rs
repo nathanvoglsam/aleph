@@ -34,7 +34,7 @@ use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ops::Deref;
 
 ref_ptr_object! {
@@ -107,6 +107,7 @@ impl IContext for Context {
                 Adapter {
                     name: name,
                     adapter: adapter,
+                    context: self.as_ref_ptr(),
                 }
             };
             let adapter: RefPtr<Adapter> = RefPtr::new(adapter);
@@ -124,6 +125,7 @@ impl IContext for Context {
             Surface {
                 factory: self.factory.clone(),
                 handle: window.raw_window_handle(),
+                context: self.as_ref_ptr(),
             }
         };
         let surface: RefPtr<Surface> = RefPtr::new(surface);

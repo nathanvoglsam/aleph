@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
+use crate::surface::Surface;
 use dx12::dxgi;
 use interfaces::gpu::ISwapChain;
-use interfaces::ref_ptr::ref_ptr_object;
+use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 
 ref_ptr_object! {
     pub struct SwapChain: ISwapChain, ISwapChainExt {
         pub(crate) swap_chain: dxgi::SwapChain,
+        pub(crate) surface: RefPtr<Surface>,
     }
 }
 

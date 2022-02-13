@@ -27,15 +27,17 @@
 // SOFTWARE.
 //
 
+use crate::context::Context;
 use crate::device::{Device, Queues};
 use dx12::dxgi;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
 ref_ptr_object! {
     pub struct Adapter: IAdapter, IAdapterExt {
         pub(crate) name: String,
         pub(crate) adapter: dxgi::Adapter,
+        pub(crate) context: RefPtr<Context>,
     }
 }
 
@@ -76,7 +78,8 @@ impl IAdapter for Adapter {
         let device = ref_ptr_init! {
             Device {
                 device: device,
-                queues: queues
+                queues: queues,
+                adapter: self.as_ref_ptr(),
             }
         };
         let device: RefPtr<Device> = RefPtr::new(device);

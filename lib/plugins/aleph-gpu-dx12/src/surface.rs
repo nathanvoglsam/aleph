@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::context::Context;
 use crate::device::Device;
 use crate::format::texture_format_to_dxgi;
 use crate::swap_chain::SwapChain;
@@ -36,12 +37,13 @@ use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, WeakRefPtr};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
 
 ref_ptr_object! {
     pub struct Surface: ISurface, ISurfaceExt {
         pub(crate) factory: dxgi::Factory,
         pub(crate) handle: RawWindowHandle,
+        pub(crate) context: RefPtr<Context>,
     }
 }
 
@@ -83,6 +85,7 @@ impl ISurface for Surface {
         let swap_chain = ref_ptr_init! {
             SwapChain {
                 swap_chain: swap_chain,
+                surface: self.as_ref_ptr(),
             }
         };
         let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
