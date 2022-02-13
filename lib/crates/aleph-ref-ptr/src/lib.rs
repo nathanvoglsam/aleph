@@ -269,7 +269,7 @@ macro_rules! ref_ptr_object {
 
                 unsafe {
                     let ptr = NonNull::from(self).cast();
-                    let object = crate::layout::TraitObject {
+                    let object = $crate::layout::TraitObject {
                         ptr,
                         vtable: NonNull::dangling(),
                     };
@@ -285,7 +285,7 @@ macro_rules! ref_ptr_object {
                 use std::mem::ManuallyDrop;
 
                 let obj = $obj_name {
-                    __internal_intrusive: unsafe { Test::new_intrusive() },
+                    __internal_intrusive: unsafe { $obj_name::new_intrusive() },
                     $($field_name : v.$field_name),*
                 };
                 let obj = ManuallyDrop::new(obj);
@@ -296,7 +296,7 @@ macro_rules! ref_ptr_object {
                     let ptr = Box::leak(Box::<ManuallyDrop<$obj_name>>::new(obj));
                     let ptr = NonNull::from(ptr).cast::<()>();
 
-                    let object = crate::layout::TraitObject {
+                    let object = $crate::layout::TraitObject {
                         ptr,
                         vtable: NonNull::dangling(),
                     };

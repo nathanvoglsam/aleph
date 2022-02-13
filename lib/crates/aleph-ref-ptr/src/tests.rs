@@ -32,24 +32,24 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 crate::ref_ptr_object! {
-    pub struct Test: ITest, ITestOther {
+    pub struct TestObject: ITest, ITestOther {
         value: Arc<AtomicUsize>,
     }
 }
 
-impl Drop for Test {
+impl Drop for TestObject {
     fn drop(&mut self) {
         self.value.fetch_add(20, Ordering::Relaxed);
     }
 }
 
-impl ITest for Test {
+impl ITest for TestObject {
     fn test_fn(&self) {
         self.value.fetch_add(1, Ordering::Relaxed);
     }
 }
 
-impl ITestOther for Test {
+impl ITestOther for TestObject {
     fn test_fn_other(&self) {
         self.value.fetch_add(5, Ordering::Relaxed);
     }
@@ -61,10 +61,10 @@ pub fn arc_test_1() {
     let counter = Arc::new(AtomicUsize::default());
 
     // Wrap our counter in a RefPtr
-    let obj = crate::ref_ptr_init!(Test {
+    let obj = crate::ref_ptr_init!(TestObject {
         value: counter.clone(),
     });
-    let obj: RefPtr<Test> = RefPtr::new(obj);
+    let obj: RefPtr<TestObject> = RefPtr::new(obj);
 
     // Get our object casted to another interface
     let test = obj.query_interface::<dyn ITest>().unwrap();
