@@ -29,13 +29,13 @@
 
 
 [package]
-name = "aleph-any"
+name = "aleph-ref-ptr"
 version = "0.1.0"
 authors = ["Nathan Voglsam <nathanvoglsam420@gmail.com>"]
-description = "Aleph's interface infrastructure"
+description = "Intrusive reference counted object infrastructure for COM like interfaces"
 license = "MIT"
-repository = "https://github.com/nathanvoglsam/aleph"
-documentation = "https://docs.rs/aleph-any/"
+repository = "https://github.com/nathanvoglsam/aleph-ref-ptr"
+documentation = "https://docs.rs/aleph-aleph-ref-ptr/"
 readme = "README.md"
 ## TODO: keywords = ["engine", "graphics", "vulkan", "game"]
 ## TODO: categories = ["game-engines"]
@@ -45,3 +45,4 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
+once_cell = "1"
