@@ -94,6 +94,44 @@ pub fn arc_test_1() {
     assert_eq!(counter.load(Ordering::Relaxed), 32);
 }
 
+#[test]
+pub fn weak_test_1() {
+    // Our counter for running the test
+    let counter = Arc::new(AtomicUsize::default());
+
+    // Wrap our counter in a RefPtr
+    let obj = crate::ref_ptr_init!(TestObject {
+        value: counter.clone(),
+    });
+    let obj: RefPtr<TestObject> = RefPtr::new(obj);
+
+    // Get our object casted to another interface
+    let weak = obj.as_weak();
+    let test = weak.query_interface::<dyn ITest>().unwrap();
+    let test_other = test.query_interface::<dyn ITestOther>().unwrap();
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+
+    test_other.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 6);
+
+    test.test_fn();
+    assert_eq!(counter.load(Ordering::Relaxed), 7);
+
+    test_other.test_fn_other();
+    assert_eq!(counter.load(Ordering::Relaxed), 12);
+
+    drop(test_other);
+    assert_eq!(counter.load(Ordering::Relaxed), 12);
+
+    drop(test);
+    assert_eq!(counter.load(Ordering::Relaxed), 12);
+
+    drop(obj);
+    assert_eq!(counter.load(Ordering::Relaxed), 32);
+}
+
 trait ITest {
     fn test_fn(&self);
 }

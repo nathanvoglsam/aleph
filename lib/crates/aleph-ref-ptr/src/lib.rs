@@ -37,6 +37,7 @@ mod tests;
 use crate::layout::{IntrusiveData, TraitObject};
 use std::any::TypeId;
 use std::marker::PhantomData;
+use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::process::abort;
 use std::ptr::NonNull;
@@ -58,7 +59,7 @@ pub struct RefPtr<T: ?Sized> {
 pub(crate) const MAX_REFCOUNT: usize = (isize::MAX) as usize;
 
 impl<T: ?Sized> RefPtr<T> {
-    /// Returns a new RefPtr that views the same underlying object through a different interface
+    /// Returns a new [RefPtr] that views the same underlying object through a different interface
     #[inline]
     pub fn query_interface<X: ?Sized + 'static>(&self) -> Option<RefPtr<X>> {
         unsafe {
@@ -70,6 +71,17 @@ impl<T: ?Sized> RefPtr<T> {
 
                 core::mem::transmute(cloned)
             })
+        }
+    }
+
+    /// Returns a weak reference to the object as a [WeakRefPtr]
+    #[inline]
+    pub fn as_weak(&self) -> WeakRefPtr<T> {
+        unsafe {
+            WeakRefPtr {
+                v: core::mem::ManuallyDrop::new(core::mem::transmute_copy(self)),
+                phantom: Default::default(),
+            }
         }
     }
 }
@@ -208,6 +220,70 @@ impl<T: ?Sized> Drop for RefPtr<T> {
 
 unsafe impl<T: ?Sized + Sync + Send> Send for RefPtr<T> {}
 unsafe impl<T: ?Sized + Sync + Send> Sync for RefPtr<T> {}
+
+///
+/// Weak reference that allows pseudo-owned copies of a [RefPtr] without incrementing the reference
+/// count.
+///
+/// The lifetime is upheld via a rust lifetime annotation that prevents the [WeakRefPtr] from
+/// outliving the [RefPtr] it was created from. This guarantees that the [WeakRefPtr] will always
+/// refer to valid data even though the reference count remains unchanged as the underlying object
+/// will be live as long as that outer [RefPtr] remains live.
+///
+/// [WeakRefPtr] is useful for when a [RefPtr] would be passed as an argument to a function that
+/// does not need to take shared ownership of the object. Leaf functions would needlessly increment
+/// and decrement the reference count as the [RefPtr] will be kept alive by the caller anyway.
+///
+/// `&RefPtr<T>` would also achieve the same effect, but at the FFI layer `&RefPtr<T>` is not the
+/// same as `WeakRefPtr<T>`. `&RefPtr<T>` also introduces a pointless extra layer of indirection
+/// which can't be avoided.
+///
+#[repr(transparent)]
+pub struct WeakRefPtr<'a, T: ?Sized> {
+    pub(crate) v: ManuallyDrop<RefPtr<T>>,
+    pub(crate) phantom: PhantomData<&'a RefPtr<T>>,
+}
+
+impl<'a, T: ?Sized> WeakRefPtr<'a, T> {
+    /// Returns a new [WeakRefPtr] that views the same underlying object through a different
+    /// interface
+    #[inline]
+    pub fn query_interface<X: ?Sized + 'static>(&self) -> Option<WeakRefPtr<X>> {
+        unsafe {
+            let id = TypeId::of::<X>();
+            let vtable = self.v.inner().table().query_vtable(id);
+            vtable.map(|v| {
+                let mut cloned = self.clone();
+                cloned.v.object.vtable = v;
+
+                core::mem::transmute(cloned)
+            })
+        }
+    }
+
+    /// Promotes the weak reference to a strong reference
+    pub fn to_strong(&self) -> RefPtr<T> {
+        self.v.deref().clone()
+    }
+}
+
+impl<'a, T: ?Sized> Clone for WeakRefPtr<'a, T> {
+    fn clone(&self) -> Self {
+        Self {
+            v: unsafe { std::mem::transmute_copy(&self.v) },
+            phantom: Default::default(),
+        }
+    }
+}
+
+impl<'a, T: ?Sized> Deref for WeakRefPtr<'a, T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        self.v.deref()
+    }
+}
 
 /// A semi-internal trait used for marking types that have a RefPtr compatible v-table available.
 ///
