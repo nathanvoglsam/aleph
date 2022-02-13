@@ -249,7 +249,7 @@ pub trait IContext: 'static {
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: Send + 'static {
+pub trait IAdapter: 'static {
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&self) -> AdapterDescription;
 
