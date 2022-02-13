@@ -32,7 +32,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
 crate::ref_ptr_object! {
+    /// This is a doc comment on TestObject
     pub struct TestObject: ITest, ITestOther {
+        /// This is a doc comment on the value field
         value: Arc<AtomicUsize>,
     }
 }

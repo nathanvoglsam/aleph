@@ -247,14 +247,22 @@ pub unsafe trait RefPtrObject: Sized + 'static {
 #[macro_export]
 macro_rules! ref_ptr_object {
     (
-        $obj_vis:vis struct $obj_name:ident $(: $($impl_name:ident),* $(,)?)? {
-            $($field_vis:vis $field_name:ident : $field_type:ty),* $(,)?
+        $(#[$obj_meta:meta])* $obj_vis:vis struct $obj_name:ident $(: $($impl_name:ident),* $(,)?)? {
+            $(
+                $(#[$field_meta:meta])*
+                $field_vis:vis $field_name:ident : $field_type:ty
+            ),*
+            $(,)?
         }
     ) => {
         #[repr(C)]
+        $(#[$obj_meta])*
         $obj_vis struct $obj_name {
             __internal_intrusive: $crate::layout::IntrusiveData::<$obj_name>,
-            $($field_vis $field_name : $field_type),*
+            $(
+                $(#[$field_meta])*
+                $field_vis $field_name : $field_type
+            ),*
         }
 
         pub struct Initializer {
