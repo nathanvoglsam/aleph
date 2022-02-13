@@ -29,8 +29,9 @@
 
 use crate::context::Context;
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, QueryInterfaceBox};
+use interfaces::any::declare_interfaces;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
+use interfaces::ref_ptr::{ref_ptr_init, RefPtr};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -55,7 +56,7 @@ impl IContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<Box<dyn IContext>, ContextCreateError> {
+    ) -> Result<RefPtr<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -70,11 +71,14 @@ impl IContextProvider for ContextProvider {
                 let gpu_assisted = !is_uwp;
                 let debug = unsafe { setup_debug_layer(options.validation, gpu_assisted) };
 
-                let out = Context {
-                    _debug: debug,
-                    factory: dxgi_factory,
+                let context = ref_ptr_init! {
+                    Context {
+                        _debug: debug,
+                        factory: dxgi_factory,
+                    }
                 };
-                Ok(Box::new(out).query_interface().ok().unwrap())
+                let context: RefPtr<Context> = RefPtr::new(context);
+                Ok(context.query_interface().unwrap())
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

@@ -29,12 +29,14 @@
 
 use crate::device::{Device, Queues};
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, QueryInterfaceBox};
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr};
 
-pub struct Adapter {
-    pub(crate) name: String,
-    pub(crate) adapter: dxgi::Adapter,
+ref_ptr_object! {
+    pub struct Adapter: IAdapter, IAdapterExt {
+        pub(crate) name: String,
+        pub(crate) adapter: dxgi::Adapter,
+    }
 }
 
 impl Adapter {
@@ -51,11 +53,11 @@ impl Adapter {
 }
 
 impl IAdapter for Adapter {
-    fn description(&mut self) -> AdapterDescription {
+    fn description(&self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&mut self) -> Result<Box<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError> {
         // Create the actual d3d12 device
         let device =
             dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0).map_err(|e| {
@@ -71,9 +73,14 @@ impl IAdapter for Adapter {
         };
 
         // Bundle and return the device
-        let device = Device { device, queues };
-        let device = Box::new(device);
-        Ok(device.query_interface().ok().unwrap())
+        let device = ref_ptr_init! {
+            Device {
+                device: device,
+                queues: queues
+            }
+        };
+        let device: RefPtr<Device> = RefPtr::new(device);
+        Ok(device.query_interface().unwrap())
     }
 }
 
@@ -86,5 +93,3 @@ impl IAdapterExt for Adapter {
         &self.adapter
     }
 }
-
-declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);

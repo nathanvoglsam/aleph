@@ -28,11 +28,13 @@
 //
 
 use dx12::dxgi;
-use interfaces::any::declare_interfaces;
 use interfaces::gpu::ISwapChain;
+use interfaces::ref_ptr::ref_ptr_object;
 
-pub struct SwapChain {
-    pub(crate) swap_chain: dxgi::SwapChain,
+ref_ptr_object! {
+    pub struct SwapChain: ISwapChain, ISwapChainExt {
+        pub(crate) swap_chain: dxgi::SwapChain,
+    }
 }
 
 impl ISwapChain for SwapChain {}
@@ -46,5 +48,3 @@ impl ISwapChainExt for SwapChain {
         &self.swap_chain
     }
 }
-
-declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);

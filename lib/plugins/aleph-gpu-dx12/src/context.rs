@@ -30,15 +30,18 @@
 use crate::adapter::Adapter;
 use crate::surface::Surface;
 use dx12::dxgi;
-use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr};
+use std::ops::Deref;
 
-pub struct Context {
-    pub(crate) _debug: Option<dx12::Debug>,
-    pub(crate) factory: dxgi::Factory,
+ref_ptr_object! {
+    pub struct Context: IContext, IContextExt {
+        pub(crate) _debug: Option<dx12::Debug>,
+        pub(crate) factory: dxgi::Factory,
+    }
 }
 
 impl Context {
@@ -79,7 +82,7 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IAdapter>> {
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>> {
         let power_preference = match options.power_class {
             AdapterPowerClass::LowPower => dxgi::GpuPreference::MinimumPower,
             AdapterPowerClass::HighPower => dxgi::GpuPreference::HighPerformance,
@@ -88,9 +91,9 @@ impl IContext for Context {
             .factory
             .select_hardware_adapter(dx12::FeatureLevel::Level_11_0, power_preference)
         {
-            if let Some(surface) = options.surface.as_ref() {
+            if let Some(surface) = options.surface.as_ref().cloned() {
                 let surface = surface.query_interface::<Surface>().unwrap();
-                self.check_surface_compatibility(&adapter, surface)?;
+                self.check_surface_compatibility(&adapter, surface.deref())?;
             }
 
             let desc = adapter
@@ -99,9 +102,15 @@ impl IContext for Context {
             let name = desc
                 .description_string()
                 .unwrap_or_else(|| "Unknown".to_string());
-            let adapter = Adapter { name, adapter };
-            let adapter = Box::new(adapter);
-            Some(adapter)
+
+            let adapter = ref_ptr_init! {
+                Adapter {
+                    name: name,
+                    adapter: adapter,
+                }
+            };
+            let adapter: RefPtr<Adapter> = RefPtr::new(adapter);
+            Some(adapter.query_interface().unwrap())
         } else {
             None
         }
@@ -110,14 +119,15 @@ impl IContext for Context {
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
-    ) -> Result<Box<dyn ISurface>, SurfaceCreateError> {
-        let surface = Surface {
-            factory: self.factory.clone(),
-            handle: window.raw_window_handle(),
+    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError> {
+        let surface = ref_ptr_init! {
+            Surface {
+                factory: self.factory.clone(),
+                handle: window.raw_window_handle(),
+            }
         };
-
-        let surface = Box::new(surface);
-        Ok(surface.query_interface().ok().unwrap())
+        let surface: RefPtr<Surface> = RefPtr::new(surface);
+        Ok(surface.query_interface().unwrap())
     }
 }
 
@@ -134,5 +144,3 @@ impl IContextExt for Context {
         &self.factory
     }
 }
-
-declare_interfaces!(Context, [IContext, IContextExt]);

@@ -28,12 +28,14 @@
 //
 
 use dx12::{AsWeakRef, CommandQueue, WeakRef};
-use interfaces::any::declare_interfaces;
 use interfaces::gpu::IDevice;
+use interfaces::ref_ptr::ref_ptr_object;
 
-pub struct Device {
-    pub(crate) device: dx12::Device,
-    pub(crate) queues: Queues,
+ref_ptr_object! {
+    pub struct Device: IDevice, IDeviceExt {
+        pub(crate) device: dx12::Device,
+        pub(crate) queues: Queues,
+    }
 }
 
 impl IDevice for Device {
@@ -67,9 +69,7 @@ impl IDeviceExt for Device {
     }
 }
 
-declare_interfaces!(Device, [IDevice, IDeviceExt]);
-
-pub(crate) struct Queues {
+pub struct Queues {
     pub general: Option<CommandQueue>,
     pub compute: Option<CommandQueue>,
     pub transfer: Option<CommandQueue>,

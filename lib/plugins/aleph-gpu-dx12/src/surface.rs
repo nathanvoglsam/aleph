@@ -32,23 +32,25 @@ use crate::format::texture_format_to_dxgi;
 use crate::swap_chain::SwapChain;
 use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
-use interfaces::any::{declare_interfaces, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
+use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, WeakRefPtr};
 
-pub struct Surface {
-    pub(crate) factory: dxgi::Factory,
-    pub(crate) handle: RawWindowHandle,
+ref_ptr_object! {
+    pub struct Surface: ISurface, ISurfaceExt {
+        pub(crate) factory: dxgi::Factory,
+        pub(crate) handle: RawWindowHandle,
+    }
 }
 
 impl ISurface for Surface {
     fn create_swap_chain(
         &self,
-        device: &dyn IDevice,
+        device: WeakRefPtr<dyn IDevice>,
         config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
         let (buffer_count, flags) = match config.present_mode {
@@ -77,9 +79,14 @@ impl ISurface for Surface {
                 let e = Box::new(e);
                 SwapChainCreateError::Platform(e)
             })?;
-        let swap_chain = SwapChain { swap_chain };
-        let swap_chain = Box::new(swap_chain);
-        Ok(swap_chain.query_interface().ok().unwrap())
+
+        let swap_chain = ref_ptr_init! {
+            SwapChain {
+                swap_chain: swap_chain,
+            }
+        };
+        let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
+        Ok(swap_chain.query_interface().unwrap())
     }
 }
 
@@ -102,5 +109,3 @@ impl ISurfaceExt for Surface {
         self.factory.clone()
     }
 }
-
-declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
