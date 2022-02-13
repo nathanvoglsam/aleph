@@ -27,8 +27,9 @@
 // SOFTWARE.
 //
 
+use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
-use ref_ptr::RefPtr;
+use ref_ptr::{RefPtr, WeakRefPtr};
 use std::fmt::Debug;
 
 pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
@@ -73,7 +74,7 @@ pub struct AdapterRequestOptions<'a> {
     ///
     /// Can be set to `None` to indicate we aren't going to present. Useful for compute-only
     /// workloads.
-    pub surface: Option<&'a dyn ISurface>,
+    pub surface: Option<WeakRefPtr<'a, dyn ISurface>>,
 
     /// Specifies the preferred power class of the adapter the context should return. See
     /// [AdapterPowerClass] for the meaning of each power class.
@@ -221,7 +222,7 @@ pub enum SwapChainCreateError {
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
-pub trait IContextProvider: 'static {
+pub trait IContextProvider: IAny + 'static {
     /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
     /// will always return Err.
     fn make_context(
@@ -250,16 +251,16 @@ pub trait IContext: 'static {
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
 pub trait IAdapter: Send + 'static {
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
-    fn description(&mut self) -> AdapterDescription;
+    fn description(&self) -> AdapterDescription;
 
     /// Requests an IDevice
-    fn request_device(&mut self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError>;
+    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError>;
 }
 
 pub trait ISurface: 'static {
     fn create_swap_chain(
         &self,
-        device: &dyn IDevice,
+        device: WeakRefPtr<dyn IDevice>,
         config: &SwapChainConfiguration,
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
 }
