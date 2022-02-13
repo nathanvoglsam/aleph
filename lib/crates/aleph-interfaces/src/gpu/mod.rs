@@ -27,69 +27,13 @@
 // SOFTWARE.
 //
 
-use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
+use ref_ptr::RefPtr;
 use std::fmt::Debug;
 
 pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
 pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
-
-/// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
-/// some other use can request a handle to the [IContextProvider] instance and create the context.
-pub trait IContextProvider: IAny + 'static {
-    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
-    /// will always return Err.
-    fn make_context(
-        &self,
-        options: &ContextOptions,
-    ) -> Result<Box<dyn IContext>, ContextCreateError>;
-}
-
-/// Represents the underlying API context. Handles creating surfaces from window handles, and
-/// retrieving
-///
-/// TODO: This doesn't need to be kept alive as the implementation should handle extending the
-///       lifetime until all objects are destroyed
-pub trait IContext: IAny + 'static {
-    /// Create an adapter that suitably meets the requested requirements and preferences specified
-    /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<Box<dyn IAdapter>>;
-
-    /// Create a surface from the provided window handle.
-    fn create_surface(
-        &self,
-        window: &dyn HasRawWindowHandle,
-    ) -> Result<Box<dyn ISurface>, SurfaceCreateError>;
-}
-
-/// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: IAny + Send + 'static {
-    /// Returns the [AdapterDescription] that provides information about this specific adapter.
-    fn description(&mut self) -> AdapterDescription;
-
-    /// Requests an IDevice
-    fn request_device(&mut self) -> Result<Box<dyn IDevice>, RequestDeviceError>;
-}
-
-pub trait ISurface: IAny + 'static {
-    fn create_swap_chain(
-        &self,
-        device: &dyn IDevice,
-        config: &SwapChainConfiguration,
-    ) -> Result<Box<dyn ISwapChain>, SwapChainCreateError>;
-}
-
-pub trait ISwapChain: IAny + 'static {}
-
-pub trait IDevice: IAny + Send + Sync + 'static {
-    fn create_sampler(&self);
-}
-
-pub trait IMemoryPool: IAny + 'static {
-    fn create_buffer(&self);
-    fn create_texture(&self);
-}
 
 /// Options provided when a context is created
 #[derive(Default)]
@@ -122,30 +66,6 @@ pub struct ContextOptions {
     /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
     /// validation layers.
     pub debug: bool,
-}
-
-/// Set of errors that can occur when creating an [IContext]
-#[derive(Debug)]
-pub enum ContextCreateError {
-    /// A context has already been created.
-    ContextAlreadyCreated,
-
-    /// Some platform error occurred while creating the API context.
-    Platform(Box<dyn Debug>),
-}
-
-/// Set of errors that can occur when creating an [IDevice]
-#[derive(Debug)]
-pub enum RequestDeviceError {
-    /// Some platform error occurred while creating the device.
-    Platform(Box<dyn Debug>),
-}
-
-/// Set of errors that can occur when creating an [ISurface]
-#[derive(Debug)]
-pub enum SurfaceCreateError {
-    /// Some platform error occurred while creating the surface.
-    Platform(Box<dyn Debug>),
 }
 
 pub struct AdapterRequestOptions<'a> {
@@ -201,16 +121,6 @@ pub enum AdapterPowerClass {
 pub struct AdapterDescription<'a> {
     /// The name of the adapter
     pub name: &'a str,
-}
-
-#[derive(Debug)]
-pub enum SwapChainCreateError {
-    UnsupportedFormat(TextureFormat),
-    UnsupportedUsage(()),
-    UnsupportedWidth(u32),
-    UnsupportedHeight(u32),
-    UnsupportedPresentMode(PresentationMode),
-    Platform(Box<dyn Debug>),
 }
 
 pub struct SwapChainConfiguration {
@@ -273,4 +183,94 @@ pub enum TextureFormat {
     Rgba32Float,
     Depth32Float,
     Depth24Stencil8,
+}
+
+/// Set of errors that can occur when creating an [IContext]
+#[derive(Debug)]
+pub enum ContextCreateError {
+    /// A context has already been created.
+    ContextAlreadyCreated,
+
+    /// Some platform error occurred while creating the API context.
+    Platform(Box<dyn Debug>),
+}
+
+/// Set of errors that can occur when creating an [IDevice]
+#[derive(Debug)]
+pub enum RequestDeviceError {
+    /// Some platform error occurred while creating the device.
+    Platform(Box<dyn Debug>),
+}
+
+/// Set of errors that can occur when creating an [ISurface]
+#[derive(Debug)]
+pub enum SurfaceCreateError {
+    /// Some platform error occurred while creating the surface.
+    Platform(Box<dyn Debug>),
+}
+
+#[derive(Debug)]
+pub enum SwapChainCreateError {
+    UnsupportedFormat(TextureFormat),
+    UnsupportedUsage(()),
+    UnsupportedWidth(u32),
+    UnsupportedHeight(u32),
+    UnsupportedPresentMode(PresentationMode),
+    Platform(Box<dyn Debug>),
+}
+
+/// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
+/// some other use can request a handle to the [IContextProvider] instance and create the context.
+pub trait IContextProvider: 'static {
+    /// Creates the RHI [IContext] object. This can only succeed once. Calling this more than once
+    /// will always return Err.
+    fn make_context(
+        &self,
+        options: &ContextOptions,
+    ) -> Result<RefPtr<dyn IContext>, ContextCreateError>;
+}
+
+/// Represents the underlying API context. Handles creating surfaces from window handles, and
+/// retrieving
+///
+/// TODO: This doesn't need to be kept alive as the implementation should handle extending the
+///       lifetime until all objects are destroyed
+pub trait IContext: 'static {
+    /// Create an adapter that suitably meets the requested requirements and preferences specified
+    /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>>;
+
+    /// Create a surface from the provided window handle.
+    fn create_surface(
+        &self,
+        window: &dyn HasRawWindowHandle,
+    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError>;
+}
+
+/// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
+pub trait IAdapter: Send + 'static {
+    /// Returns the [AdapterDescription] that provides information about this specific adapter.
+    fn description(&mut self) -> AdapterDescription;
+
+    /// Requests an IDevice
+    fn request_device(&mut self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError>;
+}
+
+pub trait ISurface: 'static {
+    fn create_swap_chain(
+        &self,
+        device: &dyn IDevice,
+        config: &SwapChainConfiguration,
+    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
+}
+
+pub trait ISwapChain: 'static {}
+
+pub trait IDevice: Send + Sync + 'static {
+    fn create_sampler(&self);
+}
+
+pub trait IMemoryPool: 'static {
+    fn create_buffer(&self);
+    fn create_texture(&self);
 }

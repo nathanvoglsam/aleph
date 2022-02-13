@@ -68,3 +68,7 @@ version = "0.1"
 [dependencies.aleph-label]
 path = "../aleph-label"
 version = "1"
+
+[dependencies.aleph-ref-ptr]
+path = "../aleph-ref-ptr"
+version = "0.1"
