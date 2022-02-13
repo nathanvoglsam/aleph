@@ -37,10 +37,18 @@ use std::ops::Deref;
 /// lifetime invariant is upheld by a phantom borrow.
 ///
 #[repr(transparent)]
-#[derive(Clone)]
 pub struct WeakRef<'a, T> {
     pub(crate) v: ManuallyDrop<T>,
     pub(crate) phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T: Clone> Clone for WeakRef<'a, T> {
+    fn clone(&self) -> Self {
+        Self {
+            v: unsafe { std::mem::transmute_copy(&self.v) },
+            phantom: Default::default(),
+        }
+    }
 }
 
 impl<'a, T: Clone> WeakRef<'a, T> {
