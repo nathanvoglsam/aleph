@@ -32,7 +32,6 @@ use crate::renderer::EguiRenderer;
 use crate::{dx12, dx12_alloc};
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt};
 use interfaces::any;
-use interfaces::any::{QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, IContextProvider, PresentationMode,
     SwapChainConfiguration, TextureFormat,
@@ -112,22 +111,16 @@ impl IPlugin for PluginRender {
 
         // Get an adapter compatible with the requested surface
         let options = AdapterRequestOptions {
-            surface: Some(gpu_surface.deref()),
+            surface: Some(gpu_surface.as_weak()),
             ..Default::default()
         };
-        let mut gpu_adapter = gpu_context.request_adapter(&options).unwrap();
+        let gpu_adapter = gpu_context.request_adapter(&options).unwrap();
 
         // Create our device
         let gpu_device = gpu_adapter.request_device().unwrap();
-        let gpu_device_ext = gpu_device
-            .deref()
-            .query_interface::<dyn IDeviceExt>()
-            .unwrap();
+        let gpu_device_ext = gpu_device.query_interface::<dyn IDeviceExt>().unwrap();
 
-        let gpu_adapter_ext = gpu_adapter
-            .query_interface::<dyn IAdapterExt>()
-            .ok()
-            .unwrap();
+        let gpu_adapter_ext = gpu_adapter.query_interface::<dyn IAdapterExt>().unwrap();
 
         let adapter = gpu_adapter_ext.get_raw_handle().clone();
         let device = gpu_device_ext.get_raw_handle().clone();
@@ -165,10 +158,9 @@ impl IPlugin for PluginRender {
             present_mode: PresentationMode::Mailbox,
         };
         let gpu_swap_chain = gpu_surface
-            .create_swap_chain(gpu_device.deref(), &config)
+            .create_swap_chain(gpu_device.as_weak(), &config)
             .unwrap();
         let gpu_swap_chain_ext = gpu_swap_chain
-            .deref()
             .query_interface::<dyn ISwapChainExt>()
             .unwrap();
 
