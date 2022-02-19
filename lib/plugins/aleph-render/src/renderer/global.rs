@@ -194,7 +194,7 @@ impl GlobalObjects {
             .depth_stencil_state(depth_stencil_state)
             .input_layout(&input_layout)
             .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
-            .rtv_formats(&[dxgi::Format::R8G8B8A8UnormSRGB])
+            .rtv_formats(&[dxgi::Format::B8G8R8A8UnormSRGB])
             .build();
 
         device

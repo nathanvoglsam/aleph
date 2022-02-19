@@ -152,7 +152,7 @@ impl IPlugin for PluginRender {
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {
             usage: (),
-            format: TextureFormat::Rgba8Unorm,
+            format: TextureFormat::Bgra8Unorm,
             width: drawable_size.0,
             height: drawable_size.1,
             present_mode: PresentationMode::Mailbox,
