@@ -29,17 +29,26 @@
 
 use crate::surface::Surface;
 use dx12::dxgi;
-use interfaces::gpu::ISwapChain;
+use interfaces::gpu::{AcquireImageError, ISwapChain, QueueType};
 use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 
 ref_ptr_object! {
     pub struct SwapChain: ISwapChain, ISwapChainExt {
         pub(crate) swap_chain: dxgi::SwapChain,
         pub(crate) surface: RefPtr<Surface>,
+        pub(crate) queue_support: QueueType,
     }
 }
 
-impl ISwapChain for SwapChain {}
+impl ISwapChain for SwapChain {
+    fn present_supported_on_queue(&self, queue: QueueType) -> bool {
+        queue == self.queue_support
+    }
+
+    fn acquire_image(&self) -> Result<(), AcquireImageError> {
+        todo!()
+    }
+}
 
 pub trait ISwapChainExt: ISwapChain {
     fn get_raw_handle(&self) -> &dxgi::SwapChain;

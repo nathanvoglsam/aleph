@@ -134,6 +134,7 @@ pub struct SwapChainConfiguration {
     pub width: u32,
     pub height: u32,
     pub present_mode: PresentationMode,
+    pub preferred_queue: QueueType,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -316,6 +317,9 @@ pub enum SwapChainCreateError {
     Platform(#[from] Box<dyn Error>),
 }
 
+#[derive(Error, Debug)]
+pub enum AcquireImageError {}
+
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
 pub trait IContextProvider: IAny + 'static {
@@ -361,7 +365,13 @@ pub trait ISurface: 'static {
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
 }
 
-pub trait ISwapChain: 'static {}
+pub trait ISwapChain: 'static {
+    /// Returns whether support operations are supported on the given queue.
+    fn present_supported_on_queue(&self, queue: QueueType) -> bool;
+
+    /// Acquire an image from the swap chain for use with rendering
+    fn acquire_image(&self) -> Result<(), AcquireImageError>;
+}
 
 pub trait IDevice: Send + Sync + 'static {
     fn create_sampler(&self);

@@ -33,7 +33,7 @@ use crate::{dx12, dx12_alloc};
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt};
 use interfaces::any;
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, IContextProvider, PresentationMode,
+    AdapterRequestOptions, ContextOptions, IContextProvider, PresentationMode, QueueType,
     SwapChainConfiguration, TextureFormat,
 };
 use interfaces::platform::*;
@@ -156,6 +156,7 @@ impl IPlugin for PluginRender {
             width: drawable_size.0,
             height: drawable_size.1,
             present_mode: PresentationMode::Mailbox,
+            preferred_queue: QueueType::General,
         };
         let gpu_swap_chain = gpu_surface
             .create_swap_chain(gpu_device.as_weak(), &config)
@@ -163,6 +164,8 @@ impl IPlugin for PluginRender {
         let gpu_swap_chain_ext = gpu_swap_chain
             .query_interface::<dyn ISwapChainExt>()
             .unwrap();
+
+        assert!(gpu_swap_chain.present_supported_on_queue(QueueType::General));
 
         let swap_chain = gpu_swap_chain_ext.get_raw_handle().clone();
 

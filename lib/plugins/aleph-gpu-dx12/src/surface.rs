@@ -34,7 +34,8 @@ use crate::swap_chain::SwapChain;
 use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
 use interfaces::gpu::{
-    IDevice, ISurface, ISwapChain, PresentationMode, SwapChainConfiguration, SwapChainCreateError,
+    IDevice, ISurface, ISwapChain, PresentationMode, QueueType, SwapChainConfiguration,
+    SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
@@ -74,9 +75,28 @@ impl ISurface for Surface {
             .swap_effect(dxgi::SwapEffect::FlipDiscard)
             .flags(flags)
             .build();
+
+        let (queue, queue_type) = match config.preferred_queue {
+            QueueType::General => (device.queues.general.as_ref(), QueueType::General),
+            QueueType::Compute => {
+                if let Some(queue) = device.queues.compute.as_ref() {
+                    (Some(queue), QueueType::Compute)
+                } else {
+                    (device.queues.general.as_ref(), QueueType::General)
+                }
+            }
+            QueueType::Transfer => {
+                if let Some(queue) = device.queues.transfer.as_ref() {
+                    (Some(queue), QueueType::Transfer)
+                } else {
+                    (device.queues.general.as_ref(), QueueType::General)
+                }
+            }
+        };
+
         let swap_chain = self
             .factory
-            .create_swap_chain(device.queues.general.as_ref().unwrap(), self, &desc)
+            .create_swap_chain(queue.unwrap(), self, &desc)
             .map_err(|e| {
                 let e = Box::new(e);
                 SwapChainCreateError::Platform(e)
@@ -86,6 +106,7 @@ impl ISurface for Surface {
             SwapChain {
                 swap_chain: swap_chain,
                 surface: self.as_ref_ptr(),
+                queue_support: queue_type,
             }
         };
         let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
