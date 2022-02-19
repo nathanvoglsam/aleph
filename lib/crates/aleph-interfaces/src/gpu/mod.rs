@@ -30,14 +30,16 @@
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
 use ref_ptr::{RefPtr, WeakRefPtr};
-use std::fmt::Debug;
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
+use thiserror::Error;
 
 pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
 pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 /// Options provided when a context is created
-#[derive(Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ContextOptions {
     /// Whether backend API validation should be enabled.
     ///
@@ -69,6 +71,7 @@ pub struct ContextOptions {
     pub debug: bool,
 }
 
+#[derive(Clone)]
 pub struct AdapterRequestOptions<'a> {
     /// A handle to an [ISurface] which the device adapter must be able to render and present to.
     ///
@@ -118,12 +121,13 @@ pub enum AdapterPowerClass {
     HighPower,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AdapterDescription<'a> {
     /// The name of the adapter
     pub name: &'a str,
 }
 
+#[derive(Clone, Debug)]
 pub struct SwapChainConfiguration {
     pub usage: (),
     pub format: TextureFormat,
@@ -132,14 +136,41 @@ pub struct SwapChainConfiguration {
     pub present_mode: PresentationMode,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum QueueType {
+    General,
+    Compute,
+    Transfer,
+}
+
+impl Display for QueueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueueType::General => f.write_str("QueueType::General"),
+            QueueType::Compute => f.write_str("QueueType::Compute"),
+            QueueType::Transfer => f.write_str("QueueType::Transfer"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum PresentationMode {
     Immediate,
     Mailbox,
     Fifo,
 }
 
-#[derive(Copy, Clone, Debug)]
+impl Display for PresentationMode {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PresentationMode::Immediate => f.write_str("PresentationMode::Immediate"),
+            PresentationMode::Mailbox => f.write_str("PresentationMode::Mailbox"),
+            PresentationMode::Fifo => f.write_str("PresentationMode::Fifo"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum TextureFormat {
     R8Unorm,
     R8Snorm,
@@ -186,38 +217,103 @@ pub enum TextureFormat {
     Depth24Stencil8,
 }
 
+impl Display for TextureFormat {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TextureFormat::R8Unorm => f.write_str("TextureFormat::R8Unorm"),
+            TextureFormat::R8Snorm => f.write_str("TextureFormat::R8Snorm"),
+            TextureFormat::R8Uint => f.write_str("TextureFormat::R8Uint"),
+            TextureFormat::R8Sint => f.write_str("TextureFormat::R8Sint"),
+            TextureFormat::R16Uint => f.write_str("TextureFormat::R16Uint"),
+            TextureFormat::R16Sint => f.write_str("TextureFormat::R16Sint"),
+            TextureFormat::R16Unorm => f.write_str("TextureFormat::R16Unorm"),
+            TextureFormat::R16Snorm => f.write_str("TextureFormat::R16Snorm"),
+            TextureFormat::R16Float => f.write_str("TextureFormat::R16Float"),
+            TextureFormat::Rg8Unorm => f.write_str("TextureFormat::Rg8Unorm"),
+            TextureFormat::Rg8Snorm => f.write_str("TextureFormat::Rg8Snorm"),
+            TextureFormat::Rg8Uint => f.write_str("TextureFormat::Rg8Uint"),
+            TextureFormat::Rg8Sint => f.write_str("TextureFormat::Rg8Sint"),
+            TextureFormat::R32Uint => f.write_str("TextureFormat::R32Uint"),
+            TextureFormat::R32Sint => f.write_str("TextureFormat::R32Sint"),
+            TextureFormat::R32Float => f.write_str("TextureFormat::R32Float"),
+            TextureFormat::Rg16Uint => f.write_str("TextureFormat::Rg16Uint"),
+            TextureFormat::Rg16Sint => f.write_str("TextureFormat::Rg16Sint"),
+            TextureFormat::Rg16Unorm => f.write_str("TextureFormat::Rg16Unorm"),
+            TextureFormat::Rg16Snorm => f.write_str("TextureFormat::Rg16Snorm"),
+            TextureFormat::Rg16Float => f.write_str("TextureFormat::Rg16Float"),
+            TextureFormat::Rgba8Unorm => f.write_str("TextureFormat::Rgba8Unorm"),
+            TextureFormat::Rgba8UnormSrgb => f.write_str("TextureFormat::Rgba8UnormSrgb"),
+            TextureFormat::Rgba8Snorm => f.write_str("TextureFormat::Rgba8Snorm"),
+            TextureFormat::Rgba8Uint => f.write_str("TextureFormat::Rgba8Uint"),
+            TextureFormat::Rgba8Sint => f.write_str("TextureFormat::Rgba8Sint"),
+            TextureFormat::Bgra8Unorm => f.write_str("TextureFormat::Bgra8Unorm"),
+            TextureFormat::Bgra8UnormSrgb => f.write_str("TextureFormat::Bgra8UnormSrgb"),
+            TextureFormat::Rgb10a2Unorm => f.write_str("TextureFormat::Rgb10a2Unorm"),
+            TextureFormat::Rg11b10Float => f.write_str("TextureFormat::Rg11b10Float"),
+            TextureFormat::Rg32Uint => f.write_str("TextureFormat::Rg32Uint"),
+            TextureFormat::Rg32Sint => f.write_str("TextureFormat::Rg32Sint"),
+            TextureFormat::Rg32Float => f.write_str("TextureFormat::Rg32Float"),
+            TextureFormat::Rgba16Uint => f.write_str("TextureFormat::Rgba16Uint"),
+            TextureFormat::Rgba16Sint => f.write_str("TextureFormat::Rgba16Sint"),
+            TextureFormat::Rgba16Unorm => f.write_str("TextureFormat::Rgba16Unorm"),
+            TextureFormat::Rgba16Snorm => f.write_str("TextureFormat::Rgba16Snorm"),
+            TextureFormat::Rgba16Float => f.write_str("TextureFormat::Rgba16Float"),
+            TextureFormat::Rgba32Uint => f.write_str("TextureFormat::Rgba32Uint"),
+            TextureFormat::Rgba32Sint => f.write_str("TextureFormat::Rgba32Sint"),
+            TextureFormat::Rgba32Float => f.write_str("TextureFormat::Rgba32Float"),
+            TextureFormat::Depth32Float => f.write_str("TextureFormat::Depth32Float"),
+            TextureFormat::Depth24Stencil8 => f.write_str("TextureFormat::Depth24Stencil8"),
+        }
+    }
+}
+
 /// Set of errors that can occur when creating an [IContext]
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum ContextCreateError {
-    /// A context has already been created.
+    #[error("A context has already been created by this provider")]
     ContextAlreadyCreated,
 
-    /// Some platform error occurred while creating the API context.
-    Platform(Box<dyn Debug>),
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(Box<dyn Error>),
 }
 
 /// Set of errors that can occur when creating an [IDevice]
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum RequestDeviceError {
-    /// Some platform error occurred while creating the device.
-    Platform(Box<dyn Debug>),
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(Box<dyn Error>),
 }
 
 /// Set of errors that can occur when creating an [ISurface]
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum SurfaceCreateError {
-    /// Some platform error occurred while creating the surface.
-    Platform(Box<dyn Debug>),
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(Box<dyn Error>),
 }
 
-#[derive(Debug)]
+#[derive(Error, Debug)]
+#[non_exhaustive]
 pub enum SwapChainCreateError {
+    #[error("The requested image format '{0}' is not supported by the swap chain")]
     UnsupportedFormat(TextureFormat),
+
+    #[error("The requested image usage is not supported by the swap chain")]
     UnsupportedUsage(()),
+
+    #[error("The requested width '{0}' is not supported by the swap chain")]
     UnsupportedWidth(u32),
+
+    #[error("The requested height '{0}' is not supported by the swap chain")]
     UnsupportedHeight(u32),
+
+    #[error("The requested presentation mode '{0}' is not supported by the swap chain")]
     UnsupportedPresentMode(PresentationMode),
-    Platform(Box<dyn Debug>),
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] Box<dyn Error>),
 }
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
