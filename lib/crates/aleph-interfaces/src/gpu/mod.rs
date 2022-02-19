@@ -312,6 +312,9 @@ pub enum SwapChainCreateError {
     #[error("The requested presentation mode '{0}' is not supported by the swap chain")]
     UnsupportedPresentMode(PresentationMode),
 
+    #[error("The surface is already owned by another existing swap chain")]
+    SurfaceAlreadyOwned,
+
     /// For a detailed explanation see [AcquireImageError::SurfaceNotAvailable]
     #[error("The surface is currently in a state where it can not be used")]
     SurfaceNotAvailable,
