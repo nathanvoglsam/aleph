@@ -30,7 +30,6 @@
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
 use ref_ptr::{RefPtr, WeakRefPtr};
-use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
 
@@ -103,6 +102,22 @@ impl<'a> Default for AdapterRequestOptions<'a> {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct AdapterDescription<'a> {
+    /// The name of the adapter
+    pub name: &'a str,
+}
+
+#[derive(Clone, Debug)]
+pub struct SwapChainConfiguration {
+    pub usage: (),
+    pub format: TextureFormat,
+    pub width: u32,
+    pub height: u32,
+    pub present_mode: PresentationMode,
+    pub preferred_queue: QueueType,
+}
+
 /// The set of adapter power classes. Primarily used as part of requesting an adapter from the
 /// [IContext].
 #[derive(Copy, Clone, Debug)]
@@ -119,22 +134,6 @@ pub enum AdapterPowerClass {
     /// as it will almost certainly be faster than the integrated GPU (otherwise why would it be
     /// installed in the system?).
     HighPower,
-}
-
-#[derive(Clone, Debug)]
-pub struct AdapterDescription<'a> {
-    /// The name of the adapter
-    pub name: &'a str,
-}
-
-#[derive(Clone, Debug)]
-pub struct SwapChainConfiguration {
-    pub usage: (),
-    pub format: TextureFormat,
-    pub width: u32,
-    pub height: u32,
-    pub present_mode: PresentationMode,
-    pub preferred_queue: QueueType,
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -276,7 +275,7 @@ pub enum ContextCreateError {
     ContextAlreadyCreated,
 
     #[error("An internal backend error has occurred '{0}'")]
-    Platform(Box<dyn Error>),
+    Platform(#[from] anyhow::Error),
 }
 
 /// Set of errors that can occur when creating an [IDevice]
@@ -284,7 +283,7 @@ pub enum ContextCreateError {
 #[non_exhaustive]
 pub enum RequestDeviceError {
     #[error("An internal backend error has occurred '{0}'")]
-    Platform(Box<dyn Error>),
+    Platform(#[from] anyhow::Error),
 }
 
 /// Set of errors that can occur when creating an [ISurface]
@@ -292,7 +291,7 @@ pub enum RequestDeviceError {
 #[non_exhaustive]
 pub enum SurfaceCreateError {
     #[error("An internal backend error has occurred '{0}'")]
-    Platform(Box<dyn Error>),
+    Platform(#[from] anyhow::Error),
 }
 
 #[derive(Error, Debug)]
@@ -313,12 +312,42 @@ pub enum SwapChainCreateError {
     #[error("The requested presentation mode '{0}' is not supported by the swap chain")]
     UnsupportedPresentMode(PresentationMode),
 
+    /// For a detailed explanation see [AcquireImageError::SurfaceNotAvailable]
+    #[error("The surface is currently in a state where it can not be used")]
+    SurfaceNotAvailable,
+
     #[error("An internal backend error has occurred '{0}'")]
-    Platform(#[from] Box<dyn Error>),
+    Platform(#[from] anyhow::Error),
 }
 
 #[derive(Error, Debug)]
-pub enum AcquireImageError {}
+pub enum AcquireImageError {
+    #[error("No image is available")]
+    ImageNotAvailable,
+
+    ///
+    /// This error is subtle and requires explanation.
+    ///
+    /// SurfaceNotAvailable will be returned when it is not possible for the backend to create the
+    /// underlying swap chain object for the surface at the present time. This is not a failure, the
+    /// surface can return to a valid state.
+    ///
+    /// This is primarily an issue on Vulkan under Windows. On Windows, when a window is minimized
+    /// the vkGetPhysicalDeviceSurfaceCapabilitiesKHR call will return a current_extent of (0, 0).
+    /// As per the Vulkan spec if current_extent is specified as anything other than
+    /// (U32_MAX, U32_MAX) then you must use exactly current_extent when creating the swap chain.
+    /// (0, 0) is an invalid value to pass so a minimized window can't have a swap chain attached
+    /// to it.
+    ///
+    /// If the window is minimized then it is impossible to create a swap chain, making it
+    /// impossible to hand out images.
+    ///
+    #[error("The surface is currently in a state where it can not be used")]
+    SurfaceNotAvailable,
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
