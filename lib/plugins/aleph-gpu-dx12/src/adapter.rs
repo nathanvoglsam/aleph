@@ -30,6 +30,7 @@
 use crate::context::Context;
 use crate::device::{Device, Queues};
 use dx12::dxgi;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
@@ -61,11 +62,8 @@ impl IAdapter for Adapter {
 
     fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError> {
         // Create the actual d3d12 device
-        let device =
-            dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0).map_err(|e| {
-                let e = Box::new(e);
-                RequestDeviceError::Platform(e)
-            })?;
+        let device = dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0)
+            .map_err(|e| anyhow!(e))?;
 
         // Load our 3 queues
         let queues = Queues {

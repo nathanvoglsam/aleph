@@ -30,6 +30,7 @@
 use crate::context::Context;
 use dx12::dxgi;
 use interfaces::any::declare_interfaces;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
 use interfaces::ref_ptr::{ref_ptr_init, RefPtr};
 use std::marker::PhantomData;
@@ -62,10 +63,8 @@ impl IContextProvider for ContextProvider {
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
         {
             Ok(_) => {
-                let dxgi_factory = dxgi::Factory::new(options.validation).map_err(|e| {
-                    let e = Box::new(e);
-                    ContextCreateError::Platform(e)
-                })?;
+                let dxgi_factory =
+                    dxgi::Factory::new(options.validation).map_err(|e| anyhow!(e))?;
 
                 let is_uwp = cfg!(target_vendor = "uwp");
                 let gpu_assisted = !is_uwp;

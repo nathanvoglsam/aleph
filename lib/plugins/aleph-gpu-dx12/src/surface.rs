@@ -33,6 +33,7 @@ use crate::format::texture_format_to_dxgi;
 use crate::swap_chain::SwapChain;
 use dx12::dxgi;
 use dx12::dxgi::SwapChainFlags;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, QueueType, SwapChainConfiguration,
     SwapChainCreateError,
@@ -48,8 +49,8 @@ ref_ptr_object! {
     }
 }
 
-impl ISurface for Surface {
-    fn create_swap_chain(
+impl Surface {
+    fn inner_create_swap_chain(
         &self,
         device: WeakRefPtr<dyn IDevice>,
         config: &SwapChainConfiguration,
@@ -97,10 +98,7 @@ impl ISurface for Surface {
         let swap_chain = self
             .factory
             .create_swap_chain(queue.unwrap(), self, &desc)
-            .map_err(|e| {
-                let e = Box::new(e);
-                SwapChainCreateError::Platform(e)
-            })?;
+            .map_err(|e| anyhow!(e))?;
 
         let swap_chain = ref_ptr_init! {
             SwapChain {
@@ -111,6 +109,22 @@ impl ISurface for Surface {
         };
         let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
         Ok(swap_chain.query_interface().unwrap())
+    }
+}
+
+impl ISurface for Surface {
+    fn create_swap_chain(
+        &self,
+        device: WeakRefPtr<dyn IDevice>,
+        config: &SwapChainConfiguration,
+    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
+
+        match self.inner_create_swap_chain(device, config) {
+            v @ Ok(_) => v,
+            v @ Err(_) => {
+                v
+            }
+        }
     }
 }
 
