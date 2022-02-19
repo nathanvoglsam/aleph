@@ -31,6 +31,7 @@ use crate::surface::Surface;
 use dx12::dxgi;
 use interfaces::gpu::{AcquireImageError, ISwapChain, QueueType};
 use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
+use std::sync::atomic::Ordering;
 
 ref_ptr_object! {
     pub struct SwapChain: ISwapChain, ISwapChainExt {
@@ -47,6 +48,16 @@ impl ISwapChain for SwapChain {
 
     fn acquire_image(&self) -> Result<(), AcquireImageError> {
         todo!()
+    }
+}
+
+impl Drop for SwapChain {
+    fn drop(&mut self) {
+        // Release the surface as the swap chain no longer owns it
+        debug_assert!(self.surface.has_swap_chain.swap(false, Ordering::SeqCst));
+
+        // TODO: We will need to manually extend the lifetime of the SwapChain so we can perform the
+        //       above operation when we know that the swap chain is no longer in use
     }
 }
 

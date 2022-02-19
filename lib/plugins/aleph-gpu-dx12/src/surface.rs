@@ -40,11 +40,13 @@ use interfaces::gpu::{
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 ref_ptr_object! {
     pub struct Surface: ISurface, ISurfaceExt {
         pub(crate) factory: dxgi::Factory,
         pub(crate) handle: RawWindowHandle,
+        pub(crate) has_swap_chain: AtomicBool,
         pub(crate) context: RefPtr<Context>,
     }
 }
@@ -118,10 +120,17 @@ impl ISurface for Surface {
         device: WeakRefPtr<dyn IDevice>,
         config: &SwapChainConfiguration,
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
+        // Check if the surface is currently taken with an existing swap chain
+        // TODO: Set this to false when the swap chain
+        if self.has_swap_chain.swap(true, Ordering::SeqCst) {
+            return Err(SwapChainCreateError::SurfaceAlreadyOwned);
+        }
 
         match self.inner_create_swap_chain(device, config) {
             v @ Ok(_) => v,
             v @ Err(_) => {
+                // Release the surface if we failed to actually create the swap chain
+                debug_assert!(self.has_swap_chain.swap(false, Ordering::SeqCst));
                 v
             }
         }

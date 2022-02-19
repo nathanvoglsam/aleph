@@ -36,6 +36,7 @@ use interfaces::gpu::{
 use interfaces::platform::HasRawWindowHandle;
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ops::Deref;
+use std::sync::atomic::AtomicBool;
 
 ref_ptr_object! {
     pub struct Context: IContext, IContextExt {
@@ -125,6 +126,7 @@ impl IContext for Context {
             Surface {
                 factory: self.factory.clone(),
                 handle: window.raw_window_handle(),
+                has_swap_chain: AtomicBool::new(false),
                 context: self.as_ref_ptr(),
             }
         };
