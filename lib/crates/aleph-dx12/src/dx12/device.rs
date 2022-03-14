@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::depth_stencil_view_desc::DepthStencilViewDesc;
 use crate::{
     dxgi, CPUDescriptorHandle, CommandAllocator, CommandListType, CommandQueue, CommandQueueDesc,
     DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence, FenceFlags,
@@ -38,8 +39,9 @@ use utf16_lit::utf16_null;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_PIPELINE_STATE_STREAM_DESC,
-    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
+    ID3D12Device4, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEPTH_STENCIL_VIEW_DESC,
+    D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC,
+    D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter1;
 
@@ -205,6 +207,21 @@ impl Device {
         let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
         self.0
             .CreateRenderTargetView(&resource.0, p_desc as *const _, dest)
+    }
+
+    #[inline]
+    pub unsafe fn create_depth_stencil_view(
+        &self,
+        resource: &Resource,
+        dsv_desc: &DepthStencilViewDesc,
+        dest: CPUDescriptorHandle,
+    ) {
+        // UNSAFE as can't bounds check or synchronize CPUDescriptorHandle
+        let desc: D3D12_DEPTH_STENCIL_VIEW_DESC = dsv_desc.clone().into();
+        let p_desc = &desc as *const D3D12_DEPTH_STENCIL_VIEW_DESC;
+        let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
+        self.0
+            .CreateDepthStencilView(&resource.0, p_desc as *const _, dest)
     }
 }
 
