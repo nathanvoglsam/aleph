@@ -60,6 +60,10 @@ pub trait ISwapChain: 'static {
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
+    /// Force a resize of the swap chain. Will block until the swap chain is no longer in use before
+    /// performing the resize operation.
+    fn queue_resize(&self, width: u32, height: u32);
+
     /// Acquire an image from the swap chain for use with rendering
     fn acquire_image(&self) -> Result<RefPtr<dyn ISwapTexture>, AcquireImageError>;
 }
