@@ -129,6 +129,90 @@ pub enum TextureFormat {
     Depth24Stencil8,
 }
 
+impl TextureFormat {
+    /// Returns whether the format is a depth/stencil texture format
+    pub fn is_depth_stencil(&self) -> bool {
+        matches!(self, Self::Depth32Float | Self::Depth24Stencil8)
+    }
+
+    /// Returns whether the format is a float format
+    pub fn is_float(&self) -> bool {
+        matches!(
+            self,
+            Self::R16Float
+                | Self::R32Float
+                | Self::Rg16Float
+                | Self::Rg11b10Float
+                | Self::Rg32Float
+                | Self::Rgba16Float
+                | Self::Rgba32Float
+                | Self::Depth32Float
+        )
+    }
+
+    /// Returns whether the format is a signed-int format
+    pub fn is_sint(&self) -> bool {
+        matches!(
+            self,
+            Self::R8Sint
+                | Self::R16Sint
+                | Self::Rg8Sint
+                | Self::R32Sint
+                | Self::Rg16Sint
+                | Self::Rgba8Sint
+                | Self::Rg32Sint
+                | Self::Rgba16Sint
+                | Self::Rgba32Sint
+        )
+    }
+
+    /// Returns whether the format is an unsigned-int format
+    pub fn is_uint(&self) -> bool {
+        matches!(
+            self,
+            Self::R8Uint
+                | Self::R16Uint
+                | Self::Rg8Uint
+                | Self::R32Uint
+                | Self::Rg16Uint
+                | Self::Rgba8Uint
+                | Self::Rg32Uint
+                | Self::Rgba16Uint
+                | Self::Rgba32Uint
+        )
+    }
+
+    /// Returns whether the format is a signed-normalized-int format
+    pub fn is_snorm(&self) -> bool {
+        matches!(
+            self,
+            Self::R8Snorm
+                | Self::R16Snorm
+                | Self::Rg8Snorm
+                | Self::Rg16Snorm
+                | Self::Rgba8Snorm
+                | Self::Rgba16Snorm
+        )
+    }
+
+    /// Returns whether the format is an unsigned-normalized-int format
+    pub fn is_unorm(&self) -> bool {
+        matches!(
+            self,
+            Self::R8Unorm
+                | Self::R16Unorm
+                | Self::Rg8Unorm
+                | Self::Rg16Unorm
+                | Self::Rgba8Unorm
+                | Self::Rgba8UnormSrgb
+                | Self::Bgra8Unorm
+                | Self::Bgra8UnormSrgb
+                | Self::Rgb10a2Unorm
+                | Self::Rgba16Unorm
+        )
+    }
+}
+
 impl Display for TextureFormat {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
