@@ -1,11 +1,12 @@
 use crate::gpu::{
-    AcquireImageError, AdapterDescription, AdapterRequestOptions, ContextCreateError,
-    ContextOptions, QueueType, RequestDeviceError, SurfaceCreateError, SwapChainConfiguration,
-    SwapChainCreateError, TextureFormat,
+    AcquireImageError, AdapterDescription, AdapterRequestOptions, ClearColor, ContextCreateError,
+    ContextOptions, DepthStencilClear, DrawOptions, QueueType, RequestDeviceError, ShaderOptions,
+    ShaderType, SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureFormat,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
 use ref_ptr::{RefPtr, WeakRefPtr};
+use std::any::Any;
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
 /// some other use can request a handle to the [IContextProvider] instance and create the context.
@@ -20,7 +21,7 @@ pub trait IContextProvider: IAny + 'static {
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
-pub trait IContext: 'static {
+pub trait IContext: Any + 'static {
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>>;
@@ -33,7 +34,7 @@ pub trait IContext: 'static {
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: 'static {
+pub trait IAdapter: Any + 'static {
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&self) -> AdapterDescription;
 
@@ -48,7 +49,7 @@ pub trait IAdapter: 'static {
 /// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
-pub trait ISurface: 'static {
+pub trait ISurface: Any + 'static {
     fn create_swap_chain(
         &self,
         device: WeakRefPtr<dyn IDevice>,
@@ -56,7 +57,7 @@ pub trait ISurface: 'static {
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
 }
 
-pub trait ISwapChain: 'static {
+pub trait ISwapChain: Any + 'static {
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
@@ -65,40 +66,57 @@ pub trait ISwapChain: 'static {
     fn queue_resize(&self, width: u32, height: u32);
 
     /// Acquire an image from the swap chain for use with rendering
-    fn acquire_image(&self) -> Result<RefPtr<dyn ISwapTexture>, AcquireImageError>;
+    fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError>;
 }
 
-pub trait IDevice: Send + Sync + 'static {
+pub trait IDevice: Send + Sync + Any + 'static {
     fn garbage_collect(&self);
+
+    fn create_shader(&self, options: &ShaderOptions) -> Result<RefPtr<dyn IShader>, ()>;
 }
 
-pub trait IVertexInputLayout: Send + Sync + 'static {}
+pub trait IVertexInputLayout: Send + Sync + Any + 'static {}
 
-pub trait IBuffer: Send + Sync + 'static {}
+pub trait IBuffer: Send + Sync + Any + 'static {}
 
-pub trait ITexture: Send + Sync + 'static {
+pub trait ITexture: Send + Sync + Any + 'static {
     fn size(&self) -> (u32, u32);
     fn width(&self) -> u32;
     fn height(&self) -> u32;
     fn format(&self) -> TextureFormat;
 }
 
-pub trait ISwapTexture: ITexture + Send + Sync + 'static {}
+pub trait IShader: Send + Sync + Any + 'static {
+    fn shader_type(&self) -> ShaderType;
+    fn entry_point(&self) -> &str;
+}
 
-pub trait IShader: Send + Sync + 'static {}
+pub trait ISampler: Send + Sync + Any + 'static {}
 
-pub trait ISampler: Send + Sync + 'static {}
+pub trait IFramebufferLayout: Send + Sync + Any + 'static {}
 
-pub trait IFramebufferLayout: Send + Sync + 'static {}
+pub trait IFramebuffer: Send + Sync + Any + 'static {}
 
-pub trait IFramebuffer: Send + Sync + 'static {}
+pub trait IBindingLayout: Send + Sync + Any + 'static {}
 
-pub trait IBindingLayout: Send + Sync + 'static {}
+pub trait IBindingSet: Send + Sync + Any + 'static {}
 
-pub trait IBindingSet: Send + Sync + 'static {}
+pub trait IGraphicsPipeline: Send + Sync + Any + 'static {}
 
-pub trait IGraphicsPipeline: Send + Sync + 'static {}
+pub trait IComputePipeline: Send + Sync + Any + 'static {}
 
-pub trait IComputePipeline: Send + Sync + 'static {}
+pub trait ICommandPool: Send + Sync + Any + 'static {
+    fn begin(&self) -> Result<RefPtr<dyn IEncoder>, ()>;
+}
 
-pub trait ICommandList: Send + Sync + 'static {}
+pub trait IEncoder: Any + 'static {
+    fn clear_texture(&self, texture: WeakRefPtr<dyn ITexture>, clear_color: ClearColor);
+    fn clear_depth_stencil_texture(
+        &self,
+        texture: WeakRefPtr<dyn ITexture>,
+        values: DepthStencilClear,
+    );
+
+    fn draw(&self, options: &DrawOptions);
+    fn draw_indexed(&self, options: &DrawOptions);
+}

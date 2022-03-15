@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::gpu::ColorRGBA;
 use std::fmt::{Display, Formatter};
 use thiserror::Error;
 
@@ -349,4 +350,27 @@ pub enum AcquireImageError {
 
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
+}
+
+/// An enumeration of all possible input types to a texture clear operation
+#[derive(Clone, Debug)]
+pub enum ClearColor {
+    /// A full 4-channel f32 colour
+    Float(ColorRGBA),
+
+    /// An integer colour using 8-bits per channel
+    Int(u32),
+}
+
+/// An enumeration of all individual shader types
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ShaderType {
+    Compute,
+    Vertex,
+    Hull,
+    Domain,
+    Geometry,
+    Fragment,
+    Amplification,
+    Mesh,
 }

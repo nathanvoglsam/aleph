@@ -27,7 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::gpu::{AdapterPowerClass, ISurface, PresentationMode, QueueType, TextureFormat};
+use crate::gpu::{
+    AdapterPowerClass, ISurface, PresentationMode, QueueType, ShaderType, TextureFormat,
+};
 use ref_ptr::WeakRefPtr;
 
 /// Options provided when a context is created
@@ -108,4 +110,38 @@ pub struct SwapChainConfiguration {
     pub height: u32,
     pub present_mode: PresentationMode,
     pub preferred_queue: QueueType,
+}
+
+/// A floating point colour value
+#[derive(Copy, Clone, Debug)]
+pub struct ColorRGBA {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
+
+/// Set of options for clearing a depth-stencil buffer
+#[derive(Copy, Clone, Debug)]
+pub struct DepthStencilClear {
+    pub depth: Option<f32>,
+    pub stencil: Option<u8>,
+}
+
+/// Set of options for a draw call command
+#[derive(Copy, Clone, Debug)]
+pub struct DrawOptions {
+    pub vertex_count: u32,
+    pub instance_count: u32,
+    pub start_index_location: u32,
+    pub start_vertex_location: u32,
+    pub start_instance_location: u32,
+}
+
+/// Set of options for creating a new shader module
+#[derive(Copy, Clone, Debug)]
+pub struct ShaderOptions<'a> {
+    pub shader_type: ShaderType,
+    pub data: &'a [u8],
+    pub entry_point: &'a str,
 }
