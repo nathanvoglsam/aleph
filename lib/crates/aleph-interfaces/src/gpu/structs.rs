@@ -28,7 +28,8 @@
 //
 
 use crate::gpu::{
-    AdapterPowerClass, ISurface, PresentationMode, QueueType, ShaderType, TextureFormat,
+    AdapterPowerClass, CpuAccessMode, ISurface, PresentationMode, QueueType, ShaderType,
+    TextureFormat,
 };
 use ref_ptr::WeakRefPtr;
 
@@ -112,6 +113,18 @@ pub struct SwapChainConfiguration {
     pub preferred_queue: QueueType,
 }
 
+impl Default for SwapChainConfiguration {
+    fn default() -> Self {
+        Self {
+            format: TextureFormat::Bgra8UnormSrgb,
+            width: 0,
+            height: 0,
+            present_mode: PresentationMode::Fifo,
+            preferred_queue: QueueType::General,
+        }
+    }
+}
+
 /// A floating point colour value
 #[derive(Copy, Clone, Debug)]
 pub struct ColorRGBA {
@@ -122,14 +135,14 @@ pub struct ColorRGBA {
 }
 
 /// Set of options for clearing a depth-stencil buffer
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct DepthStencilClear {
     pub depth: Option<f32>,
     pub stencil: Option<u8>,
 }
 
 /// Set of options for a draw call command
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct DrawOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -144,4 +157,107 @@ pub struct ShaderOptions<'a> {
     pub shader_type: ShaderType,
     pub data: &'a [u8],
     pub entry_point: &'a str,
+}
+
+/// Description object used for creating a new buffer.
+#[derive(Copy, Clone, Debug)]
+pub struct BufferDesc {
+    /// The size of the buffer in bytes
+    pub size: u64,
+
+    /// What kind of CPU access is allowed.
+    /// - None -> device local
+    /// - Read -> read back
+    /// - Write -> upload
+    pub cpu_access: CpuAccessMode,
+
+    /// Enables the buffer to be used with unordered access (unordered access view, storage buffer)
+    pub allow_unordered_access: bool,
+
+    /// Enables the buffer to be used as a texel buffer
+    pub allow_texel_buffer: bool,
+
+    /// Enables the buffer to be used as a vertex buffer
+    pub is_vertex_buffer: bool,
+
+    /// Enables the buffer to be used as an index buffer
+    pub is_index_buffer: bool,
+
+    /// Enables the buffer to be used as a constant buffer
+    pub is_constant_buffer: bool,
+
+    /// Enables the buffer to be used as an argument buffer for indirect draw calls
+    pub is_indirect_draw_args: bool,
+
+    /// Enables the buffer to be used as input for ray tracing acceleration structure builds
+    pub is_accel_struct_build_input: bool,
+
+    /// Enables the buffer to store a constructed and ready to use rt acceleration structure
+    pub is_accel_struct_storage: bool,
+}
+
+impl Default for BufferDesc {
+    fn default() -> Self {
+        Self {
+            size: 0,
+            cpu_access: CpuAccessMode::None,
+            allow_unordered_access: false,
+            allow_texel_buffer: false,
+            is_vertex_buffer: false,
+            is_index_buffer: false,
+            is_constant_buffer: false,
+            is_indirect_draw_args: false,
+            is_accel_struct_build_input: false,
+            is_accel_struct_storage: false,
+        }
+    }
+}
+
+/// Description object used for creating a new texture.
+#[derive(Copy, Clone, Debug)]
+pub struct TextureDesc {
+    /// The width of the texture
+    pub width: u32,
+
+    /// The height of the texture
+    pub height: u32,
+
+    /// The depth of the texture
+    pub depth: u32,
+
+    /// The pixel format of the texture
+    pub format: TextureFormat,
+
+    /// Number of image array elements.
+    ///
+    /// A value of '1' means to create a regular, non-array texture
+    pub array_size: u32,
+
+    /// Number of mip levels.
+    pub mip_levels: u32,
+
+    /// Sample count, for MSAA texture
+    pub sample_count: u32,
+
+    /// Sample quality, for MSAA texture
+    pub sample_quality: u32,
+
+    /// Enables the texture to be used as a render target
+    pub is_render_target: bool,
+}
+
+impl Default for TextureDesc {
+    fn default() -> Self {
+        Self {
+            width: 1,
+            height: 1,
+            depth: 1,
+            format: TextureFormat::R8Unorm,
+            array_size: 1,
+            mip_levels: 1,
+            sample_count: 1,
+            sample_quality: 0,
+            is_render_target: false,
+        }
+    }
 }

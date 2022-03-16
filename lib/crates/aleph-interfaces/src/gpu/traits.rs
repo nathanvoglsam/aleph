@@ -1,7 +1,9 @@
 use crate::gpu::{
-    AcquireImageError, AdapterDescription, AdapterRequestOptions, ClearColor, ContextCreateError,
-    ContextOptions, DepthStencilClear, DrawOptions, QueueType, RequestDeviceError, ShaderOptions,
-    ShaderType, SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureFormat,
+    AcquireImageError, AdapterDescription, AdapterRequestOptions, BackendAPI, BufferCreateError,
+    BufferDesc, ClearColor, ContextCreateError, ContextOptions, DepthStencilClear, DrawOptions,
+    QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
+    SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
+    TextureDesc, TextureFormat,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -31,6 +33,9 @@ pub trait IContext: Any + 'static {
         &self,
         window: &dyn HasRawWindowHandle,
     ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError>;
+
+    /// Returns the API used by the underlying backend implementation.
+    fn get_backend_api(&self) -> BackendAPI;
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
@@ -65,6 +70,14 @@ pub trait ISwapChain: Any + 'static {
     /// performing the resize operation.
     fn queue_resize(&self, width: u32, height: u32);
 
+    /// Returns a [SwapChainConfiguration] that describes the state of the swap chain at the time
+    /// of the function being called.
+    ///
+    /// The state may change after this function is called. If a rebuild was needed internally in
+    /// [ISwapChain::acquire_image] then the size may be different once the
+    /// [ISwapChain::acquire_image] call returns.
+    fn get_config(&self) -> SwapChainConfiguration;
+
     /// Acquire an image from the swap chain for use with rendering
     fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError>;
 }
@@ -72,12 +85,27 @@ pub trait ISwapChain: Any + 'static {
 pub trait IDevice: Send + Sync + Any + 'static {
     fn garbage_collect(&self);
 
-    fn create_shader(&self, options: &ShaderOptions) -> Result<RefPtr<dyn IShader>, ()>;
+    fn create_shader(
+        &self,
+        options: &ShaderOptions,
+    ) -> Result<RefPtr<dyn IShader>, ShaderCreateError>;
+
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<RefPtr<dyn IBuffer>, BufferCreateError>;
+
+    fn create_texture(
+        &self,
+        desc: &TextureDesc,
+    ) -> Result<RefPtr<dyn ITexture>, TextureCreateError>;
+
+    /// Returns the API used by the underlying backend implementation.
+    fn get_backend_api(&self) -> BackendAPI;
 }
 
 pub trait IVertexInputLayout: Send + Sync + Any + 'static {}
 
-pub trait IBuffer: Send + Sync + Any + 'static {}
+pub trait IBuffer: Send + Sync + Any + 'static {
+    fn size(&self) -> u64;
+}
 
 pub trait ITexture: Send + Sync + Any + 'static {
     fn size(&self) -> (u32, u32);

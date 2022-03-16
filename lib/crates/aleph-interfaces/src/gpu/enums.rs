@@ -352,6 +352,38 @@ pub enum AcquireImageError {
     Platform(#[from] anyhow::Error),
 }
 
+#[derive(Error, Debug)]
+pub enum ShaderCreateError {
+    /// This error occurs when the byte size of the shader blob is of an invalid size.
+    ///
+    /// Invalid sizes include:
+    ///     - 0
+    ///     - Non multiples of 4 (on Vulkan)
+    ///
+    /// # Vulkan
+    ///
+    /// Vulkan consumes SPIR-V as the shader blob. SPIR-V is encoded as a sequence of `u32` values.
+    /// It is impossible for a valid SPIR-V binary to have a size that is not a multiple of 4 (the
+    /// size of a u32) for this reason.
+    #[error("The shader binary size '{0}' is invalid")]
+    InvalidInputSize(usize),
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum BufferCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum TextureCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
 /// An enumeration of all possible input types to a texture clear operation
 #[derive(Clone, Debug)]
 pub enum ClearColor {
@@ -373,4 +405,24 @@ pub enum ShaderType {
     Fragment,
     Amplification,
     Mesh,
+}
+
+/// Enumeration of all available backends
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum BackendAPI {
+    Vulkan,
+    D3D12,
+}
+
+/// Enumeration of all CPU access modes for resources
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum CpuAccessMode {
+    /// Resource can not be accessed by the CPU at all (device local)
+    None,
+
+    /// Resource can be read by the CPU (read back)
+    Read,
+
+    /// Resource can be written by the CPU (upload)
+    Write,
 }
