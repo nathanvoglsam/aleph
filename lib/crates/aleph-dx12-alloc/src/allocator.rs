@@ -32,10 +32,10 @@ use crate::pool::PoolInner;
 use crate::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
 use dx12::{ClearValue, ResourceDesc, ResourceStates};
 use std::ffi::c_void;
-use std::mem::{align_of, size_of, transmute};
+use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 use std::sync::Arc;
-use windows::Win32::Graphics::Direct3D12::D3D12_CLEAR_VALUE;
+use windows::Win32::Graphics::Direct3D12::{D3D12_CLEAR_VALUE, D3D12_RESOURCE_DESC};
 
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);
@@ -90,7 +90,6 @@ impl Allocator {
     ) -> dx12::Result<Allocation> {
         unsafe {
             let alloc_desc = alloc_desc.into();
-            let resource_desc = transmute(resource_desc.clone());
 
             let mut allocation = std::ptr::null_mut();
 
@@ -99,7 +98,7 @@ impl Allocator {
                 alloc_raw::D3D12MA_Allocator_CreateResource(
                     self.0 .0.as_ptr(),
                     &alloc_desc,
-                    &resource_desc,
+                    resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
                     initial_resource_state.into(),
                     &optimized_clear_value as *const D3D12_CLEAR_VALUE as *const _,
                     &mut allocation,
@@ -115,7 +114,7 @@ impl Allocator {
                 alloc_raw::D3D12MA_Allocator_CreateResource(
                     self.0 .0.as_ptr(),
                     &alloc_desc,
-                    &resource_desc,
+                    resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
                     initial_resource_state.into(),
                     std::ptr::null(),
                     &mut allocation,
