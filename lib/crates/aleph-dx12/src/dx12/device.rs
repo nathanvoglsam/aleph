@@ -29,20 +29,17 @@
 
 use crate::depth_stencil_view_desc::DepthStencilViewDesc;
 use crate::{
-    dxgi, CPUDescriptorHandle, CommandAllocator, CommandListType, CommandQueue, CommandQueueDesc,
-    DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence, FenceFlags,
-    GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, RenderTargetViewDesc,
-    Resource, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
+    dxgi, CPUDescriptorHandle, ClearValue, CommandAllocator, CommandListType, CommandQueue,
+    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence,
+    FenceFlags, GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, HeapFlags,
+    HeapProperties, RenderTargetViewDesc, Resource, ResourceDesc, ResourceStates, RootSignature,
+    RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
 use std::mem::{transmute, transmute_copy};
 use utf16_lit::utf16_null;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
-use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEPTH_STENCIL_VIEW_DESC,
-    D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC,
-    D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
-};
+use windows::Win32::Graphics::Direct3D12::{ID3D12Device4, D3D12_CLEAR_VALUE, D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES, D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RESOURCE_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE, ID3D12Resource};
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter1;
 
 pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
@@ -222,6 +219,33 @@ impl Device {
         let dest: D3D12_CPU_DESCRIPTOR_HANDLE = dest.into();
         self.0
             .CreateDepthStencilView(&resource.0, p_desc as *const _, dest)
+    }
+
+    #[inline]
+    pub unsafe fn create_committed_resource(
+        &self,
+        heap_properties: &HeapProperties,
+        heap_flags: HeapFlags,
+        resource_desc: &ResourceDesc,
+        initial_state: ResourceStates,
+        optimized_clear_value: Option<ClearValue>,
+    ) -> windows::core::Result<Resource> {
+        let optimized_clear_value = optimized_clear_value.map(D3D12_CLEAR_VALUE::from);
+        let optimized_clear_value_ref = match optimized_clear_value.as_ref() {
+            None => core::ptr::null(),
+            Some(v) => v as *const D3D12_CLEAR_VALUE,
+        };
+
+        let mut out = None;
+        let result: windows::core::Result<()> = self.0.CreateCommittedResource::<ID3D12Resource>(
+            heap_properties as *const _ as *const D3D12_HEAP_PROPERTIES,
+            heap_flags.0,
+            resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
+            initial_state.0,
+            optimized_clear_value_ref,
+            &mut out,
+        );
+        result.map(|_| Resource(out.unwrap_unchecked()))
     }
 }
 
