@@ -3,7 +3,7 @@ use crate::gpu::{
     BufferDesc, ClearColor, ContextCreateError, ContextOptions, DepthStencilClear, DrawOptions,
     QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
     SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
-    TextureDesc, TextureFormat,
+    TextureDesc,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -104,14 +104,11 @@ pub trait IDevice: Send + Sync + Any + 'static {
 pub trait IVertexInputLayout: Send + Sync + Any + 'static {}
 
 pub trait IBuffer: Send + Sync + Any + 'static {
-    fn size(&self) -> u64;
+    fn desc(&self) -> &BufferDesc;
 }
 
 pub trait ITexture: Send + Sync + Any + 'static {
-    fn size(&self) -> (u32, u32);
-    fn width(&self) -> u32;
-    fn height(&self) -> u32;
-    fn format(&self) -> TextureFormat;
+    fn desc(&self) -> &TextureDesc;
 }
 
 pub trait IShader: Send + Sync + Any + 'static {
@@ -134,7 +131,7 @@ pub trait IGraphicsPipeline: Send + Sync + Any + 'static {}
 pub trait IComputePipeline: Send + Sync + Any + 'static {}
 
 pub trait ICommandPool: Send + Sync + Any + 'static {
-    fn begin(&self) -> Result<RefPtr<dyn IEncoder>, ()>;
+    fn begin(&self) -> Result<Box<dyn IEncoder>, ()>;
 }
 
 pub trait IEncoder: Any + 'static {

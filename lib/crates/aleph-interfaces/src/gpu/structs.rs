@@ -28,9 +28,10 @@
 //
 
 use crate::gpu::{
-    AdapterPowerClass, CpuAccessMode, ISurface, PresentationMode, QueueType, ShaderType,
-    TextureFormat,
+    AdapterPowerClass, CpuAccessMode, ISurface, PresentationMode, QueueType, ShaderBinary,
+    ShaderType, TextureDimension, TextureFormat,
 };
+use bitflags::bitflags;
 use ref_ptr::WeakRefPtr;
 
 /// Options provided when a context is created
@@ -87,6 +88,7 @@ pub struct AdapterRequestOptions<'a> {
 }
 
 impl<'a> Default for AdapterRequestOptions<'a> {
+    #[inline]
     fn default() -> Self {
         Self {
             // We can't make a "default" surface so just default to no surface.
@@ -114,6 +116,7 @@ pub struct SwapChainConfiguration {
 }
 
 impl Default for SwapChainConfiguration {
+    #[inline]
     fn default() -> Self {
         Self {
             format: TextureFormat::Bgra8UnormSrgb,
@@ -126,7 +129,7 @@ impl Default for SwapChainConfiguration {
 }
 
 /// A floating point colour value
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ColorRGBA {
     pub r: f32,
     pub g: f32,
@@ -135,14 +138,14 @@ pub struct ColorRGBA {
 }
 
 /// Set of options for clearing a depth-stencil buffer
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct DepthStencilClear {
     pub depth: Option<f32>,
     pub stencil: Option<u8>,
 }
 
 /// Set of options for a draw call command
-#[derive(Copy, Clone, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct DrawOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -152,15 +155,15 @@ pub struct DrawOptions {
 }
 
 /// Set of options for creating a new shader module
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct ShaderOptions<'a> {
     pub shader_type: ShaderType,
-    pub data: &'a [u8],
+    pub data: ShaderBinary<'a>,
     pub entry_point: &'a str,
 }
 
 /// Description object used for creating a new buffer.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct BufferDesc {
     /// The size of the buffer in bytes
     pub size: u64,
@@ -197,6 +200,7 @@ pub struct BufferDesc {
 }
 
 impl Default for BufferDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             size: 0,
@@ -214,7 +218,7 @@ impl Default for BufferDesc {
 }
 
 /// Description object used for creating a new texture.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct TextureDesc {
     /// The width of the texture
     pub width: u32,
@@ -228,36 +232,130 @@ pub struct TextureDesc {
     /// The pixel format of the texture
     pub format: TextureFormat,
 
+    /// The dimensionality of the texture.
+    ///
+    /// Declares whether the texture should be a 1D, 2D, 3D or cube texture.
+    pub dimension: TextureDimension,
+
+    /// The initial resource state the texture will take
+    pub initial_state: ResourceStates,
+
     /// Number of image array elements.
     ///
-    /// A value of '1' means to create a regular, non-array texture
+    /// A value of '1' means to create a regular, non-array texture. Setting this to a value >1
+    /// declares the texture as a texture array.
     pub array_size: u32,
 
     /// Number of mip levels.
     pub mip_levels: u32,
 
-    /// Sample count, for MSAA texture
+    /// Sample count, for MSAA texture.
+    ///
+    /// A value of '1' means a regular, non MSAA texture. This value must always be a power of two.
+    /// Setting this to a value >1 declares the texture as an MSAA texture.
     pub sample_count: u32,
 
     /// Sample quality, for MSAA texture
     pub sample_quality: u32,
+
+    /// Enables the texture to be used with unordered access (unordered access view, storage
+    /// texture)
+    pub allow_unordered_access: bool,
+
+    /// Enables the texture to be used as a face for a cube map
+    pub allow_cube_face: bool,
 
     /// Enables the texture to be used as a render target
     pub is_render_target: bool,
 }
 
 impl Default for TextureDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             width: 1,
             height: 1,
             depth: 1,
             format: TextureFormat::R8Unorm,
+            dimension: TextureDimension::Texture2D,
+            initial_state: ResourceStates::UNKNOWN,
             array_size: 1,
             mip_levels: 1,
             sample_count: 1,
             sample_quality: 0,
+            allow_unordered_access: false,
+            allow_cube_face: false,
             is_render_target: false,
         }
+    }
+}
+
+bitflags! {
+    pub struct ResourceStates: u32 {
+        /// The state of the resource is unknown or undefined.
+        const UNKNOWN                   = 0;
+
+        /// General purpose state. Resources in this state can be used as anything.
+        ///
+        /// # Warning
+        ///
+        /// This has significant performance implications, especially for textures. Only use this
+        /// when absolutely necessary.
+        const COMMON                    = 0x00000001;
+
+        /// State allowing use as a constant/uniform buffer.
+        const CONSTANT_BUFFER           = 0x00000002;
+
+        /// State allowing use as a vertex buffer.
+        const VERTEX_BUFFER             = 0x00000004;
+
+        /// State allowing use as an index buffer.
+        const INDEX_BUFFER              = 0x00000008;
+
+        const INDIRECT_ARGUMENT         = 0x00000010;
+
+        const SHADER_RESOURCE           = 0x00000020;
+
+        const UNORDERED_ACCESS          = 0x00000040;
+
+        /// State allowing use as a render target.
+        const RENDER_TARGET             = 0x00000080;
+
+        const DEPTH_WRITE               = 0x00000100;
+
+        const DEPTH_READ                = 0x00000200;
+
+        const STREAM_OUT                = 0x00000400;
+
+        /// State allowing use as a copy destination.
+        const COPY_DEST                 = 0x00000800;
+
+        /// State allowing use as a copy source.
+        const COPY_SOURCE               = 0x00001000;
+
+        const RESOLVE_DEST              = 0x00002000;
+
+        const RESOLVE_SOURCE            = 0x00004000;
+
+        /// State allowing use as a presentation surface. A resource must be in this state on the
+        /// GPU timeline for a resource to be used to present from.
+        const PRESENT                   = 0x00008000;
+
+        const ACCEL_STRUCT_READ         = 0x00010000;
+
+        const ACCEL_STRUCT_WRITE        = 0x00020000;
+
+        const ACCEL_STRUCT_BUILD_INPUT  = 0x00040000;
+
+        const ACCEL_STRUCT_BUILD_BLAS   = 0x00080000;
+
+        const SHADING_RATE_SURFACE      = 0x00100000;
+    }
+}
+
+impl Default for ResourceStates {
+    #[inline]
+    fn default() -> Self {
+        ResourceStates::UNKNOWN
     }
 }

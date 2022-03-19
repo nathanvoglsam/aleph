@@ -368,6 +368,14 @@ pub enum ShaderCreateError {
     #[error("The shader binary size '{0}' is invalid")]
     InvalidInputSize(usize),
 
+    /// This error occurs when a shader binary is provided in a format not supported by the active
+    /// backend.
+    ///
+    /// The `Vulkan` backend can only accept SPIR-V shaders, while the `D3D12` backend can only
+    /// accept DXIL shaders.
+    #[error("The shader binary is of unsupported format")]
+    UnsupportedShaderFormat,
+
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
@@ -380,6 +388,24 @@ pub enum BufferCreateError {
 
 #[derive(Error, Debug)]
 pub enum TextureCreateError {
+    #[error("Requested texture width '{0}' is invalid")]
+    InvalidWidth(u32),
+
+    #[error("Requested texture height '{0}' is invalid")]
+    InvalidHeight(u32),
+
+    #[error("Requested texture depth '{0}' is invalid")]
+    InvalidDepth(u32),
+
+    #[error("Requested texture array size '{0}' is invalid")]
+    InvalidArraySize(u32),
+
+    #[error("Requested texture mip level count '{0}' is invalid")]
+    InvalidMipLevelCount(u32),
+
+    #[error("Requested sample count '{0}' is invalid")]
+    InvalidSampleCount(u32),
+
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
@@ -392,6 +418,12 @@ pub enum ClearColor {
 
     /// An integer colour using 8-bits per channel
     Int(u32),
+
+    /// A floating point value for clearing a depth texture
+    Depth(f32),
+
+    /// A floating point + u8 pair for clearing a depth stencil texture
+    DepthStencil(f32, u8),
 }
 
 /// An enumeration of all individual shader types
@@ -407,7 +439,17 @@ pub enum ShaderType {
     Mesh,
 }
 
-/// Enumeration of all available backends
+/// An enumeration of the supported set of shader input types.
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ShaderBinary<'a> {
+    /// This variant encloses a SPIR-V binary. Only supported by the `Vulkan` backend.
+    Spirv(&'a [u8]),
+
+    /// This variant encloses a DXIL binary. Only supported by the `D3D12` backend.
+    Dxil(&'a [u8]),
+}
+
+/// Enumeration of all available backends.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum BackendAPI {
     Vulkan,
@@ -425,4 +467,17 @@ pub enum CpuAccessMode {
 
     /// Resource can be written by the CPU (upload)
     Write,
+}
+
+/// Enumeration about all major texture types.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TextureDimension {
+    /// One dimensional texture. Logically similar to a 2D image with a height of 1
+    Texture1D,
+
+    /// A standard 2D texture.
+    Texture2D,
+
+    /// A 3D volume texture.
+    Texture3D,
 }

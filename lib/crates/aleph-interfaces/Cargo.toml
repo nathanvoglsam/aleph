@@ -53,6 +53,7 @@ raw-window-handle = "0.4"
 ultraviolet = {version = "0.8", features = ["f64"] }
 thiserror = "1"
 anyhow = "1"
+bitflags = "1"
 
 [dependencies.aleph-any]
 path = "../aleph-any"
