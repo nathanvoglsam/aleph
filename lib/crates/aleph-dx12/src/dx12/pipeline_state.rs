@@ -91,3 +91,10 @@ unsafe impl AsPipelineState for ComputePipelineState {
         &self.0
     }
 }
+
+unsafe impl AsPipelineState for () {
+    #[inline]
+    fn as_pipeline_state(&self) -> &ID3D12PipelineState {
+        unreachable!()
+    }
+}
