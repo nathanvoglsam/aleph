@@ -84,6 +84,7 @@ impl DescriptorHeapDescBuilder {
 }
 
 impl Default for DescriptorHeapDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

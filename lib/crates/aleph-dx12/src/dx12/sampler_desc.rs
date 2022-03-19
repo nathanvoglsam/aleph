@@ -108,6 +108,7 @@ impl SamplerDescBuilder {
 }
 
 impl Default for SamplerDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

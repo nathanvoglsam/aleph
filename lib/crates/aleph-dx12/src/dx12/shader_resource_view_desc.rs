@@ -98,6 +98,7 @@ pub enum ShaderResourceViewDesc {
 }
 
 impl From<ShaderResourceViewDesc> for D3D12_SHADER_RESOURCE_VIEW_DESC {
+    #[inline]
     fn from(v: ShaderResourceViewDesc) -> D3D12_SHADER_RESOURCE_VIEW_DESC {
         match v {
             ShaderResourceViewDesc::Buffer {

@@ -46,6 +46,7 @@ impl From<CpuPageProperty> for D3D12_CPU_PAGE_PROPERTY {
 }
 
 impl Default for CpuPageProperty {
+    #[inline]
     fn default() -> Self {
         CpuPageProperty::Unknown
     }

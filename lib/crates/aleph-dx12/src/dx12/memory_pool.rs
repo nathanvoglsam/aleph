@@ -45,6 +45,7 @@ impl From<MemoryPool> for D3D12_MEMORY_POOL {
 }
 
 impl Default for MemoryPool {
+    #[inline]
     fn default() -> Self {
         MemoryPool::Unknown
     }

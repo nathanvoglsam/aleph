@@ -126,6 +126,7 @@ impl StaticSamplerDescBuilder {
 }
 
 impl Default for StaticSamplerDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

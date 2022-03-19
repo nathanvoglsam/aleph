@@ -117,6 +117,7 @@ impl RasterizerDescBuilder {
 }
 
 impl Default for RasterizerDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -146,6 +147,7 @@ impl RasterizerDesc {
 }
 
 impl Default for RasterizerDesc {
+    #[inline]
     fn default() -> Self {
         Self {
             fill_mode: FillMode::Solid,

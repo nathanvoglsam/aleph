@@ -65,6 +65,7 @@ pub enum DepthStencilViewDesc {
 }
 
 impl From<DepthStencilViewDesc> for D3D12_DEPTH_STENCIL_VIEW_DESC {
+    #[inline]
     fn from(v: DepthStencilViewDesc) -> Self {
         match v {
             DepthStencilViewDesc::Texture1D { format, texture_1d } => {

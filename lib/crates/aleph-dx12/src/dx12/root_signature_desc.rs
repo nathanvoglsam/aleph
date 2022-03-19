@@ -111,6 +111,7 @@ impl<'a> RootSignatureDescBuilder<'a> {
 }
 
 impl<'a> Default for RootSignatureDescBuilder<'a> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -187,6 +188,7 @@ impl<'a> RootSignatureDesc1Builder<'a> {
 }
 
 impl<'a> Default for RootSignatureDesc1Builder<'a> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

@@ -85,6 +85,7 @@ impl TryFrom<D3D12_CPU_DESCRIPTOR_HANDLE> for CPUDescriptorHandle {
 }
 
 impl From<NonZeroUsize> for CPUDescriptorHandle {
+    #[inline]
     fn from(v: NonZeroUsize) -> Self {
         Self(v)
     }
@@ -93,6 +94,7 @@ impl From<NonZeroUsize> for CPUDescriptorHandle {
 impl TryFrom<usize> for CPUDescriptorHandle {
     type Error = ();
 
+    #[inline]
     fn try_from(value: usize) -> Result<Self, Self::Error> {
         let value = NonZeroUsize::new(value).ok_or(())?;
         Ok(Self(value))

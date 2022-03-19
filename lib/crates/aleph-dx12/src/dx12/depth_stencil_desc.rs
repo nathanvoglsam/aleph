@@ -96,6 +96,7 @@ impl DepthStencilDescBuilder {
 }
 
 impl Default for DepthStencilDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

@@ -46,6 +46,7 @@ impl From<HeapType> for D3D12_HEAP_TYPE {
 }
 
 impl Default for HeapType {
+    #[inline]
     fn default() -> Self {
         HeapType::Default
     }

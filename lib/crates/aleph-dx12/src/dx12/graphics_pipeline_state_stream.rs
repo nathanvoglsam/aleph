@@ -247,6 +247,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         self
     }
 
+    #[inline]
     pub fn build(self) -> GraphicsPipelineStateStream<'a> {
         // Build the render target format array
         let mut rt_formats = [DXGI_FORMAT::default(); 8];
@@ -372,6 +373,7 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
 }
 
 impl<'a> Default for GraphicsPipelineStateStreamBuilder<'a> {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

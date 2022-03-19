@@ -77,6 +77,7 @@ impl CommandQueueDescBuilder {
 }
 
 impl Default for CommandQueueDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

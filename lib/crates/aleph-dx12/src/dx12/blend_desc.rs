@@ -73,6 +73,7 @@ impl BlendDescBuilder {
 }
 
 impl Default for BlendDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

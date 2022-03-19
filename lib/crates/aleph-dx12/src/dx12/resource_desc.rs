@@ -108,6 +108,7 @@ impl ResourceDescBuilder {
 }
 
 impl Default for ResourceDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }

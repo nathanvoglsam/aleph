@@ -30,11 +30,8 @@
 use crate::{CpuPageProperty, HeapType, MemoryPool};
 use windows::Win32::Graphics::Direct3D12::D3D12_HEAP_PROPERTIES;
 
-// D3D12_CPU_PAGE_PROPERTY CPUPageProperty;
-// D3D12_MEMORY_POOL MemoryPoolPreference;
-
 #[repr(C)]
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Default, Hash)]
 pub struct HeapProperties {
     pub r#type: HeapType,
     pub cpu_page_property: CpuPageProperty,
@@ -44,6 +41,7 @@ pub struct HeapProperties {
 }
 
 impl From<HeapProperties> for D3D12_HEAP_PROPERTIES {
+    #[inline]
     fn from(v: HeapProperties) -> Self {
         Self {
             Type: v.r#type.into(),

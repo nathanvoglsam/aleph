@@ -74,6 +74,7 @@ pub enum RenderTargetViewDesc {
 }
 
 impl From<RenderTargetViewDesc> for D3D12_RENDER_TARGET_VIEW_DESC {
+    #[inline]
     fn from(v: RenderTargetViewDesc) -> Self {
         match v {
             RenderTargetViewDesc::Buffer { format, buffer } => D3D12_RENDER_TARGET_VIEW_DESC {

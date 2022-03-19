@@ -72,18 +72,21 @@ pub unsafe trait AsPipelineState {
 }
 
 unsafe impl AsPipelineState for PipelineState {
+    #[inline]
     fn as_pipeline_state(&self) -> &ID3D12PipelineState {
         &self.0
     }
 }
 
 unsafe impl AsPipelineState for GraphicsPipelineState {
+    #[inline]
     fn as_pipeline_state(&self) -> &ID3D12PipelineState {
         &self.0
     }
 }
 
 unsafe impl AsPipelineState for ComputePipelineState {
+    #[inline]
     fn as_pipeline_state(&self) -> &ID3D12PipelineState {
         &self.0
     }

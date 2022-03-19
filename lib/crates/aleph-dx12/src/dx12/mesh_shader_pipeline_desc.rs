@@ -69,6 +69,7 @@ pub struct MeshShaderPipelineStateDesc {
 }
 
 impl MeshShaderPipelineStateDesc {
+    #[inline]
     pub fn into_pipeline_state_stream(self) -> [u8; std::mem::size_of::<packed::Packed>()] {
         let packed = packed::Packed {
             root_signature: PackedPipelineStateStreamObject::new(

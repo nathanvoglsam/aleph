@@ -108,6 +108,7 @@ impl RenderTargetBlendDescBuilder {
 }
 
 impl Default for RenderTargetBlendDescBuilder {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
