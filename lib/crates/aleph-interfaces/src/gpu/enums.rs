@@ -131,6 +131,16 @@ pub enum TextureFormat {
 }
 
 impl TextureFormat {
+    /// Returns whether the format is a depth texture format
+    pub fn is_depth(&self) -> bool {
+        matches!(self, Self::Depth32Float)
+    }
+
+    /// Returns whether the format is a stencil texture format
+    pub fn is_stencil(&self) -> bool {
+        matches!(self, Self::Depth24Stencil8)
+    }
+
     /// Returns whether the format is a depth/stencil texture format
     pub fn is_depth_stencil(&self) -> bool {
         matches!(self, Self::Depth32Float | Self::Depth24Stencil8)
@@ -406,24 +416,38 @@ pub enum TextureCreateError {
     #[error("Requested sample count '{0}' is invalid")]
     InvalidSampleCount(u32),
 
+    #[error("Requested clear value '{0}' is invalid")]
+    InvalidClearValue(ClearValue),
+
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
 
 /// An enumeration of all possible input types to a texture clear operation
 #[derive(Clone, Debug)]
-pub enum ClearColor {
+pub enum ClearValue {
     /// A full 4-channel f32 colour
-    Float(ColorRGBA),
-
-    /// An integer colour using 8-bits per channel
-    Int(u32),
-
-    /// A floating point value for clearing a depth texture
-    Depth(f32),
+    Color(ColorRGBA),
 
     /// A floating point + u8 pair for clearing a depth stencil texture
     DepthStencil(f32, u8),
+}
+
+impl Display for ClearValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ClearValue::Color(color) => {
+                write!(
+                    f,
+                    "ClearValue::Color({}, {}, {}, {})",
+                    color.r, color.g, color.b, color.a
+                )
+            }
+            ClearValue::DepthStencil(depth, stencil) => {
+                write!(f, "ClearValue::DepthStencil({}, {})", depth, stencil)
+            }
+        }
+    }
 }
 
 /// An enumeration of all individual shader types

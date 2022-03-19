@@ -1,9 +1,8 @@
 use crate::gpu::{
     AcquireImageError, AdapterDescription, AdapterRequestOptions, BackendAPI, BufferCreateError,
-    BufferDesc, ClearColor, ContextCreateError, ContextOptions, DepthStencilClear, DrawOptions,
-    QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
-    SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
-    TextureDesc,
+    BufferDesc, ClearValue, ContextCreateError, ContextOptions, DrawOptions, QueueType,
+    RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError,
+    SwapChainConfiguration, SwapChainCreateError, TextureCreateError, TextureDesc,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -135,12 +134,8 @@ pub trait ICommandPool: Send + Sync + Any + 'static {
 }
 
 pub trait IEncoder: Any + 'static {
-    fn clear_texture(&self, texture: WeakRefPtr<dyn ITexture>, clear_color: ClearColor);
-    fn clear_depth_stencil_texture(
-        &self,
-        texture: WeakRefPtr<dyn ITexture>,
-        values: DepthStencilClear,
-    );
+    fn clear_texture(&self, texture: WeakRefPtr<dyn ITexture>, clear_color: ClearValue);
+    fn clear_depth_stencil_texture(&self, texture: WeakRefPtr<dyn ITexture>, values: ClearValue);
 
     fn draw(&self, options: &DrawOptions);
     fn draw_indexed(&self, options: &DrawOptions);

@@ -28,8 +28,8 @@
 //
 
 use crate::gpu::{
-    AdapterPowerClass, CpuAccessMode, ISurface, PresentationMode, QueueType, ShaderBinary,
-    ShaderType, TextureDimension, TextureFormat,
+    AdapterPowerClass, ClearValue, CpuAccessMode, ISurface, PresentationMode, QueueType,
+    ShaderBinary, ShaderType, TextureDimension, TextureFormat,
 };
 use bitflags::bitflags;
 use ref_ptr::WeakRefPtr;
@@ -137,13 +137,6 @@ pub struct ColorRGBA {
     pub a: f32,
 }
 
-/// Set of options for clearing a depth-stencil buffer
-#[derive(Clone, Debug, Default)]
-pub struct DepthStencilClear {
-    pub depth: Option<f32>,
-    pub stencil: Option<u8>,
-}
-
 /// Set of options for a draw call command
 #[derive(Clone, Debug, Default)]
 pub struct DrawOptions {
@@ -240,6 +233,9 @@ pub struct TextureDesc {
     /// The initial resource state the texture will take
     pub initial_state: ResourceStates,
 
+    /// An optional clear value that will be 'optimal' for the underlying implementation.
+    pub clear_value: Option<ClearValue>,
+
     /// Number of image array elements.
     ///
     /// A value of '1' means to create a regular, non-array texture. Setting this to a value >1
@@ -279,6 +275,7 @@ impl Default for TextureDesc {
             format: TextureFormat::R8Unorm,
             dimension: TextureDimension::Texture2D,
             initial_state: ResourceStates::UNKNOWN,
+            clear_value: None,
             array_size: 1,
             mip_levels: 1,
             sample_count: 1,
