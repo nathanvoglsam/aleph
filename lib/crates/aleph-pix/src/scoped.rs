@@ -57,76 +57,82 @@ impl Drop for ScopedEvent {
 }
 
 pub trait RecordScopedEvent {
-    fn scoped_event(&mut self, colour: crate::Colour, text: &str, f: impl FnOnce(&mut Self));
+    /// # Safety
+    /// Access to the the command lists and command queues through these functions are not
+    /// synchronized. It is the caller's job to uphold concurrent access requirements
+    unsafe fn scoped_event(&self, colour: crate::Colour, text: &str, f: impl FnOnce(&Self));
 
-    fn scoped_event_cstr(
-        &mut self,
+    /// # Safety
+    /// Access to the the command lists and command queues through these functions are not
+    /// synchronized. It is the caller's job to uphold concurrent access requirements
+    unsafe fn scoped_event_cstr(
+        &self,
         colour: crate::Colour,
         text: &std::ffi::CStr,
-        f: impl FnOnce(&mut Self),
+        f: impl FnOnce(&Self),
     );
 }
 
 impl RecordScopedEvent for CommandQueue {
-    fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
-        unsafe { for_queue(self, colour, text, f) }
+    unsafe fn scoped_event(&self, colour: Colour, text: &str, f: impl FnOnce(&Self)) {
+        for_queue(self, colour, text, f)
     }
 
-    fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
-        unsafe { for_queue_cstr(self, colour, text, f) }
+    unsafe fn scoped_event_cstr(&self, colour: Colour, text: &CStr, f: impl FnOnce(&Self)) {
+        for_queue_cstr(self, colour, text, f)
     }
 }
 
 impl RecordScopedEvent for GraphicsCommandList {
-    fn scoped_event(&mut self, colour: Colour, text: &str, f: impl FnOnce(&mut Self)) {
-        unsafe { for_list(self, colour, text, f) }
+    unsafe fn scoped_event(&self, colour: Colour, text: &str, f: impl FnOnce(&Self)) {
+        for_list(self, colour, text, f)
     }
 
-    fn scoped_event_cstr(&mut self, colour: Colour, text: &CStr, f: impl FnOnce(&mut Self)) {
-        unsafe { for_list_cstr(self, colour, text, f) }
+    unsafe fn scoped_event_cstr(&self, colour: Colour, text: &CStr, f: impl FnOnce(&Self)) {
+        for_list_cstr(self, colour, text, f)
     }
 }
 
 pub unsafe fn for_queue(
-    queue: &mut CommandQueue,
+    queue: &CommandQueue,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&mut CommandQueue),
+    f: impl FnOnce(&CommandQueue),
 ) {
-    begin_event_on_queue(queue.as_raw_mut(), colour, text);
+    begin_event_on_queue(queue.as_raw(), colour, text);
     f(queue);
-    end_event_on_queue(queue.as_raw_mut());
+    end_event_on_queue(queue.as_raw());
 }
 
 pub unsafe fn for_queue_cstr(
-    queue: &mut CommandQueue,
+    queue: &CommandQueue,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&mut CommandQueue),
+    f: impl FnOnce(&CommandQueue),
 ) {
-    begin_event_cstr_on_queue(queue.as_raw_mut(), colour, text);
+    begin_event_cstr_on_queue(queue.as_raw(), colour, text);
     f(queue);
-    end_event_on_queue(queue.as_raw_mut());
+    end_event_on_queue(queue.as_raw());
 }
 
 pub unsafe fn for_list(
-    list: &mut GraphicsCommandList,
+    list: &GraphicsCommandList,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&mut GraphicsCommandList),
+    f: impl FnOnce(&GraphicsCommandList),
 ) {
-    begin_event_on_list(list.as_raw_mut(), colour, text);
+    begin_event_on_list(list.as_raw(), colour, text);
     f(list);
-    end_event_on_list(list.as_raw_mut());
+    end_event_on_list(list.as_raw());
 }
 
 pub unsafe fn for_list_cstr(
-    list: &mut GraphicsCommandList,
+    list: &GraphicsCommandList,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&mut GraphicsCommandList),
+    f: impl FnOnce(&GraphicsCommandList),
 ) {
-    begin_event_cstr_on_list(list.as_raw_mut(), colour, text);
+    begin_event_cstr_on_list(list.as_raw(), colour, text);
     f(list);
-    end_event_on_list(list.as_raw_mut());
+    end_event_on_list(list.as_raw());
 }
