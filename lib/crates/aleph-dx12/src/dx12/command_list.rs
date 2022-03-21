@@ -51,7 +51,7 @@ pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
 impl GraphicsCommandList {
     #[inline]
     pub unsafe fn reset<'a, T: AsPipelineState + 'a, I: Into<Option<&'a T>>>(
-        &mut self,
+        &self,
         allocator: &CommandAllocator,
         initial_state: I,
     ) -> windows::core::Result<()> {
@@ -63,14 +63,14 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::ClearState`
     #[inline]
-    pub unsafe fn clear_state<T: Into<PipelineState> + Clone>(&mut self, pipeline_state: &T) {
+    pub unsafe fn clear_state<T: Into<PipelineState> + Clone>(&self, pipeline_state: &T) {
         self.0.ClearState(&pipeline_state.clone().into().0)
     }
 
     /// `ID3D12GraphicsCommandList::DrawInstanced`
     #[inline]
     pub unsafe fn draw_instanced(
-        &mut self,
+        &self,
         vertex_count_per_instance: u32,
         instance_count: u32,
         start_vertex_location: u32,
@@ -87,7 +87,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::DrawIndexedInstanced`
     #[inline]
     pub unsafe fn draw_indexed_instanced(
-        &mut self,
+        &self,
         index_count_per_instance: u32,
         instance_count: u32,
         start_index_location: u32,
@@ -106,7 +106,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::Dispatch`
     #[inline]
     pub unsafe fn dispatch(
-        &mut self,
+        &self,
         thread_group_count_x: u32,
         thread_group_count_y: u32,
         thread_group_count_z: u32,
@@ -121,7 +121,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::CopyBufferRegion`
     #[inline]
     pub unsafe fn copy_buffer_region(
-        &mut self,
+        &self,
         dst_buffer: &Resource,
         dst_offset: u64,
         src_buffer: &Resource,
@@ -140,7 +140,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::CopyTextureRegion`
     #[inline]
     pub unsafe fn copy_texture_region(
-        &mut self,
+        &self,
         dst: &TextureCopyLocation,
         dst_x: u32,
         dst_y: u32,
@@ -165,14 +165,14 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::CopyResource`
     #[inline]
-    pub unsafe fn copy_resource(&mut self, dst_resource: &Resource, src_resource: &Resource) {
+    pub unsafe fn copy_resource(&self, dst_resource: &Resource, src_resource: &Resource) {
         self.0.CopyResource(&dst_resource.0, &src_resource.0)
     }
 
     /// `ID3D12GraphicsCommandList::CopyTiles`
     #[inline]
     pub unsafe fn copy_tiles(
-        &mut self,
+        &self,
         tiled_resource: &Resource,
         tile_region_start_coordinate: &TiledResourceCoordinate,
         tile_region_size: &TileRegionSize,
@@ -202,7 +202,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ResolveSubresource`
     #[inline]
     pub unsafe fn resolve_subresource(
-        &mut self,
+        &self,
         dst_resource: &Resource,
         dst_subresource: u32,
         src_resource: &Resource,
@@ -220,13 +220,13 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::IASetPrimitiveTopology`
     #[inline]
-    pub unsafe fn ia_set_primitive_topology(&mut self, primitive_topology: PrimitiveTopology) {
+    pub unsafe fn ia_set_primitive_topology(&self, primitive_topology: PrimitiveTopology) {
         self.0.IASetPrimitiveTopology(primitive_topology.into())
     }
 
     /// `ID3D12GraphicsCommandList::RSSetViewports`
     #[inline]
-    pub unsafe fn rs_set_viewports(&mut self, viewports: &[Viewport]) {
+    pub unsafe fn rs_set_viewports(&self, viewports: &[Viewport]) {
         let num_viewports = viewports.len() as u32;
         let p_viewports = viewports.as_ptr();
         self.0
@@ -235,7 +235,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::RSSetScissorRects`
     #[inline]
-    pub unsafe fn rs_set_scissor_rects(&mut self, rects: &[Rect]) {
+    pub unsafe fn rs_set_scissor_rects(&self, rects: &[Rect]) {
         let num_rects = rects.len() as u32;
         let p_rects = rects.as_ptr();
         self.0.RSSetScissorRects(num_rects, p_rects as *const _)
@@ -243,7 +243,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::OMSetBlendFactor`
     #[inline]
-    pub unsafe fn om_set_blend_factor(&mut self, blend_factor: Option<&[f32]>) {
+    pub unsafe fn om_set_blend_factor(&self, blend_factor: Option<&[f32]>) {
         let (num_factors, blend_factor) = optional_slice_to_num_ptr_pair(blend_factor);
 
         assert_eq!(num_factors, 4);
@@ -253,16 +253,13 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::OMSetStencilRef`
     #[inline]
-    pub unsafe fn om_set_stencil_ref(&mut self, stencil_ref: u32) {
+    pub unsafe fn om_set_stencil_ref(&self, stencil_ref: u32) {
         self.0.OMSetStencilRef(stencil_ref)
     }
 
     /// `ID3D12GraphicsCommandList::SetPipelineState`
     #[inline]
-    pub unsafe fn set_pipeline_state<T: Into<PipelineState> + Clone>(
-        &mut self,
-        pipeline_state: &T,
-    ) {
+    pub unsafe fn set_pipeline_state<T: Into<PipelineState> + Clone>(&self, pipeline_state: &T) {
         self.0.SetPipelineState(&pipeline_state.clone().into().0)
     }
 
@@ -271,7 +268,7 @@ impl GraphicsCommandList {
     /// Version of `resource_barrier` that can only take a number of barriers known at
     /// compile time, but skips a heap allocation.
     #[inline]
-    pub unsafe fn resource_barrier<const NUM: usize>(&mut self, barriers: &[ResourceBarrier; NUM]) {
+    pub unsafe fn resource_barrier<const NUM: usize>(&self, barriers: &[ResourceBarrier; NUM]) {
         const VAL: MaybeUninit<D3D12_RESOURCE_BARRIER> = MaybeUninit::uninit();
         let mut list: [MaybeUninit<D3D12_RESOURCE_BARRIER>; NUM] = [VAL; NUM];
 
@@ -295,7 +292,7 @@ impl GraphicsCommandList {
     /// Prefer `Self::resource_barrier` over this whenever possible
     #[inline]
     pub unsafe fn resource_barrier_dynamic<T: Borrow<ResourceBarrier>, I: Iterator<Item = T>>(
-        &mut self,
+        &self,
         barriers: I,
     ) {
         // Need to heap alloc to translate the type to something FFI compatible. Can't make the
@@ -309,13 +306,13 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::ExecuteBundle`
     #[inline]
-    pub unsafe fn execute_bundle(&mut self, command_list: &GraphicsCommandList) {
+    pub unsafe fn execute_bundle(&self, command_list: &GraphicsCommandList) {
         self.0.ExecuteBundle(command_list.as_raw())
     }
 
     /// `ID3D12GraphicsCommandList::SetDescriptorHeaps`
     #[inline]
-    pub unsafe fn set_descriptor_heaps(&mut self, descriptor_heaps: &[DescriptorHeap]) {
+    pub unsafe fn set_descriptor_heaps(&self, descriptor_heaps: &[DescriptorHeap]) {
         // Do some validation on the input, should be pretty low overhead
         assert!(descriptor_heaps.len() <= 2);
         if descriptor_heaps.len() == 2 {
@@ -347,20 +344,20 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::SetComputeRootSignature`
     #[inline]
-    pub unsafe fn set_compute_root_signature(&mut self, root_signature: &RootSignature) {
+    pub unsafe fn set_compute_root_signature(&self, root_signature: &RootSignature) {
         self.0.SetComputeRootSignature(&root_signature.0)
     }
 
     /// `ID3D12GraphicsCommandList::SetGraphicsRootSignature`
     #[inline]
-    pub unsafe fn set_graphics_root_signature(&mut self, root_signature: &RootSignature) {
+    pub unsafe fn set_graphics_root_signature(&self, root_signature: &RootSignature) {
         self.0.SetGraphicsRootSignature(&root_signature.0)
     }
 
     /// `ID3D12GraphicsCommandList::SetComputeRootDescriptorTable`
     #[inline]
     pub unsafe fn set_compute_root_descriptor_table(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         base_descriptor: GPUDescriptorHandle,
     ) {
@@ -372,7 +369,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRootDescriptorTable`
     #[inline]
     pub unsafe fn set_graphics_root_descriptor_table(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         base_descriptor: GPUDescriptorHandle,
     ) {
@@ -384,7 +381,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetComputeRoot32BitConstant`
     #[inline]
     pub unsafe fn set_compute_root_32bit_constant(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         value: u32,
         dest_offset_in_32bit_values: u32,
@@ -396,7 +393,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRoot32BitConstant`
     #[inline]
     pub unsafe fn set_graphics_root_32bit_constant(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         value: u32,
         dest_offset_in_32bit_values: u32,
@@ -411,7 +408,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetComputeRoot32BitConstants`
     #[inline]
     pub unsafe fn set_compute_root_32bit_constants(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         values: &[u32],
         dest_offset_in_32bit_values: u32,
@@ -429,7 +426,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRoot32BitConstants`
     #[inline]
     pub unsafe fn set_graphics_root_32bit_constants(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         values: &[u32],
         dest_offset_in_32bit_values: u32,
@@ -447,7 +444,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetComputeRootConstantBufferView`
     #[inline]
     pub unsafe fn set_compute_root_constant_buffer_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -460,7 +457,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRootConstantBufferView`
     #[inline]
     pub unsafe fn set_graphics_root_constant_buffer_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -473,7 +470,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetComputeRootShaderResourceView`
     #[inline]
     pub unsafe fn set_compute_root_shader_resource_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -486,7 +483,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRootShaderResourceView`
     #[inline]
     pub unsafe fn set_graphics_root_shader_resource_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -499,7 +496,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetComputeRootUnorderedAccessView`
     #[inline]
     pub unsafe fn set_compute_root_unordered_access_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -512,7 +509,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetGraphicsRootUnorderedAccessView`
     #[inline]
     pub unsafe fn set_graphics_root_unordered_access_view(
-        &mut self,
+        &self,
         root_parameter_index: u32,
         buffer_location: GPUDescriptorHandle,
     ) {
@@ -524,7 +521,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::IASetIndexBuffer`
     #[inline]
-    pub unsafe fn ia_set_index_buffer(&mut self, view: &IndexBufferView) {
+    pub unsafe fn ia_set_index_buffer(&self, view: &IndexBufferView) {
         assert_eq!(
             size_of::<IndexBufferView>(),
             size_of::<D3D12_INDEX_BUFFER_VIEW>()
@@ -539,7 +536,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::IASetVertexBuffers`
     #[inline]
-    pub unsafe fn ia_set_vertex_buffers(&mut self, start_slot: u32, views: &[VertexBufferView]) {
+    pub unsafe fn ia_set_vertex_buffers(&self, start_slot: u32, views: &[VertexBufferView]) {
         assert_eq!(
             size_of::<VertexBufferView>(),
             size_of::<D3D12_VERTEX_BUFFER_VIEW>()
@@ -556,7 +553,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::SOSetTargets`
     #[inline]
-    pub unsafe fn so_set_targets(&mut self, start_slot: u32, views: &[StreamOutputBufferView]) {
+    pub unsafe fn so_set_targets(&self, start_slot: u32, views: &[StreamOutputBufferView]) {
         assert_eq!(
             size_of::<StreamOutputBufferView>(),
             size_of::<D3D12_STREAM_OUTPUT_BUFFER_VIEW>()
@@ -588,7 +585,7 @@ impl GraphicsCommandList {
     /// See official Direct3D12 docs to explain this function's behavior
     #[inline]
     pub unsafe fn om_set_render_targets(
-        &mut self,
+        &self,
         render_target_descriptors: Option<&[CPUDescriptorHandle]>,
         depth_stencil_descriptor: Option<CPUDescriptorHandle>,
     ) {
@@ -615,7 +612,7 @@ impl GraphicsCommandList {
     /// See official Direct3D12 docs to explain this function's behavior
     #[inline]
     pub unsafe fn om_set_render_target_range(
-        &mut self,
+        &self,
         num_render_target_descriptors: u32,
         render_target_descriptor_base: Option<CPUDescriptorHandle>,
         depth_stencil_descriptor: Option<CPUDescriptorHandle>,
@@ -652,7 +649,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ClearDepthStencilView`
     #[inline]
     pub unsafe fn clear_depth_stencil_view(
-        &mut self,
+        &self,
         depth_stencil_view: CPUDescriptorHandle,
         clear_flags: ClearFlags,
         depth: f32,
@@ -675,7 +672,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ClearRenderTargetView`
     #[inline]
     pub unsafe fn clear_render_target_view(
-        &mut self,
+        &self,
         render_target_view: CPUDescriptorHandle,
         color_rgba: &[f32],
         rects: Option<&[Rect]>,
@@ -696,7 +693,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ClearUnorderedAccessViewUint`
     #[inline]
     pub unsafe fn clear_unordered_access_view_uint(
-        &mut self,
+        &self,
         view_gpu_handle_in_current_heap: GPUDescriptorHandle,
         view_cpu_handle: CPUDescriptorHandle,
         resource: &Resource,
@@ -723,7 +720,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ClearUnorderedAccessViewFloat`
     #[inline]
     pub unsafe fn clear_unordered_access_view_float(
-        &mut self,
+        &self,
         view_gpu_handle_in_current_heap: GPUDescriptorHandle,
         view_cpu_handle: CPUDescriptorHandle,
         resource: &Resource,
@@ -749,7 +746,7 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::DiscardResource`
     #[inline]
-    pub unsafe fn discard_resource(&mut self, resource: &Resource, region: Option<&DiscardRegion>) {
+    pub unsafe fn discard_resource(&self, resource: &Resource, region: Option<&DiscardRegion>) {
         if let Some(region) = region {
             let region = region.clone().into();
             self.0.DiscardResource(&resource.0, &region)
@@ -760,25 +757,20 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::BeginQuery`
     #[inline]
-    pub unsafe fn begin_query(
-        &mut self,
-        query_heap: &QueryHeap,
-        query_type: QueryType,
-        index: u32,
-    ) {
+    pub unsafe fn begin_query(&self, query_heap: &QueryHeap, query_type: QueryType, index: u32) {
         self.0.BeginQuery(&query_heap.0, query_type.into(), index)
     }
 
     /// `ID3D12GraphicsCommandList::EndQuery`
     #[inline]
-    pub unsafe fn end_query(&mut self, query_heap: &QueryHeap, query_type: QueryType, index: u32) {
+    pub unsafe fn end_query(&self, query_heap: &QueryHeap, query_type: QueryType, index: u32) {
         self.0.EndQuery(&query_heap.0, query_type.into(), index)
     }
 
     /// `ID3D12GraphicsCommandList::ResolveQueryData`
     #[inline]
     pub unsafe fn resolve_query_data(
-        &mut self,
+        &self,
         query_heap: &QueryHeap,
         query_type: QueryType,
         start_index: u32,
@@ -804,7 +796,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::SetPredication`
     #[inline]
     pub unsafe fn set_predication(
-        &mut self,
+        &self,
         buffer: &Resource,
         aligned_buffer_offset: u64,
         operation: PredicationOp,
@@ -816,7 +808,7 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::ExecuteIndirect`
     #[inline]
     pub unsafe fn execute_indirect(
-        &mut self,
+        &self,
         command_signature: Option<&CommandSignature>,
         max_command_count: u32,
         argument_buffer: &Resource,
@@ -847,19 +839,19 @@ impl GraphicsCommandList {
 
     /// `ID3D12GraphicsCommandList::Close`
     #[inline]
-    pub unsafe fn close(&mut self) -> windows::core::Result<()> {
+    pub unsafe fn close(&self) -> windows::core::Result<()> {
         self.0.Close()
     }
 
     /// `ID3D12GraphicsCommandList::GetType`
     #[inline]
-    pub fn get_type(&self) -> CommandListType {
-        unsafe { CommandListType::from_raw(self.0.GetType()).unwrap() }
+    pub unsafe fn get_type(&self) -> CommandListType {
+        CommandListType::from_raw(self.0.GetType()).unwrap()
     }
 }
 
 crate::as_weak_ref_impl!(GraphicsCommandList);
 crate::object_impl!(GraphicsCommandList);
 crate::device_child_impl!(GraphicsCommandList);
-crate::owned_object!(GraphicsCommandList);
+crate::shared_object!(GraphicsCommandList);
 windows::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);

@@ -41,5 +41,5 @@ impl CommandAllocator {
 
 crate::object_impl!(CommandAllocator);
 crate::device_child_impl!(CommandAllocator);
-crate::owned_object!(CommandAllocator);
+crate::shared_object!(CommandAllocator);
 windows::deref_impl!(CommandAllocator, ID3D12CommandAllocator);

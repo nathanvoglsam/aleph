@@ -36,12 +36,21 @@ pub struct CommandQueue(pub(crate) ID3D12CommandQueue);
 
 impl CommandQueue {
     #[inline]
-    pub unsafe fn signal(&mut self, fence: &Fence, value: u64) -> windows::core::Result<()> {
+    pub unsafe fn signal(&self, fence: &Fence, value: u64) -> windows::core::Result<()> {
         self.0.Signal(&fence.0, value)
     }
 
     #[inline]
-    pub unsafe fn execute_command_lists(&mut self, command_lists: &[WeakRef<GraphicsCommandList>]) {
+    pub unsafe fn execute_command_lists(&self, command_lists: &[WeakRef<GraphicsCommandList>]) {
+        // The actual call to ExecuteCommandLists
+        self.0.ExecuteCommandLists(
+            command_lists.len() as u32,
+            command_lists.as_ptr() as *const _,
+        );
+    }
+
+    #[inline]
+    pub unsafe fn execute_command_lists_strong(&self, command_lists: &[GraphicsCommandList]) {
         // The actual call to ExecuteCommandLists
         self.0.ExecuteCommandLists(
             command_lists.len() as u32,
