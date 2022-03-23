@@ -31,9 +31,11 @@ use crate::general_command_list::GeneralCommandList;
 use crate::texture::Texture;
 use interfaces::gpu::{
     ClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder, IGeneralEncoder, ITexture,
+    TextureSubresourceSet,
 };
 use interfaces::ref_ptr::WeakRefPtr;
 use std::marker::PhantomData;
+use crate::internal::conv::decode_u32_color_to_float;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
@@ -48,31 +50,28 @@ impl<'a> Drop for Encoder<'a> {
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
-    fn clear_texture(&mut self, texture: WeakRefPtr<dyn ITexture>, value: ClearValue) {
-        let _texture = texture.query_interface::<Texture>().unwrap();
-        match value {
-            ClearValue::Color(v) => unsafe {
-                let buffer = [v.r, v.g, v.b, v.a];
-                self.list.clear_render_target_view(todo!(), &buffer, None);
-            },
-            ClearValue::DepthStencil(_, _) => {}
-        }
-    }
-
-    fn clear_depth_stencil_texture(
+    fn clear_texture(
         &mut self,
         texture: WeakRefPtr<dyn ITexture>,
-        value: ClearValue,
+        _subresources: &TextureSubresourceSet,
+        value: &ClearValue,
     ) {
         let _texture = texture.query_interface::<Texture>().unwrap();
         match value {
-            ClearValue::Color(_) => {}
+            ClearValue::ColorF32(v) => unsafe {
+                let buffer = [v.r, v.g, v.b, v.a];
+                self.list.clear_render_target_view(todo!(), &buffer, None);
+            },
+            ClearValue::ColorInt(v) => unsafe {
+                let buffer = decode_u32_color_to_float(*v);
+                self.list.clear_render_target_view(todo!(), &buffer, None);
+            },
             ClearValue::DepthStencil(depth, stencil) => unsafe {
                 self.list.clear_depth_stencil_view(
                     todo!(),
                     dx12::ClearFlags::all(),
-                    depth,
-                    stencil,
+                    *depth,
+                    *stencil,
                     None,
                 );
             },

@@ -226,11 +226,21 @@ pub fn texture_create_clear_value_to_dx12(
     let clear = if let Some(clear) = &desc.clear_value {
         let clear = clear.clone();
         match clear.clone() {
-            ClearValue::Color(color) => {
+            ClearValue::ColorF32(color) => {
                 if !desc.format.is_depth_stencil() {
                     Some(dx12::ClearValue::Color {
                         format,
                         color: [color.r, color.g, color.b, color.a],
+                    })
+                } else {
+                    return Err(TextureCreateError::InvalidClearValue(clear));
+                }
+            }
+            ClearValue::ColorInt(v) => {
+                if !desc.format.is_depth_stencil() {
+                    Some(dx12::ClearValue::Color {
+                        format,
+                        color: decode_u32_color_to_float(v)
                     })
                 } else {
                     return Err(TextureCreateError::InvalidClearValue(clear));
@@ -252,4 +262,13 @@ pub fn texture_create_clear_value_to_dx12(
     };
 
     Ok(clear)
+}
+
+#[allow(clippy::erasing_op, clippy::identity_op)]
+pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
+    let a = ((v >> (8 * 0)) & 0xFF) as f32 / 255.0;
+    let b = ((v >> (8 * 1)) & 0xFF) as f32 / 255.0;
+    let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
+    let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
+    [r, g, b, a]
 }
