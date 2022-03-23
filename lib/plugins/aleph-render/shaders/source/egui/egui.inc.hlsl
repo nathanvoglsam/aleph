@@ -33,15 +33,15 @@
  * Standard Egui fragment payload for passing interpolated colour and UV to frag shader
  */
 struct EguiPixelInput {
-    float4 Color : COLOR0;
-    float2 UV    : TEXCOORD0;
+    [[vk::location(0)]] float4 Color : A0;
+    [[vk::location(1)]] float2 UV    : A1;
 };
 
 /*
  * The standard vertex input layout that the Egui shaders use
  */
 struct EguiVertexInput {
-    float2 Pos   : POSITION;
-    float2 UV    : TEXCOORD0;
-    float4 Color : COLOR0;
+    [[vk::location(0)]] float2 Pos   : A0;
+    [[vk::location(1)]] float2 UV    : A1;
+    [[vk::location(2)]] float4 Color : A2;
 };
