@@ -28,9 +28,9 @@
 //
 
 use erupt::vk;
-use interfaces::gpu::TextureFormat;
+use interfaces::gpu::{PresentationMode, TextureFormat};
 
-/// Internal function for converting texture format to DXGI_FORMAT
+/// Internal function for converting texture format to VkFormat
 pub fn texture_format_to_vk(format: TextureFormat) -> vk::Format {
     match format {
         TextureFormat::R8Unorm => vk::Format::R8_UNORM,
@@ -76,5 +76,14 @@ pub fn texture_format_to_vk(format: TextureFormat) -> vk::Format {
         TextureFormat::Rgba32Float => vk::Format::R32G32B32A32_SFLOAT,
         TextureFormat::Depth32Float => vk::Format::D32_SFLOAT,
         TextureFormat::Depth24Stencil8 => vk::Format::D24_UNORM_S8_UINT,
+    }
+}
+
+/// Internal function for converting present mode to VkPresentModeKHR
+pub fn present_mode_to_vk(mode: PresentationMode) -> vk::PresentModeKHR {
+    match mode {
+        PresentationMode::Immediate => vk::PresentModeKHR::IMMEDIATE_KHR,
+        PresentationMode::Mailbox => vk::PresentModeKHR::MAILBOX_KHR,
+        PresentationMode::Fifo => vk::PresentModeKHR::FIFO_KHR,
     }
 }

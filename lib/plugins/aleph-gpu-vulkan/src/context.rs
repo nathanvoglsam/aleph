@@ -31,8 +31,10 @@ use crate::adapter::Adapter;
 use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use crate::surface::Surface;
 use erupt::vk;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
+    AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
+    SurfaceCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
@@ -135,7 +137,7 @@ impl Context {
             // at least load the surface_capabilities then we assume no support and return None to
             // flag the device as unsuitable
             let (_surface_capabilities, surface_formats, present_modes) =
-                Self::get_device_surface_support(instance, physical_device, surface)?;
+                Self::get_device_surface_support(instance, physical_device, surface).ok()?;
 
             // No present modes means we can't present to the surface. If empty then the surface
             // is unsupported.
@@ -178,19 +180,22 @@ impl Context {
         Some(score)
     }
 
-    fn get_device_surface_support(
+    pub(crate) fn get_device_surface_support(
         instance: &erupt::InstanceLoader,
         physical_device: vk::PhysicalDevice,
         surface: vk::SurfaceKHR,
-    ) -> Option<(
-        vk::SurfaceCapabilitiesKHR,
-        Vec<vk::SurfaceFormatKHR>,
-        Vec<vk::PresentModeKHR>,
-    )> {
+    ) -> Result<
+        (
+            vk::SurfaceCapabilitiesKHR,
+            Vec<vk::SurfaceFormatKHR>,
+            Vec<vk::PresentModeKHR>,
+        ),
+        vk::Result,
+    > {
         let capabilities = unsafe {
             instance
                 .get_physical_device_surface_capabilities_khr(physical_device, surface)
-                .ok()?
+                .result()?
         };
         let formats = unsafe {
             instance
@@ -207,7 +212,7 @@ impl Context {
                 .to_vec()
         };
 
-        Some((capabilities, formats, present_modes))
+        Ok((capabilities, formats, present_modes))
     }
 }
 
@@ -355,9 +360,7 @@ impl IContext for Context {
             }
         };
 
-        let surface = result
-            .result()
-            .map_err(|v| SurfaceCreateError::Platform(Box::new(v)))?;
+        let surface = result.result().map_err(|e| anyhow!(e))?;
 
         let surface = ref_ptr_init! {
             Surface {
@@ -367,6 +370,22 @@ impl IContext for Context {
         };
         let surface: RefPtr<Surface> = RefPtr::new(surface);
         Ok(surface.query_interface().unwrap())
+    }
+
+    fn get_backend_api(&self) -> BackendAPI {
+        BackendAPI::Vulkan
+    }
+}
+
+impl Drop for Context {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(messenger) = self.messenger {
+                self.instance_loader
+                    .destroy_debug_utils_messenger_ext(Some(messenger), None);
+            }
+            self.instance_loader.destroy_instance(None);
+        }
     }
 }
 

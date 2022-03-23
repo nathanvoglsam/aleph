@@ -36,6 +36,7 @@ use erupt::vk::{
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
 };
 use interfaces::any::declare_interfaces;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
 use interfaces::ref_ptr::{ref_ptr_init, RefPtr};
@@ -107,10 +108,7 @@ impl ContextProvider {
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            erupt::InstanceLoader::new(entry_loader, &create_info, None).map_err(|e| {
-                let e = Box::new(e);
-                ContextCreateError::Platform(e)
-            })?
+            erupt::InstanceLoader::new(entry_loader, &create_info, None).map_err(|e| anyhow!(e))?
         };
 
         Ok((instance_loader, api_version))
@@ -127,10 +125,7 @@ impl IContextProvider for ContextProvider {
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
         {
             Ok(_) => {
-                let entry_loader = erupt::EntryLoader::new().map_err(|e| {
-                    let e = Box::new(e);
-                    ContextCreateError::Platform(e)
-                })?;
+                let entry_loader = erupt::EntryLoader::new().map_err(|e| anyhow!(e))?;
 
                 let (instance_loader, _version) =
                     Self::create_instance(&entry_loader, options.debug, options.validation)?;
@@ -239,8 +234,9 @@ fn check_all_layers_supported(
         for missing in missing_extensions {
             log::error!("Runtime requested unsupported extension '{:#?}'.", missing);
         }
-        let e = Box::new("Unsupported extension is required by runtime");
-        return Err(ContextCreateError::Platform(e));
+        return Err(ContextCreateError::Platform(anyhow!(
+            "Unsupported extension is required by runtime"
+        )));
     }
     Ok(())
 }
@@ -289,8 +285,9 @@ fn check_all_extensions_supported(
         for missing in missing_layers {
             log::error!("Runtime requested unsupported layer '{:#?}'.", missing);
         }
-        let e = Box::new("Unsupported layer is required by runtime");
-        return Err(ContextCreateError::Platform(e));
+        return Err(ContextCreateError::Platform(anyhow!(
+            "Unsupported layer is required by runtime"
+        )));
     }
     Ok(())
 }
@@ -341,10 +338,9 @@ fn assert_version_supported<T>(
 ) -> Result<u32, ContextCreateError> {
     // Get the latest supported API version
     let max_version = unsafe {
-        entry_loader.enumerate_instance_version().map_err(|e| {
-            let e = Box::new(e);
-            ContextCreateError::Platform(e)
-        })?
+        entry_loader
+            .enumerate_instance_version()
+            .map_err(|e| anyhow!(e))?
     };
     let max_version_major = erupt::vk1_0::api_version_major(max_version);
     let max_version_minor = erupt::vk1_0::api_version_minor(max_version);
@@ -355,7 +351,7 @@ fn assert_version_supported<T>(
             "Current driver or GPU doesn't support Vulkan {}.x",
             major_version
         );
-        return Err(ContextCreateError::Platform(Box::new(e)));
+        return Err(ContextCreateError::Platform(anyhow!(e)));
     }
 
     // Check if the minor version is supported
@@ -364,7 +360,7 @@ fn assert_version_supported<T>(
             "Current driver or GPU doesn't support Vulkan {}.{}",
             major_version, minor_version
         );
-        return Err(ContextCreateError::Platform(Box::new(e)));
+        return Err(ContextCreateError::Platform(anyhow!(e)));
     }
 
     // Return the packed version
@@ -391,9 +387,6 @@ fn install_debug_messenger(
     unsafe {
         instance_loader
             .create_debug_utils_messenger_ext(&create_info, None)
-            .map_err(|e| {
-                let e = Box::new(e);
-                ContextCreateError::Platform(e)
-            })
+            .map_err(|e| ContextCreateError::Platform(anyhow!(e)))
     }
 }

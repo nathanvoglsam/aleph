@@ -30,6 +30,7 @@
 pub const VK_MAJOR_VERSION: u32 = 1;
 pub const VK_MINOR_VERSION: u32 = 3;
 
+pub mod conv;
 pub mod macros;
 pub mod messenger;
 pub mod queue_present_support;

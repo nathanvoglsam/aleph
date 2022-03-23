@@ -39,14 +39,17 @@ mod adapter;
 mod context;
 mod context_provider;
 mod device;
-mod format;
 mod internal;
+mod shader;
 mod surface;
 mod swap_chain;
+mod swap_texture;
+mod texture;
 
 pub use adapter::IAdapterExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
+pub use shader::IShaderExt;
 pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
 

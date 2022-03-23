@@ -33,6 +33,7 @@ use crate::internal::queues::{QueueInfo, Queues};
 use erupt::vk;
 use erupt::vk1_0::PhysicalDevice;
 use interfaces::any::declare_interfaces;
+use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
@@ -159,11 +160,8 @@ impl IAdapter for Adapter {
                 &device_create_info,
                 None,
             )
-            .map_err(|v| RequestDeviceError::Platform(Box::new(v)))?
+            .map_err(|e| anyhow!(e))?
         };
-
-        // TODO: Query queue swap chain support
-        let surface_support = Default::default();
 
         let queues = unsafe { found_families.build_queues_object(&device_loader) };
 
@@ -173,7 +171,6 @@ impl IAdapter for Adapter {
                 queues: queues,
                 adapter: self.as_ref_ptr(),
                 context: self.context.clone(),
-                surface_support: surface_support,
             }
         };
         let device: RefPtr<Device> = RefPtr::new(device);
