@@ -29,10 +29,11 @@
 
 use crate::context::Context;
 use crate::device::Device;
-use crate::format::texture_format_to_dxgi;
-use crate::swap_chain::SwapChain;
+use crate::internal::conv::texture_format_to_dxgi;
+use crate::swap_chain::{SwapChain, SwapChainState};
+use crossbeam::atomic::AtomicCell;
 use dx12::dxgi;
-use dx12::dxgi::SwapChainFlags;
+use dx12::dxgi::{Format, SwapChainFlags};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, QueueType, SwapChainConfiguration,
@@ -40,6 +41,7 @@ use interfaces::gpu::{
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
+use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 ref_ptr_object! {
@@ -59,19 +61,29 @@ impl Surface {
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
+        // Translate our high level present mode into terms that make sense to d3d12
         let (buffer_count, flags) = match config.present_mode {
             PresentationMode::Immediate => (2, SwapChainFlags::ALLOW_TEARING),
             PresentationMode::Mailbox => (3, SwapChainFlags::NONE),
             PresentationMode::Fifo => (2, SwapChainFlags::NONE),
         };
 
-        let format = texture_format_to_dxgi(config.format);
+        // Translate our format
+        let view_format = texture_format_to_dxgi(config.format);
 
-        // Create our swap chain to check if the surface is compatible
+        // Vulkan allows SRGB formats for textures in memory, d3d12 does not and instead you alias
+        // a non SRGB texture of the same layout with an RTV with an SRG format.
+        let in_memory_format = match view_format {
+            Format::R8G8B8A8UnormSRGB => Format::R8G8B8A8Unorm,
+            Format::B8G8R8A8UnormSRGB => Format::B8G8R8A8Unorm,
+            format => format,
+        };
+
+        // Fill out our description
         let desc = dxgi::SwapChainDesc1::builder()
-            .width(config.width) // Dummy values, shouldn't be important?
-            .height(config.height) // Dummy values, shouldn't be important?
-            .format(format) // Guaranteed supported format
+            .width(config.width)
+            .height(config.height)
+            .format(in_memory_format)
             .usage_flags(dxgi::UsageFlags::BACK_BUFFER)
             .usage_flags(dxgi::UsageFlags::RENDER_TARGET_OUTPUT)
             .buffer_count(buffer_count)
@@ -79,6 +91,8 @@ impl Surface {
             .flags(flags)
             .build();
 
+        // Select a queue to attach the swap chain to. If the preferred queue is not supported we
+        // fallback directly to the general queue.
         let (queue, queue_type) = match config.preferred_queue {
             QueueType::General => (device.queues.general.as_ref(), QueueType::General),
             QueueType::Compute => {
@@ -97,16 +111,38 @@ impl Surface {
             }
         };
 
+        // If the preferred queue and fallback queue are not supported we return an error
+        let (queue, queue_type) = if let Some(queue) = queue {
+            (queue, queue_type)
+        } else {
+            return Err(SwapChainCreateError::NoQueueAvailable);
+        };
+
+        // Create the actual swap chain object
         let swap_chain = self
             .factory
-            .create_swap_chain(queue.unwrap(), self, &desc)
+            .create_swap_chain(&queue.lock(), self, &desc)
             .map_err(|e| anyhow!(e))?;
 
+        let images = unsafe {
+            device.create_views_for_swap_images(&swap_chain, view_format, desc.buffer_count)?
+        };
+
+        let inner = SwapChainState {
+            config: config.clone(),
+            acquired: false,
+            images,
+            dxgi_format: in_memory_format,
+            dxgi_view_format: view_format,
+        };
         let swap_chain = ref_ptr_init! {
             SwapChain {
                 swap_chain: swap_chain,
+                device: device.as_ref_ptr(),
                 surface: self.as_ref_ptr(),
                 queue_support: queue_type,
+                inner: Mutex::new(inner),
+                queued_resize: AtomicCell::new(None),
             }
         };
         let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
@@ -121,7 +157,6 @@ impl ISurface for Surface {
         config: &SwapChainConfiguration,
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
         // Check if the surface is currently taken with an existing swap chain
-        // TODO: Set this to false when the swap chain
         if self.has_swap_chain.swap(true, Ordering::SeqCst) {
             return Err(SwapChainCreateError::SurfaceAlreadyOwned);
         }
