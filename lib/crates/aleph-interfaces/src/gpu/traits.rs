@@ -1,8 +1,10 @@
 use crate::gpu::{
     AcquireImageError, AdapterDescription, AdapterRequestOptions, BackendAPI, BufferCreateError,
-    BufferDesc, ClearValue, ContextCreateError, ContextOptions, DrawOptions, QueueType,
-    RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError,
-    SwapChainConfiguration, SwapChainCreateError, TextureCreateError, TextureDesc,
+    BufferDesc, ClearValue, CommandListBeginError, CommandListCreateError, CommandListSubmitError,
+    CommandPoolCreateError, ContextCreateError, ContextOptions, DrawIndexedOptions, DrawOptions,
+    QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
+    SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
+    TextureDesc,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -61,7 +63,7 @@ pub trait ISurface: Any + 'static {
     ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
 }
 
-pub trait ISwapChain: Any + 'static {
+pub trait ISwapChain: INamedObject + Any + 'static {
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
@@ -81,7 +83,7 @@ pub trait ISwapChain: Any + 'static {
     fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError>;
 }
 
-pub trait IDevice: Send + Sync + Any + 'static {
+pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
     fn garbage_collect(&self);
 
     fn create_shader(
@@ -96,47 +98,97 @@ pub trait IDevice: Send + Sync + Any + 'static {
         desc: &TextureDesc,
     ) -> Result<RefPtr<dyn ITexture>, TextureCreateError>;
 
+    fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError>;
+
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
+    /// contain a valid command stream.
+    ///
+    /// The GPU interfaces will uphold resource lifetime requirements and CPU synchronization
+    /// requirements, but makes a very limited effort to handle GPU synchronization. It is up to the
+    /// caller to record correct barriers.
+    ///
+    unsafe fn general_queue_submit_list(
+        &self,
+        command_list: Box<dyn IGeneralCommandList>,
+    ) -> Result<(), CommandListSubmitError>;
+
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
+    /// contain a valid command stream.
+    ///
+    /// The GPU interfaces will uphold resource lifetime requirements and CPU synchronization
+    /// requirements, but makes a very limited effort to handle GPU synchronization. It is up to the
+    /// caller to record correct barriers.
+    ///
+    unsafe fn general_queue_submit_lists(
+        &self,
+        command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
+    ) -> Result<(), CommandListSubmitError>;
+
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
 }
 
-pub trait IVertexInputLayout: Send + Sync + Any + 'static {}
+pub trait IVertexInputLayout: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IBuffer: Send + Sync + Any + 'static {
+pub trait IBuffer: INamedObject + Send + Sync + Any + 'static {
     fn desc(&self) -> &BufferDesc;
 }
 
-pub trait ITexture: Send + Sync + Any + 'static {
+pub trait ITexture: INamedObject + Send + Sync + Any + 'static {
     fn desc(&self) -> &TextureDesc;
 }
 
-pub trait IShader: Send + Sync + Any + 'static {
+pub trait IShader: INamedObject + Send + Sync + Any + 'static {
     fn shader_type(&self) -> ShaderType;
     fn entry_point(&self) -> &str;
 }
 
-pub trait ISampler: Send + Sync + Any + 'static {}
+pub trait ISampler: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IFramebufferLayout: Send + Sync + Any + 'static {}
+pub trait IFramebufferLayout: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IFramebuffer: Send + Sync + Any + 'static {}
+pub trait IFramebuffer: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IBindingLayout: Send + Sync + Any + 'static {}
+pub trait IBindingLayout: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IBindingSet: Send + Sync + Any + 'static {}
+pub trait IBindingSet: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IGraphicsPipeline: Send + Sync + Any + 'static {}
+pub trait IGraphicsPipeline: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IComputePipeline: Send + Sync + Any + 'static {}
+pub trait IComputePipeline: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait ICommandPool: Send + Sync + Any + 'static {
-    fn begin(&self) -> Result<Box<dyn IEncoder>, ()>;
+pub trait ICommandPool: INamedObject + Send + Sync + Any + 'static {
+    fn create_general_command_list(
+        &self,
+    ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError>;
 }
 
-pub trait IEncoder: Any + 'static {
-    fn clear_texture(&self, texture: WeakRefPtr<dyn ITexture>, clear_color: ClearValue);
-    fn clear_depth_stencil_texture(&self, texture: WeakRefPtr<dyn ITexture>, values: ClearValue);
+pub trait IGeneralCommandList: IAny + INamedObject + Send + 'static {
+    fn begin<'a>(&'a mut self) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
+}
 
-    fn draw(&self, options: &DrawOptions);
-    fn draw_indexed(&self, options: &DrawOptions);
+pub trait IGeneralEncoder: IComputeEncoder + Send {
+    fn clear_texture(&mut self, texture: WeakRefPtr<dyn ITexture>, value: ClearValue);
+    fn clear_depth_stencil_texture(&mut self, texture: WeakRefPtr<dyn ITexture>, value: ClearValue);
+
+    fn draw(&mut self, options: &DrawOptions);
+    fn draw_indexed(&mut self, options: &DrawIndexedOptions);
+}
+
+pub trait IComputeCommandList: IAny + INamedObject + Send + 'static {
+    fn begin<'a>(&'a mut self) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
+}
+
+pub trait IComputeEncoder: Send {
+    fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
+}
+
+pub trait INamedObject {
+    fn set_name(&self, name: &str);
 }

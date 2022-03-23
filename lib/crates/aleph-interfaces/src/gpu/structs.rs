@@ -142,6 +142,15 @@ pub struct ColorRGBA {
 pub struct DrawOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
+    pub start_vertex_location: u32,
+    pub start_instance_location: u32,
+}
+
+/// Set of options for a draw call command
+#[derive(Clone, Debug, Default)]
+pub struct DrawIndexedOptions {
+    pub vertex_count: u32,
+    pub instance_count: u32,
     pub start_index_location: u32,
     pub start_vertex_location: u32,
     pub start_instance_location: u32,

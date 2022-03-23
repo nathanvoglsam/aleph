@@ -505,3 +505,30 @@ pub enum TextureDimension {
     /// A 3D volume texture.
     Texture3D,
 }
+
+#[derive(Error, Debug)]
+pub enum CommandPoolCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum CommandListCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum CommandListBeginError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum CommandListSubmitError {
+    #[error("The queue '{0}' is not available")]
+    QueueNotAvailable(QueueType),
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
