@@ -427,7 +427,10 @@ pub enum TextureCreateError {
 #[derive(Clone, Debug)]
 pub enum ClearValue {
     /// A full 4-channel f32 colour
-    Color(ColorRGBA),
+    ColorF32(ColorRGBA),
+
+    /// A 4-channel color packed into a single u32
+    ColorInt(u32),
 
     /// A floating point + u8 pair for clearing a depth stencil texture
     DepthStencil(f32, u8),
@@ -436,12 +439,15 @@ pub enum ClearValue {
 impl Display for ClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ClearValue::Color(color) => {
+            ClearValue::ColorF32(color) => {
                 write!(
                     f,
-                    "ClearValue::Color({}, {}, {}, {})",
+                    "ClearValue::ColorF32({}, {}, {}, {})",
                     color.r, color.g, color.b, color.a
                 )
+            }
+            ClearValue::ColorInt(v) => {
+                write!(f, "ClearValue::ColorInt({:X})", *v)
             }
             ClearValue::DepthStencil(depth, stencil) => {
                 write!(f, "ClearValue::DepthStencil({}, {})", depth, stencil)
