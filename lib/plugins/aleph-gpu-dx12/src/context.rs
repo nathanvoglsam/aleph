@@ -31,7 +31,8 @@ use crate::adapter::Adapter;
 use crate::surface::Surface;
 use dx12::dxgi;
 use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, IAdapter, IContext, ISurface, SurfaceCreateError,
+    AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
+    SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
@@ -132,6 +133,10 @@ impl IContext for Context {
         };
         let surface: RefPtr<Surface> = RefPtr::new(surface);
         Ok(surface.query_interface().unwrap())
+    }
+
+    fn get_backend_api(&self) -> BackendAPI {
+        BackendAPI::D3D12
     }
 }
 
