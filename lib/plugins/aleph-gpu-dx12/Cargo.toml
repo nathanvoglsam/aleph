@@ -48,6 +48,8 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
 cstr = "0.2"
+crossbeam = "0.8"
+parking_lot = "0.12"
 # once_cell = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]
