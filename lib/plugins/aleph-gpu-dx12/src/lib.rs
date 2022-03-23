@@ -45,12 +45,14 @@ mod format;
 mod internal;
 mod surface;
 mod swap_chain;
+mod texture;
 
 pub use adapter::IAdapterExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
 pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
+pub use texture::ITextureExt;
 
 use crate::context_provider::ContextProvider;
 use interfaces::any::{declare_interfaces, AnyArc};
