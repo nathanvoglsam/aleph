@@ -28,11 +28,13 @@
 //
 
 use crate::context::Context;
+use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::device::{Device, Queues};
 use dx12::dxgi;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
+use parking_lot::Mutex;
 
 ref_ptr_object! {
     pub struct Adapter: IAdapter, IAdapterExt {
@@ -46,12 +48,15 @@ impl Adapter {
     fn create_queue(
         device: &dx12::Device,
         queue_type: dx12::CommandListType,
-    ) -> Option<dx12::CommandQueue> {
+    ) -> Option<Mutex<dx12::CommandQueue>> {
         let desc = dx12::CommandQueueDesc::builder()
             .queue_type(queue_type)
             .priority(0)
             .build();
-        device.create_command_queue(&desc).ok()
+        device
+            .create_command_queue(&desc)
+            .ok()
+            .map(|v| Mutex::new(v))
     }
 }
 
@@ -75,6 +80,8 @@ impl IAdapter for Adapter {
         // Bundle and return the device
         let device = ref_ptr_init! {
             Device {
+                rtv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::RenderTargetView),
+                dsv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::DepthStencilView),
                 device: device,
                 queues: queues,
                 adapter: self.as_ref_ptr(),
@@ -86,11 +93,11 @@ impl IAdapter for Adapter {
 }
 
 pub trait IAdapterExt: IAdapter {
-    fn get_raw_handle(&self) -> &dxgi::Adapter;
+    fn get_raw_handle(&self) -> dxgi::Adapter;
 }
 
 impl IAdapterExt for Adapter {
-    fn get_raw_handle(&self) -> &dxgi::Adapter {
-        &self.adapter
+    fn get_raw_handle(&self) -> dxgi::Adapter {
+        self.adapter.clone()
     }
 }
