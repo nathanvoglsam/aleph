@@ -424,7 +424,7 @@ pub enum TextureCreateError {
 }
 
 /// An enumeration of all possible input types to a texture clear operation
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ClearValue {
     /// A full 4-channel f32 colour
     ColorF32(ColorRGBA),

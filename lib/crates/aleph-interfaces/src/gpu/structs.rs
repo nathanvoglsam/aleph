@@ -35,7 +35,7 @@ use bitflags::bitflags;
 use ref_ptr::WeakRefPtr;
 
 /// Options provided when a context is created
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct ContextOptions {
     /// Whether backend API validation should be enabled.
     ///
@@ -100,13 +100,13 @@ impl<'a> Default for AdapterRequestOptions<'a> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct AdapterDescription<'a> {
     /// The name of the adapter
     pub name: &'a str,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct SwapChainConfiguration {
     pub format: TextureFormat,
     pub width: u32,
@@ -129,7 +129,7 @@ impl Default for SwapChainConfiguration {
 }
 
 /// A floating point colour value
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct ColorRGBA {
     pub r: f32,
     pub g: f32,
@@ -138,7 +138,7 @@ pub struct ColorRGBA {
 }
 
 /// Set of options for a draw call command
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct DrawOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -147,7 +147,7 @@ pub struct DrawOptions {
 }
 
 /// Set of options for a draw call command
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct DrawIndexedOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
@@ -157,7 +157,7 @@ pub struct DrawIndexedOptions {
 }
 
 /// Set of options for creating a new shader module
-#[derive(Clone, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct ShaderOptions<'a> {
     pub shader_type: ShaderType,
     pub data: ShaderBinary<'a>,
@@ -165,7 +165,7 @@ pub struct ShaderOptions<'a> {
 }
 
 /// Description object used for creating a new buffer.
-#[derive(Clone, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct BufferDesc {
     /// The size of the buffer in bytes
     pub size: u64,
@@ -220,7 +220,7 @@ impl Default for BufferDesc {
 }
 
 /// Description object used for creating a new texture.
-#[derive(Clone, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct TextureDesc {
     /// The width of the texture
     pub width: u32,
@@ -366,7 +366,7 @@ impl Default for ResourceStates {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TextureSubresourceSet {
     pub base_mip_level: u32,
     pub num_mip_levels: u32,
