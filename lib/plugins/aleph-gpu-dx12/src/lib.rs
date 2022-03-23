@@ -42,6 +42,7 @@ mod buffer;
 mod command_pool;
 mod context;
 mod context_provider;
+mod descriptor_allocator_cpu;
 mod device;
 mod internal;
 mod shader;
