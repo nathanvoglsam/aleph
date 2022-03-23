@@ -4,7 +4,7 @@ use crate::gpu::{
     CommandPoolCreateError, ContextCreateError, ContextOptions, DrawIndexedOptions, DrawOptions,
     QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
     SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
-    TextureDesc,
+    TextureDesc, TextureSubresourceSet,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -174,8 +174,18 @@ pub trait IGeneralCommandList: IAny + INamedObject + Send + 'static {
 }
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
-    fn clear_texture(&mut self, texture: WeakRefPtr<dyn ITexture>, value: ClearValue);
-    fn clear_depth_stencil_texture(&mut self, texture: WeakRefPtr<dyn ITexture>, value: ClearValue);
+    fn clear_texture(
+        &mut self,
+        texture: WeakRefPtr<dyn ITexture>,
+        subresources: &TextureSubresourceSet,
+        value: ClearValue,
+    );
+    fn clear_depth_stencil_texture(
+        &mut self,
+        texture: WeakRefPtr<dyn ITexture>,
+        subresources: &TextureSubresourceSet,
+        value: ClearValue,
+    );
 
     fn draw(&mut self, options: &DrawOptions);
     fn draw_indexed(&mut self, options: &DrawIndexedOptions);
