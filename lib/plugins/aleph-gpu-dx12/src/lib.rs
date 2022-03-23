@@ -38,6 +38,7 @@ extern crate aleph_log as log;
 extern crate cstr;
 
 mod adapter;
+mod buffer;
 mod context;
 mod context_provider;
 mod device;
@@ -49,6 +50,7 @@ mod swap_texture;
 mod texture;
 
 pub use adapter::IAdapterExt;
+pub use buffer::IBufferExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
 pub use surface::ISurfaceExt;
