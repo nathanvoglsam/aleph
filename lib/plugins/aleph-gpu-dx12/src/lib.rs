@@ -42,6 +42,7 @@ mod context;
 mod context_provider;
 mod device;
 mod format;
+mod internal;
 mod surface;
 mod swap_chain;
 
