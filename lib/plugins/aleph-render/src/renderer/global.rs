@@ -30,56 +30,75 @@
 use crate::dx12;
 use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
+use aleph_gpu_dx12::{IDeviceExt, IShaderExt};
+use interfaces::gpu::{ShaderOptions, ShaderType};
+use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
-    pub rtv_heap: dx12::DescriptorHeap,
     pub srv_heap: dx12::DescriptorHeap,
     pub root_signature: dx12::RootSignature,
+    pub vertex_shader: RefPtr<dyn IShaderExt>,
+    pub fragment_shader: RefPtr<dyn IShaderExt>,
     pub pipeline_state: dx12::GraphicsPipelineState,
     pub swap_width: u32,
     pub swap_height: u32,
 }
 
 impl GlobalObjects {
-    pub fn new(device: &dx12::Device, swap_width: u32, swap_height: u32) -> Self {
-        let desc = dx12::DescriptorHeapDesc::builder()
-            .heap_type(dx12::DescriptorHeapType::RenderTargetView)
-            .num_descriptors(3)
-            .build();
-        let rtv_heap = device.create_descriptor_heap(&desc).unwrap();
-        rtv_heap.set_name("egui::RTVHeap").unwrap();
-
+    pub fn new(device: WeakRefPtr<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
         let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
             .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
             .num_descriptors(3)
             .flags(dx12::DescriptorHeapFlags::SHADER_VISIBLE)
             .build();
         let srv_heap = device
+            .get_raw_handle()
             .create_descriptor_heap(&descriptor_heap_desc)
             .unwrap();
         srv_heap.set_name("egui::SRVHeap").unwrap();
 
-        let root_signature = Self::create_root_signature(device);
+        let root_signature = Self::create_root_signature(&device.get_raw_handle());
         root_signature.set_name("egui::RootSignature").unwrap();
 
+        let vertex_shader = device
+            .create_shader(&ShaderOptions {
+                shader_type: ShaderType::Vertex,
+                data: crate::shaders::egui_vert_shader(),
+                entry_point: "main",
+            })
+            .unwrap()
+            .query_interface::<dyn IShaderExt>()
+            .unwrap();
+
+        let fragment_shader = device
+            .create_shader(&ShaderOptions {
+                shader_type: ShaderType::Fragment,
+                data: crate::shaders::egui_frag_shader(),
+                entry_point: "main",
+            })
+            .unwrap()
+            .query_interface::<dyn IShaderExt>()
+            .unwrap();
+
         let pipeline_state = Self::create_pipeline_state(
-            device,
+            &device.get_raw_handle(),
             &root_signature,
-            crate::shaders::egui_vert_shader(),
-            crate::shaders::egui_frag_shader(),
+            vertex_shader.as_weak(),
+            fragment_shader.as_weak(),
         );
         pipeline_state
             .set_name("egui::GraphicsPipelineState")
             .unwrap();
 
         Self {
-            rtv_heap,
             srv_heap,
             root_signature,
+            vertex_shader,
+            fragment_shader,
             pipeline_state,
-            swap_width,
-            swap_height,
+            swap_width: dimensions.0,
+            swap_height: dimensions.1,
         }
     }
 
@@ -125,8 +144,8 @@ impl GlobalObjects {
     pub fn create_pipeline_state(
         device: &dx12::Device,
         root_signature: &dx12::RootSignature,
-        vertex_shader: &[u8],
-        pixel_shader: &[u8],
+        vertex_shader: WeakRefPtr<dyn IShaderExt>,
+        pixel_shader: WeakRefPtr<dyn IShaderExt>,
     ) -> dx12::GraphicsPipelineState {
         let rasterizer_state = dx12::RasterizerDesc::builder()
             .fill_mode(dx12::FillMode::Solid)
@@ -140,7 +159,7 @@ impl GlobalObjects {
 
         let input_layout = [
             dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("POSITION").into(),
+                semantic_name: cstr::cstr!("A").into(),
                 semantic_index: 0,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
@@ -149,8 +168,8 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("TEXCOORD").into(),
-                semantic_index: 0,
+                semantic_name: cstr::cstr!("A").into(),
+                semantic_index: 1,
                 format: dxgi::Format::R32G32Float,
                 input_slot: 0,
                 aligned_byte_offset: 8,
@@ -158,8 +177,8 @@ impl GlobalObjects {
                 instance_data_step_rate: 0,
             },
             dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("COLOR").into(),
-                semantic_index: 0,
+                semantic_name: cstr::cstr!("A").into(),
+                semantic_index: 2,
                 format: dxgi::Format::R8G8B8A8Unorm,
                 input_slot: 0,
                 aligned_byte_offset: 16,
@@ -186,8 +205,8 @@ impl GlobalObjects {
 
         let state_stream = dx12::GraphicsPipelineStateStream::builder()
             .root_signature(root_signature.clone())
-            .vertex_shader(vertex_shader)
-            .pixel_shader(pixel_shader)
+            .vertex_shader(vertex_shader.get_raw_buffer())
+            .pixel_shader(pixel_shader.get_raw_buffer())
             .sample_mask(u32::MAX)
             .blend_state(blend_desc)
             .rasterizer_state(rasterizer_state)

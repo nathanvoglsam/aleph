@@ -27,31 +27,30 @@
 // SOFTWARE.
 //
 
-use crate::dx12::{dxgi, AsWeakRef, D3D12Object};
+use crate::dx12;
+use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
-use crate::{dx12, dx12_alloc};
-use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt};
+use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt, ISwapTextureExt};
 use interfaces::any;
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, IContextProvider, PresentationMode, QueueType,
+    AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, PresentationMode, QueueType,
     SwapChainConfiguration, TextureFormat,
 };
 use interfaces::platform::*;
 use interfaces::plugin::*;
+use interfaces::ref_ptr::RefPtr;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::ops::Deref;
 
 struct Data {
+    index: usize,
     window: any::AnyArc<dyn IWindow>,
     render_data: any::AnyArc<dyn egui::IEguiRenderData>,
     egui_provider: any::AnyArc<dyn egui::IEguiContextProvider>,
-    device: dx12::Device,
     queue: dx12::CommandQueue,
     event: dx12::Event,
     fence: dx12::Fence,
-    swap_chain: dxgi::SwapChain,
-    buffers: Vec<dx12::Resource>,
-    command_lists: Vec<dx12::GraphicsCommandList>,
+    swap_chain: RefPtr<dyn ISwapChainExt>,
     renderer: EguiRenderer,
 }
 
@@ -91,120 +90,97 @@ impl IPlugin for PluginRender {
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        // Get the raw window handle from the window
-        let window_provider = registry.get_interface::<dyn IWindowProvider>().unwrap();
-        let window = window_provider.get_window().unwrap();
-        let window_ref = window.deref();
+        // Get the handle for the window
+        let window = registry
+            .get_interface::<dyn IWindowProvider>()
+            .unwrap()
+            .get_window()
+            .unwrap();
 
-        // Get our context provider for creating graphics API context
-        let gpu_context_provider = registry.get_interface::<dyn IContextProvider>().unwrap();
-
-        // Create our GPU context
-        let options = ContextOptions {
-            validation: true,
-            debug: true,
-        };
-        let gpu_context = gpu_context_provider.make_context(&options).unwrap();
-
-        // Create a surface for the window we want to render with
-        let gpu_surface = gpu_context.create_surface(&window_ref).unwrap();
-
-        // Get an adapter compatible with the requested surface
-        let options = AdapterRequestOptions {
-            surface: Some(gpu_surface.as_weak()),
-            ..Default::default()
-        };
-        let gpu_adapter = gpu_context.request_adapter(&options).unwrap();
-
-        // Create our device
-        let gpu_device = gpu_adapter.request_device().unwrap();
-        let gpu_device_ext = gpu_device.query_interface::<dyn IDeviceExt>().unwrap();
-
-        let gpu_adapter_ext = gpu_adapter.query_interface::<dyn IAdapterExt>().unwrap();
-
-        let adapter = gpu_adapter_ext.get_raw_handle().clone();
-        let device = gpu_device_ext.get_raw_handle().clone();
-        let queue = gpu_device_ext.get_raw_general_queue().unwrap().to_strong();
-
-        // Get the render data slot for egui
+        // Get the render data slot for egui and the egui provider
         let render_data = registry
             .get_interface::<dyn egui::IEguiRenderData>()
             .unwrap();
-
-        // Get the egui provider
         let egui_provider = registry
             .get_interface::<dyn egui::IEguiContextProvider>()
             .unwrap();
 
+        // Get our context provider for creating graphics API context and create our GPU context
+        let options = ContextOptions {
+            validation: true,
+            debug: true,
+        };
+        let gpu_context = registry
+            .get_interface::<dyn IContextProvider>()
+            .unwrap()
+            .make_context(&options)
+            .unwrap();
+
+        // Create a surface for the window we want to render with
+        let surface = gpu_context.create_surface(&window.deref()).unwrap();
+
+        // Get an adapter compatible with the requested surface
+        let options = AdapterRequestOptions {
+            surface: Some(surface.as_weak()),
+            ..Default::default()
+        };
+        let adapter = gpu_context
+            .request_adapter(&options)
+            .unwrap()
+            .query_interface::<dyn IAdapterExt>()
+            .unwrap();
+
+        // Create our device
+        let device = adapter
+            .request_device()
+            .unwrap()
+            .query_interface::<dyn IDeviceExt>()
+            .unwrap();
+
+        let raw_device = device.get_raw_handle();
+        let queue = device.get_raw_general_queue().unwrap();
+
         aleph_log::info!("");
-        Self::log_gpu_info(&adapter);
+        Self::log_gpu_info(&adapter.get_raw_handle());
         aleph_log::info!("");
 
         let event = dx12::Event::new().unwrap();
-        let fence = device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
-
-        let allocator_desc = dx12_alloc::AllocatorDesc::builder()
-            .device(device.clone())
-            .adapter(adapter)
-            .build();
-        let allocator = dx12_alloc::Allocator::new(&allocator_desc).unwrap();
+        let fence = raw_device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
 
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {
-            usage: (),
-            format: TextureFormat::Bgra8Unorm,
+            format: TextureFormat::Bgra8UnormSrgb,
             width: drawable_size.0,
             height: drawable_size.1,
             present_mode: PresentationMode::Mailbox,
             preferred_queue: QueueType::General,
         };
-        let gpu_swap_chain = gpu_surface
-            .create_swap_chain(gpu_device.as_weak(), &config)
-            .unwrap();
-        let gpu_swap_chain_ext = gpu_swap_chain
+        let device_handle = device.query_interface::<dyn IDevice>().unwrap();
+        let swap_chain = surface
+            .create_swap_chain(device_handle.as_weak(), &config)
+            .unwrap()
             .query_interface::<dyn ISwapChainExt>()
             .unwrap();
 
-        assert!(gpu_swap_chain.present_supported_on_queue(QueueType::General));
+        assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
-        let swap_chain = gpu_swap_chain_ext.get_raw_handle().clone();
+        let renderer = EguiRenderer::new(device.clone(), drawable_size);
 
-        let buffers = swap_chain.get_buffers(3).unwrap();
-        buffers.iter().for_each(|v| {
-            v.set_name("SwapChainImage").unwrap();
-        });
-        let command_lists: Vec<dx12::GraphicsCommandList> = (0..3)
-            .into_iter()
-            .map(|_| {
-                device
-                    .create_graphics_command_list(dx12::CommandListType::Direct)
-                    .unwrap()
-            })
-            .collect();
-
-        let renderer = EguiRenderer::new(
-            device.clone(),
-            allocator,
-            &buffers,
-            drawable_size.0,
-            drawable_size.1,
-        );
-
-        let schedule_provider = registry.get_interface::<dyn IScheduleProvider>().unwrap();
-        let schedule_cell = schedule_provider.get();
+        let schedule_cell = registry
+            .get_interface::<dyn IScheduleProvider>()
+            .unwrap()
+            .get();
         let mut schedule = schedule_cell.get();
 
         let mut data = Data {
+            index: 0,
             window,
             render_data,
             egui_provider,
-            device,
             queue,
             event,
             fence,
             swap_chain,
-            buffers,
-            command_lists,
             renderer,
         };
         schedule.add_exclusive_at_start_system_to_stage(
@@ -219,42 +195,30 @@ impl IPlugin for PluginRender {
 
                 if data.window.resized() {
                     let dimensions = data.window.size();
-                    unsafe {
-                        data.buffers.clear();
-                        data.swap_chain
-                            .resize_buffers(
-                                3,
-                                dimensions.0,
-                                dimensions.1,
-                                dxgi::Format::Unknown,
-                                dxgi::SwapChainFlags::NONE,
-                                None,
-                                &[data.queue.clone(), data.queue.clone(), data.queue.clone()],
-                            )
-                            .unwrap();
-                        data.buffers = data.swap_chain.get_buffers(3).unwrap();
-                        data.renderer.recreate_swap_resources(
-                            &data.device,
-                            &data.buffers,
-                            dimensions,
-                        );
-                    }
+                    data.swap_chain.queue_resize(dimensions.0, dimensions.1);
+                    data.renderer.recreate_swap_resources(dimensions);
                 }
 
                 unsafe {
-                    let index = data.swap_chain.get_current_back_buffer_index();
-                    let command_list = &mut data.command_lists[index as usize];
-                    data.renderer.record_frame(
-                        index as usize,
-                        command_list,
-                        &data.buffers,
+                    data.index = (data.index + 1) % 3;
+                    let swap_image = data
+                        .swap_chain
+                        .acquire_image()
+                        .unwrap()
+                        .query_interface::<dyn ISwapTextureExt>()
+                        .unwrap();
+
+                    let command_list = data.renderer.record_frame(
+                        data.index,
+                        swap_image.get_raw_handle(),
+                        swap_image.get_raw_rtv(),
                         &egui_ctx,
                         data.render_data.take(),
                     );
 
-                    data.queue.execute_command_lists(&[command_list.as_weak()]);
+                    device.general_queue_submit_list(command_list).unwrap();
 
-                    data.swap_chain.present(0, 0).unwrap();
+                    data.swap_chain.get_raw_handle().present(0, 0).unwrap();
 
                     data.queue.signal(&data.fence, 1).unwrap();
 

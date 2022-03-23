@@ -29,56 +29,41 @@
 
 mod frame;
 mod global;
-mod swap;
 
-use crate::dx12::dxgi;
-use crate::{dx12, dx12_alloc};
+use crate::dx12;
+use crate::dx12::{dxgi, GraphicsCommandList};
+use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-pub(crate) use swap::SwapDependentObjects;
+use interfaces::any::QueryInterfaceBox;
+use interfaces::gpu::{DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder};
+use interfaces::ref_ptr::RefPtr;
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
-    swap_dependent: Vec<SwapDependentObjects>,
     global: GlobalObjects,
 
     /// Rendering device
-    device: dx12::Device,
-
-    /// Memory allocator
-    allocator: dx12_alloc::Allocator,
+    device: RefPtr<dyn IDeviceExt>,
 
     ///
     pixels_per_point: f32,
 }
 
 impl EguiRenderer {
-    pub fn new(
-        device: dx12::Device,
-        allocator: dx12_alloc::Allocator,
-        buffers: &[dx12::Resource],
-        swap_width: u32,
-        swap_height: u32,
-    ) -> Self {
+    pub fn new(device: RefPtr<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
         aleph_log::trace!("Initializing Egui Renderer");
 
-        let global = GlobalObjects::new(&device, swap_width, swap_height);
+        let global = GlobalObjects::new(device.as_weak(), dimensions);
 
         let frames = (0..3)
             .into_iter()
-            .map(|index| PerFrameObjects::new(&device, &allocator, &global, index))
-            .collect();
-
-        let swap_dependent = (0..3)
-            .into_iter()
-            .map(|index| SwapDependentObjects::new(&device, &global, buffers, index))
+            .map(|index| PerFrameObjects::new(device.as_weak(), &global, index))
             .collect();
 
         Self {
             device,
-            allocator,
             frames,
-            swap_dependent,
             global,
             pixels_per_point: 1.0,
         }
@@ -89,137 +74,132 @@ impl EguiRenderer {
         self.pixels_per_point = pixels_per_point;
     }
 
-    pub unsafe fn recreate_swap_resources(
-        &mut self,
-        device: &dx12::Device,
-        buffers: &[dx12::Resource],
-        new_dimensions: (u32, u32),
-    ) {
+    pub fn recreate_swap_resources(&mut self, new_dimensions: (u32, u32)) {
         self.global.swap_width = new_dimensions.0;
         self.global.swap_height = new_dimensions.1;
-        let swap_dependent = (0..3)
-            .into_iter()
-            .map(|index| SwapDependentObjects::new(device, &self.global, buffers, index))
-            .collect();
-        self.swap_dependent = swap_dependent;
     }
 
     pub unsafe fn record_frame(
         &mut self,
         index: usize,
-        command_list: &mut dx12::GraphicsCommandList,
-        buffers: &[dx12::Resource],
+        buffer: dx12::Resource,
+        view: dx12::CPUDescriptorHandle,
         egui_ctx: &egui::CtxRef,
         jobs: Vec<aleph_egui::ClippedMesh>,
-    ) {
-        // Clear the command allocator
-        self.frames[index].command_allocator.reset().unwrap();
-
+    ) -> Box<dyn IGeneralCommandList + '_> {
         // Begin recording commands into the command list
-        command_list
-            .reset(
-                &self.frames[index].command_allocator,
-                &self.global.pipeline_state,
-            )
+        let list = self.frames[index]
+            .command_allocator
+            .create_general_command_list()
+            .unwrap()
+            .query_interface::<dyn ICommandListExt>()
+            .ok()
             .unwrap();
 
-        // Handles creating the texture data resources and placing it into the staging buffer if
-        // doing so is needed. Will return whether or not the texture data needs to be re-staged.
-        let needs_reupload = self.frames[index].update_texture_data(
-            &self.device,
-            &self.allocator,
-            egui_ctx.font_image(),
-        );
+        let command_list: GraphicsCommandList = list.get_raw_list();
 
-        // If a reupload is needed we record into the command buffer the commands required to do so
-        if needs_reupload {
-            self.frames[index].record_texture_upload(command_list);
-        }
+        let mut list = list
+            .query_interface::<dyn IGeneralCommandList>()
+            .ok()
+            .unwrap();
 
-        // Map the buffers for copying into them
-        let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
+        {
+            let mut encoder = list.begin().unwrap();
 
-        // Begin the render pass and bind our resources
-        self.bind_resources(index, command_list);
+            command_list.set_pipeline_state(&self.global.pipeline_state);
 
-        // Transition from present to render target state
-        let barrier = dx12::ResourceBarrier::Transition {
-            flags: Default::default(),
-            resource: Some(buffers[index].clone()),
-            subresource: 0,
-            state_before: dx12::ResourceStates::PRESENT,
-            state_after: dx12::ResourceStates::RENDER_TARGET,
-        };
-        command_list.resource_barrier(&[barrier]);
+            // Handles creating the texture data resources and placing it into the staging buffer if
+            // doing so is needed. Will return whether or not the texture data needs to be re-staged.
+            let needs_reupload = self.frames[index]
+                .update_texture_data(self.device.as_weak(), egui_ctx.font_image());
 
-        // Clear the render target
-        command_list.clear_render_target_view(
-            self.swap_dependent[index].rtv_cpu,
-            &[0.0, 0.0, 0.0, 0.0],
-            None,
-        );
-
-        let mut vtx_base = 0;
-        let mut idx_base = 0;
-        for job in jobs {
-            let triangles = &job.1;
-
-            // Skip doing anything for the job if there's nothing to render
-            if triangles.vertices.is_empty() || triangles.indices.is_empty() {
-                continue;
+            // If a reupload is needed we record into the command buffer the commands required to do so
+            if needs_reupload {
+                self.frames[index].record_texture_upload(&command_list);
             }
 
-            // Get the slice to copy from and various byte counts
-            let v_slice = &triangles.vertices;
-            let v_size = core::mem::size_of_val(&v_slice[0]);
-            let v_copy_size = v_slice.len() * v_size;
+            // Map the buffers for copying into them
+            let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
 
-            // Get the slice to copy from and various byte counts
-            let i_slice = &triangles.indices;
-            let i_size = core::mem::size_of_val(&i_slice[0]);
-            let i_copy_size = i_slice.len() * i_size;
+            // Begin the render pass and bind our resources
+            self.bind_resources(index, &command_list, view);
 
-            // Calculate where the pointers will be after writing the current set of data
-            let v_ptr_next = v_ptr.add(v_copy_size);
-            let i_ptr_next = i_ptr.add(i_copy_size);
+            // Transition from present to render target state
+            let barrier = dx12::ResourceBarrier::Transition {
+                flags: Default::default(),
+                resource: Some(buffer.clone()),
+                subresource: 0,
+                state_before: dx12::ResourceStates::PRESENT,
+                state_after: dx12::ResourceStates::RENDER_TARGET,
+            };
+            command_list.resource_barrier(&[barrier]);
 
-            // Check if we're going to over-run the buffers, and panic if we will
-            if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
-                panic!("Out of memory");
+            // Clear the render target
+            command_list.clear_render_target_view(view, &[0.0, 0.0, 0.0, 0.0], None);
+
+            let mut vtx_base = 0;
+            let mut idx_base = 0;
+            for job in jobs {
+                let triangles = &job.1;
+
+                // Skip doing anything for the job if there's nothing to render
+                if triangles.vertices.is_empty() || triangles.indices.is_empty() {
+                    continue;
+                }
+
+                // Get the slice to copy from and various byte counts
+                let v_slice = &triangles.vertices;
+                let v_size = core::mem::size_of_val(&v_slice[0]);
+                let v_copy_size = v_slice.len() * v_size;
+
+                // Get the slice to copy from and various byte counts
+                let i_slice = &triangles.indices;
+                let i_size = core::mem::size_of_val(&i_slice[0]);
+                let i_copy_size = i_slice.len() * i_size;
+
+                // Calculate where the pointers will be after writing the current set of data
+                let v_ptr_next = v_ptr.add(v_copy_size);
+                let i_ptr_next = i_ptr.add(i_copy_size);
+
+                // Check if we're going to over-run the buffers, and panic if we will
+                if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
+                    panic!("Out of memory");
+                }
+
+                // Perform the actual copies
+                v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
+                i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
+
+                // Setup the pointers for the next iteration
+                v_ptr = v_ptr_next;
+                i_ptr = i_ptr_next;
+
+                self.record_job_commands(&command_list, encoder.as_mut(), &job, vtx_base, idx_base);
+
+                vtx_base += triangles.vertices.len();
+                idx_base += triangles.indices.len();
             }
 
-            // Perform the actual copies
-            v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
-            i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
+            let barrier = dx12::ResourceBarrier::Transition {
+                flags: Default::default(),
+                resource: Some(buffer.clone()),
+                subresource: 0,
+                state_before: dx12::ResourceStates::RENDER_TARGET,
+                state_after: dx12::ResourceStates::PRESENT,
+            };
+            command_list.resource_barrier(&[barrier]);
 
-            // Setup the pointers for the next iteration
-            v_ptr = v_ptr_next;
-            i_ptr = i_ptr_next;
-
-            self.record_job_commands(command_list, &job, vtx_base, idx_base);
-
-            vtx_base += triangles.vertices.len();
-            idx_base += triangles.indices.len();
+            // Unmap the buffers
+            self.unmap_buffers(index);
         }
 
-        let barrier = dx12::ResourceBarrier::Transition {
-            flags: Default::default(),
-            resource: Some(buffers[index].clone()),
-            subresource: 0,
-            state_before: dx12::ResourceStates::RENDER_TARGET,
-            state_after: dx12::ResourceStates::PRESENT,
-        };
-        command_list.resource_barrier(&[barrier]);
-
-        command_list.close().unwrap();
-
-        // Unmap the buffers
-        self.unmap_buffers(index);
+        list.query_interface().ok().unwrap()
     }
 
     unsafe fn record_job_commands(
         &mut self,
-        command_list: &mut dx12::GraphicsCommandList,
+        command_list: &dx12::GraphicsCommandList,
+        encoder: &mut dyn IGeneralEncoder,
         job: &aleph_egui::ClippedMesh,
         vtx_base: usize,
         idx_base: usize,
@@ -228,16 +208,21 @@ impl EguiRenderer {
 
         let scissor_rect = self.calculate_clip_rect(job);
         command_list.rs_set_scissor_rects(&[scissor_rect]);
-        command_list.draw_indexed_instanced(
-            triangles.indices.len() as _,
-            1,
-            idx_base as _,
-            vtx_base as _,
-            0,
-        );
+        encoder.draw_indexed(&DrawIndexedOptions {
+            vertex_count: triangles.indices.len() as _,
+            instance_count: 1,
+            start_index_location: idx_base as _,
+            start_vertex_location: vtx_base as _,
+            start_instance_location: 0,
+        });
     }
 
-    unsafe fn bind_resources(&self, index: usize, command_list: &mut dx12::GraphicsCommandList) {
+    unsafe fn bind_resources(
+        &self,
+        index: usize,
+        command_list: &dx12::GraphicsCommandList,
+        view: dx12::CPUDescriptorHandle,
+    ) {
         //
         // Bind the Root Signature
         //
@@ -270,8 +255,7 @@ impl EguiRenderer {
         //
         let buffer_location = self.frames[index]
             .vtx_buffer
-            .get_resource()
-            .unwrap()
+            .get_raw_handle()
             .get_gpu_virtual_address()
             .unwrap();
         command_list.ia_set_vertex_buffers(
@@ -284,8 +268,7 @@ impl EguiRenderer {
         );
         let buffer_location = self.frames[index]
             .idx_buffer
-            .get_resource()
-            .unwrap()
+            .get_raw_handle()
             .get_gpu_virtual_address()
             .unwrap();
         command_list.ia_set_index_buffer(&dx12::IndexBufferView {
@@ -297,7 +280,7 @@ impl EguiRenderer {
         //
         // Bind the render target
         //
-        command_list.om_set_render_targets(Some(&[self.swap_dependent[index].rtv_cpu]), None);
+        command_list.om_set_render_targets(Some(&[view]), None);
 
         //
         // Set the viewport state, we're going to be rendering to the whole frame
@@ -318,8 +301,7 @@ impl EguiRenderer {
         //
         let v_ptr = self.frames[index]
             .vtx_buffer
-            .get_resource()
-            .unwrap()
+            .get_raw_handle()
             .map(0, Some(0..0))
             .unwrap()
             .unwrap()
@@ -328,8 +310,7 @@ impl EguiRenderer {
 
         let i_ptr = self.frames[index]
             .idx_buffer
-            .get_resource()
-            .unwrap()
+            .get_raw_handle()
             .map(0, Some(0..0))
             .unwrap()
             .unwrap()
@@ -343,8 +324,8 @@ impl EguiRenderer {
         //
         // Flush and unmap the vertex and index buffers
         //
-        let vtx_buffer = &self.frames[index].vtx_buffer.get_resource().unwrap();
-        let idx_buffer = &self.frames[index].idx_buffer.get_resource().unwrap();
+        let vtx_buffer = &self.frames[index].vtx_buffer.get_raw_handle();
+        let idx_buffer = &self.frames[index].idx_buffer.get_raw_handle();
 
         vtx_buffer.unmap(0, None);
         idx_buffer.unmap(0, None);

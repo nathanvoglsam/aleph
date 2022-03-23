@@ -27,23 +27,27 @@
 // SOFTWARE.
 //
 
-use crate::dx12::{dxgi, D3D12Object};
+use crate::dx12::dxgi;
 use crate::pix::RecordScopedEvent;
 use crate::renderer::GlobalObjects;
-use crate::{dx12, dx12_alloc, pix};
+use crate::{dx12, pix};
+use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
+use interfaces::gpu::{
+    BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
+    TextureFormat,
+};
+use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 use std::sync::Arc;
 
 pub struct PerFrameObjects {
-    pub vtx_buffer: dx12_alloc::Allocation,
-    pub idx_buffer: dx12_alloc::Allocation,
+    pub vtx_buffer: RefPtr<dyn IBufferExt>,
+    pub idx_buffer: RefPtr<dyn IBufferExt>,
 
-    pub command_allocator: dx12::CommandAllocator,
+    pub command_allocator: RefPtr<dyn ICommandPool>,
 
-    pub font_staging_allocation: dx12_alloc::Allocation,
-    pub font_staging_resource: dx12::Resource,
+    pub font_staging_buffer: RefPtr<dyn IBufferExt>,
 
-    pub font_staged_pool: dx12_alloc::Pool,
-    pub font_staged_image: Option<dx12_alloc::Allocation>,
+    pub font_staged: Option<RefPtr<dyn ITextureExt>>,
     pub font_cpu_srv: dx12::CPUDescriptorHandle,
     pub font_gpu_srv: dx12::GPUDescriptorHandle,
     pub font_staged_size: (u32, u32),
@@ -51,65 +55,41 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(
-        device: &dx12::Device,
-        allocator: &dx12_alloc::Allocator,
-        global: &GlobalObjects,
-        index: usize,
-    ) -> Self {
-        let alloc_desc = dx12_alloc::AllocationDesc::builder()
-            .heap_type(dx12::HeapType::Upload)
-            .build();
+    pub fn new(device: WeakRefPtr<dyn IDeviceExt>, global: &GlobalObjects, index: usize) -> Self {
         let vtx_buffer = {
-            let resource_desc = dx12::ResourceDesc::builder()
-                .dimension(dx12::ResourceDimension::Buffer)
-                .width(Self::vertex_buffer_size() as _)
-                .build();
-            allocator
-                .create_resource(
-                    &alloc_desc,
-                    &resource_desc,
-                    dx12::ResourceStates::GENERIC_READ,
-                    None,
-                )
+            let desc = BufferDesc {
+                size: Self::vertex_buffer_size() as _,
+                cpu_access: CpuAccessMode::Write,
+                is_vertex_buffer: true,
+                ..Default::default()
+            };
+            device
+                .create_buffer(&desc)
+                .unwrap()
+                .query_interface()
                 .unwrap()
         };
-        vtx_buffer
-            .get_resource()
-            .unwrap()
-            .set_name("egui::VtxBuffer")
-            .unwrap();
 
         let idx_buffer = {
-            let resource_desc = dx12::ResourceDesc::builder()
-                .dimension(dx12::ResourceDimension::Buffer)
-                .width(Self::index_buffer_size() as _)
-                .build();
-            allocator
-                .create_resource(
-                    &alloc_desc,
-                    &resource_desc,
-                    dx12::ResourceStates::GENERIC_READ,
-                    None,
-                )
+            let desc = BufferDesc {
+                size: Self::index_buffer_size() as _,
+                cpu_access: CpuAccessMode::Write,
+                is_index_buffer: true,
+                ..Default::default()
+            };
+            device
+                .create_buffer(&desc)
+                .unwrap()
+                .query_interface()
                 .unwrap()
         };
-        idx_buffer
-            .get_resource()
-            .unwrap()
-            .set_name("egui::IdxBuffer")
-            .unwrap();
 
-        let font_staging_allocation =
-            unsafe { Self::create_font_staging_allocation(allocator, (4096, 4096)) };
-        let font_staging_resource = font_staging_allocation.get_resource().unwrap();
-        font_staging_resource
-            .set_name("egui::FontStagingBuffer")
-            .unwrap();
+        let font_staging_buffer =
+            Self::create_font_staging_allocation(device.clone(), (4096, 4096));
 
-        let font_staged_pool = unsafe { Self::create_staged_pool(allocator, (4096, 4096)) };
-
-        let size = device.get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav);
+        let size = device
+            .get_raw_handle()
+            .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav);
         let font_cpu_srv = global
             .srv_heap
             .get_cpu_descriptor_handle_for_heap_start()
@@ -121,21 +101,15 @@ impl PerFrameObjects {
             .unwrap()
             .add(index as u64 * size as u64);
 
-        let command_allocator = device
-            .create_command_allocator(dx12::CommandListType::Direct)
-            .unwrap();
-        command_allocator
-            .set_name("egui::CommandAllocator")
-            .unwrap();
+        let command_allocator = device.create_command_pool().unwrap();
+        command_allocator.set_name("egui::CommandAllocator");
 
         Self {
             vtx_buffer,
             idx_buffer,
             command_allocator,
-            font_staging_allocation,
-            font_staging_resource,
-            font_staged_pool,
-            font_staged_image: None,
+            font_staging_buffer,
+            font_staged: None,
             font_cpu_srv,
             font_gpu_srv,
             font_staged_size: (0, 0),
@@ -145,8 +119,7 @@ impl PerFrameObjects {
 
     pub unsafe fn update_texture_data(
         &mut self,
-        device: &dx12::Device,
-        allocator: &dx12_alloc::Allocator,
+        device: WeakRefPtr<dyn IDeviceExt>,
         texture: Arc<egui::FontImage>,
     ) -> bool {
         debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
@@ -155,48 +128,40 @@ impl PerFrameObjects {
         if dimensions != self.font_staged_size || texture.version != self.font_staged_hash {
             // Explicitly drop staged image so the pool's memory will be free to create the new
             // image
-            self.font_staged_image = None;
+            self.font_staged = None;
 
             // Create the GPU image with the new dimensions
-            self.create_staged_resources(allocator, dimensions);
+            self.create_staged_resources(device.clone(), dimensions);
 
             // Update the srv to point at the newly created image
-            self.update_srv(device);
+            self.update_srv(&device.get_raw_handle());
 
             // Update the metadata for determining when to re-upload the texture
             self.font_staged_size = dimensions;
             self.font_staged_hash = texture.version;
 
             // Map and write the texture data to our staging buffer
-            let ptr = self
-                .font_staging_resource
-                .map(0, Some(0..0))
-                .unwrap()
-                .unwrap();
+            let resource = self.font_staging_buffer.get_raw_handle();
+            let ptr = resource.map(0, Some(0..0)).unwrap().unwrap();
             ptr.as_ptr()
                 .copy_from_nonoverlapping(texture.pixels.as_ptr(), texture.pixels.len());
-            self.font_staging_resource.unmap(0, None);
+            resource.unmap(0, None);
             true
         } else {
             false
         }
     }
 
-    pub unsafe fn record_texture_upload(&mut self, command_list: &mut dx12::GraphicsCommandList) {
+    pub unsafe fn record_texture_upload(&mut self, command_list: &dx12::GraphicsCommandList) {
         command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |command_list| {
-            let staged_resource = self
-                .font_staged_image
-                .as_ref()
-                .unwrap()
-                .get_resource()
-                .unwrap();
+            let staged_resource = self.font_staged.as_ref().unwrap().get_raw_handle();
 
             let dst = dx12::TextureCopyLocation::Subresource {
                 resource: Some(staged_resource.clone()),
                 subresource_index: 0,
             };
             let src = dx12::TextureCopyLocation::Placed {
-                resource: Some(self.font_staging_resource.clone()),
+                resource: Some(self.font_staging_buffer.get_raw_handle()),
                 placed_footprint: dx12::PlacedSubresourceFootprint {
                     offset: 0,
                     footprint: dx12::SubresourceFootprint {
@@ -224,35 +189,23 @@ impl PerFrameObjects {
     /// Allocates the font texture on GPU memory
     fn create_staged_resources(
         &mut self,
-        allocator: &dx12_alloc::Allocator,
+        device: WeakRefPtr<dyn IDeviceExt>,
         dimensions: (u32, u32),
     ) {
-        let alloc_desc = dx12_alloc::AllocationDesc::builder()
-            .heap_type(dx12::HeapType::Default)
-            .pool(&self.font_staged_pool)
-            .build();
-        let resource_desc = dx12::ResourceDesc::builder()
-            .dimension(dx12::ResourceDimension::Texture2D)
-            .width(dimensions.0 as _)
-            .height(dimensions.1 as _)
-            .format(dxgi::Format::R8Unorm)
-            .layout(dx12::TextureLayout::Unknown)
-            .build();
-        let allocation = allocator
-            .create_resource(
-                &alloc_desc,
-                &resource_desc,
-                dx12::ResourceStates::COPY_DEST,
-                None,
-            )
-            .unwrap();
-        allocation
-            .get_resource()
+        let image = device
+            .create_texture(&TextureDesc {
+                width: dimensions.0,
+                height: dimensions.1,
+                format: TextureFormat::R8Unorm,
+                dimension: TextureDimension::Texture2D,
+                initial_state: ResourceStates::COPY_DEST,
+                ..Default::default()
+            })
             .unwrap()
-            .set_name("egui::FontImage")
+            .query_interface()
             .unwrap();
 
-        self.font_staged_image = Some(allocation);
+        self.font_staged = Some(image);
     }
 
     unsafe fn update_srv(&self, device: &dx12::Device) {
@@ -267,51 +220,25 @@ impl PerFrameObjects {
             },
         };
         device.create_shader_resource_view(
-            &self
-                .font_staged_image
-                .as_ref()
-                .unwrap()
-                .get_resource()
-                .unwrap(),
+            &self.font_staged.as_ref().unwrap().get_raw_handle(),
             &srv_desc,
             self.font_cpu_srv,
         );
     }
 
-    unsafe fn create_font_staging_allocation(
-        allocator: &dx12_alloc::Allocator,
+    fn create_font_staging_allocation(
+        device: WeakRefPtr<dyn IDeviceExt>,
         dimensions: (u32, u32),
-    ) -> dx12_alloc::Allocation {
-        let size = dimensions.0 * dimensions.1;
-
-        let alloc_desc = dx12_alloc::AllocationDesc::builder()
-            .heap_type(dx12::HeapType::Upload)
-            .build();
-        let resource_desc = dx12::ResourceDesc::builder()
-            .dimension(dx12::ResourceDimension::Buffer)
-            .width(size as _)
-            .build();
-        let initial_resource_state = dx12::ResourceStates::GENERIC_READ;
-        allocator
-            .create_resource(&alloc_desc, &resource_desc, initial_resource_state, None)
+    ) -> RefPtr<dyn IBufferExt> {
+        device
+            .create_buffer(&BufferDesc {
+                size: (dimensions.0 * dimensions.1) as u64,
+                cpu_access: CpuAccessMode::Write,
+                ..Default::default()
+            })
             .unwrap()
-    }
-
-    unsafe fn create_staged_pool(
-        allocator: &dx12_alloc::Allocator,
-        dimensions: (u32, u32),
-    ) -> dx12_alloc::Pool {
-        let size = dimensions.0 * dimensions.1;
-
-        let pool_desc = dx12_alloc::PoolDesc::builder()
-            .heap_type(dx12::HeapType::Default)
-            .heap_flags(dx12::HeapFlags::ALLOW_ONLY_NON_RT_DS_TEXTURES)
-            .block_size(size as _)
-            .min_block_count(1)
-            .max_block_count(1)
-            .build();
-
-        allocator.create_pool(&pool_desc).unwrap()
+            .query_interface()
+            .unwrap()
     }
 
     pub fn vertex_buffer_size() -> usize {
