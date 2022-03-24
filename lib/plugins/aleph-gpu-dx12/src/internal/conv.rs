@@ -240,7 +240,7 @@ pub fn texture_create_clear_value_to_dx12(
                 if !desc.format.is_depth_stencil() {
                     Some(dx12::ClearValue::Color {
                         format,
-                        color: decode_u32_color_to_float(v)
+                        color: decode_u32_color_to_float(v),
                     })
                 } else {
                     return Err(TextureCreateError::InvalidClearValue(clear));
