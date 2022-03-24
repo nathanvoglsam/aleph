@@ -29,7 +29,8 @@
 
 use dx12::dxgi;
 use interfaces::gpu::{
-    ClearValue, ResourceStates, TextureCreateError, TextureDesc, TextureDimension, TextureFormat,
+    OptimalClearValue, ResourceStates, TextureCreateError, TextureDesc, TextureDimension,
+    TextureFormat,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -226,34 +227,34 @@ pub fn texture_create_clear_value_to_dx12(
     let clear = if let Some(clear) = &desc.clear_value {
         let clear = clear.clone();
         match clear.clone() {
-            ClearValue::ColorF32(color) => {
+            OptimalClearValue::ColorF32 { r, g, b, a } => {
                 if !desc.format.is_depth_stencil() {
                     Some(dx12::ClearValue::Color {
                         format,
-                        color: [color.r, color.g, color.b, color.a],
+                        color: [r, g, b, a],
                     })
                 } else {
-                    return Err(TextureCreateError::InvalidClearValue(clear));
+                    return Err(TextureCreateError::InvalidOptimalClearValue(clear));
                 }
             }
-            ClearValue::ColorInt(v) => {
+            OptimalClearValue::ColorInt(v) => {
                 if !desc.format.is_depth_stencil() {
                     Some(dx12::ClearValue::Color {
                         format,
                         color: decode_u32_color_to_float(v),
                     })
                 } else {
-                    return Err(TextureCreateError::InvalidClearValue(clear));
+                    return Err(TextureCreateError::InvalidOptimalClearValue(clear));
                 }
             }
-            ClearValue::DepthStencil(depth, stencil) => {
+            OptimalClearValue::DepthStencil(depth, stencil) => {
                 if desc.format.is_depth_stencil() {
                     Some(dx12::ClearValue::Depth {
                         format,
                         depth_stencil: dx12::DepthStencilValue { depth, stencil },
                     })
                 } else {
-                    return Err(TextureCreateError::InvalidClearValue(clear));
+                    return Err(TextureCreateError::InvalidOptimalClearValue(clear));
                 }
             }
         }
