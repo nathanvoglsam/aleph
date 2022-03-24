@@ -187,6 +187,8 @@ impl IPlugin for PluginRender {
             &CoreStage::Render,
             "render::render",
             move || {
+                device.garbage_collect();
+
                 let data = &mut data;
                 let egui_ctx = data.egui_provider.get_context();
 
@@ -201,16 +203,15 @@ impl IPlugin for PluginRender {
 
                 unsafe {
                     data.index = (data.index + 1) % 3;
-                    let swap_image = data
-                        .swap_chain
-                        .acquire_image()
-                        .unwrap()
+                    let swap_image_tex = data.swap_chain.acquire_image().unwrap();
+                    let swap_image = swap_image_tex
                         .query_interface::<dyn ISwapTextureExt>()
                         .unwrap();
 
                     let command_list = data.renderer.record_frame(
                         data.index,
                         swap_image.get_raw_handle(),
+                        swap_image_tex.as_weak(),
                         swap_image.get_raw_rtv(),
                         &egui_ctx,
                         data.render_data.take(),

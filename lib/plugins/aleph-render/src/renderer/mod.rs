@@ -36,8 +36,10 @@ use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::QueryInterfaceBox;
-use interfaces::gpu::{DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder};
-use interfaces::ref_ptr::RefPtr;
+use interfaces::gpu::{
+    ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
+};
+use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
@@ -83,6 +85,7 @@ impl EguiRenderer {
         &mut self,
         index: usize,
         buffer: dx12::Resource,
+        texture: WeakRefPtr<dyn ITexture>,
         view: dx12::CPUDescriptorHandle,
         egui_ctx: &egui::CtxRef,
         jobs: Vec<aleph_egui::ClippedMesh>,
@@ -135,7 +138,16 @@ impl EguiRenderer {
             command_list.resource_barrier(&[barrier]);
 
             // Clear the render target
-            command_list.clear_render_target_view(view, &[0.0, 0.0, 0.0, 0.0], None);
+            encoder.clear_texture(
+                texture,
+                &Default::default(),
+                &ColorClearValue::Float {
+                    r: 0.0,
+                    g: 0.0,
+                    b: 0.0,
+                    a: 0.0,
+                },
+            );
 
             let mut vtx_base = 0;
             let mut idx_base = 0;
@@ -209,11 +221,11 @@ impl EguiRenderer {
         let scissor_rect = self.calculate_clip_rect(job);
         command_list.rs_set_scissor_rects(&[scissor_rect]);
         encoder.draw_indexed(&DrawIndexedOptions {
-            vertex_count: triangles.indices.len() as _,
+            index_count: triangles.indices.len() as _,
             instance_count: 1,
-            start_index_location: idx_base as _,
-            start_vertex_location: vtx_base as _,
-            start_instance_location: 0,
+            first_index: idx_base as _,
+            first_instance: 0,
+            vertex_offset: vtx_base as _,
         });
     }
 
