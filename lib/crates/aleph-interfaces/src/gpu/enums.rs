@@ -428,7 +428,7 @@ pub enum TextureCreateError {
 #[derive(Clone, Debug, PartialEq)]
 pub enum OptimalClearValue {
     /// A full 4-channel f32 colour
-    ColorF32(ColorRGBA),
+    ColorF32 { r: f32, g: f32, b: f32, a: f32 },
 
     /// A 4-channel color packed into a single u32
     ColorInt(u32),
@@ -437,15 +437,28 @@ pub enum OptimalClearValue {
     DepthStencil(f32, u8),
 }
 
+impl From<ColorRGBA> for OptimalClearValue {
+    fn from(v: ColorRGBA) -> Self {
+        Self::ColorF32 {
+            r: v.r,
+            g: v.g,
+            b: v.b,
+            a: v.a,
+        }
+    }
+}
+
+impl From<u32> for OptimalClearValue {
+    fn from(v: u32) -> Self {
+        Self::ColorInt(v)
+    }
+}
+
 impl Display for OptimalClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            OptimalClearValue::ColorF32(v) => {
-                write!(
-                    f,
-                    "OptimalClearValue::ColorF32({}, {}, {}, {})",
-                    v.r, v.g, v.b, v.a
-                )
+            OptimalClearValue::ColorF32 { r, g, b, a } => {
+                write!(f, "OptimalClearValue::ColorF32({}, {}, {}, {})", r, g, b, a)
             }
             OptimalClearValue::ColorInt(v) => {
                 write!(f, "OptimalClearValue::ColorInt({:X})", *v)
@@ -461,21 +474,34 @@ impl Display for OptimalClearValue {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ColorClearValue {
     /// A full 4-channel f32 colour
-    Float(ColorRGBA),
+    Float { r: f32, g: f32, b: f32, a: f32 },
 
     /// A 4-channel color packed into a single u32
     Int(u32),
 }
 
+impl From<ColorRGBA> for ColorClearValue {
+    fn from(v: ColorRGBA) -> Self {
+        Self::Float {
+            r: v.r,
+            g: v.g,
+            b: v.b,
+            a: v.a,
+        }
+    }
+}
+
+impl From<u32> for ColorClearValue {
+    fn from(v: u32) -> Self {
+        Self::Int(v)
+    }
+}
+
 impl Display for ColorClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ColorClearValue::Float(v) => {
-                write!(
-                    f,
-                    "ColorClearValue::Float({}, {}, {}, {})",
-                    v.r, v.g, v.b, v.a
-                )
+            ColorClearValue::Float { r, g, b, a } => {
+                write!(f, "ColorClearValue::Float({}, {}, {}, {})", r, g, b, a)
             }
             ColorClearValue::Int(v) => {
                 write!(f, "ColorClearValue::Int({:X})", *v)
