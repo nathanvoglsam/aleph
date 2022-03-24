@@ -142,18 +142,18 @@ pub struct ColorRGBA {
 pub struct DrawOptions {
     pub vertex_count: u32,
     pub instance_count: u32,
-    pub start_vertex_location: u32,
-    pub start_instance_location: u32,
+    pub first_vertex: u32,
+    pub first_instance: u32,
 }
 
 /// Set of options for a draw call command
 #[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct DrawIndexedOptions {
-    pub vertex_count: u32,
+    pub index_count: u32,
     pub instance_count: u32,
-    pub start_index_location: u32,
-    pub start_vertex_location: u32,
-    pub start_instance_location: u32,
+    pub first_index: u32,
+    pub first_instance: u32,
+    pub vertex_offset: i32,
 }
 
 /// Set of options for creating a new shader module
