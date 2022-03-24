@@ -4,7 +4,7 @@ use crate::gpu::{
     CommandPoolCreateError, ContextCreateError, ContextOptions, DrawIndexedOptions, DrawOptions,
     QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
     SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
-    TextureDesc, TextureSubresourceSet,
+    TextureDesc, TextureSubResourceSet,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -177,7 +177,7 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
     fn clear_texture(
         &mut self,
         texture: WeakRefPtr<dyn ITexture>,
-        subresources: &TextureSubresourceSet,
+        sub_resources: &TextureSubResourceSet,
         value: &ClearValue,
     );
     fn draw(&mut self, options: &DrawOptions);

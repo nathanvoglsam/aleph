@@ -367,14 +367,14 @@ impl Default for ResourceStates {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct TextureSubresourceSet {
+pub struct TextureSubResourceSet {
     pub base_mip_level: u32,
     pub num_mip_levels: u32,
     pub base_array_slice: u32,
     pub num_array_slices: u32,
 }
 
-impl Default for TextureSubresourceSet {
+impl Default for TextureSubResourceSet {
     fn default() -> Self {
         Self {
             base_mip_level: 0,
