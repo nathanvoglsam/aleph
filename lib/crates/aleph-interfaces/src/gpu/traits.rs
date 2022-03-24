@@ -1,10 +1,10 @@
 use crate::gpu::{
     AcquireImageError, AdapterDescription, AdapterRequestOptions, BackendAPI, BufferCreateError,
-    BufferDesc, ClearValue, CommandListBeginError, CommandListCreateError, CommandListSubmitError,
-    CommandPoolCreateError, ContextCreateError, ContextOptions, DrawIndexedOptions, DrawOptions,
-    QueueType, RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType,
-    SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
-    TextureDesc, TextureSubResourceSet,
+    BufferDesc, ColorClearValue, CommandListBeginError, CommandListCreateError,
+    CommandListSubmitError, CommandPoolCreateError, ContextCreateError, ContextOptions,
+    DepthStencilClearValue, DrawIndexedOptions, DrawOptions, QueueType, RequestDeviceError,
+    ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError, SwapChainConfiguration,
+    SwapChainCreateError, TextureCreateError, TextureDesc, TextureSubResourceSet,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -178,7 +178,13 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
         &mut self,
         texture: WeakRefPtr<dyn ITexture>,
         sub_resources: &TextureSubResourceSet,
-        value: &ClearValue,
+        value: &ColorClearValue,
+    );
+    fn clear_depth_stencil_texture(
+        &mut self,
+        texture: WeakRefPtr<dyn ITexture>,
+        sub_resources: &TextureSubResourceSet,
+        value: &DepthStencilClearValue,
     );
     fn draw(&mut self, options: &DrawOptions);
     fn draw_indexed(&mut self, options: &DrawIndexedOptions);

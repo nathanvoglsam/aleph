@@ -416,16 +416,17 @@ pub enum TextureCreateError {
     #[error("Requested sample count '{0}' is invalid")]
     InvalidSampleCount(u32),
 
-    #[error("Requested clear value '{0}' is invalid")]
-    InvalidClearValue(ClearValue),
+    #[error("Requested optimal clear value '{0}' is invalid")]
+    InvalidOptimalClearValue(OptimalClearValue),
 
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
 
-/// An enumeration of all possible input types to a texture clear operation
+/// An enumeration of all possible input types for initializing a texture's optimal clear color
+/// value
 #[derive(Clone, Debug, PartialEq)]
-pub enum ClearValue {
+pub enum OptimalClearValue {
     /// A full 4-channel f32 colour
     ColorF32(ColorRGBA),
 
@@ -436,21 +437,77 @@ pub enum ClearValue {
     DepthStencil(f32, u8),
 }
 
-impl Display for ClearValue {
+impl Display for OptimalClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            ClearValue::ColorF32(color) => {
+            OptimalClearValue::ColorF32(v) => {
                 write!(
                     f,
-                    "ClearValue::ColorF32({}, {}, {}, {})",
-                    color.r, color.g, color.b, color.a
+                    "OptimalClearValue::ColorF32({}, {}, {}, {})",
+                    v.r, v.g, v.b, v.a
                 )
             }
-            ClearValue::ColorInt(v) => {
-                write!(f, "ClearValue::ColorInt({:X})", *v)
+            OptimalClearValue::ColorInt(v) => {
+                write!(f, "OptimalClearValue::ColorInt({:X})", *v)
             }
-            ClearValue::DepthStencil(depth, stencil) => {
-                write!(f, "ClearValue::DepthStencil({}, {})", depth, stencil)
+            OptimalClearValue::DepthStencil(depth, stencil) => {
+                write!(f, "OptimalClearValue::DepthStencil({}, {})", depth, stencil)
+            }
+        }
+    }
+}
+
+/// An enumeration of all possible input types to a color texture clear operation
+#[derive(Clone, Debug, PartialEq)]
+pub enum ColorClearValue {
+    /// A full 4-channel f32 colour
+    Float(ColorRGBA),
+
+    /// A 4-channel color packed into a single u32
+    Int(u32),
+}
+
+impl Display for ColorClearValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ColorClearValue::Float(v) => {
+                write!(
+                    f,
+                    "ColorClearValue::Float({}, {}, {}, {})",
+                    v.r, v.g, v.b, v.a
+                )
+            }
+            ColorClearValue::Int(v) => {
+                write!(f, "ColorClearValue::Int({:X})", *v)
+            }
+        }
+    }
+}
+
+/// An enumeration of all possible input types to a depth/stencil texture clear operation
+#[derive(Clone, Debug, PartialEq)]
+pub enum DepthStencilClearValue {
+    /// A floating point + u8 pair for clearing a depth stencil texture
+    DepthStencil(f32, u8),
+
+    /// A floating point value for clearing only depth
+    Depth(f32),
+
+    /// A u8 value for clearing only stencil
+    Stencil(u8),
+}
+
+impl Display for DepthStencilClearValue {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DepthStencilClearValue::DepthStencil(depth, stencil) => {
+                write!(f, "ColorClearValue::Float({}, {})", *depth, *stencil)
+            }
+            DepthStencilClearValue::Depth(v) => {
+                write!(f, "DepthStencilClearValue::Depth({})", *v)
+            }
+            DepthStencilClearValue::Stencil(v) => {
+                write!(f, "DepthStencilClearValue::Stencil({})", *v)
             }
         }
     }

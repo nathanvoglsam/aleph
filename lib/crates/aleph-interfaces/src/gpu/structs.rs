@@ -28,7 +28,7 @@
 //
 
 use crate::gpu::{
-    AdapterPowerClass, ClearValue, CpuAccessMode, ISurface, PresentationMode, QueueType,
+    AdapterPowerClass, CpuAccessMode, ISurface, OptimalClearValue, PresentationMode, QueueType,
     ShaderBinary, ShaderType, TextureDimension, TextureFormat,
 };
 use bitflags::bitflags;
@@ -243,7 +243,7 @@ pub struct TextureDesc {
     pub initial_state: ResourceStates,
 
     /// An optional clear value that will be 'optimal' for the underlying implementation.
-    pub clear_value: Option<ClearValue>,
+    pub clear_value: Option<OptimalClearValue>,
 
     /// Number of image array elements.
     ///
