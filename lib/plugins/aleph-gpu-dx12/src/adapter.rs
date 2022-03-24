@@ -29,7 +29,7 @@
 
 use crate::context::Context;
 use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
-use crate::device::{Device, Queues};
+use crate::device::{Device, Queue, Queues};
 use dx12::dxgi;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
@@ -45,10 +45,10 @@ ref_ptr_object! {
 }
 
 impl Adapter {
-    fn create_queue(
+    fn create_queue<T>(
         device: &dx12::Device,
         queue_type: dx12::CommandListType,
-    ) -> Option<Mutex<dx12::CommandQueue>> {
+    ) -> Option<Queue<T>> {
         let desc = dx12::CommandQueueDesc::builder()
             .queue_type(queue_type)
             .priority(0)
@@ -56,7 +56,8 @@ impl Adapter {
         device
             .create_command_queue(&desc)
             .ok()
-            .map(|v| Mutex::new(v))
+            .map(Mutex::new)
+            .map(Queue::<T>::new)
     }
 }
 

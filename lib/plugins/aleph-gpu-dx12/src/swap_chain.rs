@@ -62,10 +62,11 @@ pub struct SwapChainState {
 
 impl SwapChain {
     pub unsafe fn handle_resize(&self, inner: &mut SwapChainState, width: u32, height: u32) {
+        let queues = &self.device.queues;
         let queue = match self.queue_support {
-            QueueType::General => self.device.queues.general.as_ref().unwrap().lock().clone(),
-            QueueType::Compute => self.device.queues.compute.as_ref().unwrap().lock().clone(),
-            QueueType::Transfer => self.device.queues.transfer.as_ref().unwrap().lock().clone(),
+            QueueType::General => queues.general.as_ref().unwrap().handle.lock().clone(),
+            QueueType::Compute => queues.compute.as_ref().unwrap().handle.lock().clone(),
+            QueueType::Transfer => queues.transfer.as_ref().unwrap().handle.lock().clone(),
         };
         let queues: Vec<dx12::CommandQueue> = inner
             .images

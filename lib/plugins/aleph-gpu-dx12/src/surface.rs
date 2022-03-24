@@ -93,20 +93,29 @@ impl Surface {
 
         // Select a queue to attach the swap chain to. If the preferred queue is not supported we
         // fallback directly to the general queue.
+        let queues = &device.queues;
         let (queue, queue_type) = match config.preferred_queue {
-            QueueType::General => (device.queues.general.as_ref(), QueueType::General),
+            QueueType::General => {
+                let queue = queues.general.as_ref().map(|v| &v.handle);
+                let queue_type = QueueType::General;
+                (queue, queue_type)
+            }
             QueueType::Compute => {
-                if let Some(queue) = device.queues.compute.as_ref() {
-                    (Some(queue), QueueType::Compute)
+                if let Some(queue) = queues.compute.as_ref() {
+                    (Some(&queue.handle), QueueType::Compute)
                 } else {
-                    (device.queues.general.as_ref(), QueueType::General)
+                    let queue = queues.general.as_ref().map(|v| &v.handle);
+                    let queue_type = QueueType::General;
+                    (queue, queue_type)
                 }
             }
             QueueType::Transfer => {
-                if let Some(queue) = device.queues.transfer.as_ref() {
-                    (Some(queue), QueueType::Transfer)
+                if let Some(queue) = queues.transfer.as_ref() {
+                    (Some(&queue.handle), QueueType::Transfer)
                 } else {
-                    (device.queues.general.as_ref(), QueueType::General)
+                    let queue = queues.general.as_ref().map(|v| &v.handle);
+                    let queue_type = QueueType::General;
+                    (queue, queue_type)
                 }
             }
         };

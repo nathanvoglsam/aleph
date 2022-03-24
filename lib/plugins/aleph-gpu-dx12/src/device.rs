@@ -226,8 +226,10 @@ impl IDevice for Device {
             .ok()
             .unwrap();
         queue
+            .handle
             .lock()
             .execute_command_lists_strong(&[command_list.list]);
+
         Ok(())
     }
 
@@ -253,7 +255,7 @@ impl IDevice for Device {
             })
             .collect();
 
-        queue.lock().execute_command_lists_strong(&lists);
+        queue.handle.lock().execute_command_lists_strong(&lists);
         Ok(())
     }
 
@@ -302,15 +304,24 @@ impl IDeviceExt for Device {
     }
 
     fn get_raw_general_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.general.as_ref().map(|v| v.lock().clone())
+        self.queues
+            .general
+            .as_ref()
+            .map(|v| v.handle.lock().clone())
     }
 
     fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.compute.as_ref().map(|v| v.lock().clone())
+        self.queues
+            .compute
+            .as_ref()
+            .map(|v| v.handle.lock().clone())
     }
 
     fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.transfer.as_ref().map(|v| v.lock().clone())
+        self.queues
+            .transfer
+            .as_ref()
+            .map(|v| v.handle.lock().clone())
     }
 }
 
@@ -332,7 +343,25 @@ impl INamedObject for Device {
 ///
 /// I can just remove them later
 pub struct Queues {
-    pub general: Option<Mutex<dx12::CommandQueue>>,
-    pub compute: Option<Mutex<dx12::CommandQueue>>,
-    pub transfer: Option<Mutex<dx12::CommandQueue>>,
+    pub general: Option<Queue<GeneralCommandList>>,
+    pub compute: Option<Queue<()>>,
+    pub transfer: Option<Queue<()>>,
+}
+
+pub struct Queue<T> {
+    pub handle: Mutex<dx12::CommandQueue>,
+    pub in_flight: SegQueue<InFlightCommandList<T>>,
+}
+
+impl<T> Queue<T> {
+    pub fn new(handle: Mutex<dx12::CommandQueue>) -> Self {
+        Self {
+            handle,
+            in_flight: Default::default(),
+        }
+    }
+}
+
+pub struct InFlightCommandList<T> {
+    pub list: Box<T>,
 }
