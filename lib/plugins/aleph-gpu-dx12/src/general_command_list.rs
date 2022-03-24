@@ -29,6 +29,7 @@
 
 use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
+use crate::internal::command_list_tracker::CommandListTracker;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, IAny};
 use interfaces::anyhow::anyhow;
@@ -57,6 +58,11 @@ impl IGeneralCommandList for GeneralCommandList {
 
         let encoder = Encoder::<'a> {
             list: self.list.clone(),
+            tracker: CommandListTracker {
+                images: Vec::new(),
+                buffers: Vec::new(),
+                binding_sets: Vec::new(),
+            },
             _phantom: Default::default(),
         };
         Ok(Box::new(encoder))

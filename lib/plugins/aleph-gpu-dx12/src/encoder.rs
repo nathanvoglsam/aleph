@@ -28,17 +28,20 @@
 //
 
 use crate::general_command_list::GeneralCommandList;
+use crate::internal::command_list_tracker::CommandListTracker;
+use crate::internal::conv::decode_u32_color_to_float;
+use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
 use interfaces::gpu::{
-    ClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder, IGeneralEncoder, ITexture,
-    TextureSubresourceSet,
+    ColorClearValue, DepthStencilClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder,
+    IGeneralEncoder, ITexture, TextureDesc, TextureSubResourceSet,
 };
 use interfaces::ref_ptr::WeakRefPtr;
 use std::marker::PhantomData;
-use crate::internal::conv::decode_u32_color_to_float;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
+    pub(crate) tracker: CommandListTracker,
     pub(crate) _phantom: PhantomData<&'a mut GeneralCommandList>,
 }
 
