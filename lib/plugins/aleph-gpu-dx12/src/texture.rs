@@ -27,16 +27,27 @@
 // SOFTWARE.
 //
 
+use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::device::Device;
+use crate::internal::conv::texture_format_to_dxgi;
 use dx12::{dxgi, D3D12Object};
-use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
+use interfaces::gpu::{
+    INamedObject, ITexture, TextureDesc, TextureDimension, TextureFormat, TextureSubResourceSet,
+};
+use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
+use parking_lot::RwLock;
+use std::collections::HashMap;
 
-use interfaces::ref_ptr::ref_ptr_object;
+type CacheViewCPU = HashMap<(TextureFormat, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
 
 ref_ptr_object! {
     pub struct Texture: ITexture, ITextureExt {
+        pub(crate) device: RefPtr<Device>,
         pub(crate) resource: dx12::Resource,
         pub(crate) desc: TextureDesc,
         pub(crate) dxgi_format: dxgi::Format,
+        pub(crate) rtv_cache: RwLock<CacheViewCPU>,
+        pub(crate) dsv_cache: RwLock<CacheViewCPU>,
     }
 }
 

@@ -49,7 +49,8 @@ use interfaces::gpu::{
     TextureDesc,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
+use std::collections::HashMap;
 
 ref_ptr_object! {
     pub struct Device: IDevice, IDeviceExt {
@@ -181,9 +182,12 @@ impl IDevice for Device {
 
         let texture = ref_ptr_init! {
             Texture {
+                device: self.as_ref_ptr(),
                 resource: resource,
                 desc: desc.clone(),
                 dxgi_format: resource_desc.format,
+                rtv_cache: RwLock::new(HashMap::new()),
+                dsv_cache: RwLock::new(HashMap::new()),
             }
         };
         let texture: RefPtr<Texture> = RefPtr::new(texture);
