@@ -194,9 +194,15 @@ pub trait IComputeCommandList: IAny + INamedObject + Send + 'static {
     fn begin<'a>(&'a mut self) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
 }
 
-pub trait IComputeEncoder: Send {
+pub trait IComputeEncoder: ITransferEncoder + Send {
     fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
+
+pub trait ITransferCommandList: IAny + INamedObject + Send + 'static {
+    fn begin<'a>(&'a mut self) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
+}
+
+pub trait ITransferEncoder: Send {}
 
 pub trait INamedObject {
     fn set_name(&self, name: &str);
