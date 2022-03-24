@@ -87,22 +87,21 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             self.list.draw_instanced(
                 options.vertex_count,
                 options.instance_count,
-                options.start_vertex_location,
-                options.start_instance_location,
+                options.first_vertex,
+                options.first_instance,
             )
         }
     }
 
     fn draw_indexed(&mut self, options: &DrawIndexedOptions) {
         // TODO: State check
-        // TODO: check start_vertex_location maybe?
         unsafe {
             self.list.draw_indexed_instanced(
-                options.vertex_count,
+                options.index_count,
                 options.instance_count,
-                options.start_index_location,
-                options.start_vertex_location as _,
-                options.start_instance_location,
+                options.first_index,
+                options.vertex_offset,
+                options.first_instance,
             )
         }
     }
