@@ -62,6 +62,7 @@ use crate::ITextureExt;
 use dx12::{dxgi, D3D12Object};
 use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
 use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
+use std::sync::atomic::Ordering;
 
 ref_ptr_object! {
     pub struct SwapTexture: ITexture, ITextureExt, ISwapTextureExt {
@@ -74,8 +75,9 @@ ref_ptr_object! {
 
 impl Drop for SwapTexture {
     fn drop(&mut self) {
-        let mut inner = self.swap_chain.inner.lock();
-        inner.images_in_flight = inner.images_in_flight.checked_sub(1).unwrap();
+        self.swap_chain
+            .images_in_flight
+            .fetch_sub(1, Ordering::Release);
     }
 }
 

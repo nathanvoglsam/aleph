@@ -27,19 +27,20 @@
 // SOFTWARE.
 //
 
+use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
 use crate::surface::Surface;
 use crate::swap_texture::SwapTexture;
 use crossbeam::atomic::AtomicCell;
 use dx12::dxgi;
 use interfaces::gpu::{
-    AcquireImageError, IDevice, INamedObject, ISwapChain, ITexture, QueueType, ResourceStates,
-    SwapChainConfiguration, TextureDesc, TextureDimension,
+    AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
+    ResourceStates, SwapChainConfiguration, TextureDesc, TextureDimension,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use parking_lot::Mutex;
 use std::ops::Deref;
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 ref_ptr_object! {
     pub struct SwapChain: ISwapChain, ISwapChainExt {
@@ -49,20 +50,25 @@ ref_ptr_object! {
         pub(crate) queue_support: QueueType,
         pub(crate) inner: Mutex<SwapChainState>,
         pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
+        pub(crate) acquired: AtomicBool,
+        pub(crate) images_in_flight: AtomicU32,
     }
 }
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub images_in_flight: u32,
-    pub images_acquired: u32,
     pub images: Vec<(dx12::Resource, dx12::CPUDescriptorHandle)>,
     pub dxgi_format: dxgi::Format,
     pub dxgi_view_format: dxgi::Format,
 }
 
 impl SwapChain {
-    pub unsafe fn handle_resize(&self, inner: &mut SwapChainState, width: u32, height: u32) {
+    pub unsafe fn handle_resize(
+        &self,
+        inner: &mut SwapChainState,
+        width: u32,
+        height: u32,
+    ) -> Result<(), AcquireImageError> {
         // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with a
         // swap chain *before* calling ResizeBuffers. In order to meet this requirement we will
         // force a full device queue flush and garbage collection cycle.
@@ -73,9 +79,13 @@ impl SwapChain {
         // bugs anyway.
         self.device.wait_idle();
 
-        // Empty the images array as, assuming the rest of the code is correct, that array will
-        // hold the only remaining references to the swap chain images
-        inner.images.clear();
+        // The GPU API requires that no swap images are in use and there are no acquired images for
+        // a resize to be possible.
+        //
+        // This is because of D3D12's requirements on ResizeBuffers.
+        if self.images_in_flight.load(Ordering::Relaxed) > 0 {
+            return Err(AcquireImageError::QueuedResizeFailed);
+        }
 
         let queues = &self.device.queues;
         let queue = match self.queue_support {
@@ -83,6 +93,10 @@ impl SwapChain {
             QueueType::Compute => queues.compute.as_ref().unwrap().handle.clone(),
             QueueType::Transfer => queues.transfer.as_ref().unwrap().handle.clone(),
         };
+        // Empty the images array as, assuming the rest of the code is correct, that array will
+        // hold the only remaining references to the swap chain images.
+        //
+        // This also handles creating the list of queues we pass to ResizeBuffers
         let queues: Vec<dx12::CommandQueue> = inner
             .images
             .drain(..)
@@ -116,6 +130,8 @@ impl SwapChain {
         inner.images = images;
         inner.config.width = width;
         inner.config.height = height;
+
+        Ok(())
     }
 }
 
@@ -133,47 +149,60 @@ impl ISwapChain for SwapChain {
         self.inner.lock().config.clone()
     }
 
-    fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError> {
-        let mut inner = self.inner.lock();
+    fn acquire_image(&self) -> Result<Box<dyn IAcquiredTexture>, AcquireImageError> {
+        if self
+            .acquired
+            .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+            .is_ok()
+        {
+            let mut inner = self.inner.lock();
 
-        if let Some(dimensions) = self.queued_resize.take() {
-            let new_width = dimensions.deref().0;
-            let new_height = dimensions.deref().1;
-            unsafe {
-                self.handle_resize(&mut inner, new_width, new_height);
+            if let Some(dimensions) = self.queued_resize.take() {
+                let new_width = dimensions.deref().0;
+                let new_height = dimensions.deref().1;
+                unsafe {
+                    self.handle_resize(&mut inner, new_width, new_height)?;
+                }
             }
-        }
 
-        let image = self.swap_chain.get_current_back_buffer_index();
-        let image = ref_ptr_init! {
-            SwapTexture {
-                resource: inner.images[image as usize].0.clone(),
-                view: inner.images[image as usize].1,
-                desc: TextureDesc {
-                    width: inner.config.width,
-                    height: inner.config.height,
-                    depth: 1,
-                    format: inner.config.format,
-                    dimension: TextureDimension::Texture2D,
-                    initial_state: ResourceStates::PRESENT,
-                    clear_value: None,
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    allow_unordered_access: false,
-                    allow_cube_face: false,
-                    is_render_target: true
-                },
+            let index = self.swap_chain.get_current_back_buffer_index();
+            let image = ref_ptr_init! {
+                SwapTexture {
+                    resource: inner.images[index as usize].0.clone(),
+                    view: inner.images[index as usize].1,
+                    desc: TextureDesc {
+                        width: inner.config.width,
+                        height: inner.config.height,
+                        depth: 1,
+                        format: inner.config.format,
+                        dimension: TextureDimension::Texture2D,
+                        initial_state: ResourceStates::PRESENT,
+                        clear_value: None,
+                        array_size: 1,
+                        mip_levels: 1,
+                        sample_count: 1,
+                        sample_quality: 0,
+                        allow_unordered_access: false,
+                        allow_cube_face: false,
+                        is_render_target: true
+                    },
+                    swap_chain: self.as_ref_ptr(),
+                }
+            };
+            let image: RefPtr<SwapTexture> = RefPtr::new(image);
+            let image: RefPtr<dyn ITexture> = image.query_interface().unwrap();
+
+            self.images_in_flight.fetch_add(1, Ordering::Acquire);
+
+            let acquired = Box::new(AcquiredTexture {
                 swap_chain: self.as_ref_ptr(),
-            }
-        };
-        let image: RefPtr<SwapTexture> = RefPtr::new(image);
+                image,
+            });
 
-        inner.images_in_flight = inner.images_in_flight.checked_add(1).unwrap();
-        inner.images_acquired = inner.images_acquired.checked_add(1).unwrap();
-
-        Ok(image.query_interface().unwrap())
+            Ok(acquired)
+        } else {
+            Err(AcquireImageError::ImageNotAvailable)
+        }
     }
 }
 
@@ -186,8 +215,8 @@ impl Drop for SwapChain {
         for (_, view) in inner.images.drain(..) {
             self.device.rtv_heap.free(view);
         }
-        assert_eq!(inner.images_in_flight, 0);
-        assert_eq!(inner.images_acquired, 0);
+        assert_eq!(self.images_in_flight.load(Ordering::Relaxed), 0);
+        assert!(!self.acquired.load(Ordering::Relaxed));
     }
 }
 

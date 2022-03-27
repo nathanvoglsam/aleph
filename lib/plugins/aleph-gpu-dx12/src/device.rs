@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::acquired_texture::AcquiredTexture;
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
@@ -46,9 +47,9 @@ use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
-    CpuAccessMode, IBuffer, ICommandPool, IDevice, IGeneralCommandList, INamedObject, IShader,
-    ITexture, QueueType, ShaderBinary, ShaderCreateError, ShaderOptions, TextureCreateError,
-    TextureDesc,
+    CpuAccessMode, IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList,
+    INamedObject, IShader, ISwapChain, ITexture, QueuePresentError, QueueType, ShaderBinary,
+    ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use parking_lot::RwLock;
@@ -313,6 +314,50 @@ impl IDevice for Device {
         for list in lists {
             queue.in_flight.push(InFlightCommandList { index, list });
         }
+
+        Ok(())
+    }
+
+    unsafe fn general_queue_present(
+        &self,
+        texture: Box<dyn IAcquiredTexture>,
+    ) -> Result<(), QueuePresentError> {
+        let image = texture.query_interface::<AcquiredTexture>().ok().unwrap();
+
+        if !image
+            .swap_chain
+            .present_supported_on_queue(QueueType::General)
+        {
+            return Err(QueuePresentError::QueuePresentationNotSupported(
+                QueueType::General,
+            ));
+        }
+
+        let queue = self
+            .queues
+            .general
+            .as_ref()
+            .ok_or(QueuePresentError::QueueNotAvailable(QueueType::General))?;
+
+        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
+        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
+        // either.
+        let _index = {
+            let _lock = queue.submit_lock.lock();
+
+            image
+                .swap_chain
+                .swap_chain
+                .present(0, 0)
+                .map_err(|v| anyhow!(v))?;
+            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+            queue
+                .handle
+                .signal(&queue.fence, index)
+                .map_err(|v| anyhow!(v))?;
+
+            index
+        };
 
         Ok(())
     }

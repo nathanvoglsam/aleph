@@ -42,7 +42,7 @@ use interfaces::gpu::{
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
 use parking_lot::Mutex;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 ref_ptr_object! {
     pub struct Surface: ISurface, ISurfaceExt {
@@ -148,8 +148,6 @@ impl Surface {
 
         let inner = SwapChainState {
             config: config.clone(),
-            images_in_flight: 0,
-            images_acquired: 0,
             images,
             dxgi_format: in_memory_format,
             dxgi_view_format: view_format,
@@ -162,6 +160,8 @@ impl Surface {
                 queue_support: queue_type,
                 inner: Mutex::new(inner),
                 queued_resize: AtomicCell::new(None),
+                acquired: AtomicBool::new(false),
+                images_in_flight: AtomicU32::new(0),
             }
         };
         let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);

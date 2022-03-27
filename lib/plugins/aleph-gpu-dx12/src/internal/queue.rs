@@ -77,7 +77,7 @@ impl<T: ReturnToPool> Queue<T> {
         for _ in 0..num {
             // Check if the
             let mut v = self.in_flight.pop().unwrap();
-            if v.index < last_completed {
+            if v.index > last_completed {
                 self.in_flight.push(v);
             } else {
                 v.list.return_to_pool();
