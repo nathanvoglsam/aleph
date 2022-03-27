@@ -103,7 +103,7 @@ impl Surface {
             }
             QueueType::Compute => {
                 if let Some(queue) = queues.compute.as_ref() {
-                    let queue = queue.read().handle.clone();
+                    let queue = queue.handle.clone();
                     (Some(queue), QueueType::Compute)
                 } else {
                     (None, QueueType::General)
@@ -111,7 +111,7 @@ impl Surface {
             }
             QueueType::Transfer => {
                 if let Some(queue) = queues.transfer.as_ref() {
-                    let queue = queue.read().handle.clone();
+                    let queue = queue.handle.clone();
                     (Some(queue), QueueType::Transfer)
                 } else {
                     (None, QueueType::General)
@@ -120,7 +120,7 @@ impl Surface {
         };
         let (queue, queue_type) = if queue.is_none() {
             if let Some(queue) = queues.general.as_ref() {
-                let queue = queue.read().handle.clone();
+                let queue = queue.handle.clone();
                 (Some(queue), QueueType::General)
             } else {
                 (None, QueueType::General)

@@ -67,40 +67,26 @@ ref_ptr_object! {
 
 impl IDevice for Device {
     fn garbage_collect(&self) {
-        // Lock all three queues to prevent anyone from submitting more work while we wait for the
-        // current work to flush from the queues
-        let mut general = self.queues.general.as_ref().map(|v| v.read());
-        let mut compute = self.queues.compute.as_ref().map(|v| v.read());
-        let mut transfer = self.queues.transfer.as_ref().map(|v| v.read());
-
-        if let Some(queue) = &mut general {
+        if let Some(queue) = &self.queues.general {
             queue.clear_completed_lists();
         }
-        if let Some(queue) = &mut compute {
+        if let Some(queue) = &self.queues.compute {
             queue.clear_completed_lists();
         }
-        if let Some(queue) = &mut transfer {
+        if let Some(queue) = &self.queues.transfer {
             queue.clear_completed_lists();
         }
     }
 
     fn wait_idle(&self) {
-        // Lock all three queues to prevent anyone from submitting more work while we wait for the
-        // current work to flush from the queues.
-        //
-        // This is identical to
-        let mut general = self.queues.general.as_ref().map(|v| v.write());
-        let mut compute = self.queues.compute.as_ref().map(|v| v.write());
-        let mut transfer = self.queues.transfer.as_ref().map(|v| v.write());
-
-        if let Some(queue) = &mut general {
-            queue.clear_completed_lists();
+        if let Some(queue) = &self.queues.general {
+            queue.wait_all_lists_completed();
         }
-        if let Some(queue) = &mut compute {
-            queue.clear_completed_lists();
+        if let Some(queue) = &self.queues.compute {
+            queue.wait_all_lists_completed();
         }
-        if let Some(queue) = &mut transfer {
-            queue.clear_completed_lists();
+        if let Some(queue) = &self.queues.transfer {
+            queue.wait_all_lists_completed();
         }
     }
 
@@ -248,30 +234,36 @@ impl IDevice for Device {
         &self,
         command_list: Box<dyn IGeneralCommandList>,
     ) -> Result<(), CommandListSubmitError> {
-        // Get a reference to the queue, propagating an error if it is not loaded
-        let queue = self
-            .queues
-            .general
-            .as_ref()
-            .ok_or(CommandListSubmitError::QueueNotAvailable(
-                QueueType::General,
-            ))
-            .map(|v| v.write())?;
+        let queue =
+            self.queues
+                .general
+                .as_ref()
+                .ok_or(CommandListSubmitError::QueueNotAvailable(
+                    QueueType::General,
+                ))?;
 
-        // Perform the actual submit operation
         let command_list: Box<GeneralCommandList> = command_list
             .query_interface::<GeneralCommandList>()
             .ok()
             .unwrap();
-        queue
-            .handle
-            .execute_command_lists(&[command_list.list.as_weak()]);
 
-        let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-        queue
-            .handle
-            .signal(&queue.fence, index)
-            .map_err(|v| anyhow!(v))?;
+        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
+        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
+        // either.
+        let index = {
+            let _lock = queue.submit_lock.lock();
+            queue
+                .handle
+                .execute_command_lists(&[command_list.list.as_weak()]);
+
+            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+            queue
+                .handle
+                .signal(&queue.fence, index)
+                .map_err(|v| anyhow!(v))?;
+
+            index
+        };
 
         queue.in_flight.push(InFlightCommandList {
             index,
@@ -285,31 +277,38 @@ impl IDevice for Device {
         &self,
         command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
     ) -> Result<(), CommandListSubmitError> {
-        // Get a reference to the queue, propagating an error if it is not loaded
-        let queue = self
-            .queues
-            .general
-            .as_ref()
-            .ok_or(CommandListSubmitError::QueueNotAvailable(
-                QueueType::General,
-            ))
-            .map(|v| v.write())?;
+        let queue =
+            self.queues
+                .general
+                .as_ref()
+                .ok_or(CommandListSubmitError::QueueNotAvailable(
+                    QueueType::General,
+                ))?;
 
         // Perform the actual submit operation
         let lists: Vec<Box<GeneralCommandList>> = command_lists
             .map(|v| v.query_interface::<GeneralCommandList>().ok().unwrap())
             .collect();
 
-        let handles: Vec<dx12::GraphicsCommandList> =
-            lists.iter().map(|v| v.list.clone()).collect();
+        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
+        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
+        // either.
+        let index = {
+            let _lock = queue.submit_lock.lock();
 
-        queue.handle.execute_command_lists_strong(&handles);
+            let handles: Vec<dx12::GraphicsCommandList> =
+                lists.iter().map(|v| v.list.clone()).collect();
 
-        let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-        queue
-            .handle
-            .signal(&queue.fence, index)
-            .map_err(|v| anyhow!(v))?;
+            queue.handle.execute_command_lists_strong(&handles);
+
+            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+            queue
+                .handle
+                .signal(&queue.fence, index)
+                .map_err(|v| anyhow!(v))?;
+
+            index
+        };
 
         for list in lists {
             queue.in_flight.push(InFlightCommandList { index, list });
@@ -363,24 +362,15 @@ impl IDeviceExt for Device {
     }
 
     fn get_raw_general_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues
-            .general
-            .as_ref()
-            .map(|v| v.read().handle.clone())
+        self.queues.general.as_ref().map(|v| v.handle.clone())
     }
 
     fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues
-            .compute
-            .as_ref()
-            .map(|v| v.read().handle.clone())
+        self.queues.compute.as_ref().map(|v| v.handle.clone())
     }
 
     fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues
-            .transfer
-            .as_ref()
-            .map(|v| v.read().handle.clone())
+        self.queues.transfer.as_ref().map(|v| v.handle.clone())
     }
 }
 
@@ -402,7 +392,7 @@ impl INamedObject for Device {
 ///
 /// I can just remove them later
 pub struct Queues {
-    pub general: Option<RwLock<Queue<GeneralCommandList>>>,
-    pub compute: Option<RwLock<Queue<()>>>,
-    pub transfer: Option<RwLock<Queue<()>>>,
+    pub general: Option<Queue<GeneralCommandList>>,
+    pub compute: Option<Queue<()>>,
+    pub transfer: Option<Queue<()>>,
 }

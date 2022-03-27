@@ -79,9 +79,9 @@ impl SwapChain {
 
         let queues = &self.device.queues;
         let queue = match self.queue_support {
-            QueueType::General => queues.general.as_ref().unwrap().read().handle.clone(),
-            QueueType::Compute => queues.compute.as_ref().unwrap().read().handle.clone(),
-            QueueType::Transfer => queues.transfer.as_ref().unwrap().read().handle.clone(),
+            QueueType::General => queues.general.as_ref().unwrap().handle.clone(),
+            QueueType::Compute => queues.compute.as_ref().unwrap().handle.clone(),
+            QueueType::Transfer => queues.transfer.as_ref().unwrap().handle.clone(),
         };
         let queues: Vec<dx12::CommandQueue> = inner
             .images

@@ -36,7 +36,6 @@ use dx12::dxgi;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
-use parking_lot::RwLock;
 
 ref_ptr_object! {
     pub struct Adapter: IAdapter, IAdapterExt {
@@ -50,7 +49,7 @@ impl Adapter {
     fn create_queue<T: ReturnToPool>(
         device: &dx12::Device,
         queue_type: dx12::CommandListType,
-    ) -> Option<RwLock<Queue<T>>> {
+    ) -> Option<Queue<T>> {
         let desc = dx12::CommandQueueDesc::builder()
             .queue_type(queue_type)
             .priority(0)

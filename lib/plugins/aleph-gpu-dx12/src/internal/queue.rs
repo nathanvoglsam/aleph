@@ -29,11 +29,12 @@
 
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crossbeam::queue::SegQueue;
-use parking_lot::RwLock;
+use parking_lot::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct Queue<T: ReturnToPool> {
     pub handle: dx12::CommandQueue,
+    pub submit_lock: Mutex<()>,
     pub fence: dx12::Fence,
     pub last_submitted_index: AtomicU64,
     pub last_completed_index: AtomicU64,
@@ -42,14 +43,23 @@ pub struct Queue<T: ReturnToPool> {
 
 impl<T: ReturnToPool> Queue<T> {
     #[inline]
-    pub fn new(device: &dx12::Device, handle: dx12::CommandQueue) -> RwLock<Self> {
-        RwLock::new(Self {
+    pub fn new(device: &dx12::Device, handle: dx12::CommandQueue) -> Self {
+        Self {
             handle,
+            submit_lock: Mutex::new(()),
             fence: device.create_fence(0, dx12::FenceFlags::NONE).unwrap(),
             last_submitted_index: Default::default(),
             last_completed_index: Default::default(),
             in_flight: Default::default(),
-        })
+        }
+    }
+
+    pub fn wait_all_lists_completed(&self) {
+        while let Some(mut v) = self.in_flight.pop() {
+            self.fence.set_event_on_completion(v.index, None).unwrap();
+            self.last_completed_index.store(v.index, Ordering::Relaxed);
+            v.list.return_to_pool();
+        }
     }
 
     pub fn clear_completed_lists(&self) {
