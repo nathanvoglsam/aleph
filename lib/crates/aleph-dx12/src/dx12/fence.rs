@@ -41,8 +41,17 @@ impl Fence {
     }
 
     #[inline]
-    pub fn set_event_on_completion(&self, value: u64, event: &Event) -> windows::core::Result<()> {
-        unsafe { self.0.SetEventOnCompletion(value, HANDLE(event.0.get())) }
+    pub fn set_event_on_completion<'a, 'b>(
+        &'a self,
+        value: u64,
+        event: impl Into<Option<&'b Event>>,
+    ) -> windows::core::Result<()> {
+        let handle = if let Some(event) = event.into() {
+            HANDLE(event.0.get())
+        } else {
+            HANDLE(0)
+        };
+        unsafe { self.0.SetEventOnCompletion(value, handle) }
     }
 
     #[inline]
