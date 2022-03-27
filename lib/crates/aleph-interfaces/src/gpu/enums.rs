@@ -335,7 +335,30 @@ pub enum SwapChainCreateError {
 
 #[derive(Error, Debug)]
 pub enum AcquireImageError {
-    #[error("The swap chain is already acquired")]
+    ///
+    /// This error occurs when a queued resize operation was attempted to be resolved before
+    /// acquiring and returning an image handle, but the resize operation could not complete.
+    ///
+    /// This does not flag when the actual GAPI calls for resizing or recreating the swap chain
+    /// fails, rather this failure occurs when the wrapper API requirements for resize operations
+    /// are not met and the resize could not be completed.
+    ///
+    /// A resize operation can only occur if there are no swap textures in use on the GPU and there
+    /// are no images acquired by the API consumer. When resizing the GPU queues will be flushed so
+    /// it is easy to ensure the first condition by managing your image acquires.
+    ///
+    /// It is the caller's job to ensure it is possible for the resize operation to complete.
+    ///
+    #[error("A resize operation that was queued failed to complete")]
+    QueuedResizeFailed,
+
+    ///
+    /// This error occurs when the swap image has already been acquired and an API consumer attempts
+    /// to acquire the image again.
+    ///
+    /// It is the caller's job to manage image acquisitions to avoid triggering this.
+    ///
+    #[error("No swap chain images are available to acquire")]
     ImageNotAvailable,
 
     ///
@@ -615,6 +638,18 @@ pub enum CommandListBeginError {
 
 #[derive(Error, Debug)]
 pub enum CommandListSubmitError {
+    #[error("The queue '{0}' is not available")]
+    QueueNotAvailable(QueueType),
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum QueuePresentError {
+    #[error("The queue '{0}' does not support presentation to the requested swap chain")]
+    QueuePresentationNotSupported(QueueType),
+
     #[error("The queue '{0}' is not available")]
     QueueNotAvailable(QueueType),
 

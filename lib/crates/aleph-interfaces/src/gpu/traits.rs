@@ -2,9 +2,10 @@ use crate::gpu::{
     AcquireImageError, AdapterDescription, AdapterRequestOptions, BackendAPI, BufferCreateError,
     BufferDesc, ColorClearValue, CommandListBeginError, CommandListCreateError,
     CommandListSubmitError, CommandPoolCreateError, ContextCreateError, ContextOptions,
-    DepthStencilClearValue, DrawIndexedOptions, DrawOptions, QueueType, RequestDeviceError,
-    ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError, SwapChainConfiguration,
-    SwapChainCreateError, TextureCreateError, TextureDesc, TextureSubResourceSet,
+    DepthStencilClearValue, DrawIndexedOptions, DrawOptions, QueuePresentError, QueueType,
+    RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError,
+    SwapChainConfiguration, SwapChainCreateError, TextureCreateError, TextureDesc,
+    TextureSubResourceSet,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -80,7 +81,11 @@ pub trait ISwapChain: INamedObject + Any + 'static {
     fn get_config(&self) -> SwapChainConfiguration;
 
     /// Acquire an image from the swap chain for use with rendering
-    fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError>;
+    fn acquire_image(&self) -> Result<Box<dyn IAcquiredTexture>, AcquireImageError>;
+}
+
+pub trait IAcquiredTexture: IAny + Send + 'static {
+    fn image(&self) -> WeakRefPtr<dyn ITexture>;
 }
 
 pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
@@ -138,6 +143,18 @@ pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
         &self,
         command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
     ) -> Result<(), CommandListSubmitError>;
+
+    ///
+    /// # Safety
+    ///
+    /// It is the caller's responsibility to ensure that the image that is being presented will be
+    /// in the required resource state for presentation by the time this operation will be executed
+    /// on the GPU timeline.
+    ///
+    unsafe fn general_queue_present(
+        &self,
+        image: Box<dyn IAcquiredTexture>,
+    ) -> Result<(), QueuePresentError>;
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
