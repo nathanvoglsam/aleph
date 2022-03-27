@@ -70,7 +70,7 @@ impl<'a> Encoder<'a> {
 
         unsafe {
             self.list
-                .clear_render_target_view(concrete.view, &buffer, None);
+                .clear_render_target_view(concrete.view, &buffer, &[]);
         }
         self.track_texture(texture);
     }
@@ -114,7 +114,7 @@ impl<'a> Encoder<'a> {
 
                 if let Some(view) = view {
                     unsafe {
-                        self.list.clear_render_target_view(view, &buffer, None);
+                        self.list.clear_render_target_view(view, &buffer, &[]);
                     }
                 } else {
                     aleph_log::debug!(
@@ -170,7 +170,7 @@ impl<'a> Encoder<'a> {
                 if let Some(view) = view {
                     unsafe {
                         self.list
-                            .clear_depth_stencil_view(view, clear_flags, depth, stencil, None);
+                            .clear_depth_stencil_view(view, clear_flags, depth, stencil, &[]);
                     }
                 } else {
                     aleph_log::debug!(

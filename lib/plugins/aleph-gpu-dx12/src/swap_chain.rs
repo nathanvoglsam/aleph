@@ -32,7 +32,7 @@ use crate::device::Device;
 use crate::surface::Surface;
 use crate::swap_texture::SwapTexture;
 use crossbeam::atomic::AtomicCell;
-use dx12::dxgi;
+use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
     ResourceStates, SwapChainConfiguration, TextureDesc, TextureDimension,
@@ -97,12 +97,12 @@ impl SwapChain {
         // hold the only remaining references to the swap chain images.
         //
         // This also handles creating the list of queues we pass to ResizeBuffers
-        let queues: Vec<dx12::CommandQueue> = inner
+        let queues: Vec<WeakRef<dx12::CommandQueue>> = inner
             .images
             .drain(..)
             .map(|(_, view)| {
                 self.device.rtv_heap.free(view);
-                queue.clone()
+                queue.as_weak()
             })
             .collect();
 

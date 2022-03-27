@@ -356,6 +356,9 @@ impl IDevice for Device {
                 .signal(&queue.fence, index)
                 .map_err(|v| anyhow!(v))?;
 
+            // TODO: We need to track the lifetime of this operation and extend the swap image's
+            //       lifetime until the present operation is complete.
+
             index
         };
 
