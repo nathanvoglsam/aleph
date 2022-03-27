@@ -35,10 +35,12 @@ use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::{
     resource_state_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
 };
+use crate::internal::in_flight_command_list::InFlightCommandList;
+use crate::internal::queue::Queue;
 use crate::shader::Shader;
 use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
-use dx12::{dxgi, D3D12Object};
+use dx12::{dxgi, AsWeakRef, D3D12Object};
 use interfaces::any::QueryInterfaceBox;
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
@@ -49,8 +51,9 @@ use interfaces::gpu::{
     TextureDesc,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 
 ref_ptr_object! {
     pub struct Device: IDevice, IDeviceExt {
@@ -64,7 +67,41 @@ ref_ptr_object! {
 
 impl IDevice for Device {
     fn garbage_collect(&self) {
-        todo!()
+        // Lock all three queues to prevent anyone from submitting more work while we wait for the
+        // current work to flush from the queues
+        let mut general = self.queues.general.as_ref().map(|v| v.read());
+        let mut compute = self.queues.compute.as_ref().map(|v| v.read());
+        let mut transfer = self.queues.transfer.as_ref().map(|v| v.read());
+
+        if let Some(queue) = &mut general {
+            queue.clear_completed_lists();
+        }
+        if let Some(queue) = &mut compute {
+            queue.clear_completed_lists();
+        }
+        if let Some(queue) = &mut transfer {
+            queue.clear_completed_lists();
+        }
+    }
+
+    fn wait_idle(&self) {
+        // Lock all three queues to prevent anyone from submitting more work while we wait for the
+        // current work to flush from the queues.
+        //
+        // This is identical to
+        let mut general = self.queues.general.as_ref().map(|v| v.write());
+        let mut compute = self.queues.compute.as_ref().map(|v| v.write());
+        let mut transfer = self.queues.transfer.as_ref().map(|v| v.write());
+
+        if let Some(queue) = &mut general {
+            queue.clear_completed_lists();
+        }
+        if let Some(queue) = &mut compute {
+            queue.clear_completed_lists();
+        }
+        if let Some(queue) = &mut transfer {
+            queue.clear_completed_lists();
+        }
     }
 
     fn create_shader(
@@ -212,13 +249,14 @@ impl IDevice for Device {
         command_list: Box<dyn IGeneralCommandList>,
     ) -> Result<(), CommandListSubmitError> {
         // Get a reference to the queue, propagating an error if it is not loaded
-        let queue =
-            self.queues
-                .general
-                .as_ref()
-                .ok_or(CommandListSubmitError::QueueNotAvailable(
-                    QueueType::General,
-                ))?;
+        let queue = self
+            .queues
+            .general
+            .as_ref()
+            .ok_or(CommandListSubmitError::QueueNotAvailable(
+                QueueType::General,
+            ))
+            .map(|v| v.write())?;
 
         // Perform the actual submit operation
         let command_list: Box<GeneralCommandList> = command_list
@@ -227,8 +265,18 @@ impl IDevice for Device {
             .unwrap();
         queue
             .handle
-            .lock()
-            .execute_command_lists_strong(&[command_list.list]);
+            .execute_command_lists(&[command_list.list.as_weak()]);
+
+        let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        queue
+            .handle
+            .signal(&queue.fence, index)
+            .map_err(|v| anyhow!(v))?;
+
+        queue.in_flight.push(InFlightCommandList {
+            index,
+            list: command_list,
+        });
 
         Ok(())
     }
@@ -238,24 +286,35 @@ impl IDevice for Device {
         command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
     ) -> Result<(), CommandListSubmitError> {
         // Get a reference to the queue, propagating an error if it is not loaded
-        let queue =
-            self.queues
-                .general
-                .as_ref()
-                .ok_or(CommandListSubmitError::QueueNotAvailable(
-                    QueueType::General,
-                ))?;
+        let queue = self
+            .queues
+            .general
+            .as_ref()
+            .ok_or(CommandListSubmitError::QueueNotAvailable(
+                QueueType::General,
+            ))
+            .map(|v| v.write())?;
 
         // Perform the actual submit operation
-        let lists: Vec<dx12::GraphicsCommandList> = command_lists
-            .map(|v| {
-                let v: Box<GeneralCommandList> =
-                    v.query_interface::<GeneralCommandList>().ok().unwrap();
-                v.list
-            })
+        let lists: Vec<Box<GeneralCommandList>> = command_lists
+            .map(|v| v.query_interface::<GeneralCommandList>().ok().unwrap())
             .collect();
 
-        queue.handle.lock().execute_command_lists_strong(&lists);
+        let handles: Vec<dx12::GraphicsCommandList> =
+            lists.iter().map(|v| v.list.clone()).collect();
+
+        queue.handle.execute_command_lists_strong(&handles);
+
+        let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
+        queue
+            .handle
+            .signal(&queue.fence, index)
+            .map_err(|v| anyhow!(v))?;
+
+        for list in lists {
+            queue.in_flight.push(InFlightCommandList { index, list });
+        }
+
         Ok(())
     }
 
@@ -307,21 +366,21 @@ impl IDeviceExt for Device {
         self.queues
             .general
             .as_ref()
-            .map(|v| v.handle.lock().clone())
+            .map(|v| v.read().handle.clone())
     }
 
     fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue> {
         self.queues
             .compute
             .as_ref()
-            .map(|v| v.handle.lock().clone())
+            .map(|v| v.read().handle.clone())
     }
 
     fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue> {
         self.queues
             .transfer
             .as_ref()
-            .map(|v| v.handle.lock().clone())
+            .map(|v| v.read().handle.clone())
     }
 }
 
@@ -343,25 +402,7 @@ impl INamedObject for Device {
 ///
 /// I can just remove them later
 pub struct Queues {
-    pub general: Option<Queue<GeneralCommandList>>,
-    pub compute: Option<Queue<()>>,
-    pub transfer: Option<Queue<()>>,
-}
-
-pub struct Queue<T> {
-    pub handle: Mutex<dx12::CommandQueue>,
-    pub in_flight: SegQueue<InFlightCommandList<T>>,
-}
-
-impl<T> Queue<T> {
-    pub fn new(handle: Mutex<dx12::CommandQueue>) -> Self {
-        Self {
-            handle,
-            in_flight: Default::default(),
-        }
-    }
-}
-
-pub struct InFlightCommandList<T> {
-    pub list: Box<T>,
+    pub general: Option<RwLock<Queue<GeneralCommandList>>>,
+    pub compute: Option<RwLock<Queue<()>>>,
+    pub transfer: Option<RwLock<Queue<()>>>,
 }

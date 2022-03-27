@@ -28,21 +28,24 @@
 //
 
 use crate::general_command_list::GeneralCommandList;
-use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::conv::decode_u32_color_to_float;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
 use interfaces::gpu::{
     ColorClearValue, DepthStencilClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder,
-    IGeneralEncoder, ITexture, TextureDesc, TextureSubResourceSet,
+    IGeneralEncoder, ITexture, ITransferEncoder, TextureDesc, TextureSubResourceSet,
 };
 use interfaces::ref_ptr::WeakRefPtr;
-use std::marker::PhantomData;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
-    pub(crate) tracker: CommandListTracker,
-    pub(crate) _phantom: PhantomData<&'a mut GeneralCommandList>,
+    pub(crate) parent: &'a mut GeneralCommandList,
+}
+
+impl<'a> Encoder<'a> {
+    pub fn track_texture(&mut self, texture: WeakRefPtr<dyn ITexture>) {
+        self.parent.tracker.images.push(texture.to_strong());
+    }
 }
 
 impl<'a> Drop for Encoder<'a> {
@@ -69,7 +72,7 @@ impl<'a> Encoder<'a> {
             self.list
                 .clear_render_target_view(concrete.view, &buffer, None);
         }
-        self.tracker.images.push(texture.to_strong());
+        self.track_texture(texture);
     }
 
     #[inline]
@@ -124,7 +127,7 @@ impl<'a> Encoder<'a> {
             todo!()
         }
 
-        self.tracker.images.push(texture.to_strong());
+        self.track_texture(texture);
     }
 
     #[inline]
@@ -178,7 +181,7 @@ impl<'a> Encoder<'a> {
             }
         }
 
-        self.tracker.images.push(texture.to_strong());
+        self.track_texture(texture);
     }
 
     #[inline]
@@ -315,3 +318,5 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         }
     }
 }
+
+impl<'a> ITransferEncoder for Encoder<'a> {}

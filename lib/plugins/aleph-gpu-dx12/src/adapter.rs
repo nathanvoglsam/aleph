@@ -29,12 +29,14 @@
 
 use crate::context::Context;
 use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
-use crate::device::{Device, Queue, Queues};
+use crate::device::{Device, Queues};
+use crate::internal::in_flight_command_list::ReturnToPool;
+use crate::internal::queue::Queue;
 use dx12::dxgi;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
-use parking_lot::Mutex;
+use parking_lot::RwLock;
 
 ref_ptr_object! {
     pub struct Adapter: IAdapter, IAdapterExt {
@@ -45,10 +47,10 @@ ref_ptr_object! {
 }
 
 impl Adapter {
-    fn create_queue<T>(
+    fn create_queue<T: ReturnToPool>(
         device: &dx12::Device,
         queue_type: dx12::CommandListType,
-    ) -> Option<Queue<T>> {
+    ) -> Option<RwLock<Queue<T>>> {
         let desc = dx12::CommandQueueDesc::builder()
             .queue_type(queue_type)
             .priority(0)
@@ -56,8 +58,7 @@ impl Adapter {
         device
             .create_command_queue(&desc)
             .ok()
-            .map(Mutex::new)
-            .map(Queue::<T>::new)
+            .map(|v| Queue::<T>::new(device, v))
     }
 }
 

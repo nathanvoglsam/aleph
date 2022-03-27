@@ -33,7 +33,7 @@ use crate::swap_texture::SwapTexture;
 use crossbeam::atomic::AtomicCell;
 use dx12::dxgi;
 use interfaces::gpu::{
-    AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, ResourceStates,
+    AcquireImageError, IDevice, INamedObject, ISwapChain, ITexture, QueueType, ResourceStates,
     SwapChainConfiguration, TextureDesc, TextureDimension,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
@@ -62,11 +62,25 @@ pub struct SwapChainState {
 
 impl SwapChain {
     pub unsafe fn handle_resize(&self, inner: &mut SwapChainState, width: u32, height: u32) {
+        // D3D12 requires releasing all references to the D3D12_RESOURCE handles associated with a
+        // swap chain *before* calling ResizeBuffers. In order to meet this requirement we will
+        // force a full device queue flush and garbage collection cycle.
+        //
+        // This way we know the only places that can be holding a reference to any of the swap chain
+        // resources is the swap chain itself. That means we now have exclusive ownership of the
+        // images and releasing the handles should leave them all freed. Assuming no implementation
+        // bugs anyway.
+        self.device.wait_idle();
+
+        // Empty the images array as, assuming the rest of the code is correct, that array will
+        // hold the only remaining references to the swap chain images
+        inner.images.clear();
+
         let queues = &self.device.queues;
         let queue = match self.queue_support {
-            QueueType::General => queues.general.as_ref().unwrap().handle.lock().clone(),
-            QueueType::Compute => queues.compute.as_ref().unwrap().handle.lock().clone(),
-            QueueType::Transfer => queues.transfer.as_ref().unwrap().handle.lock().clone(),
+            QueueType::General => queues.general.as_ref().unwrap().read().handle.clone(),
+            QueueType::Compute => queues.compute.as_ref().unwrap().read().handle.clone(),
+            QueueType::Transfer => queues.transfer.as_ref().unwrap().read().handle.clone(),
         };
         let queues: Vec<dx12::CommandQueue> = inner
             .images

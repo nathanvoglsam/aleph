@@ -30,6 +30,15 @@
 use interfaces::gpu::{IBindingSet, IBuffer, ITexture};
 use interfaces::ref_ptr::RefPtr;
 
+/// Internal struct used to hold references to resources that need to have their lifetime extended
+/// until some point in the future.
+///
+/// This is intended to be used with command lists. When recording all resources used by the command
+/// list will have a reference added to a tracker instance which will keep the resources alive via
+/// ref counting. The implementation will then keep track of the tracker and its associated command
+/// list and will release the references once the command list has completed running on the GPU
+/// timeline.
+#[derive(Default)]
 pub struct CommandListTracker {
     /// Any bare image resources we need to extend the lifetime of until the command list has been
     /// retired.
@@ -41,4 +50,12 @@ pub struct CommandListTracker {
 
     /// Any binding sets we need to extend the lifetime of until the command list has been retired
     pub binding_sets: Vec<RefPtr<dyn IBindingSet>>,
+}
+
+impl CommandListTracker {
+    pub fn clear(&mut self) {
+        self.images.clear();
+        self.buffers.clear();
+        self.binding_sets.clear();
+    }
 }

@@ -87,6 +87,7 @@ impl ICommandPool for CommandPool {
 
         let command_list = GeneralCommandList {
             pool: self.as_ref_ptr(),
+            tracker: Default::default(),
             allocator,
             list,
         };

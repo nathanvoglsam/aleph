@@ -30,6 +30,7 @@
 use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
 use crate::internal::command_list_tracker::CommandListTracker;
+use crate::internal::in_flight_command_list::ReturnToPool;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, IAny};
 use interfaces::anyhow::anyhow;
@@ -38,6 +39,7 @@ use interfaces::ref_ptr::RefPtr;
 
 pub struct GeneralCommandList {
     pub(crate) pool: RefPtr<CommandPool>,
+    pub(crate) tracker: CommandListTracker,
     pub(crate) allocator: dx12::CommandAllocator,
     pub(crate) list: dx12::GraphicsCommandList,
 }
@@ -56,16 +58,27 @@ impl IGeneralCommandList for GeneralCommandList {
                 .map_err(|v| anyhow!(v))?;
         }
 
+        // Clear the resource tracker data. The list can't be in flight when we do this so it's all
+        // good to do this here. If the tracker is tracking anything it's because of the command
+        // list having already been recorded
+        self.tracker.clear();
+
         let encoder = Encoder::<'a> {
             list: self.list.clone(),
-            tracker: CommandListTracker {
-                images: Vec::new(),
-                buffers: Vec::new(),
-                binding_sets: Vec::new(),
-            },
-            _phantom: Default::default(),
+            parent: self,
         };
         Ok(Box::new(encoder))
+    }
+}
+
+impl ReturnToPool for GeneralCommandList {
+    fn return_to_pool(&mut self) {
+        self.tracker.images.clear();
+        self.tracker.binding_sets.clear();
+        self.tracker.buffers.clear();
+        self.pool
+            .general_free_list
+            .push((self.allocator.clone(), self.list.clone()))
     }
 }
 

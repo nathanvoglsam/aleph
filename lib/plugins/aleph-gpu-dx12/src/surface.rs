@@ -96,28 +96,37 @@ impl Surface {
         let queues = &device.queues;
         let (queue, queue_type) = match config.preferred_queue {
             QueueType::General => {
-                let queue = queues.general.as_ref().map(|v| &v.handle);
-                let queue_type = QueueType::General;
-                (queue, queue_type)
+                // Loading the general queue is handled after this match block as a fallback for
+                // the other two cases. We can just re-use the same code for loading it if we
+                // pretend we didn't find a queue here.
+                (None, QueueType::General)
             }
             QueueType::Compute => {
                 if let Some(queue) = queues.compute.as_ref() {
-                    (Some(&queue.handle), QueueType::Compute)
+                    let queue = queue.read().handle.clone();
+                    (Some(queue), QueueType::Compute)
                 } else {
-                    let queue = queues.general.as_ref().map(|v| &v.handle);
-                    let queue_type = QueueType::General;
-                    (queue, queue_type)
+                    (None, QueueType::General)
                 }
             }
             QueueType::Transfer => {
                 if let Some(queue) = queues.transfer.as_ref() {
-                    (Some(&queue.handle), QueueType::Transfer)
+                    let queue = queue.read().handle.clone();
+                    (Some(queue), QueueType::Transfer)
                 } else {
-                    let queue = queues.general.as_ref().map(|v| &v.handle);
-                    let queue_type = QueueType::General;
-                    (queue, queue_type)
+                    (None, QueueType::General)
                 }
             }
+        };
+        let (queue, queue_type) = if queue.is_none() {
+            if let Some(queue) = queues.general.as_ref() {
+                let queue = queue.read().handle.clone();
+                (Some(queue), QueueType::General)
+            } else {
+                (None, QueueType::General)
+            }
+        } else {
+            (queue, queue_type)
         };
 
         // If the preferred queue and fallback queue are not supported we return an error
@@ -130,7 +139,7 @@ impl Surface {
         // Create the actual swap chain object
         let swap_chain = self
             .factory
-            .create_swap_chain(&queue.lock(), self, &desc)
+            .create_swap_chain(&queue, self, &desc)
             .map_err(|e| anyhow!(e))?;
 
         let images = unsafe {
