@@ -86,6 +86,8 @@ pub trait ISwapChain: INamedObject + Any + 'static {
 pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
     fn garbage_collect(&self);
 
+    fn wait_idle(&self);
+
     fn create_shader(
         &self,
         options: &ShaderOptions,
