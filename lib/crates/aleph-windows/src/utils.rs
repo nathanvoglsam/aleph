@@ -27,12 +27,11 @@
 // SOFTWARE.
 //
 
-use crate::Win32::Foundation::PSTR;
-use crate::Win32::Foundation::PWSTR;
-use crate::Win32::Graphics::Direct3D12::D3D12_CACHED_PIPELINE_STATE;
-use crate::Win32::Graphics::Direct3D12::D3D12_SHADER_BYTECODE;
-use crate::Win32::System::LibraryLoader::GetProcAddress;
-use crate::Win32::System::LibraryLoader::LoadLibraryW;
+use crate::core::PCSTR;
+use crate::core::PCWSTR;
+use crate::Win32::Foundation::{HANDLE, HINSTANCE};
+use crate::Win32::Graphics::Direct3D12::{D3D12_CACHED_PIPELINE_STATE, D3D12_SHADER_BYTECODE};
+use crate::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
 use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
@@ -148,15 +147,12 @@ impl<T: Sized> DynamicLoadCell<T> {
         self.cell
             .get_or_try_init(|| {
                 // Attempt to load the library
-                let h_module = LoadLibraryW(PWSTR(self.lib_name.as_ptr() as *mut u16));
-
-                // If we fail to load the library emit an error
-                if h_module == 0 {
-                    return Err(());
-                }
+                let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))
+                    .ok()
+                    .map_err(|_| ())?;
 
                 // Attempt to find the function pointer we're after
-                GetProcAddress(h_module, PSTR(self.fn_name.as_ptr() as *mut u8))
+                GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
                     .ok_or(())
                     .map(|v| std::mem::transmute_copy::<_, T>(&v))
             })
@@ -175,12 +171,14 @@ impl<T: Sized> DynamicLoadCell<T> {
 /// undefined.
 ///
 #[inline]
-pub unsafe fn name_current_thread(name: &[u16]) {
+pub unsafe fn name_current_thread(name: &[u16]) -> crate::windows::core::Result<()> {
     use crate::Win32::System::Threading::GetCurrentThread;
     use crate::Win32::System::Threading::SetThreadDescription;
 
-    let handle = GetCurrentThread();
-    let _ = SetThreadDescription(handle, PWSTR(name.as_ptr() as *mut u16));
+    let handle: HANDLE = GetCurrentThread().ok()?;
+    let _ = SetThreadDescription(handle, PCWSTR(name.as_ptr()));
+
+    Ok(())
 }
 
 #[inline]

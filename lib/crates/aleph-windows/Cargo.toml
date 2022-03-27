@@ -48,7 +48,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 version = "1"
 
 [target.'cfg(not(target_vendor = "uwp"))'.dependencies.windows]
-version = "0.29"
+version = "0.34"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi",
@@ -70,7 +70,7 @@ features = [
 ]
 
 [target.'cfg(target_vendor = "uwp")'.dependencies.windows]
-version = "0.29"
+version = "0.34"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi",
@@ -91,10 +91,6 @@ features = [
     "Win32_Security",
     "System",
 ]
-
-[target.x86_64-uwp-windows-msvc.dependencies.aleph-windows-x86_64_msvc_uwp]
-version = "0.29.0"
-path = "../aleph-windows-x86_64_msvc_uwp"
 
 [build-dependencies.syn]
 version = "1"
