@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::dx12;
 use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt, ISwapTextureExt};
@@ -47,9 +46,6 @@ struct Data {
     window: any::AnyArc<dyn IWindow>,
     render_data: any::AnyArc<dyn egui::IEguiRenderData>,
     egui_provider: any::AnyArc<dyn egui::IEguiContextProvider>,
-    queue: dx12::CommandQueue,
-    event: dx12::Event,
-    fence: dx12::Fence,
     swap_chain: RefPtr<dyn ISwapChainExt>,
     renderer: EguiRenderer,
 }
@@ -137,15 +133,9 @@ impl IPlugin for PluginRender {
             .query_interface::<dyn IDeviceExt>()
             .unwrap();
 
-        let raw_device = device.get_raw_handle();
-        let queue = device.get_raw_general_queue().unwrap();
-
         aleph_log::info!("");
         Self::log_gpu_info(&adapter.get_raw_handle());
         aleph_log::info!("");
-
-        let event = dx12::Event::new().unwrap();
-        let fence = raw_device.create_fence(0, dx12::FenceFlags::NONE).unwrap();
 
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {
@@ -177,9 +167,6 @@ impl IPlugin for PluginRender {
             window,
             render_data,
             egui_provider,
-            queue,
-            event,
-            fence,
             swap_chain,
             renderer,
         };
@@ -192,9 +179,6 @@ impl IPlugin for PluginRender {
                 let data = &mut data;
                 let egui_ctx = data.egui_provider.get_context();
 
-                data.fence.signal(0).unwrap();
-                data.fence.set_event_on_completion(1, &data.event).unwrap();
-
                 if data.window.resized() {
                     let dimensions = data.window.size();
                     data.swap_chain.queue_resize(dimensions.0, dimensions.1);
@@ -203,27 +187,21 @@ impl IPlugin for PluginRender {
 
                 unsafe {
                     data.index = (data.index + 1) % 3;
-                    let swap_image_tex = data.swap_chain.acquire_image().unwrap();
-                    let swap_image = swap_image_tex
-                        .query_interface::<dyn ISwapTextureExt>()
-                        .unwrap();
+                    let acquired_image = data.swap_chain.acquire_image().unwrap();
+                    let image = acquired_image.image();
+                    let image_ext = image.query_interface::<dyn ISwapTextureExt>().unwrap();
 
                     let command_list = data.renderer.record_frame(
                         data.index,
-                        swap_image.get_raw_handle(),
-                        swap_image_tex.as_weak(),
-                        swap_image.get_raw_rtv(),
+                        image_ext.get_raw_handle(),
+                        acquired_image.image(),
+                        image_ext.get_raw_rtv(),
                         &egui_ctx,
                         data.render_data.take(),
                     );
 
                     device.general_queue_submit_list(command_list).unwrap();
-
-                    data.swap_chain.get_raw_handle().present(0, 0).unwrap();
-
-                    data.queue.signal(&data.fence, 1).unwrap();
-
-                    data.event.wait(None).unwrap();
+                    device.general_queue_present(acquired_image).unwrap();
                 }
             },
         );
