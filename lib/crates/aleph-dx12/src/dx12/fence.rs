@@ -44,6 +44,11 @@ impl Fence {
     pub fn set_event_on_completion(&self, value: u64, event: &Event) -> windows::core::Result<()> {
         unsafe { self.0.SetEventOnCompletion(value, HANDLE(event.0.get())) }
     }
+
+    #[inline]
+    pub fn get_completed_value(&self) -> u64 {
+        unsafe { self.0.GetCompletedValue() }
+    }
 }
 
 crate::object_impl!(Fence);
