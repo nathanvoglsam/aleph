@@ -84,8 +84,15 @@ pub trait ISwapChain: INamedObject + Any + 'static {
 }
 
 pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
+    /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
+    /// command lists to be freed. It is recommended to call this at least once per frame.
     fn garbage_collect(&self);
 
+    /// Block the calling thread until all GPU queues are flushed of work. This is similar to
+    /// vkDeviceWaitIdle.
+    ///
+    /// This will also trigger a GC cycle, freeing the releases from the now completed command
+    /// lists.
     fn wait_idle(&self);
 
     fn create_shader(
