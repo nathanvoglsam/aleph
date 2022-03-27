@@ -313,7 +313,7 @@ impl log::Log for Logger {
 
             let payload = format!("[{} {}] {}\r\n\0", level, module, record.args());
 
-            let v = aleph_windows::Win32::Foundation::PSTR(payload.as_ptr() as *mut _);
+            let v = aleph_windows::core::PCSTR(payload.as_ptr());
             aleph_windows::Win32::System::Diagnostics::Debug::OutputDebugStringA(v);
         }
 
