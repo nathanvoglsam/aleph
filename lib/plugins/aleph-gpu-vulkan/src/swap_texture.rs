@@ -50,7 +50,13 @@ impl ITexture for SwapTexture {
 
 impl Drop for SwapTexture {
     fn drop(&mut self) {
-        self.swap_chain.inner.lock().unwrap().acquired = false;
+        self.swap_chain
+            .inner
+            .lock()
+            .unwrap()
+            .images_in_flight
+            .checked_sub(1)
+            .unwrap();
     }
 }
 

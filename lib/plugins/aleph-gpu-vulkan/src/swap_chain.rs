@@ -37,8 +37,9 @@ use erupt::vk;
 use erupt::vk1_0::{Extent2D, Format};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, ResourceStates,
-    SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension, TextureFormat,
+    AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
+    ResourceStates, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
+    TextureFormat,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::sync::Mutex;
@@ -69,7 +70,7 @@ ref_ptr_object! {
 pub struct SwapChainState {
     pub swap_chain: vk::SwapchainKHR,
     pub acquire_fence: vk::Fence,
-    pub acquired: bool,
+    pub images_in_flight: u32,
     pub format: TextureFormat,
     pub vk_format: vk::Format,
     pub color_space: vk::ColorSpaceKHR,
@@ -268,20 +269,17 @@ impl ISwapChain for SwapChain {
         todo!()
     }
 
-    fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError> {
+    fn acquire_image(&self) -> Result<Box<dyn IAcquiredTexture>, AcquireImageError> {
         let mut inner = self.inner.lock().unwrap();
-
-        // Check if the image is already acquired. We only allow a single swap chain image to be
-        // acquired at any one time to make synchronization easier to reason about.
-        if inner.acquired {
-            return Err(AcquireImageError::ImageNotAvailable);
-        }
 
         if let Some((width, height)) = inner.queued_resize.take() {
             unsafe {
                 // TODO: Need to investigate how to correctly synchronize this. It should only
                 //       require handling when the old swap chain is destroyed as oldSwapChain is
                 //       specifically designed to allow already in flight frames to finish
+                self.device.wait_idle();
+                self.device.garbage_collect();
+
                 let width = if width == u32::MAX {
                     inner.extent.width
                 } else {
@@ -360,7 +358,8 @@ impl ISwapChain for SwapChain {
                         }
                     };
                     let image: RefPtr<SwapTexture> = RefPtr::new(image);
-                    Ok(image.query_interface::<dyn ITexture>().unwrap())
+                    todo!()
+                    // Ok(image.query_interface::<dyn ITexture>().unwrap())
                 }
                 vk::Result::ERROR_OUT_OF_DATE_KHR => {
                     inner.queued_resize = Some((u32::MAX, u32::MAX));
