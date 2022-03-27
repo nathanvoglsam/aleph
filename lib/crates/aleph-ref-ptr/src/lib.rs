@@ -159,6 +159,24 @@ impl<T: ?Sized> Clone for RefPtr<T> {
             abort();
         }
 
+        // Our usage of internally reference counted objects has one small gap
+        // in the implementation that would allow unsoundness. Calling .as_ref_ptr()
+        // inside a Drop impl would allow 'reviving' the RefPtr and creating a
+        // zombie object that refers to an invalid object if we didn't guard against
+        // that happening.
+        //
+        // Thankfully we can prevent this happening with the check below. Thanks to
+        // the invariants held by the rest of the interface it is only possible for
+        // an object to observe its own refcount at 0 inside the drop function. If
+        // the ref count is 0 when calling this function then we must be reviving
+        // a dead object from the destructor.
+        //
+        // This is super bad behavior so we abort instead of panic to limit
+        // help reduce code size.
+        if old_size == 0 {
+            abort();
+        }
+
         unsafe { Self::from_inner(self.object) }
     }
 }
