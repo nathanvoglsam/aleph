@@ -57,6 +57,6 @@ impl TryFrom<DXGI_SCALING> for Scaling {
 impl From<Scaling> for DXGI_SCALING {
     #[inline]
     fn from(v: Scaling) -> Self {
-        v as _
+        DXGI_SCALING(v as _)
     }
 }

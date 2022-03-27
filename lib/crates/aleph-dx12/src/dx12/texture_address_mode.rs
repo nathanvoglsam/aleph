@@ -42,6 +42,6 @@ pub enum TextureAddressMode {
 impl From<TextureAddressMode> for D3D12_TEXTURE_ADDRESS_MODE {
     #[inline]
     fn from(v: TextureAddressMode) -> Self {
-        v as _
+        D3D12_TEXTURE_ADDRESS_MODE(v as _)
     }
 }

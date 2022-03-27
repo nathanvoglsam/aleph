@@ -40,7 +40,7 @@ pub enum MemoryPool {
 impl From<MemoryPool> for D3D12_MEMORY_POOL {
     #[inline]
     fn from(v: MemoryPool) -> Self {
-        v as _
+        D3D12_MEMORY_POOL(v as _)
     }
 }
 

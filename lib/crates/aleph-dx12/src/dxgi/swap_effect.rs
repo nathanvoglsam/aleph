@@ -60,6 +60,6 @@ impl TryFrom<DXGI_SWAP_EFFECT> for SwapEffect {
 impl From<SwapEffect> for DXGI_SWAP_EFFECT {
     #[inline]
     fn from(v: SwapEffect) -> Self {
-        v as _
+        DXGI_SWAP_EFFECT(v as _)
     }
 }

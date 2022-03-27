@@ -130,13 +130,11 @@ impl Device {
         root_signature_blob: &RootSignatureBlob,
     ) -> windows::core::Result<RootSignature> {
         unsafe {
-            self.0
-                .CreateRootSignature(
-                    0,
-                    root_signature_blob.0.GetBufferPointer(),
-                    root_signature_blob.0.GetBufferSize(),
-                )
-                .map(RootSignature)
+            let blob = core::slice::from_raw_parts(
+                root_signature_blob.0.GetBufferPointer() as *const u8,
+                root_signature_blob.0.GetBufferSize(),
+            );
+            self.0.CreateRootSignature(0, blob).map(RootSignature)
         }
     }
 
@@ -244,9 +242,9 @@ impl Device {
         let mut out = None;
         let result: windows::core::Result<()> = self.0.CreateCommittedResource::<ID3D12Resource>(
             heap_properties as *const _ as *const D3D12_HEAP_PROPERTIES,
-            heap_flags.0,
+            heap_flags.into(),
             resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
-            initial_state.0,
+            initial_state.into(),
             optimized_clear_value_ref,
             &mut out,
         );

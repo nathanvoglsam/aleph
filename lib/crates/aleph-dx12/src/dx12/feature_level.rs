@@ -55,6 +55,6 @@ pub enum FeatureLevel {
 impl From<FeatureLevel> for D3D_FEATURE_LEVEL {
     #[inline]
     fn from(v: FeatureLevel) -> Self {
-        v as _
+        D3D_FEATURE_LEVEL(v as _)
     }
 }

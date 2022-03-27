@@ -41,6 +41,6 @@ pub enum TextureLayout {
 impl From<TextureLayout> for D3D12_TEXTURE_LAYOUT {
     #[inline]
     fn from(v: TextureLayout) -> Self {
-        v as _
+        D3D12_TEXTURE_LAYOUT(v as _)
     }
 }

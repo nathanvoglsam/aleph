@@ -124,8 +124,8 @@ macro_rules! object_impl {
         impl $crate::D3D12Object for $t {
             #[inline]
             unsafe fn set_name_raw(&self, name: &[u16]) -> $crate::windows::core::Result<()> {
-                use $crate::windows::Win32::Foundation::PWSTR;
-                self.0.SetName(PWSTR(name.as_ptr() as *mut u16))
+                use $crate::windows::core::PCWSTR;
+                self.0.SetName(PCWSTR(name.as_ptr()))
             }
         }
     };

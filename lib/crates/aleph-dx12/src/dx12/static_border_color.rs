@@ -40,6 +40,6 @@ pub enum StaticBorderColor {
 impl From<StaticBorderColor> for D3D12_STATIC_BORDER_COLOR {
     #[inline]
     fn from(v: StaticBorderColor) -> Self {
-        v as _
+        D3D12_STATIC_BORDER_COLOR(v as _)
     }
 }

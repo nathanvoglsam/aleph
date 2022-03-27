@@ -42,6 +42,6 @@ pub enum ResourceDimension {
 impl From<ResourceDimension> for D3D12_RESOURCE_DIMENSION {
     #[inline]
     fn from(v: ResourceDimension) -> Self {
-        v as _
+        D3D12_RESOURCE_DIMENSION(v as _)
     }
 }

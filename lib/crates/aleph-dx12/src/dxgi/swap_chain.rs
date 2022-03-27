@@ -28,7 +28,7 @@
 //
 
 use crate::dxgi::{Format, SwapChainDesc1, SwapChainFlags};
-use crate::CommandQueue;
+use crate::{CommandQueue, WeakRef};
 use std::mem::transmute;
 use windows::core::IUnknown;
 use windows::Win32::Graphics::Dxgi::{
@@ -49,7 +49,7 @@ impl SwapChain {
         format: Format,
         flags: SwapChainFlags,
         node_masks: Option<&[u32]>,
-        queues: &[CommandQueue],
+        queues: &[WeakRef<CommandQueue>],
     ) -> windows::core::Result<()> {
         // Input validation
         assert!(
@@ -65,10 +65,6 @@ impl SwapChain {
             buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS,
             "can't have more than 16 swap chain buffers"
         );
-
-        // Unpack args
-        let format = format.into();
-        let swap_chain_flags = flags.0;
 
         // Input validation + arg unpacking
         let p_creation_node_mask = if let Some(node_masks) = node_masks {
@@ -89,18 +85,24 @@ impl SwapChain {
         };
 
         // Arg unpack
-        let pp_present_queue = queues.as_ptr() as *mut CommandQueue;
+        let pp_present_queue = queues.as_ptr() as *mut WeakRef<CommandQueue>;
         let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
 
-        self.0.ResizeBuffers1(
-            buffer_count,
-            width,
-            height,
-            format,
-            swap_chain_flags,
-            p_creation_node_mask,
-            pp_present_queue,
-        )
+        {
+            (windows::core::Interface::vtable(&self.0)
+                .base
+                .ResizeBuffers1)(
+                ::core::mem::transmute_copy(&self.0),
+                ::core::mem::transmute(buffer_count),
+                ::core::mem::transmute(width),
+                ::core::mem::transmute(height),
+                ::core::mem::transmute(format),
+                ::core::mem::transmute(flags),
+                ::core::mem::transmute(p_creation_node_mask),
+                ::core::mem::transmute(pp_present_queue),
+            )
+            .ok()
+        }
     }
 
     /// `IDXGISwapChain1::Present1`

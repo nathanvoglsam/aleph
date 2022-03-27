@@ -55,6 +55,6 @@ windows::flags_bitwise_impl!(ClearFlags);
 impl From<ClearFlags> for D3D12_CLEAR_FLAGS {
     #[inline]
     fn from(v: ClearFlags) -> Self {
-        v.0
+        D3D12_CLEAR_FLAGS(v.0)
     }
 }

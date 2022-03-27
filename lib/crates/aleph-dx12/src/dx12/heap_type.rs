@@ -41,7 +41,7 @@ pub enum HeapType {
 impl From<HeapType> for D3D12_HEAP_TYPE {
     #[inline]
     fn from(v: HeapType) -> Self {
-        v as _
+        D3D12_HEAP_TYPE(v as _)
     }
 }
 

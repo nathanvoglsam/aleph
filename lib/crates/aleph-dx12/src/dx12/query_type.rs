@@ -47,6 +47,6 @@ pub enum QueryType {
 impl From<QueryType> for D3D12_QUERY_TYPE {
     #[inline]
     fn from(v: QueryType) -> Self {
-        v as _
+        D3D12_QUERY_TYPE(v as _)
     }
 }

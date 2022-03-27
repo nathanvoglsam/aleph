@@ -45,6 +45,6 @@ pub enum ComparisonFunc {
 impl From<ComparisonFunc> for D3D12_COMPARISON_FUNC {
     #[inline]
     fn from(v: ComparisonFunc) -> Self {
-        v as _
+        D3D12_COMPARISON_FUNC(v as _)
     }
 }

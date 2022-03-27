@@ -35,13 +35,13 @@ use windows::Win32::Graphics::Dxgi::{
 #[repr(i32)]
 #[derive(Copy, Clone, Debug, Hash)]
 pub enum GpuPreference {
-    NoPreference = DXGI_GPU_PREFERENCE_UNSPECIFIED,
-    MinimumPower = DXGI_GPU_PREFERENCE_MINIMUM_POWER,
-    HighPerformance = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+    NoPreference = DXGI_GPU_PREFERENCE_UNSPECIFIED.0,
+    MinimumPower = DXGI_GPU_PREFERENCE_MINIMUM_POWER.0,
+    HighPerformance = DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE.0,
 }
 
 impl From<GpuPreference> for DXGI_GPU_PREFERENCE {
     fn from(v: GpuPreference) -> Self {
-        v as _
+        DXGI_GPU_PREFERENCE(v as _)
     }
 }

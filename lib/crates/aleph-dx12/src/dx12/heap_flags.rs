@@ -63,6 +63,6 @@ windows::flags_bitwise_impl!(HeapFlags);
 impl From<HeapFlags> for D3D12_HEAP_FLAGS {
     #[inline]
     fn from(v: HeapFlags) -> Self {
-        v.0
+        D3D12_HEAP_FLAGS(v.0)
     }
 }

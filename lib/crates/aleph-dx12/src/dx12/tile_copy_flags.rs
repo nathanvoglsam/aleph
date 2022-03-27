@@ -51,6 +51,6 @@ windows::flags_bitwise_impl!(TileCopyFlags);
 impl From<TileCopyFlags> for D3D12_TILE_COPY_FLAGS {
     #[inline]
     fn from(v: TileCopyFlags) -> Self {
-        v.0
+        D3D12_TILE_COPY_FLAGS(v.0)
     }
 }

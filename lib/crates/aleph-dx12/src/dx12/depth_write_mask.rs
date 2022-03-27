@@ -39,6 +39,6 @@ pub enum DepthWriteMask {
 impl From<DepthWriteMask> for D3D12_DEPTH_WRITE_MASK {
     #[inline]
     fn from(v: DepthWriteMask) -> Self {
-        v as _
+        D3D12_DEPTH_WRITE_MASK(v as _)
     }
 }

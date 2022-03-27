@@ -42,6 +42,6 @@ pub enum DescriptorHeapType {
 impl From<DescriptorHeapType> for D3D12_DESCRIPTOR_HEAP_TYPE {
     #[inline]
     fn from(v: DescriptorHeapType) -> Self {
-        v as _
+        D3D12_DESCRIPTOR_HEAP_TYPE(v as _)
     }
 }

@@ -50,6 +50,6 @@ windows::flags_bitwise_impl!(ResourceBarrierFlags);
 impl From<ResourceBarrierFlags> for D3D12_RESOURCE_BARRIER_FLAGS {
     #[inline]
     fn from(v: ResourceBarrierFlags) -> Self {
-        v.0
+        D3D12_RESOURCE_BARRIER_FLAGS(v.0)
     }
 }

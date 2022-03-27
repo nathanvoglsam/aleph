@@ -73,6 +73,6 @@ pub enum Filter {
 impl From<Filter> for D3D12_FILTER {
     #[inline]
     fn from(v: Filter) -> Self {
-        v as _
+        D3D12_FILTER(v as _)
     }
 }

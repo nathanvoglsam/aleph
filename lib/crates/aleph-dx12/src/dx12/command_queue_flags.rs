@@ -49,6 +49,6 @@ windows::flags_bitwise_impl!(CommandQueueFlags);
 impl From<CommandQueueFlags> for D3D12_COMMAND_QUEUE_FLAGS {
     #[inline]
     fn from(v: CommandQueueFlags) -> Self {
-        v.0
+        D3D12_COMMAND_QUEUE_FLAGS(v.0)
     }
 }

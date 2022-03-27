@@ -53,6 +53,6 @@ pub enum LogicOp {
 impl From<LogicOp> for D3D12_LOGIC_OP {
     #[inline]
     fn from(v: LogicOp) -> Self {
-        v as _
+        D3D12_LOGIC_OP(v as _)
     }
 }

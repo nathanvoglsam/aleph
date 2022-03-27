@@ -86,6 +86,6 @@ impl Default for PrimitiveTopology {
 impl From<PrimitiveTopology> for D3D_PRIMITIVE_TOPOLOGY {
     #[inline]
     fn from(v: PrimitiveTopology) -> Self {
-        v as _
+        D3D_PRIMITIVE_TOPOLOGY(v as _)
     }
 }

@@ -43,19 +43,15 @@ impl CommandQueue {
     #[inline]
     pub unsafe fn execute_command_lists(&self, command_lists: &[WeakRef<GraphicsCommandList>]) {
         // The actual call to ExecuteCommandLists
-        self.0.ExecuteCommandLists(
-            command_lists.len() as u32,
-            command_lists.as_ptr() as *const _,
-        );
+        self.0
+            .ExecuteCommandLists(core::mem::transmute(command_lists));
     }
 
     #[inline]
     pub unsafe fn execute_command_lists_strong(&self, command_lists: &[GraphicsCommandList]) {
         // The actual call to ExecuteCommandLists
-        self.0.ExecuteCommandLists(
-            command_lists.len() as u32,
-            command_lists.as_ptr() as *const _,
-        );
+        self.0
+            .ExecuteCommandLists(core::mem::transmute(command_lists));
     }
 }
 

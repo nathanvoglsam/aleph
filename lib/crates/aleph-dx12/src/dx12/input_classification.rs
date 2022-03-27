@@ -39,6 +39,6 @@ pub enum InputClassification {
 impl From<InputClassification> for D3D12_INPUT_CLASSIFICATION {
     #[inline]
     fn from(v: InputClassification) -> Self {
-        v as _
+        D3D12_INPUT_CLASSIFICATION(v as _)
     }
 }

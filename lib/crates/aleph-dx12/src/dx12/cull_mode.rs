@@ -40,6 +40,6 @@ pub enum CullMode {
 impl From<CullMode> for D3D12_CULL_MODE {
     #[inline]
     fn from(v: CullMode) -> Self {
-        v as _
+        D3D12_CULL_MODE(v as _)
     }
 }

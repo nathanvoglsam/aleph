@@ -45,6 +45,6 @@ pub enum StencilOp {
 impl From<StencilOp> for D3D12_STENCIL_OP {
     #[inline]
     fn from(v: StencilOp) -> Self {
-        v as _
+        D3D12_STENCIL_OP(v as _)
     }
 }

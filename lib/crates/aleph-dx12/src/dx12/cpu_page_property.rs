@@ -41,7 +41,7 @@ pub enum CpuPageProperty {
 impl From<CpuPageProperty> for D3D12_CPU_PAGE_PROPERTY {
     #[inline]
     fn from(v: CpuPageProperty) -> Self {
-        v as _
+        D3D12_CPU_PAGE_PROPERTY(v as _)
     }
 }
 

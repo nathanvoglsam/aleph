@@ -66,6 +66,6 @@ impl CommandListType {
 impl From<CommandListType> for D3D12_COMMAND_LIST_TYPE {
     #[inline]
     fn from(v: CommandListType) -> Self {
-        v as _
+        D3D12_COMMAND_LIST_TYPE(v as _)
     }
 }

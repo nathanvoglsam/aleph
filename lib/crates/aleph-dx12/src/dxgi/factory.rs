@@ -83,7 +83,7 @@ impl Factory {
             let swapchain = match window_handle {
                 RawWindowHandle::Win32(hwnd) => {
                     assert!(!hwnd.hwnd.is_null());
-                    let hwnd = hwnd.hwnd as isize;
+                    let hwnd = HWND(hwnd.hwnd as isize);
                     self.create_swap_chain_for_hwnd(queue, hwnd, desc)?
                 }
                 RawWindowHandle::WinRt(core_window) => {
@@ -162,7 +162,7 @@ impl Factory {
                     let desc = adapter.GetDesc1().unwrap();
 
                     // We want to skip software adapters as they're going to be *very* slow
-                    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) != 0 {
+                    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
                         i += 1;
                         continue;
                     }

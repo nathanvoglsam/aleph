@@ -39,6 +39,6 @@ pub enum ConservativeRasterizationMode {
 impl From<ConservativeRasterizationMode> for D3D12_CONSERVATIVE_RASTERIZATION_MODE {
     #[inline]
     fn from(v: ConservativeRasterizationMode) -> Self {
-        v as _
+        D3D12_CONSERVATIVE_RASTERIZATION_MODE(v as _)
     }
 }

@@ -136,6 +136,6 @@ impl DebugRLOFlags {
 impl From<DebugRLOFlags> for DXGI_DEBUG_RLO_FLAGS {
     #[inline]
     fn from(v: DebugRLOFlags) -> Self {
-        v.0
+        DXGI_DEBUG_RLO_FLAGS(v.0)
     }
 }

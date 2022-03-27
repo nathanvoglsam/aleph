@@ -45,6 +45,6 @@ pub enum ShaderVisibility {
 impl From<ShaderVisibility> for D3D12_SHADER_VISIBILITY {
     #[inline]
     fn from(v: ShaderVisibility) -> Self {
-        v as _
+        D3D12_SHADER_VISIBILITY(v as _)
     }
 }

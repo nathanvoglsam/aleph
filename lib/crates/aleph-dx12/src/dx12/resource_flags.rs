@@ -56,6 +56,6 @@ windows::flags_bitwise_impl!(ResourceFlags);
 impl From<ResourceFlags> for D3D12_RESOURCE_FLAGS {
     #[inline]
     fn from(v: ResourceFlags) -> Self {
-        v.0
+        D3D12_RESOURCE_FLAGS(v.0)
     }
 }

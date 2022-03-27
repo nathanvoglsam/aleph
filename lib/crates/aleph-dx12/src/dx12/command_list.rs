@@ -227,27 +227,18 @@ impl GraphicsCommandList {
     /// `ID3D12GraphicsCommandList::RSSetViewports`
     #[inline]
     pub unsafe fn rs_set_viewports(&self, viewports: &[Viewport]) {
-        let num_viewports = viewports.len() as u32;
-        let p_viewports = viewports.as_ptr();
-        self.0
-            .RSSetViewports(num_viewports, p_viewports as *const _)
+        self.0.RSSetViewports(core::mem::transmute(viewports))
     }
 
     /// `ID3D12GraphicsCommandList::RSSetScissorRects`
     #[inline]
     pub unsafe fn rs_set_scissor_rects(&self, rects: &[Rect]) {
-        let num_rects = rects.len() as u32;
-        let p_rects = rects.as_ptr();
-        self.0.RSSetScissorRects(num_rects, p_rects as *const _)
+        self.0.RSSetScissorRects(core::mem::transmute(rects))
     }
 
     /// `ID3D12GraphicsCommandList::OMSetBlendFactor`
     #[inline]
-    pub unsafe fn om_set_blend_factor(&self, blend_factor: Option<&[f32]>) {
-        let (num_factors, blend_factor) = optional_slice_to_num_ptr_pair(blend_factor);
-
-        assert_eq!(num_factors, 4);
-
+    pub unsafe fn om_set_blend_factor(&self, blend_factor: &[f32; 4]) {
         self.0.OMSetBlendFactor(blend_factor)
     }
 
@@ -278,7 +269,8 @@ impl GraphicsCommandList {
 
         let p_barriers = list.as_ptr() as *const _;
 
-        self.0.ResourceBarrier(NUM as u32, p_barriers);
+        self.0
+            .ResourceBarrier(core::slice::from_raw_parts(p_barriers, NUM));
     }
 
     /// `ID3D12GraphicsCommandList::ResourceBarrier`
@@ -299,9 +291,7 @@ impl GraphicsCommandList {
         // wrapper FFI compatible without forcing very non-idiomatic and unsafe code on the user.
         let barriers: Vec<D3D12_RESOURCE_BARRIER> =
             barriers.map(|v| v.borrow().get_raw()).collect();
-        let num_barriers = barriers.len() as u32;
-        let p_barriers = barriers.as_ptr();
-        self.0.ResourceBarrier(num_barriers, p_barriers)
+        self.0.ResourceBarrier(&barriers)
     }
 
     /// `ID3D12GraphicsCommandList::ExecuteBundle`
@@ -332,14 +322,8 @@ impl GraphicsCommandList {
             assert_ne!(heap2_desc.heap_type, DescriptorHeapType::RenderTargetView);
         }
 
-        // Perform the actual API call
-        let num_descriptor_heaps = descriptor_heaps.len() as u32;
-
-        let pp_descriptor_heaps = descriptor_heaps.as_ptr();
-        let pp_descriptor_heaps = pp_descriptor_heaps as *mut Option<_>;
-
         self.0
-            .SetDescriptorHeaps(num_descriptor_heaps, pp_descriptor_heaps);
+            .SetDescriptorHeaps(core::mem::transmute(descriptor_heaps));
     }
 
     /// `ID3D12GraphicsCommandList::SetComputeRootSignature`
@@ -545,10 +529,9 @@ impl GraphicsCommandList {
             align_of::<VertexBufferView>(),
             align_of::<D3D12_VERTEX_BUFFER_VIEW>()
         );
-        let num_views = views.len() as u32;
-        let p_views = views.as_ptr();
+
         self.0
-            .IASetVertexBuffers(start_slot, num_views, p_views as *const _)
+            .IASetVertexBuffers(start_slot, core::mem::transmute(views))
     }
 
     /// `ID3D12GraphicsCommandList::SOSetTargets`
@@ -570,10 +553,7 @@ impl GraphicsCommandList {
             }
         });
 
-        let num_views = views.len() as u32;
-        let p_views = views.as_ptr();
-        self.0
-            .SOSetTargets(start_slot, num_views, p_views as *const _)
+        self.0.SOSetTargets(start_slot, core::mem::transmute(views))
     }
 
     /// `ID3D12GraphicsCommandList::OMSetRenderTargets`
@@ -654,18 +634,15 @@ impl GraphicsCommandList {
         clear_flags: ClearFlags,
         depth: f32,
         stencil: u8,
-        rects: Option<&[Rect]>,
+        rects: &[Rect],
     ) {
-        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
-
         let depth_stencil_view: D3D12_CPU_DESCRIPTOR_HANDLE = depth_stencil_view.into();
         self.0.ClearDepthStencilView(
             depth_stencil_view,
             clear_flags.into(),
             depth,
             stencil,
-            num_rects,
-            p_rects as *const _,
+            core::mem::transmute(rects),
         )
     }
 
@@ -675,18 +652,15 @@ impl GraphicsCommandList {
         &self,
         render_target_view: CPUDescriptorHandle,
         color_rgba: &[f32],
-        rects: Option<&[Rect]>,
+        rects: &[Rect],
     ) {
         assert_eq!(color_rgba.len(), 4);
-
-        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
         let render_target_view: D3D12_CPU_DESCRIPTOR_HANDLE = render_target_view.into();
         self.0.ClearRenderTargetView(
             render_target_view,
             color_rgba.as_ptr(),
-            num_rects,
-            p_rects as *const _,
+            core::mem::transmute(rects),
         )
     }
 
@@ -698,11 +672,9 @@ impl GraphicsCommandList {
         view_cpu_handle: CPUDescriptorHandle,
         resource: &Resource,
         values: &[u32],
-        rects: Option<&[Rect]>,
+        rects: &[Rect],
     ) {
         assert_eq!(values.len(), 4);
-
-        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
         let view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE =
             view_gpu_handle_in_current_heap.into();
@@ -712,8 +684,7 @@ impl GraphicsCommandList {
             view_cpu_handle,
             &resource.0,
             values.as_ptr(),
-            num_rects,
-            p_rects as *const _,
+            core::mem::transmute(rects),
         )
     }
 
@@ -725,11 +696,9 @@ impl GraphicsCommandList {
         view_cpu_handle: CPUDescriptorHandle,
         resource: &Resource,
         values: &[f32],
-        rects: Option<&[Rect]>,
+        rects: &[Rect],
     ) {
         assert_eq!(values.len(), 4);
-
-        let (num_rects, p_rects) = optional_slice_to_num_ptr_pair(rects);
 
         let view_gpu_handle_in_current_heap: D3D12_GPU_DESCRIPTOR_HANDLE =
             view_gpu_handle_in_current_heap.into();
@@ -739,8 +708,7 @@ impl GraphicsCommandList {
             view_cpu_handle,
             &resource.0,
             values.as_ptr(),
-            num_rects,
-            p_rects as *const _,
+            core::mem::transmute(rects),
         )
     }
 

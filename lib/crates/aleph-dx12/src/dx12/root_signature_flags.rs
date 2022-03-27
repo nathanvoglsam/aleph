@@ -58,6 +58,6 @@ windows::flags_bitwise_impl!(RootSignatureFlags);
 impl From<RootSignatureFlags> for D3D12_ROOT_SIGNATURE_FLAGS {
     #[inline]
     fn from(v: RootSignatureFlags) -> Self {
-        v.0
+        D3D12_ROOT_SIGNATURE_FLAGS(v.0)
     }
 }

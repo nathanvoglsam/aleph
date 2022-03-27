@@ -49,6 +49,6 @@ windows::flags_bitwise_impl!(DescriptorHeapFlags);
 impl From<DescriptorHeapFlags> for D3D12_DESCRIPTOR_HEAP_FLAGS {
     #[inline]
     fn from(v: DescriptorHeapFlags) -> Self {
-        v.0
+        D3D12_DESCRIPTOR_HEAP_FLAGS(v.0)
     }
 }

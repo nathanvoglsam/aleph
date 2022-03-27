@@ -42,6 +42,6 @@ pub enum BlendOp {
 impl From<BlendOp> for D3D12_BLEND_OP {
     #[inline]
     fn from(v: BlendOp) -> Self {
-        v as _
+        D3D12_BLEND_OP(v as _)
     }
 }

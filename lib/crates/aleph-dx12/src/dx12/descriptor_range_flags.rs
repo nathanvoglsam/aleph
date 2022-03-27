@@ -53,6 +53,6 @@ windows::flags_bitwise_impl!(DescriptorRangeFlags);
 impl From<DescriptorRangeFlags> for D3D12_DESCRIPTOR_RANGE_FLAGS {
     #[inline]
     fn from(v: DescriptorRangeFlags) -> Self {
-        v.0
+        D3D12_DESCRIPTOR_RANGE_FLAGS(v.0)
     }
 }

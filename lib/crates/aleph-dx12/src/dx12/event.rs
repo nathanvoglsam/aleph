@@ -28,7 +28,8 @@
 //
 
 use std::num::NonZeroIsize;
-use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, PWSTR, WAIT_FAILED, WAIT_TIMEOUT};
+use windows::core::PCWSTR;
+use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, WAIT_FAILED, WAIT_TIMEOUT};
 use windows::Win32::System::Threading::{
     CreateEventW, WaitForMultipleObjects, WaitForSingleObject, WAIT_ABANDONED_0, WAIT_OBJECT_0,
 };
@@ -106,7 +107,7 @@ pub enum MultipleWaitAnyResponse {
 impl MultipleWaitAnyResponse {
     #[inline]
     fn from_u32(v: u32) -> Result<Self, ()> {
-        if v == WAIT_TIMEOUT {
+        if v == WAIT_TIMEOUT.0 {
             return Ok(MultipleWaitAnyResponse::Timeout);
         }
 
@@ -120,7 +121,7 @@ impl MultipleWaitAnyResponse {
             return Ok(MultipleWaitAnyResponse::Abandoned(abandoned_index as usize));
         }
 
-        if v == WAIT_FAILED {
+        if v == WAIT_FAILED.0 {
             return Err(());
         }
 
@@ -136,10 +137,10 @@ impl Event {
     pub fn new() -> Option<Self> {
         let event = unsafe {
             CreateEventW(
-                std::ptr::null_mut(),
+                std::ptr::null(),
                 BOOL::from(false),
                 BOOL::from(false),
-                PWSTR(std::ptr::null_mut()),
+                PCWSTR(std::ptr::null()),
             )
         };
 
@@ -181,22 +182,10 @@ impl WaitAll for [Event] {
             panic!("Can't use WaitForMultipleObjects with more than 64 objects");
         }
         let ret = if let Some(timeout) = timeout {
-            unsafe {
-                WaitForMultipleObjects(
-                    self.len() as _,
-                    self.as_ptr() as *const _,
-                    BOOL::from(true),
-                    timeout,
-                )
-            }
+            unsafe { WaitForMultipleObjects(core::mem::transmute(self), BOOL::from(true), timeout) }
         } else {
             unsafe {
-                WaitForMultipleObjects(
-                    self.len() as _,
-                    self.as_ptr() as *const _,
-                    BOOL::from(true),
-                    4294967295,
-                )
+                WaitForMultipleObjects(core::mem::transmute(self), BOOL::from(true), 4294967295)
             }
         };
         MultipleWaitAllResponse::from_u32(ret)
@@ -209,21 +198,11 @@ impl WaitAll for [Event] {
         }
         let ret = if let Some(timeout) = timeout {
             unsafe {
-                WaitForMultipleObjects(
-                    self.len() as _,
-                    self.as_ptr() as *const _,
-                    BOOL::from(false),
-                    timeout,
-                )
+                WaitForMultipleObjects(core::mem::transmute(self), BOOL::from(false), timeout)
             }
         } else {
             unsafe {
-                WaitForMultipleObjects(
-                    self.len() as _,
-                    self.as_ptr() as *const _,
-                    BOOL::from(false),
-                    4294967295,
-                )
+                WaitForMultipleObjects(core::mem::transmute(self), BOOL::from(false), 4294967295)
             }
         };
         MultipleWaitAnyResponse::from_u32(ret)

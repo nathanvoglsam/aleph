@@ -41,6 +41,6 @@ pub enum DescriptorRangeType {
 impl From<DescriptorRangeType> for D3D12_DESCRIPTOR_RANGE_TYPE {
     #[inline]
     fn from(v: DescriptorRangeType) -> Self {
-        v as _
+        D3D12_DESCRIPTOR_RANGE_TYPE(v as _)
     }
 }

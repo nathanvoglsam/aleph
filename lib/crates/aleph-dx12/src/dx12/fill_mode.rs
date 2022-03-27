@@ -39,6 +39,6 @@ pub enum FillMode {
 impl From<FillMode> for D3D12_FILL_MODE {
     #[inline]
     fn from(v: FillMode) -> Self {
-        v as _
+        D3D12_FILL_MODE(v as _)
     }
 }

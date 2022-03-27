@@ -207,6 +207,6 @@ windows::flags_bitwise_impl!(ResourceStates);
 impl From<ResourceStates> for D3D12_RESOURCE_STATES {
     #[inline]
     fn from(v: ResourceStates) -> Self {
-        v.0
+        D3D12_RESOURCE_STATES(v.0)
     }
 }

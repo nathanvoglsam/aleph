@@ -51,6 +51,6 @@ windows::flags_bitwise_impl!(FenceFlags);
 impl From<FenceFlags> for D3D12_FENCE_FLAGS {
     #[inline]
     fn from(v: FenceFlags) -> Self {
-        v.0
+        D3D12_FENCE_FLAGS(v.0)
     }
 }

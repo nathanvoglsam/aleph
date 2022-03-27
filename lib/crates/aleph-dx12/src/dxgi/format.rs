@@ -352,6 +352,6 @@ impl TryFrom<DXGI_FORMAT> for Format {
 impl From<Format> for DXGI_FORMAT {
     #[inline]
     fn from(v: Format) -> Self {
-        v as _
+        DXGI_FORMAT(v as _)
     }
 }

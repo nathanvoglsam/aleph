@@ -60,6 +60,6 @@ impl TryFrom<DXGI_ALPHA_MODE> for AlphaMode {
 impl From<AlphaMode> for DXGI_ALPHA_MODE {
     #[inline]
     fn from(v: AlphaMode) -> Self {
-        v as _
+        DXGI_ALPHA_MODE(v as _)
     }
 }

@@ -52,6 +52,6 @@ windows::flags_bitwise_impl!(RootDescriptorFlags);
 impl From<RootDescriptorFlags> for D3D12_ROOT_DESCRIPTOR_FLAGS {
     #[inline]
     fn from(v: RootDescriptorFlags) -> Self {
-        v.0
+        D3D12_ROOT_DESCRIPTOR_FLAGS(v.0)
     }
 }

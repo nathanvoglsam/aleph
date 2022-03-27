@@ -40,6 +40,6 @@ pub enum PredicationOp {
 impl From<PredicationOp> for D3D12_PREDICATION_OP {
     #[inline]
     fn from(v: PredicationOp) -> Self {
-        v as _
+        D3D12_PREDICATION_OP(v as _)
     }
 }

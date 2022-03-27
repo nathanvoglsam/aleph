@@ -49,6 +49,6 @@ impl Default for PrimitiveTopologyType {
 impl From<PrimitiveTopologyType> for D3D12_PRIMITIVE_TOPOLOGY_TYPE {
     #[inline]
     fn from(v: PrimitiveTopologyType) -> Self {
-        v as _
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE(v as _)
     }
 }

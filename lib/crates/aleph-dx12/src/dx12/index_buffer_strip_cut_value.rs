@@ -47,6 +47,6 @@ impl Default for IndexBufferStripCutValue {
 impl From<IndexBufferStripCutValue> for D3D12_INDEX_BUFFER_STRIP_CUT_VALUE {
     #[inline]
     fn from(v: IndexBufferStripCutValue) -> Self {
-        v as _
+        D3D12_INDEX_BUFFER_STRIP_CUT_VALUE(v as _)
     }
 }
