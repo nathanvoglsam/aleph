@@ -54,7 +54,8 @@ ref_ptr_object! {
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub acquired: bool,
+    pub images_in_flight: u32,
+    pub images_acquired: u32,
     pub images: Vec<(dx12::Resource, dx12::CPUDescriptorHandle)>,
     pub dxgi_format: dxgi::Format,
     pub dxgi_view_format: dxgi::Format,
@@ -135,14 +136,7 @@ impl ISwapChain for SwapChain {
     fn acquire_image(&self) -> Result<RefPtr<dyn ITexture>, AcquireImageError> {
         let mut inner = self.inner.lock();
 
-        if inner.acquired {
-            return Err(AcquireImageError::ImageNotAvailable);
-        }
-
         if let Some(dimensions) = self.queued_resize.take() {
-            // TODO: We need to ensure that the swap chain is no longer in use before we do any of
-            //       this. We also need to make sure all dx12::Resource handles to the swap images
-            //       have been dropped.
             let new_width = dimensions.deref().0;
             let new_height = dimensions.deref().1;
             unsafe {
@@ -176,7 +170,8 @@ impl ISwapChain for SwapChain {
         };
         let image: RefPtr<SwapTexture> = RefPtr::new(image);
 
-        inner.acquired = true;
+        inner.images_in_flight = inner.images_in_flight.checked_add(1).unwrap();
+        inner.images_acquired = inner.images_acquired.checked_add(1).unwrap();
 
         Ok(image.query_interface().unwrap())
     }
@@ -191,7 +186,8 @@ impl Drop for SwapChain {
         for (_, view) in inner.images.drain(..) {
             self.device.rtv_heap.free(view);
         }
-        assert!(!inner.acquired);
+        assert_eq!(inner.images_in_flight, 0);
+        assert_eq!(inner.images_acquired, 0);
     }
 }
 

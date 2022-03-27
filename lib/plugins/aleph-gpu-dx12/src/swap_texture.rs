@@ -74,7 +74,8 @@ ref_ptr_object! {
 
 impl Drop for SwapTexture {
     fn drop(&mut self) {
-        self.swap_chain.inner.lock().acquired = false;
+        let mut inner = self.swap_chain.inner.lock();
+        inner.images_in_flight = inner.images_in_flight.checked_sub(1).unwrap();
     }
 }
 

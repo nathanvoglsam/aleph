@@ -148,7 +148,8 @@ impl Surface {
 
         let inner = SwapChainState {
             config: config.clone(),
-            acquired: false,
+            images_in_flight: 0,
+            images_acquired: 0,
             images,
             dxgi_format: in_memory_format,
             dxgi_view_format: view_format,
