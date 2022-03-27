@@ -70,7 +70,7 @@ impl EngineBuilder {
 
         #[cfg(target_os = "windows")]
         unsafe {
-            aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread"));
+            aleph_windows::name_current_thread(&utf16_lit::utf16_null!("MainThread")).unwrap();
         }
 
         Self {
