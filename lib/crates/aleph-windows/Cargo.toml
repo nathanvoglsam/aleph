@@ -47,7 +47,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies.once_cell]
 version = "1"
 
-[target.'cfg(not(target_vendor = "uwp"))'.dependencies.windows]
+[target.'cfg(all(not(target_vendor = "uwp"), target_os = "windows"))'.dependencies.windows]
 version = "0.34"
 features = [
     "Win32_Foundation",
@@ -69,7 +69,7 @@ features = [
     "Win32_Security",
 ]
 
-[target.'cfg(target_vendor = "uwp")'.dependencies.windows]
+[target.'cfg(all(target_vendor = "uwp", target_os = "windows"))'.dependencies.windows]
 version = "0.34"
 features = [
     "Win32_Foundation",
@@ -91,16 +91,3 @@ features = [
     "Win32_Security",
     "System",
 ]
-
-[build-dependencies.syn]
-version = "1"
-default-features = false
-features = ["derive", "parsing", "printing", "clone-impls", "full", "extra-traits"]
-
-[build-dependencies.proc-macro2]
-version = "1"
-default-features = false
-
-[build-dependencies.quote]
-version = "1"
-default-features = false
