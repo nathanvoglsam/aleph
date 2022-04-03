@@ -84,6 +84,18 @@ impl<T: ?Sized> RefPtr<T> {
             }
         }
     }
+
+    /// Returns whether two RefPtr objects point to the same underlying object
+    #[inline]
+    pub fn same_object_as<U>(&self, other: &RefPtr<U>) -> bool {
+        self.object.ptr == other.object.ptr
+    }
+
+    /// Returns whether two RefPtr objects point to the same underlying object
+    #[inline]
+    pub fn same_object_as_weak<'a, U>(&self, other: &WeakRefPtr<'a, U>) -> bool {
+        self.object.ptr == other.v.object.ptr
+    }
 }
 
 impl<T: ?Sized> RefPtr<T> {
@@ -282,6 +294,18 @@ impl<'a, T: ?Sized> WeakRefPtr<'a, T> {
     /// Promotes the weak reference to a strong reference
     pub fn to_strong(&self) -> RefPtr<T> {
         self.v.deref().clone()
+    }
+
+    /// Returns whether two RefPtr objects point to the same underlying object
+    #[inline]
+    pub fn same_object_as<'b, U>(&self, other: &WeakRefPtr<'b, U>) -> bool {
+        self.v.object.ptr == other.v.object.ptr
+    }
+
+    /// Returns whether two RefPtr objects point to the same underlying object
+    #[inline]
+    pub fn same_object_as_strong<U>(&self, other: &RefPtr<U>) -> bool {
+        self.v.object.ptr == other.object.ptr
     }
 }
 
