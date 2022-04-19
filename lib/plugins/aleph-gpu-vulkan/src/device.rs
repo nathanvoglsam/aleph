@@ -36,9 +36,9 @@ use erupt::vk;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
-    IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList, INamedObject, IShader,
-    ITexture, QueuePresentError, ShaderBinary, ShaderCreateError, ShaderOptions,
-    TextureCreateError, TextureDesc,
+    IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList, INamedObject, ISampler,
+    IShader, ITexture, QueuePresentError, SamplerDesc, ShaderBinary, ShaderCreateError,
+    ShaderOptions, TextureCreateError, TextureDesc,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ffi::CString;
@@ -106,6 +106,10 @@ impl IDevice for Device {
         &self,
         _desc: &TextureDesc,
     ) -> Result<RefPtr<dyn ITexture>, TextureCreateError> {
+        todo!()
+    }
+
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()> {
         todo!()
     }
 
