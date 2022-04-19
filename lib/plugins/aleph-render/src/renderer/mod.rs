@@ -35,11 +35,12 @@ use crate::dx12::{dxgi, GraphicsCommandList};
 use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-use interfaces::any::QueryInterfaceBox;
+use interfaces::any::{QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
 };
 use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
+use std::ops::Deref;
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
@@ -91,20 +92,16 @@ impl EguiRenderer {
         jobs: Vec<aleph_egui::ClippedMesh>,
     ) -> Box<dyn IGeneralCommandList + '_> {
         // Begin recording commands into the command list
-        let list = self.frames[index]
+        let mut list = self.frames[index]
             .command_allocator
             .create_general_command_list()
-            .unwrap()
+            .unwrap();
+
+        let command_list: GraphicsCommandList = list
+            .deref()
             .query_interface::<dyn ICommandListExt>()
-            .ok()
-            .unwrap();
-
-        let command_list: GraphicsCommandList = list.get_raw_list();
-
-        let mut list = list
-            .query_interface::<dyn IGeneralCommandList>()
-            .ok()
-            .unwrap();
+            .unwrap()
+            .get_raw_list();
 
         {
             let mut encoder = list.begin().unwrap();

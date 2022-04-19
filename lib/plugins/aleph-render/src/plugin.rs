@@ -29,11 +29,11 @@
 
 use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
-use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapChainExt, ISwapTextureExt};
+use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapTextureExt};
 use interfaces::any;
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, PresentationMode, QueueType,
-    SwapChainConfiguration, TextureFormat,
+    AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, ISwapChain, PresentationMode,
+    QueueType, SwapChainConfiguration, TextureFormat,
 };
 use interfaces::platform::*;
 use interfaces::plugin::*;
@@ -46,15 +46,17 @@ struct Data {
     window: any::AnyArc<dyn IWindow>,
     render_data: any::AnyArc<dyn egui::IEguiRenderData>,
     egui_provider: any::AnyArc<dyn egui::IEguiContextProvider>,
-    swap_chain: RefPtr<dyn ISwapChainExt>,
+    swap_chain: RefPtr<dyn ISwapChain>,
     renderer: EguiRenderer,
 }
 
-pub struct PluginRender();
+pub struct PluginRender {
+    device: Option<RefPtr<dyn IDeviceExt>>,
+}
 
 impl PluginRender {
     pub fn new() -> Self {
-        Self()
+        Self { device: None }
     }
 }
 
@@ -132,6 +134,7 @@ impl IPlugin for PluginRender {
             .unwrap()
             .query_interface::<dyn IDeviceExt>()
             .unwrap();
+        self.device = Some(device.clone());
 
         aleph_log::info!("");
         Self::log_gpu_info(&adapter.get_raw_handle());
@@ -148,8 +151,6 @@ impl IPlugin for PluginRender {
         let device_handle = device.query_interface::<dyn IDevice>().unwrap();
         let swap_chain = surface
             .create_swap_chain(device_handle.as_weak(), &config)
-            .unwrap()
-            .query_interface::<dyn ISwapChainExt>()
             .unwrap();
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
@@ -207,6 +208,16 @@ impl IPlugin for PluginRender {
         );
 
         Box::new(Vec::new())
+    }
+
+    fn on_exit(&mut self, _registry: &dyn IRegistryAccessor) {
+        if let Some(device) = self.device.take() {
+            // When existing we need to flush all still active GPU work and force a GC cycle to
+            // release all references being held live by the resource tracking system. The resource
+            // tracking system creates cycles in the object graph so if we don't clear them then
+            // we'll leak GPU objects.
+            device.wait_idle();
+        }
     }
 }
 
