@@ -50,6 +50,13 @@ impl<T: IAny + Sized> AnyArc<T> {
     }
 
     ///
+    /// Wrapper around [Arc::new_cyclic]
+    ///
+    pub fn new_cyclic(data_fn: impl FnOnce(&Weak<T>) -> T) -> AnyArc<T> {
+        AnyArc::<T>(Arc::new_cyclic(data_fn))
+    }
+
+    ///
     /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny` without going through
     /// `query_interface`
     ///
