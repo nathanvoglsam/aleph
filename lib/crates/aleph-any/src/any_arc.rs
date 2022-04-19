@@ -45,6 +45,7 @@ impl<T: IAny + Sized> AnyArc<T> {
     /// Takes the given concrete type and wraps it in an `AnyArc`
     ///
     /// `T` must be sized in this case as we're making a concrete heap allocation
+    #[inline]
     pub fn new(v: T) -> AnyArc<T> {
         AnyArc::<T>(Arc::new(v))
     }
@@ -52,14 +53,20 @@ impl<T: IAny + Sized> AnyArc<T> {
     ///
     /// Wrapper around [Arc::new_cyclic]
     ///
-    pub fn new_cyclic(data_fn: impl FnOnce(&Weak<T>) -> T) -> AnyArc<T> {
-        AnyArc::<T>(Arc::new_cyclic(data_fn))
+    #[inline]
+    pub fn new_cyclic(data_fn: impl FnOnce(&AnyWeak<T>) -> T) -> AnyArc<T> {
+        AnyArc::<T>(Arc::new_cyclic(|v| {
+            // SAFETY: AnyWeak is a repr(transparent) alias for Weak so this is perfectly safe to
+            //         do. The compiler just can't prove it.
+            unsafe { data_fn(core::mem::transmute(v)) }
+        }))
     }
 
     ///
     /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny` without going through
     /// `query_interface`
     ///
+    #[inline]
     pub fn into_any(v: Self) -> AnyArc<dyn IAny> {
         let inner: Arc<dyn IAny> = v.0;
         AnyArc::from_arc(inner)
@@ -71,6 +78,7 @@ impl<T: IAny + Send + Sized> AnyArc<T> {
     /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
     /// through `query_interface`
     ///
+    #[inline]
     pub fn into_send_any(v: Self) -> AnyArc<dyn IAny + Send> {
         let inner: Arc<dyn IAny + Send> = v.0;
         AnyArc::from_arc(inner)
@@ -82,6 +90,7 @@ impl<T: IAny + Send + Sync + Sized> AnyArc<T> {
     /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn ISendSyncAny>` without going
     /// through `query_interface`
     ///
+    #[inline]
     pub fn into_send_sync_any(v: Self) -> AnyArc<dyn IAny + Send + Sync> {
         let inner: Arc<dyn IAny + Send + Sync> = v.0;
         AnyArc::from_arc(inner)
@@ -95,6 +104,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     /// Useful for when you want to get access to the `query_interface` wrapper with a standard
     /// `Arc`.
     ///
+    #[inline]
     pub fn from_arc(arc: Arc<T>) -> Self {
         Self(arc)
     }
@@ -105,6 +115,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     /// Useful for when you want to access to things `Arc` provides like `CoerceUnsized` which isn't
     /// stabilized yet and so can't be implemented on `AnyArc` yet.
     ///
+    #[inline]
     pub fn into_arc(this: Self) -> Arc<T> {
         this.0
     }
@@ -116,6 +127,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     ///
     /// This is just a wrapper around `std::sync::Arc`'s `downgrade`
     ///
+    #[inline]
     pub fn downgrade(this: &Self) -> AnyWeak<T> {
         AnyWeak(Arc::downgrade(&this.0))
     }
@@ -151,6 +163,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     ///
     /// This is just a wrapper around `std::sync::Arc`'s `strong_count`
     ///
+    #[inline]
     pub fn strong_count(this: &Self) -> usize {
         Arc::strong_count(&this.0)
     }
@@ -166,6 +179,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     ///
     /// This is just a wrapper around `std::sync::Arc`'s `get_mut`
     ///
+    #[inline]
     pub fn get_mut(this: &mut Self) -> Option<&mut T> {
         Arc::get_mut(&mut this.0)
     }
@@ -223,12 +237,14 @@ impl<T: IAny + ?Sized> AnyArc<T> {
 }
 
 impl<T: IAny + Default> Default for AnyArc<T> {
+    #[inline]
     fn default() -> Self {
         Self(Arc::new(Default::default()))
     }
 }
 
 impl<T: IAny + ?Sized> Clone for AnyArc<T> {
+    #[inline]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
@@ -237,11 +253,13 @@ impl<T: IAny + ?Sized> Clone for AnyArc<T> {
 impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     type Target = T;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         self.0.deref()
     }
 }
 
+#[repr(transparent)]
 pub struct AnyWeak<T: IAny + ?Sized>(Weak<T>);
 
 impl<T: IAny + ?Sized> AnyWeak<T> {
@@ -255,6 +273,7 @@ impl<T: IAny + ?Sized> AnyWeak<T> {
     ///
     /// This is just a wrapper around `std::sync::Weak`'s `upgrade`
     ///
+    #[inline]
     pub fn upgrade(&self) -> Option<AnyArc<T>> {
         self.0.upgrade().map(|v| AnyArc(v))
     }
@@ -266,6 +285,7 @@ impl<T: IAny + ?Sized> AnyWeak<T> {
     ///
     /// This is just a wrapper around `std::sync::Weak`'s `strong_count`
     ///
+    #[inline]
     pub fn strong_count(&self) -> usize {
         self.0.strong_count()
     }
@@ -284,12 +304,14 @@ impl<T: IAny + ?Sized> AnyWeak<T> {
     ///
     /// This is just a wrapper around `std::sync::Weak`'s `weak_count`
     ///
+    #[inline]
     pub fn weak_count(&self) -> usize {
         self.0.weak_count()
     }
 }
 
 impl<T: IAny + ?Sized> Clone for AnyWeak<T> {
+    #[inline]
     fn clone(&self) -> Self {
         Self(self.0.clone())
     }
