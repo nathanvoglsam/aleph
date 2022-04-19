@@ -27,8 +27,8 @@
 // SOFTWARE.
 //
 
+use interfaces::any::AnyArc;
 use interfaces::gpu::{IBindingSet, IBuffer, ITexture};
-use interfaces::ref_ptr::RefPtr;
 
 /// Internal struct used to hold references to resources that need to have their lifetime extended
 /// until some point in the future.
@@ -42,14 +42,14 @@ use interfaces::ref_ptr::RefPtr;
 pub struct CommandListTracker {
     /// Any bare image resources we need to extend the lifetime of until the command list has been
     /// retired.
-    pub images: Vec<RefPtr<dyn ITexture>>,
+    pub images: Vec<AnyArc<dyn ITexture>>,
 
     /// Any bare buffer resources we need to extend the lifetime of until the command list has been
     /// retired
-    pub buffers: Vec<RefPtr<dyn IBuffer>>,
+    pub buffers: Vec<AnyArc<dyn IBuffer>>,
 
     /// Any binding sets we need to extend the lifetime of until the command list has been retired
-    pub binding_sets: Vec<RefPtr<dyn IBindingSet>>,
+    pub binding_sets: Vec<AnyArc<dyn IBindingSet>>,
 }
 
 impl CommandListTracker {

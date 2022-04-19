@@ -27,23 +27,23 @@
 // SOFTWARE.
 //
 
+use crate::device::Device;
+use crate::general_command_list::GeneralCommandList;
 use crossbeam::queue::SegQueue;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{CommandListCreateError, ICommandPool, IGeneralCommandList, INamedObject};
 
-use crate::device::Device;
-use crate::general_command_list::GeneralCommandList;
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr, RefPtrObject};
-
-ref_ptr_object! {
-    pub struct CommandPool: ICommandPool {
-        pub(crate) device: RefPtr<Device>,
-        pub(crate) general_free_list: SegQueue<CommandPoolFreeListItem>,
-        pub(crate) compute_free_list: SegQueue<CommandPoolFreeListItem>,
-        pub(crate) transfer_free_list: SegQueue<CommandPoolFreeListItem>,
-    }
+pub struct CommandPool {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: AnyArc<Device>,
+    pub(crate) general_free_list: SegQueue<CommandPoolFreeListItem>,
+    pub(crate) compute_free_list: SegQueue<CommandPoolFreeListItem>,
+    pub(crate) transfer_free_list: SegQueue<CommandPoolFreeListItem>,
 }
+
+declare_interfaces!(CommandPool, [ICommandPool]);
 
 pub type CommandPoolFreeListItem = (dx12::CommandAllocator, dx12::GraphicsCommandList);
 
@@ -73,6 +73,10 @@ unsafe impl Send for CommandPool {}
 unsafe impl Sync for CommandPool {}
 
 impl ICommandPool for CommandPool {
+    fn upgrade(&self) -> AnyArc<dyn ICommandPool> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn create_general_command_list(
         &self,
     ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError> {
@@ -86,7 +90,7 @@ impl ICommandPool for CommandPool {
         };
 
         let command_list = GeneralCommandList {
-            pool: self.as_ref_ptr(),
+            pool: self.this.upgrade().unwrap(),
             tracker: Default::default(),
             allocator,
             list,

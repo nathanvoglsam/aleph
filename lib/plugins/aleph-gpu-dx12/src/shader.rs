@@ -27,18 +27,23 @@
 // SOFTWARE.
 //
 
+use interfaces::any::{declare_interfaces, AnyWeak, AnyArc};
 use interfaces::gpu::{INamedObject, IShader, ShaderType};
-use interfaces::ref_ptr::ref_ptr_object;
 
-ref_ptr_object! {
-    pub struct Shader: IShader, IShaderExt {
-        pub(crate) shader_type: ShaderType,
-        pub(crate) data: Vec<u8>,
-        pub(crate) entry_point: String,
-    }
+pub struct Shader {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) shader_type: ShaderType,
+    pub(crate) data: Vec<u8>,
+    pub(crate) entry_point: String,
 }
 
+declare_interfaces!(Shader, [IShader, IShaderExt]);
+
 impl IShader for Shader {
+    fn upgrade(&self) -> AnyArc<dyn IShader> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn shader_type(&self) -> ShaderType {
         self.shader_type
     }

@@ -42,7 +42,7 @@ use crate::shader::Shader;
 use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
 use dx12::{dxgi, AsWeakRef, D3D12Object};
-use interfaces::any::QueryInterfaceBox;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -51,23 +51,27 @@ use interfaces::gpu::{
     INamedObject, ISampler, IShader, ISwapChain, ITexture, QueuePresentError, QueueType,
     SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
 };
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
-ref_ptr_object! {
-    pub struct Device: IDevice, IDeviceExt {
-        pub(crate) device: dx12::Device,
-        pub(crate) rtv_heap: DescriptorAllocatorCPU,
-        pub(crate) dsv_heap: DescriptorAllocatorCPU,
-        pub(crate) sampler_heap: DescriptorAllocatorCPU,
-        pub(crate) queues: Queues,
-        pub(crate) adapter: RefPtr<Adapter>,
-    }
+pub struct Device {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: dx12::Device,
+    pub(crate) rtv_heap: DescriptorAllocatorCPU,
+    pub(crate) dsv_heap: DescriptorAllocatorCPU,
+    pub(crate) sampler_heap: DescriptorAllocatorCPU,
+    pub(crate) queues: Queues,
+    pub(crate) adapter: AnyArc<Adapter>,
 }
 
+declare_interfaces!(Device, [IDevice, IDeviceExt]);
+
 impl IDevice for Device {
+    fn upgrade(&self) -> AnyArc<dyn IDevice> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn garbage_collect(&self) {
         if let Some(queue) = &self.queues.general {
             queue.clear_completed_lists();
@@ -95,29 +99,26 @@ impl IDevice for Device {
     fn create_shader(
         &self,
         options: &ShaderOptions,
-    ) -> Result<RefPtr<dyn IShader>, ShaderCreateError> {
+    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
         if let ShaderBinary::Dxil(data) = options.data {
             // Empty shader binary is invalid
             if data.is_empty() {
                 return Err(ShaderCreateError::InvalidInputSize(0));
             }
 
-            let shader = ref_ptr_init! {
-                Shader {
-                    shader_type: options.shader_type,
-                    data: data.to_vec(),
-                    entry_point: options.entry_point.to_string(),
-                }
-            };
-            let shader: RefPtr<Shader> = RefPtr::new(shader);
-
+            let shader = AnyArc::new_cyclic(move |v| Shader {
+                this: v.clone(),
+                shader_type: options.shader_type,
+                data: data.to_vec(),
+                entry_point: options.entry_point.to_string(),
+            });
             Ok(shader.query_interface().unwrap())
         } else {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }
     }
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<RefPtr<dyn IBuffer>, BufferCreateError> {
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         let mut resource_desc = dx12::ResourceDesc {
             // Fields that will be the same regardless of the requested buffer desc
             dimension: dx12::ResourceDimension::Buffer,
@@ -170,20 +171,18 @@ impl IDevice for Device {
                 .map_err(|v| anyhow!(v))?
         };
 
-        let buffer = ref_ptr_init! {
-            Buffer {
-                resource: resource,
-                desc: desc.clone(),
-            }
-        };
-        let buffer: RefPtr<Buffer> = RefPtr::new(buffer);
+        let buffer = AnyArc::new_cyclic(move |v| Buffer {
+            this: v.clone(),
+            resource: resource,
+            desc: desc.clone(),
+        });
         Ok(buffer.query_interface().unwrap())
     }
 
     fn create_texture(
         &self,
         desc: &TextureDesc,
-    ) -> Result<RefPtr<dyn ITexture>, TextureCreateError> {
+    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
         let heap_properties = dx12::HeapProperties {
             r#type: dx12::HeapType::Default,
             ..Default::default()
@@ -205,34 +204,30 @@ impl IDevice for Device {
                 .map_err(|v| anyhow!(v))?
         };
 
-        let texture = ref_ptr_init! {
-            Texture {
-                device: self.as_ref_ptr(),
-                resource: resource,
-                desc: desc.clone(),
-                dxgi_format: resource_desc.format,
-                rtv_cache: RwLock::new(HashMap::new()),
-                dsv_cache: RwLock::new(HashMap::new()),
-            }
-        };
-        let texture: RefPtr<Texture> = RefPtr::new(texture);
+        let texture = AnyArc::new_cyclic(move |v| Texture {
+            this: v.clone(),
+            device: self.this.upgrade().unwrap(),
+            resource,
+            desc: desc.clone(),
+            dxgi_format: resource_desc.format,
+            rtv_cache: RwLock::new(HashMap::new()),
+            dsv_cache: RwLock::new(HashMap::new()),
+        });
         Ok(texture.query_interface().unwrap())
     }
 
-    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<AnyArc<dyn ISampler>, ()> {
         todo!()
     }
 
-    fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError> {
-        let pool = ref_ptr_init! {
-            CommandPool {
-                device: self.as_ref_ptr(),
-                general_free_list: SegQueue::new(),
-                compute_free_list: SegQueue::new(),
-                transfer_free_list: SegQueue::new(),
-            }
-        };
-        let pool: RefPtr<CommandPool> = RefPtr::new(pool);
+    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
+        let pool = AnyArc::new_cyclic(move |v| CommandPool {
+            this: v.clone(),
+            device: self.this.upgrade().unwrap(),
+            general_free_list: SegQueue::new(),
+            compute_free_list: SegQueue::new(),
+            transfer_free_list: SegQueue::new(),
+        });
         Ok(pool.query_interface().unwrap())
     }
 

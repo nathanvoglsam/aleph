@@ -32,13 +32,12 @@ use crate::encoder::Encoder;
 use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use dx12::D3D12Object;
-use interfaces::any::{declare_interfaces, IAny};
+use interfaces::any::{declare_interfaces, AnyArc, IAny};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{CommandListBeginError, IGeneralCommandList, IGeneralEncoder, INamedObject};
-use interfaces::ref_ptr::RefPtr;
 
 pub struct GeneralCommandList {
-    pub(crate) pool: RefPtr<CommandPool>,
+    pub(crate) pool: AnyArc<CommandPool>,
     pub(crate) tracker: CommandListTracker,
     pub(crate) allocator: dx12::CommandAllocator,
     pub(crate) list: dx12::GraphicsCommandList,

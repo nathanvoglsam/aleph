@@ -33,27 +33,28 @@ use crate::surface::Surface;
 use crate::swap_texture::SwapTexture;
 use crossbeam::atomic::AtomicCell;
 use dx12::{dxgi, AsWeakRef, WeakRef};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
     ResourceStates, SwapChainConfiguration, TextureDesc, TextureDimension,
 };
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use parking_lot::Mutex;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-ref_ptr_object! {
-    pub struct SwapChain: ISwapChain, ISwapChainExt {
-        pub(crate) swap_chain: dxgi::SwapChain,
-        pub(crate) device: RefPtr<Device>,
-        pub(crate) surface: RefPtr<Surface>,
-        pub(crate) queue_support: QueueType,
-        pub(crate) inner: Mutex<SwapChainState>,
-        pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
-        pub(crate) acquired: AtomicBool,
-        pub(crate) images_in_flight: AtomicU32,
-    }
+pub struct SwapChain {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) swap_chain: dxgi::SwapChain,
+    pub(crate) device: AnyArc<Device>,
+    pub(crate) surface: AnyArc<Surface>,
+    pub(crate) queue_support: QueueType,
+    pub(crate) inner: Mutex<SwapChainState>,
+    pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
+    pub(crate) acquired: AtomicBool,
+    pub(crate) images_in_flight: AtomicU32,
 }
+
+declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
@@ -136,6 +137,10 @@ impl SwapChain {
 }
 
 impl ISwapChain for SwapChain {
+    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
         queue == self.queue_support
     }
@@ -166,36 +171,34 @@ impl ISwapChain for SwapChain {
             }
 
             let index = self.swap_chain.get_current_back_buffer_index();
-            let image = ref_ptr_init! {
-                SwapTexture {
-                    resource: inner.images[index as usize].0.clone(),
-                    view: inner.images[index as usize].1,
-                    desc: TextureDesc {
-                        width: inner.config.width,
-                        height: inner.config.height,
-                        depth: 1,
-                        format: inner.config.format,
-                        dimension: TextureDimension::Texture2D,
-                        initial_state: ResourceStates::PRESENT,
-                        clear_value: None,
-                        array_size: 1,
-                        mip_levels: 1,
-                        sample_count: 1,
-                        sample_quality: 0,
-                        allow_unordered_access: false,
-                        allow_cube_face: false,
-                        is_render_target: true
-                    },
-                    swap_chain: self.as_ref_ptr(),
-                }
-            };
-            let image: RefPtr<SwapTexture> = RefPtr::new(image);
-            let image: RefPtr<dyn ITexture> = image.query_interface().unwrap();
+            let image = AnyArc::new_cyclic(move |v| SwapTexture {
+                this: v.clone(),
+                resource: inner.images[index as usize].0.clone(),
+                view: inner.images[index as usize].1,
+                desc: TextureDesc {
+                    width: inner.config.width,
+                    height: inner.config.height,
+                    depth: 1,
+                    format: inner.config.format,
+                    dimension: TextureDimension::Texture2D,
+                    initial_state: ResourceStates::PRESENT,
+                    clear_value: None,
+                    array_size: 1,
+                    mip_levels: 1,
+                    sample_count: 1,
+                    sample_quality: 0,
+                    allow_unordered_access: false,
+                    allow_cube_face: false,
+                    is_render_target: true,
+                },
+                swap_chain: self.this.upgrade().unwrap(),
+            });
+            let image: AnyArc<dyn ITexture> = image.query_interface().unwrap();
 
             self.images_in_flight.fetch_add(1, Ordering::Acquire);
 
             let acquired = Box::new(AcquiredTexture {
-                swap_chain: self.as_ref_ptr(),
+                swap_chain: self.this.upgrade().unwrap(),
                 image,
             });
 

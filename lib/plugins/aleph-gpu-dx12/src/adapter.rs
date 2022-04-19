@@ -33,17 +33,18 @@ use crate::device::{Device, Queues};
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::queue::Queue;
 use dx12::dxgi;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
-ref_ptr_object! {
-    pub struct Adapter: IAdapter, IAdapterExt {
-        pub(crate) name: String,
-        pub(crate) adapter: dxgi::Adapter,
-        pub(crate) context: RefPtr<Context>,
-    }
+pub struct Adapter {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) name: String,
+    pub(crate) adapter: dxgi::Adapter,
+    pub(crate) context: AnyArc<Context>,
 }
+
+declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
 
 impl Adapter {
     fn create_queue<T: ReturnToPool>(
@@ -62,11 +63,15 @@ impl Adapter {
 }
 
 impl IAdapter for Adapter {
+    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn description(&self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         // Create the actual d3d12 device
         let device = dx12::Device::new(&self.adapter, dx12::FeatureLevel::Level_11_0)
             .map_err(|e| anyhow!(e))?;
@@ -79,17 +84,24 @@ impl IAdapter for Adapter {
         };
 
         // Bundle and return the device
-        let device = ref_ptr_init! {
-            Device {
-                rtv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::RenderTargetView),
-                dsv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::DepthStencilView),
-                sampler_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::Sampler),
-                device: device,
-                queues: queues,
-                adapter: self.as_ref_ptr(),
-            }
-        };
-        let device: RefPtr<Device> = RefPtr::new(device);
+        let device = AnyArc::new_cyclic(move |v| Device {
+            this: v.clone(),
+            rtv_heap: DescriptorAllocatorCPU::new(
+                device.clone(),
+                dx12::DescriptorHeapType::RenderTargetView,
+            ),
+            dsv_heap: DescriptorAllocatorCPU::new(
+                device.clone(),
+                dx12::DescriptorHeapType::DepthStencilView,
+            ),
+            sampler_heap: DescriptorAllocatorCPU::new(
+                device.clone(),
+                dx12::DescriptorHeapType::Sampler,
+            ),
+            device,
+            queues,
+            adapter: self.this.upgrade().unwrap(),
+        });
         Ok(device.query_interface().unwrap())
     }
 }

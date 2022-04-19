@@ -30,21 +30,21 @@
 use crate::adapter::Adapter;
 use crate::surface::Surface;
 use dx12::dxgi;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
     SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
-use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 
-ref_ptr_object! {
-    pub struct Context: IContext, IContextExt {
-        pub(crate) _debug: Option<dx12::Debug>,
-        pub(crate) factory: dxgi::Factory,
-    }
+pub struct Context {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) _debug: Option<dx12::Debug>,
+    pub(crate) factory: dxgi::Factory,
 }
+
+declare_interfaces!(Context, [IContext, IContextExt]);
 
 impl Context {
     /// Checks if a surface is compatible with an adapter by performing a full device initialization
@@ -84,7 +84,11 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>> {
+    fn upgrade(&self) -> AnyArc<dyn IContext> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let power_preference = match options.power_class {
             AdapterPowerClass::LowPower => dxgi::GpuPreference::MinimumPower,
             AdapterPowerClass::HighPower => dxgi::GpuPreference::HighPerformance,
@@ -93,9 +97,9 @@ impl IContext for Context {
             .factory
             .select_hardware_adapter(dx12::FeatureLevel::Level_11_0, power_preference)
         {
-            if let Some(surface) = options.surface.as_ref().cloned() {
+            if let Some(surface) = options.surface {
                 let surface = surface.query_interface::<Surface>().unwrap();
-                self.check_surface_compatibility(&adapter, surface.deref())?;
+                self.check_surface_compatibility(&adapter, surface)?;
             }
 
             let desc = adapter
@@ -105,14 +109,12 @@ impl IContext for Context {
                 .description_string()
                 .unwrap_or_else(|| "Unknown".to_string());
 
-            let adapter = ref_ptr_init! {
-                Adapter {
-                    name: name,
-                    adapter: adapter,
-                    context: self.as_ref_ptr(),
-                }
-            };
-            let adapter: RefPtr<Adapter> = RefPtr::new(adapter);
+            let adapter = AnyArc::new_cyclic(move |v| Adapter {
+                this: v.clone(),
+                name,
+                adapter,
+                context: self.this.upgrade().unwrap(),
+            });
             Some(adapter.query_interface().unwrap())
         } else {
             None
@@ -122,16 +124,14 @@ impl IContext for Context {
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
-    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError> {
-        let surface = ref_ptr_init! {
-            Surface {
-                factory: self.factory.clone(),
-                handle: window.raw_window_handle(),
-                has_swap_chain: AtomicBool::new(false),
-                context: self.as_ref_ptr(),
-            }
-        };
-        let surface: RefPtr<Surface> = RefPtr::new(surface);
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
+        let surface = AnyArc::new_cyclic(move |v| Surface {
+            this: v.clone(),
+            factory: self.factory.clone(),
+            handle: window.raw_window_handle(),
+            has_swap_chain: AtomicBool::new(false),
+            context: self.this.upgrade().unwrap(),
+        });
         Ok(surface.query_interface().unwrap())
     }
 

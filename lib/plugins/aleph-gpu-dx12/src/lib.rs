@@ -59,58 +59,61 @@ pub use buffer::IBufferExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
 pub use general_command_list::ICommandListExt;
+pub use plugin::PluginGpuDX12;
 pub use shader::IShaderExt;
 pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
 pub use swap_texture::ISwapTextureExt;
 pub use texture::ITextureExt;
 
-use crate::context_provider::ContextProvider;
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::gpu::IContextProvider;
-use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
-};
-use std::any::TypeId;
+mod plugin {
+    use crate::context_provider::ContextProvider;
+    use interfaces::any::{declare_interfaces, AnyArc};
+    use interfaces::gpu::IContextProvider;
+    use interfaces::plugin::{
+        IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    };
+    use std::any::TypeId;
 
-pub struct PluginGpuDX12();
+    pub struct PluginGpuDX12();
 
-impl PluginGpuDX12 {
-    pub fn new() -> Self {
-        Self()
-    }
-}
-
-impl IPlugin for PluginGpuDX12 {
-    fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginGpuDX12".to_string(),
-            description: "The aleph-engine dx12 RHI backend".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+    impl PluginGpuDX12 {
+        pub fn new() -> Self {
+            Self()
         }
     }
 
-    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.provides_interface::<dyn IContextProvider>();
+    impl IPlugin for PluginGpuDX12 {
+        fn get_description(&self) -> PluginDescription {
+            PluginDescription {
+                name: "PluginGpuDX12".to_string(),
+                description: "The aleph-engine dx12 RHI backend".to_string(),
+                major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+                minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+                patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+            }
+        }
+
+        fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+            registrar.provides_interface::<dyn IContextProvider>();
+        }
+
+        fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+            let context_provider = ContextProvider::new();
+
+            let response = vec![(
+                TypeId::of::<dyn IContextProvider>(),
+                AnyArc::into_any(AnyArc::new(context_provider)),
+            )];
+            Box::new(response)
+        }
     }
 
-    fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let context_provider = ContextProvider::new();
-
-        let response = vec![(
-            TypeId::of::<dyn IContextProvider>(),
-            AnyArc::into_any(AnyArc::new(context_provider)),
-        )];
-        Box::new(response)
+    impl Default for PluginGpuDX12 {
+        fn default() -> Self {
+            Self::new()
+        }
     }
+
+    declare_interfaces!(PluginGpuDX12, [IPlugin]);
 }
-
-impl Default for PluginGpuDX12 {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-declare_interfaces!(PluginGpuDX12, [IPlugin]);

@@ -28,18 +28,22 @@
 //
 
 use dx12::D3D12Object;
+use interfaces::any::{declare_interfaces, AnyWeak, AnyArc};
 use interfaces::gpu::{BufferDesc, IBuffer, INamedObject};
 
-use interfaces::ref_ptr::ref_ptr_object;
-
-ref_ptr_object! {
-    pub struct Buffer: IBuffer, IBufferExt {
-        pub(crate) resource: dx12::Resource,
-        pub(crate) desc: BufferDesc,
-    }
+pub struct Buffer {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) resource: dx12::Resource,
+    pub(crate) desc: BufferDesc,
 }
 
+declare_interfaces!(Buffer, [IBuffer, IBufferExt]);
+
 impl IBuffer for Buffer {
+    fn upgrade(&self) -> AnyArc<dyn IBuffer> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn desc(&self) -> &BufferDesc {
         &self.desc
     }

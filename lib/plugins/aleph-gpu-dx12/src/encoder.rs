@@ -31,11 +31,11 @@ use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::decode_u32_color_to_float;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
+use interfaces::any::QueryInterface;
 use interfaces::gpu::{
     ColorClearValue, DepthStencilClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder,
     IGeneralEncoder, ITexture, ITransferEncoder, TextureDesc, TextureSubResourceSet,
 };
-use interfaces::ref_ptr::WeakRefPtr;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
@@ -43,8 +43,8 @@ pub struct Encoder<'a> {
 }
 
 impl<'a> Encoder<'a> {
-    pub fn track_texture(&mut self, texture: WeakRefPtr<dyn ITexture>) {
-        self.parent.tracker.images.push(texture.to_strong());
+    pub fn track_texture(&mut self, texture: &dyn ITexture) {
+        self.parent.tracker.images.push(texture.upgrade());
     }
 }
 
@@ -59,8 +59,8 @@ impl<'a> Encoder<'a> {
     #[inline]
     fn clear_swap_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
-        concrete: WeakRefPtr<SwapTexture>,
+        texture: &dyn ITexture,
+        concrete: &SwapTexture,
         value: &ColorClearValue,
     ) {
         let buffer = match value {
@@ -78,8 +78,8 @@ impl<'a> Encoder<'a> {
     #[inline]
     fn clear_plain_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
-        concrete: WeakRefPtr<Texture>,
+        texture: &dyn ITexture,
+        concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     ) {
@@ -133,8 +133,8 @@ impl<'a> Encoder<'a> {
     #[inline]
     fn clear_depth_image(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
-        concrete: WeakRefPtr<Texture>,
+        texture: &dyn ITexture,
+        concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     ) {
@@ -255,7 +255,7 @@ impl<'a> Encoder<'a> {
 impl<'a> IGeneralEncoder for Encoder<'a> {
     fn clear_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
+        texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     ) {
@@ -270,7 +270,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     fn clear_depth_stencil_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
+        texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     ) {

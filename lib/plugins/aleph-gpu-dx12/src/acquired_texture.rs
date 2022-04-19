@@ -28,14 +28,14 @@
 //
 
 use crate::swap_chain::SwapChain;
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::gpu::{IAcquiredTexture, ITexture};
-use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
+use std::ops::Deref;
 use std::sync::atomic::Ordering;
 
 pub struct AcquiredTexture {
-    pub(crate) swap_chain: RefPtr<SwapChain>,
-    pub(crate) image: RefPtr<dyn ITexture>,
+    pub(crate) swap_chain: AnyArc<SwapChain>,
+    pub(crate) image: AnyArc<dyn ITexture>,
 }
 
 declare_interfaces!(AcquiredTexture, [IAcquiredTexture]);
@@ -57,7 +57,7 @@ impl Drop for AcquiredTexture {
 }
 
 impl IAcquiredTexture for AcquiredTexture {
-    fn image(&self) -> WeakRefPtr<dyn ITexture> {
-        self.image.as_weak()
+    fn image(&self) -> &dyn ITexture {
+        self.image.deref()
     }
 }

@@ -34,31 +34,32 @@ use crate::swap_chain::{SwapChain, SwapChainState};
 use crossbeam::atomic::AtomicCell;
 use dx12::dxgi;
 use dx12::dxgi::{Format, SwapChainFlags};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, PresentationMode, QueueType, SwapChainConfiguration,
     SwapChainCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
-ref_ptr_object! {
-    pub struct Surface: ISurface, ISurfaceExt {
-        pub(crate) factory: dxgi::Factory,
-        pub(crate) handle: RawWindowHandle,
-        pub(crate) has_swap_chain: AtomicBool,
-        pub(crate) context: RefPtr<Context>,
-    }
+pub struct Surface {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) factory: dxgi::Factory,
+    pub(crate) handle: RawWindowHandle,
+    pub(crate) has_swap_chain: AtomicBool,
+    pub(crate) context: AnyArc<Context>,
 }
+
+declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
 
 impl Surface {
     fn inner_create_swap_chain(
         &self,
-        device: WeakRefPtr<dyn IDevice>,
+        device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
         // Translate our high level present mode into terms that make sense to d3d12
@@ -152,29 +153,31 @@ impl Surface {
             dxgi_format: in_memory_format,
             dxgi_view_format: view_format,
         };
-        let swap_chain = ref_ptr_init! {
-            SwapChain {
-                swap_chain: swap_chain,
-                device: device.as_ref_ptr(),
-                surface: self.as_ref_ptr(),
-                queue_support: queue_type,
-                inner: Mutex::new(inner),
-                queued_resize: AtomicCell::new(None),
-                acquired: AtomicBool::new(false),
-                images_in_flight: AtomicU32::new(0),
-            }
-        };
-        let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
+        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+            this: v.clone(),
+            swap_chain,
+            device: device.this.upgrade().unwrap(),
+            surface: self.this.upgrade().unwrap(),
+            queue_support: queue_type,
+            inner: Mutex::new(inner),
+            queued_resize: AtomicCell::new(None),
+            acquired: AtomicBool::new(false),
+            images_in_flight: AtomicU32::new(0),
+        });
         Ok(swap_chain.query_interface().unwrap())
     }
 }
 
 impl ISurface for Surface {
+    fn upgrade(&self) -> AnyArc<dyn ISurface> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn create_swap_chain(
         &self,
-        device: WeakRefPtr<dyn IDevice>,
+        device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
         // Check if the surface is currently taken with an existing swap chain
         if self.has_swap_chain.swap(true, Ordering::SeqCst) {
             return Err(SwapChainCreateError::SurfaceAlreadyOwned);
