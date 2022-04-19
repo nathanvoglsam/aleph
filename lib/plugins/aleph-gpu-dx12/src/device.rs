@@ -48,8 +48,8 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
     CpuAccessMode, IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList,
-    INamedObject, IShader, ISwapChain, ITexture, QueuePresentError, QueueType, ShaderBinary,
-    ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
+    INamedObject, ISampler, IShader, ISwapChain, ITexture, QueuePresentError, QueueType,
+    SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
 };
 use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use parking_lot::RwLock;
@@ -61,6 +61,7 @@ ref_ptr_object! {
         pub(crate) device: dx12::Device,
         pub(crate) rtv_heap: DescriptorAllocatorCPU,
         pub(crate) dsv_heap: DescriptorAllocatorCPU,
+        pub(crate) sampler_heap: DescriptorAllocatorCPU,
         pub(crate) queues: Queues,
         pub(crate) adapter: RefPtr<Adapter>,
     }
@@ -216,6 +217,10 @@ impl IDevice for Device {
         };
         let texture: RefPtr<Texture> = RefPtr::new(texture);
         Ok(texture.query_interface().unwrap())
+    }
+
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()> {
+        todo!()
     }
 
     fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError> {

@@ -83,6 +83,7 @@ impl IAdapter for Adapter {
             Device {
                 rtv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::RenderTargetView),
                 dsv_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::DepthStencilView),
+                sampler_heap: DescriptorAllocatorCPU::new(device.clone(), dx12::DescriptorHeapType::Sampler),
                 device: device,
                 queues: queues,
                 adapter: self.as_ref_ptr(),
