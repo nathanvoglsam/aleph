@@ -29,7 +29,6 @@
 
 pub extern crate aleph_any as any;
 pub extern crate aleph_label as label;
-pub extern crate aleph_ref_ptr as ref_ptr;
 pub extern crate anyhow;
 
 pub mod components;

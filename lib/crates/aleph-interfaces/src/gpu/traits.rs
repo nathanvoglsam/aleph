@@ -7,9 +7,8 @@ use crate::gpu::{
     SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
     TextureDesc, TextureSubResourceSet,
 };
-use any::IAny;
+use any::{AnyArc, IAny};
 use raw_window_handle::HasRawWindowHandle;
-use ref_ptr::{RefPtr, WeakRefPtr};
 use std::any::Any;
 
 /// Entry point of the RHI. This interface is intended to be installed into a plugin registry where
@@ -20,33 +19,33 @@ pub trait IContextProvider: IAny + 'static {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<RefPtr<dyn IContext>, ContextCreateError>;
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError>;
 }
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
-pub trait IContext: Any + 'static {
+pub trait IContext: IAny + 'static {
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>>;
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>>;
 
     /// Create a surface from the provided window handle.
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
-    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError>;
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError>;
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
 }
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: Any + 'static {
+pub trait IAdapter: IAny + 'static {
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&self) -> AdapterDescription;
 
     /// Requests an IDevice
-    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError>;
+    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError>;
 }
 
 /// Represents the graphics API's handle to the window or monitor surface. SwapChains are created
@@ -56,15 +55,15 @@ pub trait IAdapter: Any + 'static {
 /// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
-pub trait ISurface: Any + 'static {
+pub trait ISurface: IAny + 'static {
     fn create_swap_chain(
         &self,
-        device: WeakRefPtr<dyn IDevice>,
+        device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError>;
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError>;
 }
 
-pub trait ISwapChain: INamedObject + Any + 'static {
+pub trait ISwapChain: INamedObject + IAny + 'static {
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
@@ -85,10 +84,10 @@ pub trait ISwapChain: INamedObject + Any + 'static {
 }
 
 pub trait IAcquiredTexture: IAny + Send + 'static {
-    fn image(&self) -> WeakRefPtr<dyn ITexture>;
+    fn image(&self) -> &dyn ITexture;
 }
 
-pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
+pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
     /// command lists to be freed. It is recommended to call this at least once per frame.
     fn garbage_collect(&self);
@@ -103,18 +102,18 @@ pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
     fn create_shader(
         &self,
         options: &ShaderOptions,
-    ) -> Result<RefPtr<dyn IShader>, ShaderCreateError>;
+    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError>;
 
-    fn create_buffer(&self, desc: &BufferDesc) -> Result<RefPtr<dyn IBuffer>, BufferCreateError>;
+    fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError>;
 
     fn create_texture(
         &self,
         desc: &TextureDesc,
-    ) -> Result<RefPtr<dyn ITexture>, TextureCreateError>;
+    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError>;
 
-    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()>;
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<AnyArc<dyn ISampler>, ()>;
 
-    fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError>;
+    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError>;
 
     ///
     /// # Safety
@@ -164,53 +163,53 @@ pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
 
 pub trait IVertexInputLayout: INamedObject + Send + Sync + Any + 'static {}
 
-pub trait IBuffer: INamedObject + Send + Sync + Any + 'static {
+pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
     fn desc(&self) -> &BufferDesc;
 }
 
-pub trait ITexture: INamedObject + Send + Sync + Any + 'static {
+pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
     fn desc(&self) -> &TextureDesc;
 }
 
-pub trait IShader: INamedObject + Send + Sync + Any + 'static {
+pub trait IShader: INamedObject + Send + Sync + IAny + Any + 'static {
     fn shader_type(&self) -> ShaderType;
     fn entry_point(&self) -> &str;
 }
 
-pub trait ISampler: INamedObject + Send + Sync + Any + 'static {}
+pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IFramebufferLayout: INamedObject + Send + Sync + Any + 'static {}
+pub trait IFramebufferLayout: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IFramebuffer: INamedObject + Send + Sync + Any + 'static {}
+pub trait IFramebuffer: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IBindingLayout: INamedObject + Send + Sync + Any + 'static {}
+pub trait IBindingLayout: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IBindingSet: INamedObject + Send + Sync + Any + 'static {}
+pub trait IBindingSet: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IGraphicsPipeline: INamedObject + Send + Sync + Any + 'static {}
+pub trait IGraphicsPipeline: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait IComputePipeline: INamedObject + Send + Sync + Any + 'static {}
+pub trait IComputePipeline: INamedObject + Send + Sync + IAny + Any + 'static {}
 
-pub trait ICommandPool: INamedObject + Send + Sync + Any + 'static {
+pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
     fn create_general_command_list(
         &self,
     ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError>;
 }
 
-pub trait IGeneralCommandList: IAny + INamedObject + Send + 'static {
+pub trait IGeneralCommandList: INamedObject + Send + IAny + Any + 'static {
     fn begin<'a>(&'a mut self) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
 }
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
     fn clear_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
+        texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     );
     fn clear_depth_stencil_texture(
         &mut self,
-        texture: WeakRefPtr<dyn ITexture>,
+        texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     );
@@ -218,7 +217,7 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
     fn draw_indexed(&mut self, options: &DrawIndexedOptions);
 }
 
-pub trait IComputeCommandList: IAny + INamedObject + Send + 'static {
+pub trait IComputeCommandList: INamedObject + Send + IAny + Any + 'static {
     fn begin<'a>(&'a mut self) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
 }
 
@@ -226,7 +225,7 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
     fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
-pub trait ITransferCommandList: IAny + INamedObject + Send + 'static {
+pub trait ITransferCommandList: INamedObject + Send + IAny + Any + 'static {
     fn begin<'a>(&'a mut self) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
 }
 

@@ -33,7 +33,6 @@ use crate::gpu::{
     TextureFormat, TextureMipFilter,
 };
 use bitflags::bitflags;
-use ref_ptr::WeakRefPtr;
 
 /// Options provided when a context is created
 #[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
@@ -74,7 +73,7 @@ pub struct AdapterRequestOptions<'a> {
     ///
     /// Can be set to `None` to indicate we aren't going to present. Useful for compute-only
     /// workloads.
-    pub surface: Option<WeakRefPtr<'a, dyn ISurface>>,
+    pub surface: Option<&'a dyn ISurface>,
 
     /// Specifies the preferred power class of the adapter the context should return. See
     /// [AdapterPowerClass] for the meaning of each power class.
