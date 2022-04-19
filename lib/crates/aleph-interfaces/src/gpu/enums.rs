@@ -618,6 +618,39 @@ pub enum TextureDimension {
     Texture3D,
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TextureAddressMode {
+    Wrap,
+    Mirror,
+    Clamp,
+    Border,
+    MirrorOnce,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TextureFilter {
+    Nearest,
+    Linear,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TextureMipFilter {
+    Nearest,
+    Linear,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ComparisonOp {
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterOrEqual,
+    Always,
+}
+
 #[derive(Error, Debug)]
 pub enum CommandPoolCreateError {
     #[error("An internal backend error has occurred '{0}'")]

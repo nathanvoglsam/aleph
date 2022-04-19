@@ -3,9 +3,9 @@ use crate::gpu::{
     BufferDesc, ColorClearValue, CommandListBeginError, CommandListCreateError,
     CommandListSubmitError, CommandPoolCreateError, ContextCreateError, ContextOptions,
     DepthStencilClearValue, DrawIndexedOptions, DrawOptions, QueuePresentError, QueueType,
-    RequestDeviceError, ShaderCreateError, ShaderOptions, ShaderType, SurfaceCreateError,
-    SwapChainConfiguration, SwapChainCreateError, TextureCreateError, TextureDesc,
-    TextureSubResourceSet,
+    RequestDeviceError, SamplerDesc, ShaderCreateError, ShaderOptions, ShaderType,
+    SurfaceCreateError, SwapChainConfiguration, SwapChainCreateError, TextureCreateError,
+    TextureDesc, TextureSubResourceSet,
 };
 use any::IAny;
 use raw_window_handle::HasRawWindowHandle;
@@ -111,6 +111,8 @@ pub trait IDevice: INamedObject + Send + Sync + Any + 'static {
         &self,
         desc: &TextureDesc,
     ) -> Result<RefPtr<dyn ITexture>, TextureCreateError>;
+
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()>;
 
     fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError>;
 

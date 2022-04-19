@@ -28,8 +28,9 @@
 //
 
 use crate::gpu::{
-    AdapterPowerClass, CpuAccessMode, ISurface, OptimalClearValue, PresentationMode, QueueType,
-    ShaderBinary, ShaderType, TextureDimension, TextureFormat,
+    AdapterPowerClass, ComparisonOp, CpuAccessMode, ISurface, OptimalClearValue, PresentationMode,
+    QueueType, ShaderBinary, ShaderType, TextureAddressMode, TextureDimension, TextureFilter,
+    TextureFormat, TextureMipFilter,
 };
 use bitflags::bitflags;
 use ref_ptr::WeakRefPtr;
@@ -383,4 +384,21 @@ impl Default for TextureSubResourceSet {
             num_array_slices: 1,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SamplerDesc {
+    pub min_filter: TextureFilter,
+    pub mag_filter: TextureFilter,
+    pub mip_filter: TextureMipFilter,
+    pub address_mode_u: TextureAddressMode,
+    pub address_mode_v: TextureAddressMode,
+    pub address_mode_w: TextureAddressMode,
+    pub lod_bias: f32,
+    pub min_lod: f32,
+    pub max_lod: f32,
+    pub enable_anisotropy: bool,
+    pub max_anisotropy: f32,
+    pub compare_op: ComparisonOp,
+    // TODO: Border colour
 }
