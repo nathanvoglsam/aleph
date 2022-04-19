@@ -38,6 +38,7 @@ use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::os::raw::c_char;
+use windows::Win32::Foundation::GetLastError;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -147,9 +148,11 @@ impl<T: Sized> DynamicLoadCell<T> {
         self.cell
             .get_or_try_init(|| {
                 // Attempt to load the library
-                let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))
-                    .ok()
-                    .map_err(|_| ())?;
+                let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()));
+
+                if h_module.0 == 0 {
+                    return Err(());
+                }
 
                 // Attempt to find the function pointer we're after
                 GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
@@ -175,7 +178,10 @@ pub unsafe fn name_current_thread(name: &[u16]) -> crate::windows::core::Result<
     use crate::Win32::System::Threading::GetCurrentThread;
     use crate::Win32::System::Threading::SetThreadDescription;
 
-    let handle: HANDLE = GetCurrentThread().ok()?;
+    let handle: HANDLE = GetCurrentThread();
+    if handle.is_invalid() {
+        GetLastError().ok()?
+    }
     let _ = SetThreadDescription(handle, PCWSTR(name.as_ptr()));
 
     Ok(())
