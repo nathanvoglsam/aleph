@@ -142,6 +142,7 @@ impl Event {
                 BOOL::from(false),
                 PCWSTR(std::ptr::null()),
             )
+            .ok()?
         };
 
         NonZeroIsize::new(event.0).map(Self)

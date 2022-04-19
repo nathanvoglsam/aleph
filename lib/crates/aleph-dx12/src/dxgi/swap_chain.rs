@@ -88,21 +88,15 @@ impl SwapChain {
         let pp_present_queue = queues.as_ptr() as *mut WeakRef<CommandQueue>;
         let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
 
-        {
-            (windows::core::Interface::vtable(&self.0)
-                .base
-                .ResizeBuffers1)(
-                ::core::mem::transmute_copy(&self.0),
-                ::core::mem::transmute(buffer_count),
-                ::core::mem::transmute(width),
-                ::core::mem::transmute(height),
-                ::core::mem::transmute(format),
-                ::core::mem::transmute(flags),
-                ::core::mem::transmute(p_creation_node_mask),
-                ::core::mem::transmute(pp_present_queue),
-            )
-            .ok()
-        }
+        self.0.ResizeBuffers1(
+            buffer_count,
+            width,
+            height,
+            format.into(),
+            flags.0,
+            p_creation_node_mask,
+            pp_present_queue,
+        )
     }
 
     /// `IDXGISwapChain1::Present1`
