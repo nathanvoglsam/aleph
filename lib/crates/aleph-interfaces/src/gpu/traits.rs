@@ -25,6 +25,8 @@ pub trait IContextProvider: IAny + 'static {
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
 pub trait IContext: IAny + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IContext>;
+
     /// Create an adapter that suitably meets the requested requirements and preferences specified
     /// by `options`. Will return `None` if no adapter meeting the requirements could be found.
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>>;
@@ -41,6 +43,8 @@ pub trait IContext: IAny + 'static {
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
 pub trait IAdapter: IAny + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IAdapter>;
+
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
     fn description(&self) -> AdapterDescription;
 
@@ -56,6 +60,8 @@ pub trait IAdapter: IAny + 'static {
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
 pub trait ISurface: IAny + 'static {
+    fn upgrade(&self) -> AnyArc<dyn ISurface>;
+
     fn create_swap_chain(
         &self,
         device: &dyn IDevice,
@@ -64,6 +70,8 @@ pub trait ISurface: IAny + 'static {
 }
 
 pub trait ISwapChain: INamedObject + IAny + 'static {
+    fn upgrade(&self) -> AnyArc<dyn ISwapChain>;
+
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
@@ -88,6 +96,8 @@ pub trait IAcquiredTexture: IAny + Send + 'static {
 }
 
 pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IDevice>;
+
     /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
     /// command lists to be freed. It is recommended to call this at least once per frame.
     fn garbage_collect(&self);
@@ -161,36 +171,56 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     fn get_backend_api(&self) -> BackendAPI;
 }
 
-pub trait IVertexInputLayout: INamedObject + Send + Sync + Any + 'static {}
+pub trait IVertexInputLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IVertexInputLayout>;
+}
 
 pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IBuffer>;
     fn desc(&self) -> &BufferDesc;
 }
 
 pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn ITexture>;
     fn desc(&self) -> &TextureDesc;
 }
 
 pub trait IShader: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IShader>;
     fn shader_type(&self) -> ShaderType;
     fn entry_point(&self) -> &str;
 }
 
-pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn ISampler>;
+}
 
-pub trait IFramebufferLayout: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IFramebufferLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IFramebufferLayout>;
+}
 
-pub trait IFramebuffer: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IFramebuffer: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IFramebuffer>;
+}
 
-pub trait IBindingLayout: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IBindingLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IBindingLayout>;
+}
 
-pub trait IBindingSet: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IBindingSet: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IBindingSet>;
+}
 
-pub trait IGraphicsPipeline: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IGraphicsPipeline: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline>;
+}
 
-pub trait IComputePipeline: INamedObject + Send + Sync + IAny + Any + 'static {}
+pub trait IComputePipeline: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn IComputePipeline>;
+}
 
 pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
+    fn upgrade(&self) -> AnyArc<dyn ICommandPool>;
     fn create_general_command_list(
         &self,
     ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError>;
