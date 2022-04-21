@@ -35,11 +35,10 @@ use crate::dx12::{dxgi, GraphicsCommandList};
 use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-use interfaces::any::{QueryInterface, QueryInterfaceBox};
+use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
 };
-use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 use std::ops::Deref;
 
 pub struct EguiRenderer {
@@ -47,21 +46,21 @@ pub struct EguiRenderer {
     global: GlobalObjects,
 
     /// Rendering device
-    device: RefPtr<dyn IDeviceExt>,
+    device: AnyArc<dyn IDeviceExt>,
 
     ///
     pixels_per_point: f32,
 }
 
 impl EguiRenderer {
-    pub fn new(device: RefPtr<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
+    pub fn new(device: AnyArc<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
         aleph_log::trace!("Initializing Egui Renderer");
 
-        let global = GlobalObjects::new(device.as_weak(), dimensions);
+        let global = GlobalObjects::new(device.deref(), dimensions);
 
         let frames = (0..3)
             .into_iter()
-            .map(|index| PerFrameObjects::new(device.as_weak(), &global, index))
+            .map(|index| PerFrameObjects::new(device.deref(), &global, index))
             .collect();
 
         Self {
@@ -86,7 +85,7 @@ impl EguiRenderer {
         &mut self,
         index: usize,
         buffer: dx12::Resource,
-        texture: WeakRefPtr<dyn ITexture>,
+        texture: &dyn ITexture,
         view: dx12::CPUDescriptorHandle,
         egui_ctx: &egui::CtxRef,
         jobs: Vec<aleph_egui::ClippedMesh>,
@@ -111,7 +110,7 @@ impl EguiRenderer {
             // Handles creating the texture data resources and placing it into the staging buffer if
             // doing so is needed. Will return whether or not the texture data needs to be re-staged.
             let needs_reupload = self.frames[index]
-                .update_texture_data(self.device.as_weak(), egui_ctx.font_image());
+                .update_texture_data(self.device.deref(), egui_ctx.font_image());
 
             // If a reupload is needed we record into the command buffer the commands required to do so
             if needs_reupload {

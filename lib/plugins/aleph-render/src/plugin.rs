@@ -30,28 +30,27 @@
 use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapTextureExt};
-use interfaces::any;
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, ISwapChain, PresentationMode,
     QueueType, SwapChainConfiguration, TextureFormat,
 };
 use interfaces::platform::*;
 use interfaces::plugin::*;
-use interfaces::ref_ptr::RefPtr;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::ops::Deref;
+use interfaces::any::{AnyArc, declare_interfaces, QueryInterface};
 
 struct Data {
     index: usize,
-    window: any::AnyArc<dyn IWindow>,
-    render_data: any::AnyArc<dyn egui::IEguiRenderData>,
-    egui_provider: any::AnyArc<dyn egui::IEguiContextProvider>,
-    swap_chain: RefPtr<dyn ISwapChain>,
+    window: AnyArc<dyn IWindow>,
+    render_data: AnyArc<dyn egui::IEguiRenderData>,
+    egui_provider: AnyArc<dyn egui::IEguiContextProvider>,
+    swap_chain: AnyArc<dyn ISwapChain>,
     renderer: EguiRenderer,
 }
 
 pub struct PluginRender {
-    device: Option<RefPtr<dyn IDeviceExt>>,
+    device: Option<AnyArc<dyn IDeviceExt>>,
 }
 
 impl PluginRender {
@@ -119,7 +118,7 @@ impl IPlugin for PluginRender {
 
         // Get an adapter compatible with the requested surface
         let options = AdapterRequestOptions {
-            surface: Some(surface.as_weak()),
+            surface: Some(surface.deref()),
             ..Default::default()
         };
         let adapter = gpu_context
@@ -150,7 +149,7 @@ impl IPlugin for PluginRender {
         };
         let device_handle = device.query_interface::<dyn IDevice>().unwrap();
         let swap_chain = surface
-            .create_swap_chain(device_handle.as_weak(), &config)
+            .create_swap_chain(device_handle.deref(), &config)
             .unwrap();
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
@@ -227,7 +226,7 @@ impl Default for PluginRender {
     }
 }
 
-any::declare_interfaces!(PluginRender, [IPlugin]);
+declare_interfaces!(PluginRender, [IPlugin]);
 
 impl PluginRender {
     ///

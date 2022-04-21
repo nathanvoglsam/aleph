@@ -27,26 +27,27 @@
 // SOFTWARE.
 //
 
+use std::ops::Deref;
 use crate::dx12;
 use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
 use aleph_gpu_dx12::{IDeviceExt, IShaderExt};
+use interfaces::any::AnyArc;
 use interfaces::gpu::{ShaderOptions, ShaderType};
-use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
     pub srv_heap: dx12::DescriptorHeap,
     pub root_signature: dx12::RootSignature,
-    pub vertex_shader: RefPtr<dyn IShaderExt>,
-    pub fragment_shader: RefPtr<dyn IShaderExt>,
+    pub vertex_shader: AnyArc<dyn IShaderExt>,
+    pub fragment_shader: AnyArc<dyn IShaderExt>,
     pub pipeline_state: dx12::GraphicsPipelineState,
     pub swap_width: u32,
     pub swap_height: u32,
 }
 
 impl GlobalObjects {
-    pub fn new(device: WeakRefPtr<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
+    pub fn new(device: &dyn IDeviceExt, dimensions: (u32, u32)) -> Self {
         let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
             .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
             .num_descriptors(3)
@@ -84,8 +85,8 @@ impl GlobalObjects {
         let pipeline_state = Self::create_pipeline_state(
             &device.get_raw_handle(),
             &root_signature,
-            vertex_shader.as_weak(),
-            fragment_shader.as_weak(),
+            vertex_shader.deref(),
+            fragment_shader.deref(),
         );
         pipeline_state
             .set_name("egui::GraphicsPipelineState")
@@ -144,8 +145,8 @@ impl GlobalObjects {
     pub fn create_pipeline_state(
         device: &dx12::Device,
         root_signature: &dx12::RootSignature,
-        vertex_shader: WeakRefPtr<dyn IShaderExt>,
-        pixel_shader: WeakRefPtr<dyn IShaderExt>,
+        vertex_shader: &dyn IShaderExt,
+        pixel_shader: &dyn IShaderExt,
     ) -> dx12::GraphicsPipelineState {
         let rasterizer_state = dx12::RasterizerDesc::builder()
             .fill_mode(dx12::FillMode::Solid)

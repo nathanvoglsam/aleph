@@ -36,18 +36,18 @@ use interfaces::gpu::{
     BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
     TextureFormat,
 };
-use interfaces::ref_ptr::{RefPtr, WeakRefPtr};
 use std::sync::Arc;
+use interfaces::any::AnyArc;
 
 pub struct PerFrameObjects {
-    pub vtx_buffer: RefPtr<dyn IBufferExt>,
-    pub idx_buffer: RefPtr<dyn IBufferExt>,
+    pub vtx_buffer: AnyArc<dyn IBufferExt>,
+    pub idx_buffer: AnyArc<dyn IBufferExt>,
 
-    pub command_allocator: RefPtr<dyn ICommandPool>,
+    pub command_allocator: AnyArc<dyn ICommandPool>,
 
-    pub font_staging_buffer: RefPtr<dyn IBufferExt>,
+    pub font_staging_buffer: AnyArc<dyn IBufferExt>,
 
-    pub font_staged: Option<RefPtr<dyn ITextureExt>>,
+    pub font_staged: Option<AnyArc<dyn ITextureExt>>,
     pub font_cpu_srv: dx12::CPUDescriptorHandle,
     pub font_gpu_srv: dx12::GPUDescriptorHandle,
     pub font_staged_size: (u32, u32),
@@ -55,7 +55,7 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(device: WeakRefPtr<dyn IDeviceExt>, global: &GlobalObjects, index: usize) -> Self {
+    pub fn new(device: &dyn IDeviceExt, global: &GlobalObjects, index: usize) -> Self {
         let vtx_buffer = {
             let desc = BufferDesc {
                 size: Self::vertex_buffer_size() as _,
@@ -119,7 +119,7 @@ impl PerFrameObjects {
 
     pub unsafe fn update_texture_data(
         &mut self,
-        device: WeakRefPtr<dyn IDeviceExt>,
+        device: &dyn IDeviceExt,
         texture: Arc<egui::FontImage>,
     ) -> bool {
         debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
@@ -189,7 +189,7 @@ impl PerFrameObjects {
     /// Allocates the font texture on GPU memory
     fn create_staged_resources(
         &mut self,
-        device: WeakRefPtr<dyn IDeviceExt>,
+        device: &dyn IDeviceExt,
         dimensions: (u32, u32),
     ) {
         let image = device
@@ -227,9 +227,9 @@ impl PerFrameObjects {
     }
 
     fn create_font_staging_allocation(
-        device: WeakRefPtr<dyn IDeviceExt>,
+        device: &dyn IDeviceExt,
         dimensions: (u32, u32),
-    ) -> RefPtr<dyn IBufferExt> {
+    ) -> AnyArc<dyn IBufferExt> {
         device
             .create_buffer(&BufferDesc {
                 size: (dimensions.0 * dimensions.1) as u64,
