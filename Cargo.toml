@@ -58,7 +58,6 @@ members = [
     "lib/crates/aleph-log",
     "lib/crates/aleph-pix",
     "lib/crates/aleph-pix-raw",
-    "lib/crates/aleph-ref-ptr",
     "lib/crates/aleph-sys-info",
     "lib/crates/aleph-target",
     "lib/crates/aleph-target-build",
