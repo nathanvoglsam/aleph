@@ -57,12 +57,12 @@ use std::sync::atomic::Ordering;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) adapter: AnyArc<Adapter>,
     pub(crate) device: dx12::Device,
     pub(crate) rtv_heap: DescriptorAllocatorCPU,
     pub(crate) dsv_heap: DescriptorAllocatorCPU,
     pub(crate) sampler_heap: DescriptorAllocatorCPU,
     pub(crate) queues: Queues,
-    pub(crate) adapter: AnyArc<Adapter>,
 }
 
 declare_interfaces!(Device, [IDevice, IDeviceExt]);

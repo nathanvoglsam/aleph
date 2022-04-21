@@ -37,9 +37,9 @@ use std::sync::atomic::Ordering;
 
 pub struct SwapTexture {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) resource: dx12::Resource,
     pub(crate) view: dx12::CPUDescriptorHandle,
-    pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) desc: TextureDesc,
 }
 

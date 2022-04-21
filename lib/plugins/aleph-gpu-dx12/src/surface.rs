@@ -46,10 +46,10 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) context: AnyArc<Context>,
     pub(crate) factory: dxgi::Factory,
     pub(crate) handle: RawWindowHandle,
     pub(crate) has_swap_chain: AtomicBool,
-    pub(crate) context: AnyArc<Context>,
 }
 
 declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
@@ -155,9 +155,9 @@ impl Surface {
         };
         let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
             this: v.clone(),
-            swap_chain,
             device: device.this.upgrade().unwrap(),
             surface: self.this.upgrade().unwrap(),
+            swap_chain,
             queue_support: queue_type,
             inner: Mutex::new(inner),
             queued_resize: AtomicCell::new(None),

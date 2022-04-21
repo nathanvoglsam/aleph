@@ -28,7 +28,7 @@
 //
 
 use dx12::D3D12Object;
-use interfaces::any::{declare_interfaces, AnyWeak, AnyArc};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{BufferDesc, IBuffer, INamedObject};
 
 pub struct Buffer {

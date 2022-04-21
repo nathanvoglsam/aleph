@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{declare_interfaces, AnyWeak, AnyArc};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IShader, ShaderType};
 
 pub struct Shader {

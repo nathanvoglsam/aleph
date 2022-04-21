@@ -111,9 +111,9 @@ impl IContext for Context {
 
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
+                context: self.this.upgrade().unwrap(),
                 name,
                 adapter,
-                context: self.this.upgrade().unwrap(),
             });
             Some(adapter.query_interface().unwrap())
         } else {
@@ -127,10 +127,10 @@ impl IContext for Context {
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
+            context: self.this.upgrade().unwrap(),
             factory: self.factory.clone(),
             handle: window.raw_window_handle(),
             has_swap_chain: AtomicBool::new(false),
-            context: self.this.upgrade().unwrap(),
         });
         Ok(surface.query_interface().unwrap())
     }

@@ -44,9 +44,9 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) swap_chain: dxgi::SwapChain,
     pub(crate) device: AnyArc<Device>,
     pub(crate) surface: AnyArc<Surface>,
+    pub(crate) swap_chain: dxgi::SwapChain,
     pub(crate) queue_support: QueueType,
     pub(crate) inner: Mutex<SwapChainState>,
     pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
@@ -173,6 +173,7 @@ impl ISwapChain for SwapChain {
             let index = self.swap_chain.get_current_back_buffer_index();
             let image = AnyArc::new_cyclic(move |v| SwapTexture {
                 this: v.clone(),
+                swap_chain: self.this.upgrade().unwrap(),
                 resource: inner.images[index as usize].0.clone(),
                 view: inner.images[index as usize].1,
                 desc: TextureDesc {
@@ -191,7 +192,6 @@ impl ISwapChain for SwapChain {
                     allow_cube_face: false,
                     is_render_target: true,
                 },
-                swap_chain: self.this.upgrade().unwrap(),
             });
             let image: AnyArc<dyn ITexture> = image.query_interface().unwrap();
 
