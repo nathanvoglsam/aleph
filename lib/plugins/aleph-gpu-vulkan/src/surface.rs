@@ -33,20 +33,20 @@ use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use erupt::vk;
 use erupt::vk::SurfaceKHR;
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError, TextureFormat,
 };
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject, WeakRefPtr};
 use std::sync::Mutex;
 
-ref_ptr_object! {
-    pub struct Surface: ISurface, ISurfaceExt {
-        pub(crate) surface: vk::SurfaceKHR,
-        pub(crate) context: RefPtr<Context>,
-    }
+pub struct Surface {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) context: AnyArc<Context>,
+    pub(crate) surface: vk::SurfaceKHR,
 }
+
+declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
 
 impl Surface {
     /// Internal function for querying present support for a given surface
@@ -104,12 +104,16 @@ impl Surface {
 }
 
 impl ISurface for Surface {
+    fn upgrade(&self) -> AnyArc<dyn ISurface> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn create_swap_chain(
         &self,
-        device: WeakRefPtr<dyn IDevice>,
+        device: &dyn IDevice,
         config: &SwapChainConfiguration,
-    ) -> Result<RefPtr<dyn ISwapChain>, SwapChainCreateError> {
-        let device = device.query_interface::<Device>().unwrap().to_strong();
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
+        let device = device.query_interface::<Device>().unwrap();
 
         let queue_support = unsafe { Surface::get_queue_support(&device, self.surface).unwrap() };
 
@@ -133,15 +137,13 @@ impl ISurface for Surface {
             images: Vec::new(),
             queued_resize: None, // TODO: This likely needs to be initialized to something
         };
-        let swap_chain = ref_ptr_init! {
-            SwapChain {
-                inner: Mutex::new(inner),
-                queue_support: queue_support,
-                device: device,
-                surface: self.as_ref_ptr(),
-            }
-        };
-        let swap_chain: RefPtr<SwapChain> = RefPtr::new(swap_chain);
+        let swap_chain = AnyArc::new_cyclic(move |v| SwapChain {
+            this: v.clone(),
+            device: device.this.upgrade().unwrap(),
+            surface: self.this.upgrade().unwrap(),
+            inner: Mutex::new(inner),
+            queue_support,
+        });
 
         // TODO: This is unsound and wrong, no checks have been made yet
         unsafe {
@@ -176,5 +178,3 @@ impl ISurfaceExt for Surface {
         self.surface
     }
 }
-
-declare_interfaces!(Surface, [ISurface, ISurfaceExt]);

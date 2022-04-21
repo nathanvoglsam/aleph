@@ -32,18 +32,18 @@ use crate::device::Device;
 use crate::internal::queues::{QueueInfo, Queues};
 use erupt::vk;
 use erupt::vk1_0::PhysicalDevice;
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 
-ref_ptr_object! {
-    pub struct Adapter: IAdapter, IAdapterExt {
-        pub(crate) name: String,
-        pub(crate) physical_device: vk::PhysicalDevice,
-        pub(crate) context: RefPtr<Context>,
-    }
+pub struct Adapter {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) context: AnyArc<Context>,
+    pub(crate) name: String,
+    pub(crate) physical_device: vk::PhysicalDevice,
 }
+
+declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
 
 impl Adapter {
     #[inline]
@@ -129,11 +129,15 @@ impl Adapter {
 }
 
 impl IAdapter for Adapter {
+    fn upgrade(&self) -> AnyArc<dyn IAdapter> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn description(&self) -> AdapterDescription {
         AdapterDescription { name: &self.name }
     }
 
-    fn request_device(&self) -> Result<RefPtr<dyn IDevice>, RequestDeviceError> {
+    fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
         use erupt::extensions::*;
 
         let enabled_features = vk::PhysicalDeviceFeatures::default();
@@ -165,15 +169,13 @@ impl IAdapter for Adapter {
 
         let queues = unsafe { found_families.build_queues_object(&device_loader) };
 
-        let device = ref_ptr_init! {
-            Device {
-                device_loader: device_loader,
-                queues: queues,
-                adapter: self.as_ref_ptr(),
-                context: self.context.clone(),
-            }
-        };
-        let device: RefPtr<Device> = RefPtr::new(device);
+        let device = AnyArc::new_cyclic(move |v| Device {
+            this: v.clone(),
+            device_loader,
+            queues,
+            adapter: self.this.upgrade().unwrap(),
+            context: self.context.clone(),
+        });
 
         Ok(device.query_interface().unwrap())
     }
@@ -188,8 +190,6 @@ impl IAdapterExt for Adapter {
         self.physical_device
     }
 }
-
-declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
 
 // We're just going have a pre-allocated chunk of priorities bigger than we're ever going to
 // need to slice from to send to vulkan. Saves allocating when we don't need to

@@ -35,11 +35,10 @@ use erupt::vk::{
     make_api_version, DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessageTypeFlagsEXT,
     DebugUtilsMessengerCreateInfoEXTBuilder, DebugUtilsMessengerEXT,
 };
-use interfaces::any::declare_interfaces;
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
-use interfaces::ref_ptr::{ref_ptr_init, RefPtr};
 use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::os::raw::c_char;
@@ -119,7 +118,7 @@ impl IContextProvider for ContextProvider {
     fn make_context(
         &self,
         options: &ContextOptions,
-    ) -> Result<RefPtr<dyn IContext>, ContextCreateError> {
+    ) -> Result<AnyArc<dyn IContext>, ContextCreateError> {
         match self
             .context_made
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
@@ -146,13 +145,11 @@ impl IContextProvider for ContextProvider {
                     None
                 };
 
-                let context = ref_ptr_init! {
-                    Context {
-                        instance_loader: instance_loader,
-                        messenger: messenger,
-                    }
-                };
-                let context: RefPtr<Context> = RefPtr::new(context);
+                let context = AnyArc::new_cyclic(move |v| Context {
+                    this: v.clone(),
+                    instance_loader,
+                    messenger,
+                });
                 Ok(context.query_interface().unwrap())
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),

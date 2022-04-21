@@ -33,6 +33,7 @@ use crate::internal::queues::Queues;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
 use erupt::vk;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
@@ -40,19 +41,23 @@ use interfaces::gpu::{
     IShader, ITexture, QueuePresentError, SamplerDesc, ShaderBinary, ShaderCreateError,
     ShaderOptions, TextureCreateError, TextureDesc,
 };
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ffi::CString;
 
-ref_ptr_object! {
-    pub struct Device: IDevice, IDeviceExt {
-        pub(crate) device_loader: erupt::DeviceLoader,
-        pub(crate) queues: Queues,
-        pub(crate) adapter: RefPtr<Adapter>,
-        pub(crate) context: RefPtr<Context>,
-    }
+pub struct Device {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) context: AnyArc<Context>,
+    pub(crate) adapter: AnyArc<Adapter>,
+    pub(crate) device_loader: erupt::DeviceLoader,
+    pub(crate) queues: Queues,
 }
 
+declare_interfaces!(Device, [IDevice, IDeviceExt]);
+
 impl IDevice for Device {
+    fn upgrade(&self) -> AnyArc<dyn IDevice> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn garbage_collect(&self) {
         todo!()
     }
@@ -64,7 +69,7 @@ impl IDevice for Device {
     fn create_shader(
         &self,
         options: &ShaderOptions,
-    ) -> Result<RefPtr<dyn IShader>, ShaderCreateError> {
+    ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
         if let ShaderBinary::Spirv(data) = options.data {
             // Vulkan shaders must always have a buffer length that is a multiple of 4. SPIR-V's binary
             // representation is a sequence of u32 values.
@@ -82,38 +87,35 @@ impl IDevice for Device {
                     .map_err(|v| anyhow!(v))?
             };
 
-            let shader = ref_ptr_init! {
-                Shader {
-                    device: self.as_ref_ptr(),
-                    shader_type: options.shader_type,
-                    module: module,
-                    entry_point: options.entry_point.to_string(),
-                }
-            };
-            let shader: RefPtr<Shader> = RefPtr::new(shader);
-
+            let shader = AnyArc::new_cyclic(move |v| Shader {
+                this: v.clone(),
+                device: self.this.upgrade().unwrap(),
+                shader_type: options.shader_type,
+                module,
+                entry_point: options.entry_point.to_string(),
+            });
             Ok(shader.query_interface().unwrap())
         } else {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }
     }
 
-    fn create_buffer(&self, _desc: &BufferDesc) -> Result<RefPtr<dyn IBuffer>, BufferCreateError> {
+    fn create_buffer(&self, _desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         todo!()
     }
 
     fn create_texture(
         &self,
         _desc: &TextureDesc,
-    ) -> Result<RefPtr<dyn ITexture>, TextureCreateError> {
+    ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
         todo!()
     }
 
-    fn create_sampler(&self, desc: &SamplerDesc) -> Result<RefPtr<dyn ISampler>, ()> {
+    fn create_sampler(&self, desc: &SamplerDesc) -> Result<AnyArc<dyn ISampler>, ()> {
         todo!()
     }
 
-    fn create_command_pool(&self) -> Result<RefPtr<dyn ICommandPool>, CommandPoolCreateError> {
+    fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
         todo!()
     }
 

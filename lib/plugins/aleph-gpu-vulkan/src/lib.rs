@@ -49,56 +49,59 @@ mod texture;
 pub use adapter::IAdapterExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
+pub use plugin::PluginGpuVulkan;
 pub use shader::IShaderExt;
 pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
 
-use crate::context_provider::ContextProvider;
-use interfaces::any::{declare_interfaces, AnyArc};
-use interfaces::gpu::IContextProvider;
-use interfaces::plugin::{
-    IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
-};
-use std::any::TypeId;
+mod plugin {
+    use crate::context_provider::ContextProvider;
+    use interfaces::any::{declare_interfaces, AnyArc};
+    use interfaces::gpu::IContextProvider;
+    use interfaces::plugin::{
+        IInitResponse, IPlugin, IPluginRegistrar, IRegistryAccessor, PluginDescription,
+    };
+    use std::any::TypeId;
 
-pub struct PluginGpuVulkan();
+    pub struct PluginGpuVulkan();
 
-impl PluginGpuVulkan {
-    pub fn new() -> Self {
-        Self()
-    }
-}
-
-impl IPlugin for PluginGpuVulkan {
-    fn get_description(&self) -> PluginDescription {
-        PluginDescription {
-            name: "PluginGpuVulkan".to_string(),
-            description: "The aleph-engine Vulkan RHI backend".to_string(),
-            major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
-            minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
-            patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+    impl PluginGpuVulkan {
+        pub fn new() -> Self {
+            Self()
         }
     }
 
-    fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
-        registrar.provides_interface::<dyn IContextProvider>();
+    impl IPlugin for PluginGpuVulkan {
+        fn get_description(&self) -> PluginDescription {
+            PluginDescription {
+                name: "PluginGpuVulkan".to_string(),
+                description: "The aleph-engine Vulkan RHI backend".to_string(),
+                major_version: env!("CARGO_PKG_VERSION_MAJOR").parse().unwrap(),
+                minor_version: env!("CARGO_PKG_VERSION_MINOR").parse().unwrap(),
+                patch_version: env!("CARGO_PKG_VERSION_PATCH").parse().unwrap(),
+            }
+        }
+
+        fn register(&mut self, registrar: &mut dyn IPluginRegistrar) {
+            registrar.provides_interface::<dyn IContextProvider>();
+        }
+
+        fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
+            let context_provider = ContextProvider::new();
+
+            let response = vec![(
+                TypeId::of::<dyn IContextProvider>(),
+                AnyArc::into_any(AnyArc::new(context_provider)),
+            )];
+            Box::new(response)
+        }
     }
 
-    fn on_init(&mut self, _registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
-        let context_provider = ContextProvider::new();
-
-        let response = vec![(
-            TypeId::of::<dyn IContextProvider>(),
-            AnyArc::into_any(AnyArc::new(context_provider)),
-        )];
-        Box::new(response)
+    impl Default for PluginGpuVulkan {
+        fn default() -> Self {
+            Self::new()
+        }
     }
+
+    declare_interfaces!(PluginGpuVulkan, [IPlugin]);
 }
-
-impl Default for PluginGpuVulkan {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-declare_interfaces!(PluginGpuVulkan, [IPlugin]);

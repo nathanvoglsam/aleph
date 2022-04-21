@@ -29,20 +29,25 @@
 
 use crate::swap_chain::SwapChain;
 use erupt::vk;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 use std::ffi::CString;
 
-ref_ptr_object! {
-    pub struct SwapTexture: ITexture, IImageResourceExt {
-        pub image: vk::Image,
-        pub vk_format: vk::Format,
-        pub desc: TextureDesc,
-        pub swap_chain: RefPtr<SwapChain>,
-    }
+pub struct SwapTexture {
+    pub this: AnyWeak<Self>,
+    pub swap_chain: AnyArc<SwapChain>,
+    pub image: vk::Image,
+    pub vk_format: vk::Format,
+    pub desc: TextureDesc,
 }
 
+declare_interfaces!(SwapTexture, [ITexture, IImageResourceExt]);
+
 impl ITexture for SwapTexture {
+    fn upgrade(&self) -> AnyArc<dyn ITexture> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn desc(&self) -> &TextureDesc {
         &self.desc
     }

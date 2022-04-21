@@ -29,20 +29,25 @@
 
 use crate::device::Device;
 use erupt::vk;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 use std::ffi::CString;
 
-ref_ptr_object! {
-    pub struct Texture: ITexture, IImageResourceExt {
-        pub image: vk::Image,
-        pub vk_format: vk::Format,
-        pub desc: TextureDesc,
-        pub device: RefPtr<Device>,
-    }
+pub struct Texture {
+    pub(crate) this: AnyWeak<Self>,
+    pub device: AnyArc<Device>,
+    pub image: vk::Image,
+    pub vk_format: vk::Format,
+    pub desc: TextureDesc,
 }
 
+declare_interfaces!(Texture, [ITexture, IImageResourceExt]);
+
 impl ITexture for Texture {
+    fn upgrade(&self) -> AnyArc<dyn ITexture> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn desc(&self) -> &TextureDesc {
         &self.desc
     }

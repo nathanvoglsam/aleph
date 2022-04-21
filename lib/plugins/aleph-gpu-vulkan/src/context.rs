@@ -31,21 +31,22 @@ use crate::adapter::Adapter;
 use crate::internal::{VK_MAJOR_VERSION, VK_MINOR_VERSION};
 use crate::surface::Surface;
 use erupt::vk;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
     SurfaceCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::ffi::CStr;
 
-ref_ptr_object! {
-    pub struct Context: IContext, IContextExt {
-        pub(crate) instance_loader: erupt::InstanceLoader,
-        pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
-    }
+pub struct Context {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) instance_loader: erupt::InstanceLoader,
+    pub(crate) messenger: Option<vk::DebugUtilsMessengerEXT>,
 }
+
+declare_interfaces!(Context, [IContext, IContextExt]);
 
 impl Context {
     fn select_device(
@@ -217,7 +218,11 @@ impl Context {
 }
 
 impl IContext for Context {
-    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<RefPtr<dyn IAdapter>> {
+    fn upgrade(&self) -> AnyArc<dyn IContext> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
+    fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let surface = options
             .surface
             .as_ref()
@@ -231,14 +236,12 @@ impl IContext for Context {
             options.power_class,
         )
         .map(|(name, physical_device)| {
-            let adapter = ref_ptr_init! {
-                Adapter {
-                    name: name,
-                    physical_device: physical_device,
-                    context: self.as_ref_ptr(),
-                }
-            };
-            let adapter: RefPtr<Adapter> = RefPtr::new(adapter);
+            let adapter = AnyArc::new_cyclic(move |v| Adapter {
+                this: v.clone(),
+                context: self.this.upgrade().unwrap(),
+                name,
+                physical_device,
+            });
             adapter.query_interface().unwrap()
         })
     }
@@ -246,7 +249,7 @@ impl IContext for Context {
     fn create_surface(
         &self,
         window: &dyn HasRawWindowHandle,
-    ) -> Result<RefPtr<dyn ISurface>, SurfaceCreateError> {
+    ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let result = unsafe {
             match window.raw_window_handle() {
                 #[cfg(any(
@@ -362,13 +365,11 @@ impl IContext for Context {
 
         let surface = result.result().map_err(|e| anyhow!(e))?;
 
-        let surface = ref_ptr_init! {
-            Surface {
-                surface: surface,
-                context: self.as_ref_ptr(),
-            }
-        };
-        let surface: RefPtr<Surface> = RefPtr::new(surface);
+        let surface = AnyArc::new_cyclic(move |v| Surface {
+            this: v.clone(),
+            surface,
+            context: self.this.upgrade().unwrap(),
+        });
         Ok(surface.query_interface().unwrap())
     }
 

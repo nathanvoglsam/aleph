@@ -58,18 +58,19 @@
 
 use crate::device::Device;
 use erupt::vk;
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IShader, ShaderType};
-use interfaces::ref_ptr::{ref_ptr_object, RefPtr};
 use std::ffi::CString;
 
-ref_ptr_object! {
-    pub struct Shader: IShader {
-        pub(crate) device: RefPtr<Device>,
-        pub(crate) shader_type: ShaderType,
-        pub(crate) module: vk::ShaderModule,
-        pub(crate) entry_point: String,
-    }
+pub struct Shader {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: AnyArc<Device>,
+    pub(crate) shader_type: ShaderType,
+    pub(crate) module: vk::ShaderModule,
+    pub(crate) entry_point: String,
 }
+
+declare_interfaces!(Shader, [IShader, IShaderExt]);
 
 impl Drop for Shader {
     fn drop(&mut self) {
@@ -82,6 +83,10 @@ impl Drop for Shader {
 }
 
 impl IShader for Shader {
+    fn upgrade(&self) -> AnyArc<dyn IShader> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn shader_type(&self) -> ShaderType {
         self.shader_type
     }

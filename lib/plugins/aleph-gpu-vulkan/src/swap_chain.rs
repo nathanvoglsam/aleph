@@ -35,13 +35,13 @@ use crate::surface::Surface;
 use crate::swap_texture::SwapTexture;
 use erupt::vk;
 use erupt::vk1_0::{Extent2D, Format};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
     ResourceStates, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
     TextureFormat,
 };
-use interfaces::ref_ptr::{ref_ptr_init, ref_ptr_object, RefPtr, RefPtrObject};
 use std::sync::Mutex;
 
 // TODO: Track out of date status with a flag and trigger a transparent rebuild.
@@ -58,14 +58,15 @@ use std::sync::Mutex;
 //       custom texture and blit operation, but requires presentation images to support
 //       TRANSFER_DST
 
-ref_ptr_object! {
-    pub struct SwapChain {
-        pub(crate) inner: Mutex<SwapChainState>,
-        pub(crate) queue_support: QueuePresentSupportFlags,
-        pub(crate) device: RefPtr<Device>,
-        pub(crate) surface: RefPtr<Surface>,
-    }
+pub struct SwapChain {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) device: AnyArc<Device>,
+    pub(crate) surface: AnyArc<Surface>,
+    pub(crate) inner: Mutex<SwapChainState>,
+    pub(crate) queue_support: QueuePresentSupportFlags,
 }
+
+declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
 
 pub struct SwapChainState {
     pub swap_chain: vk::SwapchainKHR,
@@ -246,6 +247,10 @@ impl SwapChain {
 }
 
 impl ISwapChain for SwapChain {
+    fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
+        self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
         match queue {
             QueueType::General => self
@@ -334,30 +339,28 @@ impl ISwapChain for SwapChain {
                         .reset_fences(&[inner.acquire_fence])
                         .map_err(|e| anyhow!("Failed to reset acquire fence with code '{}'", e))?;
 
-                    let image = ref_ptr_init! {
-                        SwapTexture {
-                            image: image,
-                            desc: TextureDesc {
-                                width: inner.extent.width,
-                                height: inner.extent.height,
-                                depth: 1,
-                                format: inner.format,
-                                dimension: TextureDimension::Texture2D,
-                                initial_state: ResourceStates::UNKNOWN,
-                                clear_value: None,
-                                array_size: 1,
-                                mip_levels: 1,
-                                sample_count: 1,
-                                sample_quality: 0,
-                                allow_unordered_access: false,
-                                allow_cube_face: false,
-                                is_render_target: true
-                            },
-                            vk_format: inner.vk_format,
-                            swap_chain: self.as_ref_ptr(),
-                        }
-                    };
-                    let image: RefPtr<SwapTexture> = RefPtr::new(image);
+                    let image = AnyArc::new_cyclic(move |v| SwapTexture {
+                        this: v.clone(),
+                        swap_chain: self.this.upgrade().unwrap(),
+                        image: image,
+                        desc: TextureDesc {
+                            width: inner.extent.width,
+                            height: inner.extent.height,
+                            depth: 1,
+                            format: inner.format,
+                            dimension: TextureDimension::Texture2D,
+                            initial_state: ResourceStates::UNKNOWN,
+                            clear_value: None,
+                            array_size: 1,
+                            mip_levels: 1,
+                            sample_count: 1,
+                            sample_quality: 0,
+                            allow_unordered_access: false,
+                            allow_cube_face: false,
+                            is_render_target: true,
+                        },
+                        vk_format: inner.vk_format,
+                    });
                     todo!()
                     // Ok(image.query_interface::<dyn ITexture>().unwrap())
                 }
