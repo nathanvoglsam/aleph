@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
+use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{

@@ -28,8 +28,8 @@
 //
 
 use crate::context::Context;
-use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::device::{Device, Queues};
+use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::queue::Queue;
 use dx12::dxgi;

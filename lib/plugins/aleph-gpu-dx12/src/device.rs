@@ -31,11 +31,11 @@ use crate::acquired_texture::AcquiredTexture;
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
-use crate::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::{
     resource_state_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
 };
+use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::in_flight_command_list::InFlightCommandList;
 use crate::internal::queue::Queue;
 use crate::shader::Shader;
