@@ -109,8 +109,8 @@ impl EguiRenderer {
 
             // Handles creating the texture data resources and placing it into the staging buffer if
             // doing so is needed. Will return whether or not the texture data needs to be re-staged.
-            let needs_reupload = self.frames[index]
-                .update_texture_data(self.device.deref(), egui_ctx.font_image());
+            let needs_reupload =
+                self.frames[index].update_texture_data(self.device.deref(), egui_ctx.font_image());
 
             // If a reupload is needed we record into the command buffer the commands required to do so
             if needs_reupload {

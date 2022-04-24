@@ -30,6 +30,7 @@
 use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapTextureExt};
+use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, ISwapChain, PresentationMode,
     QueueType, SwapChainConfiguration, TextureFormat,
@@ -38,7 +39,6 @@ use interfaces::platform::*;
 use interfaces::plugin::*;
 use interfaces::schedule::{CoreStage, IScheduleProvider};
 use std::ops::Deref;
-use interfaces::any::{AnyArc, declare_interfaces, QueryInterface};
 
 struct Data {
     index: usize,

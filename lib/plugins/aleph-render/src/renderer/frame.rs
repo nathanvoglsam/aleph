@@ -32,12 +32,12 @@ use crate::pix::RecordScopedEvent;
 use crate::renderer::GlobalObjects;
 use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
+use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
     TextureFormat,
 };
 use std::sync::Arc;
-use interfaces::any::AnyArc;
 
 pub struct PerFrameObjects {
     pub vtx_buffer: AnyArc<dyn IBufferExt>,
@@ -187,11 +187,7 @@ impl PerFrameObjects {
     }
 
     /// Allocates the font texture on GPU memory
-    fn create_staged_resources(
-        &mut self,
-        device: &dyn IDeviceExt,
-        dimensions: (u32, u32),
-    ) {
+    fn create_staged_resources(&mut self, device: &dyn IDeviceExt, dimensions: (u32, u32)) {
         let image = device
             .create_texture(&TextureDesc {
                 width: dimensions.0,

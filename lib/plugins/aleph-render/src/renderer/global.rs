@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use std::ops::Deref;
 use crate::dx12;
 use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
 use aleph_gpu_dx12::{IDeviceExt, IShaderExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{ShaderOptions, ShaderType};
+use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
