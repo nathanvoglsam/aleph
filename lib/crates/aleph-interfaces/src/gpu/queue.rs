@@ -27,50 +27,43 @@
 // SOFTWARE.
 //
 
-pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
-pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
-pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
+use std::fmt::{Display, Formatter};
+use thiserror::Error;
 
-#[macro_use]
-mod misc;
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum QueueType {
+    General,
+    Compute,
+    Transfer,
+}
 
-pub use misc::*;
+impl Display for QueueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueueType::General => f.write_str("QueueType::General"),
+            QueueType::Compute => f.write_str("QueueType::Compute"),
+            QueueType::Transfer => f.write_str("QueueType::Transfer"),
+        }
+    }
+}
 
-mod adapter;
-mod buffer;
-mod command_encoder;
-mod command_list;
-mod command_pool;
-mod context;
-mod context_provider;
-mod descriptor_set;
-mod descriptor_set_layout;
-mod device;
-mod pipeline;
-mod queue;
-mod resource;
-mod sampler;
-mod shader;
-mod surface;
-mod swap_chain;
-mod texture;
+#[derive(Error, Debug)]
+pub enum QueueSubmitError {
+    #[error("The queue '{0}' is not available")]
+    QueueNotAvailable(QueueType),
 
-pub use adapter::*;
-pub use buffer::*;
-pub use command_encoder::*;
-pub use command_list::*;
-pub use command_pool::*;
-pub use context::*;
-pub use context_provider::*;
-pub use descriptor_set::*;
-pub use descriptor_set_layout::*;
-pub use device::*;
-pub use pipeline::*;
-pub use queue::*;
-pub use resource::*;
-pub use sampler::*;
-pub use sampler::*;
-pub use shader::*;
-pub use surface::*;
-pub use swap_chain::*;
-pub use texture::*;
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum QueuePresentError {
+    #[error("The queue '{0}' does not support presentation to the requested swap chain")]
+    QueuePresentationNotSupported(QueueType),
+
+    #[error("The queue '{0}' is not available")]
+    QueueNotAvailable(QueueType),
+
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}

@@ -27,50 +27,21 @@
 // SOFTWARE.
 //
 
-pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
-pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
-pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
+use crate::gpu::INamedObject;
+use any::{AnyArc, IAny};
+use std::any::Any;
 
-#[macro_use]
-mod misc;
+pub trait IDescriptorSet: INamedObject + Send + Sync + IAny + Any + 'static {
+    any_arc_trait_utils_decl!(IDescriptorSet);
+}
 
-pub use misc::*;
-
-mod adapter;
-mod buffer;
-mod command_encoder;
-mod command_list;
-mod command_pool;
-mod context;
-mod context_provider;
-mod descriptor_set;
-mod descriptor_set_layout;
-mod device;
-mod pipeline;
-mod queue;
-mod resource;
-mod sampler;
-mod shader;
-mod surface;
-mod swap_chain;
-mod texture;
-
-pub use adapter::*;
-pub use buffer::*;
-pub use command_encoder::*;
-pub use command_list::*;
-pub use command_pool::*;
-pub use context::*;
-pub use context_provider::*;
-pub use descriptor_set::*;
-pub use descriptor_set_layout::*;
-pub use device::*;
-pub use pipeline::*;
-pub use queue::*;
-pub use resource::*;
-pub use sampler::*;
-pub use sampler::*;
-pub use shader::*;
-pub use surface::*;
-pub use swap_chain::*;
-pub use texture::*;
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum DescriptorType {
+    Texture,
+    TypedBuffer,
+    StructuredBuffer,
+    RawBuffer,
+    ConstantBuffer,
+    Sampler,
+    PushConstants { size: u16 },
+}

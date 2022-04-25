@@ -27,50 +27,31 @@
 // SOFTWARE.
 //
 
-pub const API_VERSION_MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
-pub const API_VERSION_MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
-pub const API_VERSION_PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
+use crate::gpu::{IDevice, ISwapChain, SwapChainConfiguration, SwapChainCreateError};
+use any::{AnyArc, IAny};
+use thiserror::Error;
 
-#[macro_use]
-mod misc;
+/// Represents the graphics API's handle to the window or monitor surface. SwapChains are created
+/// from surfaces.
+///
+/// A surface is not tied to a specific [IDevice], it represents an API level handle to a rendering
+/// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
+/// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
+/// [ISurface].
+pub trait ISurface: IAny + 'static {
+    any_arc_trait_utils_decl!(ISurface);
 
-pub use misc::*;
+    fn create_swap_chain(
+        &self,
+        device: &dyn IDevice,
+        config: &SwapChainConfiguration,
+    ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError>;
+}
 
-mod adapter;
-mod buffer;
-mod command_encoder;
-mod command_list;
-mod command_pool;
-mod context;
-mod context_provider;
-mod descriptor_set;
-mod descriptor_set_layout;
-mod device;
-mod pipeline;
-mod queue;
-mod resource;
-mod sampler;
-mod shader;
-mod surface;
-mod swap_chain;
-mod texture;
-
-pub use adapter::*;
-pub use buffer::*;
-pub use command_encoder::*;
-pub use command_list::*;
-pub use command_pool::*;
-pub use context::*;
-pub use context_provider::*;
-pub use descriptor_set::*;
-pub use descriptor_set_layout::*;
-pub use device::*;
-pub use pipeline::*;
-pub use queue::*;
-pub use resource::*;
-pub use sampler::*;
-pub use sampler::*;
-pub use shader::*;
-pub use surface::*;
-pub use swap_chain::*;
-pub use texture::*;
+/// Set of errors that can occur when creating an [ISurface]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum SurfaceCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
