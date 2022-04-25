@@ -45,10 +45,9 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [dependencies]
-rhai = { version = "1", optional = true }
+rhai = { version = "1", optional = true, features = ["internals"] }
 serde_json = { version = "1" }
 serde = { version = "1", features = ["derive"] }
-smartstring = "0.2"
 env_logger = "0.9"
 aleph-log = { path = "../aleph-log", version = "1" }
 
