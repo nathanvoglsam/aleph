@@ -39,7 +39,7 @@ use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError}
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) _context: AnyArc<Context>,
     pub(crate) name: String,
     pub(crate) adapter: dxgi::Adapter,
 }
@@ -94,7 +94,7 @@ impl IAdapter for Adapter {
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {
             this: v.clone(),
-            adapter: self.this.upgrade().unwrap(),
+            _adapter: self.this.upgrade().unwrap(),
             rtv_heap: DescriptorAllocatorCPU::new(
                 device.clone(),
                 dx12::DescriptorHeapType::RenderTargetView,
@@ -103,7 +103,7 @@ impl IAdapter for Adapter {
                 device.clone(),
                 dx12::DescriptorHeapType::DepthStencilView,
             ),
-            sampler_heap: DescriptorAllocatorCPU::new(
+            _sampler_heap: DescriptorAllocatorCPU::new(
                 device.clone(),
                 dx12::DescriptorHeapType::Sampler,
             ),

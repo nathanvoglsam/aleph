@@ -58,11 +58,11 @@ use std::sync::atomic::Ordering;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) adapter: AnyArc<Adapter>,
+    pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: dx12::Device,
     pub(crate) rtv_heap: DescriptorAllocatorCPU,
     pub(crate) dsv_heap: DescriptorAllocatorCPU,
-    pub(crate) sampler_heap: DescriptorAllocatorCPU,
+    pub(crate) _sampler_heap: DescriptorAllocatorCPU,
     pub(crate) queues: Queues,
 }
 
@@ -127,7 +127,7 @@ impl IDevice for Device {
         }
     }
 
-    fn create_descriptor_set_layout(&self, desc: &DescriptorSetLayoutDesc) {
+    fn create_descriptor_set_layout(&self, _desc: &DescriptorSetLayoutDesc) {
         todo!()
     }
 
@@ -231,7 +231,7 @@ impl IDevice for Device {
 
     fn create_sampler(
         &self,
-        desc: &SamplerDesc,
+        _desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
         todo!()
     }
@@ -241,8 +241,8 @@ impl IDevice for Device {
             this: v.clone(),
             device: self.this.upgrade().unwrap(),
             general_free_list: SegQueue::new(),
-            compute_free_list: SegQueue::new(),
-            transfer_free_list: SegQueue::new(),
+            _compute_free_list: SegQueue::new(),
+            _transfer_free_list: SegQueue::new(),
         });
         Ok(pool.query_interface().unwrap())
     }

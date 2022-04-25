@@ -46,7 +46,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) context: AnyArc<Context>,
+    pub(crate) _context: AnyArc<Context>,
     pub(crate) factory: dxgi::Factory,
     pub(crate) handle: RawWindowHandle,
     pub(crate) has_swap_chain: AtomicBool,
