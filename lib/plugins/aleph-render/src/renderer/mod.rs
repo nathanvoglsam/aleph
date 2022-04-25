@@ -190,7 +190,7 @@ impl EguiRenderer {
 
             let barrier = dx12::ResourceBarrier::Transition {
                 flags: Default::default(),
-                resource: Some(buffer.clone()),
+                resource: Some(buffer),
                 subresource: 0,
                 state_before: dx12::ResourceStates::RENDER_TARGET,
                 state_after: dx12::ResourceStates::PRESENT,

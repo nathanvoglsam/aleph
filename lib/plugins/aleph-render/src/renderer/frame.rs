@@ -84,8 +84,7 @@ impl PerFrameObjects {
                 .unwrap()
         };
 
-        let font_staging_buffer =
-            Self::create_font_staging_allocation(device.clone(), (4096, 4096));
+        let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
         let size = device
             .get_raw_handle()
@@ -131,7 +130,7 @@ impl PerFrameObjects {
             self.font_staged = None;
 
             // Create the GPU image with the new dimensions
-            self.create_staged_resources(device.clone(), dimensions);
+            self.create_staged_resources(device, dimensions);
 
             // Update the srv to point at the newly created image
             self.update_srv(&device.get_raw_handle());
