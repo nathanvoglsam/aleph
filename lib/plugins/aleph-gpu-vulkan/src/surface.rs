@@ -123,7 +123,7 @@ impl ISurface for Surface {
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
         let device = device.query_interface::<Device>().unwrap();
 
-        let queue_support = unsafe { Surface::get_queue_support(&device, self.surface).unwrap() };
+        let queue_support = unsafe { Surface::get_queue_support(device, self.surface).unwrap() };
 
         let fence = unsafe {
             let fence_info = vk::FenceCreateInfoBuilder::new();

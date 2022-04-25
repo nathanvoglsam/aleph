@@ -350,7 +350,7 @@ impl ISwapChain for SwapChain {
                     let image = AnyArc::new_cyclic(move |v| SwapTexture {
                         this: v.clone(),
                         swap_chain: self.this.upgrade().unwrap(),
-                        image: image,
+                        image,
                         desc: TextureDesc {
                             width: inner.extent.width,
                             height: inner.extent.height,
