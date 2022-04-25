@@ -108,7 +108,7 @@ impl IDevice for Device {
         }
     }
 
-    fn create_descriptor_set_layout(&self, desc: &DescriptorSetLayoutDesc) {
+    fn create_descriptor_set_layout(&self, _desc: &DescriptorSetLayoutDesc) {
         todo!()
     }
 
@@ -125,7 +125,7 @@ impl IDevice for Device {
 
     fn create_sampler(
         &self,
-        desc: &SamplerDesc,
+        _desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
         todo!()
     }
@@ -150,7 +150,7 @@ impl IDevice for Device {
 
     unsafe fn general_queue_present(
         &self,
-        image: Box<dyn IAcquiredTexture>,
+        _image: Box<dyn IAcquiredTexture>,
     ) -> Result<(), QueuePresentError> {
         todo!()
     }
