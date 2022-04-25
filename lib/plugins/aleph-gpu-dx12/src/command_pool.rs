@@ -77,6 +77,14 @@ impl ICommandPool for CommandPool {
         self.this.upgrade().unwrap().query_interface().unwrap()
     }
 
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
     fn create_general_command_list(
         &self,
     ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError> {

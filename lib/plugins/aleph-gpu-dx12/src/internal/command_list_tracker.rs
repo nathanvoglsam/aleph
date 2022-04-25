@@ -28,7 +28,7 @@
 //
 
 use interfaces::any::AnyArc;
-use interfaces::gpu::{IBindingSet, IBuffer, ITexture};
+use interfaces::gpu::{IBuffer, IDescriptorSet, ITexture};
 
 /// Internal struct used to hold references to resources that need to have their lifetime extended
 /// until some point in the future.
@@ -49,7 +49,7 @@ pub struct CommandListTracker {
     pub buffers: Vec<AnyArc<dyn IBuffer>>,
 
     /// Any binding sets we need to extend the lifetime of until the command list has been retired
-    pub binding_sets: Vec<AnyArc<dyn IBindingSet>>,
+    pub binding_sets: Vec<AnyArc<dyn IDescriptorSet>>,
 }
 
 impl CommandListTracker {

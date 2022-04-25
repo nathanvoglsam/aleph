@@ -46,10 +46,11 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
-    CpuAccessMode, IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList,
-    INamedObject, ISampler, IShader, ISwapChain, ITexture, QueuePresentError, QueueType,
-    SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
+    BackendAPI, BufferCreateError, BufferDesc, CommandPoolCreateError, CpuAccessMode,
+    DescriptorSetLayoutDesc, IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList,
+    INamedObject, ISampler, IShader, ISwapChain, ITexture, QueuePresentError, QueueSubmitError,
+    QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions,
+    TextureCreateError, TextureDesc,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -70,6 +71,14 @@ declare_interfaces!(Device, [IDevice, IDeviceExt]);
 impl IDevice for Device {
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
         self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
     }
 
     fn garbage_collect(&self) {
@@ -116,6 +125,10 @@ impl IDevice for Device {
         } else {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }
+    }
+
+    fn create_descriptor_set_layout(&self, desc: &DescriptorSetLayoutDesc) {
+        todo!()
     }
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
@@ -216,7 +229,10 @@ impl IDevice for Device {
         Ok(texture.query_interface().unwrap())
     }
 
-    fn create_sampler(&self, desc: &SamplerDesc) -> Result<AnyArc<dyn ISampler>, ()> {
+    fn create_sampler(
+        &self,
+        desc: &SamplerDesc,
+    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
         todo!()
     }
 
@@ -234,14 +250,12 @@ impl IDevice for Device {
     unsafe fn general_queue_submit_list(
         &self,
         command_list: Box<dyn IGeneralCommandList>,
-    ) -> Result<(), CommandListSubmitError> {
-        let queue =
-            self.queues
-                .general
-                .as_ref()
-                .ok_or(CommandListSubmitError::QueueNotAvailable(
-                    QueueType::General,
-                ))?;
+    ) -> Result<(), QueueSubmitError> {
+        let queue = self
+            .queues
+            .general
+            .as_ref()
+            .ok_or(QueueSubmitError::QueueNotAvailable(QueueType::General))?;
 
         let command_list: Box<GeneralCommandList> = command_list
             .query_interface::<GeneralCommandList>()
@@ -277,14 +291,12 @@ impl IDevice for Device {
     unsafe fn general_queue_submit_lists(
         &self,
         command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
-    ) -> Result<(), CommandListSubmitError> {
-        let queue =
-            self.queues
-                .general
-                .as_ref()
-                .ok_or(CommandListSubmitError::QueueNotAvailable(
-                    QueueType::General,
-                ))?;
+    ) -> Result<(), QueueSubmitError> {
+        let queue = self
+            .queues
+            .general
+            .as_ref()
+            .ok_or(QueueSubmitError::QueueNotAvailable(QueueType::General))?;
 
         // Perform the actual submit operation
         let lists: Vec<Box<GeneralCommandList>> = command_lists

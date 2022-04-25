@@ -141,6 +141,14 @@ impl ISwapChain for SwapChain {
         self.this.upgrade().unwrap().query_interface().unwrap()
     }
 
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
     fn present_supported_on_queue(&self, queue: QueueType) -> bool {
         queue == self.queue_support
     }

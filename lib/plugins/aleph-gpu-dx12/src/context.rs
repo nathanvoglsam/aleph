@@ -88,6 +88,14 @@ impl IContext for Context {
         self.this.upgrade().unwrap().query_interface().unwrap()
     }
 
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
         let power_preference = match options.power_class {
             AdapterPowerClass::LowPower => dxgi::GpuPreference::MinimumPower,
