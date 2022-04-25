@@ -48,6 +48,14 @@ impl ITexture for SwapTexture {
         self.this.upgrade().unwrap().query_interface().unwrap()
     }
 
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
     fn desc(&self) -> &TextureDesc {
         &self.desc
     }

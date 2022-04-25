@@ -36,10 +36,10 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    BackendAPI, BufferCreateError, BufferDesc, CommandListSubmitError, CommandPoolCreateError,
+    BackendAPI, BufferCreateError, BufferDesc, CommandPoolCreateError, DescriptorSetLayoutDesc,
     IAcquiredTexture, IBuffer, ICommandPool, IDevice, IGeneralCommandList, INamedObject, ISampler,
-    IShader, ITexture, QueuePresentError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, TextureCreateError, TextureDesc,
+    IShader, ITexture, QueuePresentError, QueueSubmitError, SamplerCreateError, SamplerDesc,
+    ShaderBinary, ShaderCreateError, ShaderOptions, TextureCreateError, TextureDesc,
 };
 use std::ffi::CString;
 
@@ -56,6 +56,14 @@ declare_interfaces!(Device, [IDevice, IDeviceExt]);
 impl IDevice for Device {
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
         self.this.upgrade().unwrap().query_interface().unwrap()
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
     }
 
     fn garbage_collect(&self) {
@@ -100,6 +108,10 @@ impl IDevice for Device {
         }
     }
 
+    fn create_descriptor_set_layout(&self, desc: &DescriptorSetLayoutDesc) {
+        todo!()
+    }
+
     fn create_buffer(&self, _desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         todo!()
     }
@@ -111,7 +123,10 @@ impl IDevice for Device {
         todo!()
     }
 
-    fn create_sampler(&self, desc: &SamplerDesc) -> Result<AnyArc<dyn ISampler>, ()> {
+    fn create_sampler(
+        &self,
+        desc: &SamplerDesc,
+    ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
         todo!()
     }
 
@@ -122,14 +137,14 @@ impl IDevice for Device {
     unsafe fn general_queue_submit_list(
         &self,
         _command_list: Box<dyn IGeneralCommandList>,
-    ) -> Result<(), CommandListSubmitError> {
+    ) -> Result<(), QueueSubmitError> {
         todo!()
     }
 
     unsafe fn general_queue_submit_lists(
         &self,
         _command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
-    ) -> Result<(), CommandListSubmitError> {
+    ) -> Result<(), QueueSubmitError> {
         todo!()
     }
 
