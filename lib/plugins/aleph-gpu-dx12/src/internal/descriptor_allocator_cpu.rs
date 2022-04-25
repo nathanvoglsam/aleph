@@ -218,9 +218,7 @@ impl DescriptorAllocatorCPU {
             .heap_type(heap_type)
             .num_descriptors(num_descriptors)
             .build();
-        let chunk = device.create_descriptor_heap(&desc).unwrap();
-
-        chunk
+        device.create_descriptor_heap(&desc).unwrap()
     }
 }
 

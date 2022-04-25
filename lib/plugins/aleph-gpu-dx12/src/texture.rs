@@ -129,7 +129,7 @@ impl Texture {
         }
 
         let format = format.unwrap_or(self.desc.format);
-        let key = (format.clone(), sub_resources.clone());
+        let key = (format, sub_resources.clone());
         if let Some(view) = views.get(&key) {
             Some(*view)
         } else {

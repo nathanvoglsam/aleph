@@ -260,9 +260,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &ColorClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_plain_texture(texture.clone(), concrete, sub_resources, value);
+            self.clear_plain_texture(texture, concrete, sub_resources, value);
         } else if let Some(concrete) = texture.query_interface::<SwapTexture>() {
-            self.clear_swap_texture(texture.clone(), concrete, value);
+            self.clear_swap_texture(texture, concrete, value);
         } else {
             panic!("Unknown ITexture implementation");
         }
@@ -275,8 +275,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &DepthStencilClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_depth_image(texture.clone(), concrete, sub_resources, value);
-        } else if let Some(_) = texture.query_interface::<SwapTexture>() {
+            self.clear_depth_image(texture, concrete, sub_resources, value);
+        } else if texture.query_interface::<SwapTexture>().is_some() {
             aleph_log::debug!("Tried to clear swap chain image as a depth stencil texture");
         } else {
             panic!("Unknown ITexture implementation");

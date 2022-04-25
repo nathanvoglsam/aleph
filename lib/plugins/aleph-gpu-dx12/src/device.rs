@@ -186,7 +186,7 @@ impl IDevice for Device {
 
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
-            resource: resource,
+            resource,
             desc: desc.clone(),
         });
         Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
