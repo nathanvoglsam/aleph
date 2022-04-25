@@ -141,23 +141,21 @@ impl PluginRegistryBuilder {
     fn resolve_dependencies(
         &self,
         dependencies: &[BTreeSet<TypeId>],
-        init_dependencies: &mut Vec<BTreeSet<TypeId>>,
-        update_dependencies: &mut Vec<BTreeSet<TypeId>>,
+        init_dependencies: &mut [BTreeSet<TypeId>],
+        update_dependencies: &mut [BTreeSet<TypeId>],
         provided_interfaces: &[BTreeSet<TypeId>],
     ) {
         // Collect a flattened set of all interfaces that are mandatory for the full set of plugins
         // to work
         let mandatory_interfaces: BTreeSet<TypeId> = dependencies
             .iter()
-            .map(|v| v.iter().cloned())
-            .flatten()
+            .flat_map(|v| v.iter().cloned())
             .collect();
 
         // Collect a flattened set of all interfaces that have been provided by the set of plugins
         let all_interfaces: BTreeSet<TypeId> = provided_interfaces
             .iter()
-            .map(|v| v.iter().cloned())
-            .flatten()
+            .flat_map(|v| v.iter().cloned())
             .chain(self.plugins.iter().map(|v| v.type_id()))
             .collect();
 
@@ -208,10 +206,10 @@ impl PluginRegistryBuilder {
 
     fn schedule_plugin_execution(
         &self,
-        init_dependencies: &mut Vec<BTreeSet<TypeId>>,
-        update_dependencies: &mut Vec<BTreeSet<TypeId>>,
-        provided_interfaces: &mut Vec<BTreeSet<TypeId>>,
-        should_update: &mut Vec<bool>,
+        init_dependencies: &mut [BTreeSet<TypeId>],
+        update_dependencies: &mut [BTreeSet<TypeId>],
+        provided_interfaces: &mut [BTreeSet<TypeId>],
+        should_update: &mut [bool],
     ) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
         // Build a hash set populated with the number 0..n where n is the number of plugins.
         let unscheduled: BTreeSet<usize> = (0..self.plugins.len()).collect();
