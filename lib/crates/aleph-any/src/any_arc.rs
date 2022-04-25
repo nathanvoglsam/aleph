@@ -63,7 +63,7 @@ impl<T: IAny + Sized> AnyArc<T> {
     }
 
     ///
-    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny` without going through
+    /// Takes the given `AnyArc` and converts it into a `AnyArc<dyn IAny>` without going through
     /// `query_interface`
     ///
     #[inline]
@@ -98,6 +98,38 @@ impl<T: IAny + Send + Sync + Sized> AnyArc<T> {
 }
 
 impl<T: IAny + ?Sized> AnyArc<T> {
+    /// Mapping operation that takes a given `AnyArc` and runs the given mapping function over it,
+    /// but in terms of the raw `Arc` objects instead.
+    ///
+    /// Hack to allow an easy way to use `coerce unsized` to convert a concrete `AnyArc` to a trait
+    /// object `AnyArc` without calling `query_interface`.
+    ///
+    /// ```
+    /// use aleph_any::{AnyArc, declare_interfaces};
+    ///
+    /// struct S {
+    ///     v: usize,
+    /// }
+    ///
+    /// declare_interfaces!(S, [T]);
+    ///
+    /// trait T {
+    ///     fn get_v(&self) -> usize;
+    /// }
+    ///
+    /// impl T for S {
+    ///     fn get_v(&self) -> usize {
+    ///         self.v
+    ///     }
+    /// }
+    ///
+    /// let v = AnyArc::new(S {v: 0});
+    /// let v: AnyArc<dyn T> = AnyArc::map(v, |v| v);
+    /// ```
+    pub fn map<X: IAny + ?Sized, F: FnOnce(Arc<T>) -> Arc<X>>(v: Self, func: F) -> AnyArc<X> {
+        AnyArc(func(v.0))
+    }
+
     ///
     /// Construct an `AnyArc` from a `std::sync::Arc`.
     ///
