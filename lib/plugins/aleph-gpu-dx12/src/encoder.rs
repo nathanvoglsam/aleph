@@ -31,7 +31,7 @@ use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::decode_u32_color_to_float;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
-use interfaces::any::QueryInterface;
+use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     ColorClearValue, DepthStencilClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder,
     IGeneralEncoder, ITexture, ITransferEncoder, TextureDesc, TextureSubResourceSet,
@@ -40,12 +40,6 @@ use interfaces::gpu::{
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
     pub(crate) parent: &'a mut GeneralCommandList,
-}
-
-impl<'a> Encoder<'a> {
-    pub fn track_texture(&mut self, texture: &dyn ITexture) {
-        self.parent.tracker.images.push(texture.upgrade());
-    }
 }
 
 impl<'a> Drop for Encoder<'a> {
@@ -57,12 +51,7 @@ impl<'a> Drop for Encoder<'a> {
 
 impl<'a> Encoder<'a> {
     #[inline]
-    fn clear_swap_texture(
-        &mut self,
-        texture: &dyn ITexture,
-        concrete: &SwapTexture,
-        value: &ColorClearValue,
-    ) {
+    fn clear_swap_texture(&mut self, concrete: &SwapTexture, value: &ColorClearValue) {
         let buffer = match value {
             ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
             ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
@@ -72,13 +61,18 @@ impl<'a> Encoder<'a> {
             self.list
                 .clear_render_target_view(concrete.view, &buffer, &[]);
         }
-        self.track_texture(texture);
+        self.parent
+            .tracker
+            .images
+            .push(AnyArc::map::<dyn ITexture, _>(
+                concrete.this.upgrade().unwrap(),
+                |v| v,
+            ));
     }
 
     #[inline]
     fn clear_plain_texture(
         &mut self,
-        texture: &dyn ITexture,
         concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
@@ -127,13 +121,18 @@ impl<'a> Encoder<'a> {
             todo!()
         }
 
-        self.track_texture(texture);
+        self.parent
+            .tracker
+            .images
+            .push(AnyArc::map::<dyn ITexture, _>(
+                concrete.this.upgrade().unwrap(),
+                |v| v,
+            ));
     }
 
     #[inline]
     fn clear_depth_image(
         &mut self,
-        texture: &dyn ITexture,
         concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
@@ -181,7 +180,13 @@ impl<'a> Encoder<'a> {
             }
         }
 
-        self.track_texture(texture);
+        self.parent
+            .tracker
+            .images
+            .push(AnyArc::map::<dyn ITexture, _>(
+                concrete.this.upgrade().unwrap(),
+                |v| v,
+            ));
     }
 
     #[inline]
@@ -260,9 +265,9 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &ColorClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_plain_texture(texture, concrete, sub_resources, value);
+            self.clear_plain_texture(concrete, sub_resources, value);
         } else if let Some(concrete) = texture.query_interface::<SwapTexture>() {
-            self.clear_swap_texture(texture, concrete, value);
+            self.clear_swap_texture(concrete, value);
         } else {
             panic!("Unknown ITexture implementation");
         }
@@ -275,7 +280,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &DepthStencilClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_depth_image(texture, concrete, sub_resources, value);
+            self.clear_depth_image(concrete, sub_resources, value);
         } else if texture.query_interface::<SwapTexture>().is_some() {
             aleph_log::debug!("Tried to clear swap chain image as a depth stencil texture");
         } else {
