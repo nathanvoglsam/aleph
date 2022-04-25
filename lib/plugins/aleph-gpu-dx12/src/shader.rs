@@ -41,7 +41,7 @@ declare_interfaces!(Shader, [IShader, IShaderExt]);
 
 impl IShader for Shader {
     fn upgrade(&self) -> AnyArc<dyn IShader> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IShader, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {

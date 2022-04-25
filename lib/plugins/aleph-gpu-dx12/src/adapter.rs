@@ -64,7 +64,7 @@ impl Adapter {
 
 impl IAdapter for Adapter {
     fn upgrade(&self) -> AnyArc<dyn IAdapter> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IAdapter, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -110,7 +110,7 @@ impl IAdapter for Adapter {
             device,
             queues,
         });
-        Ok(device.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
 }
 

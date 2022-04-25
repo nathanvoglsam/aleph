@@ -138,7 +138,7 @@ impl SwapChain {
 
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -201,7 +201,7 @@ impl ISwapChain for SwapChain {
                     is_render_target: true,
                 },
             });
-            let image: AnyArc<dyn ITexture> = image.query_interface().unwrap();
+            let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
 
             self.images_in_flight.fetch_add(1, Ordering::Acquire);
 

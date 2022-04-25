@@ -41,7 +41,7 @@ declare_interfaces!(Buffer, [IBuffer, IBufferExt]);
 
 impl IBuffer for Buffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IBuffer, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {

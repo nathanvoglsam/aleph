@@ -164,13 +164,13 @@ impl Surface {
             acquired: AtomicBool::new(false),
             images_in_flight: AtomicU32::new(0),
         });
-        Ok(swap_chain.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
 }
 
 impl ISurface for Surface {
     fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ISurface, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {

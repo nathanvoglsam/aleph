@@ -74,7 +74,7 @@ impl IContextProvider for ContextProvider {
                     _debug: debug,
                     factory: dxgi_factory,
                 });
-                Ok(context.query_interface().unwrap())
+                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

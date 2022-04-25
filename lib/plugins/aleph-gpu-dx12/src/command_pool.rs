@@ -74,7 +74,7 @@ unsafe impl Sync for CommandPool {}
 
 impl ICommandPool for CommandPool {
     fn upgrade(&self) -> AnyArc<dyn ICommandPool> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ICommandPool, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {

@@ -70,7 +70,7 @@ declare_interfaces!(Device, [IDevice, IDeviceExt]);
 
 impl IDevice for Device {
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -121,7 +121,7 @@ impl IDevice for Device {
                 data: data.to_vec(),
                 entry_point: options.entry_point.to_string(),
             });
-            Ok(shader.query_interface().unwrap())
+            Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
         } else {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }
@@ -189,7 +189,7 @@ impl IDevice for Device {
             resource: resource,
             desc: desc.clone(),
         });
-        Ok(buffer.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
     }
 
     fn create_texture(
@@ -226,7 +226,7 @@ impl IDevice for Device {
             rtv_cache: RwLock::new(HashMap::new()),
             dsv_cache: RwLock::new(HashMap::new()),
         });
-        Ok(texture.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
 
     fn create_sampler(
@@ -244,7 +244,7 @@ impl IDevice for Device {
             _compute_free_list: SegQueue::new(),
             _transfer_free_list: SegQueue::new(),
         });
-        Ok(pool.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn ICommandPool, _>(pool, |v| v))
     }
 
     unsafe fn general_queue_submit_list(
