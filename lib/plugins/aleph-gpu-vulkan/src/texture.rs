@@ -45,7 +45,7 @@ declare_interfaces!(Texture, [ITexture, IImageResourceExt]);
 
 impl ITexture for Texture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {

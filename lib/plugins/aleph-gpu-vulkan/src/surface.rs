@@ -105,7 +105,7 @@ impl Surface {
 
 impl ISurface for Surface {
     fn upgrade(&self) -> AnyArc<dyn ISurface> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ISurface, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -159,7 +159,7 @@ impl ISurface for Surface {
             swap_chain.build(&mut inner, config)?;
         }
 
-        Ok(swap_chain.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
 }
 

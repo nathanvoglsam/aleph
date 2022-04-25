@@ -219,7 +219,7 @@ impl Context {
 
 impl IContext for Context {
     fn upgrade(&self) -> AnyArc<dyn IContext> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IContext, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -250,7 +250,7 @@ impl IContext for Context {
                 name,
                 physical_device,
             });
-            adapter.query_interface().unwrap()
+            AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
         })
     }
 
@@ -378,7 +378,7 @@ impl IContext for Context {
             surface,
             context: self.this.upgrade().unwrap(),
         });
-        Ok(surface.query_interface().unwrap())
+        Ok(AnyArc::map::<dyn ISurface, _>(surface, |v| v))
     }
 
     fn get_backend_api(&self) -> BackendAPI {

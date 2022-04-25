@@ -55,7 +55,7 @@ declare_interfaces!(Device, [IDevice, IDeviceExt]);
 
 impl IDevice for Device {
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -102,7 +102,7 @@ impl IDevice for Device {
                 module,
                 entry_point: options.entry_point.to_string(),
             });
-            Ok(shader.query_interface().unwrap())
+            Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
         } else {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }

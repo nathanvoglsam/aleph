@@ -150,7 +150,7 @@ impl IContextProvider for ContextProvider {
                     instance_loader,
                     messenger,
                 });
-                Ok(context.query_interface().unwrap())
+                Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
             }
             Err(_) => Err(ContextCreateError::ContextAlreadyCreated),
         }

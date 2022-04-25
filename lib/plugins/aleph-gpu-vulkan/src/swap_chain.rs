@@ -248,7 +248,7 @@ impl SwapChain {
 
 impl ISwapChain for SwapChain {
     fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
-        self.this.upgrade().unwrap().query_interface().unwrap()
+        AnyArc::map::<dyn ISwapChain, _>(self.this.upgrade().unwrap(), |v| v)
     }
 
     fn strong_count(&self) -> usize {
@@ -370,7 +370,7 @@ impl ISwapChain for SwapChain {
                         vk_format: inner.vk_format,
                     });
                     todo!()
-                    // Ok(image.query_interface::<dyn ITexture>().unwrap())
+                    // Ok(AnyArc::map::<dyn ITexture, _>(image, |v| v))
                 }
                 vk::Result::ERROR_OUT_OF_DATE_KHR => {
                     inner.queued_resize = Some((u32::MAX, u32::MAX));
