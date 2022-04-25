@@ -46,8 +46,8 @@ pub trait INamedObject {
 macro_rules! any_arc_trait_utils_decl {
     ($x: path) => {
         /// Returns an `AnyArc` that points to `self`. This is similar to upgrading a weak
-        /// reference. We take a non-owning reference `&dyn $x` and upgrade it to an owning
-        /// `AnyArc<$x>` handle.
+        /// reference. We take a non-owning reference `&dyn SomeTrait` and upgrade it to an owning
+        /// `AnyArc<dyn SomeTrait>` handle.
         fn upgrade(&self) -> AnyArc<dyn $x>;
 
         /// Returns the number of strong references to the object.
