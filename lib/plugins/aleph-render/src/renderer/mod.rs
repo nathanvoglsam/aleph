@@ -33,6 +33,7 @@ mod global;
 use crate::dx12;
 use crate::dx12::dxgi;
 use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
+use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
@@ -40,7 +41,6 @@ use interfaces::gpu::{
     ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
 };
 use std::ops::Deref;
-use egui::RenderData;
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,

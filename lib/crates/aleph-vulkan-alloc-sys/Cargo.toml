@@ -55,5 +55,5 @@ aleph-compile = { path = "../aleph-compile", version = "1" }
 aleph-target-build = { path = "../aleph-target-build", version = "2" }
 
 [build-dependencies.bindgen]
-version = "0.56"
+version = "0.59"
 optional = true

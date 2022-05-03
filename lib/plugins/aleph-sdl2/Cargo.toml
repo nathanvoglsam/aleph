@@ -48,7 +48,7 @@ sdl2 = { version = "0.35.2", features = ["raw-window-handle"] }
 
 ctrlc = "3"
 once_cell = "1"
-parking_lot = "0.11"
+parking_lot = "0.12"
 raw-window-handle = "0.4"
 
 [target.'cfg(target_os = "windows")'.dependencies]

@@ -53,5 +53,5 @@ spirv-reflect = "0.2"
 bytemuck = "1"
 
 [dependencies.ultraviolet]
-version = "0.8"
+version = "0.9"
 features = ["f64"]
