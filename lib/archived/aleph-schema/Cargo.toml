@@ -48,4 +48,4 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 aleph-combine-utils = { version = "0.1", path = "../aleph-combine-utils" }
 aleph-sexpr = { version = "0.1", path = "../aleph-sexpr" }
 combine = "4"
-smartstring = "0.2"
+smartstring = "1"
