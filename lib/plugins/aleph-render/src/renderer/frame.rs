@@ -29,6 +29,7 @@
 
 use crate::dx12::dxgi;
 use crate::pix::RecordScopedEvent;
+use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
 use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
@@ -37,7 +38,6 @@ use interfaces::gpu::{
     BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
     TextureFormat,
 };
-use std::sync::Arc;
 
 pub struct PerFrameObjects {
     pub vtx_buffer: AnyArc<dyn IBufferExt>,
@@ -45,13 +45,13 @@ pub struct PerFrameObjects {
 
     pub command_allocator: AnyArc<dyn ICommandPool>,
 
+    pub font_version: usize,
     pub font_staging_buffer: AnyArc<dyn IBufferExt>,
 
     pub font_staged: Option<AnyArc<dyn ITextureExt>>,
+    pub font_staged_size: (u32, u32),
     pub font_cpu_srv: dx12::CPUDescriptorHandle,
     pub font_gpu_srv: dx12::GPUDescriptorHandle,
-    pub font_staged_size: (u32, u32),
-    pub font_staged_hash: u64,
 }
 
 impl PerFrameObjects {
@@ -107,48 +107,42 @@ impl PerFrameObjects {
             vtx_buffer,
             idx_buffer,
             command_allocator,
+            font_version: 0,
             font_staging_buffer,
             font_staged: None,
+            font_staged_size: (0, 0),
             font_cpu_srv,
             font_gpu_srv,
-            font_staged_size: (0, 0),
-            font_staged_hash: 0,
         }
     }
 
-    pub unsafe fn update_texture_data(
-        &mut self,
-        device: &dyn IDeviceExt,
-        texture: Arc<egui::FontImage>,
-    ) -> bool {
-        debug_assert_eq!(texture.pixels.len(), texture.width * texture.height);
+    pub unsafe fn update_texture_data(&mut self, device: &dyn IDeviceExt, texture: &FontTexture) {
+        // Check the data is correct
+        assert_eq!(texture.bytes.len(), texture.width * texture.height);
 
+        // Crunch our dimensions for d3d12
         let dimensions = (texture.width as u32, texture.height as u32);
-        if dimensions != self.font_staged_size || texture.version != self.font_staged_hash {
-            // Explicitly drop staged image so the pool's memory will be free to create the new
-            // image
-            self.font_staged = None;
 
-            // Create the GPU image with the new dimensions
-            self.create_staged_resources(device, dimensions);
+        // Explicitly drop staged image so the pool's memory will be free to create the new
+        // image
+        self.font_staged = None;
 
-            // Update the srv to point at the newly created image
-            self.update_srv(&device.get_raw_handle());
+        // Create the GPU image with the new dimensions
+        self.create_staged_resources(device, dimensions);
 
-            // Update the metadata for determining when to re-upload the texture
-            self.font_staged_size = dimensions;
-            self.font_staged_hash = texture.version;
+        // Update the srv to point at the newly created image
+        self.update_srv(&device.get_raw_handle());
 
-            // Map and write the texture data to our staging buffer
-            let resource = self.font_staging_buffer.get_raw_handle();
-            let ptr = resource.map(0, Some(0..0)).unwrap().unwrap();
-            ptr.as_ptr()
-                .copy_from_nonoverlapping(texture.pixels.as_ptr(), texture.pixels.len());
-            resource.unmap(0, None);
-            true
-        } else {
-            false
-        }
+        // Update the metadata for determining when to re-upload the texture
+        self.font_version = texture.version;
+        self.font_staged_size = dimensions;
+
+        // Map and write the texture data to our staging buffer
+        let resource = self.font_staging_buffer.get_raw_handle();
+        let ptr = resource.map(0, Some(0..0)).unwrap().unwrap();
+        ptr.as_ptr()
+            .copy_from_nonoverlapping(texture.bytes.as_ptr(), texture.bytes.len());
+        resource.unmap(0, None);
     }
 
     pub unsafe fn record_texture_upload(&mut self, command_list: &dx12::GraphicsCommandList) {

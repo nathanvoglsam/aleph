@@ -44,7 +44,6 @@ struct Data {
     index: usize,
     window: AnyArc<dyn IWindow>,
     render_data: AnyArc<dyn egui::IEguiRenderData>,
-    egui_provider: AnyArc<dyn egui::IEguiContextProvider>,
     swap_chain: AnyArc<dyn ISwapChain>,
     renderer: EguiRenderer,
 }
@@ -81,9 +80,7 @@ impl IPlugin for PluginRender {
         registrar.must_init_after::<dyn IScheduleProvider>();
 
         registrar.depends_on::<dyn egui::IEguiRenderData>();
-        registrar.depends_on::<dyn egui::IEguiContextProvider>();
         registrar.must_init_after::<dyn egui::IEguiRenderData>();
-        registrar.must_init_after::<dyn egui::IEguiContextProvider>();
     }
 
     fn on_init(&mut self, registry: &dyn IRegistryAccessor) -> Box<dyn IInitResponse> {
@@ -97,9 +94,6 @@ impl IPlugin for PluginRender {
         // Get the render data slot for egui and the egui provider
         let render_data = registry
             .get_interface::<dyn egui::IEguiRenderData>()
-            .unwrap();
-        let egui_provider = registry
-            .get_interface::<dyn egui::IEguiContextProvider>()
             .unwrap();
 
         // Get our context provider for creating graphics API context and create our GPU context
@@ -166,7 +160,6 @@ impl IPlugin for PluginRender {
             index: 0,
             window,
             render_data,
-            egui_provider,
             swap_chain,
             renderer,
         };
@@ -177,7 +170,6 @@ impl IPlugin for PluginRender {
                 device.garbage_collect();
 
                 let data = &mut data;
-                let egui_ctx = data.egui_provider.get_context();
 
                 if data.window.resized() {
                     let dimensions = data.window.size();
@@ -196,7 +188,6 @@ impl IPlugin for PluginRender {
                         image_ext.get_raw_handle(),
                         acquired_image.image(),
                         image_ext.get_raw_rtv(),
-                        &egui_ctx,
                         data.render_data.take(),
                     );
 

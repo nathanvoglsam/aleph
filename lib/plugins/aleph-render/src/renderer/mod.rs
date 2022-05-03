@@ -31,7 +31,7 @@ mod frame;
 mod global;
 
 use crate::dx12;
-use crate::dx12::{dxgi, GraphicsCommandList};
+use crate::dx12::dxgi;
 use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
@@ -40,6 +40,7 @@ use interfaces::gpu::{
     ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
 };
 use std::ops::Deref;
+use egui::RenderData;
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
@@ -87,8 +88,7 @@ impl EguiRenderer {
         buffer: dx12::Resource,
         texture: &dyn ITexture,
         view: dx12::CPUDescriptorHandle,
-        egui_ctx: &egui::CtxRef,
-        jobs: Vec<aleph_egui::ClippedMesh>,
+        render_data: RenderData,
     ) -> Box<dyn IGeneralCommandList + '_> {
         // Begin recording commands into the command list
         let mut list = self.frames[index]
@@ -96,7 +96,7 @@ impl EguiRenderer {
             .create_general_command_list()
             .unwrap();
 
-        let command_list: GraphicsCommandList = list
+        let command_list: dx12::GraphicsCommandList = list
             .deref()
             .query_interface::<dyn ICommandListExt>()
             .unwrap()
@@ -107,13 +107,18 @@ impl EguiRenderer {
 
             command_list.set_pipeline_state(&self.global.pipeline_state);
 
-            // Handles creating the texture data resources and placing it into the staging buffer if
-            // doing so is needed. Will return whether or not the texture data needs to be re-staged.
-            let needs_reupload =
-                self.frames[index].update_texture_data(self.device.deref(), egui_ctx.font_image());
+            // If the font texture has changed then we need to update our copy and increment the
+            // version to invalidate the per-frame font textures
+            for (_, delta) in render_data.textures_delta.set {
+                if let egui::epaint::ImageData::Font(_) = &delta.image {
+                    self.global.update_font_texture(&delta);
+                }
+            }
 
-            // If a reupload is needed we record into the command buffer the commands required to do so
-            if needs_reupload {
+            // If the versions do not match then we should re-upload the texture to the GPU
+            if self.frames[index].font_version != self.global.font_texture.version {
+                self.frames[index]
+                    .update_texture_data(self.device.deref(), &self.global.font_texture);
                 self.frames[index].record_texture_upload(&command_list);
             }
 
@@ -147,45 +152,51 @@ impl EguiRenderer {
 
             let mut vtx_base = 0;
             let mut idx_base = 0;
-            for job in jobs {
-                let triangles = &job.1;
+            for job in render_data.primitives {
+                if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
+                    // Skip doing anything for the job if there's nothing to render
+                    if triangles.vertices.is_empty() || triangles.indices.is_empty() {
+                        continue;
+                    }
 
-                // Skip doing anything for the job if there's nothing to render
-                if triangles.vertices.is_empty() || triangles.indices.is_empty() {
-                    continue;
+                    // Get the slice to copy from and various byte counts
+                    let v_slice = &triangles.vertices;
+                    let v_size = core::mem::size_of_val(&v_slice[0]);
+                    let v_copy_size = v_slice.len() * v_size;
+
+                    // Get the slice to copy from and various byte counts
+                    let i_slice = &triangles.indices;
+                    let i_size = core::mem::size_of_val(&i_slice[0]);
+                    let i_copy_size = i_slice.len() * i_size;
+
+                    // Calculate where the pointers will be after writing the current set of data
+                    let v_ptr_next = v_ptr.add(v_copy_size);
+                    let i_ptr_next = i_ptr.add(i_copy_size);
+
+                    // Check if we're going to over-run the buffers, and panic if we will
+                    if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
+                        panic!("Out of memory");
+                    }
+
+                    // Perform the actual copies
+                    v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
+                    i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
+
+                    // Setup the pointers for the next iteration
+                    v_ptr = v_ptr_next;
+                    i_ptr = i_ptr_next;
+
+                    self.record_job_commands(
+                        &command_list,
+                        encoder.as_mut(),
+                        &job,
+                        vtx_base,
+                        idx_base,
+                    );
+
+                    vtx_base += triangles.vertices.len();
+                    idx_base += triangles.indices.len();
                 }
-
-                // Get the slice to copy from and various byte counts
-                let v_slice = &triangles.vertices;
-                let v_size = core::mem::size_of_val(&v_slice[0]);
-                let v_copy_size = v_slice.len() * v_size;
-
-                // Get the slice to copy from and various byte counts
-                let i_slice = &triangles.indices;
-                let i_size = core::mem::size_of_val(&i_slice[0]);
-                let i_copy_size = i_slice.len() * i_size;
-
-                // Calculate where the pointers will be after writing the current set of data
-                let v_ptr_next = v_ptr.add(v_copy_size);
-                let i_ptr_next = i_ptr.add(i_copy_size);
-
-                // Check if we're going to over-run the buffers, and panic if we will
-                if v_ptr_next >= v_ptr_end || i_ptr_next >= i_ptr_end {
-                    panic!("Out of memory");
-                }
-
-                // Perform the actual copies
-                v_ptr.copy_from(v_slice.as_ptr() as *const _, v_copy_size);
-                i_ptr.copy_from(i_slice.as_ptr() as *const _, i_copy_size);
-
-                // Setup the pointers for the next iteration
-                v_ptr = v_ptr_next;
-                i_ptr = i_ptr_next;
-
-                self.record_job_commands(&command_list, encoder.as_mut(), &job, vtx_base, idx_base);
-
-                vtx_base += triangles.vertices.len();
-                idx_base += triangles.indices.len();
             }
 
             let barrier = dx12::ResourceBarrier::Transition {
@@ -208,21 +219,21 @@ impl EguiRenderer {
         &mut self,
         command_list: &dx12::GraphicsCommandList,
         encoder: &mut dyn IGeneralEncoder,
-        job: &aleph_egui::ClippedMesh,
+        job: &aleph_egui::ClippedPrimitive,
         vtx_base: usize,
         idx_base: usize,
     ) {
-        let triangles = &job.1;
-
-        let scissor_rect = self.calculate_clip_rect(job);
-        command_list.rs_set_scissor_rects(&[scissor_rect]);
-        encoder.draw_indexed(&DrawIndexedOptions {
-            index_count: triangles.indices.len() as _,
-            instance_count: 1,
-            first_index: idx_base as _,
-            first_instance: 0,
-            vertex_offset: vtx_base as _,
-        });
+        if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
+            let scissor_rect = self.calculate_clip_rect(job);
+            command_list.rs_set_scissor_rects(&[scissor_rect]);
+            encoder.draw_indexed(&DrawIndexedOptions {
+                index_count: triangles.indices.len() as _,
+                instance_count: 1,
+                first_index: idx_base as _,
+                first_instance: 0,
+                vertex_offset: vtx_base as _,
+            });
+        }
     }
 
     unsafe fn bind_resources(
@@ -339,12 +350,12 @@ impl EguiRenderer {
         idx_buffer.unmap(0, None);
     }
 
-    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedMesh) -> dx12::Rect {
+    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedPrimitive) -> dx12::Rect {
         let width_pixels = self.global.swap_width as f32;
         let height_pixels = self.global.swap_height as f32;
 
         // Calculate clip offset
-        let min = job.0.min;
+        let min = job.clip_rect.min;
         let min = egui::Pos2 {
             x: min.x * self.pixels_per_point,
             y: min.y * self.pixels_per_point,
@@ -355,7 +366,7 @@ impl EguiRenderer {
         };
 
         // Calculate clip extent
-        let max = job.0.max;
+        let max = job.clip_rect.max;
         let max = egui::Pos2 {
             x: max.x * self.pixels_per_point,
             y: max.y * self.pixels_per_point,

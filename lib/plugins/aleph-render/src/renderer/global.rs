@@ -31,6 +31,7 @@ use crate::dx12;
 use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
 use aleph_gpu_dx12::{IDeviceExt, IShaderExt};
+use egui::ImageData;
 use interfaces::any::AnyArc;
 use interfaces::gpu::{ShaderOptions, ShaderType};
 use std::ops::Deref;
@@ -42,6 +43,7 @@ pub struct GlobalObjects {
     pub vertex_shader: AnyArc<dyn IShaderExt>,
     pub fragment_shader: AnyArc<dyn IShaderExt>,
     pub pipeline_state: dx12::GraphicsPipelineState,
+    pub font_texture: FontTexture,
     pub swap_width: u32,
     pub swap_height: u32,
 }
@@ -98,6 +100,12 @@ impl GlobalObjects {
             vertex_shader,
             fragment_shader,
             pipeline_state,
+            font_texture: FontTexture {
+                width: 256,
+                height: 1,
+                bytes: vec![255; 256],
+                version: 1,
+            },
             swap_width: dimensions.0,
             swap_height: dimensions.1,
         }
@@ -221,4 +229,96 @@ impl GlobalObjects {
             .create_graphics_pipeline_state(&state_stream)
             .unwrap()
     }
+
+    pub fn update_font_texture(&mut self, delta: &egui::epaint::ImageDelta) {
+        fn coverage_mapper(v: &f32) -> u8 {
+            // Function jigged from egui
+            fn fast_round(r: f32) -> u8 {
+                (r + 0.5).floor() as _ // rust does a saturating cast since 1.45
+            }
+
+            fast_round(v.powf(1.0 / 2.2) * 255.0)
+        }
+
+        // Increment the version to invalidate the cached textures on the GPU
+        self.font_texture.version += 1;
+
+        // We only support font images here so we panic if we get something else
+        match &delta.image {
+            ImageData::Font(font) => {
+                // In the event of a whole update we need to re-allocate the texture as the size may have
+                // increased.
+                //
+                // Partial updates patch the data in place
+                if let Some(position) = &delta.pos {
+                    // Handle a partial update
+                    let x = position[0];
+                    let y = position[1];
+                    let w = font.size[0];
+                    let h = font.size[1];
+
+                    // Assert that we can't access the texture out of bounds based on the input we
+                    // got.
+                    assert!(x < self.font_texture.width);
+                    assert!(y < self.font_texture.height);
+                    assert!(x + w <= self.font_texture.width);
+                    assert!(y + h <= self.font_texture.height);
+
+                    // Assert that the buffers are big enough.
+                    //
+                    // We're trying to convince the optimizer that it can elide the bounds checks
+                    // on array indexing.
+                    assert!(
+                        self.font_texture.bytes.len()
+                            >= self.font_texture.width * self.font_texture.height
+                    );
+                    assert!(font.pixels.len() >= w * h);
+
+                    // Iterate over each row
+                    for d_row in 0..w {
+                        // Transform our row in the delta pixels to our texture's pixel
+                        let f_row = d_row + x;
+
+                        // Iterate over all the columns in the current row
+                        for d_col in 0..h {
+                            // Transform our column in the delta pixels to our texture's pixels
+                            let f_col = d_col + y;
+
+                            // Calculate indices
+                            let d_idx = d_row + d_col * w; // In delta tex
+                            let f_idx = f_row + f_col * self.font_texture.width; // In our tex
+
+                            // Copy and map our coverage sample into our font texture
+                            self.font_texture.bytes[f_idx] = coverage_mapper(&font.pixels[d_idx]);
+                        }
+                    }
+                } else {
+                    // Handle a full update
+
+                    // Just replace the old texture with the new data, mapped to u8
+                    self.font_texture.width = delta.image.width();
+                    self.font_texture.height = delta.image.height();
+                    self.font_texture.bytes = font.pixels.iter().map(coverage_mapper).collect();
+                }
+            }
+            _ => {
+                unimplemented!()
+            }
+        }
+    }
+}
+
+pub struct FontTexture {
+    /// Width in pixels of the texture
+    pub width: usize,
+
+    /// Height in pixels of the texture
+    pub height: usize,
+
+    /// Raw data for the texture
+    pub bytes: Vec<u8>,
+
+    /// Version index that should be incremented every time the texture is changed so the per-frame
+    /// data can detect when it needs to update
+    pub version: usize,
 }
