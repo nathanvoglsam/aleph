@@ -179,7 +179,7 @@ impl InstanceBuilder {
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            erupt::InstanceLoader::new(entry_loader, &create_info, None)
+            erupt::InstanceLoader::new(entry_loader, &create_info)
                 .expect("Failed to initialize Vulkan instance loader")
         };
 
@@ -311,12 +311,11 @@ impl Drop for Inner {
     fn drop(&mut self) {
         unsafe {
             aleph_log::trace!("Destroying Vulkan surface");
-            self.instance_loader
-                .destroy_surface_khr(Some(self.surface), None);
+            self.instance_loader.destroy_surface_khr(self.surface, None);
             if let Some(messenger) = self.messenger {
                 aleph_log::trace!("Destroying debug messenger");
                 self.instance_loader
-                    .destroy_debug_utils_messenger_ext(Some(messenger), None);
+                    .destroy_debug_utils_messenger_ext(messenger, None);
             }
             aleph_log::trace!("Destroying Vulkan instance");
             self.instance_loader.destroy_instance(None);

@@ -176,7 +176,7 @@ impl DeviceBuilder {
             .queue_create_infos(&queue_create_infos);
         aleph_log::trace!("Loading device functions");
         let device_loader = unsafe {
-            DeviceLoader::new(instance, physical_device, &device_create_info, None)
+            DeviceLoader::new(instance, physical_device, &device_create_info)
                 .expect("Failed to create device and device loader")
         };
 

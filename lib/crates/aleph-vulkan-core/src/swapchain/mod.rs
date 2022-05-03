@@ -353,12 +353,8 @@ impl Swapchain {
         let timeout = timeout.as_nanos() as u64;
 
         let result = unsafe {
-            self.device.acquire_next_image_khr(
-                self.swapchain,
-                timeout,
-                Some(semaphore),
-                Some(fence),
-            )
+            self.device
+                .acquire_next_image_khr(self.swapchain, timeout, semaphore, fence)
         };
 
         // Type alias for brevity
@@ -608,11 +604,11 @@ impl Swapchain {
             unsafe {
                 aleph_log::trace!("Destroying old swapchain ImageViews");
                 self.images.iter().for_each(|i| {
-                    self.device.destroy_image_view(Some(i.image_view()), None);
+                    self.device.destroy_image_view(i.image_view(), None);
                 });
 
                 aleph_log::trace!("Destroying old swapchain");
-                self.device.destroy_swapchain_khr(Some(old_swapchain), None);
+                self.device.destroy_swapchain_khr(old_swapchain, None);
             }
         }
 
@@ -632,12 +628,11 @@ impl Drop for Swapchain {
         unsafe {
             aleph_log::trace!("Destroying swapchain ImageViews");
             self.images.iter().for_each(|i| {
-                self.device.destroy_image_view(Some(i.image_view()), None);
+                self.device.destroy_image_view(i.image_view(), None);
             });
 
             aleph_log::trace!("Destroying swapchain");
-            self.device
-                .destroy_swapchain_khr(Some(self.swapchain), None);
+            self.device.destroy_swapchain_khr(self.swapchain, None);
         }
     }
 }

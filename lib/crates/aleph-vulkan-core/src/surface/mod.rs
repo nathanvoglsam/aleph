@@ -136,7 +136,7 @@ pub unsafe fn create_surface(
         }
 
         #[cfg(target_os = "windows")]
-        RawWindowHandle::Windows(handle) => {
+        RawWindowHandle::Win32(handle) => {
             use erupt::extensions::khr_win32_surface::*;
 
             let create_info = Win32SurfaceCreateInfoKHR {
