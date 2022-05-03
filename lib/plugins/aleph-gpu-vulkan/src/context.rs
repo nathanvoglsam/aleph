@@ -391,7 +391,7 @@ impl Drop for Context {
         unsafe {
             if let Some(messenger) = self.messenger {
                 self.instance_loader
-                    .destroy_debug_utils_messenger_ext(Some(messenger), None);
+                    .destroy_debug_utils_messenger_ext(messenger, None);
             }
             self.instance_loader.destroy_instance(None);
         }

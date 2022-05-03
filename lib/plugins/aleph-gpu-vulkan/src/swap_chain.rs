@@ -319,8 +319,8 @@ impl ISwapChain for SwapChain {
             let result = self.device.device_loader.acquire_next_image_khr(
                 inner.swap_chain,
                 u64::MAX,
-                None,
-                Some(inner.acquire_fence),
+                vk::Semaphore::null(),
+                inner.acquire_fence,
             );
             match result.raw {
                 vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR => {
@@ -391,7 +391,7 @@ impl Drop for SwapChain {
         unsafe {
             self.device
                 .device_loader
-                .destroy_swapchain_khr(Some(inner.swap_chain), None);
+                .destroy_swapchain_khr(inner.swap_chain, None);
         }
     }
 }

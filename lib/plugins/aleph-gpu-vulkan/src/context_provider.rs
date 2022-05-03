@@ -107,7 +107,7 @@ impl ContextProvider {
         // Construct the vulkan instance
         aleph_log::trace!("Creating Vulkan instance");
         let instance_loader = unsafe {
-            erupt::InstanceLoader::new(entry_loader, &create_info, None).map_err(|e| anyhow!(e))?
+            erupt::InstanceLoader::new(entry_loader, &create_info).map_err(|e| anyhow!(e))?
         };
 
         Ok((instance_loader, api_version))

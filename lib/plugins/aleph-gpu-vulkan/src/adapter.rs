@@ -170,7 +170,6 @@ impl IAdapter for Adapter {
                 &self.context.instance_loader,
                 self.physical_device,
                 &device_create_info,
-                None,
             )
             .map_err(|e| anyhow!(e))?
         };

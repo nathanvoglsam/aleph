@@ -77,7 +77,7 @@ impl Drop for Shader {
         unsafe {
             self.device
                 .device_loader
-                .destroy_shader_module(Some(self.module), None);
+                .destroy_shader_module(self.module, None);
         }
     }
 }
@@ -124,7 +124,7 @@ impl INamedObject for Shader {
                 .object_handle(self.module.object_handle())
                 .object_name(&name);
             unsafe {
-                (func)(loader.handle, &info.build());
+                (func)(loader.handle, &info.build_dangling());
             }
         }
     }

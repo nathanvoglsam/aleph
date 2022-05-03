@@ -168,7 +168,7 @@ impl Drop for Surface {
         unsafe {
             self.context
                 .instance_loader
-                .destroy_surface_khr(Some(self.surface), None);
+                .destroy_surface_khr(self.surface, None);
         }
     }
 }

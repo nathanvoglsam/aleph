@@ -93,7 +93,7 @@ impl INamedObject for SwapTexture {
                 .object_handle(self.image.object_handle())
                 .object_name(&name);
             unsafe {
-                (func)(loader.handle, &info.build());
+                (func)(loader.handle, &info.build_dangling());
             }
         }
     }

@@ -203,7 +203,7 @@ impl INamedObject for Device {
                 .object_handle(self.device_loader.handle.object_handle())
                 .object_name(&name);
             unsafe {
-                (func)(loader.handle, &info.build());
+                (func)(loader.handle, &info.build_dangling());
             }
         }
     }

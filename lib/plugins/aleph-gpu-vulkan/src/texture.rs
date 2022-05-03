@@ -64,9 +64,7 @@ impl ITexture for Texture {
 impl Drop for Texture {
     fn drop(&mut self) {
         unsafe {
-            self.device
-                .device_loader
-                .destroy_image(Some(self.image), None);
+            self.device.device_loader.destroy_image(self.image, None);
         }
     }
 }
@@ -91,7 +89,7 @@ impl INamedObject for Texture {
                 .object_handle(self.image.object_handle())
                 .object_name(&name);
             unsafe {
-                (func)(loader.handle, &info.build());
+                (func)(loader.handle, &info.build_dangling());
             }
         }
     }
