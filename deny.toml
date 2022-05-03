@@ -77,4 +77,4 @@ unknown-registry = "warn"
 unknown-git = "warn"
 
 [sources.allow-org]
-github = ["nathanvoglsam", "rust-windowing"]
+github = []
