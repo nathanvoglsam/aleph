@@ -48,7 +48,7 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 version = "1"
 
 [target.'cfg(all(not(target_vendor = "uwp"), target_os = "windows"))'.dependencies.windows]
-version = "0.35"
+version = "0.36"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi",
@@ -70,7 +70,7 @@ features = [
 ]
 
 [target.'cfg(all(target_vendor = "uwp", target_os = "windows"))'.dependencies.windows]
-version = "0.35"
+version = "0.36"
 features = [
     "Win32_Foundation",
     "Win32_Graphics_Dxgi",

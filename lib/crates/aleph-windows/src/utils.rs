@@ -148,7 +148,8 @@ impl<T: Sized> DynamicLoadCell<T> {
         self.cell
             .get_or_try_init(|| {
                 // Attempt to load the library
-                let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()));
+                let h_module: HINSTANCE =
+                    LoadLibraryW(PCWSTR(self.lib_name.as_ptr())).map_err(|_| ())?;
 
                 if h_module.0 == 0 {
                     return Err(());
