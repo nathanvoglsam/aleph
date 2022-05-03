@@ -100,7 +100,7 @@ impl IPlugin for PluginGameLogic {
                         .collapsible(false)
                         .hscroll(true)
                         .show(&egui_ctx, |ui| {
-                            colour_test.ui(ui, None);
+                            colour_test.ui(ui);
                         });
 
                     aleph::egui::Window::new("Settings")
