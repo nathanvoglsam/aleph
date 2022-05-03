@@ -167,7 +167,7 @@ impl IPlugin for PluginGameLogic {
                                 .show(ui, |ui| {
                                     ui.add(
                                         egui::TextEdit::multiline(&mut text)
-                                            .text_style(egui::TextStyle::Monospace)
+                                            .font(egui::TextStyle::Monospace)
                                             .desired_width(f32::INFINITY),
                                     );
                                 });
