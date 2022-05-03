@@ -47,6 +47,6 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 
 [build-dependencies]
 cc = "1"
-zip = "0.5"
+zip = "0.6"
 aleph-compile = { path = "../aleph-compile", version = "1"}
 aleph-target-build = { path = "../aleph-target-build", version = "2"}
