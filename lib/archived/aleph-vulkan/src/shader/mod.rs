@@ -623,7 +623,7 @@ impl ShaderModule {
     ///
     pub unsafe fn destroy(&self, device: &Device) {
         if !self.module.is_null() {
-            device.destroy_shader_module(Some(self.module), None)
+            device.destroy_shader_module(self.module, None)
         }
     }
 }

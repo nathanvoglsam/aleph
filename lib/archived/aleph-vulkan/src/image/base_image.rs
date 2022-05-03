@@ -333,7 +333,7 @@ impl ImageSingle2D {
     /// Destroys the image
     ///
     pub unsafe fn destroy(&self, device: &Device, alloc: &Allocator) {
-        device.destroy_image_view(Some(self.image_view), None);
+        device.destroy_image_view(self.image_view, None);
         alloc.destroy_image(self.image, self.allocation);
     }
 }

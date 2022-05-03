@@ -340,9 +340,9 @@ impl PipelineLayout {
     /// Is unsafe because destruction is not synchronized
     ///
     pub unsafe fn destroy(&self, device: &Device) {
-        device.destroy_pipeline_layout(Some(self.pipeline_layout), None);
+        device.destroy_pipeline_layout(self.pipeline_layout, None);
         self.set_layouts
             .iter()
-            .for_each(|v| device.destroy_descriptor_set_layout(Some(*v), None));
+            .for_each(|v| device.destroy_descriptor_set_layout(*v, None));
     }
 }
