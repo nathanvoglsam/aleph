@@ -37,7 +37,7 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
     let result = raw_cpuid::CpuId::new();
     match result.get_vendor_info() {
         None => String::from("Unknown CPU Vendor"),
-        Some(vendor) => vendor.as_string().to_string(),
+        Some(vendor) => vendor.as_str().to_string(),
     }
 });
 
@@ -47,12 +47,9 @@ static CPU_VENDOR_STRING: Lazy<String> = Lazy::new(|| {
 #[allow(clippy::identity_op)]
 static CPU_BRAND_STRING: Lazy<String> = Lazy::new(|| {
     let result = raw_cpuid::CpuId::new();
-    match result.get_extended_function_info() {
+    match result.get_processor_brand_string() {
         None => "Unknown CPU".to_string(),
-        Some(ext) => ext
-            .processor_brand_string()
-            .unwrap_or("Unknown CPU")
-            .to_string(),
+        Some(ext) => ext.as_str().to_string(),
     }
 });
 
