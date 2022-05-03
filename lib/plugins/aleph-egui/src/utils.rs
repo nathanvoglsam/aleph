@@ -65,7 +65,11 @@ pub fn get_egui_input(
     }
 }
 
-pub fn process_egui_output(output: egui::Output, mouse: &dyn IMouse, clipboard: &dyn IClipboard) {
+pub fn process_egui_output(
+    output: egui::PlatformOutput,
+    mouse: &dyn IMouse,
+    clipboard: &dyn IClipboard,
+) {
     if !output.copied_text.is_empty() {
         clipboard.set(&output.copied_text);
     }

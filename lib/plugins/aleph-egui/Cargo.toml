@@ -44,7 +44,7 @@ edition = "2021"
 [dependencies]
 aleph-log = { path = "../../crates/aleph-log", version = "1" }
 aleph-interfaces = { path = "../../crates/aleph-interfaces", version = "0.1" }
-egui = "0.16"
+egui = "0.18"
 
 [badges]
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }

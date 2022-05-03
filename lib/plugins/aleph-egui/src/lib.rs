@@ -30,7 +30,6 @@
 extern crate aleph_interfaces as interfaces;
 extern crate egui;
 
-mod fonts;
 mod plugin;
 mod traits;
 mod utils;
@@ -38,5 +37,6 @@ mod utils;
 pub use plugin::PluginEgui;
 pub use traits::IEguiContextProvider;
 pub use traits::IEguiRenderData;
+pub use traits::RenderData;
 
 pub use egui::*;

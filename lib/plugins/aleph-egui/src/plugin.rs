@@ -28,8 +28,8 @@
 //
 
 use crate::traits::{EguiContextProvider, EguiRenderData};
-use crate::{IEguiContextProvider, IEguiRenderData};
-use egui::ClippedMesh;
+use crate::{IEguiContextProvider, IEguiRenderData, RenderData};
+use egui::ClippedPrimitive;
 use interfaces::any::AnyArc;
 use interfaces::platform::{
     IClipboardProvider, IEventsProvider, IFrameTimerProvider, IKeyboardProvider, IMouseProvider,
@@ -153,12 +153,15 @@ impl IPlugin for PluginEgui {
                 let mouse = post_update_mouse.deref();
                 let clipboard = clipboard.deref();
 
-                let (output, shapes) = context_provider.end_frame();
+                let output = context_provider.end_frame();
                 let egui_ctx = context_provider.get_context();
-                let jobs: Vec<ClippedMesh> = egui_ctx.tessellate(shapes);
-                crate::utils::process_egui_output(output, mouse, clipboard);
+                let jobs: Vec<ClippedPrimitive> = egui_ctx.tessellate(output.shapes);
+                crate::utils::process_egui_output(output.platform_output, mouse, clipboard);
 
-                render_data.put(jobs);
+                render_data.put(RenderData {
+                    primitives: jobs,
+                    textures_delta: output.textures_delta,
+                });
             },
         );
 
