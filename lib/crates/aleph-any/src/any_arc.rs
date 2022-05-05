@@ -105,7 +105,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     /// object `AnyArc` without calling `query_interface`.
     ///
     /// ```
-    /// use aleph_any::{AnyArc, declare_interfaces};
+    /// use aleph_any::{AnyArc, declare_interfaces, IAny};
     ///
     /// struct S {
     ///     v: usize,
@@ -113,7 +113,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     ///
     /// declare_interfaces!(S, [T]);
     ///
-    /// trait T {
+    /// trait T: IAny {
     ///     fn get_v(&self) -> usize;
     /// }
     ///
@@ -124,7 +124,7 @@ impl<T: IAny + ?Sized> AnyArc<T> {
     /// }
     ///
     /// let v = AnyArc::new(S {v: 0});
-    /// let v: AnyArc<dyn T> = AnyArc::map(v, |v| v);
+    /// let v: AnyArc<dyn T> = AnyArc::map::<dyn T, _>(v, |v| v);
     /// ```
     pub fn map<X: IAny + ?Sized, F: FnOnce(Arc<T>) -> Arc<X>>(v: Self, func: F) -> AnyArc<X> {
         AnyArc(func(v.0))
