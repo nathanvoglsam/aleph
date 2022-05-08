@@ -71,7 +71,7 @@ impl IContextProvider for ContextProvider {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     this: v.clone(),
-                    _debug: debug,
+                    debug: debug,
                     factory: dxgi_factory,
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))

@@ -60,6 +60,7 @@ pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: dx12::Device,
+    pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) rtv_heap: DescriptorAllocatorCPU,
     pub(crate) dsv_heap: DescriptorAllocatorCPU,
     pub(crate) _sampler_heap: DescriptorAllocatorCPU,
@@ -406,6 +407,17 @@ impl Device {
             images.push((buffer, view));
         }
         Ok(images)
+    }
+}
+
+impl Drop for Device {
+    fn drop(&mut self) {
+        // SAFETY: This should be safe but I can't prove it
+        unsafe {
+            if let Some(cookie) = self.debug_message_cookie {
+                let _sink = self.device.unregister_message_callback(cookie);
+            }
+        }
     }
 }
 

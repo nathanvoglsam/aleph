@@ -32,14 +32,14 @@ use crate::device::{Device, Queues};
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::queue::Queue;
-use dx12::dxgi;
+use dx12::{dxgi, MessageSeverity};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
+    pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
     pub(crate) adapter: dxgi::Adapter,
 }
@@ -91,10 +91,32 @@ impl IAdapter for Adapter {
             transfer: Adapter::create_queue(&device, dx12::CommandListType::Copy),
         };
 
+        let debug_message_cookie = if self.context.debug.is_some() {
+            // SAFETY: Should be safe but I don't have a proof
+            unsafe {
+                device
+                    .register_message_callback(move |category, severity, id, description| {
+                        let level = match severity {
+                            MessageSeverity::Corruption => aleph_log::Level::Error,
+                            MessageSeverity::Error => aleph_log::Level::Error,
+                            MessageSeverity::Warning => aleph_log::Level::Warn,
+                            MessageSeverity::Info => aleph_log::Level::Info,
+                            MessageSeverity::Message => aleph_log::Level::Info,
+                        };
+
+                        aleph_log::log!(level, "[{:?}] [{:?}] {:?}", category, id, description);
+                    })
+                    .ok()
+            }
+        } else {
+            None
+        };
+
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {
             this: v.clone(),
             _adapter: self.this.upgrade().unwrap(),
+            debug_message_cookie,
             rtv_heap: DescriptorAllocatorCPU::new(
                 device.clone(),
                 dx12::DescriptorHeapType::RenderTargetView,

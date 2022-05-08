@@ -40,7 +40,7 @@ use std::sync::atomic::AtomicBool;
 
 pub struct Context {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) _debug: Option<dx12::Debug>,
+    pub(crate) debug: Option<dx12::Debug>,
     pub(crate) factory: dxgi::Factory,
 }
 
@@ -119,7 +119,7 @@ impl IContext for Context {
 
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
-                _context: self.this.upgrade().unwrap(),
+                context: self.this.upgrade().unwrap(),
                 name,
                 adapter,
             });
