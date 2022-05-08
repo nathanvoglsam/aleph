@@ -28,22 +28,25 @@
 //
 
 use crate::depth_stencil_view_desc::DepthStencilViewDesc;
+use crate::message_id::MessageId;
 use crate::{
     dxgi, CPUDescriptorHandle, ClearValue, CommandAllocator, CommandListType, CommandQueue,
     CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence,
     FenceFlags, GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, HeapFlags,
-    HeapProperties, RenderTargetViewDesc, Resource, ResourceDesc, ResourceStates, RootSignature,
-    RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
+    HeapProperties, MessageCategory, MessageSeverity, RenderTargetViewDesc, Resource, ResourceDesc,
+    ResourceStates, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
 };
+use std::ffi::CStr;
 use std::mem::{transmute, transmute_copy};
 use utf16_lit::utf16_null;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, ID3D12Resource, D3D12_CLEAR_VALUE, D3D12_CPU_DESCRIPTOR_HANDLE,
-    D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES, D3D12_PIPELINE_STATE_STREAM_DESC,
-    D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RESOURCE_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC,
-    PFN_D3D12_CREATE_DEVICE,
+    ID3D12Device4, ID3D12InfoQueue1, ID3D12Resource, D3D12_CLEAR_VALUE,
+    D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES,
+    D3D12_MESSAGE_CALLBACK_FLAG_NONE, D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_ID,
+    D3D12_MESSAGE_SEVERITY, D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC,
+    D3D12_RESOURCE_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter1;
 
@@ -249,6 +252,59 @@ impl Device {
             &mut out,
         );
         result.map(|_| Resource(out.unwrap_unchecked()))
+    }
+
+    pub unsafe fn register_message_callback<
+        T: Fn(MessageCategory, MessageSeverity, MessageId, &CStr) + 'static,
+    >(
+        &self,
+        callback: T,
+    ) -> windows::core::Result<u32> {
+        /// Internal callback that wraps the closure in an FFI compatible function
+        unsafe extern "system" fn raw_callback<
+            X: Fn(MessageCategory, MessageSeverity, MessageId, &CStr) + 'static,
+        >(
+            category: D3D12_MESSAGE_CATEGORY,
+            severity: D3D12_MESSAGE_SEVERITY,
+            id: D3D12_MESSAGE_ID,
+            pdescription: windows::core::PCSTR,
+            pcontext: *mut core::ffi::c_void,
+        ) {
+            // Translate the enums
+            let category = MessageCategory::from(category);
+            let severity = MessageSeverity::from(severity);
+            let id = MessageId::from(id);
+
+            // Cast to the concrete type and get a reference
+            let context = pcontext as *const X;
+            let context = context.as_ref().unwrap();
+
+            let description = CStr::from_ptr(pdescription.0 as *const _);
+
+            // Call the actual callback
+            (context)(category, severity, id, description);
+        }
+
+        let casted: ID3D12InfoQueue1 = self.0.cast::<ID3D12InfoQueue1>()?;
+        let mut cookie = 0;
+
+        let boxed = Box::new(callback);
+        let leak = Box::leak(boxed);
+
+        casted.RegisterMessageCallback(
+            Some(raw_callback::<T>),
+            D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+            leak as *const _ as *const core::ffi::c_void,
+            &mut cookie,
+        )?;
+
+        Ok(cookie)
+    }
+
+    pub unsafe fn unregister_message_callback(&self, cookie: u32) -> windows::core::Result<()> {
+        let casted: ID3D12InfoQueue1 = self.0.cast::<ID3D12InfoQueue1>()?;
+        casted.UnregisterMessageCallback(cookie)?;
+        Ok(())
     }
 }
 
