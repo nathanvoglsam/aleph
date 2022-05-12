@@ -1,8 +1,18 @@
+# Ignore Rust compiler output
 /target
-Cargo.lock
-shader_cache.bin
-.vs
-crates/engine/platform/aleph-platform/thirdparty/sdl2/out
-crates/graphics/aleph-vulkan-alloc-sys/lib/out
-crates/engine/plugins/aleph-render/shaders/out
 
+# Ignore Cargo lockfile so CI will always run on latest dependencies
+Cargo.lock
+
+# Igore Visual Studio dir
+.vs
+
+# Ignore Vulkan shader cache
+shader_cache.bin
+
+# Ignore .pfx certificates (private key)
+*.pfx
+
+# Ignore .appx and .msix packages (build artifact)
+*.appx
+*.msix
