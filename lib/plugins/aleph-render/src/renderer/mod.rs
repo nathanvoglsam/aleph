@@ -37,9 +37,7 @@ use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
-use interfaces::gpu::{
-    ColorClearValue, DrawIndexedOptions, IGeneralCommandList, IGeneralEncoder, ITexture,
-};
+use interfaces::gpu::{ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture};
 use std::ops::Deref;
 
 pub struct EguiRenderer {
@@ -226,13 +224,13 @@ impl EguiRenderer {
         if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
             let scissor_rect = self.calculate_clip_rect(job);
             command_list.rs_set_scissor_rects(&[scissor_rect]);
-            encoder.draw_indexed(&DrawIndexedOptions {
-                index_count: triangles.indices.len() as _,
-                instance_count: 1,
-                first_index: idx_base as _,
-                first_instance: 0,
-                vertex_offset: vtx_base as _,
-            });
+            encoder.draw_indexed(
+                triangles.indices.len() as _,
+                1,
+                idx_base as _,
+                0,
+                vtx_base as _,
+            );
         }
     }
 
