@@ -35,7 +35,7 @@ use any::{AnyArc, IAny};
 use bitflags::bitflags;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::Any;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
 
 //
@@ -674,6 +674,15 @@ impl<'a> Default for AdapterRequestOptions<'a> {
             // 99.9999% of the time this will be HighPower so we default to that.
             power_class: AdapterPowerClass::HighPower,
         }
+    }
+}
+
+impl<'a> Debug for AdapterRequestOptions<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AdapterRequestOptions")
+            .field("surface", &self.surface.as_ref().map(|_| "<ptr>"))
+            .field("power_class", &self.power_class)
+            .finish()
     }
 }
 
