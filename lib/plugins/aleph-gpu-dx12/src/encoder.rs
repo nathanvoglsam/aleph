@@ -36,8 +36,8 @@ use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
-    IGeneralEncoder, ITexture, ITransferEncoder, ResourceStates, SplitBufferMode, TextureBarrier,
-    TextureDesc, TextureSubResourceSet,
+    IGeneralEncoder, ITexture, ITransferEncoder, QueueTransitionMode, ResourceStates,
+    SplitBufferMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
@@ -394,12 +394,27 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                         u32::MAX
                     };
 
+                    let (state_before, state_after) = match v.queue_transition_mode {
+                        QueueTransitionMode::None => (
+                            resource_state_to_dx12(v.before_state),
+                            resource_state_to_dx12(v.after_state),
+                        ),
+                        QueueTransitionMode::Acquire(_) => (
+                            dx12::ResourceStates::COMMON,
+                            resource_state_to_dx12(v.after_state),
+                        ),
+                        QueueTransitionMode::Release(_) => (
+                            resource_state_to_dx12(v.before_state),
+                            dx12::ResourceStates::COMMON,
+                        ),
+                    };
+
                     dx12::ResourceBarrier::Transition {
                         flags,
                         resource: Some(t.0.clone()),
                         subresource,
-                        state_before: resource_state_to_dx12(v.before_state),
-                        state_after: resource_state_to_dx12(v.after_state),
+                        state_before,
+                        state_after,
                     }
                 }
             });
