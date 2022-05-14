@@ -1275,26 +1275,26 @@ pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
 // Command Encoders
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
-    fn clear_texture(
+    unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     );
-    fn clear_depth_stencil_texture(
+    unsafe fn clear_depth_stencil_texture(
         &mut self,
         texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     );
-    fn draw(
+    unsafe fn draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
         first_vertex: u32,
         first_instance: u32,
     );
-    fn draw_indexed(
+    unsafe fn draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -1311,7 +1311,7 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
         texture_barriers: &[TextureBarrier],
     );
 
-    fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
+    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
 pub trait ITransferEncoder: Send {}
