@@ -89,10 +89,7 @@ pub fn resource_state_to_dx12(state: ResourceStates) -> dx12::ResourceStates {
     }
 
     let mut out = dx12::ResourceStates::default();
-    if state.contains(ResourceStates::CONSTANT_BUFFER) {
-        out |= dx12::ResourceStates::VERTEX_AND_CONSTANT_BUFFER
-    }
-    if state.contains(ResourceStates::VERTEX_BUFFER) {
+    if state.contains(ResourceStates::VERTEX_AND_CONSTANT_BUFFER) {
         out |= dx12::ResourceStates::VERTEX_AND_CONSTANT_BUFFER
     }
     if state.contains(ResourceStates::INDEX_BUFFER) {
@@ -101,9 +98,11 @@ pub fn resource_state_to_dx12(state: ResourceStates) -> dx12::ResourceStates {
     if state.contains(ResourceStates::INDIRECT_ARGUMENT) {
         out |= dx12::ResourceStates::INDIRECT_ARGUMENT
     }
-    if state.contains(ResourceStates::SHADER_RESOURCE) {
+    if state.contains(ResourceStates::NON_PIXEL_SHADER_RESOURCE) {
+        out |= dx12::ResourceStates::NON_PIXEL_SHADER_RESOURCE
+    }
+    if state.contains(ResourceStates::PIXEL_SHADER_RESOURCE) {
         out |= dx12::ResourceStates::PIXEL_SHADER_RESOURCE
-            | dx12::ResourceStates::NON_PIXEL_SHADER_RESOURCE
     }
     if state.contains(ResourceStates::UNORDERED_ACCESS) {
         out |= dx12::ResourceStates::UNORDERED_ACCESS
@@ -126,29 +125,8 @@ pub fn resource_state_to_dx12(state: ResourceStates) -> dx12::ResourceStates {
     if state.contains(ResourceStates::COPY_SOURCE) {
         out |= dx12::ResourceStates::COPY_SOURCE
     }
-    if state.contains(ResourceStates::RESOLVE_DEST) {
-        out |= dx12::ResourceStates::RESOLVE_DEST
-    }
-    if state.contains(ResourceStates::RESOLVE_SOURCE) {
-        out |= dx12::ResourceStates::RESOLVE_SOURCE
-    }
     if state.contains(ResourceStates::PRESENT) {
         out |= dx12::ResourceStates::PRESENT
-    }
-    if state.contains(ResourceStates::ACCEL_STRUCT_READ) {
-        out |= dx12::ResourceStates::RAYTRACING_ACCELERATION_STRUCTURE
-    }
-    if state.contains(ResourceStates::ACCEL_STRUCT_WRITE) {
-        out |= dx12::ResourceStates::RAYTRACING_ACCELERATION_STRUCTURE
-    }
-    if state.contains(ResourceStates::ACCEL_STRUCT_BUILD_INPUT) {
-        out |= dx12::ResourceStates::NON_PIXEL_SHADER_RESOURCE
-    }
-    if state.contains(ResourceStates::ACCEL_STRUCT_BUILD_BLAS) {
-        out |= dx12::ResourceStates::RAYTRACING_ACCELERATION_STRUCTURE
-    }
-    if state.contains(ResourceStates::SHADING_RATE_SURFACE) {
-        out |= dx12::ResourceStates::SHADING_RATE_SOURCE
     }
 
     out
