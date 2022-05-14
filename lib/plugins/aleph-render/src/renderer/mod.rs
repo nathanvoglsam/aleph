@@ -135,6 +135,8 @@ impl EguiRenderer {
                     before_state: ResourceStates::PRESENT,
                     after_state: ResourceStates::RENDER_TARGET,
                     split_buffer_mode: Default::default(),
+                    queue_transition_mode: Default::default(),
+                    subresource: None,
                 }],
             );
 
@@ -206,6 +208,8 @@ impl EguiRenderer {
                     before_state: ResourceStates::RENDER_TARGET,
                     after_state: ResourceStates::PRESENT,
                     split_buffer_mode: Default::default(),
+                    queue_transition_mode: Default::default(),
+                    subresource: None
                 }],
             );
 
