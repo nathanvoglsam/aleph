@@ -54,16 +54,14 @@ impl<'a> Drop for Encoder<'a> {
 
 impl<'a> Encoder<'a> {
     #[inline]
-    fn clear_swap_texture(&mut self, concrete: &SwapTexture, value: &ColorClearValue) {
+    unsafe fn clear_swap_texture(&mut self, concrete: &SwapTexture, value: &ColorClearValue) {
         let buffer = match value {
             ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
             ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
         };
 
-        unsafe {
-            self.list
-                .clear_render_target_view(concrete.view, &buffer, &[]);
-        }
+        self.list
+            .clear_render_target_view(concrete.view, &buffer, &[]);
         self.parent
             .tracker
             .images
@@ -74,7 +72,7 @@ impl<'a> Encoder<'a> {
     }
 
     #[inline]
-    fn clear_plain_texture(
+    unsafe fn clear_plain_texture(
         &mut self,
         concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
@@ -110,9 +108,7 @@ impl<'a> Encoder<'a> {
                 let view = concrete.get_or_create_rtv_for_usage(None, &level_sub_resources);
 
                 if let Some(view) = view {
-                    unsafe {
-                        self.list.clear_render_target_view(view, &buffer, &[]);
-                    }
+                    self.list.clear_render_target_view(view, &buffer, &[]);
                 } else {
                     aleph_log::debug!(
                         "Called IEncoder::clear_texture with TextureSubResourceSet::num_mip_levels = 0."
@@ -134,7 +130,7 @@ impl<'a> Encoder<'a> {
     }
 
     #[inline]
-    fn clear_depth_image(
+    unsafe fn clear_depth_image(
         &mut self,
         concrete: &Texture,
         sub_resources: &TextureSubResourceSet,
@@ -170,10 +166,8 @@ impl<'a> Encoder<'a> {
 
                 let view = concrete.get_or_create_dsv_for_usage(None, &level_sub_resources);
                 if let Some(view) = view {
-                    unsafe {
-                        self.list
-                            .clear_depth_stencil_view(view, clear_flags, depth, stencil, &[]);
-                    }
+                    self.list
+                        .clear_depth_stencil_view(view, clear_flags, depth, stencil, &[]);
                 } else {
                     aleph_log::debug!(
                     "Called IEncoder::clear_depth_stencil_texture with TextureSubResourceSet::num_mip_levels = 0."
@@ -261,7 +255,7 @@ impl<'a> Encoder<'a> {
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
-    fn clear_texture(
+    unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
@@ -276,7 +270,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    fn clear_depth_stencil_texture(
+    unsafe fn clear_depth_stencil_texture(
         &mut self,
         texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
@@ -291,21 +285,18 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    fn draw(
+    unsafe fn draw(
         &mut self,
         vertex_count: u32,
         instance_count: u32,
         first_vertex: u32,
         first_instance: u32,
     ) {
-        // TODO: State check
-        unsafe {
-            self.list
-                .draw_instanced(vertex_count, instance_count, first_vertex, first_instance)
-        }
+        self.list
+            .draw_instanced(vertex_count, instance_count, first_vertex, first_instance)
     }
 
-    fn draw_indexed(
+    unsafe fn draw_indexed(
         &mut self,
         index_count: u32,
         instance_count: u32,
@@ -313,16 +304,13 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        // TODO: State check
-        unsafe {
-            self.list.draw_indexed_instanced(
-                index_count,
-                instance_count,
-                first_index,
-                vertex_offset,
-                first_instance,
-            )
-        }
+        self.list.draw_indexed_instanced(
+            index_count,
+            instance_count,
+            first_index,
+            vertex_offset,
+            first_instance,
+        )
     }
 }
 
@@ -421,12 +409,9 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         self.list.resource_barrier_dynamic(barriers);
     }
 
-    fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        // TODO: State check
-        unsafe {
-            self.list
-                .dispatch(group_count_x, group_count_y, group_count_z);
-        }
+    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+        self.list
+            .dispatch(group_count_x, group_count_y, group_count_z);
     }
 }
 
