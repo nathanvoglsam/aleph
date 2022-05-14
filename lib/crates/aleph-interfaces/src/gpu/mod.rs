@@ -717,71 +717,32 @@ impl Default for SwapChainConfiguration {
 
 bitflags! {
     pub struct ResourceStates: u32 {
-        /// The state of the resource is unknown or undefined.
-        const UNKNOWN                   = 0;
-
-        /// General purpose state. Resources in this state can be used as anything.
-        ///
-        /// # Warning
-        ///
-        /// This has significant performance implications, especially for textures. Only use this
-        /// when absolutely necessary.
-        const COMMON                    = 0x00000001;
-
-        /// State allowing use as a constant/uniform buffer.
-        const CONSTANT_BUFFER           = 0x00000002;
-
-        /// State allowing use as a vertex buffer.
-        const VERTEX_BUFFER             = 0x00000004;
-
-        /// State allowing use as an index buffer.
-        const INDEX_BUFFER              = 0x00000008;
-
-        const INDIRECT_ARGUMENT         = 0x00000010;
-
-        const SHADER_RESOURCE           = 0x00000020;
-
-        const UNORDERED_ACCESS          = 0x00000040;
-
-        /// State allowing use as a render target.
-        const RENDER_TARGET             = 0x00000080;
-
-        const DEPTH_WRITE               = 0x00000100;
-
-        const DEPTH_READ                = 0x00000200;
-
-        const STREAM_OUT                = 0x00000400;
-
-        /// State allowing use as a copy destination.
-        const COPY_DEST                 = 0x00000800;
-
-        /// State allowing use as a copy source.
-        const COPY_SOURCE               = 0x00001000;
-
-        const RESOLVE_DEST              = 0x00002000;
-
-        const RESOLVE_SOURCE            = 0x00004000;
-
-        /// State allowing use as a presentation surface. A resource must be in this state on the
-        /// GPU timeline for a resource to be used to present from.
-        const PRESENT                   = 0x00008000;
-
-        const ACCEL_STRUCT_READ         = 0x00010000;
-
-        const ACCEL_STRUCT_WRITE        = 0x00020000;
-
-        const ACCEL_STRUCT_BUILD_INPUT  = 0x00040000;
-
-        const ACCEL_STRUCT_BUILD_BLAS   = 0x00080000;
-
-        const SHADING_RATE_SURFACE      = 0x00100000;
+        const UNDEFINED = 0;
+        const VERTEX_AND_CONSTANT_BUFFER = 0x1;
+        const INDEX_BUFFER = 0x2;
+        const RENDER_TARGET = 0x4;
+        const UNORDERED_ACCESS = 0x8;
+        const DEPTH_WRITE = 0x10;
+        const DEPTH_READ = 0x20;
+        const NON_PIXEL_SHADER_RESOURCE = 0x40;
+        const PIXEL_SHADER_RESOURCE = 0x80;
+        const SHADER_RESOURCE = 0x40 | 0x80;
+        const STREAM_OUT = 0x100;
+        const INDIRECT_ARGUMENT = 0x200;
+        const COPY_DEST = 0x400;
+        const COPY_SOURCE = 0x800;
+        const GENERIC_READ = 0x1 | 0x2 | 0x40 | 0x80 | 0x200 | 0x800;
+        const PRESENT = 0x1000;
+        const COMMON = 0x2000;
+        // const RAYTRACING_ACCELERATION_STRUCTURE = 0x4000;
+        // const SHADING_RATE_SOURCE = 0x8000;
     }
 }
 
 impl Default for ResourceStates {
     #[inline]
     fn default() -> Self {
-        ResourceStates::UNKNOWN
+        ResourceStates::UNDEFINED
     }
 }
 
@@ -914,7 +875,7 @@ impl Default for TextureDesc {
             depth: 1,
             format: TextureFormat::R8Unorm,
             dimension: TextureDimension::Texture2D,
-            initial_state: ResourceStates::UNKNOWN,
+            initial_state: ResourceStates::UNDEFINED,
             clear_value: None,
             array_size: 1,
             mip_levels: 1,
