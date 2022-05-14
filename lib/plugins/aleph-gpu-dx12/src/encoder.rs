@@ -27,14 +27,17 @@
 // SOFTWARE.
 //
 
+use crate::buffer::Buffer;
 use crate::general_command_list::GeneralCommandList;
-use crate::internal::conv::decode_u32_color_to_float;
+use crate::internal::calc_subresource_index;
+use crate::internal::conv::{decode_u32_color_to_float, resource_state_to_dx12};
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    ColorClearValue, DepthStencilClearValue, IComputeEncoder, IGeneralEncoder, ITexture,
-    ITransferEncoder, TextureDesc, TextureSubResourceSet,
+    BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
+    IGeneralEncoder, ITexture, ITransferEncoder, ResourceStates, SplitBufferMode, TextureBarrier,
+    TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
@@ -324,6 +327,100 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
+    unsafe fn resource_barrier(
+        &mut self,
+        buffer_barriers: &[BufferBarrier],
+        texture_barriers: &[TextureBarrier],
+    ) {
+        let buffer_barriers = buffer_barriers
+            .iter()
+            .filter_map(|v| {
+                // Filter out any buffers from foreign backends
+                if let Some(b) = v.buffer.query_interface::<Buffer>() {
+                    Some((b, v))
+                } else {
+                    None
+                }
+            })
+            .filter(|(b, _v)| {
+                // Filter out any non GPU visible buffers as resource transitions mean nothing for
+                // CPU only resources
+                !matches!(b.desc.cpu_access, CpuAccessMode::None)
+            })
+            .map(|(b, v)| {
+                let old_uav = v.before_state == ResourceStates::UNORDERED_ACCESS;
+                let new_uav = v.after_state == ResourceStates::UNORDERED_ACCESS;
+                if old_uav && new_uav {
+                    dx12::ResourceBarrier::UAV {
+                        flags: Default::default(),
+                        resource: Some(b.resource.clone()),
+                    }
+                } else {
+                    dx12::ResourceBarrier::Transition {
+                        flags: Default::default(),
+                        resource: Some(b.resource.clone()),
+                        subresource: u32::MAX,
+                        state_before: resource_state_to_dx12(v.before_state),
+                        state_after: resource_state_to_dx12(v.after_state),
+                    }
+                }
+            });
+
+        let texture_barriers = texture_barriers
+            .iter()
+            .filter_map(|v| {
+                // Filter out any textures from foreign backends
+                if let Some(t) = v.texture.query_interface::<Texture>() {
+                    Some(((&t.resource, &t.desc), v))
+                } else if let Some(t) = v.texture.query_interface::<SwapTexture>() {
+                    Some(((&t.resource, &t.desc), v))
+                } else {
+                    None
+                }
+            })
+            .map(|(t, v)| {
+                let old_uav = v.before_state == ResourceStates::UNORDERED_ACCESS;
+                let new_uav = v.after_state == ResourceStates::UNORDERED_ACCESS;
+                if old_uav && new_uav {
+                    dx12::ResourceBarrier::UAV {
+                        flags: Default::default(),
+                        resource: Some(t.0.clone()),
+                    }
+                } else {
+                    // Translate the split barrier mode request
+                    let flags = match v.split_buffer_mode {
+                        SplitBufferMode::None => dx12::ResourceBarrierFlags::NONE,
+                        SplitBufferMode::Begin => dx12::ResourceBarrierFlags::BEGIN_ONLY,
+                        SplitBufferMode::End => dx12::ResourceBarrierFlags::END_ONLY,
+                    };
+
+                    let subresource = if let Some(o) = v.subresource {
+                        calc_subresource_index(
+                            o.mip_level as _,
+                            o.array_layer as _,
+                            0,
+                            t.1.mip_levels,
+                            t.1.array_size,
+                        )
+                    } else {
+                        u32::MAX
+                    };
+
+                    dx12::ResourceBarrier::Transition {
+                        flags,
+                        resource: Some(t.0.clone()),
+                        subresource,
+                        state_before: resource_state_to_dx12(v.before_state),
+                        state_after: resource_state_to_dx12(v.after_state),
+                    }
+                }
+            });
+
+        let barriers = buffer_barriers.chain(texture_barriers);
+
+        self.list.resource_barrier_dynamic(barriers);
+    }
+
     fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         // TODO: State check
         unsafe {
