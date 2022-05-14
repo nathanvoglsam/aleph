@@ -37,7 +37,9 @@ use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
-use interfaces::gpu::{ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture};
+use interfaces::gpu::{
+    ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture, ResourceStates, TextureBarrier,
+};
 use std::ops::Deref;
 
 pub struct EguiRenderer {
@@ -83,7 +85,6 @@ impl EguiRenderer {
     pub unsafe fn record_frame(
         &mut self,
         index: usize,
-        buffer: dx12::Resource,
         texture: &dyn ITexture,
         view: dx12::CPUDescriptorHandle,
         render_data: RenderData,
@@ -127,14 +128,15 @@ impl EguiRenderer {
             self.bind_resources(index, &command_list, view);
 
             // Transition from present to render target state
-            let barrier = dx12::ResourceBarrier::Transition {
-                flags: Default::default(),
-                resource: Some(buffer.clone()),
-                subresource: 0,
-                state_before: dx12::ResourceStates::PRESENT,
-                state_after: dx12::ResourceStates::RENDER_TARGET,
-            };
-            command_list.resource_barrier(&[barrier]);
+            encoder.resource_barrier(
+                &[],
+                &[TextureBarrier {
+                    texture,
+                    before_state: ResourceStates::PRESENT,
+                    after_state: ResourceStates::RENDER_TARGET,
+                    split_buffer_mode: Default::default(),
+                }],
+            );
 
             // Clear the render target
             encoder.clear_texture(
@@ -197,14 +199,15 @@ impl EguiRenderer {
                 }
             }
 
-            let barrier = dx12::ResourceBarrier::Transition {
-                flags: Default::default(),
-                resource: Some(buffer),
-                subresource: 0,
-                state_before: dx12::ResourceStates::RENDER_TARGET,
-                state_after: dx12::ResourceStates::PRESENT,
-            };
-            command_list.resource_barrier(&[barrier]);
+            encoder.resource_barrier(
+                &[],
+                &[TextureBarrier {
+                    texture,
+                    before_state: ResourceStates::RENDER_TARGET,
+                    after_state: ResourceStates::PRESENT,
+                    split_buffer_mode: Default::default(),
+                }],
+            );
 
             // Unmap the buffers
             self.unmap_buffers(index);

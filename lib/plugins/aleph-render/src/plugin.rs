@@ -180,12 +180,13 @@ impl IPlugin for PluginRender {
                 unsafe {
                     data.index = (data.index + 1) % 3;
                     let acquired_image = data.swap_chain.acquire_image().unwrap();
-                    let image = acquired_image.image();
-                    let image_ext = image.query_interface::<dyn ISwapTextureExt>().unwrap();
+                    let image_ext = acquired_image
+                        .image()
+                        .query_interface::<dyn ISwapTextureExt>()
+                        .unwrap();
 
                     let command_list = data.renderer.record_frame(
                         data.index,
-                        image_ext.get_raw_handle(),
                         acquired_image.image(),
                         image_ext.get_raw_rtv(),
                         data.render_data.take(),
