@@ -595,6 +595,25 @@ impl Display for DepthStencilClearValue {
     }
 }
 
+/// Enum flags for barrier commands for specifying the split barrier behavior.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum SplitBufferMode {
+    /// A regular, non split barrier
+    None,
+
+    /// Flags the barrier as the begin half of a split barrier
+    Begin,
+
+    /// Flags the barrier as the end half of a split barrier
+    End,
+}
+
+impl Default for SplitBufferMode {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
 //
 // =================================================================================================
 // STRUCTURES
@@ -975,6 +994,60 @@ impl Default for TextureSubResourceSet {
 }
 
 //
+//
+// _________________________________________________________________________________________________
+// Command Payloads
+
+#[derive(Clone)]
+pub struct BufferBarrier<'a> {
+    pub buffer: &'a dyn IBuffer,
+    pub before_state: ResourceStates,
+    pub after_state: ResourceStates,
+    pub split_buffer_mode: SplitBufferMode,
+    // uint8_t       mAcquire : 1;      // Queue Ownership Transition
+    // uint8_t       mRelease : 1;      // Queue Ownership Transition
+    // uint8_t       mQueueType : 5;    // Queue Ownership Transition
+}
+
+impl<'a> Debug for BufferBarrier<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BufferBarrier")
+            .field("buffer", &"<ptr>")
+            .field("before_state", &self.before_state)
+            .field("after_state", &self.after_state)
+            .finish()
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct BarrierSubresourceOptions {
+    pub mip_level: u8,
+    pub array_layer: u16,
+}
+
+#[derive(Clone)]
+pub struct TextureBarrier<'a> {
+    pub texture: &'a dyn ITexture,
+    pub before_state: ResourceStates,
+    pub after_state: ResourceStates,
+    pub split_buffer_mode: SplitBufferMode,
+    pub subresource: Option<BarrierSubresourceOptions>,
+    // uint8_t       mAcquire : 1;      // Queue Ownership Transition
+    // uint8_t       mRelease : 1;      // Queue Ownership Transition
+    // uint8_t       mQueueType : 5;    // Queue Ownership Transition
+}
+
+impl<'a> Debug for TextureBarrier<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TextureBarrier")
+            .field("texture", &"<ptr>")
+            .field("before_state", &self.before_state)
+            .field("after_state", &self.after_state)
+            .finish()
+    }
+}
+
+//
 // =================================================================================================
 // INTERFACES
 // =================================================================================================
@@ -1232,6 +1305,12 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
 }
 
 pub trait IComputeEncoder: ITransferEncoder + Send {
+    unsafe fn resource_barrier(
+        &mut self,
+        buffer_barriers: &[BufferBarrier],
+        texture_barriers: &[TextureBarrier],
+    );
+
     fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
