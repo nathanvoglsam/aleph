@@ -33,8 +33,8 @@ use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    ColorClearValue, DepthStencilClearValue, DrawIndexedOptions, DrawOptions, IComputeEncoder,
-    IGeneralEncoder, ITexture, ITransferEncoder, TextureDesc, TextureSubResourceSet,
+    ColorClearValue, DepthStencilClearValue, IComputeEncoder, IGeneralEncoder, ITexture,
+    ITransferEncoder, TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
@@ -288,27 +288,36 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    fn draw(&mut self, options: &DrawOptions) {
+    fn draw(
+        &mut self,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) {
         // TODO: State check
         unsafe {
-            self.list.draw_instanced(
-                options.vertex_count,
-                options.instance_count,
-                options.first_vertex,
-                options.first_instance,
-            )
+            self.list
+                .draw_instanced(vertex_count, instance_count, first_vertex, first_instance)
         }
     }
 
-    fn draw_indexed(&mut self, options: &DrawIndexedOptions) {
+    fn draw_indexed(
+        &mut self,
+        index_count: u32,
+        instance_count: u32,
+        first_index: u32,
+        first_instance: u32,
+        vertex_offset: i32,
+    ) {
         // TODO: State check
         unsafe {
             self.list.draw_indexed_instanced(
-                options.index_count,
-                options.instance_count,
-                options.first_index,
-                options.vertex_offset,
-                options.first_instance,
+                index_count,
+                instance_count,
+                first_index,
+                vertex_offset,
+                first_instance,
             )
         }
     }
