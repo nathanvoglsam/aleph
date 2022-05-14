@@ -614,6 +614,25 @@ impl Default for SplitBufferMode {
     }
 }
 
+/// Enum flags for barrier commands for specifying queue ownership transition behavior.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum QueueTransitionMode {
+    /// No queue ownership transition will be performed
+    None,
+
+    /// Flag the barrier to acquire the resource from the queue provided
+    Acquire(QueueType),
+
+    /// Flag the barrier to release the flag to the queue provided
+    Release(QueueType),
+}
+
+impl Default for QueueTransitionMode {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
 //
 // =================================================================================================
 // STRUCTURES
@@ -998,15 +1017,25 @@ impl Default for TextureSubResourceSet {
 // _________________________________________________________________________________________________
 // Command Payloads
 
+/// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
 #[derive(Clone)]
 pub struct BufferBarrier<'a> {
+    /// The buffer that the barrier will describe a state transition for
     pub buffer: &'a dyn IBuffer,
+
+    /// The state the buffer is in before the barrier is executed
     pub before_state: ResourceStates,
+
+    /// The state the buffer will transition to after the barrier is executed
     pub after_state: ResourceStates,
+
+    /// Enables describing split barriers, where one barrier begins a transition and another ends
+    /// the transition. This allows interleaving other rendering commands with state transitions.
     pub split_buffer_mode: SplitBufferMode,
-    // uint8_t       mAcquire : 1;      // Queue Ownership Transition
-    // uint8_t       mRelease : 1;      // Queue Ownership Transition
-    // uint8_t       mQueueType : 5;    // Queue Ownership Transition
+
+    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
+    /// passed from one queue to another to be used across multiple queues.
+    pub queue_transition_mode: QueueTransitionMode,
 }
 
 impl<'a> Debug for BufferBarrier<'a> {
@@ -1015,26 +1044,43 @@ impl<'a> Debug for BufferBarrier<'a> {
             .field("buffer", &"<ptr>")
             .field("before_state", &self.before_state)
             .field("after_state", &self.after_state)
+            .field("split_buffer_mode", &self.split_buffer_mode)
+            .field("queue_transition_mode", &self.queue_transition_mode)
             .finish()
     }
 }
 
-#[derive(Copy, Clone)]
+/// Structure used by [TextureBarrier] for describing which image sub resource to make the subject
+/// of a resource barrier.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct BarrierSubresourceOptions {
     pub mip_level: u8,
     pub array_layer: u16,
 }
 
+/// Describes a resource barrier that will apply to an [ITexture] resource on a command queue
 #[derive(Clone)]
 pub struct TextureBarrier<'a> {
+    /// The texture that the barrier will describe a state transition for
     pub texture: &'a dyn ITexture,
+
+    /// The state the texture is in before the barrier is executed
     pub before_state: ResourceStates,
+
+    /// The state the texture will transition to after the barrier is executed
     pub after_state: ResourceStates,
+
+    /// Enables describing split barriers, where one barrier begins a transition and another ends
+    /// the transition. This allows interleaving other rendering commands with state transitions.
     pub split_buffer_mode: SplitBufferMode,
+
+    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
+    /// passed from one queue to another to be used across multiple queues.
+    pub queue_transition_mode: QueueTransitionMode,
+
+    /// Enables specifying the buffer affect only a specific sub-resource of the texture. When left
+    /// as `None` the entire texture will be affected by the barrier.
     pub subresource: Option<BarrierSubresourceOptions>,
-    // uint8_t       mAcquire : 1;      // Queue Ownership Transition
-    // uint8_t       mRelease : 1;      // Queue Ownership Transition
-    // uint8_t       mQueueType : 5;    // Queue Ownership Transition
 }
 
 impl<'a> Debug for TextureBarrier<'a> {
@@ -1043,6 +1089,9 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("texture", &"<ptr>")
             .field("before_state", &self.before_state)
             .field("after_state", &self.after_state)
+            .field("split_buffer_mode", &self.split_buffer_mode)
+            .field("queue_transition_mode", &self.queue_transition_mode)
+            .field("subresource", &self.subresource)
             .finish()
     }
 }
