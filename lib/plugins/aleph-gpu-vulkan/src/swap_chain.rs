@@ -357,7 +357,7 @@ impl ISwapChain for SwapChain {
                             depth: 1,
                             format: inner.format,
                             dimension: TextureDimension::Texture2D,
-                            initial_state: ResourceStates::UNKNOWN,
+                            initial_state: ResourceStates::UNDEFINED,
                             clear_value: None,
                             array_size: 1,
                             mip_levels: 1,
