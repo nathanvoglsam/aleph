@@ -29,8 +29,7 @@
 
 use dx12::dxgi;
 use interfaces::gpu::{
-    OptimalClearValue, ResourceStates, TextureCreateError, TextureDesc, TextureDimension,
-    Format,
+    Format, OptimalClearValue, ResourceStates, TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT

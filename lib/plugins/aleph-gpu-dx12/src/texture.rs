@@ -33,7 +33,7 @@ use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    INamedObject, ITexture, TextureDesc, TextureDimension, Format, TextureSubResourceSet,
+    Format, INamedObject, ITexture, TextureDesc, TextureDimension, TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
