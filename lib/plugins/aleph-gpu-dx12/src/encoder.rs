@@ -37,7 +37,7 @@ use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
     IGeneralEncoder, ITexture, ITransferEncoder, QueueTransitionMode, ResourceStates,
-    SplitBufferMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
+    SplitBarrierMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
@@ -376,10 +376,10 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                     }
                 } else {
                     // Translate the split barrier mode request
-                    let flags = match v.split_buffer_mode {
-                        SplitBufferMode::None => dx12::ResourceBarrierFlags::NONE,
-                        SplitBufferMode::Begin => dx12::ResourceBarrierFlags::BEGIN_ONLY,
-                        SplitBufferMode::End => dx12::ResourceBarrierFlags::END_ONLY,
+                    let flags = match v.split_barrier_mode {
+                        SplitBarrierMode::None => dx12::ResourceBarrierFlags::NONE,
+                        SplitBarrierMode::Begin => dx12::ResourceBarrierFlags::BEGIN_ONLY,
+                        SplitBarrierMode::End => dx12::ResourceBarrierFlags::END_ONLY,
                     };
 
                     let subresource = if let Some(o) = v.subresource {
