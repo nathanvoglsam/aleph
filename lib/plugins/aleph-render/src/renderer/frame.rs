@@ -188,6 +188,10 @@ impl PerFrameObjects {
                 format: TextureFormat::R8Unorm,
                 dimension: TextureDimension::Texture2D,
                 initial_state: ResourceStates::COPY_DEST,
+                array_size: 1,
+                mip_levels: 1,
+                sample_count: 1,
+                sample_quality: 0,
                 ..Default::default()
             })
             .unwrap()
