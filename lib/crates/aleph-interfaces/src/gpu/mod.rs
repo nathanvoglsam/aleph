@@ -991,7 +991,7 @@ pub struct DescriptorSetLayoutDesc<'a> {
 //
 //
 // _________________________________________________________________________________________________
-// ?
+// Command Payloads
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TextureSubResourceSet {
@@ -1011,11 +1011,6 @@ impl Default for TextureSubResourceSet {
         }
     }
 }
-
-//
-//
-// _________________________________________________________________________________________________
-// Command Payloads
 
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
 #[derive(Clone)]
