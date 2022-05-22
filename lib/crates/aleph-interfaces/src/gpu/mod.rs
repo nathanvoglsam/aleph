@@ -985,8 +985,13 @@ pub struct SamplerDesc {
 /// Set of options for creating a new shader module
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct ShaderOptions<'a> {
+    /// Specifies the type of shader that this module will hold
     pub shader_type: ShaderType,
+
+    /// The raw bytes of the shader module, discriminated as either SPIR-V or DXIL
     pub data: ShaderBinary<'a>,
+
+    /// The name of the entry point function that will be married to the shader module
     pub entry_point: &'a str,
 }
 
