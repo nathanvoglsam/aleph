@@ -33,12 +33,12 @@ use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    INamedObject, ITexture, TextureDesc, TextureDimension, TextureFormat, TextureSubResourceSet,
+    INamedObject, ITexture, TextureDesc, TextureDimension, Format, TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
 
-type CacheViewCPU = HashMap<(TextureFormat, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
+type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
 
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
@@ -56,7 +56,7 @@ impl Texture {
     #[inline]
     pub fn get_or_create_rtv_for_usage(
         &self,
-        format: Option<TextureFormat>,
+        format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
     ) -> Option<dx12::CPUDescriptorHandle> {
         let init = |view, format, sub_resources| unsafe {
@@ -78,7 +78,7 @@ impl Texture {
     #[inline]
     pub fn get_or_create_dsv_for_usage(
         &self,
-        format: Option<TextureFormat>,
+        format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
     ) -> Option<dx12::CPUDescriptorHandle> {
         let init = |view, format, sub_resources| unsafe {
@@ -102,10 +102,10 @@ impl Texture {
         &self,
         cache: &RwLock<CacheViewCPU>,
         allocator: &DescriptorAllocatorCPU,
-        format: Option<TextureFormat>,
+        format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
         allow_multiple_mips: bool,
-        init: impl FnOnce(dx12::CPUDescriptorHandle, TextureFormat, TextureSubResourceSet),
+        init: impl FnOnce(dx12::CPUDescriptorHandle, Format, TextureSubResourceSet),
     ) -> Option<dx12::CPUDescriptorHandle> {
         // First see if we already have a compatible view
         //
@@ -154,7 +154,7 @@ impl Texture {
     #[inline]
     pub fn make_rtv_desc_for_format_and_sub_resources(
         &self,
-        format: TextureFormat,
+        format: Format,
         sub_resources: &TextureSubResourceSet,
     ) -> dx12::RenderTargetViewDesc {
         let is_array = self.desc.array_size > 1;
@@ -220,7 +220,7 @@ impl Texture {
     #[inline]
     pub fn make_dsv_desc_for_format_and_sub_resources(
         &self,
-        format: TextureFormat,
+        format: Format,
         sub_resources: &TextureSubResourceSet,
     ) -> dx12::DepthStencilViewDesc {
         let is_array = self.desc.array_size > 1;

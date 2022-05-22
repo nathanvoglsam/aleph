@@ -166,7 +166,7 @@ impl IDevice for Device {
             CpuAccessMode::Write => (dx12::HeapType::Upload, dx12::ResourceStates::GENERIC_READ),
         };
 
-        let heap_properites = dx12::HeapProperties {
+        let heap_properties = dx12::HeapProperties {
             r#type: heap_type,
             cpu_page_property: Default::default(),
             memory_pool_preference: Default::default(),
@@ -176,7 +176,7 @@ impl IDevice for Device {
         let resource = unsafe {
             self.device
                 .create_committed_resource(
-                    &heap_properites,
+                    &heap_properties,
                     dx12::HeapFlags::NONE,
                     &resource_desc,
                     initial_state,
