@@ -31,7 +31,7 @@ use erupt::vk;
 use interfaces::gpu::{Format, PresentationMode};
 
 /// Internal function for converting texture format to VkFormat
-pub fn texture_format_to_vk(format: Format) -> vk::Format {
+pub const fn texture_format_to_vk(format: Format) -> vk::Format {
     match format {
         Format::R8Unorm => vk::Format::R8_UNORM,
         Format::R8Snorm => vk::Format::R8_SNORM,
@@ -80,7 +80,7 @@ pub fn texture_format_to_vk(format: Format) -> vk::Format {
 }
 
 /// Internal function for converting present mode to VkPresentModeKHR
-pub fn present_mode_to_vk(mode: PresentationMode) -> vk::PresentModeKHR {
+pub const fn present_mode_to_vk(mode: PresentationMode) -> vk::PresentModeKHR {
     match mode {
         PresentationMode::Immediate => vk::PresentModeKHR::IMMEDIATE_KHR,
         PresentationMode::Mailbox => vk::PresentModeKHR::MAILBOX_KHR,
