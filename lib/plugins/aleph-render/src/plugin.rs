@@ -32,8 +32,8 @@ use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapTextureExt};
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, ISwapChain, PresentationMode,
-    QueueType, SwapChainConfiguration, Format,
+    AdapterRequestOptions, ContextOptions, Format, IContextProvider, IDevice, ISwapChain,
+    PresentationMode, QueueType, SwapChainConfiguration,
 };
 use interfaces::platform::*;
 use interfaces::plugin::*;

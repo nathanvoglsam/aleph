@@ -35,8 +35,7 @@ use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
-    Format,
+    BufferDesc, CpuAccessMode, Format, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
 };
 
 pub struct PerFrameObjects {
