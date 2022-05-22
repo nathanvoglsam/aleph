@@ -33,8 +33,7 @@ use interfaces::gpu::{
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
-#[inline]
-pub fn texture_format_to_dxgi(format: Format) -> dxgi::Format {
+pub const fn texture_format_to_dxgi(format: Format) -> dxgi::Format {
     match format {
         Format::R8Unorm => dxgi::Format::R8Unorm,
         Format::R8Snorm => dxgi::Format::R8Snorm,
