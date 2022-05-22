@@ -140,8 +140,8 @@ impl Default for RenderTargetBlendDesc {
     #[inline]
     fn default() -> Self {
         Self {
-            blend_enable: false.into(),
-            logic_op_enable: false.into(),
+            blend_enable: Bool::FALSE,
+            logic_op_enable: Bool::FALSE,
             src_blend: Blend::One,
             dest_blend: Blend::Zero,
             blend_op: BlendOp::Add,
@@ -149,7 +149,7 @@ impl Default for RenderTargetBlendDesc {
             dest_blend_alpha: Blend::Zero,
             blend_op_alpha: BlendOp::Add,
             logic_op: LogicOp::Noop,
-            render_target_write_mask: ColorWriteEnable::all(),
+            render_target_write_mask: ColorWriteEnable::NONE,
         }
     }
 }
