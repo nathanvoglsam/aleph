@@ -673,7 +673,8 @@ pub struct ContextOptions {
     /// # Detail
     ///
     /// Basically just a request to enable `VK_EXT_debug_utils` for Vulkan without enabling
-    /// validation layers.
+    /// validation layers. Vulkan requires `VK_EXT_debug_utils` for object naming as that is the
+    /// extension that provides the naming functionality.
     pub debug: bool,
 }
 
@@ -709,7 +710,7 @@ impl<'a> Default for AdapterRequestOptions<'a> {
             // We can't make a "default" surface so just default to no surface.
             surface: None,
 
-            // 99.9999% of the time this will be HighPower so we default to that.
+            // 99.9999% users will ask for the HighPower adapter so we default to that.
             power_class: AdapterPowerClass::HighPower,
         }
     }
