@@ -82,6 +82,11 @@ impl<'a> Debug for CStrFFI<'a> {
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Bool(u32);
 
+impl Bool {
+    pub const TRUE: Self = Self(1);
+    pub const FALSE: Self = Self(0);
+}
+
 impl PartialEq<bool> for Bool {
     fn eq(&self, other: &bool) -> bool {
         let num = *other as u32;
