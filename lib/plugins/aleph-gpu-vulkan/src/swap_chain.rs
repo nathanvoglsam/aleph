@@ -34,7 +34,6 @@ use crate::internal::queue_present_support::QueuePresentSupportFlags;
 use crate::surface::Surface;
 use crate::swap_texture::SwapTexture;
 use erupt::vk;
-use erupt::vk1_0::{Extent2D, Format};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -177,7 +176,7 @@ impl SwapChain {
     fn select_format_and_color_space(
         config: &SwapChainConfiguration,
         formats: &[vk::SurfaceFormatKHR],
-    ) -> Result<(Format, vk::ColorSpaceKHR), SwapChainCreateError> {
+    ) -> Result<(vk::Format, vk::ColorSpaceKHR), SwapChainCreateError> {
         // Translate our format into the vulkan format
         let format = texture_format_to_vk(config.format);
 
@@ -198,7 +197,7 @@ impl SwapChain {
     fn select_extents(
         config: &SwapChainConfiguration,
         capabilities: &vk::SurfaceCapabilitiesKHR,
-    ) -> Result<Extent2D, SwapChainCreateError> {
+    ) -> Result<vk::Extent2D, SwapChainCreateError> {
         // We can either use the wanted size or the size demanded by vulkan
         let extents = match (
             capabilities.current_extent.width,
