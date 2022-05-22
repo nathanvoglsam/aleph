@@ -467,6 +467,12 @@ pub enum SamplerMipFilter {
     Linear,
 }
 
+impl Default for SamplerMipFilter {
+    fn default() -> Self {
+        Self::Nearest
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum SamplerComparisonOp {
     Never,
