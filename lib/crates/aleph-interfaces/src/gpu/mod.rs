@@ -597,7 +597,7 @@ impl Display for DepthStencilClearValue {
 
 /// Enum flags for barrier commands for specifying the split barrier behavior.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum SplitBufferMode {
+pub enum SplitBarrierMode {
     /// A regular, non split barrier
     None,
 
@@ -608,7 +608,7 @@ pub enum SplitBufferMode {
     End,
 }
 
-impl Default for SplitBufferMode {
+impl Default for SplitBarrierMode {
     fn default() -> Self {
         Self::None
     }
@@ -1031,7 +1031,7 @@ pub struct BufferBarrier<'a> {
 
     /// Enables describing split barriers, where one barrier begins a transition and another ends
     /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_buffer_mode: SplitBufferMode,
+    pub split_barrier_mode: SplitBarrierMode,
 
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
@@ -1044,7 +1044,7 @@ impl<'a> Debug for BufferBarrier<'a> {
             .field("buffer", &"<ptr>")
             .field("before_state", &self.before_state)
             .field("after_state", &self.after_state)
-            .field("split_buffer_mode", &self.split_buffer_mode)
+            .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
             .finish()
     }
@@ -1072,7 +1072,7 @@ pub struct TextureBarrier<'a> {
 
     /// Enables describing split barriers, where one barrier begins a transition and another ends
     /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_buffer_mode: SplitBufferMode,
+    pub split_barrier_mode: SplitBarrierMode,
 
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
@@ -1089,7 +1089,7 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("texture", &"<ptr>")
             .field("before_state", &self.before_state)
             .field("after_state", &self.after_state)
-            .field("split_buffer_mode", &self.split_buffer_mode)
+            .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
             .field("subresource", &self.subresource)
             .finish()
