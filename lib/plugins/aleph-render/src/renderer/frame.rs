@@ -36,7 +36,7 @@ use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BufferDesc, CpuAccessMode, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
-    TextureFormat,
+    Format,
 };
 
 pub struct PerFrameObjects {
@@ -185,7 +185,7 @@ impl PerFrameObjects {
             .create_texture(&TextureDesc {
                 width: dimensions.0,
                 height: dimensions.1,
-                format: TextureFormat::R8Unorm,
+                format: Format::R8Unorm,
                 dimension: TextureDimension::Texture2D,
                 initial_state: ResourceStates::COPY_DEST,
                 array_size: 1,

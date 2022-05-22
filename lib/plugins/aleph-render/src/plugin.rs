@@ -33,7 +33,7 @@ use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ISwapTextureExt};
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, IContextProvider, IDevice, ISwapChain, PresentationMode,
-    QueueType, SwapChainConfiguration, TextureFormat,
+    QueueType, SwapChainConfiguration, Format,
 };
 use interfaces::platform::*;
 use interfaces::plugin::*;
@@ -135,7 +135,7 @@ impl IPlugin for PluginRender {
 
         let drawable_size = window.drawable_size();
         let config = SwapChainConfiguration {
-            format: TextureFormat::Bgra8UnormSrgb,
+            format: Format::Bgra8UnormSrgb,
             width: drawable_size.0,
             height: drawable_size.1,
             present_mode: PresentationMode::Mailbox,
