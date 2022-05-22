@@ -36,7 +36,7 @@ use erupt::vk::SurfaceKHR;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError, Format,
+    Format, IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
 };
 use std::sync::Mutex;
 

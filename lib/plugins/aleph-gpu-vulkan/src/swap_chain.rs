@@ -37,9 +37,8 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
+    AcquireImageError, Format, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
     ResourceStates, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
-    Format,
 };
 use std::sync::Mutex;
 

@@ -28,7 +28,7 @@
 //
 
 use erupt::vk;
-use interfaces::gpu::{PresentationMode, Format};
+use interfaces::gpu::{Format, PresentationMode};
 
 /// Internal function for converting texture format to VkFormat
 pub fn texture_format_to_vk(format: Format) -> vk::Format {
