@@ -104,8 +104,6 @@ impl EguiRenderer {
         {
             let mut encoder = list.begin().unwrap();
 
-            command_list.set_pipeline_state(&self.global.pipeline_state);
-
             // If the font texture has changed then we need to update our copy and increment the
             // version to invalidate the per-frame font textures
             for (_, delta) in render_data.textures_delta.set {
@@ -209,7 +207,7 @@ impl EguiRenderer {
                     after_state: ResourceStates::PRESENT,
                     split_buffer_mode: Default::default(),
                     queue_transition_mode: Default::default(),
-                    subresource: None
+                    subresource: None,
                 }],
             );
 
@@ -247,6 +245,11 @@ impl EguiRenderer {
         command_list: &dx12::GraphicsCommandList,
         view: dx12::CPUDescriptorHandle,
     ) {
+        //
+        // Bind the pipeline state object
+        //
+        command_list.set_pipeline_state(&self.global.pipeline_state);
+
         //
         // Bind the Root Signature
         //

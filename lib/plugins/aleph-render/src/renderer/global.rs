@@ -205,6 +205,7 @@ impl GlobalObjects {
             .src_blend_alpha(dx12::Blend::DestAlphaInv)
             .dest_blend_alpha(dx12::Blend::One)
             .blend_op_alpha(dx12::BlendOp::Add)
+            .render_target_write_mask(dx12::ColorWriteEnable::all())
             .build();
         let blend_desc = dx12::BlendDesc::builder()
             .alpha_to_coverage_enable(false)
