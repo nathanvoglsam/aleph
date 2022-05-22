@@ -40,7 +40,7 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
     ResourceStates, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
-    TextureFormat,
+    Format,
 };
 use std::sync::Mutex;
 
@@ -72,7 +72,7 @@ pub struct SwapChainState {
     pub swap_chain: vk::SwapchainKHR,
     pub acquire_fence: vk::Fence,
     pub images_in_flight: u32,
-    pub format: TextureFormat,
+    pub format: Format,
     pub vk_format: vk::Format,
     pub color_space: vk::ColorSpaceKHR,
     pub present_mode: vk::PresentModeKHR,

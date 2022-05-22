@@ -36,7 +36,7 @@ use erupt::vk::SurfaceKHR;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError, TextureFormat,
+    IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError, Format,
 };
 use std::sync::Mutex;
 
@@ -137,7 +137,7 @@ impl ISurface for Surface {
             swap_chain: vk::SwapchainKHR::null(),
             acquire_fence: fence,
             images_in_flight: 0,
-            format: TextureFormat::Bgra8Unorm,
+            format: Format::Bgra8Unorm,
             vk_format: Default::default(),
             color_space: Default::default(),
             present_mode: Default::default(),
