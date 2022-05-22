@@ -178,7 +178,7 @@ impl Default for CpuAccessMode {
 // Resources - Texture
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum TextureFormat {
+pub enum Format {
     R8Unorm,
     R8Snorm,
     R8Uint,
@@ -224,13 +224,13 @@ pub enum TextureFormat {
     Depth24Stencil8,
 }
 
-impl Default for TextureFormat {
+impl Default for Format {
     fn default() -> Self {
         Self::R8Unorm
     }
 }
 
-impl TextureFormat {
+impl Format {
     /// Returns whether the format is a depth texture format
     pub fn is_depth(&self) -> bool {
         matches!(self, Self::Depth32Float)
@@ -324,52 +324,52 @@ impl TextureFormat {
     }
 }
 
-impl Display for TextureFormat {
+impl Display for Format {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            TextureFormat::R8Unorm => f.write_str("TextureFormat::R8Unorm"),
-            TextureFormat::R8Snorm => f.write_str("TextureFormat::R8Snorm"),
-            TextureFormat::R8Uint => f.write_str("TextureFormat::R8Uint"),
-            TextureFormat::R8Sint => f.write_str("TextureFormat::R8Sint"),
-            TextureFormat::R16Uint => f.write_str("TextureFormat::R16Uint"),
-            TextureFormat::R16Sint => f.write_str("TextureFormat::R16Sint"),
-            TextureFormat::R16Unorm => f.write_str("TextureFormat::R16Unorm"),
-            TextureFormat::R16Snorm => f.write_str("TextureFormat::R16Snorm"),
-            TextureFormat::R16Float => f.write_str("TextureFormat::R16Float"),
-            TextureFormat::Rg8Unorm => f.write_str("TextureFormat::Rg8Unorm"),
-            TextureFormat::Rg8Snorm => f.write_str("TextureFormat::Rg8Snorm"),
-            TextureFormat::Rg8Uint => f.write_str("TextureFormat::Rg8Uint"),
-            TextureFormat::Rg8Sint => f.write_str("TextureFormat::Rg8Sint"),
-            TextureFormat::R32Uint => f.write_str("TextureFormat::R32Uint"),
-            TextureFormat::R32Sint => f.write_str("TextureFormat::R32Sint"),
-            TextureFormat::R32Float => f.write_str("TextureFormat::R32Float"),
-            TextureFormat::Rg16Uint => f.write_str("TextureFormat::Rg16Uint"),
-            TextureFormat::Rg16Sint => f.write_str("TextureFormat::Rg16Sint"),
-            TextureFormat::Rg16Unorm => f.write_str("TextureFormat::Rg16Unorm"),
-            TextureFormat::Rg16Snorm => f.write_str("TextureFormat::Rg16Snorm"),
-            TextureFormat::Rg16Float => f.write_str("TextureFormat::Rg16Float"),
-            TextureFormat::Rgba8Unorm => f.write_str("TextureFormat::Rgba8Unorm"),
-            TextureFormat::Rgba8UnormSrgb => f.write_str("TextureFormat::Rgba8UnormSrgb"),
-            TextureFormat::Rgba8Snorm => f.write_str("TextureFormat::Rgba8Snorm"),
-            TextureFormat::Rgba8Uint => f.write_str("TextureFormat::Rgba8Uint"),
-            TextureFormat::Rgba8Sint => f.write_str("TextureFormat::Rgba8Sint"),
-            TextureFormat::Bgra8Unorm => f.write_str("TextureFormat::Bgra8Unorm"),
-            TextureFormat::Bgra8UnormSrgb => f.write_str("TextureFormat::Bgra8UnormSrgb"),
-            TextureFormat::Rgb10a2Unorm => f.write_str("TextureFormat::Rgb10a2Unorm"),
-            TextureFormat::Rg11b10Float => f.write_str("TextureFormat::Rg11b10Float"),
-            TextureFormat::Rg32Uint => f.write_str("TextureFormat::Rg32Uint"),
-            TextureFormat::Rg32Sint => f.write_str("TextureFormat::Rg32Sint"),
-            TextureFormat::Rg32Float => f.write_str("TextureFormat::Rg32Float"),
-            TextureFormat::Rgba16Uint => f.write_str("TextureFormat::Rgba16Uint"),
-            TextureFormat::Rgba16Sint => f.write_str("TextureFormat::Rgba16Sint"),
-            TextureFormat::Rgba16Unorm => f.write_str("TextureFormat::Rgba16Unorm"),
-            TextureFormat::Rgba16Snorm => f.write_str("TextureFormat::Rgba16Snorm"),
-            TextureFormat::Rgba16Float => f.write_str("TextureFormat::Rgba16Float"),
-            TextureFormat::Rgba32Uint => f.write_str("TextureFormat::Rgba32Uint"),
-            TextureFormat::Rgba32Sint => f.write_str("TextureFormat::Rgba32Sint"),
-            TextureFormat::Rgba32Float => f.write_str("TextureFormat::Rgba32Float"),
-            TextureFormat::Depth32Float => f.write_str("TextureFormat::Depth32Float"),
-            TextureFormat::Depth24Stencil8 => f.write_str("TextureFormat::Depth24Stencil8"),
+            Format::R8Unorm => f.write_str("Format::R8Unorm"),
+            Format::R8Snorm => f.write_str("Format::R8Snorm"),
+            Format::R8Uint => f.write_str("Format::R8Uint"),
+            Format::R8Sint => f.write_str("Format::R8Sint"),
+            Format::R16Uint => f.write_str("Format::R16Uint"),
+            Format::R16Sint => f.write_str("Format::R16Sint"),
+            Format::R16Unorm => f.write_str("Format::R16Unorm"),
+            Format::R16Snorm => f.write_str("Format::R16Snorm"),
+            Format::R16Float => f.write_str("Format::R16Float"),
+            Format::Rg8Unorm => f.write_str("Format::Rg8Unorm"),
+            Format::Rg8Snorm => f.write_str("Format::Rg8Snorm"),
+            Format::Rg8Uint => f.write_str("Format::Rg8Uint"),
+            Format::Rg8Sint => f.write_str("Format::Rg8Sint"),
+            Format::R32Uint => f.write_str("Format::R32Uint"),
+            Format::R32Sint => f.write_str("Format::R32Sint"),
+            Format::R32Float => f.write_str("Format::R32Float"),
+            Format::Rg16Uint => f.write_str("Format::Rg16Uint"),
+            Format::Rg16Sint => f.write_str("Format::Rg16Sint"),
+            Format::Rg16Unorm => f.write_str("Format::Rg16Unorm"),
+            Format::Rg16Snorm => f.write_str("Format::Rg16Snorm"),
+            Format::Rg16Float => f.write_str("Format::Rg16Float"),
+            Format::Rgba8Unorm => f.write_str("Format::Rgba8Unorm"),
+            Format::Rgba8UnormSrgb => f.write_str("Format::Rgba8UnormSrgb"),
+            Format::Rgba8Snorm => f.write_str("Format::Rgba8Snorm"),
+            Format::Rgba8Uint => f.write_str("Format::Rgba8Uint"),
+            Format::Rgba8Sint => f.write_str("Format::Rgba8Sint"),
+            Format::Bgra8Unorm => f.write_str("Format::Bgra8Unorm"),
+            Format::Bgra8UnormSrgb => f.write_str("Format::Bgra8UnormSrgb"),
+            Format::Rgb10a2Unorm => f.write_str("Format::Rgb10a2Unorm"),
+            Format::Rg11b10Float => f.write_str("Format::Rg11b10Float"),
+            Format::Rg32Uint => f.write_str("Format::Rg32Uint"),
+            Format::Rg32Sint => f.write_str("Format::Rg32Sint"),
+            Format::Rg32Float => f.write_str("Format::Rg32Float"),
+            Format::Rgba16Uint => f.write_str("Format::Rgba16Uint"),
+            Format::Rgba16Sint => f.write_str("Format::Rgba16Sint"),
+            Format::Rgba16Unorm => f.write_str("Format::Rgba16Unorm"),
+            Format::Rgba16Snorm => f.write_str("Format::Rgba16Snorm"),
+            Format::Rgba16Float => f.write_str("Format::Rgba16Float"),
+            Format::Rgba32Uint => f.write_str("Format::Rgba32Uint"),
+            Format::Rgba32Sint => f.write_str("Format::Rgba32Sint"),
+            Format::Rgba32Float => f.write_str("Format::Rgba32Float"),
+            Format::Depth32Float => f.write_str("Format::Depth32Float"),
+            Format::Depth24Stencil8 => f.write_str("Format::Depth24Stencil8"),
         }
     }
 }
@@ -810,7 +810,7 @@ pub struct AdapterDescription<'a> {
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct SwapChainConfiguration {
-    pub format: TextureFormat,
+    pub format: Format,
     pub width: u32,
     pub height: u32,
     pub present_mode: PresentationMode,
@@ -913,7 +913,7 @@ pub struct TextureDesc {
     pub depth: u32,
 
     /// The pixel format of the texture
-    pub format: TextureFormat,
+    pub format: Format,
 
     /// The dimensionality of the texture.
     ///
@@ -1501,7 +1501,7 @@ pub enum SurfaceCreateError {
 #[non_exhaustive]
 pub enum SwapChainCreateError {
     #[error("The requested image format '{0}' is not supported by the swap chain")]
-    UnsupportedFormat(TextureFormat),
+    UnsupportedFormat(Format),
 
     #[error("The requested image usage is not supported by the swap chain")]
     UnsupportedUsage(()),
