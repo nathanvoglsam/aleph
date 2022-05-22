@@ -114,6 +114,12 @@ pub enum AdapterPowerClass {
     HighPower,
 }
 
+impl Default for AdapterPowerClass {
+    fn default() -> Self {
+        Self::LowPower
+    }
+}
+
 //
 //
 // _________________________________________________________________________________________________
@@ -124,6 +130,12 @@ pub enum PresentationMode {
     Immediate,
     Mailbox,
     Fifo,
+}
+
+impl Default for PresentationMode {
+    fn default() -> Self {
+        Self::Immediate
+    }
 }
 
 impl Display for PresentationMode {
@@ -152,6 +164,12 @@ pub enum CpuAccessMode {
 
     /// Resource can be written by the CPU (upload)
     Write,
+}
+
+impl Default for CpuAccessMode {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 //
@@ -204,6 +222,12 @@ pub enum TextureFormat {
     Rgba32Float,
     Depth32Float,
     Depth24Stencil8,
+}
+
+impl Default for TextureFormat {
+    fn default() -> Self {
+        Self::R8Unorm
+    }
 }
 
 impl TextureFormat {
@@ -363,6 +387,12 @@ pub enum TextureDimension {
     Texture3D,
 }
 
+impl Default for TextureDimension {
+    fn default() -> Self {
+        Self::Texture1D
+    }
+}
+
 /// An enumeration of all possible input types for initializing a texture's optimal clear color
 /// value
 #[derive(Clone, Debug, PartialEq)]
@@ -413,10 +443,22 @@ pub enum SamplerAddressMode {
     MirrorOnce,
 }
 
+impl Default for SamplerAddressMode {
+    fn default() -> Self {
+        Self::Wrap
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum SamplerFilter {
     Nearest,
     Linear,
+}
+
+impl Default for SamplerFilter {
+    fn default() -> Self {
+        Self::Nearest
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -465,6 +507,12 @@ pub enum ShaderType {
     Mesh,
 }
 
+impl Default for ShaderType {
+    fn default() -> Self {
+        Self::Compute
+    }
+}
+
 //
 //
 // _________________________________________________________________________________________________
@@ -481,6 +529,12 @@ pub enum DescriptorType {
     PushConstants { size: u16 },
 }
 
+impl Default for DescriptorType {
+    fn default() -> Self {
+        Self::Texture
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum DescriptorShaderVisibility {
     All,
@@ -492,6 +546,12 @@ pub enum DescriptorShaderVisibility {
     Fragment,
     Amplification,
     Mesh,
+}
+
+impl Default for DescriptorShaderVisibility {
+    fn default() -> Self {
+        Self::All
+    }
 }
 
 impl From<ShaderType> for DescriptorShaderVisibility {
@@ -520,6 +580,12 @@ pub enum QueueType {
     General,
     Compute,
     Transfer,
+}
+
+impl Default for QueueType {
+    fn default() -> Self {
+        Self::General
+    }
 }
 
 impl Display for QueueType {
@@ -736,26 +802,13 @@ pub struct AdapterDescription<'a> {
 // _________________________________________________________________________________________________
 // SwapChain
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct SwapChainConfiguration {
     pub format: TextureFormat,
     pub width: u32,
     pub height: u32,
     pub present_mode: PresentationMode,
     pub preferred_queue: QueueType,
-}
-
-impl Default for SwapChainConfiguration {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            format: TextureFormat::Bgra8UnormSrgb,
-            width: 0,
-            height: 0,
-            present_mode: PresentationMode::Fifo,
-            preferred_queue: QueueType::General,
-        }
-    }
 }
 
 //
@@ -800,7 +853,7 @@ impl Default for ResourceStates {
 // Resource Descriptions - Buffer
 
 /// Description object used for creating a new buffer.
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
 pub struct BufferDesc {
     /// The size of the buffer in bytes
     pub size: u64,
@@ -836,31 +889,13 @@ pub struct BufferDesc {
     pub is_accel_struct_storage: bool,
 }
 
-impl Default for BufferDesc {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            size: 0,
-            cpu_access: CpuAccessMode::None,
-            allow_unordered_access: false,
-            allow_texel_buffer: false,
-            is_vertex_buffer: false,
-            is_index_buffer: false,
-            is_constant_buffer: false,
-            is_indirect_draw_args: false,
-            is_accel_struct_build_input: false,
-            is_accel_struct_storage: false,
-        }
-    }
-}
-
 //
 //
 // _________________________________________________________________________________________________
 // Resource Descriptions - Texture
 
 /// Description object used for creating a new texture.
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct TextureDesc {
     /// The width of the texture
     pub width: u32,
@@ -914,28 +949,6 @@ pub struct TextureDesc {
     pub is_render_target: bool,
 }
 
-impl Default for TextureDesc {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            width: 1,
-            height: 1,
-            depth: 1,
-            format: TextureFormat::R8Unorm,
-            dimension: TextureDimension::Texture2D,
-            initial_state: ResourceStates::UNDEFINED,
-            clear_value: None,
-            array_size: 1,
-            mip_levels: 1,
-            sample_count: 1,
-            sample_quality: 0,
-            allow_unordered_access: false,
-            allow_cube_face: false,
-            is_render_target: false,
-        }
-    }
-}
-
 //
 //
 // _________________________________________________________________________________________________
@@ -976,14 +989,14 @@ pub struct ShaderOptions<'a> {
 // _________________________________________________________________________________________________
 // Descriptor Set Layout
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct DescriptorSetLayoutDescItem {
     pub binding_num: u32,
     pub binding_type: DescriptorType,
     pub read_only: bool,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct DescriptorSetLayoutDesc<'a> {
     pub visibility: DescriptorShaderVisibility,
     pub items: &'a [DescriptorSetLayoutDescItem],
@@ -994,23 +1007,12 @@ pub struct DescriptorSetLayoutDesc<'a> {
 // _________________________________________________________________________________________________
 // Command Payloads
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct TextureSubResourceSet {
     pub base_mip_level: u32,
     pub num_mip_levels: u32,
     pub base_array_slice: u32,
     pub num_array_slices: u32,
-}
-
-impl Default for TextureSubResourceSet {
-    fn default() -> Self {
-        Self {
-            base_mip_level: 0,
-            num_mip_levels: 1,
-            base_array_slice: 0,
-            num_array_slices: 1,
-        }
-    }
 }
 
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
@@ -1048,7 +1050,7 @@ impl<'a> Debug for BufferBarrier<'a> {
 
 /// Structure used by [TextureBarrier] for describing which image sub resource to make the subject
 /// of a resource barrier.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct BarrierSubresourceOptions {
     pub mip_level: u8,
     pub array_layer: u16,
