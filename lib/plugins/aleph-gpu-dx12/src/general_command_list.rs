@@ -65,6 +65,7 @@ impl IGeneralCommandList for GeneralCommandList {
         let encoder = Encoder::<'a> {
             list: self.list.clone(),
             parent: self,
+            input_binding_strides: [0; 16],
         };
         Ok(Box::new(encoder))
     }

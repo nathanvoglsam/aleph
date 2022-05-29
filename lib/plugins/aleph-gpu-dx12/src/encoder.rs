@@ -31,18 +31,20 @@ use crate::buffer::Buffer;
 use crate::general_command_list::GeneralCommandList;
 use crate::internal::calc_subresource_index;
 use crate::internal::conv::{decode_u32_color_to_float, resource_state_to_dx12};
+use crate::pipeline::GraphicsPipeline;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
-    IGeneralEncoder, ITexture, ITransferEncoder, QueueTransitionMode, ResourceStates,
-    SplitBarrierMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
+    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, QueueTransitionMode,
+    ResourceStates, SplitBarrierMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
     pub(crate) parent: &'a mut GeneralCommandList,
+    pub(crate) input_binding_strides: [u32; 16],
 }
 
 impl<'a> Drop for Encoder<'a> {
@@ -255,6 +257,33 @@ impl<'a> Encoder<'a> {
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
+    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
+        if let Some(concrete) = pipeline.query_interface::<GraphicsPipeline>() {
+            // Binds the pipeline
+            self.list.set_pipeline_state(&concrete.pipeline);
+
+            // A pipeline is inseparable from its' root signature so we need to bind it here too
+            self.list
+                .set_graphics_root_signature(&concrete.pipeline_layout.root_signature);
+
+            // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
+            // defers the full specification to this call below. Vulkan can't implement D3D12's
+            // behavior so we have to be like vulkan here so we also set the primitive topology
+            self.list
+                .ia_set_primitive_topology(concrete.primitive_topology);
+
+            // Update the state for input binding strides. These get read when binding vertex
+            // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
+            // d3d12 takes them in 'IASetVertexBuffers'.
+            //
+            // TODO: Consider whether we just expose the parameter in the call and pipeline
+            //       creation.
+            self.input_binding_strides = concrete.input_binding_strides;
+        } else {
+            panic!("Unknown IGraphicsPipeline implementation");
+        }
+    }
+
     unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
