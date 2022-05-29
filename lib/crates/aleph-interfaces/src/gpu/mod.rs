@@ -1472,16 +1472,29 @@ pub struct GraphicsPipelineDesc<'a> {
 // Descriptor Set Layout
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-pub struct DescriptorSetLayoutDescItem {
+pub struct DescriptorSetLayoutBinding {
+    /// The binding number of this entry and corresponds to a resource of the same binding number in
+    /// the shader stages.
     pub binding_num: u32,
+
+    /// Specifies which type of resource descriptors are used for this binding
     pub binding_type: DescriptorType,
+
+    /// Specifies the number of descriptors contained in the binding. Should be 1 to declare a
+    /// single binding, or >1 to declare an array of descriptors.
+    pub binding_count: u32,
+
+    /// Declares whether the descriptor will be accessed as a read only resource.
     pub read_only: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct DescriptorSetLayoutDesc<'a> {
+    /// Specifies which shader stages can access a resource for this set
     pub visibility: DescriptorShaderVisibility,
-    pub items: &'a [DescriptorSetLayoutDescItem],
+
+    /// A list of all bindings that are a part of this descriptor set layout
+    pub items: &'a [DescriptorSetLayoutBinding],
 }
 
 //
@@ -1689,7 +1702,10 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
         options: &ShaderOptions,
     ) -> Result<AnyArc<dyn IShader>, ShaderCreateError>;
 
-    fn create_descriptor_set_layout(&self, desc: &DescriptorSetLayoutDesc);
+    fn create_descriptor_set_layout(
+        &self,
+        desc: &DescriptorSetLayoutDesc,
+    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError>;
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError>;
 
@@ -2106,6 +2122,17 @@ pub enum ShaderCreateError {
     #[error("The shader binary is of unsupported format")]
     UnsupportedShaderFormat,
 
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Descriptors
+
+#[derive(Error, Debug)]
+pub enum DescriptorSetLayoutCreateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
