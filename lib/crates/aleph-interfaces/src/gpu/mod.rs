@@ -473,18 +473,6 @@ impl Default for SamplerMipFilter {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum SamplerComparisonOp {
-    Never,
-    Less,
-    Equal,
-    LessEqual,
-    Greater,
-    NotEqual,
-    GreaterOrEqual,
-    Always,
-}
-
 //
 //
 // _________________________________________________________________________________________________
@@ -573,6 +561,286 @@ impl From<ShaderType> for DescriptorShaderVisibility {
             ShaderType::Amplification => DescriptorShaderVisibility::Amplification,
             ShaderType::Mesh => DescriptorShaderVisibility::Mesh,
         }
+    }
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Pipeline State Description
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum VertexInputRate {
+    /// Specifies that vertex attribute addressing is a function of the vertex index
+    PerVertex,
+
+    /// Specifies that vertex attribute addressing is a function of the instance index
+    PerInstance,
+}
+
+impl Default for VertexInputRate {
+    #[inline]
+    fn default() -> Self {
+        Self::PerVertex
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum PrimitiveTopology {
+    /// Specifies a series of separate point primitives
+    PointList,
+
+    /// specifies a series of separate line primitives
+    LineList,
+
+    /// Specifies a series of connected line primitives with consecutive lines sharing a vertex
+    LineStrip,
+
+    /// Specifies a series of separate triangle primitives
+    TriangleList,
+
+    /// Specifies a series of connected triangle primitives with consecutive triangles sharing an
+    /// edge
+    TriangleStrip,
+}
+
+impl Default for PrimitiveTopology {
+    #[inline]
+    fn default() -> Self {
+        Self::PointList
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum PolygonMode {
+    /// Specifies that polygon vertices are drawn as points
+    Fill,
+
+    /// Specifies that polygon edges are drawn as line segments
+    Line,
+}
+
+impl Default for PolygonMode {
+    #[inline]
+    fn default() -> Self {
+        Self::Fill
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum CullMode {
+    /// Specifies that no triangles are discarded
+    None,
+
+    /// Specifies that back-facing triangles are discarded
+    Back,
+
+    /// Specifies that front-facing triangles are discarded
+    Front,
+}
+
+impl Default for CullMode {
+    #[inline]
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum FrontFaceOrder {
+    /// Specifies that a front-facing triangle is defined as one with a counter-clockwise winding
+    /// order
+    CounterClockwise,
+
+    /// Specifies that a front-facing triangle is defined as one with a clockwise winding order
+    Clockwise,
+}
+
+impl Default for FrontFaceOrder {
+    #[inline]
+    fn default() -> Self {
+        Self::CounterClockwise
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum BlendFactor {
+    Zero,
+    One,
+    SrcColor,
+    OneMinusSrcColor,
+    DstColor,
+    OneMinusDstColor,
+    SrcAlpha,
+    OneMinusSrcAlpha,
+    DstAlpha,
+    OneMinusDstAlpha,
+    SrcAlphaSaturate,
+    BlendFactor,
+    OneMinusBlendFactor,
+}
+
+impl Default for BlendFactor {
+    #[inline]
+    fn default() -> Self {
+        Self::Zero
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum BlendOp {
+    Add,
+    Subtract,
+    ReverseSubtract,
+    Min,
+    Max,
+}
+
+impl Default for BlendOp {
+    #[inline]
+    fn default() -> Self {
+        Self::Add
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum StencilOp {
+    /// Keeps the current value
+    Keep,
+
+    /// Sets the value to 0
+    Zero,
+
+    /// Sets the value to reference
+    Replace,
+
+    /// Increments the current value and clamps to the maximum representable unsigned value
+    IncrementClamp,
+
+    /// Decrements the current value and clamps to 0
+    DecrementClamp,
+
+    /// Bitwise-inverts the current value
+    Invert,
+
+    /// Increments the current value and wraps to 0 when the maximum value would have been exceeded
+    IncrementWrap,
+
+    /// Decrements the current value and wraps to the maximum possible value when the value would go
+    /// below 0
+    DecrementWrap,
+}
+
+impl Default for StencilOp {
+    #[inline]
+    fn default() -> Self {
+        Self::Keep
+    }
+}
+
+/// Enumeration of available comparison operators. Comparison operators compare a 'reference' and a
+/// 'test' value, and return a true (“passed”) or false (“failed”) value depending on the comparison
+/// operator chosen.
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum CompareOp {
+    /// Specifies that the comparison always evaluates false
+    Never,
+
+    /// Specifies that the comparison always evaluates true
+    Always,
+
+    /// Specifies that the comparison evaluates reference = test
+    Equal,
+
+    /// Specifies that the comparison evaluates reference ≠ test
+    NotEqual,
+
+    /// Specifies that the comparison evaluates reference < test
+    Less,
+
+    /// Specifies that the comparison evaluates reference ≤ test
+    LessEqual,
+
+    /// Specifies that the comparison evaluates reference > test
+    Greater,
+
+    /// Specifies that the comparison evaluates reference ≥ test
+    GreaterOrEqual,
+}
+
+impl Default for CompareOp {
+    fn default() -> Self {
+        Self::Never
+    }
+}
+
+/// Enumeration of the available logical operations that can be applied as part of attachment blend
+/// operations.
+///
+/// To describe the behavior of each operation we define the following:
+///
+/// * ¬ is bitwise invert
+/// * ∧ is bitwise and
+/// * ∨ is bitwise or
+/// * ⊕ is bitwise exclusive or
+/// * s is the fragment’s Rs0, Gs0, Bs0 or As0 component value for the fragment output corresponding
+///   to the color attachment being updated
+/// * d is the color attachment’s R, G, B or A component value
+///
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum LogicOp {
+    /// 0
+    Clear,
+
+    /// s ∧ d
+    And,
+
+    /// s ∧ ¬ d
+    AndReverse,
+
+    /// s
+    Copy,
+
+    /// ¬ s ∧ d
+    AndInverted,
+
+    /// d
+    Noop,
+
+    /// s ⊕ d
+    Xor,
+
+    /// s ∨ d
+    Or,
+
+    /// ¬ (s ∨ d)
+    Nor,
+
+    /// ¬ (s ⊕ d)
+    Equivalent,
+
+    /// ¬ d
+    Invert,
+
+    /// s ∨ ¬ d
+    OrReverse,
+
+    /// ¬ s
+    CopyInverted,
+
+    /// ¬ s ∨ d
+    OrInverted,
+
+    /// ¬ (s ∧ d)
+    Nand,
+
+    /// all 1s
+    Set,
+}
+
+impl Default for LogicOp {
+    fn default() -> Self {
+        Self::Clear
     }
 }
 
@@ -973,7 +1241,7 @@ pub struct SamplerDesc {
     pub max_lod: f32,
     pub enable_anisotropy: bool,
     pub max_anisotropy: f32,
-    pub compare_op: SamplerComparisonOp,
+    pub compare_op: CompareOp,
     // TODO: Border colour
 }
 
@@ -993,6 +1261,209 @@ pub struct ShaderOptions<'a> {
 
     /// The name of the entry point function that will be married to the shader module
     pub entry_point: &'a str,
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Pipeline State Description
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct VertexInputBindingDesc {
+    /// The binding number that this structure describes
+    pub binding: u32,
+
+    /// The byte stride between consecutive elements within the buffer
+    pub stride: u32,
+
+    /// Value specifying the rate at which this input binding is fetched (per-vertex or
+    /// per-instance)
+    pub input_rate: VertexInputRate,
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct VertexInputAttributeDesc {
+    /// The shader input location number for this attribute
+    pub location: u32,
+
+    /// The binding number which this attribute takes its data from
+    pub binding: u32,
+
+    /// The format of the vertex attribute, describing size and layout
+    pub format: Format,
+
+    /// Byte offset of this attribute relative to the start of an element in the vertex input
+    /// binding
+    pub offset: u32,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct VertexInputStateDesc<'a> {
+    /// The list of input bindings. An input binding describes the access pattern of a single buffer
+    /// bound at a specific binding slot. Each binding specifies the stride of a binding element
+    /// as well as the input rate (per-vertex/per-instance) the elements are used at.
+    pub input_bindings: &'a [VertexInputBindingDesc],
+
+    /// The list of input attachments. An input attachment describes an individual vertex attribute.
+    /// Conceptually it marks up a single 'field' within the input binding it is read from. Multiple
+    /// attributes can be fetched from the same binding.
+    pub input_attributes: &'a [VertexInputAttributeDesc],
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct InputAssemblyStateDesc {
+    pub primitive_topology: PrimitiveTopology,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct RasterizerStateDesc {
+    /// Specifies the triangle facing directions used for primitive culling
+    pub cull_mode: CullMode,
+
+    /// Specifies what winding order defines a 'front' facing triangle
+    pub front_face: FrontFaceOrder,
+
+    /// Specifies the triangle rendering mode
+    pub polygon_mode: PolygonMode,
+}
+
+bitflags! {
+    /// Bit flags used for identifying and/or masking the color components in operations regarding
+    /// texels.
+    pub struct ColorComponentFlags: u8 {
+        /// Specifies the 'red' channel
+        const R = 0b0001;
+
+        /// Specifies the 'green' channel
+        const G = 0b0010;
+
+        /// Specifies the 'blue' channel
+        const B = 0b0100;
+
+        /// Specifies the 'alpha' channel
+        const A = 0b1000;
+    }
+}
+
+impl Default for ColorComponentFlags {
+    #[inline]
+    fn default() -> Self {
+        ColorComponentFlags::empty()
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct AttachmentBlendState {
+    /// Enables color blending for matching attachment. All other fields will be ignored if this
+    /// value is `false`.
+    pub blend_enabled: bool,
+
+    /// Selects which blend factor is used to determine the source factors (Sr,Sg,Sb)
+    pub src_factor: BlendFactor,
+
+    /// Selects which blend factor is used to determine the destination factors (Dr,Dg,Db)
+    pub dst_factor: BlendFactor,
+
+    /// Selects which blend operation is used to calculate the RGB values to write to the color
+    /// attachment
+    pub blend_op: BlendOp,
+
+    /// Selects which blend factor is used to determine the source factor (Sa)
+    pub alpha_src_factor: BlendFactor,
+
+    /// Selects which blend factor is used to determine the destination factor (Da)
+    pub alpha_dst_factor: BlendFactor,
+
+    /// Selects which blend operation is use to calculate the alpha values to write to the color
+    /// attachment
+    pub alpha_blend_op: BlendOp,
+
+    /// Is a bitmask of [ColorComponentFlags] specifying which of the R, G, B, and/or A components
+    /// are enabled for writing
+    pub color_write_mask: ColorComponentFlags,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct StencilOpState {
+    /// Value specifying the action performed on samples that fail the stencil test
+    pub fail_op: StencilOp,
+
+    /// Value specifying the action performed on samples that pass both the depth and stencil tests
+    pub pass_op: StencilOp,
+
+    /// Value specifying the action performed on samples that pass the stencil test and fail the
+    /// depth test
+    pub depth_fail_op: StencilOp,
+
+    /// Value specifying the comparison operator used in the stencil test
+    pub compare_op: CompareOp,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct DepthStencilStateDesc {
+    /// Controls whether depth testing is enabled
+    pub depth_test: bool,
+
+    /// Controls whether depth writes are enabled when 'depth_test' is true. Depth writes are always
+    /// disabled when 'depth_test' is false
+    pub depth_write: bool,
+
+    /// Specifies the comparison operator to use in the 'comparison' step of the depth test
+    pub depth_compare_op: CompareOp,
+
+    /// Controls whether stencil testing is enabled
+    pub stencil_test: bool,
+
+    /// Selects the bits of the unsigned integer stencil values participating in the stencil test
+    pub stencil_read_mask: u8,
+
+    /// Selects the bits of the unsigned integer stencil values updated by the stencil test in the
+    /// stencil framebuffer attachment
+    pub stencil_write_mask: u8,
+
+    /// Control the 'front' parameters of the stencil test
+    pub stencil_front: StencilOpState,
+
+    /// Control the 'back' parameters of the stencil test
+    pub stencil_back: StencilOpState,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub struct BlendStateDesc<'a> {
+    /// An array of blend state descriptions that will be applied to each matching output attachment
+    pub attachments: &'a [AttachmentBlendState],
+}
+
+#[derive(Clone)]
+pub struct GraphicsPipelineDesc<'a> {
+    /// The list of shader modules that the pipeline configuration will use. The shader stage for
+    /// each module is specified on the [IShader] object.
+    pub shader_stages: &'a [&'a dyn IShader],
+
+    /// The description of binding locations used by both the pipeline and descriptor sets used with
+    /// the pipeline
+    pub pipeline_layout: &'a dyn IPipelineLayout,
+
+    /// Structure that describes the vertex input piece of the graphics pipeline
+    pub vertex_layout: &'a VertexInputStateDesc<'a>,
+
+    /// Structure that describes the input assembly piece of the graphics pipeline
+    pub input_assembly_state: &'a InputAssemblyStateDesc,
+
+    /// Structure that describes the rasterizer piece of the graphics pipeline
+    pub rasterizer_state: &'a RasterizerStateDesc,
+
+    /// Structure that describes the depth/stencil test piece of the graphics pipeline
+    pub depth_stencil_state: &'a DepthStencilStateDesc,
+
+    /// Structure that describes the color blending piece of the graphics pipeline
+    pub blend_state: &'a BlendStateDesc<'a>,
+
+    /// Specifies the number of and format of render target attachments
+    pub render_target_formats: &'a [Format],
+
+    /// Specifies the format of the depth stencil attachment, if any.
+    pub depth_stencil_format: Option<Format>,
 }
 
 //
@@ -1208,6 +1679,11 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     /// lists.
     fn wait_idle(&self);
 
+    fn create_graphics_pipeline(
+        &self,
+        desc: &GraphicsPipelineDesc,
+    ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError>;
+
     fn create_shader(
         &self,
         options: &ShaderOptions,
@@ -1333,6 +1809,7 @@ pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
 // Command Encoders
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
+    unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
     unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
@@ -1421,6 +1898,10 @@ pub trait IDescriptorSet: INamedObject + Send + Sync + IAny + Any + 'static {
 //
 // _________________________________________________________________________________________________
 // Pipeline Objects
+
+pub trait IPipelineLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+    any_arc_trait_utils_decl!(IPipelineLayout);
+}
 
 pub trait IGraphicsPipeline: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IGraphicsPipeline);
@@ -1625,6 +2106,17 @@ pub enum ShaderCreateError {
     #[error("The shader binary is of unsupported format")]
     UnsupportedShaderFormat,
 
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Pipelines
+
+#[derive(Error, Debug)]
+pub enum GraphicsPipelineCreateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
