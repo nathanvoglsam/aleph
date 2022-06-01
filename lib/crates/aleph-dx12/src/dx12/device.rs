@@ -27,14 +27,16 @@
 // SOFTWARE.
 //
 
+use crate::compute_pipeline_state_desc::ComputePipelineStateDesc;
 use crate::depth_stencil_view_desc::DepthStencilViewDesc;
 use crate::message_id::MessageId;
 use crate::{
     dxgi, CPUDescriptorHandle, ClearValue, CommandAllocator, CommandListType, CommandQueue,
-    CommandQueueDesc, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType, FeatureLevel, Fence,
-    FenceFlags, GraphicsCommandList, GraphicsPipelineState, GraphicsPipelineStateStream, HeapFlags,
-    HeapProperties, MessageCategory, MessageSeverity, RenderTargetViewDesc, Resource, ResourceDesc,
-    ResourceStates, RootSignature, RootSignatureBlob, SamplerDesc, ShaderResourceViewDesc,
+    CommandQueueDesc, ComputePipelineState, DescriptorHeap, DescriptorHeapDesc, DescriptorHeapType,
+    FeatureLevel, Fence, FenceFlags, GraphicsCommandList, GraphicsPipelineState,
+    GraphicsPipelineStateStream, HeapFlags, HeapProperties, MessageCategory, MessageSeverity,
+    RenderTargetViewDesc, Resource, ResourceDesc, ResourceStates, RootSignature, RootSignatureBlob,
+    SamplerDesc, ShaderResourceViewDesc,
 };
 use std::ffi::CStr;
 use std::mem::{transmute, transmute_copy};
@@ -42,11 +44,12 @@ use utf16_lit::utf16_null;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, ID3D12InfoQueue1, ID3D12Resource, D3D12_CLEAR_VALUE,
-    D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES,
-    D3D12_MESSAGE_CALLBACK_FLAG_NONE, D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_ID,
-    D3D12_MESSAGE_SEVERITY, D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC,
-    D3D12_RESOURCE_DESC, D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
+    ID3D12Device4, ID3D12InfoQueue1, ID3D12Resource, D3D12_CACHED_PIPELINE_STATE,
+    D3D12_CLEAR_VALUE, D3D12_COMPUTE_PIPELINE_STATE_DESC, D3D12_CPU_DESCRIPTOR_HANDLE,
+    D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES, D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+    D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_ID, D3D12_MESSAGE_SEVERITY,
+    D3D12_PIPELINE_STATE_STREAM_DESC, D3D12_RENDER_TARGET_VIEW_DESC, D3D12_RESOURCE_DESC,
+    D3D12_SHADER_BYTECODE, D3D12_SHADER_RESOURCE_VIEW_DESC, PFN_D3D12_CREATE_DEVICE,
 };
 use windows::Win32::Graphics::Dxgi::IDXGIAdapter1;
 
@@ -124,6 +127,35 @@ impl Device {
                 pPipelineStateSubobjectStream: state_stream.as_ptr() as *mut u8 as *mut _,
             };
             self.0.CreatePipelineState(&desc).map(GraphicsPipelineState)
+        }
+    }
+
+    #[inline]
+    pub fn create_compute_pipeline_state(
+        &self,
+        desc: &ComputePipelineStateDesc,
+    ) -> windows::core::Result<ComputePipelineState> {
+        unsafe {
+            let cached_pso = match desc.cached_pso {
+                None => D3D12_CACHED_PIPELINE_STATE::default(),
+                Some(v) => D3D12_CACHED_PIPELINE_STATE {
+                    pCachedBlob: v.as_ptr() as *const _,
+                    CachedBlobSizeInBytes: v.len(),
+                },
+            };
+            let desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
+                pRootSignature: Some(desc.root_signature.0.clone()),
+                CS: D3D12_SHADER_BYTECODE {
+                    pShaderBytecode: desc.shader.as_ptr() as *const _,
+                    BytecodeLength: desc.shader.len(),
+                },
+                NodeMask: desc.node_mask,
+                CachedPSO: cached_pso,
+                Flags: Default::default(),
+            };
+            self.0
+                .CreateComputePipelineState(&desc)
+                .map(ComputePipelineState)
         }
     }
 
