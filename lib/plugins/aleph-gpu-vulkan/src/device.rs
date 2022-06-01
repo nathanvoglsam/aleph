@@ -34,16 +34,17 @@ use crate::internal::queues::Queues;
 use crate::shader::Shader;
 use byteorder::{ByteOrder, NativeEndian};
 use erupt::vk;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BufferCreateError, BufferDesc, CommandPoolCreateError,
-    CompareOp, CullMode, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
+    CompareOp, ComputePipelineCreateError, ComputePipelineDesc, CullMode,
+    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
     GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
-    IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler,
-    IShader, ITexture, PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError,
-    SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp,
-    StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    IComputePipeline, IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline,
+    INamedObject, ISampler, IShader, ITexture, PolygonMode, PrimitiveTopology, QueuePresentError,
+    QueueSubmitError, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
+    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
 use std::ffi::CString;
 
@@ -284,6 +285,34 @@ impl IDevice for Device {
         todo!()
     }
 
+    fn create_compute_pipeline(
+        &self,
+        desc: &ComputePipelineDesc,
+    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+        let module = desc
+            .shader_module
+            .query_interface::<Shader>()
+            .expect("Unknown IShader implementation");
+
+        let builder = vk::ComputePipelineCreateInfoBuilder::new();
+
+        // TODO: Pipeline layout
+
+        let builder = builder.stage(
+            vk::PipelineShaderStageCreateInfoBuilder::new()
+                .stage(vk::ShaderStageFlagBits::COMPUTE)
+                .module(module.module)
+                .name(&module.entry_point)
+                .build_dangling(),
+        );
+
+        let _todo = unsafe {
+            self.device_loader
+                .create_compute_pipelines(vk::PipelineCache::null(), &[builder], None)
+        };
+        todo!()
+    }
+
     fn create_shader(
         &self,
         options: &ShaderOptions,
@@ -305,12 +334,15 @@ impl IDevice for Device {
                     .map_err(|v| anyhow!(v))?
             };
 
+            let entry_point = CString::new(options.entry_point)
+                .map_err(|_| ShaderCreateError::InvalidEntryPointName)?;
+
             let shader = AnyArc::new_cyclic(move |v| Shader {
                 this: v.clone(),
                 device: self.this.upgrade().unwrap(),
                 shader_type: options.shader_type,
                 module,
-                entry_point: options.entry_point.to_string(),
+                entry_point,
             });
             Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
         } else {
@@ -318,7 +350,10 @@ impl IDevice for Device {
         }
     }
 
-    fn create_descriptor_set_layout(&self, _desc: &DescriptorSetLayoutDesc) {
+    fn create_descriptor_set_layout(
+        &self,
+        _desc: &DescriptorSetLayoutDesc,
+    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
         todo!()
     }
 

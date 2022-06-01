@@ -67,7 +67,7 @@ pub struct Shader {
     pub(crate) device: AnyArc<Device>,
     pub(crate) shader_type: ShaderType,
     pub(crate) module: vk::ShaderModule,
-    pub(crate) entry_point: String,
+    pub(crate) entry_point: CString,
 }
 
 declare_interfaces!(Shader, [IShader, IShaderExt]);
@@ -100,7 +100,11 @@ impl IShader for Shader {
     }
 
     fn entry_point(&self) -> &str {
-        &self.entry_point
+        let bytes = self.entry_point.as_bytes();
+
+        // SAFETY: the 'entry_point' is initialized from a &str so it's impossible for this to not
+        //         be valid utf-8 without the presence of other unsound unsafe code.
+        unsafe { core::str::from_utf8_unchecked(bytes) }
     }
 }
 
