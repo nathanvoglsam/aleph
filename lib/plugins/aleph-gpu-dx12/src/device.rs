@@ -52,8 +52,9 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BlendStateDesc, BufferCreateError, BufferDesc,
     CommandPoolCreateError, CompareOp, ComputePipelineCreateError, ComputePipelineDesc,
-    CpuAccessMode, CullMode, DepthStencilStateDesc, FrontFaceOrder, GraphicsPipelineCreateError,
-    GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline, IDevice,
+    CpuAccessMode, CullMode, DepthStencilStateDesc, DescriptorSetLayoutCreateError,
+    DescriptorSetLayoutDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
+    IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline, IDescriptorSetLayout, IDevice,
     IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler, IShader, ISwapChain, ITexture,
     PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError, QueueType,
     RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
@@ -227,8 +228,19 @@ impl IDevice for Device {
         }
     }
 
-    fn create_descriptor_set_layout(&self, _desc: &DescriptorSetLayoutDesc) {
-        todo!()
+    fn create_descriptor_set_layout(
+        &self,
+        desc: &DescriptorSetLayoutDesc,
+    ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+        let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
+            this: v.clone(),
+            visibility: desc.visibility,
+            items: desc.items.to_vec(),
+        });
+        Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(
+            descriptor_set_layout,
+            |v| v,
+        ))
     }
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
