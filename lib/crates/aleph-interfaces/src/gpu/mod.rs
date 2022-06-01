@@ -181,6 +181,11 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError>;
 
+    fn create_compute_pipeline(
+        &self,
+        desc: &ComputePipelineDesc,
+    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError>;
+
     fn create_shader(
         &self,
         options: &ShaderOptions,
@@ -1679,6 +1684,16 @@ pub struct GraphicsPipelineDesc<'a> {
     pub depth_stencil_format: Option<Format>,
 }
 
+#[derive(Clone)]
+pub struct ComputePipelineDesc<'a> {
+    /// The compute shader module that will be used by the compute pipeline being created.
+    pub shader_module: &'a dyn IShader,
+
+    /// The description of binding locations used by both the pipeline and descriptor sets used with
+    /// the pipeline
+    pub pipeline_layout: &'a dyn IPipelineLayout,
+}
+
 //
 //
 // _________________________________________________________________________________________________
@@ -2055,6 +2070,13 @@ pub enum ShaderCreateError {
     #[error("The shader binary size '{0}' is invalid")]
     InvalidInputSize(usize),
 
+    /// This error occurs when the entry point name string is invalid. The primary trigger for this
+    /// will be getting dodgy null-terminated strings as '&str'.
+    ///
+    /// Do not 'pre-null-terminate' the entry point names.
+    #[error("The string provided for the entry point name is invalid")]
+    InvalidEntryPointName,
+
     /// This error occurs when a shader binary is provided in a format not supported by the active
     /// backend.
     ///
@@ -2085,6 +2107,12 @@ pub enum DescriptorSetLayoutCreateError {
 
 #[derive(Error, Debug)]
 pub enum GraphicsPipelineCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum ComputePipelineCreateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
