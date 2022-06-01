@@ -30,7 +30,7 @@
 use crate::pipeline_layout::PipelineLayout;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{IGraphicsPipeline, INamedObject};
+use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
 
 pub struct GraphicsPipeline {
     pub(crate) this: AnyWeak<Self>,
@@ -74,6 +74,44 @@ impl IGraphicsPipelineExt for GraphicsPipeline {
 }
 
 impl INamedObject for GraphicsPipeline {
+    fn set_name(&self, name: &str) {
+        self.pipeline.set_name(name).unwrap()
+    }
+}
+
+pub struct ComputePipeline {
+    pub(crate) this: AnyWeak<Self>,
+    pub(crate) pipeline: dx12::ComputePipelineState,
+    pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
+}
+
+declare_interfaces!(ComputePipeline, [IComputePipeline, IComputePipelineExt]);
+
+impl IComputePipeline for ComputePipeline {
+    fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
+        AnyArc::map::<dyn IComputePipeline, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+}
+
+pub trait IComputePipelineExt: IComputePipeline {
+    fn get_raw_handle(&self) -> dx12::ComputePipelineState;
+}
+
+impl IComputePipelineExt for ComputePipeline {
+    fn get_raw_handle(&self) -> dx12::ComputePipelineState {
+        self.pipeline.clone()
+    }
+}
+
+impl INamedObject for ComputePipeline {
     fn set_name(&self, name: &str) {
         self.pipeline.set_name(name).unwrap()
     }

@@ -40,7 +40,7 @@ use crate::internal::conv::{
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::in_flight_command_list::InFlightCommandList;
 use crate::internal::queue::Queue;
-use crate::pipeline::GraphicsPipeline;
+use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
 use crate::shader::Shader;
 use crate::texture::Texture;
@@ -51,14 +51,14 @@ use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BlendStateDesc, BufferCreateError, BufferDesc,
-    CommandPoolCreateError, CompareOp, CpuAccessMode, CullMode, DepthStencilStateDesc,
-    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
-    GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
-    IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler,
-    IShader, ISwapChain, ITexture, PolygonMode, PrimitiveTopology, QueuePresentError,
-    QueueSubmitError, QueueType, RasterizerStateDesc, SamplerCreateError, SamplerDesc,
-    ShaderBinary, ShaderCreateError, ShaderOptions, ShaderType, StencilOp, StencilOpState,
-    TextureCreateError, TextureDesc, VertexInputRate, VertexInputStateDesc,
+    CommandPoolCreateError, CompareOp, ComputePipelineCreateError, ComputePipelineDesc,
+    CpuAccessMode, CullMode, DepthStencilStateDesc, FrontFaceOrder, GraphicsPipelineCreateError,
+    GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline, IDevice,
+    IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler, IShader, ISwapChain, ITexture,
+    PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError, QueueType,
+    RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
+    ShaderOptions, ShaderType, StencilOp, StencilOpState, TextureCreateError, TextureDesc,
+    VertexInputRate, VertexInputStateDesc,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -167,6 +167,42 @@ impl IDevice for Device {
             input_binding_strides,
         });
         Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
+    }
+
+    fn create_compute_pipeline(
+        &self,
+        desc: &ComputePipelineDesc,
+    ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
+        // Unwrap the pipeline layout trait object into the concrete implementation
+        let pipeline_layout = desc
+            .pipeline_layout
+            .upgrade()
+            .query_interface::<PipelineLayout>()
+            .expect("Unknown IPipelineLayout implementation");
+
+        let module = desc
+            .shader_module
+            .query_interface::<Shader>()
+            .expect("Unknown IShader implementation");
+
+        let pipeline_desc = dx12::ComputePipelineStateDesc {
+            root_signature: pipeline_layout.root_signature.clone(),
+            shader: &module.data,
+            node_mask: 0,
+            cached_pso: None,
+        };
+
+        let pipeline = self
+            .device
+            .create_compute_pipeline_state(&pipeline_desc)
+            .map_err(|v| anyhow!(v))?;
+
+        let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
+            this: v.clone(),
+            pipeline,
+            pipeline_layout,
+        });
+        Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }
 
     fn create_shader(

@@ -61,6 +61,7 @@ pub use buffer::IBufferExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
 pub use general_command_list::ICommandListExt;
+pub use pipeline::IComputePipelineExt;
 pub use pipeline::IGraphicsPipelineExt;
 pub use pipeline_layout::IPipelineLayoutExt;
 pub use plugin::PluginGpuDX12;
