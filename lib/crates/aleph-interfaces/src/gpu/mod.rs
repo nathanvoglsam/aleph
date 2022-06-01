@@ -391,11 +391,20 @@ pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // Descriptors
 
+pub trait IDescriptorPool: INamedObject + Send + IAny + Any + 'static {
+    fn allocate(
+        &mut self,
+        layouts: &[&dyn IDescriptorSetLayout],
+    ) -> Result<Vec<Box<dyn IDescriptorSet>>, ()>;
+    unsafe fn free(&mut self, sets: &[&dyn IDescriptorSet]);
+    unsafe fn reset(&mut self);
+}
+
 pub trait IDescriptorSetLayout: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
 }
 
-pub trait IDescriptorSet: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IDescriptorSet: INamedObject + Send + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IDescriptorSet);
 }
 
