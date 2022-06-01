@@ -659,53 +659,6 @@ impl Default for ResourceStates {
     }
 }
 
-//
-//
-// _________________________________________________________________________________________________
-// Resources - Buffer
-
-/// Description object used for creating a new buffer.
-#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
-pub struct BufferDesc {
-    /// The size of the buffer in bytes
-    pub size: u64,
-
-    /// What kind of CPU access is allowed.
-    /// - None -> device local
-    /// - Read -> read back
-    /// - Write -> upload
-    pub cpu_access: CpuAccessMode,
-
-    /// Enables the buffer to be used with unordered access (unordered access view, storage buffer)
-    pub allow_unordered_access: bool,
-
-    /// Enables the buffer to be used as a texel buffer
-    pub allow_texel_buffer: bool,
-
-    /// Enables the buffer to be used as a vertex buffer
-    pub is_vertex_buffer: bool,
-
-    /// Enables the buffer to be used as an index buffer
-    pub is_index_buffer: bool,
-
-    /// Enables the buffer to be used as a constant buffer
-    pub is_constant_buffer: bool,
-
-    /// Enables the buffer to be used as an argument buffer for indirect draw calls
-    pub is_indirect_draw_args: bool,
-
-    /// Enables the buffer to be used as input for ray tracing acceleration structure builds
-    pub is_accel_struct_build_input: bool,
-
-    /// Enables the buffer to store a constructed and ready to use rt acceleration structure
-    pub is_accel_struct_storage: bool,
-}
-
-//
-//
-// _________________________________________________________________________________________________
-// Resources - Texture
-
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Format {
     R8Unorm,
@@ -902,6 +855,53 @@ impl Display for Format {
         }
     }
 }
+
+//
+//
+// _________________________________________________________________________________________________
+// Resources - Buffer
+
+/// Description object used for creating a new buffer.
+#[derive(Clone, Hash, PartialEq, Eq, Debug, Default)]
+pub struct BufferDesc {
+    /// The size of the buffer in bytes
+    pub size: u64,
+
+    /// What kind of CPU access is allowed.
+    /// - None -> device local
+    /// - Read -> read back
+    /// - Write -> upload
+    pub cpu_access: CpuAccessMode,
+
+    /// Enables the buffer to be used with unordered access (unordered access view, storage buffer)
+    pub allow_unordered_access: bool,
+
+    /// Enables the buffer to be used as a texel buffer
+    pub allow_texel_buffer: bool,
+
+    /// Enables the buffer to be used as a vertex buffer
+    pub is_vertex_buffer: bool,
+
+    /// Enables the buffer to be used as an index buffer
+    pub is_index_buffer: bool,
+
+    /// Enables the buffer to be used as a constant buffer
+    pub is_constant_buffer: bool,
+
+    /// Enables the buffer to be used as an argument buffer for indirect draw calls
+    pub is_indirect_draw_args: bool,
+
+    /// Enables the buffer to be used as input for ray tracing acceleration structure builds
+    pub is_accel_struct_build_input: bool,
+
+    /// Enables the buffer to store a constructed and ready to use rt acceleration structure
+    pub is_accel_struct_storage: bool,
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Resources - Texture
 
 /// Enumeration about all major texture types.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -1191,8 +1191,8 @@ pub struct DescriptorSetLayoutBinding {
     /// single binding, or >1 to declare an array of descriptors.
     pub binding_count: u32,
 
-    /// Declares whether the descriptor will be accessed as a read only resource.
-    pub read_only: bool,
+    /// Declares whether the descriptor's underlying resource can be accessed with write access.
+    pub allow_writes: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -1300,10 +1300,7 @@ pub struct InputAssemblyStateDesc {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum PolygonMode {
-    /// Specifies that polygon vertices are drawn as points
     Fill,
-
-    /// Specifies that polygon edges are drawn as line segments
     Line,
 }
 
