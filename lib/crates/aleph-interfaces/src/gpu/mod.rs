@@ -36,6 +36,7 @@ use bitflags::bitflags;
 use raw_window_handle::HasRawWindowHandle;
 use std::any::Any;
 use std::fmt::{Debug, Display, Formatter};
+use std::num::NonZeroU32;
 use thiserror::Error;
 
 //
@@ -1169,7 +1170,6 @@ pub enum DescriptorType {
     RawBuffer,
     ConstantBuffer,
     Sampler,
-    PushConstants { size: u16 },
 }
 
 impl Default for DescriptorType {
@@ -1213,8 +1213,8 @@ impl From<ShaderType> for DescriptorShaderVisibility {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-pub struct DescriptorSetLayoutBinding {
+#[derive(Clone, Default)]
+pub struct DescriptorSetLayoutBinding<'a> {
     /// The binding number of this entry and corresponds to a resource of the same binding number in
     /// the shader stages.
     pub binding_num: u32,
@@ -1224,19 +1224,24 @@ pub struct DescriptorSetLayoutBinding {
 
     /// Specifies the number of descriptors contained in the binding. Should be 1 to declare a
     /// single binding, or >1 to declare an array of descriptors.
-    pub binding_count: u32,
+    pub binding_count: Option<NonZeroU32>,
 
     /// Declares whether the descriptor's underlying resource can be accessed with write access.
     pub allow_writes: bool,
+
+    /// An optional list of `binding_count` samplers to specify static samplers for `Sampler`
+    /// descriptors. If `binding_type` is `Sampler` but `static_samplers` is `None` then the
+    /// samplers are dynamic.
+    pub static_samplers: Option<&'a [&'a dyn ISampler]>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Default)]
 pub struct DescriptorSetLayoutDesc<'a> {
     /// Specifies which shader stages can access a resource for this set
     pub visibility: DescriptorShaderVisibility,
 
     /// A list of all bindings that are a part of this descriptor set layout
-    pub items: &'a [DescriptorSetLayoutBinding],
+    pub items: &'a [DescriptorSetLayoutBinding<'a>],
 }
 
 //
