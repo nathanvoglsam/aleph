@@ -30,6 +30,7 @@
 use crate::context::Context;
 use crate::device::{Device, Queues};
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::queue::Queue;
 use dx12::{dxgi, MessageSeverity};
@@ -117,6 +118,7 @@ impl IAdapter for Adapter {
             this: v.clone(),
             _adapter: self.this.upgrade().unwrap(),
             debug_message_cookie,
+            descriptor_heap_info: DescriptorHeapInfo::new(&device),
             rtv_heap: DescriptorAllocatorCPU::new(
                 device.clone(),
                 dx12::DescriptorHeapType::RenderTargetView,

@@ -27,19 +27,33 @@
 // SOFTWARE.
 //
 
-pub mod command_list_tracker;
-pub mod conv;
-pub mod descriptor_allocator_cpu;
-pub mod descriptor_heap_info;
-pub mod in_flight_command_list;
-pub mod queue;
+/// Internal struct that caches the descriptor increment sizes needed for allocating space in
+/// descriptor heaps.
+pub struct DescriptorHeapInfo {
+    /// Descriptor increment for shader resource views
+    pub resource_inc: u32,
 
-pub const fn calc_subresource_index(
-    mip_level: u32,
-    array_layer: u32,
-    plane_slice: u32,
-    mip_levels: u32,
-    array_size: u32,
-) -> u32 {
-    mip_level + (array_layer * mip_levels) + (plane_slice * mip_levels * array_size)
+    /// Descriptor increment for unordered access views
+    pub rtv_inc: u32,
+
+    /// Descriptor increment for constant buffer views
+    pub dsv_inc: u32,
+
+    /// Descriptor increment for samplers
+    pub sampler_inc: u32,
+}
+
+impl DescriptorHeapInfo {
+    pub fn new(device: &dx12::Device) -> Self {
+        Self {
+            resource_inc: device
+                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav),
+            rtv_inc: device
+                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::RenderTargetView),
+            dsv_inc: device
+                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::DepthStencilView),
+            sampler_inc: device
+                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::Sampler),
+        }
+    }
 }

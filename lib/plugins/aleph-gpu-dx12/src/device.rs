@@ -38,6 +38,7 @@ use crate::internal::conv::{
     texture_format_to_dxgi,
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::in_flight_command_list::InFlightCommandList;
 use crate::internal::queue::Queue;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
@@ -71,6 +72,7 @@ pub struct Device {
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: dx12::Device,
     pub(crate) debug_message_cookie: Option<u32>,
+    pub(crate) descriptor_heap_info: DescriptorHeapInfo,
     pub(crate) rtv_heap: DescriptorAllocatorCPU,
     pub(crate) dsv_heap: DescriptorAllocatorCPU,
     pub(crate) _sampler_heap: DescriptorAllocatorCPU,
