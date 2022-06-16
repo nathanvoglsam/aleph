@@ -306,6 +306,8 @@ pub trait IAcquiredTexture: IAny + Send + 'static {
 
 pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(ISampler);
+
+    fn desc(&self) -> &SamplerDesc;
 }
 
 //
@@ -1086,6 +1088,25 @@ pub struct SamplerDesc {
     pub max_anisotropy: f32,
     pub compare_op: CompareOp,
     // TODO: Border colour
+}
+
+impl Default for SamplerDesc {
+    fn default() -> Self {
+        Self {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            lod_bias: 0.0,
+            min_lod: 0.0,
+            max_lod: 1000.0,
+            enable_anisotropy: false,
+            max_anisotropy: 0.0,
+            compare_op: Default::default(),
+        }
+    }
 }
 
 //
