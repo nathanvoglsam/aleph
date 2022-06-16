@@ -34,8 +34,8 @@ use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
 
 pub struct GraphicsPipeline {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) pipeline: dx12::GraphicsPipelineState,
     pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) pipeline: dx12::GraphicsPipelineState,
 
     /// Vulkan bakes this into the pipeline, d3d12 doesn't. We have to behave like vulkan as vulkan
     /// can't do the reverse.
@@ -81,8 +81,8 @@ impl INamedObject for GraphicsPipeline {
 
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
     pub(crate) pipeline: dx12::ComputePipelineState,
-    pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
 }
 
 declare_interfaces!(ComputePipeline, [IComputePipeline, IComputePipelineExt]);
