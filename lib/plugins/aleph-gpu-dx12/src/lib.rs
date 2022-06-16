@@ -50,6 +50,7 @@ mod general_command_list;
 mod internal;
 mod pipeline;
 mod pipeline_layout;
+mod sampler;
 mod shader;
 mod surface;
 mod swap_chain;

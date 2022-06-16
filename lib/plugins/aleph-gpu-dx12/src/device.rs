@@ -42,6 +42,7 @@ use crate::internal::in_flight_command_list::InFlightCommandList;
 use crate::internal::queue::Queue;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::PipelineLayout;
+use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
@@ -343,9 +344,14 @@ impl IDevice for Device {
 
     fn create_sampler(
         &self,
-        _desc: &SamplerDesc,
+        desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
-        todo!()
+        let sampler = AnyArc::new_cyclic(move |v| Sampler {
+            this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            desc: desc.clone(),
+        });
+        Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
     }
 
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
