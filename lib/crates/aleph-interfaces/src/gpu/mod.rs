@@ -1074,6 +1074,19 @@ impl Default for SamplerMipFilter {
     }
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum SamplerBorderColor {
+    BlackTransparent,
+    BlackOpaque,
+    WhiteOpaque,
+}
+
+impl Default for SamplerBorderColor {
+    fn default() -> Self {
+        Self::BlackTransparent
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct SamplerDesc {
     pub min_filter: SamplerFilter,
@@ -1088,7 +1101,7 @@ pub struct SamplerDesc {
     pub enable_anisotropy: bool,
     pub max_anisotropy: f32,
     pub compare_op: CompareOp,
-    // TODO: Border colour
+    pub border_color: SamplerBorderColor,
 }
 
 impl Default for SamplerDesc {
@@ -1106,6 +1119,7 @@ impl Default for SamplerDesc {
             enable_anisotropy: false,
             max_anisotropy: 0.0,
             compare_op: Default::default(),
+            border_color: Default::default(),
         }
     }
 }
