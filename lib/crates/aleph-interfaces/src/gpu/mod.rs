@@ -1100,7 +1100,7 @@ pub struct SamplerDesc {
     pub max_lod: f32,
     pub enable_anisotropy: bool,
     pub max_anisotropy: f32,
-    pub compare_op: CompareOp,
+    pub compare_op: Option<CompareOp>,
     pub border_color: SamplerBorderColor,
 }
 
