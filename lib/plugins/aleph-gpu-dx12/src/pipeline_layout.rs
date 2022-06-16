@@ -27,12 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::device::Device;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IPipelineLayout};
 
 pub struct PipelineLayout {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) root_signature: dx12::RootSignature,
 }
 
