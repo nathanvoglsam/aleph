@@ -34,8 +34,10 @@ use crate::command_pool::CommandPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::{
-    resource_state_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
-    texture_format_to_dxgi,
+    blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
+    cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
+    resource_state_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
+    texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -52,16 +54,15 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface, Query
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    BackendAPI, BlendFactor, BlendOp, BlendStateDesc, BufferCreateError, BufferDesc,
-    CommandPoolCreateError, CompareOp, ComputePipelineCreateError, ComputePipelineDesc,
-    CpuAccessMode, CullMode, DepthStencilStateDesc, DescriptorSetLayoutCreateError,
-    DescriptorSetLayoutDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
-    IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline, IDescriptorSetLayout, IDevice,
-    IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler, IShader, ISwapChain, ITexture,
-    PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError, QueueType,
+    BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
+    ComputePipelineCreateError, ComputePipelineDesc, CpuAccessMode, DepthStencilStateDesc,
+    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, GraphicsPipelineCreateError,
+    GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline,
+    IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler,
+    IShader, ISwapChain, ITexture, QueuePresentError, QueueSubmitError, QueueType,
     RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, ShaderType, StencilOp, StencilOpState, TextureCreateError, TextureDesc,
-    VertexInputRate, VertexInputStateDesc,
+    ShaderOptions, ShaderType, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    VertexInputStateDesc,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -650,47 +651,18 @@ impl Device {
         // the "primitive class" here, as we should. We also need to store the *actual* primitive
         // topology on the pipeline so we can call IASetPrimitiveTopology with the correct value
         // when we bind the pipeline.
-        let topo = match desc.input_assembly_state.primitive_topology {
-            PrimitiveTopology::PointList => {
-                builder = builder.primitive_topology_type(dx12::PrimitiveTopologyType::Point);
-                dx12::PrimitiveTopology::PointList
-            }
-            PrimitiveTopology::LineList => {
-                builder = builder.primitive_topology_type(dx12::PrimitiveTopologyType::Line);
-                dx12::PrimitiveTopology::LineList
-            }
-            PrimitiveTopology::LineStrip => {
-                builder = builder.primitive_topology_type(dx12::PrimitiveTopologyType::Line);
-                dx12::PrimitiveTopology::LineStrip
-            }
-            PrimitiveTopology::TriangleList => {
-                builder = builder.primitive_topology_type(dx12::PrimitiveTopologyType::Triangle);
-                dx12::PrimitiveTopology::TriangleList
-            }
-            PrimitiveTopology::TriangleStrip => {
-                builder = builder.primitive_topology_type(dx12::PrimitiveTopologyType::Triangle);
-                dx12::PrimitiveTopology::TriangleStrip
-            }
-        };
+        let (r#type, topo) =
+            primitive_topology_to_dx12(desc.input_assembly_state.primitive_topology);
+        builder = builder.primitive_topology_type(r#type);
         (builder, topo)
     }
 
     /// Internal function for translating the [RasterizerStateDesc] field of a pipeline
     /// description
     fn translate_rasterizer_state_desc(desc: &RasterizerStateDesc) -> dx12::RasterizerDesc {
-        let fill_mode = match desc.polygon_mode {
-            PolygonMode::Fill => dx12::FillMode::Solid,
-            PolygonMode::Line => dx12::FillMode::Wireframe,
-        };
-        let cull_mode = match desc.cull_mode {
-            CullMode::None => dx12::CullMode::None,
-            CullMode::Back => dx12::CullMode::Back,
-            CullMode::Front => dx12::CullMode::Front,
-        };
-        let front_counter_clockwise = match desc.front_face {
-            FrontFaceOrder::CounterClockwise => dx12::Bool::TRUE,
-            FrontFaceOrder::Clockwise => dx12::Bool::FALSE,
-        };
+        let fill_mode = polygon_mode_to_dx12(desc.polygon_mode);
+        let cull_mode = cull_mode_to_dx12(desc.cull_mode);
+        let front_counter_clockwise = front_face_order_to_dx12(desc.front_face);
         dx12::RasterizerDesc {
             fill_mode,
             cull_mode,
@@ -709,39 +681,12 @@ impl Device {
     /// Internal function for translating the [DepthStencilStateDesc] field of a pipeline
     /// description
     fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> dx12::DepthStencilDesc {
-        /// Internal function for translating our [CompareOp] to the D3D12 equivalent
-        fn translate_compare_op(op: CompareOp) -> dx12::ComparisonFunc {
-            match op {
-                CompareOp::Never => dx12::ComparisonFunc::Never,
-                CompareOp::Always => dx12::ComparisonFunc::Always,
-                CompareOp::Equal => dx12::ComparisonFunc::Equal,
-                CompareOp::NotEqual => dx12::ComparisonFunc::NotEqual,
-                CompareOp::Less => dx12::ComparisonFunc::Less,
-                CompareOp::LessEqual => dx12::ComparisonFunc::LessEqual,
-                CompareOp::Greater => dx12::ComparisonFunc::Greater,
-                CompareOp::GreaterOrEqual => dx12::ComparisonFunc::GreaterEqual,
-            }
-        }
-
         /// Internal function for translating our [StencilOpState] into the D3D12 equivalent
         fn translate_depth_stencil_op_desc(desc: &StencilOpState) -> dx12::DepthStencilOpDesc {
-            /// Internal function for translating our [StencilOp] into the D3D12 equivalent
-            fn translate_stencil_op(op: StencilOp) -> dx12::StencilOp {
-                match op {
-                    StencilOp::Keep => dx12::StencilOp::Keep,
-                    StencilOp::Zero => dx12::StencilOp::Zero,
-                    StencilOp::Replace => dx12::StencilOp::Replace,
-                    StencilOp::IncrementClamp => dx12::StencilOp::IncrementSaturate,
-                    StencilOp::DecrementClamp => dx12::StencilOp::DecrementSaturate,
-                    StencilOp::Invert => dx12::StencilOp::Invert,
-                    StencilOp::IncrementWrap => dx12::StencilOp::Increment,
-                    StencilOp::DecrementWrap => dx12::StencilOp::Decrement,
-                }
-            }
-            let stencil_fail_op = translate_stencil_op(desc.fail_op);
-            let stencil_depth_fail_op = translate_stencil_op(desc.depth_fail_op);
-            let stencil_pass_op = translate_stencil_op(desc.pass_op);
-            let stencil_func = translate_compare_op(desc.compare_op);
+            let stencil_fail_op = stencil_op_to_dx12(desc.fail_op);
+            let stencil_depth_fail_op = stencil_op_to_dx12(desc.depth_fail_op);
+            let stencil_pass_op = stencil_op_to_dx12(desc.pass_op);
+            let stencil_func = compare_op_to_dx12(desc.compare_op);
             dx12::DepthStencilOpDesc {
                 stencil_fail_op,
                 stencil_depth_fail_op,
@@ -756,7 +701,7 @@ impl Device {
         } else {
             dx12::DepthWriteMask::Zero
         };
-        let depth_func = translate_compare_op(desc.depth_compare_op);
+        let depth_func = compare_op_to_dx12(desc.depth_compare_op);
         let stencil_enable = dx12::Bool::from(desc.stencil_test);
         let stencil_read_mask = desc.stencil_read_mask;
         let stencil_write_mask = desc.stencil_write_mask;
@@ -777,34 +722,6 @@ impl Device {
     }
 
     fn translate_blend_state_desc(desc: &BlendStateDesc) -> dx12::BlendDesc {
-        fn translate_blend_factor(factor: BlendFactor) -> dx12::Blend {
-            match factor {
-                BlendFactor::Zero => dx12::Blend::Zero,
-                BlendFactor::One => dx12::Blend::One,
-                BlendFactor::SrcColor => dx12::Blend::SrcColor,
-                BlendFactor::OneMinusSrcColor => dx12::Blend::SrcColorInv,
-                BlendFactor::DstColor => dx12::Blend::DestColor,
-                BlendFactor::OneMinusDstColor => dx12::Blend::DestColorInv,
-                BlendFactor::SrcAlpha => dx12::Blend::SrcAlpha,
-                BlendFactor::OneMinusSrcAlpha => dx12::Blend::SrcAlphaInv,
-                BlendFactor::DstAlpha => dx12::Blend::DestAlpha,
-                BlendFactor::OneMinusDstAlpha => dx12::Blend::DestAlphaInv,
-                BlendFactor::SrcAlphaSaturate => dx12::Blend::SrcAlphaSaturated,
-                BlendFactor::BlendFactor => dx12::Blend::BlendFactor,
-                BlendFactor::OneMinusBlendFactor => dx12::Blend::BlendFactorInv,
-            }
-        }
-
-        fn translate_blend_op(op: BlendOp) -> dx12::BlendOp {
-            match op {
-                BlendOp::Add => dx12::BlendOp::Add,
-                BlendOp::Subtract => dx12::BlendOp::Subtract,
-                BlendOp::ReverseSubtract => dx12::BlendOp::SubtractReverse,
-                BlendOp::Min => dx12::BlendOp::Min,
-                BlendOp::Max => dx12::BlendOp::Max,
-            }
-        }
-
         // TODO: Figure out if alpha to coverage is possible to expose
         let alpha_to_coverage_enable = dx12::Bool::FALSE;
         let independent_blend_enable = dx12::Bool::TRUE;
@@ -832,13 +749,13 @@ impl Device {
             let logic_op_enable = dx12::Bool::FALSE;
             let logic_op = dx12::LogicOp::Clear;
 
-            let src_blend = translate_blend_factor(attachment.src_factor);
-            let dest_blend = translate_blend_factor(attachment.dst_factor);
-            let blend_op = translate_blend_op(attachment.blend_op);
+            let src_blend = blend_factor_to_dx12(attachment.src_factor);
+            let dest_blend = blend_factor_to_dx12(attachment.dst_factor);
+            let blend_op = blend_op_to_dx12(attachment.blend_op);
 
-            let src_blend_alpha = translate_blend_factor(attachment.alpha_src_factor);
-            let dest_blend_alpha = translate_blend_factor(attachment.alpha_dst_factor);
-            let blend_op_alpha = translate_blend_op(attachment.alpha_blend_op);
+            let src_blend_alpha = blend_factor_to_dx12(attachment.alpha_src_factor);
+            let dest_blend_alpha = blend_factor_to_dx12(attachment.alpha_dst_factor);
+            let blend_op_alpha = blend_op_to_dx12(attachment.alpha_blend_op);
 
             let render_target_write_mask =
                 dx12::ColorWriteEnable(attachment.color_write_mask.bits());

@@ -29,7 +29,9 @@
 
 use dx12::dxgi;
 use interfaces::gpu::{
-    Format, OptimalClearValue, ResourceStates, TextureCreateError, TextureDesc, TextureDimension,
+    BlendFactor, BlendOp, CompareOp, CullMode, DescriptorShaderVisibility, Format, FrontFaceOrder,
+    OptimalClearValue, PolygonMode, PrimitiveTopology, ResourceStates, SamplerBorderColor,
+    StencilOp, TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -78,6 +80,135 @@ pub const fn texture_format_to_dxgi(format: Format) -> dxgi::Format {
         Format::Rgba32Float => dxgi::Format::R32G32B32A32Float,
         Format::Depth32Float => dxgi::Format::D32Float,
         Format::Depth24Stencil8 => dxgi::Format::D24UnormS8Uint,
+    }
+}
+
+pub const fn shader_visibility_to_dx12(
+    visibility: DescriptorShaderVisibility,
+) -> dx12::ShaderVisibility {
+    // Visibility translates almost directly. 'Compute' maps to 'All' in d3d12 as 'Compute' is
+    // the only stage active in a compute dispatch so d3d12 lacks a compute specifier.
+    match visibility {
+        DescriptorShaderVisibility::All => dx12::ShaderVisibility::All,
+        DescriptorShaderVisibility::Compute => dx12::ShaderVisibility::All, // TODO: Verify
+        DescriptorShaderVisibility::Vertex => dx12::ShaderVisibility::Vertex,
+        DescriptorShaderVisibility::Hull => dx12::ShaderVisibility::Hull,
+        DescriptorShaderVisibility::Domain => dx12::ShaderVisibility::Domain,
+        DescriptorShaderVisibility::Geometry => dx12::ShaderVisibility::Geometry,
+        DescriptorShaderVisibility::Fragment => dx12::ShaderVisibility::Pixel,
+        DescriptorShaderVisibility::Amplification => dx12::ShaderVisibility::Amplification,
+        DescriptorShaderVisibility::Mesh => dx12::ShaderVisibility::Mesh,
+    }
+}
+
+pub const fn border_color_to_dx12(color: SamplerBorderColor) -> dx12::StaticBorderColor {
+    match color {
+        SamplerBorderColor::BlackTransparent => dx12::StaticBorderColor::TransparentBlack,
+        SamplerBorderColor::BlackOpaque => dx12::StaticBorderColor::OpaqueBlack,
+        SamplerBorderColor::WhiteOpaque => dx12::StaticBorderColor::OpaqueWhite,
+    }
+}
+
+pub const fn polygon_mode_to_dx12(polygon_mode: PolygonMode) -> dx12::FillMode {
+    match polygon_mode {
+        PolygonMode::Fill => dx12::FillMode::Solid,
+        PolygonMode::Line => dx12::FillMode::Wireframe,
+    }
+}
+
+pub const fn cull_mode_to_dx12(cull_mode: CullMode) -> dx12::CullMode {
+    match cull_mode {
+        CullMode::None => dx12::CullMode::None,
+        CullMode::Back => dx12::CullMode::Back,
+        CullMode::Front => dx12::CullMode::Front,
+    }
+}
+
+pub const fn front_face_order_to_dx12(front_face: FrontFaceOrder) -> dx12::Bool {
+    match front_face {
+        FrontFaceOrder::CounterClockwise => dx12::Bool::TRUE,
+        FrontFaceOrder::Clockwise => dx12::Bool::FALSE,
+    }
+}
+
+pub const fn blend_factor_to_dx12(factor: BlendFactor) -> dx12::Blend {
+    match factor {
+        BlendFactor::Zero => dx12::Blend::Zero,
+        BlendFactor::One => dx12::Blend::One,
+        BlendFactor::SrcColor => dx12::Blend::SrcColor,
+        BlendFactor::OneMinusSrcColor => dx12::Blend::SrcColorInv,
+        BlendFactor::DstColor => dx12::Blend::DestColor,
+        BlendFactor::OneMinusDstColor => dx12::Blend::DestColorInv,
+        BlendFactor::SrcAlpha => dx12::Blend::SrcAlpha,
+        BlendFactor::OneMinusSrcAlpha => dx12::Blend::SrcAlphaInv,
+        BlendFactor::DstAlpha => dx12::Blend::DestAlpha,
+        BlendFactor::OneMinusDstAlpha => dx12::Blend::DestAlphaInv,
+        BlendFactor::SrcAlphaSaturate => dx12::Blend::SrcAlphaSaturated,
+        BlendFactor::BlendFactor => dx12::Blend::BlendFactor,
+        BlendFactor::OneMinusBlendFactor => dx12::Blend::BlendFactorInv,
+    }
+}
+
+pub const fn blend_op_to_dx12(op: BlendOp) -> dx12::BlendOp {
+    match op {
+        BlendOp::Add => dx12::BlendOp::Add,
+        BlendOp::Subtract => dx12::BlendOp::Subtract,
+        BlendOp::ReverseSubtract => dx12::BlendOp::SubtractReverse,
+        BlendOp::Min => dx12::BlendOp::Min,
+        BlendOp::Max => dx12::BlendOp::Max,
+    }
+}
+
+pub const fn stencil_op_to_dx12(op: StencilOp) -> dx12::StencilOp {
+    match op {
+        StencilOp::Keep => dx12::StencilOp::Keep,
+        StencilOp::Zero => dx12::StencilOp::Zero,
+        StencilOp::Replace => dx12::StencilOp::Replace,
+        StencilOp::IncrementClamp => dx12::StencilOp::IncrementSaturate,
+        StencilOp::DecrementClamp => dx12::StencilOp::DecrementSaturate,
+        StencilOp::Invert => dx12::StencilOp::Invert,
+        StencilOp::IncrementWrap => dx12::StencilOp::Increment,
+        StencilOp::DecrementWrap => dx12::StencilOp::Decrement,
+    }
+}
+
+pub const fn compare_op_to_dx12(op: CompareOp) -> dx12::ComparisonFunc {
+    match op {
+        CompareOp::Never => dx12::ComparisonFunc::Never,
+        CompareOp::Always => dx12::ComparisonFunc::Always,
+        CompareOp::Equal => dx12::ComparisonFunc::Equal,
+        CompareOp::NotEqual => dx12::ComparisonFunc::NotEqual,
+        CompareOp::Less => dx12::ComparisonFunc::Less,
+        CompareOp::LessEqual => dx12::ComparisonFunc::LessEqual,
+        CompareOp::Greater => dx12::ComparisonFunc::Greater,
+        CompareOp::GreaterOrEqual => dx12::ComparisonFunc::GreaterEqual,
+    }
+}
+
+pub const fn primitive_topology_to_dx12(
+    primitive_topology: PrimitiveTopology,
+) -> (dx12::PrimitiveTopologyType, dx12::PrimitiveTopology) {
+    match primitive_topology {
+        PrimitiveTopology::PointList => (
+            dx12::PrimitiveTopologyType::Point,
+            dx12::PrimitiveTopology::PointList,
+        ),
+        PrimitiveTopology::LineList => (
+            dx12::PrimitiveTopologyType::Line,
+            dx12::PrimitiveTopology::LineList,
+        ),
+        PrimitiveTopology::LineStrip => (
+            dx12::PrimitiveTopologyType::Line,
+            dx12::PrimitiveTopology::LineStrip,
+        ),
+        PrimitiveTopology::TriangleList => (
+            dx12::PrimitiveTopologyType::Triangle,
+            dx12::PrimitiveTopology::TriangleList,
+        ),
+        PrimitiveTopology::TriangleStrip => (
+            dx12::PrimitiveTopologyType::Triangle,
+            dx12::PrimitiveTopology::TriangleStrip,
+        ),
     }
 }
 
