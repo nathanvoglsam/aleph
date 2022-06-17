@@ -315,7 +315,7 @@ impl IDevice for Device {
         }
 
         let mut parameters =
-            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_ranges.len());
+            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
         for (ranges, visibility) in &resource_tables {
             let param = dx12::RootParameter1::DescriptorTable {
                 visibility: visibility.clone(),
@@ -327,15 +327,17 @@ impl IDevice for Device {
         //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
         //       constants after descriptors means the constants are more likely to spill into
         //       memory instead of being in the registers.
-        for range in desc.push_constant_ranges {
-            // TODO: offset isn't handled. we need to make a virtual block of values, pack all the
-            //       ranges into it and place it in the appropriate place in the constant params
+        for block in desc.push_constant_blocks {
+            if (block.size % 4) != 0 {
+                return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
+            }
+            let num32_bit_values = (block.size / 4) as u32;
             let range = dx12::RootParameter1::Constants {
-                visibility: shader_visibility_to_dx12(range.visibility),
+                visibility: shader_visibility_to_dx12(block.visibility),
                 constants: dx12::RootConstants {
-                    shader_register: range.binding,
+                    shader_register: block.binding,
                     register_space: 1024, // A reserved space for root/push constants
-                    num32_bit_values: (range.size / 4) as u32, // TODO: Verify is a multiple of 4
+                    num32_bit_values,
                 },
             };
             parameters.push(range);
