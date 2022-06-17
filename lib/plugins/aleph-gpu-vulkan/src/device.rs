@@ -42,9 +42,10 @@ use interfaces::gpu::{
     DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
     GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
     IComputePipeline, IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline,
-    INamedObject, ISampler, IShader, ITexture, PolygonMode, PrimitiveTopology, QueuePresentError,
-    QueueSubmitError, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    INamedObject, IPipelineLayout, ISampler, IShader, ITexture, PipelineLayoutCreateError,
+    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError,
+    SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp,
+    StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
 use std::ffi::CString;
 
@@ -354,6 +355,13 @@ impl IDevice for Device {
         &self,
         _desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+        todo!()
+    }
+
+    fn create_pipeline_layout(
+        &self,
+        desc: &PipelineLayoutDesc,
+    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
         todo!()
     }
 
