@@ -28,19 +28,18 @@
 //
 
 use crate::dx12;
-use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
-use aleph_gpu_dx12::{IDeviceExt, IPipelineLayoutExt, IShaderExt};
+use aleph_gpu_dx12::{IDeviceExt, IGraphicsPipelineExt, IPipelineLayoutExt};
 use egui::ImageData;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     AttachmentBlendState, BlendFactor, BlendOp, BlendStateDesc, ColorComponentFlags, CullMode,
     DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
     DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
-    IGraphicsPipeline, IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc,
-    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantRange, RasterizerStateDesc,
-    SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType,
-    VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
+    IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc, PipelineLayoutDesc, PolygonMode,
+    PrimitiveTopology, PushConstantRange, RasterizerStateDesc, SamplerAddressMode, SamplerDesc,
+    SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType, VertexInputAttributeDesc,
+    VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
 };
 use std::ops::Deref;
 
@@ -51,8 +50,7 @@ pub struct GlobalObjects {
     pub pipeline_layout: AnyArc<dyn IPipelineLayoutExt>,
     pub vertex_shader: AnyArc<dyn IShader>,
     pub fragment_shader: AnyArc<dyn IShader>,
-    pub graphics_pipeline: AnyArc<dyn IGraphicsPipeline>,
-    pub pipeline_state: dx12::GraphicsPipelineState,
+    pub graphics_pipeline: AnyArc<dyn IGraphicsPipelineExt>,
     pub font_texture: FontTexture,
     pub swap_width: u32,
     pub swap_height: u32,
@@ -91,15 +89,13 @@ impl GlobalObjects {
             })
             .unwrap();
 
-        let (pipeline_state, graphics_pipeline) = Self::create_pipeline_state(
+        let graphics_pipeline = Self::create_pipeline_state(
             device,
             pipeline_layout.deref(),
             vertex_shader.deref(),
             fragment_shader.deref(),
         );
-        pipeline_state
-            .set_name("egui::GraphicsPipelineState")
-            .unwrap();
+        graphics_pipeline.set_name("egui::GraphicsPipelineState");
 
         Self {
             srv_heap,
@@ -108,7 +104,6 @@ impl GlobalObjects {
             vertex_shader,
             fragment_shader,
             graphics_pipeline,
-            pipeline_state,
             font_texture: FontTexture {
                 width: 256,
                 height: 1,
@@ -168,12 +163,11 @@ impl GlobalObjects {
                 size: 8,
             }],
         };
-        let pipeline_layout = device
+        device
             .create_pipeline_layout(&pipeline_layout_desc)
             .unwrap()
             .query_interface::<dyn IPipelineLayoutExt>()
-            .unwrap();
-        pipeline_layout
+            .unwrap()
     }
 
     pub fn create_pipeline_state(
@@ -181,28 +175,17 @@ impl GlobalObjects {
         pipeline_layout: &dyn IPipelineLayoutExt,
         vertex_shader: &dyn IShader,
         pixel_shader: &dyn IShader,
-    ) -> (dx12::GraphicsPipelineState, AnyArc<dyn IGraphicsPipeline>) {
-        let vertex_shader_ext = vertex_shader.query_interface::<dyn IShaderExt>().unwrap();
-        let pixel_shader_ext = pixel_shader.query_interface::<dyn IShaderExt>().unwrap();
-
+    ) -> AnyArc<dyn IGraphicsPipelineExt> {
         let rasterizer_state_new = RasterizerStateDesc {
             cull_mode: CullMode::None,
             front_face: FrontFaceOrder::CounterClockwise,
             polygon_mode: PolygonMode::Fill,
         };
-        let rasterizer_state = dx12::RasterizerDesc::builder()
-            .fill_mode(dx12::FillMode::Solid)
-            .cull_mode(dx12::CullMode::None)
-            .front_counter_clockwise(true)
-            .build();
 
         let depth_stencil_state_new = DepthStencilStateDesc {
             depth_test: false,
             ..Default::default()
         };
-        let depth_stencil_state = dx12::DepthStencilDesc::builder()
-            .depth_enable(false)
-            .build();
 
         let vertex_layout_new = VertexInputStateDesc {
             input_bindings: &[VertexInputBindingDesc {
@@ -231,35 +214,6 @@ impl GlobalObjects {
                 },
             ],
         };
-        let input_layout = [
-            dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("A").into(),
-                semantic_index: 0,
-                format: dxgi::Format::R32G32Float,
-                input_slot: 0,
-                aligned_byte_offset: 0,
-                input_slot_class: dx12::InputClassification::PerVertex,
-                instance_data_step_rate: 0,
-            },
-            dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("A").into(),
-                semantic_index: 1,
-                format: dxgi::Format::R32G32Float,
-                input_slot: 0,
-                aligned_byte_offset: 8,
-                input_slot_class: dx12::InputClassification::PerVertex,
-                instance_data_step_rate: 0,
-            },
-            dx12::InputElementDesc {
-                semantic_name: cstr::cstr!("A").into(),
-                semantic_index: 2,
-                format: dxgi::Format::R8G8B8A8Unorm,
-                input_slot: 0,
-                aligned_byte_offset: 16,
-                input_slot_class: dx12::InputClassification::PerVertex,
-                instance_data_step_rate: 0,
-            },
-        ];
 
         let input_assembly_state_new = InputAssemblyStateDesc {
             primitive_topology: PrimitiveTopology::TriangleList,
@@ -277,22 +231,6 @@ impl GlobalObjects {
                 color_write_mask: ColorComponentFlags::all(),
             }],
         };
-        let blend = dx12::RenderTargetBlendDesc::builder()
-            .blend_enable(true)
-            .logic_op_enable(false)
-            .src_blend(dx12::Blend::One)
-            .dest_blend(dx12::Blend::SrcAlphaInv)
-            .blend_op(dx12::BlendOp::Add)
-            .src_blend_alpha(dx12::Blend::DestAlphaInv)
-            .dest_blend_alpha(dx12::Blend::One)
-            .blend_op_alpha(dx12::BlendOp::Add)
-            .render_target_write_mask(dx12::ColorWriteEnable::all())
-            .build();
-        let blend_desc = dx12::BlendDesc::builder()
-            .alpha_to_coverage_enable(false)
-            .independent_blend_enable(false)
-            .render_targets(&[blend])
-            .build();
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, pixel_shader],
@@ -307,27 +245,12 @@ impl GlobalObjects {
             render_target_formats: &[Format::Bgra8UnormSrgb],
             depth_stencil_format: None,
         };
-        let state_stream = dx12::GraphicsPipelineStateStream::builder()
-            .root_signature(pipeline_layout.get_raw_handle())
-            .vertex_shader(vertex_shader_ext.get_raw_buffer())
-            .pixel_shader(pixel_shader_ext.get_raw_buffer())
-            .sample_mask(u32::MAX)
-            .blend_state(blend_desc)
-            .rasterizer_state(rasterizer_state)
-            .depth_stencil_state(depth_stencil_state)
-            .input_layout(&input_layout)
-            .primitive_topology_type(dx12::PrimitiveTopologyType::Triangle)
-            .rtv_formats(&[dxgi::Format::B8G8R8A8UnormSRGB])
-            .build();
 
-        let graphics_pipeline = device
+        device
             .create_graphics_pipeline(&graphics_pipeline_desc_new)
-            .unwrap();
-        let pipeline_state = device
-            .get_raw_handle()
-            .create_graphics_pipeline_state(&state_stream)
-            .unwrap();
-        (pipeline_state, graphics_pipeline)
+            .unwrap()
+            .query_interface::<dyn IGraphicsPipelineExt>()
+            .unwrap()
     }
 
     pub fn update_font_texture(&mut self, delta: &egui::epaint::ImageDelta) {

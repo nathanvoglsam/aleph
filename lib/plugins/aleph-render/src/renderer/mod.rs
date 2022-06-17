@@ -248,7 +248,7 @@ impl EguiRenderer {
         //
         // Bind the pipeline state object
         //
-        command_list.set_pipeline_state(&self.global.pipeline_state);
+        command_list.set_pipeline_state(&self.global.graphics_pipeline.get_raw_handle());
 
         //
         // Bind the Root Signature
