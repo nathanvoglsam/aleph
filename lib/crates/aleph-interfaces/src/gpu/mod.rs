@@ -1269,7 +1269,7 @@ pub struct DescriptorSetLayoutDesc<'a> {
 // Pipeline State Description
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-pub struct PushConstantRange {
+pub struct PushConstantBlock {
     /// Specifies the binding index that the push constant range will be attached to in the shader.
     ///
     /// # Warning
@@ -1284,10 +1284,6 @@ pub struct PushConstantRange {
     /// Specifies which shader stages the push constant range will be
     pub visibility: DescriptorShaderVisibility,
 
-    /// Specifies the offset, in bytes, from the start of the push constant memory that the range
-    /// begins at.
-    pub offset: u16,
-
     /// Specifies the size, in bytes, of the push constant range.
     pub size: u16,
 }
@@ -1300,7 +1296,7 @@ pub struct PipelineLayoutDesc<'a> {
     pub set_layouts: &'a [&'a dyn IDescriptorSetLayout],
 
     /// Specifies the set of push constant ranges that the pipeline layout will hold.
-    pub push_constant_ranges: &'a [PushConstantRange],
+    pub push_constant_blocks: &'a [PushConstantBlock],
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -2196,6 +2192,9 @@ pub enum DescriptorSetLayoutCreateError {
 
 #[derive(Error, Debug)]
 pub enum PipelineLayoutCreateError {
+    #[error("A push constant block has an invalid size")]
+    InvalidPushConstantBlockSize,
+
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
