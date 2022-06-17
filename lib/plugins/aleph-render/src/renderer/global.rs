@@ -37,7 +37,7 @@ use interfaces::gpu::{
     DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
     DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
     IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc, PipelineLayoutDesc, PolygonMode,
-    PrimitiveTopology, PushConstantRange, RasterizerStateDesc, SamplerAddressMode, SamplerDesc,
+    PrimitiveTopology, PushConstantBlock, RasterizerStateDesc, SamplerAddressMode, SamplerDesc,
     SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType, VertexInputAttributeDesc,
     VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
 };
@@ -156,10 +156,9 @@ impl GlobalObjects {
             .unwrap();
         let pipeline_layout_desc = PipelineLayoutDesc {
             set_layouts: &[descriptor_set_layout.deref()],
-            push_constant_ranges: &[PushConstantRange {
+            push_constant_blocks: &[PushConstantBlock {
                 binding: 0,
                 visibility: DescriptorShaderVisibility::All,
-                offset: 0,
                 size: 8,
             }],
         };
