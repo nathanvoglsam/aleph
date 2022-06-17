@@ -30,18 +30,28 @@
 use crate::dx12;
 use crate::dx12::dxgi;
 use crate::dx12::D3D12Object;
-use aleph_gpu_dx12::{IDeviceExt, IShaderExt};
+use aleph_gpu_dx12::{IDeviceExt, IPipelineLayoutExt, IShaderExt};
 use egui::ImageData;
-use interfaces::any::AnyArc;
-use interfaces::gpu::{ShaderOptions, ShaderType};
+use interfaces::any::{AnyArc, QueryInterface};
+use interfaces::gpu::{
+    AttachmentBlendState, BlendFactor, BlendOp, BlendStateDesc, ColorComponentFlags, CullMode,
+    DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
+    DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
+    IGraphicsPipeline, IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc,
+    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantRange, RasterizerStateDesc,
+    SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType,
+    VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
+};
 use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
     pub srv_heap: dx12::DescriptorHeap,
-    pub root_signature: dx12::RootSignature,
-    pub vertex_shader: AnyArc<dyn IShaderExt>,
-    pub fragment_shader: AnyArc<dyn IShaderExt>,
+    pub sampler: AnyArc<dyn ISampler>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayoutExt>,
+    pub vertex_shader: AnyArc<dyn IShader>,
+    pub fragment_shader: AnyArc<dyn IShader>,
+    pub graphics_pipeline: AnyArc<dyn IGraphicsPipeline>,
     pub pipeline_state: dx12::GraphicsPipelineState,
     pub font_texture: FontTexture,
     pub swap_width: u32,
@@ -61,8 +71,9 @@ impl GlobalObjects {
             .unwrap();
         srv_heap.set_name("egui::SRVHeap").unwrap();
 
-        let root_signature = Self::create_root_signature(&device.get_raw_handle());
-        root_signature.set_name("egui::RootSignature").unwrap();
+        let sampler = Self::create_sampler(device);
+        let pipeline_layout = Self::create_root_signature(device, sampler.deref());
+        pipeline_layout.set_name("egui::RootSignature");
 
         let vertex_shader = device
             .create_shader(&ShaderOptions {
@@ -70,8 +81,6 @@ impl GlobalObjects {
                 data: crate::shaders::egui_vert_shader(),
                 entry_point: "main",
             })
-            .unwrap()
-            .query_interface::<dyn IShaderExt>()
             .unwrap();
 
         let fragment_shader = device
@@ -80,13 +89,11 @@ impl GlobalObjects {
                 data: crate::shaders::egui_frag_shader(),
                 entry_point: "main",
             })
-            .unwrap()
-            .query_interface::<dyn IShaderExt>()
             .unwrap();
 
-        let pipeline_state = Self::create_pipeline_state(
-            &device.get_raw_handle(),
-            &root_signature,
+        let (pipeline_state, graphics_pipeline) = Self::create_pipeline_state(
+            device,
+            pipeline_layout.deref(),
             vertex_shader.deref(),
             fragment_shader.deref(),
         );
@@ -96,9 +103,11 @@ impl GlobalObjects {
 
         Self {
             srv_heap,
-            root_signature,
+            sampler,
+            pipeline_layout,
             vertex_shader,
             fragment_shader,
+            graphics_pipeline,
             pipeline_state,
             font_texture: FontTexture {
                 width: 256,
@@ -111,61 +120,117 @@ impl GlobalObjects {
         }
     }
 
-    pub fn create_root_signature(device: &dx12::Device) -> dx12::RootSignature {
-        let parameters = [
-            dx12::RootParameter::DescriptorTable {
-                visibility: dx12::ShaderVisibility::All,
-                ranges: &[dx12::DescriptorRange {
-                    range_type: dx12::DescriptorRangeType::SRV,
-                    num_descriptors: 1,
-                    base_shader_register: 0,
-                    register_space: 0,
-                    offset_in_descriptors_from_table_start: 0,
-                }],
-            },
-            dx12::RootParameter::Constants {
-                visibility: dx12::ShaderVisibility::All,
-                constants: dx12::RootConstants {
-                    shader_register: 0,
-                    register_space: 0,
-                    num32_bit_values: 2,
+    pub fn create_sampler(device: &dyn IDeviceExt) -> AnyArc<dyn ISampler> {
+        let desc = SamplerDesc {
+            min_filter: SamplerFilter::Linear,
+            mag_filter: SamplerFilter::Linear,
+            mip_filter: SamplerMipFilter::Linear,
+            address_mode_u: SamplerAddressMode::Clamp,
+            address_mode_v: SamplerAddressMode::Clamp,
+            address_mode_w: SamplerAddressMode::Clamp,
+            ..Default::default()
+        };
+        device.create_sampler(&desc).unwrap()
+    }
+
+    pub fn create_root_signature(
+        device: &dyn IDeviceExt,
+        sampler: &dyn ISampler,
+    ) -> AnyArc<dyn IPipelineLayoutExt> {
+        let samplers = [sampler];
+        let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
+            visibility: DescriptorShaderVisibility::All,
+            items: &[
+                DescriptorSetLayoutBinding {
+                    binding_num: 0,
+                    binding_type: DescriptorType::Texture,
+                    binding_count: None,
+                    ..Default::default()
                 },
-            },
-        ];
-        let static_samplers = [dx12::StaticSamplerDesc::builder()
-            .address_u(dx12::TextureAddressMode::Clamp)
-            .address_v(dx12::TextureAddressMode::Clamp)
-            .address_w(dx12::TextureAddressMode::Clamp)
-            .shader_visibility(dx12::ShaderVisibility::All)
-            .shader_register(0)
-            .register_space(0)
-            .build()];
-        let desc_builder = dx12::RootSignatureDesc::builder()
-            .parameters(&parameters)
-            .static_samplers(&static_samplers)
-            .flags(dx12::RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
-        let desc = desc_builder.build();
-        let desc = dx12::VersionedRootSignatureDesc::Desc(desc);
-        let root_signature_blob = unsafe { dx12::RootSignatureBlob::new(&desc).unwrap() };
-        device.create_root_signature(&root_signature_blob).unwrap()
+                DescriptorSetLayoutBinding {
+                    binding_num: 1,
+                    binding_type: DescriptorType::Sampler,
+                    binding_count: None,
+                    static_samplers: Some(&samplers),
+                    ..Default::default()
+                },
+            ],
+        };
+        let descriptor_set_layout = device
+            .create_descriptor_set_layout(&descriptor_set_layout_desc)
+            .unwrap();
+        let pipeline_layout_desc = PipelineLayoutDesc {
+            set_layouts: &[descriptor_set_layout.deref()],
+            push_constant_ranges: &[PushConstantRange {
+                binding: 0,
+                visibility: DescriptorShaderVisibility::All,
+                offset: 0,
+                size: 8,
+            }],
+        };
+        let pipeline_layout = device
+            .create_pipeline_layout(&pipeline_layout_desc)
+            .unwrap()
+            .query_interface::<dyn IPipelineLayoutExt>()
+            .unwrap();
+        pipeline_layout
     }
 
     pub fn create_pipeline_state(
-        device: &dx12::Device,
-        root_signature: &dx12::RootSignature,
-        vertex_shader: &dyn IShaderExt,
-        pixel_shader: &dyn IShaderExt,
-    ) -> dx12::GraphicsPipelineState {
+        device: &dyn IDeviceExt,
+        pipeline_layout: &dyn IPipelineLayoutExt,
+        vertex_shader: &dyn IShader,
+        pixel_shader: &dyn IShader,
+    ) -> (dx12::GraphicsPipelineState, AnyArc<dyn IGraphicsPipeline>) {
+        let vertex_shader_ext = vertex_shader.query_interface::<dyn IShaderExt>().unwrap();
+        let pixel_shader_ext = pixel_shader.query_interface::<dyn IShaderExt>().unwrap();
+
+        let rasterizer_state_new = RasterizerStateDesc {
+            cull_mode: CullMode::None,
+            front_face: FrontFaceOrder::CounterClockwise,
+            polygon_mode: PolygonMode::Fill,
+        };
         let rasterizer_state = dx12::RasterizerDesc::builder()
             .fill_mode(dx12::FillMode::Solid)
             .cull_mode(dx12::CullMode::None)
             .front_counter_clockwise(true)
             .build();
 
+        let depth_stencil_state_new = DepthStencilStateDesc {
+            depth_test: false,
+            ..Default::default()
+        };
         let depth_stencil_state = dx12::DepthStencilDesc::builder()
             .depth_enable(false)
             .build();
 
+        let vertex_layout_new = VertexInputStateDesc {
+            input_bindings: &[VertexInputBindingDesc {
+                binding: 0,
+                stride: 20,
+                input_rate: VertexInputRate::PerVertex,
+            }],
+            input_attributes: &[
+                VertexInputAttributeDesc {
+                    location: 0,
+                    binding: 0,
+                    format: Format::Rg32Float,
+                    offset: 0,
+                },
+                VertexInputAttributeDesc {
+                    location: 1,
+                    binding: 0,
+                    format: Format::Rg32Float,
+                    offset: 8,
+                },
+                VertexInputAttributeDesc {
+                    location: 2,
+                    binding: 0,
+                    format: Format::Rgba8Unorm,
+                    offset: 16,
+                },
+            ],
+        };
         let input_layout = [
             dx12::InputElementDesc {
                 semantic_name: cstr::cstr!("A").into(),
@@ -196,6 +261,22 @@ impl GlobalObjects {
             },
         ];
 
+        let input_assembly_state_new = InputAssemblyStateDesc {
+            primitive_topology: PrimitiveTopology::TriangleList,
+        };
+
+        let blend_state_new = BlendStateDesc {
+            attachments: &[AttachmentBlendState {
+                blend_enabled: true,
+                src_factor: BlendFactor::One,
+                dst_factor: BlendFactor::OneMinusSrcAlpha,
+                blend_op: BlendOp::Add,
+                alpha_src_factor: BlendFactor::OneMinusDstAlpha,
+                alpha_dst_factor: BlendFactor::One,
+                alpha_blend_op: BlendOp::Add,
+                color_write_mask: ColorComponentFlags::all(),
+            }],
+        };
         let blend = dx12::RenderTargetBlendDesc::builder()
             .blend_enable(true)
             .logic_op_enable(false)
@@ -213,10 +294,23 @@ impl GlobalObjects {
             .render_targets(&[blend])
             .build();
 
+        let graphics_pipeline_desc_new = GraphicsPipelineDesc {
+            shader_stages: &[vertex_shader, pixel_shader],
+            pipeline_layout: pipeline_layout
+                .query_interface::<dyn IPipelineLayout>()
+                .unwrap(),
+            vertex_layout: &vertex_layout_new,
+            input_assembly_state: &input_assembly_state_new,
+            rasterizer_state: &rasterizer_state_new,
+            depth_stencil_state: &depth_stencil_state_new,
+            blend_state: &blend_state_new,
+            render_target_formats: &[Format::Bgra8UnormSrgb],
+            depth_stencil_format: None,
+        };
         let state_stream = dx12::GraphicsPipelineStateStream::builder()
-            .root_signature(root_signature.clone())
-            .vertex_shader(vertex_shader.get_raw_buffer())
-            .pixel_shader(pixel_shader.get_raw_buffer())
+            .root_signature(pipeline_layout.get_raw_handle())
+            .vertex_shader(vertex_shader_ext.get_raw_buffer())
+            .pixel_shader(pixel_shader_ext.get_raw_buffer())
             .sample_mask(u32::MAX)
             .blend_state(blend_desc)
             .rasterizer_state(rasterizer_state)
@@ -226,9 +320,14 @@ impl GlobalObjects {
             .rtv_formats(&[dxgi::Format::B8G8R8A8UnormSRGB])
             .build();
 
-        device
+        let graphics_pipeline = device
+            .create_graphics_pipeline(&graphics_pipeline_desc_new)
+            .unwrap();
+        let pipeline_state = device
+            .get_raw_handle()
             .create_graphics_pipeline_state(&state_stream)
-            .unwrap()
+            .unwrap();
+        (pipeline_state, graphics_pipeline)
     }
 
     pub fn update_font_texture(&mut self, delta: &egui::epaint::ImageDelta) {

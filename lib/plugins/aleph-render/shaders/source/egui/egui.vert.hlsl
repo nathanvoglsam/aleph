@@ -34,7 +34,7 @@ struct RootConstantLayout {
     float2 ScreenSize;
 };
 
-ConstantBuffer<RootConstantLayout> RootConstants : register(b0);
+ConstantBuffer<RootConstantLayout> RootConstants : register(b0, space1024);
 
 EguiPixelInput main(in EguiVertexInput input, out float4 Pos : SV_POSITION) {
     EguiPixelInput output;

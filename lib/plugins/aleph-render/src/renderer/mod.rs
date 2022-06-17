@@ -253,7 +253,7 @@ impl EguiRenderer {
         //
         // Bind the Root Signature
         //
-        command_list.set_graphics_root_signature(&self.global.root_signature);
+        command_list.set_graphics_root_signature(&self.global.pipeline_layout.get_raw_handle());
 
         //
         // Bind the descriptor heap
