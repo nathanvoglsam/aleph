@@ -30,8 +30,9 @@
 use dx12::dxgi;
 use interfaces::gpu::{
     BlendFactor, BlendOp, CompareOp, CullMode, DescriptorShaderVisibility, Format, FrontFaceOrder,
-    OptimalClearValue, PolygonMode, PrimitiveTopology, ResourceStates, SamplerBorderColor,
-    StencilOp, TextureCreateError, TextureDesc, TextureDimension,
+    OptimalClearValue, PolygonMode, PrimitiveTopology, ResourceStates, SamplerAddressMode,
+    SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError,
+    TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -209,6 +210,52 @@ pub const fn primitive_topology_to_dx12(
             dx12::PrimitiveTopologyType::Triangle,
             dx12::PrimitiveTopology::TriangleStrip,
         ),
+    }
+}
+
+pub const fn sampler_address_mode_to_dx12(mode: SamplerAddressMode) -> dx12::TextureAddressMode {
+    match mode {
+        SamplerAddressMode::Wrap => dx12::TextureAddressMode::Wrap,
+        SamplerAddressMode::Mirror => dx12::TextureAddressMode::Mirror,
+        SamplerAddressMode::Clamp => dx12::TextureAddressMode::Clamp,
+        SamplerAddressMode::Border => dx12::TextureAddressMode::Border,
+        SamplerAddressMode::MirrorOnce => dx12::TextureAddressMode::MirrorOnce,
+    }
+}
+
+pub const fn sampler_filters_to_dx12(
+    min: SamplerFilter,
+    mag: SamplerFilter,
+    mip: SamplerMipFilter,
+    comparison: bool,
+    anisotropic: bool,
+) -> dx12::Filter {
+    type F = SamplerFilter;
+    type MF = SamplerMipFilter;
+    type DF = dx12::Filter;
+    match (anisotropic, comparison, min, mag, mip) {
+        (false, false, F::Nearest, F::Nearest, MF::Nearest) => DF::MinMagMipPoint,
+        (false, false, F::Nearest, F::Nearest, MF::Linear) => DF::MinMagPointMipLinear,
+        (false, false, F::Nearest, F::Linear, MF::Nearest) => DF::MinPointMagLinearMipPoint,
+        (false, false, F::Nearest, F::Linear, MF::Linear) => DF::MinPointMagMipLinear,
+        (false, false, F::Linear, F::Nearest, MF::Nearest) => DF::MinLinearMagMipPoint,
+        (false, false, F::Linear, F::Nearest, MF::Linear) => DF::MinLinearMagPointMipLinear,
+        (false, false, F::Linear, F::Linear, MF::Nearest) => DF::MinMagLinearMipPoint,
+        (false, false, F::Linear, F::Linear, MF::Linear) => DF::MinMagMipLinear,
+        (false, true, F::Nearest, F::Nearest, MF::Nearest) => DF::ComparisonMinMagMipPoint,
+        (false, true, F::Nearest, F::Nearest, MF::Linear) => DF::ComparisonMinMagPointMipLinear,
+        (false, true, F::Nearest, F::Linear, MF::Nearest) => {
+            DF::ComparisonMinPointMagLinearMipPoint
+        }
+        (false, true, F::Nearest, F::Linear, MF::Linear) => DF::ComparisonMinPointMagMipLinear,
+        (false, true, F::Linear, F::Nearest, MF::Nearest) => DF::ComparisonMinLinearMagMipPoint,
+        (false, true, F::Linear, F::Nearest, MF::Linear) => {
+            DF::ComparisonMinLinearMagPointMipLinear
+        }
+        (false, true, F::Linear, F::Linear, MF::Nearest) => DF::ComparisonMinMagLinearMipPoint,
+        (false, true, F::Linear, F::Linear, MF::Linear) => DF::ComparisonMinMagMipLinear,
+        (true, false, _, _, _) => DF::Anisotropic,
+        (true, true, _, _, _) => DF::ComparisonAnisotropic,
     }
 }
 

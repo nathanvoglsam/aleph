@@ -34,15 +34,17 @@
 //! create_descriptor_set_layout call so we can collect and use it when we create the root
 //! signature.
 
+use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{
-    DescriptorSetLayoutBinding, DescriptorShaderVisibility, IDescriptorSetLayout, INamedObject,
-};
+use interfaces::gpu::{IDescriptorSetLayout, INamedObject};
 
 pub struct DescriptorSetLayout {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) visibility: DescriptorShaderVisibility,
-    pub(crate) items: Vec<DescriptorSetLayoutBinding>,
+    pub(crate) _device: AnyArc<Device>,
+    pub(crate) visibility: dx12::ShaderVisibility,
+    pub(crate) resource_table: Vec<dx12::DescriptorRange1>,
+    pub(crate) static_samplers: Vec<dx12::StaticSamplerDesc>,
+    pub(crate) sampler_table: Option<Vec<dx12::DescriptorRange1>>,
 }
 
 declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);

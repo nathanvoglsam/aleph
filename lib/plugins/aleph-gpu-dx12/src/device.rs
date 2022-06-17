@@ -36,8 +36,9 @@ use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
     cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
-    resource_state_to_dx12, shader_visibility_to_dx12, stencil_op_to_dx12,
-    texture_create_clear_value_to_dx12, texture_create_desc_to_dx12, texture_format_to_dxgi,
+    resource_state_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
+    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
+    texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -56,10 +57,11 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
     ComputePipelineCreateError, ComputePipelineDesc, CpuAccessMode, DepthStencilStateDesc,
-    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, GraphicsPipelineCreateError,
-    GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool, IComputePipeline,
-    IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline, INamedObject, ISampler,
-    IShader, ISwapChain, ITexture, QueuePresentError, QueueSubmitError, QueueType,
+    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, DescriptorType,
+    GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
+    IComputePipeline, IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline,
+    INamedObject, IPipelineLayout, ISampler, IShader, ISwapChain, ITexture,
+    PipelineLayoutCreateError, PipelineLayoutDesc, QueuePresentError, QueueSubmitError, QueueType,
     RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
     ShaderOptions, ShaderType, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
     VertexInputStateDesc,
@@ -155,7 +157,20 @@ impl IDevice for Device {
 
         let builder = builder.sample_mask(u32::MAX); // TODO: Why?
 
-        // TODO: translate render target desc
+        // Render target format translation is straight forward, just convert the formats and add
+        let rtv_formats: Vec<dxgi::Format> = desc
+            .render_target_formats
+            .iter()
+            .copied()
+            .map(texture_format_to_dxgi)
+            .collect();
+        let builder = builder.rtv_formats(&rtv_formats);
+        let builder =
+            if let Some(dsv_format) = desc.depth_stencil_format.map(texture_format_to_dxgi) {
+                builder.dsv_format(dsv_format)
+            } else {
+                builder
+            };
 
         // Construct the D3D12 pipeline object
         let state_stream = builder.build();
@@ -205,7 +220,7 @@ impl IDevice for Device {
         let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
             this: v.clone(),
             pipeline,
-            pipeline_layout,
+            _pipeline_layout: pipeline_layout,
         });
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }
@@ -236,13 +251,121 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
+        let visibility = shader_visibility_to_dx12(desc.visibility);
+
+        // TODO: Currently we always create a descriptor table. In the future we could use some
+        //       optimization heuristics to detect when a root descriptor is better.
+
+        // First we produce a descriptor table for the non-sampler descriptors. Samplers have to go
+        // in their own descriptor heap and so we can't emit a single descriptor table for the
+        // layout.
+        //
+        // Any non-immutable samplers require a second descriptor table.
+        let resource_table = self.build_resource_table_layout(desc);
+        let (sampler_table, static_samplers) = self.build_sampler_table_layout(desc)?;
+
+        // Convert an empty sampler table into none to better encode the meaning in the type
+        let sampler_table = if sampler_table.is_empty() {
+            None
+        } else {
+            Some(sampler_table)
+        };
+
         let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
             this: v.clone(),
-            visibility: desc.visibility,
-            items: desc.items.to_vec(),
+            _device: self.this.upgrade().unwrap(),
+            visibility,
+            resource_table,
+            static_samplers,
+            sampler_table,
         });
         Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(
             descriptor_set_layout,
+            |v| v,
+        ))
+    }
+
+    fn create_pipeline_layout(
+        &self,
+        desc: &PipelineLayoutDesc,
+    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+        // Bundle up all the table layouts after we patch them for use in this layout as we need to
+        // extend the lifetime for the call to create the root signature
+        let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());
+        let mut static_samplers = Vec::new();
+        for (i, layout) in desc.set_layouts.iter().enumerate() {
+            let layout = layout
+                .query_interface::<DescriptorSetLayout>()
+                .expect("Unknown IDescriptorSetLayout impl");
+
+            // Take a copy of the pre-calculated layout and patch the register space to match the
+            // set index that it is being used for
+            let mut table = layout.resource_table.clone();
+            for binding in table.iter_mut() {
+                binding.register_space = i as u32;
+            }
+            resource_tables.push((table, layout.visibility));
+
+            // Extend our list of static samplers based on the provided list for this binding
+            static_samplers.extend(layout.static_samplers.iter().map(|v| {
+                let mut out = v.clone();
+                out.register_space = i as u32;
+                out
+            }));
+        }
+
+        let mut parameters =
+            Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_ranges.len());
+        for (ranges, visibility) in &resource_tables {
+            let param = dx12::RootParameter1::DescriptorTable {
+                visibility: visibility.clone(),
+                ranges: ranges.as_slice(),
+            };
+            parameters.push(param);
+        }
+        // TODO: Putting root constants after all descriptors may have performance implications.
+        //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
+        //       constants after descriptors means the constants are more likely to spill into
+        //       memory instead of being in the registers.
+        for range in desc.push_constant_ranges {
+            // TODO: offset isn't handled. we need to make a virtual block of values, pack all the
+            //       ranges into it and place it in the appropriate place in the constant params
+            let range = dx12::RootParameter1::Constants {
+                visibility: shader_visibility_to_dx12(range.visibility),
+                constants: dx12::RootConstants {
+                    shader_register: range.binding,
+                    register_space: 1024, // A reserved space for root/push constants
+                    num32_bit_values: (range.size / 4) as u32, // TODO: Verify is a multiple of 4
+                },
+            };
+            parameters.push(range);
+        }
+
+        // TODO: dynamic samplers
+
+        // TODO: Investigate a better way for handling 'allow input assembler' flag as currently we
+        //       just unconditionally enable it. Supposedly it can be a minor optimization on some
+        //       hardware.
+        let desc = dx12::RootSignatureDesc1::builder()
+            .parameters(&parameters)
+            .static_samplers(&static_samplers)
+            .flags(dx12::RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)
+            .build();
+        let desc = dx12::VersionedRootSignatureDesc::Desc1(desc);
+        let root_signature = unsafe {
+            let blob = dx12::RootSignatureBlob::new(&desc).map_err(|v| anyhow!(v))?;
+            self.device
+                .create_root_signature(&blob)
+                .map_err(|v| anyhow!(v))?
+        };
+
+        let pipeline_layout = AnyArc::new_cyclic(move |v| PipelineLayout {
+            this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
+            root_signature,
+        });
+        Ok(AnyArc::map::<dyn IPipelineLayout, _>(
+            pipeline_layout,
             |v| v,
         ))
     }
@@ -667,11 +790,11 @@ impl Device {
             fill_mode,
             cull_mode,
             front_counter_clockwise,
-            depth_bias: todo!(),
-            depth_bias_clamp: todo!(),
-            slope_scaled_depth_bias: todo!(),
-            depth_clip_enable: todo!(),
-            multisample_enable: todo!(),
+            depth_bias: 0,                         // TODO: translate
+            depth_bias_clamp: 0.0,                 // TODO: translate
+            slope_scaled_depth_bias: 0.0,          // TODO: translate
+            depth_clip_enable: dx12::Bool::TRUE,   // Vulkan has no option, so always true
+            multisample_enable: dx12::Bool::FALSE, // TODO: translate
             antialiased_line_enable: dx12::Bool::FALSE,
             forced_sample_count: 0,
             conservative_raster: dx12::ConservativeRasterizationMode::Off,
@@ -779,6 +902,161 @@ impl Device {
             independent_blend_enable,
             render_targets,
         }
+    }
+
+    fn build_resource_table_layout(
+        &self,
+        desc: &DescriptorSetLayoutDesc,
+    ) -> Vec<dx12::DescriptorRange1> {
+        let mut offset = 0;
+        let mut table = Vec::with_capacity(desc.items.len());
+        for item in desc
+            .items
+            .iter()
+            .filter(|v| v.binding_type != DescriptorType::Sampler)
+        {
+            if item.binding_count.is_some() {
+                // Descriptor arrays are currently unimplemented pending a solution for mapping
+                // how they surface in SPIR-V vs D3D12.
+                //
+                // - Vulkan uses a single binding for the whole array.
+                // - D3D12 uses a register per element.
+                //
+                // We currently map binding_num directly to register number. Arrays break this
+                // mapping, Vulkan will work but D3D12 will not. We either have to force asinine
+                // D3D12 behavior on Vulkan or
+                //
+                unimplemented!("Currently descriptor arrays are unimplemented");
+            }
+            // The concrete descriptor type depends on the resource class and potential write access
+            //
+            // - Anything that can be written to will be accessed via an unordered access view.
+            // - Constant buffers have a dedicated view type (constant buffer view).
+            // - Textures and other buffer types are shader resource views.
+            // - Samplers get filtered out so don't matter for this conversion.
+            let range_type = match (item.binding_type, item.allow_writes) {
+                (
+                    DescriptorType::Texture
+                    | DescriptorType::StructuredBuffer
+                    | DescriptorType::RawBuffer
+                    | DescriptorType::TypedBuffer,
+                    false,
+                ) => dx12::DescriptorRangeType::SRV,
+                (
+                    DescriptorType::Texture
+                    | DescriptorType::StructuredBuffer
+                    | DescriptorType::RawBuffer
+                    | DescriptorType::TypedBuffer,
+                    true,
+                ) => dx12::DescriptorRangeType::UAV,
+                (DescriptorType::ConstantBuffer, _) => dx12::DescriptorRangeType::CBV,
+                (DescriptorType::Sampler, _) => unreachable!(),
+            };
+            let num_descriptors = match item.binding_count {
+                None => 1,
+                Some(v) => v.get(),
+            };
+            let base_shader_register = item.binding_num;
+            let flags = dx12::DescriptorRangeFlags::DATA_VOLATILE
+                | dx12::DescriptorRangeFlags::DESCRIPTORS_VOLATILE;
+            let item = dx12::DescriptorRange1 {
+                range_type,
+                num_descriptors,
+                base_shader_register,
+                register_space: 0,
+                flags, // TODO: temp fix for existing renderer, remove in future
+                offset_in_descriptors_from_table_start: offset,
+            };
+            table.push(item);
+            offset += self.descriptor_heap_info.resource_inc * num_descriptors;
+        }
+        table
+    }
+
+    fn build_sampler_table_layout(
+        &self,
+        desc: &DescriptorSetLayoutDesc,
+    ) -> Result<
+        (Vec<dx12::DescriptorRange1>, Vec<dx12::StaticSamplerDesc>),
+        DescriptorSetLayoutCreateError,
+    > {
+        let mut offset = 0;
+        let mut sampler_table = Vec::new();
+        let mut static_samplers = Vec::new();
+        for item in desc
+            .items
+            .iter()
+            .filter(|v| v.binding_type == DescriptorType::Sampler)
+        {
+            if item.binding_count.is_some() {
+                // we don't support sampler array bindings due to strict limits imposed on D3D12.
+                // - (Tier 1) max 16 samplers in a single root signature
+                // - (Tier 2+) max 2048 samplers in a single root signature
+                // - max 2048 samplers in a single device-visible descriptor heap
+                //
+                // Only 2048 samplers can ever be addressed at once, making bindless difficult as
+                // the limit is very small, and non-bindless capable hardware can only have 16
+                // samplers in a root signature meaning static sized arrays will typically be so
+                // small it makes using an array redundant.
+                unimplemented!("Sampler Arrays are currently un-implemented");
+            }
+
+            // Dynamic samplers require a descriptor table as they're dynamic. There is a separate
+            // part of a root signature that handles static samplers.
+            //
+            // We switch how we output the binding based on the presence of static samplers
+            if let Some(samplers) = item.static_samplers {
+                for sampler in samplers {
+                    let sampler = sampler.query_interface::<Sampler>().unwrap();
+                    let filter = sampler_filters_to_dx12(
+                        sampler.desc.min_filter,
+                        sampler.desc.mag_filter,
+                        sampler.desc.mip_filter,
+                        sampler.desc.compare_op.is_some(),
+                        sampler.desc.enable_anisotropy,
+                    );
+                    static_samplers.push(dx12::StaticSamplerDesc {
+                        filter,
+                        address_u: sampler_address_mode_to_dx12(sampler.desc.address_mode_u),
+                        address_v: sampler_address_mode_to_dx12(sampler.desc.address_mode_v),
+                        address_w: sampler_address_mode_to_dx12(sampler.desc.address_mode_w),
+                        mip_lod_bias: sampler.desc.lod_bias,
+                        max_anisotropy: sampler.desc.max_anisotropy as u32,
+                        comparison_func: sampler
+                            .desc
+                            .compare_op
+                            .map(compare_op_to_dx12)
+                            .unwrap_or(dx12::ComparisonFunc::Always),
+                        border_color: border_color_to_dx12(sampler.desc.border_color),
+                        min_lod: sampler.desc.min_lod,
+                        max_lod: sampler.desc.max_lod,
+                        shader_register: item.binding_num,
+                        register_space: 0,
+                        shader_visibility: dx12::ShaderVisibility::All,
+                    });
+                }
+            } else {
+                // Handle dynamic samplers by inserting them into a descriptor table.
+                let num_descriptors = match item.binding_count {
+                    None => 1,
+                    Some(v) => v.get(),
+                };
+                let base_shader_register = item.binding_num;
+                let flags = dx12::DescriptorRangeFlags::DATA_VOLATILE
+                    | dx12::DescriptorRangeFlags::DESCRIPTORS_VOLATILE;
+                let item = dx12::DescriptorRange1 {
+                    range_type: dx12::DescriptorRangeType::Sampler,
+                    num_descriptors,
+                    base_shader_register,
+                    register_space: 0,
+                    flags, // TODO: temp fix for existing renderer, remove in future
+                    offset_in_descriptors_from_table_start: offset,
+                };
+                sampler_table.push(item);
+                offset += self.descriptor_heap_info.sampler_inc * num_descriptors;
+            }
+        }
+        Ok((sampler_table, static_samplers))
     }
 }
 
