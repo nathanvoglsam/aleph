@@ -197,6 +197,11 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError>;
 
+    fn create_pipeline_layout(
+        &self,
+        desc: &PipelineLayoutDesc,
+    ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError>;
+
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError>;
 
     fn create_texture(
@@ -1263,6 +1268,41 @@ pub struct DescriptorSetLayoutDesc<'a> {
 // _________________________________________________________________________________________________
 // Pipeline State Description
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+pub struct PushConstantRange {
+    /// Specifies the binding index that the push constant range will be attached to in the shader.
+    ///
+    /// # Warning
+    ///
+    /// This is ignored on Vulkan. Vulkan has a dedicated 'push constant' location specifier. D3D12
+    /// maps its 'root constants' (D3D12's analogue of push constants) to a register index.
+    ///
+    /// There is no robust way to automatically choose a register index, so we leave the choice as
+    /// an exercise for the user.
+    pub binding: u32,
+
+    /// Specifies which shader stages the push constant range will be
+    pub visibility: DescriptorShaderVisibility,
+
+    /// Specifies the offset, in bytes, from the start of the push constant memory that the range
+    /// begins at.
+    pub offset: u16,
+
+    /// Specifies the size, in bytes, of the push constant range.
+    pub size: u16,
+}
+
+#[derive(Clone, Default)]
+pub struct PipelineLayoutDesc<'a> {
+    /// Specifies the layouts of all descriptor sets that will be combined into this pipeline
+    /// layout. The order of this array is meaningful: the `n`th element will define the layout for
+    /// the `n`th descriptor set.
+    pub set_layouts: &'a [&'a dyn IDescriptorSetLayout],
+
+    /// Specifies the set of push constant ranges that the pipeline layout will hold.
+    pub push_constant_ranges: &'a [PushConstantRange],
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum VertexInputRate {
     /// Specifies that vertex attribute addressing is a function of the vertex index
@@ -2153,6 +2193,12 @@ pub enum DescriptorSetLayoutCreateError {
 //
 // _________________________________________________________________________________________________
 // Pipelines
+
+#[derive(Error, Debug)]
+pub enum PipelineLayoutCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+}
 
 #[derive(Error, Debug)]
 pub enum GraphicsPipelineCreateError {
