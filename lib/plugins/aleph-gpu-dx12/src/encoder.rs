@@ -34,11 +34,13 @@ use crate::internal::conv::{decode_u32_color_to_float, resource_state_to_dx12};
 use crate::pipeline::GraphicsPipeline;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
+use dx12::dxgi;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
-    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, QueueTransitionMode,
-    ResourceStates, SplitBarrierMode, TextureBarrier, TextureDesc, TextureSubResourceSet,
+    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, IndexType,
+    InputAssemblyBufferBinding, QueueTransitionMode, Rect, ResourceStates, SplitBarrierMode,
+    TextureBarrier, TextureDesc, TextureSubResourceSet,
 };
 
 pub struct Encoder<'a> {
@@ -282,6 +284,75 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         } else {
             panic!("Unknown IGraphicsPipeline implementation");
         }
+    }
+
+    unsafe fn bind_vertex_buffers(
+        &mut self,
+        first_binding: u32,
+        bindings: &[InputAssemblyBufferBinding],
+    ) {
+        let views: Vec<dx12::VertexBufferView> = bindings
+            .iter()
+            .enumerate()
+            .map(|(i, v)| {
+                let buffer = v
+                    .buffer
+                    .query_interface::<Buffer>()
+                    .expect("Unkonwn IBuffer implementation");
+
+                let buffer_location = buffer.base_address;
+                let buffer_location = buffer_location.add(v.offset);
+
+                let size_in_bytes = buffer.desc.size as u32;
+
+                dx12::VertexBufferView {
+                    buffer_location,
+                    size_in_bytes,
+                    stride_in_bytes: self.input_binding_strides[i + first_binding as usize],
+                }
+            })
+            .collect();
+        self.list.ia_set_vertex_buffers(first_binding, &views);
+    }
+
+    unsafe fn bind_index_buffer(
+        &mut self,
+        index_type: IndexType,
+        binding: &InputAssemblyBufferBinding,
+    ) {
+        let buffer = binding
+            .buffer
+            .query_interface::<Buffer>()
+            .expect("Unknown IBuffer implementation");
+
+        let buffer_location = buffer.base_address;
+        let buffer_location = buffer_location.add(binding.offset);
+
+        let size_in_bytes = buffer.desc.size as u32;
+
+        let view = dx12::IndexBufferView {
+            buffer_location,
+            size_in_bytes,
+            format: match index_type {
+                IndexType::U16 => dxgi::Format::R16Uint,
+                IndexType::U32 => dxgi::Format::R32Uint,
+            },
+        };
+        self.list.ia_set_index_buffer(&view);
+    }
+
+    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
+        // TODO: bump allocator on self for temp allocations like this
+        let rects: Vec<dx12::Rect> = rects
+            .iter()
+            .map(|v| dx12::Rect {
+                left: v.x as i32,
+                top: v.y as i32,
+                right: (v.x + v.w) as i32,
+                bottom: (v.y + v.h) as i32,
+            })
+            .collect();
+        self.list.rs_set_scissor_rects(&rects);
     }
 
     unsafe fn clear_texture(
