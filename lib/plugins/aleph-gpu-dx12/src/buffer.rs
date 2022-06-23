@@ -34,6 +34,7 @@ use interfaces::gpu::{BufferDesc, IBuffer, INamedObject};
 pub struct Buffer {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) resource: dx12::Resource,
+    pub(crate) base_address: dx12::GPUDescriptorHandle,
     pub(crate) desc: BufferDesc,
 }
 

@@ -424,10 +424,12 @@ impl IDevice for Device {
                 )
                 .map_err(|v| anyhow!(v))?
         };
+        let base_address = resource.get_gpu_virtual_address().unwrap();
 
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
             resource,
+            base_address,
             desc: desc.clone(),
         });
         Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
