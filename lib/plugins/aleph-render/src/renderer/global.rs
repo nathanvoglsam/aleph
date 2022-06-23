@@ -29,17 +29,17 @@
 
 use crate::dx12;
 use crate::dx12::D3D12Object;
-use aleph_gpu_dx12::{IDeviceExt, IGraphicsPipelineExt, IPipelineLayoutExt};
+use aleph_gpu_dx12::IDeviceExt;
 use egui::ImageData;
-use interfaces::any::{AnyArc, QueryInterface};
+use interfaces::any::AnyArc;
 use interfaces::gpu::{
     AttachmentBlendState, BlendFactor, BlendOp, BlendStateDesc, ColorComponentFlags, CullMode,
     DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
     DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
-    IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc, PipelineLayoutDesc, PolygonMode,
-    PrimitiveTopology, PushConstantBlock, RasterizerStateDesc, SamplerAddressMode, SamplerDesc,
-    SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType, VertexInputAttributeDesc,
-    VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
+    IGraphicsPipeline, IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc,
+    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantBlock, RasterizerStateDesc,
+    SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType,
+    VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
 };
 use std::ops::Deref;
 
@@ -47,10 +47,10 @@ use std::ops::Deref;
 pub struct GlobalObjects {
     pub srv_heap: dx12::DescriptorHeap,
     pub sampler: AnyArc<dyn ISampler>,
-    pub pipeline_layout: AnyArc<dyn IPipelineLayoutExt>,
+    pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pub vertex_shader: AnyArc<dyn IShader>,
     pub fragment_shader: AnyArc<dyn IShader>,
-    pub graphics_pipeline: AnyArc<dyn IGraphicsPipelineExt>,
+    pub graphics_pipeline: AnyArc<dyn IGraphicsPipeline>,
     pub font_texture: FontTexture,
     pub swap_width: u32,
     pub swap_height: u32,
@@ -131,7 +131,7 @@ impl GlobalObjects {
     pub fn create_root_signature(
         device: &dyn IDeviceExt,
         sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IPipelineLayoutExt> {
+    ) -> AnyArc<dyn IPipelineLayout> {
         let samplers = [sampler];
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
@@ -165,16 +165,14 @@ impl GlobalObjects {
         device
             .create_pipeline_layout(&pipeline_layout_desc)
             .unwrap()
-            .query_interface::<dyn IPipelineLayoutExt>()
-            .unwrap()
     }
 
     pub fn create_pipeline_state(
         device: &dyn IDeviceExt,
-        pipeline_layout: &dyn IPipelineLayoutExt,
+        pipeline_layout: &dyn IPipelineLayout,
         vertex_shader: &dyn IShader,
         pixel_shader: &dyn IShader,
-    ) -> AnyArc<dyn IGraphicsPipelineExt> {
+    ) -> AnyArc<dyn IGraphicsPipeline> {
         let rasterizer_state_new = RasterizerStateDesc {
             cull_mode: CullMode::None,
             front_face: FrontFaceOrder::CounterClockwise,
@@ -233,9 +231,7 @@ impl GlobalObjects {
 
         let graphics_pipeline_desc_new = GraphicsPipelineDesc {
             shader_stages: &[vertex_shader, pixel_shader],
-            pipeline_layout: pipeline_layout
-                .query_interface::<dyn IPipelineLayout>()
-                .unwrap(),
+            pipeline_layout,
             vertex_layout: &vertex_layout_new,
             input_assembly_state: &input_assembly_state_new,
             rasterizer_state: &rasterizer_state_new,
@@ -247,8 +243,6 @@ impl GlobalObjects {
 
         device
             .create_graphics_pipeline(&graphics_pipeline_desc_new)
-            .unwrap()
-            .query_interface::<dyn IGraphicsPipelineExt>()
             .unwrap()
     }
 

@@ -31,16 +31,16 @@ mod frame;
 mod global;
 
 use crate::dx12;
-use crate::dx12::dxgi;
-use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
+use aleph_gpu_dx12::{IBufferExt, ICommandListExt, IDeviceExt};
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture, ResourceStates, TextureBarrier,
+    ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture, IndexType,
+    InputAssemblyBufferBinding, Rect, ResourceStates, TextureBarrier,
 };
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
@@ -116,14 +116,14 @@ impl EguiRenderer {
             if self.frames[index].font_version != self.global.font_texture.version {
                 self.frames[index]
                     .update_texture_data(self.device.deref(), &self.global.font_texture);
-                self.frames[index].record_texture_upload(&command_list);
+                self.frames[index].record_texture_upload(&command_list, encoder.deref_mut());
             }
 
             // Map the buffers for copying into them
             let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
 
             // Begin the render pass and bind our resources
-            self.bind_resources(index, &command_list, view);
+            self.bind_resources(index, &command_list, encoder.deref_mut(), view);
 
             // Transition from present to render target state
             encoder.resource_barrier(
@@ -186,13 +186,7 @@ impl EguiRenderer {
                     v_ptr = v_ptr_next;
                     i_ptr = i_ptr_next;
 
-                    self.record_job_commands(
-                        &command_list,
-                        encoder.as_mut(),
-                        &job,
-                        vtx_base,
-                        idx_base,
-                    );
+                    self.record_job_commands(encoder.as_mut(), &job, vtx_base, idx_base);
 
                     vtx_base += triangles.vertices.len();
                     idx_base += triangles.indices.len();
@@ -220,7 +214,6 @@ impl EguiRenderer {
 
     unsafe fn record_job_commands(
         &mut self,
-        command_list: &dx12::GraphicsCommandList,
         encoder: &mut dyn IGeneralEncoder,
         job: &aleph_egui::ClippedPrimitive,
         vtx_base: usize,
@@ -228,7 +221,7 @@ impl EguiRenderer {
     ) {
         if let aleph_egui::epaint::Primitive::Mesh(triangles) = &job.primitive {
             let scissor_rect = self.calculate_clip_rect(job);
-            command_list.rs_set_scissor_rects(&[scissor_rect]);
+            encoder.set_scissor_rects(&[scissor_rect]);
             encoder.draw_indexed(
                 triangles.indices.len() as _,
                 1,
@@ -243,17 +236,10 @@ impl EguiRenderer {
         &self,
         index: usize,
         command_list: &dx12::GraphicsCommandList,
+        encoder: &mut dyn IGeneralEncoder,
         view: dx12::CPUDescriptorHandle,
     ) {
-        //
-        // Bind the pipeline state object
-        //
-        command_list.set_pipeline_state(&self.global.graphics_pipeline.get_raw_handle());
-
-        //
-        // Bind the Root Signature
-        //
-        command_list.set_graphics_root_signature(&self.global.pipeline_layout.get_raw_handle());
+        encoder.bind_graphics_pipeline(self.global.graphics_pipeline.deref());
 
         //
         // Bind the descriptor heap
@@ -275,34 +261,23 @@ impl EguiRenderer {
         let values = [width_points.to_bits(), height_points.to_bits()];
         command_list.set_graphics_root_32bit_constants(1, &values, 0);
 
-        command_list.ia_set_primitive_topology(dx12::PrimitiveTopology::TriangleList);
-
         //
         // Bind the vertex and index buffers to render with
         //
-        let buffer_location = self.frames[index]
-            .vtx_buffer
-            .get_raw_handle()
-            .get_gpu_virtual_address()
-            .unwrap();
-        command_list.ia_set_vertex_buffers(
+        encoder.bind_vertex_buffers(
             0,
-            &[dx12::VertexBufferView {
-                buffer_location,
-                size_in_bytes: PerFrameObjects::vertex_buffer_size() as _,
-                stride_in_bytes: (4 * 4) + 4,
+            &[InputAssemblyBufferBinding {
+                buffer: self.frames[index].vtx_buffer.deref(),
+                offset: 0,
             }],
         );
-        let buffer_location = self.frames[index]
-            .idx_buffer
-            .get_raw_handle()
-            .get_gpu_virtual_address()
-            .unwrap();
-        command_list.ia_set_index_buffer(&dx12::IndexBufferView {
-            buffer_location,
-            size_in_bytes: PerFrameObjects::index_buffer_size() as _,
-            format: dxgi::Format::R32Uint,
-        });
+        encoder.bind_index_buffer(
+            IndexType::U32,
+            &InputAssemblyBufferBinding {
+                buffer: self.frames[index].idx_buffer.deref(),
+                offset: 0,
+            },
+        );
 
         //
         // Bind the render target
@@ -328,6 +303,8 @@ impl EguiRenderer {
         //
         let v_ptr = self.frames[index]
             .vtx_buffer
+            .query_interface::<dyn IBufferExt>()
+            .unwrap()
             .get_raw_handle()
             .map(0, Some(0..0))
             .unwrap()
@@ -337,6 +314,8 @@ impl EguiRenderer {
 
         let i_ptr = self.frames[index]
             .idx_buffer
+            .query_interface::<dyn IBufferExt>()
+            .unwrap()
             .get_raw_handle()
             .map(0, Some(0..0))
             .unwrap()
@@ -351,14 +330,22 @@ impl EguiRenderer {
         //
         // Flush and unmap the vertex and index buffers
         //
-        let vtx_buffer = &self.frames[index].vtx_buffer.get_raw_handle();
-        let idx_buffer = &self.frames[index].idx_buffer.get_raw_handle();
+        let vtx_buffer = &self.frames[index]
+            .vtx_buffer
+            .query_interface::<dyn IBufferExt>()
+            .unwrap()
+            .get_raw_handle();
+        let idx_buffer = &self.frames[index]
+            .idx_buffer
+            .query_interface::<dyn IBufferExt>()
+            .unwrap()
+            .get_raw_handle();
 
         vtx_buffer.unmap(0, None);
         idx_buffer.unmap(0, None);
     }
 
-    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedPrimitive) -> dx12::Rect {
+    fn calculate_clip_rect(&self, job: &aleph_egui::ClippedPrimitive) -> Rect {
         let width_pixels = self.global.swap_width as f32;
         let height_pixels = self.global.swap_height as f32;
 
@@ -384,11 +371,11 @@ impl EguiRenderer {
             y: max.y.clamp(min.y, height_pixels),
         };
 
-        dx12::Rect {
-            left: min.x.round() as _,
-            top: min.y.round() as _,
-            right: max.x.round() as _,
-            bottom: max.y.round() as _,
+        Rect {
+            x: min.x.round() as _,
+            y: min.y.round() as _,
+            w: (max.x - min.x).round() as _,
+            h: (max.y - min.y).round() as _,
         }
     }
 }

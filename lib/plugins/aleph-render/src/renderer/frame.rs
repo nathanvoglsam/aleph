@@ -35,19 +35,21 @@ use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    BufferDesc, CpuAccessMode, Format, ICommandPool, ResourceStates, TextureDesc, TextureDimension,
+    BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture,
+    ResourceStates, TextureBarrier, TextureDesc, TextureDimension,
 };
+use std::ops::Deref;
 
 pub struct PerFrameObjects {
-    pub vtx_buffer: AnyArc<dyn IBufferExt>,
-    pub idx_buffer: AnyArc<dyn IBufferExt>,
+    pub vtx_buffer: AnyArc<dyn IBuffer>,
+    pub idx_buffer: AnyArc<dyn IBuffer>,
 
     pub command_allocator: AnyArc<dyn ICommandPool>,
 
     pub font_version: usize,
-    pub font_staging_buffer: AnyArc<dyn IBufferExt>,
+    pub font_staging_buffer: AnyArc<dyn IBuffer>,
 
-    pub font_staged: Option<AnyArc<dyn ITextureExt>>,
+    pub font_staged: Option<AnyArc<dyn ITexture>>,
     pub font_staged_size: (u32, u32),
     pub font_cpu_srv: dx12::CPUDescriptorHandle,
     pub font_gpu_srv: dx12::GPUDescriptorHandle,
@@ -62,11 +64,7 @@ impl PerFrameObjects {
                 is_vertex_buffer: true,
                 ..Default::default()
             };
-            device
-                .create_buffer(&desc)
-                .unwrap()
-                .query_interface()
-                .unwrap()
+            device.create_buffer(&desc).unwrap()
         };
 
         let idx_buffer = {
@@ -76,11 +74,7 @@ impl PerFrameObjects {
                 is_index_buffer: true,
                 ..Default::default()
             };
-            device
-                .create_buffer(&desc)
-                .unwrap()
-                .query_interface()
-                .unwrap()
+            device.create_buffer(&desc).unwrap()
         };
 
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
@@ -137,23 +131,42 @@ impl PerFrameObjects {
         self.font_staged_size = dimensions;
 
         // Map and write the texture data to our staging buffer
-        let resource = self.font_staging_buffer.get_raw_handle();
+        let resource = self
+            .font_staging_buffer
+            .query_interface::<dyn IBufferExt>()
+            .unwrap()
+            .get_raw_handle();
         let ptr = resource.map(0, Some(0..0)).unwrap().unwrap();
         ptr.as_ptr()
             .copy_from_nonoverlapping(texture.bytes.as_ptr(), texture.bytes.len());
         resource.unmap(0, None);
     }
 
-    pub unsafe fn record_texture_upload(&mut self, command_list: &dx12::GraphicsCommandList) {
+    pub unsafe fn record_texture_upload(
+        &mut self,
+        command_list: &dx12::GraphicsCommandList,
+        encoder: &mut dyn IGeneralEncoder,
+    ) {
         command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |command_list| {
-            let staged_resource = self.font_staged.as_ref().unwrap().get_raw_handle();
+            let staged_resource = self
+                .font_staged
+                .as_ref()
+                .unwrap()
+                .query_interface::<dyn ITextureExt>()
+                .unwrap()
+                .get_raw_handle();
 
             let dst = dx12::TextureCopyLocation::Subresource {
                 resource: Some(staged_resource.clone()),
                 subresource_index: 0,
             };
             let src = dx12::TextureCopyLocation::Placed {
-                resource: Some(self.font_staging_buffer.get_raw_handle()),
+                resource: Some(
+                    self.font_staging_buffer
+                        .query_interface::<dyn IBufferExt>()
+                        .unwrap()
+                        .get_raw_handle(),
+                ),
                 placed_footprint: dx12::PlacedSubresourceFootprint {
                     offset: 0,
                     footprint: dx12::SubresourceFootprint {
@@ -167,14 +180,17 @@ impl PerFrameObjects {
             };
             command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
 
-            let barrier = dx12::ResourceBarrier::Transition {
-                flags: Default::default(),
-                resource: Some(staged_resource),
-                subresource: 0,
-                state_before: dx12::ResourceStates::COPY_DEST,
-                state_after: dx12::ResourceStates::PIXEL_SHADER_RESOURCE,
-            };
-            command_list.resource_barrier(&[barrier]);
+            encoder.resource_barrier(
+                &[],
+                &[TextureBarrier {
+                    texture: self.font_staged.as_ref().unwrap().deref(),
+                    before_state: ResourceStates::COPY_DEST,
+                    after_state: ResourceStates::PIXEL_SHADER_RESOURCE,
+                    split_barrier_mode: Default::default(),
+                    queue_transition_mode: Default::default(),
+                    subresource: None,
+                }],
+            );
         });
     }
 
@@ -193,8 +209,6 @@ impl PerFrameObjects {
                 sample_quality: 0,
                 ..Default::default()
             })
-            .unwrap()
-            .query_interface()
             .unwrap();
 
         self.font_staged = Some(image);
@@ -212,7 +226,13 @@ impl PerFrameObjects {
             },
         };
         device.create_shader_resource_view(
-            &self.font_staged.as_ref().unwrap().get_raw_handle(),
+            &self
+                .font_staged
+                .as_ref()
+                .unwrap()
+                .query_interface::<dyn ITextureExt>()
+                .unwrap()
+                .get_raw_handle(),
             &srv_desc,
             self.font_cpu_srv,
         );
@@ -221,15 +241,13 @@ impl PerFrameObjects {
     fn create_font_staging_allocation(
         device: &dyn IDeviceExt,
         dimensions: (u32, u32),
-    ) -> AnyArc<dyn IBufferExt> {
+    ) -> AnyArc<dyn IBuffer> {
         device
             .create_buffer(&BufferDesc {
                 size: (dimensions.0 * dimensions.1) as u64,
                 cpu_access: CpuAccessMode::Write,
                 ..Default::default()
             })
-            .unwrap()
-            .query_interface()
             .unwrap()
     }
 
