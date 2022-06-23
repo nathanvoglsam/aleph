@@ -323,6 +323,17 @@ pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
+    unsafe fn bind_vertex_buffers(
+        &mut self,
+        first_binding: u32,
+        bindings: &[InputAssemblyBufferBinding],
+    );
+    unsafe fn bind_index_buffer(
+        &mut self,
+        index_type: IndexType,
+        binding: &InputAssemblyBufferBinding,
+    );
+    unsafe fn set_scissor_rects(&mut self, rects: &[Rect]);
     unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
@@ -465,6 +476,19 @@ pub trait INamedObject {
 // DATA
 // =================================================================================================
 //
+
+//
+//
+// _________________________________________________________________________________________________
+// General
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct Rect {
+    pub x: u32,
+    pub y: u32,
+    pub w: u32,
+    pub h: u32,
+}
 
 //
 //
@@ -1993,6 +2017,18 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("subresource", &self.subresource)
             .finish()
     }
+}
+
+#[derive(Clone)]
+pub struct InputAssemblyBufferBinding<'a> {
+    pub buffer: &'a dyn IBuffer,
+    pub offset: u64,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum IndexType {
+    U16,
+    U32,
 }
 
 //
