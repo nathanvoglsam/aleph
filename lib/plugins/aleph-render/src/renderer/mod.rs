@@ -38,7 +38,7 @@ pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture, IndexType,
-    InputAssemblyBufferBinding, Rect, ResourceStates, TextureBarrier,
+    InputAssemblyBufferBinding, Rect, ResourceStates, TextureBarrier, Viewport,
 };
 use std::ops::{Deref, DerefMut};
 
@@ -258,8 +258,8 @@ impl EguiRenderer {
         let height_pixels = self.global.swap_height as f32;
         let width_points = width_pixels / self.pixels_per_point;
         let height_points = height_pixels / self.pixels_per_point;
-        let values = [width_points.to_bits(), height_points.to_bits()];
-        command_list.set_graphics_root_32bit_constants(1, &values, 0);
+        let values_data = [width_points, height_points];
+        encoder.set_push_constant_block(0, bytemuck::cast_slice(&values_data));
 
         //
         // Bind the vertex and index buffers to render with
@@ -287,9 +287,9 @@ impl EguiRenderer {
         //
         // Set the viewport state, we're going to be rendering to the whole frame
         //
-        command_list.rs_set_viewports(&[dx12::Viewport {
-            top_left_x: 0.0,
-            top_left_y: 0.0,
+        encoder.set_viewports(&[Viewport {
+            x: 0.0,
+            y: 0.0,
             width: self.global.swap_width as _,
             height: self.global.swap_height as _,
             min_depth: 0.0,
