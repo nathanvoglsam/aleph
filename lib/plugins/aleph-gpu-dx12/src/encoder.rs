@@ -40,8 +40,9 @@ use interfaces::gpu::{
     BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
     IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, IndexType,
     InputAssemblyBufferBinding, QueueTransitionMode, Rect, ResourceStates, SplitBarrierMode,
-    TextureBarrier, TextureDesc, TextureSubResourceSet,
+    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
+use std::ops::Deref;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
@@ -346,6 +347,21 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         self.list.ia_set_index_buffer(&view);
     }
 
+    unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
+        let viewports: Vec<dx12::Viewport> = viewports
+            .iter()
+            .map(|v| dx12::Viewport {
+                top_left_x: v.x,
+                top_left_y: v.y,
+                width: v.width,
+                height: v.height,
+                min_depth: v.min_depth,
+                max_depth: v.max_depth,
+            })
+            .collect();
+        self.list.rs_set_viewports(&viewports);
+    }
+
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
         // TODO: bump allocator on self for temp allocations like this
         let rects: Vec<dx12::Rect> = rects
@@ -358,6 +374,33 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             })
             .collect();
         self.list.rs_set_scissor_rects(&rects);
+    }
+
+    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
+        // This command can't work without a bound pipeline, we need the pipeline layout so we can
+        // know where in the root signature to write the data
+        let pipeline = self
+            .bound_graphics_pipeline
+            .as_ref()
+            .map(|v| v.deref())
+            .unwrap();
+
+        // Lookup the parameter index on the currently bound pipeline (pipeline layout) based on
+        // the constant block index
+        let block = &pipeline.pipeline_layout.push_constant_blocks[block_index];
+
+        debug_assert!(
+            data.len() % 4 == 0,
+            "Push Constant data must have len divisible by 4"
+        );
+
+        debug_assert!(
+            data.len() <= block.size as usize,
+            "Push Constant data larger than the specified block"
+        );
+
+        self.list
+            .set_graphics_root_32bit_constants(block.root_parameter_index, data, 0);
     }
 
     unsafe fn clear_texture(
