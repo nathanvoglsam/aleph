@@ -36,6 +36,7 @@ pub struct PipelineLayout {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) root_signature: dx12::RootSignature,
+    pub(crate) push_constant_blocks: Vec<PushConstantBlockInfo>,
 }
 
 declare_interfaces!(PipelineLayout, [IPipelineLayout, IPipelineLayoutExt]);
@@ -68,4 +69,10 @@ impl INamedObject for PipelineLayout {
     fn set_name(&self, name: &str) {
         self.root_signature.set_name(name).unwrap()
     }
+}
+
+/// Internal struct for caching information necessary for implementing command recording
+pub struct PushConstantBlockInfo {
+    pub size: u32,
+    pub root_parameter_index: u32,
 }

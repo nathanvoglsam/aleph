@@ -45,7 +45,7 @@ use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::in_flight_command_list::InFlightCommandList;
 use crate::internal::queue::Queue;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
-use crate::pipeline_layout::PipelineLayout;
+use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::Texture;
@@ -327,6 +327,7 @@ impl IDevice for Device {
         //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
         //       constants after descriptors means the constants are more likely to spill into
         //       memory instead of being in the registers.
+        let mut push_constant_blocks = Vec::new();
         for block in desc.push_constant_blocks {
             if (block.size % 4) != 0 {
                 return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
@@ -340,6 +341,10 @@ impl IDevice for Device {
                     num32_bit_values,
                 },
             };
+            push_constant_blocks.push(PushConstantBlockInfo {
+                size: num32_bit_values * 4,
+                root_parameter_index: parameters.len() as u32,
+            });
             parameters.push(range);
         }
 
@@ -365,6 +370,7 @@ impl IDevice for Device {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             root_signature,
+            push_constant_blocks,
         });
         Ok(AnyArc::map::<dyn IPipelineLayout, _>(
             pipeline_layout,
