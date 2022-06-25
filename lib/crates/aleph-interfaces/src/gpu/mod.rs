@@ -323,23 +323,32 @@ pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
 
 pub trait IGeneralEncoder: IComputeEncoder + Send {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline);
+
     unsafe fn bind_vertex_buffers(
         &mut self,
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     );
+
     unsafe fn bind_index_buffer(
         &mut self,
         index_type: IndexType,
         binding: &InputAssemblyBufferBinding,
     );
+
+    unsafe fn set_viewports(&mut self, viewports: &[Viewport]);
+
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]);
+
+    unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]);
+
     unsafe fn clear_texture(
         &mut self,
         texture: &dyn ITexture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     );
+
     unsafe fn clear_depth_stencil_texture(
         &mut self,
         texture: &dyn ITexture,
@@ -353,6 +362,7 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
         first_vertex: u32,
         first_instance: u32,
     );
+
     unsafe fn draw_indexed(
         &mut self,
         index_count: u32,
@@ -2029,6 +2039,17 @@ pub struct InputAssemblyBufferBinding<'a> {
 pub enum IndexType {
     U16,
     U32,
+}
+
+#[repr(C)]
+#[derive(Clone, Debug)]
+pub struct Viewport {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub min_depth: f32,
+    pub max_depth: f32,
 }
 
 //
