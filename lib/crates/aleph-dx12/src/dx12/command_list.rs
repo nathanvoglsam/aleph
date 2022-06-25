@@ -394,10 +394,10 @@ impl GraphicsCommandList {
     pub unsafe fn set_compute_root_32bit_constants(
         &self,
         root_parameter_index: u32,
-        values: &[u32],
+        values: &[u8],
         dest_offset_in_32bit_values: u32,
     ) {
-        let num32_bit_values_to_set = values.len() as u32;
+        let num32_bit_values_to_set = (values.len() / 4) as u32;
         let p_src_data = values.as_ptr();
         self.0.SetComputeRoot32BitConstants(
             root_parameter_index,
@@ -412,10 +412,10 @@ impl GraphicsCommandList {
     pub unsafe fn set_graphics_root_32bit_constants(
         &self,
         root_parameter_index: u32,
-        values: &[u32],
+        values: &[u8],
         dest_offset_in_32bit_values: u32,
     ) {
-        let num32_bit_values_to_set = values.len() as u32;
+        let num32_bit_values_to_set = (values.len() / 4) as u32;
         let p_src_data = values.as_ptr();
         self.0.SetGraphicsRoot32BitConstants(
             root_parameter_index,
