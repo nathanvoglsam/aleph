@@ -46,6 +46,7 @@ use interfaces::gpu::{
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
     pub(crate) parent: &'a mut GeneralCommandList,
+    pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
 }
 
@@ -281,6 +282,10 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             // TODO: Consider whether we just expose the parameter in the call and pipeline
             //       creation.
             self.input_binding_strides = concrete.input_binding_strides;
+
+            // We need the currently bound pipeline while recording commands to access things like
+            // the pipeline layout for handling binding descriptors.
+            self.bound_graphics_pipeline = Some(concrete.this.upgrade().unwrap());
         } else {
             panic!("Unknown IGraphicsPipeline implementation");
         }
