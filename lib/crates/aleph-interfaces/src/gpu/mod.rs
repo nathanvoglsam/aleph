@@ -1892,7 +1892,7 @@ impl Display for DepthStencilClearValue {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             DepthStencilClearValue::DepthStencil(depth, stencil) => {
-                write!(f, "ColorClearValue::Float({}, {})", *depth, *stencil)
+                write!(f, "DepthStencilClearValue::Float({}, {})", *depth, *stencil)
             }
             DepthStencilClearValue::Depth(v) => {
                 write!(f, "DepthStencilClearValue::Depth({})", *v)
