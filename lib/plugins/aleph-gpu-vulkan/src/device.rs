@@ -40,12 +40,11 @@ use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BufferCreateError, BufferDesc, CommandPoolCreateError,
     CompareOp, ComputePipelineCreateError, ComputePipelineDesc, CullMode,
     DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
-    GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
-    IComputePipeline, IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline,
-    INamedObject, IPipelineLayout, ISampler, IShader, ITexture, PipelineLayoutCreateError,
-    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueuePresentError, QueueSubmitError,
-    SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp,
-    StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool, IComputePipeline,
+    IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue,
+    ISampler, IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode,
+    PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
+    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
 use std::ffi::CString;
 
@@ -387,24 +386,7 @@ impl IDevice for Device {
         todo!()
     }
 
-    unsafe fn general_queue_submit_list(
-        &self,
-        _command_list: Box<dyn IGeneralCommandList>,
-    ) -> Result<(), QueueSubmitError> {
-        todo!()
-    }
-
-    unsafe fn general_queue_submit_lists(
-        &self,
-        _command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
-    ) -> Result<(), QueueSubmitError> {
-        todo!()
-    }
-
-    unsafe fn general_queue_present(
-        &self,
-        _image: Box<dyn IAcquiredTexture>,
-    ) -> Result<(), QueuePresentError> {
+    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
         todo!()
     }
 
