@@ -216,19 +216,29 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
 
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError>;
 
+    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
+
+    /// Returns the API used by the underlying backend implementation.
+    fn get_backend_api(&self) -> BackendAPI;
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Queue
+
+pub trait IQueue: INamedObject + IAny + 'static {
+    any_arc_trait_utils_decl!(IQueue);
+
     ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
     /// contain a valid command stream.
     ///
-    /// The GPU interfaces will uphold resource lifetime requirements and CPU synchronization
-    /// requirements, but makes a very limited effort to handle GPU synchronization. It is up to the
-    /// caller to record correct barriers.
-    ///
-    unsafe fn general_queue_submit_list(
+    unsafe fn submit_list(
         &self,
-        command_list: Box<dyn IGeneralCommandList>,
+        command_list: Box<dyn ICommandList>,
     ) -> Result<(), QueueSubmitError>;
 
     ///
@@ -237,13 +247,9 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     /// It is the caller's responsibility to ensure that the command lists submitted to the GPU
     /// contain a valid command stream.
     ///
-    /// The GPU interfaces will uphold resource lifetime requirements and CPU synchronization
-    /// requirements, but makes a very limited effort to handle GPU synchronization. It is up to the
-    /// caller to record correct barriers.
-    ///
-    unsafe fn general_queue_submit_lists(
+    unsafe fn submit_lists(
         &self,
-        command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
+        command_lists: &mut dyn Iterator<Item = Box<dyn ICommandList>>,
     ) -> Result<(), QueueSubmitError>;
 
     ///
@@ -253,13 +259,7 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn general_queue_present(
-        &self,
-        image: Box<dyn IAcquiredTexture>,
-    ) -> Result<(), QueuePresentError>;
-
-    /// Returns the API used by the underlying backend implementation.
-    fn get_backend_api(&self) -> BackendAPI;
+    unsafe fn present(&self, image: Box<dyn IAcquiredTexture>) -> Result<(), QueuePresentError>;
 }
 
 //
@@ -390,16 +390,18 @@ pub trait ITransferEncoder: Send {}
 // _________________________________________________________________________________________________
 // Command Lists
 
-pub trait IGeneralCommandList: INamedObject + Send + IAny + Any + 'static {
-    fn begin<'a>(&'a mut self) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
-}
+pub trait ICommandList: INamedObject + Send + IAny + Any + 'static {
+    fn begin_general<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError>;
 
-pub trait IComputeCommandList: INamedObject + Send + IAny + Any + 'static {
-    fn begin<'a>(&'a mut self) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
-}
+    fn begin_compute<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError>;
 
-pub trait ITransferCommandList: INamedObject + Send + IAny + Any + 'static {
-    fn begin<'a>(&'a mut self) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
+    fn begin_transfer<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError>;
 }
 
 //
@@ -410,9 +412,7 @@ pub trait ITransferCommandList: INamedObject + Send + IAny + Any + 'static {
 pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(ICommandPool);
 
-    fn create_general_command_list(
-        &self,
-    ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError>;
+    fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
 }
 
 //
@@ -2349,6 +2349,9 @@ pub enum CommandListCreateError {
 
 #[derive(Error, Debug)]
 pub enum CommandListBeginError {
+    #[error("The command list does not support encoding commands for a '{0}' queue")]
+    InvalidEncoderType(QueueType),
+
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
 }
@@ -2360,8 +2363,8 @@ pub enum CommandListBeginError {
 
 #[derive(Error, Debug)]
 pub enum QueueSubmitError {
-    #[error("The queue '{0}' is not available")]
-    QueueNotAvailable(QueueType),
+    #[error("The queue does not support submitting '{0}' commands")]
+    InvalidEncoderType(QueueType),
 
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
@@ -2371,9 +2374,6 @@ pub enum QueueSubmitError {
 pub enum QueuePresentError {
     #[error("The queue '{0}' does not support presentation to the requested swap chain")]
     QueuePresentationNotSupported(QueueType),
-
-    #[error("The queue '{0}' is not available")]
-    QueueNotAvailable(QueueType),
 
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
