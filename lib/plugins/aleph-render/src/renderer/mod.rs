@@ -37,7 +37,7 @@ pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    ColorClearValue, IGeneralCommandList, IGeneralEncoder, ITexture, IndexType,
+    ColorClearValue, ICommandList, IGeneralEncoder, ITexture, IndexType,
     InputAssemblyBufferBinding, Rect, ResourceStates, TextureBarrier, Viewport,
 };
 use std::ops::{Deref, DerefMut};
@@ -88,11 +88,11 @@ impl EguiRenderer {
         texture: &dyn ITexture,
         view: dx12::CPUDescriptorHandle,
         render_data: RenderData,
-    ) -> Box<dyn IGeneralCommandList + '_> {
+    ) -> Box<dyn ICommandList + '_> {
         // Begin recording commands into the command list
         let mut list = self.frames[index]
             .command_allocator
-            .create_general_command_list()
+            .create_command_list()
             .unwrap();
 
         let command_list: dx12::GraphicsCommandList = list
@@ -102,7 +102,7 @@ impl EguiRenderer {
             .get_raw_list();
 
         {
-            let mut encoder = list.begin().unwrap();
+            let mut encoder = list.begin_general().unwrap();
 
             // If the font texture has changed then we need to update our copy and increment the
             // version to invalidate the per-frame font textures

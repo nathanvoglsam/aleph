@@ -129,6 +129,8 @@ impl IPlugin for PluginRender {
             .unwrap();
         self.device = Some(device.clone());
 
+        let queue = device.get_queue(QueueType::General).unwrap();
+
         aleph_log::info!("");
         Self::log_gpu_info(&adapter.get_raw_handle());
         aleph_log::info!("");
@@ -192,8 +194,8 @@ impl IPlugin for PluginRender {
                         data.render_data.take(),
                     );
 
-                    device.general_queue_submit_list(command_list).unwrap();
-                    device.general_queue_present(acquired_image).unwrap();
+                    queue.submit_list(command_list).unwrap();
+                    queue.present(acquired_image).unwrap();
                 }
             },
         );
