@@ -34,45 +34,73 @@ use crate::internal::in_flight_command_list::ReturnToPool;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, IAny};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{CommandListBeginError, IGeneralCommandList, IGeneralEncoder, INamedObject};
+use interfaces::gpu::{
+    CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
+    ITransferEncoder, QueueType,
+};
 
-pub struct GeneralCommandList {
+pub struct CommandList {
     pub(crate) pool: AnyArc<CommandPool>,
     pub(crate) tracker: CommandListTracker,
+    pub(crate) list_type: QueueType,
     pub(crate) allocator: dx12::CommandAllocator,
     pub(crate) list: dx12::GraphicsCommandList,
 }
 
-declare_interfaces!(GeneralCommandList, [IGeneralCommandList, ICommandListExt]);
+declare_interfaces!(CommandList, [ICommandList, ICommandListExt]);
 
-unsafe impl Send for GeneralCommandList {}
+unsafe impl Send for CommandList {}
 
-impl IGeneralCommandList for GeneralCommandList {
-    fn begin<'a>(&'a mut self) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
-        // Open the command list for recording with no bound pipeline so we can attach it to
-        // the command allocator
-        unsafe {
-            self.list
-                .reset::<(), _>(&self.allocator, None)
-                .map_err(|v| anyhow!(v))?;
+impl ICommandList for CommandList {
+    fn begin_general<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
+        if matches!(self.list_type, QueueType::General) {
+            // Open the command list for recording with no bound pipeline so we can attach it to
+            // the command allocator
+            unsafe {
+                self.list
+                    .reset::<(), _>(&self.allocator, None)
+                    .map_err(|v| anyhow!(v))?;
+            }
+
+            // Clear the resource tracker data. The list can't be in flight when we do this so it's all
+            // good to do this here. If the tracker is tracking anything it's because of the command
+            // list having already been recorded
+            self.tracker.clear();
+
+            let encoder = Encoder::<'a> {
+                list: self.list.clone(),
+                parent: self,
+                bound_graphics_pipeline: None,
+                input_binding_strides: [0; 16],
+            };
+            Ok(Box::new(encoder))
+        } else {
+            Err(CommandListBeginError::InvalidEncoderType(
+                QueueType::General,
+            ))
         }
+    }
 
-        // Clear the resource tracker data. The list can't be in flight when we do this so it's all
-        // good to do this here. If the tracker is tracking anything it's because of the command
-        // list having already been recorded
-        self.tracker.clear();
+    fn begin_compute<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn IComputeEncoder + 'a>, CommandListBeginError> {
+        Err(CommandListBeginError::InvalidEncoderType(
+            QueueType::Compute,
+        ))
+    }
 
-        let encoder = Encoder::<'a> {
-            list: self.list.clone(),
-            parent: self,
-            bound_graphics_pipeline: None,
-            input_binding_strides: [0; 16],
-        };
-        Ok(Box::new(encoder))
+    fn begin_transfer<'a>(
+        &'a mut self,
+    ) -> Result<Box<dyn ITransferEncoder + 'a>, CommandListBeginError> {
+        Err(CommandListBeginError::InvalidEncoderType(
+            QueueType::Transfer,
+        ))
     }
 }
 
-impl ReturnToPool for GeneralCommandList {
+impl ReturnToPool for CommandList {
     fn return_to_pool(&mut self) {
         self.tracker.images.clear();
         self.tracker.binding_sets.clear();
@@ -89,7 +117,7 @@ pub trait ICommandListExt: IAny {
     fn get_raw_list(&self) -> dx12::GraphicsCommandList;
 }
 
-impl ICommandListExt for GeneralCommandList {
+impl ICommandListExt for CommandList {
     fn get_raw_allocator(&self) -> dx12::CommandAllocator {
         self.allocator.clone()
     }
@@ -99,7 +127,7 @@ impl ICommandListExt for GeneralCommandList {
     }
 }
 
-impl INamedObject for GeneralCommandList {
+impl INamedObject for CommandList {
     fn set_name(&self, name: &str) {
         self.allocator.set_name(name).unwrap();
         self.list.set_name(name).unwrap();

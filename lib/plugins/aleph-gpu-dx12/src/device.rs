@@ -27,12 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::acquired_texture::AcquiredTexture;
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
 use crate::descriptor_set_layout::DescriptorSetLayout;
-use crate::general_command_list::GeneralCommandList;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
     cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
@@ -42,33 +40,30 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
-use crate::internal::in_flight_command_list::InFlightCommandList;
-use crate::internal::queue::Queue;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
+use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
-use dx12::{dxgi, AsWeakRef, D3D12Object};
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface, QueryInterfaceBox};
+use dx12::{dxgi, D3D12Object};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
     ComputePipelineCreateError, ComputePipelineDesc, CpuAccessMode, DepthStencilStateDesc,
     DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, DescriptorType,
-    GraphicsPipelineCreateError, GraphicsPipelineDesc, IAcquiredTexture, IBuffer, ICommandPool,
-    IComputePipeline, IDescriptorSetLayout, IDevice, IGeneralCommandList, IGraphicsPipeline,
-    INamedObject, IPipelineLayout, ISampler, IShader, ISwapChain, ITexture,
-    PipelineLayoutCreateError, PipelineLayoutDesc, QueuePresentError, QueueSubmitError, QueueType,
+    GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool, IComputePipeline,
+    IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue,
+    ISampler, IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, QueueType,
     RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
     ShaderOptions, ShaderType, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
     VertexInputStateDesc,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -79,7 +74,9 @@ pub struct Device {
     pub(crate) rtv_heap: DescriptorAllocatorCPU,
     pub(crate) dsv_heap: DescriptorAllocatorCPU,
     pub(crate) _sampler_heap: DescriptorAllocatorCPU,
-    pub(crate) queues: Queues,
+    pub(crate) general_queue: Option<AnyArc<Queue>>,
+    pub(crate) compute_queue: Option<AnyArc<Queue>>,
+    pub(crate) transfer_queue: Option<AnyArc<Queue>>,
 }
 
 declare_interfaces!(Device, [IDevice, IDeviceExt]);
@@ -98,25 +95,25 @@ impl IDevice for Device {
     }
 
     fn garbage_collect(&self) {
-        if let Some(queue) = &self.queues.general {
+        if let Some(queue) = &self.general_queue {
             queue.clear_completed_lists();
         }
-        if let Some(queue) = &self.queues.compute {
+        if let Some(queue) = &self.compute_queue {
             queue.clear_completed_lists();
         }
-        if let Some(queue) = &self.queues.transfer {
+        if let Some(queue) = &self.transfer_queue {
             queue.clear_completed_lists();
         }
     }
 
     fn wait_idle(&self) {
-        if let Some(queue) = &self.queues.general {
+        if let Some(queue) = &self.general_queue {
             queue.wait_all_lists_completed();
         }
-        if let Some(queue) = &self.queues.compute {
+        if let Some(queue) = &self.compute_queue {
             queue.wait_all_lists_completed();
         }
-        if let Some(queue) = &self.queues.transfer {
+        if let Some(queue) = &self.transfer_queue {
             queue.wait_all_lists_completed();
         }
     }
@@ -501,134 +498,21 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn ICommandPool, _>(pool, |v| v))
     }
 
-    unsafe fn general_queue_submit_list(
-        &self,
-        command_list: Box<dyn IGeneralCommandList>,
-    ) -> Result<(), QueueSubmitError> {
-        let queue = self
-            .queues
-            .general
-            .as_ref()
-            .ok_or(QueueSubmitError::QueueNotAvailable(QueueType::General))?;
-
-        let command_list: Box<GeneralCommandList> = command_list
-            .query_interface::<GeneralCommandList>()
-            .ok()
-            .unwrap();
-
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let index = {
-            let _lock = queue.submit_lock.lock();
-            queue
-                .handle
-                .execute_command_lists(&[command_list.list.as_weak()]);
-
-            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            queue
-                .handle
-                .signal(&queue.fence, index)
-                .map_err(|v| anyhow!(v))?;
-
-            index
-        };
-
-        queue.in_flight.push(InFlightCommandList {
-            index,
-            list: command_list,
-        });
-
-        Ok(())
-    }
-
-    unsafe fn general_queue_submit_lists(
-        &self,
-        command_lists: &mut dyn Iterator<Item = Box<dyn IGeneralCommandList>>,
-    ) -> Result<(), QueueSubmitError> {
-        let queue = self
-            .queues
-            .general
-            .as_ref()
-            .ok_or(QueueSubmitError::QueueNotAvailable(QueueType::General))?;
-
-        // Perform the actual submit operation
-        let lists: Vec<Box<GeneralCommandList>> = command_lists
-            .map(|v| v.query_interface::<GeneralCommandList>().ok().unwrap())
-            .collect();
-
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let index = {
-            let _lock = queue.submit_lock.lock();
-
-            let handles: Vec<dx12::GraphicsCommandList> =
-                lists.iter().map(|v| v.list.clone()).collect();
-
-            queue.handle.execute_command_lists_strong(&handles);
-
-            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            queue
-                .handle
-                .signal(&queue.fence, index)
-                .map_err(|v| anyhow!(v))?;
-
-            index
-        };
-
-        for list in lists {
-            queue.in_flight.push(InFlightCommandList { index, list });
+    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
+        match queue_type {
+            QueueType::General => self
+                .general_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Compute => self
+                .compute_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Transfer => self
+                .transfer_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
         }
-
-        Ok(())
-    }
-
-    unsafe fn general_queue_present(
-        &self,
-        texture: Box<dyn IAcquiredTexture>,
-    ) -> Result<(), QueuePresentError> {
-        let image = texture.query_interface::<AcquiredTexture>().ok().unwrap();
-
-        if !image
-            .swap_chain
-            .present_supported_on_queue(QueueType::General)
-        {
-            return Err(QueuePresentError::QueuePresentationNotSupported(
-                QueueType::General,
-            ));
-        }
-
-        let queue = self
-            .queues
-            .general
-            .as_ref()
-            .ok_or(QueuePresentError::QueueNotAvailable(QueueType::General))?;
-
-        // Grab the submit lock to prevent concurrent submits. I'm not sure if d3d12 allows
-        // concurrent submits from multiple threads but vulkan doesn't so I'll assume d3d12 doesn't
-        // either.
-        let _index = {
-            let _lock = queue.submit_lock.lock();
-
-            image
-                .swap_chain
-                .swap_chain
-                .present(0, 0)
-                .map_err(|v| anyhow!(v))?;
-            let index = queue.last_submitted_index.fetch_add(1, Ordering::Relaxed);
-            queue
-                .handle
-                .signal(&queue.fence, index)
-                .map_err(|v| anyhow!(v))?;
-
-            // TODO: We need to track the lifetime of this operation and extend the swap image's
-            //       lifetime until the present operation is complete.
-
-            index
-        };
-
-        Ok(())
     }
 
     fn get_backend_api(&self) -> BackendAPI {
@@ -1094,15 +978,15 @@ impl IDeviceExt for Device {
     }
 
     fn get_raw_general_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.general.as_ref().map(|v| v.handle.clone())
+        self.general_queue.as_ref().map(|v| v.handle.clone())
     }
 
     fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.compute.as_ref().map(|v| v.handle.clone())
+        self.compute_queue.as_ref().map(|v| v.handle.clone())
     }
 
     fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue> {
-        self.queues.transfer.as_ref().map(|v| v.handle.clone())
+        self.transfer_queue.as_ref().map(|v| v.handle.clone())
     }
 }
 
@@ -1113,18 +997,4 @@ impl INamedObject for Device {
     fn set_name(&self, name: &str) {
         self.device.set_name(name).unwrap()
     }
-}
-
-/// Internal struct that logically associates all queues into a single block
-///
-/// # Info
-///
-/// I'm not sure if I need a mutex on D3D12, but vkQueue requires external synchronization so I am
-/// just going to be safe for now and lock for the D3D12 backend too for now.
-///
-/// I can just remove them later
-pub struct Queues {
-    pub general: Option<Queue<GeneralCommandList>>,
-    pub compute: Option<Queue<()>>,
-    pub transfer: Option<Queue<()>>,
 }

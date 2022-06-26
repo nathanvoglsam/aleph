@@ -32,7 +32,6 @@ pub mod conv;
 pub mod descriptor_allocator_cpu;
 pub mod descriptor_heap_info;
 pub mod in_flight_command_list;
-pub mod queue;
 
 pub const fn calc_subresource_index(
     mip_level: u32,

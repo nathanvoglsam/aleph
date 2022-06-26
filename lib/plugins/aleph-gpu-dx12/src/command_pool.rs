@@ -27,13 +27,15 @@
 // SOFTWARE.
 //
 
+use crate::command_list::CommandList;
 use crate::device::Device;
-use crate::general_command_list::GeneralCommandList;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{CommandListCreateError, ICommandPool, IGeneralCommandList, INamedObject};
+use interfaces::gpu::{
+    CommandListCreateError, ICommandList, ICommandPool, INamedObject, QueueType,
+};
 
 pub struct CommandPool {
     pub(crate) this: AnyWeak<Self>,
@@ -85,9 +87,7 @@ impl ICommandPool for CommandPool {
         self.this.weak_count()
     }
 
-    fn create_general_command_list(
-        &self,
-    ) -> Result<Box<dyn IGeneralCommandList>, CommandListCreateError> {
+    fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
         let (allocator, list) = if let Some(v) = self.general_free_list.pop() {
             unsafe {
                 v.0.reset().map_err(|v| anyhow!(v))?;
@@ -97,9 +97,10 @@ impl ICommandPool for CommandPool {
             self.new_list(dx12::CommandListType::Direct)?
         };
 
-        let command_list = GeneralCommandList {
+        let command_list = CommandList {
             pool: self.this.upgrade().unwrap(),
             tracker: Default::default(),
+            list_type: QueueType::General,
             allocator,
             list,
         };

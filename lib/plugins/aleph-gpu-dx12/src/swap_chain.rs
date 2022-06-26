@@ -88,11 +88,10 @@ impl SwapChain {
             return Err(AcquireImageError::QueuedResizeFailed);
         }
 
-        let queues = &self.device.queues;
         let queue = match self.queue_support {
-            QueueType::General => queues.general.as_ref().unwrap().handle.clone(),
-            QueueType::Compute => queues.compute.as_ref().unwrap().handle.clone(),
-            QueueType::Transfer => queues.transfer.as_ref().unwrap().handle.clone(),
+            QueueType::General => self.device.general_queue.as_ref().unwrap().handle.clone(),
+            QueueType::Compute => self.device.compute_queue.as_ref().unwrap().handle.clone(),
+            QueueType::Transfer => self.device.transfer_queue.as_ref().unwrap().handle.clone(),
         };
         // Empty the images array as, assuming the rest of the code is correct, that array will
         // hold the only remaining references to the swap chain images.

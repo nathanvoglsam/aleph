@@ -94,7 +94,6 @@ impl Surface {
 
         // Select a queue to attach the swap chain to. If the preferred queue is not supported we
         // fallback directly to the general queue.
-        let queues = &device.queues;
         let (queue, queue_type) = match config.preferred_queue {
             QueueType::General => {
                 // Loading the general queue is handled after this match block as a fallback for
@@ -103,7 +102,7 @@ impl Surface {
                 (None, QueueType::General)
             }
             QueueType::Compute => {
-                if let Some(queue) = queues.compute.as_ref() {
+                if let Some(queue) = device.compute_queue.as_ref() {
                     let queue = queue.handle.clone();
                     (Some(queue), QueueType::Compute)
                 } else {
@@ -111,7 +110,7 @@ impl Surface {
                 }
             }
             QueueType::Transfer => {
-                if let Some(queue) = queues.transfer.as_ref() {
+                if let Some(queue) = device.transfer_queue.as_ref() {
                     let queue = queue.handle.clone();
                     (Some(queue), QueueType::Transfer)
                 } else {
@@ -120,7 +119,7 @@ impl Surface {
             }
         };
         let (queue, queue_type) = if queue.is_none() {
-            if let Some(queue) = queues.general.as_ref() {
+            if let Some(queue) = device.general_queue.as_ref() {
                 let queue = queue.handle.clone();
                 (Some(queue), QueueType::General)
             } else {

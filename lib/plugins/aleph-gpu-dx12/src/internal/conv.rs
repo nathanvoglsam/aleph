@@ -30,9 +30,9 @@
 use dx12::dxgi;
 use interfaces::gpu::{
     BlendFactor, BlendOp, CompareOp, CullMode, DescriptorShaderVisibility, Format, FrontFaceOrder,
-    OptimalClearValue, PolygonMode, PrimitiveTopology, ResourceStates, SamplerAddressMode,
-    SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError,
-    TextureDesc, TextureDimension,
+    OptimalClearValue, PolygonMode, PrimitiveTopology, QueueType, ResourceStates,
+    SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
+    TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -220,6 +220,14 @@ pub const fn sampler_address_mode_to_dx12(mode: SamplerAddressMode) -> dx12::Tex
         SamplerAddressMode::Clamp => dx12::TextureAddressMode::Clamp,
         SamplerAddressMode::Border => dx12::TextureAddressMode::Border,
         SamplerAddressMode::MirrorOnce => dx12::TextureAddressMode::MirrorOnce,
+    }
+}
+
+pub const fn queue_type_to_dx12(queue_type: QueueType) -> dx12::CommandListType {
+    match queue_type {
+        QueueType::General => dx12::CommandListType::Direct,
+        QueueType::Compute => dx12::CommandListType::Compute,
+        QueueType::Transfer => dx12::CommandListType::Copy,
     }
 }
 

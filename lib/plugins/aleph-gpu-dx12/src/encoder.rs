@@ -28,7 +28,7 @@
 //
 
 use crate::buffer::Buffer;
-use crate::general_command_list::GeneralCommandList;
+use crate::command_list::CommandList;
 use crate::internal::calc_subresource_index;
 use crate::internal::conv::{decode_u32_color_to_float, resource_state_to_dx12};
 use crate::pipeline::GraphicsPipeline;
@@ -46,7 +46,7 @@ use std::ops::Deref;
 
 pub struct Encoder<'a> {
     pub(crate) list: dx12::GraphicsCommandList,
-    pub(crate) parent: &'a mut GeneralCommandList,
+    pub(crate) parent: &'a mut CommandList,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
 }

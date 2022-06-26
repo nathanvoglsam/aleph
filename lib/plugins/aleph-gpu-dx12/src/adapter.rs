@@ -28,15 +28,15 @@
 //
 
 use crate::context::Context;
-use crate::device::{Device, Queues};
+use crate::device::Device;
+use crate::internal::conv::queue_type_to_dx12;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
-use crate::internal::in_flight_command_list::ReturnToPool;
-use crate::internal::queue::Queue;
+use crate::queue::Queue;
 use dx12::{dxgi, MessageSeverity};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
+use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, QueueType, RequestDeviceError};
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
@@ -48,18 +48,15 @@ pub struct Adapter {
 declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
 
 impl Adapter {
-    fn create_queue<T: ReturnToPool>(
-        device: &dx12::Device,
-        queue_type: dx12::CommandListType,
-    ) -> Option<Queue<T>> {
+    fn create_queue(device: &dx12::Device, queue_type: QueueType) -> Option<AnyArc<Queue>> {
         let desc = dx12::CommandQueueDesc::builder()
-            .queue_type(queue_type)
+            .queue_type(queue_type_to_dx12(queue_type))
             .priority(0)
             .build();
         device
             .create_command_queue(&desc)
             .ok()
-            .map(|v| Queue::<T>::new(device, v))
+            .map(|v| Queue::new(device, queue_type, v))
     }
 }
 
@@ -86,11 +83,9 @@ impl IAdapter for Adapter {
             .map_err(|e| anyhow!(e))?;
 
         // Load our 3 queues
-        let queues = Queues {
-            general: Adapter::create_queue(&device, dx12::CommandListType::Direct),
-            compute: Adapter::create_queue(&device, dx12::CommandListType::Compute),
-            transfer: Adapter::create_queue(&device, dx12::CommandListType::Copy),
-        };
+        let general_queue = Adapter::create_queue(&device, QueueType::General);
+        let compute_queue = Adapter::create_queue(&device, QueueType::Compute);
+        let transfer_queue = Adapter::create_queue(&device, QueueType::Transfer);
 
         let debug_message_cookie = if self.context.debug.is_some() {
             // SAFETY: Should be safe but I don't have a proof
@@ -132,7 +127,9 @@ impl IAdapter for Adapter {
                 dx12::DescriptorHeapType::Sampler,
             ),
             device,
-            queues,
+            general_queue,
+            compute_queue,
+            transfer_queue,
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
