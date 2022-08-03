@@ -1,19 +1,20 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31019.35
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "aleph-test", "target\debug\aleph-test.exe", "{B1722BFB-2106-4C41-BE95-92A8B2558998}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = D:\Code\aleph\target\debug\aleph-test.exe
+		Executable = C:\Users\Nathan\Code\aleph\target\debug\aleph-test.exe
 		RemoteMachine = DESKTOP-EQ6K1EM
-		StartingDirectory = D:\Code\aleph\target\debug
+		StartingDirectory = C:\Users\Nathan\Code\aleph\target\debug
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No
 		LaunchSQLEngine = No
 		AttachLaunchAction = No
+		IORedirection = Auto
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Debug", "Debug", "{722200FF-EC7A-4EE0-B8C4-F667CD048420}"
@@ -23,14 +24,15 @@ EndProject
 Project("{911E67C6-3D85-4FCE-B560-20A9C3E3FF48}") = "aleph-test", "target\release\aleph-test.exe", "{B9B807C8-DDA9-4822-A52D-B67EC5301D40}"
 	ProjectSection(DebuggerProjectSystem) = preProject
 		PortSupplier = 00000000-0000-0000-0000-000000000000
-		Executable = D:\Code\aleph\target\release\aleph-test.exe
+		Executable = C:\Users\Nathan\Code\aleph\target\release\aleph-test.exe
 		RemoteMachine = DESKTOP-EQ6K1EM
-		StartingDirectory = D:\Code\aleph\target\release
+		StartingDirectory = C:\Users\Nathan\Code\aleph\target\release
 		Environment = Default
 		LaunchingEngine = 00000000-0000-0000-0000-000000000000
 		UseLegacyDebugEngines = No
 		LaunchSQLEngine = No
 		AttachLaunchAction = No
+		IORedirection = Auto
 	EndProjectSection
 EndProject
 Global
