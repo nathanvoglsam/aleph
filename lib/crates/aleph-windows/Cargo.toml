@@ -47,6 +47,12 @@ azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.a
 [dependencies.once_cell]
 version = "1"
 
+[dependencies.windows-interface]
+version = "0.39.0"
+
+[dependencies.bitflags]
+version = "1"
+
 [target.'cfg(all(not(target_vendor = "uwp"), target_os = "windows"))'.dependencies.windows]
 version = "0.39"
 features = [
@@ -67,6 +73,8 @@ features = [
     "Win32_System_WindowsProgramming",
     "Win32_Storage_StructuredStorage",
     "Win32_Security",
+    "implement",
+    "interface",
 ]
 
 [target.'cfg(all(target_vendor = "uwp", target_os = "windows"))'.dependencies.windows]
@@ -90,4 +98,6 @@ features = [
     "Win32_Storage_StructuredStorage",
     "Win32_Security",
     "System",
+    "implement",
+    "interface",
 ]

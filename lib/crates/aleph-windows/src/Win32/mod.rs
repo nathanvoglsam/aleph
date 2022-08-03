@@ -27,17 +27,13 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+#![allow(non_snake_case)]
+#![allow(non_camel_case_types)]
 
-extern crate windows;
+pub mod Graphics;
 
-#[allow(non_snake_case)]
-pub mod Win32;
-
-#[cfg(all(target_vendor = "uwp", target_os = "windows"))]
-pub use windows::System;
-
-pub use windows::core;
-
-pub mod utils;
-pub use crate::utils::name_current_thread;
+pub use windows::Win32::Foundation;
+pub use windows::Win32::Security;
+pub use windows::Win32::Storage;
+pub use windows::Win32::System;
+pub use windows::Win32::UI;

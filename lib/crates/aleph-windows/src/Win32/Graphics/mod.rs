@@ -27,17 +27,8 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+pub mod Direct3D12;
 
-extern crate windows;
-
-#[allow(non_snake_case)]
-pub mod Win32;
-
-#[cfg(all(target_vendor = "uwp", target_os = "windows"))]
-pub use windows::System;
-
-pub use windows::core;
-
-pub mod utils;
-pub use crate::utils::name_current_thread;
+pub use windows::Win32::Graphics::Direct3D;
+pub use windows::Win32::Graphics::Direct3D11;
+pub use windows::Win32::Graphics::Dxgi;
