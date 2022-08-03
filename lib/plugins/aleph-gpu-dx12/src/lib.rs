@@ -124,3 +124,13 @@ mod plugin {
 
     declare_interfaces!(PluginGpuDX12, [IPlugin]);
 }
+
+#[used]
+#[no_mangle]
+#[allow(non_upper_case_globals)]
+pub static D3D12SDKVersion: u32 = 706;
+
+#[used]
+#[no_mangle]
+#[allow(non_upper_case_globals)]
+pub static D3D12SDKPath: &[u8; 3] = b".\\\0";

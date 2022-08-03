@@ -56,3 +56,8 @@ parking_lot = "0.12"
 aleph-dx12 = { path = "../../crates/aleph-dx12", version = "0.1" }
 aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }
+
+[build-dependencies]
+zip = "0.6"
+aleph-compile = { path = "../../crates/aleph-compile", version = "1"}
+aleph-target-build = { path = "../../crates/aleph-target-build", version = "2"}
