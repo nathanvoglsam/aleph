@@ -29,9 +29,11 @@
 
 use std::num::NonZeroIsize;
 use windows::core::PCWSTR;
-use windows::Win32::Foundation::{CloseHandle, BOOL, HANDLE, WAIT_FAILED, WAIT_TIMEOUT};
+use windows::Win32::Foundation::{
+    CloseHandle, BOOL, HANDLE, WAIT_ABANDONED_0, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
+};
 use windows::Win32::System::Threading::{
-    CreateEventW, WaitForMultipleObjects, WaitForSingleObject, WAIT_ABANDONED_0, WAIT_OBJECT_0,
+    CreateEventW, WaitForMultipleObjects, WaitForSingleObject,
 };
 
 /// Wrapper around the return value of `WaitForSingleObject`
@@ -111,12 +113,12 @@ impl MultipleWaitAnyResponse {
             return Ok(MultipleWaitAnyResponse::Timeout);
         }
 
-        let signaled_index = v - WAIT_OBJECT_0;
+        let signaled_index = v - WAIT_OBJECT_0.0;
         if signaled_index <= 64 {
             return Ok(MultipleWaitAnyResponse::Signaled(signaled_index as usize));
         }
 
-        let abandoned_index = v - WAIT_ABANDONED_0;
+        let abandoned_index = v - WAIT_ABANDONED_0.0;
         if abandoned_index <= 64 {
             return Ok(MultipleWaitAnyResponse::Abandoned(abandoned_index as usize));
         }

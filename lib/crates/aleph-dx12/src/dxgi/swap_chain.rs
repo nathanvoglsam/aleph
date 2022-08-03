@@ -114,6 +114,7 @@ impl SwapChain {
         };
         self.0
             .Present1(sync_interval, present_flags, &presentation_params)
+            .ok()
     }
 
     /// `IDXGISwapChain3::GetCurrentBackBufferIndex`

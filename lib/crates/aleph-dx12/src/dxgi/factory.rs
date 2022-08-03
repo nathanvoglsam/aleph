@@ -122,7 +122,7 @@ impl Factory {
         let core_window = core_window.cast::<IUnknown>()?;
         let swapchain =
             self.0
-                .CreateSwapChainForCoreWindow(queue.as_raw(), core_window, &desc, None)?;
+                .CreateSwapChainForCoreWindow(queue.as_raw(), &core_window, &desc, None)?;
         swapchain.cast::<IDXGISwapChain4>()
     }
 
