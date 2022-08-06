@@ -35,7 +35,7 @@ pub use windows::Win32::Graphics::Direct3D12::*;
 pub const D3D12_FEATURE_D3D12_OPTIONS12: D3D12_FEATURE = D3D12_FEATURE(41i32);
 
 #[repr(transparent)]
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct D3D12_TRI_STATE(pub i32);
 
 impl D3D12_TRI_STATE {
