@@ -29,17 +29,8 @@
 
 use aleph_target_build::build::target_platform;
 use std::io::{Cursor, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use zip::ZipArchive;
-
-/// Text content of the .def file to be linked to force export the required symbols
-const DEF_FILE: &str = r#"
-EXPORTS
-
-  D3D12SDKVersion DATA PRIVATE
-
-  D3D12SDKPath DATA PRIVATE
-"#;
 
 ///
 /// This function will perform the necessary work to allow rust to export the `D3D12SDKVersion` and
@@ -68,18 +59,26 @@ EXPORTS
 ///
 pub fn link_agility_symbol_def() {
     if target_platform().is_msvc() {
-        let def_file_path = aleph_compile::cargo_out_dir().join("agility.def");
-
-        // Delete the file, if it exists
-        let _ = std::fs::remove_file(&def_file_path);
-
-        std::fs::write(&def_file_path, DEF_FILE).unwrap();
-
-        println!(
-            "cargo:rustc-link-arg=/DEF:{}",
-            def_file_path.to_str().unwrap()
-        );
+        println!("cargo:rustc-link-arg=/DEF:{}", def_location().display());
     }
+}
+
+///
+/// Internal function which returns the location of the .def file for giving to the linker
+///
+fn def_location() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("pkg")
+        .join("symbols.def")
+}
+
+///
+/// Internal function which returns the location of the agility SDK .nupkg file.
+///
+fn pkg_location() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("pkg")
+        .join("microsoft.direct3d.d3d12.1.706.3-preview.nupkg")
 }
 
 ///
@@ -157,7 +156,7 @@ pub fn extract_agility_sdk_binaries() {
         let out_dir = std::env::var("OUT_DIR").unwrap();
         let out_dir = Path::new(&out_dir);
 
-        let bytes = std::fs::read("pkg/microsoft.direct3d.d3d12.1.706.3-preview.nupkg").unwrap();
+        let bytes = std::fs::read(pkg_location()).unwrap();
         let cursor = Cursor::new(bytes.as_slice());
         let mut package = ZipArchive::new(cursor).unwrap();
 
