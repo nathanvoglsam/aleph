@@ -137,6 +137,7 @@
       <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-vk-format/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/archived/aleph-vulkan/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-ref-ptr/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/lib/crates/aleph-dx12-agility-sdk/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-render/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/lib/plugins/aleph-sdl2/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/.vs" />

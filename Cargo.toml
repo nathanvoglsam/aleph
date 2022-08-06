@@ -48,6 +48,7 @@ members = [
     "lib/crates/aleph-compile",
     "lib/crates/aleph-console",
     "lib/crates/aleph-dx12",
+    "lib/crates/aleph-dx12-agility-sdk",
     "lib/crates/aleph-dx12-alloc",
     "lib/crates/aleph-dx12-alloc-raw",
     "lib/crates/aleph-ecs",
