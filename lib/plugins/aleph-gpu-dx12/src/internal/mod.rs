@@ -31,6 +31,7 @@ pub mod command_list_tracker;
 pub mod conv;
 pub mod descriptor_allocator_cpu;
 pub mod descriptor_heap_info;
+pub mod feature_support;
 pub mod in_flight_command_list;
 
 pub const fn calc_subresource_index(
