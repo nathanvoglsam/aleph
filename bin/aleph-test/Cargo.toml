@@ -37,8 +37,8 @@ edition = "2021"
 
 [dependencies]
 aleph-engine = { path = "../../lib/crates/aleph-engine", version = "0.1.0", features = ["default", "remote-console", "console"] }
+aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }
 egui_demo_lib = "0.18"
 
 [build-dependencies]
-aleph-compile = { path = "../../lib/crates/aleph-compile", version = "1" }
-aleph-target-build = { path = "../../lib/crates/aleph-target-build", version = "2" }
+aleph-dx12-agility-sdk = { path = "../../lib/crates/aleph-dx12-agility-sdk", version = "1.706.0" }

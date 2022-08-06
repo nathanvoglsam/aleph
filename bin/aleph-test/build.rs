@@ -27,31 +27,7 @@
 // SOFTWARE.
 //
 
-use aleph_target_build::build::target_platform;
-
-const DEF_FILE: &str = r#"
-EXPORTS
-
-  D3D12SDKVersion DATA PRIVATE
-
-  D3D12SDKPath DATA PRIVATE
-"#;
-
 fn main() {
-    if target_platform().is_msvc() {
-        let def_file_path = aleph_compile::cargo_out_dir().join("agility.def");
-
-        // Delete the file, if it exists
-        let _ = std::fs::remove_file(&def_file_path);
-
-        std::fs::write(&def_file_path, DEF_FILE).unwrap();
-
-        println!(
-            "cargo:rustc-link-arg=/DEF:{}",
-            def_file_path
-                .to_str()
-                .unwrap()
-        );
-    }
+    aleph_dx12_agility_sdk::link_agility_symbol_def();
+    aleph_dx12_agility_sdk::extract_agility_sdk_binaries();
 }
-

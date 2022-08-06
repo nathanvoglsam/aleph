@@ -128,3 +128,5 @@ fn main() {
     engine.plugin(PluginGameLogic::new());
     engine.build().run()
 }
+
+aleph_dx12_agility_sdk::export_standard_agility_sdk_symbols!();
