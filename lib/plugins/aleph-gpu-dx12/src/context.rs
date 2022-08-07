@@ -28,7 +28,12 @@
 //
 
 use crate::adapter::Adapter;
+use crate::internal::feature_support::FeatureSupport;
 use crate::surface::Surface;
+use aleph_windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_12_0;
+use aleph_windows::Win32::Graphics::Direct3D12::{
+    ID3D12Device4, D3D_ROOT_SIGNATURE_VERSION_1_1, D3D_SHADER_MODEL_6_0,
+};
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
@@ -52,13 +57,7 @@ impl Context {
     ///
     /// There's no other way to check if the surface can be used on the device so we just eat some
     /// overhead at init time to do this.
-    fn check_surface_compatibility(
-        &self,
-        adapter: &dxgi::Adapter,
-        surface: &Surface,
-    ) -> Option<()> {
-        let device = dx12::Device::new(adapter, dx12::FeatureLevel::Level_11_0).ok()?;
-
+    fn check_surface_compatibility(&self, device: &dx12::Device, surface: &Surface) -> Option<()> {
         // Create a direct queue so we can create a swapchain
         let desc = dx12::CommandQueueDesc::builder()
             .queue_type(dx12::CommandListType::Direct)
@@ -78,6 +77,33 @@ impl Context {
         self.factory
             .create_swap_chain(&queue, &surface, &desc)
             .ok()?;
+
+        Some(())
+    }
+
+    /// Checks if the adapter supports all the minimum required features. This requires a full
+    /// device initialization because of D3D12's API.
+    fn check_mandatory_features(&self, device: &dx12::Device) -> Option<()> {
+        unsafe {
+            let device_inner: ID3D12Device4 = std::mem::transmute(device.clone());
+            let feature_support = FeatureSupport::new(device_inner).ok()?;
+
+            if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_0.0 {
+                return None;
+            }
+
+            if !feature_support.EnhancedBarriersSupported() {
+                return None;
+            }
+
+            if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_0.0 {
+                return None;
+            }
+
+            if feature_support.HighestRootSignatureVersion().0 < D3D_ROOT_SIGNATURE_VERSION_1_1.0 {
+                return None;
+            }
+        }
 
         Some(())
     }
@@ -103,11 +129,33 @@ impl IContext for Context {
         };
         if let Some(adapter) = self
             .factory
-            .select_hardware_adapter(dx12::FeatureLevel::Level_11_0, power_preference)
+            .select_hardware_adapter(power_preference, |candidate| {
+                let device = dx12::Device::new(candidate, dx12::FeatureLevel::Level_11_0).ok();
+                let device = if let Some(device) = device {
+                    device
+                } else {
+                    return false;
+                };
+
+                if let Some(surface) = options.surface {
+                    let surface = surface.query_interface::<Surface>().unwrap();
+                    if self.check_surface_compatibility(&device, surface).is_none() {
+                        return false;
+                    }
+                }
+
+                if self.check_mandatory_features(&device).is_none() {
+                    return false;
+                }
+
+                true
+            })
         {
+            let device = dx12::Device::new(&adapter, dx12::FeatureLevel::Level_11_0).ok()?;
+
             if let Some(surface) = options.surface {
                 let surface = surface.query_interface::<Surface>().unwrap();
-                self.check_surface_compatibility(&adapter, surface)?;
+                self.check_surface_compatibility(&device, surface)?;
             }
 
             let desc = adapter
