@@ -30,14 +30,13 @@
 use crate::dxgi::gpu_preference::GpuPreference;
 use crate::dxgi::{Adapter, SwapChain, SwapChainDesc1};
 use crate::windows::core::Interface;
-use crate::{CommandQueue, FeatureLevel};
+use crate::CommandQueue;
 use raw_window_handle::{HasRawWindowHandle, RawWindowHandle};
-use std::mem::{transmute, transmute_copy};
+use std::mem::transmute;
 use utf16_lit::utf16_null;
 use windows::core::{IInspectable, IUnknown, GUID};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Foundation::HWND;
-use windows::Win32::Graphics::Direct3D12::ID3D12Device4;
 use windows::Win32::Graphics::Dxgi::{
     IDXGIAdapter1, IDXGIFactory2, IDXGIFactory6, IDXGISwapChain4, DXGI_ADAPTER_FLAG_SOFTWARE,
     DXGI_SWAP_CHAIN_DESC1,
@@ -133,17 +132,12 @@ impl Factory {
 
     pub fn select_hardware_adapter(
         &self,
-        minimum_feature_level: FeatureLevel,
         gpu_preference: GpuPreference,
+        mut filter: impl FnMut(&Adapter) -> bool,
     ) -> Option<Adapter> {
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_6 = self.0.cast::<IDXGIFactory6>().ok();
-
-            let create_fn = crate::dx12::device::CREATE_FN
-                .get()
-                .expect("Failed to load dxgi.dll")
-                .unwrap();
 
             // Loop over all the available adapters
             let mut i = 0;
@@ -157,9 +151,9 @@ impl Factory {
 
                 // Check if we've gotten an adapter, or break from the loop if we don't as we've either hit
                 // a big error or enumerated all of them already
-                if let Ok(adapter) = adapter {
+                if let Ok(adapter) = adapter.map(Adapter) {
                     // Get the adapter description so we can decide if we want to use it or not
-                    let desc = adapter.GetDesc1().unwrap();
+                    let desc = adapter.0.GetDesc1().unwrap();
 
                     // We want to skip software adapters as they're going to be *very* slow
                     if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
@@ -167,17 +161,8 @@ impl Factory {
                         continue;
                     }
 
-                    // Check if the device supports the feature level we want by trying to create a device
-                    let result = create_fn(
-                        transmute_copy(&adapter),
-                        minimum_feature_level.into(),
-                        &ID3D12Device4::IID,
-                        std::ptr::null_mut(),
-                    );
-
-                    // If we succeeded then use the adapter
-                    if result.is_ok() {
-                        return Some(Adapter(adapter));
+                    if filter(&adapter) {
+                        return Some(adapter);
                     }
                 } else {
                     break;
