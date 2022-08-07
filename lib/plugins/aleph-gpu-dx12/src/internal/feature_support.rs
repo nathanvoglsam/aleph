@@ -72,7 +72,8 @@ pub struct FeatureSupport {
 }
 
 impl FeatureSupport {
-    pub fn new(device: ID3D12Device) -> aleph_windows::core::Result<Self> {
+    pub fn new(device: impl Into<ID3D12Device>) -> aleph_windows::core::Result<Self> {
+        let device = device.into();
         unsafe {
             let options = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS)
                 .unwrap_or_else(|_| D3D12_FEATURE_DATA_D3D12_OPTIONS {
