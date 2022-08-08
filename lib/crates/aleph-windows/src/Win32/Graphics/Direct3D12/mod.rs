@@ -28,8 +28,12 @@
 //
 
 use bitflags::bitflags;
+use std::ffi::c_void;
 use std::ops::Deref;
+use windows::core::{GUID, HRESULT};
 use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Dxgi::Common::*;
+
 pub use windows::Win32::Graphics::Direct3D12::*;
 
 pub const D3D12_FEATURE_D3D12_OPTIONS12: D3D12_FEATURE = D3D12_FEATURE(41i32);
@@ -394,6 +398,316 @@ impl<'a> From<&'a ID3D12GraphicsCommandList7> for &'a ID3D12GraphicsCommandList6
 }
 impl From<&ID3D12GraphicsCommandList7> for ID3D12GraphicsCommandList6 {
     fn from(value: &ID3D12GraphicsCommandList7) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+
+type ID3D12Device9Vtbl = ID3D12Device9_Vtbl;
+
+#[windows_interface::interface("517F8718-AA66-49F9-B02B-A7AB89C06031")]
+pub unsafe trait ID3D12Device10: ID3D12Device9 {
+    fn __CreateCommittedResource3_ABI(
+        &self,
+        pHeapProperties: *const D3D12_HEAP_PROPERTIES,
+        HeapFlags: D3D12_HEAP_FLAGS,
+        pDesc: *const D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        pProtectedSession: *mut c_void,
+        NumCastableFormats: u32,
+        pCastableFormats: *const DXGI_FORMAT,
+        riidresource: *const GUID,
+        ppvresource: *mut *mut c_void,
+    ) -> HRESULT;
+
+    fn __CreatePlacedResource2_ABI(
+        &self,
+        pHeap: *mut c_void,
+        HeapOffset: u64,
+        pDesc: *const D3D12_RESOURCE_DESC1,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        NumCastableFormats: u32,
+        pCastableFormats: *const DXGI_FORMAT,
+        riidresource: *const GUID,
+        ppvresource: *mut *mut c_void,
+    ) -> HRESULT;
+
+    fn __CreateReservedResource2_ABI(
+        &self,
+        pDesc: *const D3D12_RESOURCE_DESC,
+        InitialLayout: D3D12_BARRIER_LAYOUT,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+        pProtectedSession: *mut c_void,
+        NumCastableFormats: u32,
+        pCastableFormats: *const DXGI_FORMAT,
+        riidresource: *const GUID,
+        ppvresource: *mut *mut c_void,
+    ) -> HRESULT;
+}
+
+impl ID3D12Device10 {
+    pub unsafe fn CreateCommittedResource3<'a, P0, T>(
+        &self,
+        pheapproperties: *const D3D12_HEAP_PROPERTIES,
+        heapflags: D3D12_HEAP_FLAGS,
+        pdesc: *const D3D12_RESOURCE_DESC1,
+        initiallayout: D3D12_BARRIER_LAYOUT,
+        poptimizedclearvalue: *const D3D12_CLEAR_VALUE,
+        pprotectedsession: P0,
+        numcastableformats: u32,
+        pcastableformats: *const DXGI_FORMAT,
+    ) -> windows::core::Result<T>
+    where
+        P0: Into<windows::core::InParam<'a, ID3D12ProtectedResourceSession>>,
+        T: windows::core::Interface,
+    {
+        let mut result__ = None;
+        (windows::core::Interface::vtable(self).__CreateCommittedResource3_ABI)(
+            windows::core::Interface::as_raw(self),
+            core::mem::transmute(pheapproperties),
+            heapflags,
+            core::mem::transmute(pdesc),
+            initiallayout,
+            core::mem::transmute(poptimizedclearvalue),
+            pprotectedsession.into().abi(),
+            numcastableformats,
+            core::mem::transmute(pcastableformats),
+            &<T as windows::core::Interface>::IID,
+            &mut result__ as *mut _ as *mut _,
+        )
+        .and_some(result__)
+    }
+
+    pub unsafe fn CreatePlacedResource2<'a, P0, T>(
+        &self,
+        pheap: P0,
+        heapoffset: u64,
+        pdesc: *const D3D12_RESOURCE_DESC1,
+        initiallayout: D3D12_BARRIER_LAYOUT,
+        poptimizedclearvalue: *const D3D12_CLEAR_VALUE,
+        numcastableformats: u32,
+        pcastableformats: *const DXGI_FORMAT,
+    ) -> windows::core::Result<T>
+    where
+        P0: Into<windows::core::InParam<'a, ID3D12Heap>>,
+        T: windows::core::Interface,
+    {
+        let mut result__ = None;
+        (windows::core::Interface::vtable(self).__CreatePlacedResource2_ABI)(
+            windows::core::Interface::as_raw(self),
+            pheap.into().abi(),
+            heapoffset,
+            core::mem::transmute(pdesc),
+            initiallayout,
+            core::mem::transmute(poptimizedclearvalue),
+            numcastableformats,
+            core::mem::transmute(pcastableformats),
+            &<T as windows::core::Interface>::IID,
+            &mut result__ as *mut _ as *mut _,
+        )
+        .and_some(result__)
+    }
+
+    pub unsafe fn CreateReservedResource1<'a, P0, T>(
+        &self,
+        pdesc: *const D3D12_RESOURCE_DESC,
+        initiallayout: D3D12_BARRIER_LAYOUT,
+        poptimizedclearvalue: *const D3D12_CLEAR_VALUE,
+        pprotectedsession: P0,
+        numcastableformats: u32,
+        pcastableformats: *const DXGI_FORMAT,
+    ) -> windows::core::Result<T>
+    where
+        P0: Into<windows::core::InParam<'a, ID3D12ProtectedResourceSession>>,
+        T: windows::core::Interface,
+    {
+        let mut result__ = None;
+        (windows::core::Interface::vtable(self).__CreateReservedResource2_ABI)(
+            windows::core::Interface::as_raw(self),
+            core::mem::transmute(pdesc),
+            initiallayout,
+            core::mem::transmute(poptimizedclearvalue),
+            pprotectedsession.into().abi(),
+            numcastableformats,
+            core::mem::transmute(pcastableformats),
+            &<T as windows::core::Interface>::IID,
+            &mut result__ as *mut _ as *mut _,
+        )
+        .and_some(result__)
+    }
+}
+
+impl Deref for ID3D12Device10 {
+    type Target = ID3D12Device9;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl From<ID3D12Device10> for ID3D12Object {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Object {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Object {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device1 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device1 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device1 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device2 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device2 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device2 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device3 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device3 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device3 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device4 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device4 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device4 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device5 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device5 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device5 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device6 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device6 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device6 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device7 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device7 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device7 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device8 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device8 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device8 {
+    fn from(value: &ID3D12Device10) -> Self {
+        ::core::convert::From::from(::core::clone::Clone::clone(value))
+    }
+}
+impl From<ID3D12Device10> for ID3D12Device9 {
+    fn from(value: ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl<'a> From<&'a ID3D12Device10> for &'a ID3D12Device9 {
+    fn from(value: &'a ID3D12Device10) -> Self {
+        unsafe { core::mem::transmute(value) }
+    }
+}
+impl From<&ID3D12Device10> for ID3D12Device9 {
+    fn from(value: &ID3D12Device10) -> Self {
         ::core::convert::From::from(::core::clone::Clone::clone(value))
     }
 }
