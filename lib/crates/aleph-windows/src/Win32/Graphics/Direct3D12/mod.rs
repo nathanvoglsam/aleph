@@ -447,6 +447,7 @@ pub unsafe trait ID3D12Device10: ID3D12Device9 {
 }
 
 impl ID3D12Device10 {
+    #[inline(always)]
     pub unsafe fn CreateCommittedResource3<'a, P0, T>(
         &self,
         pheapproperties: *const D3D12_HEAP_PROPERTIES,
@@ -479,6 +480,7 @@ impl ID3D12Device10 {
         .and_some(result__)
     }
 
+    #[inline(always)]
     pub unsafe fn CreatePlacedResource2<'a, P0, T>(
         &self,
         pheap: P0,
@@ -509,6 +511,7 @@ impl ID3D12Device10 {
         .and_some(result__)
     }
 
+    #[inline(always)]
     pub unsafe fn CreateReservedResource1<'a, P0, T>(
         &self,
         pdesc: *const D3D12_RESOURCE_DESC,
