@@ -684,6 +684,242 @@ impl Default for CpuAccessMode {
     }
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ImageLayout {
+    /// Specifies that the layout is unknown.
+    Undefined,
+
+    /// Supports all types of read device access. Writable access is not possible through this
+    /// layout.
+    /// TODO: The above might be wrong about write access
+    Common,
+
+    /// Must only be used for presenting a presentable image for display.
+    PresentSrc,
+
+    ///
+    ColorAttachmentOptimal,
+
+    ///
+    DepthStencilAttachmentOptimal,
+
+    ///
+    DepthStencilReadOnlyOptimal,
+
+    /// Specifies a layout allowing read-only access in a shader as a sampled image.
+    ShaderReadOnlyOptimal,
+
+    /// Must only be used as a source image of a copy command.
+    CopySrc,
+
+    /// Must only be used as a destination image of a copy command.
+    CopyDst,
+
+    /// Supports all types of access, potentially including unordered access.
+    /// TODO: This might not be needed, D3D12_BARRIER_LAYOUT_COMMON might cover us like Vulkan as
+    ///       this layout appears to only exist for backwards compatibility with old barriers.
+    UnorderedAccess,
+
+    /// TODO: Might not be needed like UnorderedAccess
+    ResolveSource,
+
+    /// TODO: Might not be needed like UnorderedAccess
+    ResolveDest,
+    // /// Must only be used as a fragment shading rate attachment or shading rate image.
+    // ShadingRateAttachmentOptimal,
+}
+
+bitflags! {
+    pub struct BarrierSync: u64 {
+        ///
+        /// ## Vulkan
+        ///
+        /// - `NONE`
+        ///
+        /// ## D3D12
+        ///
+        /// - `NONE`
+        ///
+        const NONE = 0x0;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ALL_COMMANDS_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `ALL`
+        ///
+        const ALL  = 0x1;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ALL_GRAPHICS_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `DRAW`
+        ///
+        const DRAW  = 0x2;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `VERTEX_INPUT_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `INPUT_ASSEMBLER`
+        ///
+        const INPUT_ASSEMBLER = 0x4;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `PRE_RASTERIZATION_SHADERS_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `VERTEX_SHADING`
+        ///
+        const VERTEX_SHADING = 0x8;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `FRAGMENT_SHADER_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `PIXEL_SHADING`
+        ///
+        const PIXEL_SHADING = 0x10;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `EARLY_FRAGMENT_TESTS_BIT`
+        /// - `LATE_FRAGMENT_TESTS_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `DEPTH_STENCIL`
+        ///
+        const DEPTH_STENCIL = 0x20;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `COLOR_ATTACHMENT_OUTPUT_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RENDER_TARGET`
+        ///
+        const RENDER_TARGET = 0x40;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `COMPUTE_SHADER_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COMPUTE_SHADING`
+        ///
+        const COMPUTE_SHADING = 0x80;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `RAY_TRACING_SHADER_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RAYTRACING`
+        ///
+        const RAYTRACING = 0x100;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `COPY_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COPY`
+        ///
+        const COPY = 0x200;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `RESOLVE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RESOLVE`
+        ///
+        const RESOLVE = 0x400;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `DRAW_INDIRECT_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `EXECUTE_INDIRECT`
+        /// - `PREDICATION`
+        ///
+        const EXECUTE_INDIRECT = 0x800;
+
+        // const ALL_SHADING = 0x1000;
+
+        ///
+        /// ## Warning
+        ///
+        /// I don't know if this is needed, or can be mapped in a sane way. This will describe what
+        /// I think this should map to.
+        ///
+        /// ## Vulkan
+        ///
+        /// - `CLEAR_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `CLEAR_UNORDERED_ACCESS_VIEW`
+        ///
+        #[deprecated]
+        const CLEAR_UNORDERED_ACCESS_VIEW = 0x8000;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ACCELERATION_STRUCTURE_BUILD_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `BUILD_RAYTRACING_ACCELERATION_STRUCTURE`
+        /// - `EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO`
+        ///
+        const BUILD_RAYTRACING_ACCELERATION_STRUCTURE = 0x800000;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ACCELERATION_STRUCTURE_COPY_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COPY_RAYTRACING_ACCELERATION_STRUCTURE`
+        ///
+        const COPY_RAYTRACING_ACCELERATION_STRUCTURE = 0x1000000;
+    }
+}
+
 bitflags! {
     pub struct ResourceStates: u32 {
         const UNDEFINED = 0;
