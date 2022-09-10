@@ -37,10 +37,10 @@ use crate::texture::Texture;
 use dx12::dxgi;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    BufferBarrier, ColorClearValue, CpuAccessMode, DepthStencilClearValue, IComputeEncoder,
-    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, IndexType,
+    BufferBarrier, BufferBarrier2, ColorClearValue, CpuAccessMode, DepthStencilClearValue,
+    IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, IndexType,
     InputAssemblyBufferBinding, QueueTransitionMode, Rect, ResourceStates, SplitBarrierMode,
-    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
+    TextureBarrier, TextureBarrier2, TextureDesc, TextureSubResourceSet, Viewport,
 };
 use std::ops::Deref;
 
@@ -570,6 +570,14 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         let barriers = buffer_barriers.chain(texture_barriers);
 
         self.list.resource_barrier_dynamic(barriers);
+    }
+
+    unsafe fn resource_barrier2(
+        &mut self,
+        _buffer_barriers: &[BufferBarrier2],
+        _texture_barriers: &[TextureBarrier2],
+    ) {
+        // todo
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
