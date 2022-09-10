@@ -94,7 +94,7 @@ impl DebugConsole {
     pub fn register_fn<N, A, F>(&self, name: N, func: F)
     where
         N: AsRef<str> + Into<rhai::Identifier>,
-        F: rhai::RegisterNativeFunction<A, ()>,
+        F: rhai::RegisterNativeFunction<A, (), ()>,
     {
         self.inner.borrow_mut().register_fn(name, func);
     }
