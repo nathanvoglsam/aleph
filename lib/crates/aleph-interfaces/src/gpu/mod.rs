@@ -380,6 +380,12 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
         texture_barriers: &[TextureBarrier],
     );
 
+    unsafe fn resource_barrier2(
+        &mut self,
+        buffer_barriers: &[BufferBarrier2],
+        texture_barriers: &[TextureBarrier2],
+    );
+
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
@@ -917,6 +923,194 @@ bitflags! {
         /// - `COPY_RAYTRACING_ACCELERATION_STRUCTURE`
         ///
         const COPY_RAYTRACING_ACCELERATION_STRUCTURE = 0x1000000;
+    }
+}
+
+bitflags! {
+    pub struct BarrierAccess: u64 {
+        ///
+        /// This one is still up in the air. D3D12 doesn't really have a way to declare that a
+        /// resource is not accessed. Rather it has a system that allows putting a resource into
+        /// a strange "NO_ACCESS" state where it is illegal to access until transitioned out of the
+        /// "NO_ACCESS" state. It does not mean what Vulkan's no access means.
+        ///
+        /// The 'all zeroes' case in Vulkan specifies no access, while in D3D12 it specifies an
+        /// adaptive access depending on the image layout. I can't see how D3D12 specifies no access
+        /// in either the before or after scope.
+        ///
+        /// In Vulkan the primary use of a 'none' access is for initializing images. This will
+        /// always be used with an `Undefined` layout. I would assume D3D12 to understand that
+        /// 'COMMON' accessed paired with `Undefined` would mean no-access as it is not possible to
+        /// access an image with `Undefined` layout.
+        ///
+        /// I think `NONE` will suffice for this purpose.
+        ///
+        /// How to represent an after scope with no-access escapes me. This will most commonly be
+        /// used for transitioning images into `PresentSrc` for presentation. On Vulkan sync `NONE`
+        /// is fine in the after scope as presentation will always be sequenced with a semaphore.
+        ///
+        /// D3D12 aliases 'Common' and 'PresentSrc' layouts, so the 'COMMON' access will infer all
+        /// valid accesses for a 'Common' layout. This is a significant over-synchronization which
+        /// theoretically could have performance implications. In practice the transition to present
+        /// will likely be the very last command submitted to the queue so there won't be
+        /// any commands in the after scope to synchronize with anyway, and D3D12 will sync on the
+        /// `ExecuteCommandLists` boundary as well.
+        ///
+        /// Perhaps a special access 'PRESENT' should added to handle the platform differences?
+        /// Swap images are a little magical sometimes.
+        ///
+        /// ## Vulkan
+        ///
+        /// - `NONE`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COMMON`
+        ///
+        const NONE = 0x0;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `VERTEX_ATTRIBUTE_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `VERTEX_BUFFER`
+        ///
+        const VERTEX_BUFFER_READ = 0x1;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `INDEX_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `INDEX_BUFFER`
+        ///
+        const INDEX_BUFFER_READ = 0x2;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `UNIFORM_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `CONSTANT_BUFFER`
+        ///
+        const CONSTANT_BUFFER_READ = 0x4;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `INDIRECT_COMMAND_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `INDIRECT_ARGUMENT`
+        ///
+        const INDIRECT_COMMAND_READ = 0x8;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `SHADER_SAMPLED_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `SHADER_RESOURCE`
+        ///
+        const SHADER_SAMPLED_READ = 0x10;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `COLOR_ATTACHMENT_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RENDER_TARGET`
+        ///
+        const RENDER_TARGET_READ = 0x20;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `COLOR_ATTACHMENT_WRITE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RENDER_TARGET`
+        ///
+        const RENDER_TARGET_WRITE = 0x40;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `DEPTH_STENCIL_ATTACHMENT_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `DEPTH_STENCIL_READ`
+        ///
+        const DEPTH_STENCIL_READ = 0x80;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `DEPTH_STENCIL_ATTACHMENT_WRITE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `DEPTH_STENCIL_WRITE`
+        ///
+        const DEPTH_STENCIL_WRITE = 0x100;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `TRANSFER_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COPY_SOURCE`
+        ///
+        const COPY_READ = 0x200;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `TRANSFER_WRITE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `COPY_DEST`
+        ///
+        const COPY_WRITE = 0x400;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ACCELERATION_STRUCTURE_READ_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RAYTRACING_ACCELERATION_STRUCTURE_READ`
+        ///
+        const RAYTRACING_ACCELERATION_STRUCTURE_READ = 0x800;
+
+        ///
+        /// ## Vulkan
+        ///
+        /// - `ACCELERATION_STRUCTURE_WRITE_BIT`
+        ///
+        /// ## D3D12
+        ///
+        /// - `RAYTRACING_ACCELERATION_STRUCTURE_WRITE`
+        ///
+        const RAYTRACING_ACCELERATION_STRUCTURE_WRITE = 0x1000;
     }
 }
 
@@ -2219,6 +2413,41 @@ impl<'a> Debug for BufferBarrier<'a> {
     }
 }
 
+/// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
+#[derive(Clone)]
+pub struct BufferBarrier2<'a> {
+    /// The buffer that the barrier will describe a state transition for
+    pub buffer: &'a dyn IBuffer,
+
+    pub before_sync: BarrierSync,
+    pub after_sync: BarrierSync,
+
+    pub before_access: BarrierAccess,
+    pub after_access: BarrierAccess,
+
+    /// Enables describing split barriers, where one barrier begins a transition and another ends
+    /// the transition. This allows interleaving other rendering commands with state transitions.
+    pub split_barrier_mode: SplitBarrierMode,
+
+    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
+    /// passed from one queue to another to be used across multiple queues.
+    pub queue_transition_mode: QueueTransitionMode,
+}
+
+impl<'a> Debug for BufferBarrier2<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BufferBarrier2")
+            .field("buffer", &"<ptr>")
+            .field("before_sync", &self.before_sync)
+            .field("after_sync", &self.after_sync)
+            .field("before_access", &self.before_access)
+            .field("after_access", &self.after_access)
+            .field("split_barrier_mode", &self.split_barrier_mode)
+            .field("queue_transition_mode", &self.queue_transition_mode)
+            .finish()
+    }
+}
+
 /// Structure used by [TextureBarrier] for describing which image sub resource to make the subject
 /// of a resource barrier.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
@@ -2258,6 +2487,51 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("texture", &"<ptr>")
             .field("before_state", &self.before_state)
             .field("after_state", &self.after_state)
+            .field("split_barrier_mode", &self.split_barrier_mode)
+            .field("queue_transition_mode", &self.queue_transition_mode)
+            .field("subresource", &self.subresource)
+            .finish()
+    }
+}
+
+/// Describes a resource barrier that will apply to an [ITexture] resource on a command queue
+#[derive(Clone)]
+pub struct TextureBarrier2<'a> {
+    /// The texture that the barrier will describe a state transition for
+    pub texture: &'a dyn ITexture,
+
+    pub before_sync: BarrierSync,
+    pub after_sync: BarrierSync,
+
+    pub before_access: BarrierAccess,
+    pub after_access: BarrierAccess,
+
+    pub before_layout: ImageLayout,
+    pub after_layout: ImageLayout,
+
+    /// Enables describing split barriers, where one barrier begins a transition and another ends
+    /// the transition. This allows interleaving other rendering commands with state transitions.
+    pub split_barrier_mode: SplitBarrierMode,
+
+    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
+    /// passed from one queue to another to be used across multiple queues.
+    pub queue_transition_mode: QueueTransitionMode,
+
+    /// Enables specifying the buffer affect only a specific sub-resource of the texture. When left
+    /// as `None` the entire texture will be affected by the barrier.
+    pub subresource: Option<BarrierSubresourceOptions>,
+}
+
+impl<'a> Debug for TextureBarrier2<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TextureBarrier2")
+            .field("texture", &"<ptr>")
+            .field("before_sync", &self.before_sync)
+            .field("after_sync", &self.after_sync)
+            .field("before_access", &self.before_access)
+            .field("after_access", &self.after_access)
+            .field("before_layout", &self.before_layout)
+            .field("after_layout", &self.after_layout)
             .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
             .field("subresource", &self.subresource)
