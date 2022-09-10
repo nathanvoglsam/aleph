@@ -91,11 +91,11 @@ impl DebugConsole {
     /// console.eval("add(40, 2)");
     /// console.eval("sub(44, 2)");
     /// ```
-    pub fn register_fn<N, A, F>(&self, name: N, func: F)
-    where
-        N: AsRef<str> + Into<rhai::Identifier>,
-        F: rhai::RegisterNativeFunction<A, (), ()>,
-    {
+    pub fn register_fn<A, R, S, F: rhai::RegisterNativeFunction<A, R, S>>(
+        &self,
+        name: impl AsRef<str> + Into<rhai::Identifier>,
+        func: F,
+    ) {
         self.inner.borrow_mut().register_fn(name, func);
     }
 
