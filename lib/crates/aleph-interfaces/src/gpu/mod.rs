@@ -735,6 +735,12 @@ pub enum ImageLayout {
     // ShadingRateAttachmentOptimal,
 }
 
+impl Default for ImageLayout {
+    fn default() -> Self {
+        ImageLayout::Undefined
+    }
+}
+
 bitflags! {
     pub struct BarrierSync: u64 {
         ///
