@@ -240,7 +240,18 @@ type ID3D12GraphicsCommandList6Vtbl = ID3D12GraphicsCommandList6_Vtbl;
 
 #[windows_interface::interface("DD171223-8B61-4769-90E3-160CCDE4E2C1")]
 pub unsafe trait ID3D12GraphicsCommandList7: ID3D12GraphicsCommandList6 {
-    fn Barrier(&self, numbarriergroups: u32, pbarriergroups: *const D3D12_BARRIER_GROUP);
+    fn __Barrier_ABI(&self, numbarriergroups: u32, pbarriergroups: *const D3D12_BARRIER_GROUP);
+}
+
+impl ID3D12GraphicsCommandList7 {
+    #[inline(always)]
+    pub unsafe fn Barrier(
+        &self,
+        numbarriergroups: u32,
+        pbarriergroups: *const D3D12_BARRIER_GROUP,
+    ) {
+        self.__Barrier_ABI(numbarriergroups, pbarriergroups);
+    }
 }
 
 impl Deref for ID3D12GraphicsCommandList7 {
