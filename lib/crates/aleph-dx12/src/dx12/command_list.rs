@@ -38,7 +38,7 @@ use std::borrow::Borrow;
 use std::mem::{align_of, size_of, transmute, MaybeUninit};
 use windows::utils::{optional_ref_to_ptr, optional_slice_to_num_ptr_pair};
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12GraphicsCommandList, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
+    ID3D12GraphicsCommandList7, D3D12_RESOURCE_BARRIER, D3D12_TEXTURE_COPY_LOCATION,
 };
 use windows::Win32::Graphics::Direct3D12::{
     D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_GPU_DESCRIPTOR_HANDLE, D3D12_INDEX_BUFFER_VIEW,
@@ -46,7 +46,7 @@ use windows::Win32::Graphics::Direct3D12::{
 };
 
 #[repr(transparent)]
-pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList);
+pub struct GraphicsCommandList(pub(crate) ID3D12GraphicsCommandList7);
 
 impl GraphicsCommandList {
     #[inline]
@@ -822,4 +822,4 @@ crate::as_weak_ref_impl!(GraphicsCommandList);
 crate::object_impl!(GraphicsCommandList);
 crate::device_child_impl!(GraphicsCommandList);
 crate::shared_object!(GraphicsCommandList);
-windows::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList);
+windows::deref_impl!(GraphicsCommandList, ID3D12GraphicsCommandList7);
