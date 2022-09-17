@@ -376,15 +376,9 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
 pub trait IComputeEncoder: ITransferEncoder + Send {
     unsafe fn resource_barrier(
         &mut self,
+        memory_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier],
         texture_barriers: &[TextureBarrier],
-    );
-
-    unsafe fn resource_barrier2(
-        &mut self,
-        memory_barriers: &[GlobalBarrier],
-        buffer_barriers: &[BufferBarrier2],
-        texture_barriers: &[TextureBarrier2],
     );
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
@@ -2387,39 +2381,6 @@ pub struct TextureSubResourceSet {
     pub num_array_slices: u32,
 }
 
-/// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
-#[derive(Clone)]
-pub struct BufferBarrier<'a> {
-    /// The buffer that the barrier will describe a state transition for
-    pub buffer: &'a dyn IBuffer,
-
-    /// The state the buffer is in before the barrier is executed
-    pub before_state: ResourceStates,
-
-    /// The state the buffer will transition to after the barrier is executed
-    pub after_state: ResourceStates,
-
-    /// Enables describing split barriers, where one barrier begins a transition and another ends
-    /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_barrier_mode: SplitBarrierMode,
-
-    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
-    /// passed from one queue to another to be used across multiple queues.
-    pub queue_transition_mode: QueueTransitionMode,
-}
-
-impl<'a> Debug for BufferBarrier<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BufferBarrier")
-            .field("buffer", &"<ptr>")
-            .field("before_state", &self.before_state)
-            .field("after_state", &self.after_state)
-            .field("split_barrier_mode", &self.split_barrier_mode)
-            .field("queue_transition_mode", &self.queue_transition_mode)
-            .finish()
-    }
-}
-
 /// Describes a global memory barrier
 #[derive(Clone)]
 pub struct GlobalBarrier {
@@ -2448,7 +2409,7 @@ impl Debug for GlobalBarrier {
 
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
 #[derive(Clone)]
-pub struct BufferBarrier2<'a> {
+pub struct BufferBarrier<'a> {
     /// The buffer that the barrier will describe a state transition for
     pub buffer: &'a dyn IBuffer,
 
@@ -2474,9 +2435,9 @@ pub struct BufferBarrier2<'a> {
     pub queue_transition_mode: QueueTransitionMode,
 }
 
-impl<'a> Debug for BufferBarrier2<'a> {
+impl<'a> Debug for BufferBarrier<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("BufferBarrier2")
+        f.debug_struct("BufferBarrier")
             .field("buffer", &"<ptr>")
             .field("before_sync", &self.before_sync)
             .field("after_sync", &self.after_sync)
@@ -2488,55 +2449,9 @@ impl<'a> Debug for BufferBarrier2<'a> {
     }
 }
 
-/// Structure used by [TextureBarrier] for describing which image sub resource to make the subject
-/// of a resource barrier.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
-pub struct BarrierSubresourceOptions {
-    pub mip_level: u8,
-    pub array_layer: u16,
-}
-
 /// Describes a resource barrier that will apply to an [ITexture] resource on a command queue
 #[derive(Clone)]
 pub struct TextureBarrier<'a> {
-    /// The texture that the barrier will describe a state transition for
-    pub texture: &'a dyn ITexture,
-
-    /// The state the texture is in before the barrier is executed
-    pub before_state: ResourceStates,
-
-    /// The state the texture will transition to after the barrier is executed
-    pub after_state: ResourceStates,
-
-    /// Enables describing split barriers, where one barrier begins a transition and another ends
-    /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_barrier_mode: SplitBarrierMode,
-
-    /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
-    /// passed from one queue to another to be used across multiple queues.
-    pub queue_transition_mode: QueueTransitionMode,
-
-    /// Enables specifying the buffer affect only a specific sub-resource of the texture. When left
-    /// as `None` the entire texture will be affected by the barrier.
-    pub subresource: Option<BarrierSubresourceOptions>,
-}
-
-impl<'a> Debug for TextureBarrier<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TextureBarrier")
-            .field("texture", &"<ptr>")
-            .field("before_state", &self.before_state)
-            .field("after_state", &self.after_state)
-            .field("split_barrier_mode", &self.split_barrier_mode)
-            .field("queue_transition_mode", &self.queue_transition_mode)
-            .field("subresource", &self.subresource)
-            .finish()
-    }
-}
-
-/// Describes a resource barrier that will apply to an [ITexture] resource on a command queue
-#[derive(Clone)]
-pub struct TextureBarrier2<'a> {
     /// The texture that the barrier will describe a state transition for
     pub texture: &'a dyn ITexture,
 
@@ -2560,9 +2475,9 @@ pub struct TextureBarrier2<'a> {
     pub queue_transition_mode: QueueTransitionMode,
 }
 
-impl<'a> Debug for TextureBarrier2<'a> {
+impl<'a> Debug for TextureBarrier<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("TextureBarrier2")
+        f.debug_struct("TextureBarrier")
             .field("texture", &"<ptr>")
             .field("subresource_range", &self.subresource_range)
             .field("before_sync", &self.before_sync)
