@@ -205,7 +205,7 @@ pub struct D3D12_TEXTURE_BARRIER {
     pub AccessAfter: D3D12_BARRIER_ACCESS,
     pub LayoutBefore: D3D12_BARRIER_LAYOUT,
     pub LayoutAfter: D3D12_BARRIER_LAYOUT,
-    pub pResource: Option<ID3D12Resource>,
+    pub pResource: Option<ID3D12Resource>, // TODO: Make 'weak'
     pub Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE,
     pub Flags: D3D12_TEXTURE_BARRIER_FLAGS,
 }
@@ -217,7 +217,7 @@ pub struct D3D12_BUFFER_BARRIER {
     pub SyncAfter: D3D12_BARRIER_SYNC,
     pub AccessBefore: D3D12_BARRIER_ACCESS,
     pub AccessAfter: D3D12_BARRIER_ACCESS,
-    pub pResource: Option<ID3D12Resource>,
+    pub pResource: Option<ID3D12Resource>, // TODO: Make 'weak'
     pub Offset: u64,
     pub Size: u64,
 }
