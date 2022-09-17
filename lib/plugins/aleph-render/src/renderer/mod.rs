@@ -37,8 +37,9 @@ pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    ColorClearValue, ICommandList, IGeneralEncoder, ITexture, IndexType,
-    InputAssemblyBufferBinding, Rect, ResourceStates, TextureBarrier, Viewport,
+    BarrierAccess, BarrierSync, ColorClearValue, ICommandList, IGeneralEncoder, ITexture,
+    ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier2,
+    TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
 
@@ -125,16 +126,25 @@ impl EguiRenderer {
             // Begin the render pass and bind our resources
             self.bind_resources(index, &command_list, encoder.deref_mut(), view);
 
-            // Transition from present to render target state
-            encoder.resource_barrier(
+            encoder.resource_barrier2(
                 &[],
-                &[TextureBarrier {
+                &[],
+                &[TextureBarrier2 {
                     texture,
-                    before_state: ResourceStates::PRESENT,
-                    after_state: ResourceStates::RENDER_TARGET,
+                    subresource_range: TextureSubResourceSet {
+                        base_mip_level: 0,
+                        num_mip_levels: 1,
+                        base_array_slice: 0,
+                        num_array_slices: 1,
+                    },
+                    before_sync: BarrierSync::ALL,
+                    after_sync: BarrierSync::RENDER_TARGET,
+                    before_access: BarrierAccess::NONE,
+                    after_access: BarrierAccess::RENDER_TARGET_WRITE,
+                    before_layout: ImageLayout::Undefined,
+                    after_layout: ImageLayout::ColorAttachmentOptimal,
                     split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
-                    subresource: None,
                 }],
             );
 
@@ -193,15 +203,25 @@ impl EguiRenderer {
                 }
             }
 
-            encoder.resource_barrier(
+            encoder.resource_barrier2(
                 &[],
-                &[TextureBarrier {
+                &[],
+                &[TextureBarrier2 {
                     texture,
-                    before_state: ResourceStates::RENDER_TARGET,
-                    after_state: ResourceStates::PRESENT,
+                    subresource_range: TextureSubResourceSet {
+                        base_mip_level: 0,
+                        num_mip_levels: 1,
+                        base_array_slice: 0,
+                        num_array_slices: 1,
+                    },
+                    before_sync: BarrierSync::RENDER_TARGET,
+                    after_sync: BarrierSync::ALL,
+                    before_access: BarrierAccess::RENDER_TARGET_WRITE,
+                    after_access: BarrierAccess::NONE,
+                    before_layout: ImageLayout::ColorAttachmentOptimal,
+                    after_layout: ImageLayout::PresentSrc,
                     split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
-                    subresource: None,
                 }],
             );
 

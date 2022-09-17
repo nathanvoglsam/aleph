@@ -35,8 +35,9 @@ use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture,
-    ResourceStates, TextureBarrier, TextureDesc, TextureDimension,
+    BarrierAccess, BarrierSync, BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool,
+    IGeneralEncoder, ITexture, ImageLayout, ResourceStates, TextureBarrier, TextureBarrier2,
+    TextureDesc, TextureDimension, TextureSubResourceSet,
 };
 use std::ops::Deref;
 
@@ -180,17 +181,27 @@ impl PerFrameObjects {
             };
             command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
 
-            encoder.resource_barrier(
+            encoder.resource_barrier2(
                 &[],
-                &[TextureBarrier {
+                &[],
+                &[TextureBarrier2 {
                     texture: self.font_staged.as_ref().unwrap().deref(),
-                    before_state: ResourceStates::COPY_DEST,
-                    after_state: ResourceStates::PIXEL_SHADER_RESOURCE,
+                    subresource_range: TextureSubResourceSet {
+                        base_mip_level: 0,
+                        num_mip_levels: 1,
+                        base_array_slice: 0,
+                        num_array_slices: 1,
+                    },
+                    before_sync: BarrierSync::COPY,
+                    after_sync: BarrierSync::ALL,
+                    before_access: BarrierAccess::COPY_WRITE,
+                    after_access: BarrierAccess::SHADER_SAMPLED_READ,
+                    before_layout: ImageLayout::CopyDst,
+                    after_layout: ImageLayout::ShaderReadOnlyOptimal,
                     split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
-                    subresource: None,
                 }],
-            );
+            )
         });
     }
 
