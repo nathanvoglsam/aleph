@@ -30,17 +30,26 @@
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::internal::calc_subresource_index;
-use crate::internal::conv::{decode_u32_color_to_float, resource_state_to_dx12};
+use crate::internal::conv::{
+    barrier_access_to_dx12, barrier_sync_to_dx12, decode_u32_color_to_float, image_layout_to_dx12,
+    resource_state_to_dx12,
+};
 use crate::pipeline::GraphicsPipeline;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
+use aleph_windows::Win32::Graphics::Direct3D12::{
+    D3D12_BARRIER_GROUP, D3D12_BARRIER_GROUP_0, D3D12_BARRIER_SUBRESOURCE_RANGE,
+    D3D12_BARRIER_TYPE, D3D12_BUFFER_BARRIER, D3D12_GLOBAL_BARRIER, D3D12_TEXTURE_BARRIER,
+    D3D12_TEXTURE_BARRIER_FLAGS,
+};
 use dx12::dxgi;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BufferBarrier, BufferBarrier2, ColorClearValue, CpuAccessMode, DepthStencilClearValue,
-    IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, IndexType,
-    InputAssemblyBufferBinding, QueueTransitionMode, Rect, ResourceStates, SplitBarrierMode,
-    TextureBarrier, TextureBarrier2, TextureDesc, TextureSubResourceSet, Viewport,
+    GlobalBarrier, IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder,
+    ImageLayout, IndexType, InputAssemblyBufferBinding, QueueTransitionMode, Rect, ResourceStates,
+    SplitBarrierMode, TextureBarrier, TextureBarrier2, TextureDesc, TextureSubResourceSet,
+    Viewport,
 };
 use std::ops::Deref;
 
@@ -433,6 +442,42 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
+    // unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+    //     for color_attachment in info.color_attachments {
+    //         match color_attachment.load_op {
+    //             AttachmentLoadOp::Clear => {
+    //                 // TODO: Clear texture
+    //                 // self.clear_texture((), &Default::default(), &color_attachment.clear_value);
+    //             }
+    //             AttachmentLoadOp::DontCare => {
+    //                 // TODO: Discard texture
+    //             }
+    //             AttachmentLoadOp::Load | AttachmentLoadOp::None => {}
+    //         }
+    //     }
+    //     if let Some(depth_attachment) = info.depth_attachment {
+    //         match depth_attachment.load_op {
+    //             AttachmentLoadOp::Clear => {
+    //                 // TODO: Clear texture
+    //                 // self.clear_depth_stencil_texture(
+    //                 //     (),
+    //                 //     &Default::default(),
+    //                 //     &depth_attachment.clear_value,
+    //                 // );
+    //             }
+    //             AttachmentLoadOp::DontCare => {
+    //                 // TODO: Discard texture
+    //             }
+    //             AttachmentLoadOp::Load | AttachmentLoadOp::None => {}
+    //         }
+    //     }
+    //     // todo!()
+    // }
+    //
+    // unsafe fn end_rendering(&mut self) {
+    //     // todo!()
+    // }
+
     unsafe fn draw(
         &mut self,
         vertex_count: u32,
@@ -574,10 +619,132 @@ impl<'a> IComputeEncoder for Encoder<'a> {
 
     unsafe fn resource_barrier2(
         &mut self,
-        _buffer_barriers: &[BufferBarrier2],
-        _texture_barriers: &[TextureBarrier2],
+        global_barriers: &[GlobalBarrier],
+        buffer_barriers: &[BufferBarrier2],
+        texture_barriers: &[TextureBarrier2],
     ) {
-        // todo
+        #![allow(non_snake_case)]
+        // TODO: Bump allocator on the command buffer
+        let mut translated_global_barriers: Vec<D3D12_GLOBAL_BARRIER> =
+            Vec::with_capacity(global_barriers.len());
+        let mut translated_buffer_barriers: Vec<D3D12_BUFFER_BARRIER> =
+            Vec::with_capacity(buffer_barriers.len());
+        let mut translated_texture_barriers: Vec<D3D12_TEXTURE_BARRIER> =
+            Vec::with_capacity(texture_barriers.len());
+        let mut barrier_groups: Vec<D3D12_BARRIER_GROUP> = Vec::with_capacity(3);
+
+        if !buffer_barriers.is_empty() {
+            for barrier in global_barriers {
+                translated_global_barriers.push(D3D12_GLOBAL_BARRIER {
+                    SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
+                    SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
+                    AccessBefore: barrier_access_to_dx12(barrier.before_access),
+                    AccessAfter: barrier_access_to_dx12(barrier.after_access),
+                });
+            }
+
+            barrier_groups.push(D3D12_BARRIER_GROUP {
+                Type: D3D12_BARRIER_TYPE::GLOBAL,
+                NumBarriers: translated_global_barriers.len() as _,
+                Anonymous: D3D12_BARRIER_GROUP_0 {
+                    pGlobalBarriers: translated_global_barriers.as_ptr(),
+                },
+            });
+        }
+
+        if !buffer_barriers.is_empty() {
+            for barrier in buffer_barriers {
+                // Grab the d3d12 resource handle
+                let resource = barrier
+                    .buffer
+                    .query_interface::<Buffer>()
+                    .expect("Unknown IBuffer implementation");
+
+                translated_buffer_barriers.push(D3D12_BUFFER_BARRIER {
+                    SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
+                    SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
+                    AccessBefore: barrier_access_to_dx12(barrier.before_access),
+                    AccessAfter: barrier_access_to_dx12(barrier.after_access),
+                    pResource: Some(resource.resource.as_raw().clone()),
+                    Offset: barrier.offset,
+                    Size: barrier.size,
+                });
+            }
+
+            barrier_groups.push(D3D12_BARRIER_GROUP {
+                Type: D3D12_BARRIER_TYPE::BUFFER,
+                NumBarriers: translated_buffer_barriers.len() as _,
+                Anonymous: D3D12_BARRIER_GROUP_0 {
+                    pBufferBarriers: translated_buffer_barriers.as_ptr(),
+                },
+            });
+        }
+
+        if !texture_barriers.is_empty() {
+            for barrier in texture_barriers {
+                // Grab the d3d12 resource handle from our texture impls
+                let resource = barrier
+                    .texture
+                    .query_interface::<Texture>()
+                    .map(|v| v.resource.as_raw())
+                    .unwrap_or_else(|| {
+                        barrier
+                            .texture
+                            .query_interface::<SwapTexture>()
+                            .expect("Unknown ITexture implementation")
+                            .resource
+                            .as_raw()
+                    });
+
+                // Vulkan initializes layout metadata automatically when transitioning from
+                // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise
+                // we need to issue another command. To match behaviour we always use the flag.
+                //
+                // I would be surprised if this affects performance in any meaningful way, this
+                // should only initialize the layout metadata and not the actual data unlike a full
+                // clear.
+                let Flags = if barrier.before_layout == ImageLayout::Undefined {
+                    D3D12_TEXTURE_BARRIER_FLAGS::DISCARD
+                } else {
+                    D3D12_TEXTURE_BARRIER_FLAGS::empty()
+                };
+
+                translated_texture_barriers.push(D3D12_TEXTURE_BARRIER {
+                    SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
+                    SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
+                    AccessBefore: barrier_access_to_dx12(barrier.before_access),
+                    AccessAfter: barrier_access_to_dx12(barrier.after_access),
+                    LayoutBefore: image_layout_to_dx12(barrier.before_layout),
+                    LayoutAfter: image_layout_to_dx12(barrier.after_layout),
+                    pResource: Some(resource.clone()),
+                    Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE {
+                        IndexOrFirstMipLevel: barrier.subresource_range.base_mip_level,
+                        NumMipLevels: barrier.subresource_range.num_mip_levels,
+                        FirstArraySlice: barrier.subresource_range.base_array_slice,
+                        NumArraySlices: barrier.subresource_range.num_array_slices,
+                        FirstPlane: 0,
+                        NumPlanes: 1,
+                    },
+                    Flags,
+                });
+            }
+            barrier_groups.push(D3D12_BARRIER_GROUP {
+                Type: D3D12_BARRIER_TYPE::TEXTURE,
+                NumBarriers: translated_texture_barriers.len() as _,
+                Anonymous: D3D12_BARRIER_GROUP_0 {
+                    pTextureBarriers: translated_texture_barriers.as_ptr(),
+                },
+            });
+        }
+
+        self.list.as_raw().Barrier(
+            barrier_groups.len() as _,
+            if barrier_groups.is_empty() {
+                std::ptr::null()
+            } else {
+                barrier_groups.as_ptr()
+            },
+        );
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

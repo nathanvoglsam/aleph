@@ -27,12 +27,16 @@
 // SOFTWARE.
 //
 
+use aleph_windows::Win32::Graphics::Direct3D12::{
+    D3D12_BARRIER_ACCESS, D3D12_BARRIER_LAYOUT, D3D12_BARRIER_SYNC,
+};
 use dx12::dxgi;
 use interfaces::gpu::{
-    BlendFactor, BlendOp, CompareOp, CullMode, DescriptorShaderVisibility, Format, FrontFaceOrder,
-    OptimalClearValue, PolygonMode, PrimitiveTopology, QueueType, ResourceStates,
-    SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
-    TextureCreateError, TextureDesc, TextureDimension,
+    BarrierAccess, BarrierSync, BlendFactor, BlendOp, CompareOp, CullMode,
+    DescriptorShaderVisibility, Format, FrontFaceOrder, ImageLayout, OptimalClearValue,
+    PolygonMode, PrimitiveTopology, QueueType, ResourceStates, SamplerAddressMode,
+    SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError,
+    TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -265,6 +269,192 @@ pub const fn sampler_filters_to_dx12(
         (true, false, _, _, _) => DF::Anisotropic,
         (true, true, _, _, _) => DF::ComparisonAnisotropic,
     }
+}
+
+pub fn image_layout_to_dx12(layout: ImageLayout) -> D3D12_BARRIER_LAYOUT {
+    match layout {
+        ImageLayout::Undefined => D3D12_BARRIER_LAYOUT::UNDEFINED,
+        ImageLayout::Common => D3D12_BARRIER_LAYOUT::COMMON,
+        ImageLayout::PresentSrc => D3D12_BARRIER_LAYOUT::PRESENT,
+        ImageLayout::ColorAttachmentOptimal => D3D12_BARRIER_LAYOUT::RENDER_TARGET,
+        ImageLayout::DepthStencilAttachmentOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_WRITE,
+        ImageLayout::DepthStencilReadOnlyOptimal => D3D12_BARRIER_LAYOUT::DEPTH_STENCIL_READ,
+        ImageLayout::ShaderReadOnlyOptimal => D3D12_BARRIER_LAYOUT::SHADER_RESOURCE,
+        ImageLayout::CopySrc => D3D12_BARRIER_LAYOUT::COPY_SOURCE,
+        ImageLayout::CopyDst => D3D12_BARRIER_LAYOUT::COPY_DEST,
+        ImageLayout::UnorderedAccess => D3D12_BARRIER_LAYOUT::UNORDERED_ACCESS,
+        ImageLayout::ResolveSource => D3D12_BARRIER_LAYOUT::RESOLVE_SOURCE,
+        ImageLayout::ResolveDest => D3D12_BARRIER_LAYOUT::RESOLVE_DEST,
+    }
+}
+
+macro_rules! translate_flag_onto {
+    ($src:ident, $dst:ident, $src_flag:expr, $dst_flag:expr) => {
+        if ($src.contains($src_flag)) {
+            $dst = $dst | $dst_flag;
+        }
+    };
+}
+
+pub fn barrier_sync_to_dx12(sync: BarrierSync) -> D3D12_BARRIER_SYNC {
+    let mut out = D3D12_BARRIER_SYNC::empty();
+    translate_flag_onto!(sync, out, BarrierSync::ALL, D3D12_BARRIER_SYNC::ALL);
+    translate_flag_onto!(sync, out, BarrierSync::DRAW, D3D12_BARRIER_SYNC::DRAW);
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::INPUT_ASSEMBLER,
+        D3D12_BARRIER_SYNC::INPUT_ASSEMBLER
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::VERTEX_SHADING,
+        D3D12_BARRIER_SYNC::VERTEX_SHADING
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::PIXEL_SHADING,
+        D3D12_BARRIER_SYNC::PIXEL_SHADING
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::DEPTH_STENCIL,
+        D3D12_BARRIER_SYNC::DEPTH_STENCIL
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RENDER_TARGET,
+        D3D12_BARRIER_SYNC::RENDER_TARGET
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COMPUTE_SHADING,
+        D3D12_BARRIER_SYNC::COMPUTE_SHADING
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::RAYTRACING,
+        D3D12_BARRIER_SYNC::RAYTRACING
+    );
+    translate_flag_onto!(sync, out, BarrierSync::COPY, D3D12_BARRIER_SYNC::COPY);
+    translate_flag_onto!(sync, out, BarrierSync::RESOLVE, D3D12_BARRIER_SYNC::RESOLVE);
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::EXECUTE_INDIRECT,
+        D3D12_BARRIER_SYNC::EXECUTE_INDIRECT
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::CLEAR_UNORDERED_ACCESS_VIEW,
+        D3D12_BARRIER_SYNC::CLEAR_UNORDERED_ACCESS_VIEW
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::BUILD_RAYTRACING_ACCELERATION_STRUCTURE,
+        (D3D12_BARRIER_SYNC::BUILD_RAYTRACING_ACCELERATION_STRUCTURE
+            | D3D12_BARRIER_SYNC::EMIT_RAYTRACING_ACCELERATION_STRUCTURE_POSTBUILD_INFO)
+    );
+    translate_flag_onto!(
+        sync,
+        out,
+        BarrierSync::COPY_RAYTRACING_ACCELERATION_STRUCTURE,
+        D3D12_BARRIER_SYNC::COPY_RAYTRACING_ACCELERATION_STRUCTURE
+    );
+
+    out
+}
+
+pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
+    let mut out = D3D12_BARRIER_ACCESS::empty();
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::VERTEX_BUFFER_READ,
+        D3D12_BARRIER_ACCESS::VERTEX_BUFFER
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDEX_BUFFER_READ,
+        D3D12_BARRIER_ACCESS::INDEX_BUFFER
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::CONSTANT_BUFFER_READ,
+        D3D12_BARRIER_ACCESS::CONSTANT_BUFFER
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::INDIRECT_COMMAND_READ,
+        D3D12_BARRIER_ACCESS::INDIRECT_ARGUMENT
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::SHADER_SAMPLED_READ,
+        D3D12_BARRIER_ACCESS::SHADER_RESOURCE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_READ,
+        D3D12_BARRIER_ACCESS::RENDER_TARGET
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RENDER_TARGET_WRITE,
+        D3D12_BARRIER_ACCESS::RENDER_TARGET
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_READ,
+        D3D12_BARRIER_ACCESS::DEPTH_STENCIL_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::DEPTH_STENCIL_WRITE,
+        D3D12_BARRIER_ACCESS::DEPTH_STENCIL_WRITE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_READ,
+        D3D12_BARRIER_ACCESS::COPY_SOURCE
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::COPY_WRITE,
+        D3D12_BARRIER_ACCESS::COPY_DEST
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_READ,
+        D3D12_BARRIER_ACCESS::RAYTRACING_ACCELERATION_STRUCTURE_READ
+    );
+    translate_flag_onto!(
+        access,
+        out,
+        BarrierAccess::RAYTRACING_ACCELERATION_STRUCTURE_WRITE,
+        D3D12_BARRIER_ACCESS::RAYTRACING_ACCELERATION_STRUCTURE_WRITE
+    );
+
+    out
 }
 
 pub fn resource_state_to_dx12(state: ResourceStates) -> dx12::ResourceStates {
