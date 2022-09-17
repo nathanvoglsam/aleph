@@ -36,8 +36,8 @@ use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool,
-    IGeneralEncoder, ITexture, ImageLayout, ResourceStates, TextureBarrier, TextureBarrier2,
-    TextureDesc, TextureDimension, TextureSubResourceSet,
+    IGeneralEncoder, ITexture, ImageLayout, ResourceStates, TextureBarrier, TextureDesc,
+    TextureDimension, TextureSubResourceSet,
 };
 use std::ops::Deref;
 
@@ -181,10 +181,10 @@ impl PerFrameObjects {
             };
             command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
 
-            encoder.resource_barrier2(
+            encoder.resource_barrier(
                 &[],
                 &[],
-                &[TextureBarrier2 {
+                &[TextureBarrier {
                     texture: self.font_staged.as_ref().unwrap().deref(),
                     subresource_range: TextureSubResourceSet {
                         base_mip_level: 0,

@@ -38,7 +38,7 @@ pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, ColorClearValue, ICommandList, IGeneralEncoder, ITexture,
-    ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier2,
+    ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier,
     TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
@@ -126,10 +126,10 @@ impl EguiRenderer {
             // Begin the render pass and bind our resources
             self.bind_resources(index, &command_list, encoder.deref_mut(), view);
 
-            encoder.resource_barrier2(
+            encoder.resource_barrier(
                 &[],
                 &[],
-                &[TextureBarrier2 {
+                &[TextureBarrier {
                     texture,
                     subresource_range: TextureSubResourceSet {
                         base_mip_level: 0,
@@ -203,10 +203,10 @@ impl EguiRenderer {
                 }
             }
 
-            encoder.resource_barrier2(
+            encoder.resource_barrier(
                 &[],
                 &[],
-                &[TextureBarrier2 {
+                &[TextureBarrier {
                     texture,
                     subresource_range: TextureSubResourceSet {
                         base_mip_level: 0,
