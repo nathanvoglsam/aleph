@@ -382,6 +382,7 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
 
     unsafe fn resource_barrier2(
         &mut self,
+        memory_barriers: &[GlobalBarrier],
         buffer_barriers: &[BufferBarrier2],
         texture_barriers: &[TextureBarrier2],
     );
@@ -2419,11 +2420,44 @@ impl<'a> Debug for BufferBarrier<'a> {
     }
 }
 
+/// Describes a global memory barrier
+#[derive(Clone)]
+pub struct GlobalBarrier {
+    pub before_sync: BarrierSync,
+    pub after_sync: BarrierSync,
+
+    pub before_access: BarrierAccess,
+    pub after_access: BarrierAccess,
+
+    /// Enables describing split barriers, where one barrier begins a transition and another ends
+    /// the transition. This allows interleaving other rendering commands with state transitions.
+    pub split_barrier_mode: SplitBarrierMode,
+}
+
+impl Debug for GlobalBarrier {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GlobalBarrier")
+            .field("before_sync", &self.before_sync)
+            .field("after_sync", &self.after_sync)
+            .field("before_access", &self.before_access)
+            .field("after_access", &self.after_access)
+            .field("split_barrier_mode", &self.split_barrier_mode)
+            .finish()
+    }
+}
+
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
 #[derive(Clone)]
 pub struct BufferBarrier2<'a> {
     /// The buffer that the barrier will describe a state transition for
     pub buffer: &'a dyn IBuffer,
+
+    /// The offset from the start of the buffer, in bytes, the barrier applies to.
+    pub offset: u64,
+
+    /// The size of the affected region of the buffer, in bytes, or `u64::MAX` to indicate the whole
+    /// buffer.
+    pub size: u64,
 
     pub before_sync: BarrierSync,
     pub after_sync: BarrierSync,
@@ -2506,6 +2540,8 @@ pub struct TextureBarrier2<'a> {
     /// The texture that the barrier will describe a state transition for
     pub texture: &'a dyn ITexture,
 
+    pub subresource_range: TextureSubResourceSet,
+
     pub before_sync: BarrierSync,
     pub after_sync: BarrierSync,
 
@@ -2522,16 +2558,13 @@ pub struct TextureBarrier2<'a> {
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
     pub queue_transition_mode: QueueTransitionMode,
-
-    /// Enables specifying the buffer affect only a specific sub-resource of the texture. When left
-    /// as `None` the entire texture will be affected by the barrier.
-    pub subresource: Option<BarrierSubresourceOptions>,
 }
 
 impl<'a> Debug for TextureBarrier2<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TextureBarrier2")
             .field("texture", &"<ptr>")
+            .field("subresource_range", &self.subresource_range)
             .field("before_sync", &self.before_sync)
             .field("after_sync", &self.after_sync)
             .field("before_access", &self.before_access)
@@ -2540,7 +2573,6 @@ impl<'a> Debug for TextureBarrier2<'a> {
             .field("after_layout", &self.after_layout)
             .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
-            .field("subresource", &self.subresource)
             .finish()
     }
 }
