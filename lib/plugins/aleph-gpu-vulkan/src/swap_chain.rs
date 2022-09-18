@@ -38,7 +38,7 @@ use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AcquireImageError, Format, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
-    ResourceStates, SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
+    SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
 };
 use std::sync::Mutex;
 
@@ -355,7 +355,6 @@ impl ISwapChain for SwapChain {
                             depth: 1,
                             format: inner.format,
                             dimension: TextureDimension::Texture2D,
-                            initial_state: ResourceStates::UNDEFINED,
                             clear_value: None,
                             array_size: 1,
                             mip_levels: 1,
