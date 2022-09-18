@@ -1115,37 +1115,6 @@ bitflags! {
     }
 }
 
-bitflags! {
-    pub struct ResourceStates: u32 {
-        const UNDEFINED = 0;
-        const VERTEX_AND_CONSTANT_BUFFER = 0x1;
-        const INDEX_BUFFER = 0x2;
-        const RENDER_TARGET = 0x4;
-        const UNORDERED_ACCESS = 0x8;
-        const DEPTH_WRITE = 0x10;
-        const DEPTH_READ = 0x20;
-        const NON_PIXEL_SHADER_RESOURCE = 0x40;
-        const PIXEL_SHADER_RESOURCE = 0x80;
-        const SHADER_RESOURCE = 0x40 | 0x80;
-        const STREAM_OUT = 0x100;
-        const INDIRECT_ARGUMENT = 0x200;
-        const COPY_DEST = 0x400;
-        const COPY_SOURCE = 0x800;
-        const GENERIC_READ = 0x1 | 0x2 | 0x40 | 0x80 | 0x200 | 0x800;
-        const PRESENT = 0x1000;
-        const COMMON = 0x2000;
-        // const RAYTRACING_ACCELERATION_STRUCTURE = 0x4000;
-        // const SHADING_RATE_SOURCE = 0x8000;
-    }
-}
-
-impl Default for ResourceStates {
-    #[inline]
-    fn default() -> Self {
-        ResourceStates::UNDEFINED
-    }
-}
-
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Format {
     R8Unorm,
@@ -1464,9 +1433,6 @@ pub struct TextureDesc {
     ///
     /// Declares whether the texture should be a 1D, 2D, 3D or cube texture.
     pub dimension: TextureDimension,
-
-    /// The initial resource state the texture will take
-    pub initial_state: ResourceStates,
 
     /// An optional clear value that will be 'optimal' for the underlying implementation.
     pub clear_value: Option<OptimalClearValue>,
