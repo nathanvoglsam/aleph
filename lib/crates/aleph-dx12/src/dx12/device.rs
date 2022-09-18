@@ -44,7 +44,7 @@ use utf16_lit::utf16_null;
 use windows::core::Interface;
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, ID3D12InfoQueue1, ID3D12Resource, D3D12_CACHED_PIPELINE_STATE,
+    ID3D12Device10, ID3D12InfoQueue1, ID3D12Resource, D3D12_CACHED_PIPELINE_STATE,
     D3D12_CLEAR_VALUE, D3D12_COMPUTE_PIPELINE_STATE_DESC, D3D12_CPU_DESCRIPTOR_HANDLE,
     D3D12_DEPTH_STENCIL_VIEW_DESC, D3D12_HEAP_PROPERTIES, D3D12_MESSAGE_CALLBACK_FLAG_NONE,
     D3D12_MESSAGE_CATEGORY, D3D12_MESSAGE_ID, D3D12_MESSAGE_SEVERITY,
@@ -57,7 +57,7 @@ pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
     DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
 
 #[repr(transparent)]
-pub struct Device(pub(crate) ID3D12Device4);
+pub struct Device(pub(crate) ID3D12Device10);
 
 impl Device {
     #[inline]
@@ -67,15 +67,15 @@ impl Device {
     ) -> windows::core::Result<Device> {
         unsafe {
             let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
-            let mut device: Option<ID3D12Device4> = None;
+            let mut device: Option<ID3D12Device10> = None;
             let adapter: Option<IDXGIAdapter1> = adapter.into().map(|v| v.0.clone());
             let ptr = &mut device;
-            let ptr = ptr as *mut Option<ID3D12Device4>;
+            let ptr = ptr as *mut Option<ID3D12Device10>;
             let ptr = ptr as *mut *mut ::std::ffi::c_void;
             create_fn(
                 transmute_copy(&adapter),
                 minimum_feature_level.into(),
-                &ID3D12Device4::IID,
+                &ID3D12Device10::IID,
                 ptr,
             )
             .and_some(device)
@@ -342,4 +342,4 @@ impl Device {
 
 crate::object_impl!(Device);
 crate::shared_object!(Device);
-windows::deref_impl!(Device, ID3D12Device4);
+windows::deref_impl!(Device, ID3D12Device10);

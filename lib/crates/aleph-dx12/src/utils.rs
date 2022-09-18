@@ -109,7 +109,7 @@ macro_rules! device_child_impl {
         impl $crate::D3D12DeviceChild for $t {
             #[inline]
             unsafe fn get_device(&self) -> $crate::windows::core::Result<$crate::Device> {
-                type D = $crate::windows::Win32::Graphics::Direct3D12::ID3D12Device4;
+                type D = $crate::windows::Win32::Graphics::Direct3D12::ID3D12Device10;
                 let mut device: Option<D> = None;
                 self.0.GetDevice::<D>(&mut device)?;
                 $crate::windows::core::Result::Ok($crate::Device(device.unwrap()))
