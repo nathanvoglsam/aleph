@@ -31,21 +31,19 @@ use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, decode_u32_color_to_float, image_layout_to_dx12,
+    translate_rendering_color_attachment, translate_rendering_depth_stencil_attachment,
 };
 use crate::pipeline::GraphicsPipeline;
 use crate::swap_texture::SwapTexture;
 use crate::texture::Texture;
-use aleph_windows::Win32::Graphics::Direct3D12::{
-    D3D12_BARRIER_GROUP, D3D12_BARRIER_GROUP_0, D3D12_BARRIER_SUBRESOURCE_RANGE,
-    D3D12_BARRIER_TYPE, D3D12_BUFFER_BARRIER, D3D12_GLOBAL_BARRIER, D3D12_TEXTURE_BARRIER,
-    D3D12_TEXTURE_BARRIER_FLAGS,
-};
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    BufferBarrier, ColorClearValue, DepthStencilClearValue, GlobalBarrier, IComputeEncoder,
-    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
+    BeginRenderingInfo, BufferBarrier, ColorClearValue, DepthStencilClearValue, GlobalBarrier,
+    IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout,
+    IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc,
+    TextureSubResourceSet, Viewport,
 };
 use std::ops::Deref;
 
@@ -438,41 +436,39 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         }
     }
 
-    // unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
-    //     for color_attachment in info.color_attachments {
-    //         match color_attachment.load_op {
-    //             AttachmentLoadOp::Clear => {
-    //                 // TODO: Clear texture
-    //                 // self.clear_texture((), &Default::default(), &color_attachment.clear_value);
-    //             }
-    //             AttachmentLoadOp::DontCare => {
-    //                 // TODO: Discard texture
-    //             }
-    //             AttachmentLoadOp::Load | AttachmentLoadOp::None => {}
-    //         }
-    //     }
-    //     if let Some(depth_attachment) = info.depth_attachment {
-    //         match depth_attachment.load_op {
-    //             AttachmentLoadOp::Clear => {
-    //                 // TODO: Clear texture
-    //                 // self.clear_depth_stencil_texture(
-    //                 //     (),
-    //                 //     &Default::default(),
-    //                 //     &depth_attachment.clear_value,
-    //                 // );
-    //             }
-    //             AttachmentLoadOp::DontCare => {
-    //                 // TODO: Discard texture
-    //             }
-    //             AttachmentLoadOp::Load | AttachmentLoadOp::None => {}
-    //         }
-    //     }
-    //     // todo!()
-    // }
-    //
-    // unsafe fn end_rendering(&mut self) {
-    //     // todo!()
-    // }
+    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
+        let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
+        for info in info.color_attachments {
+            color_attachments.push(translate_rendering_color_attachment(
+                info,
+                Default::default(), // TODO: descriptor
+                None,               // TODO: format
+            ));
+        }
+
+        let depth_stencil = info.depth_stencil_attachment.map(|info| {
+            translate_rendering_depth_stencil_attachment(
+                info,
+                Default::default(), // TODO: descriptor
+                None,               // TODO: format
+            )
+        });
+
+        let depth_stencil_ref = depth_stencil
+            .as_ref()
+            .map(|v| v as *const _)
+            .unwrap_or(std::ptr::null());
+
+        self.list.as_raw().BeginRenderPass(
+            &color_attachments,
+            depth_stencil_ref,
+            D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES, // TODO: This *could* be suboptimal
+        );
+    }
+
+    unsafe fn end_rendering(&mut self) {
+        self.list.as_raw().EndRenderPass();
+    }
 
     unsafe fn draw(
         &mut self,
