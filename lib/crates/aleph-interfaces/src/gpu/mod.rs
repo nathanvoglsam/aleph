@@ -355,6 +355,11 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     );
+
+    unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo);
+
+    unsafe fn end_rendering(&mut self);
+
     unsafe fn draw(
         &mut self,
         vertex_count: u32,
@@ -499,6 +504,39 @@ pub struct Rect {
     pub y: u32,
     pub w: u32,
     pub h: u32,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum AttachmentLoadOp<ClearValue> {
+    /// Specifies that the attachment will be loaded from the data in memory
+    Load,
+
+    /// Specifies that the attachment will be cleared with a specified colour
+    Clear(ClearValue),
+
+    /// Specifies that the contents of the attachment are not important and can be safely discarded.
+    /// Any loads will read undefined data.
+    DontCare,
+
+    /// Specifies that the attachment is *not* loaded (unused). This is similar to
+    /// [AttachmentLoadOp::DontCare], but will leave the attachment untouched rather than undefined.
+    None,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum AttachmentStoreOp {
+    /// Specifies that the results of rendering operations will be written to the attachment's
+    /// memory
+    Store,
+
+    /// Specifies that the results of rendering operations will be discarded and *not* written to
+    /// memory. The contents of the attachment will become undefined.
+    DontCare,
+
+    /// Specifies that the attachment is *not* stored to (unused). This is similar to
+    /// [AttachmentStoreOp::DontCare], but will leave the attachment untouched rather than
+    /// undefined.
+    None,
 }
 
 //
@@ -2479,6 +2517,33 @@ pub struct Viewport {
     pub height: f32,
     pub min_depth: f32,
     pub max_depth: f32,
+}
+
+#[derive(Clone, Debug)]
+pub struct RenderingColorAttachmentInfo<'a> {
+    pub image_view: &'a (),
+    pub image_layout: ImageLayout,
+    pub load_op: AttachmentLoadOp<ColorClearValue>,
+    pub store_op: AttachmentStoreOp,
+}
+
+#[derive(Clone, Debug)]
+pub struct RenderingDepthStencilAttachmentInfo<'a> {
+    pub image_view: &'a (),
+    pub image_layout: ImageLayout,
+    pub depth_load_op: AttachmentLoadOp<DepthStencilClearValue>,
+    pub depth_store_op: AttachmentStoreOp,
+    pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
+    pub stencil_store_op: AttachmentStoreOp,
+}
+
+#[derive(Clone, Debug)]
+pub struct BeginRenderingInfo<'a> {
+    pub render_area: Rect,
+    pub layer_count: u32,
+    pub view_mask: u32,
+    pub color_attachments: &'a [RenderingColorAttachmentInfo<'a>],
+    pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo<'a>>,
 }
 
 //
