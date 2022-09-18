@@ -36,7 +36,7 @@ use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
-    ResourceStates, SwapChainConfiguration, TextureDesc, TextureDimension,
+    SwapChainConfiguration, TextureDesc, TextureDimension,
 };
 use parking_lot::Mutex;
 use std::ops::Deref;
@@ -189,7 +189,6 @@ impl ISwapChain for SwapChain {
                     depth: 1,
                     format: inner.config.format,
                     dimension: TextureDimension::Texture2D,
-                    initial_state: ResourceStates::PRESENT,
                     clear_value: None,
                     array_size: 1,
                     mip_levels: 1,

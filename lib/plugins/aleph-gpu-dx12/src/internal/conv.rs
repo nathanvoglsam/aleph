@@ -28,15 +28,19 @@
 //
 
 use aleph_windows::Win32::Graphics::Direct3D12::{
-    D3D12_BARRIER_ACCESS, D3D12_BARRIER_LAYOUT, D3D12_BARRIER_SYNC,
+    D3D12_BARRIER_ACCESS, D3D12_BARRIER_LAYOUT, D3D12_BARRIER_SYNC, D3D12_RESOURCE_DESC1,
+    D3D12_RESOURCE_DIMENSION_TEXTURE1D, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
+    D3D12_RESOURCE_DIMENSION_TEXTURE3D, D3D12_RESOURCE_FLAGS,
+    D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
+    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_TEXTURE_LAYOUT_UNKNOWN,
 };
+use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use dx12::dxgi;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BlendFactor, BlendOp, CompareOp, CullMode,
     DescriptorShaderVisibility, Format, FrontFaceOrder, ImageLayout, OptimalClearValue,
-    PolygonMode, PrimitiveTopology, QueueType, ResourceStates, SamplerAddressMode,
-    SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError,
-    TextureDesc, TextureDimension,
+    PolygonMode, PrimitiveTopology, QueueType, SamplerAddressMode, SamplerBorderColor,
+    SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -457,70 +461,21 @@ pub fn barrier_access_to_dx12(access: BarrierAccess) -> D3D12_BARRIER_ACCESS {
     out
 }
 
-pub fn resource_state_to_dx12(state: ResourceStates) -> dx12::ResourceStates {
-    if state == ResourceStates::COMMON {
-        return dx12::ResourceStates::COMMON;
-    }
-
-    let mut out = dx12::ResourceStates::default();
-    if state.contains(ResourceStates::VERTEX_AND_CONSTANT_BUFFER) {
-        out |= dx12::ResourceStates::VERTEX_AND_CONSTANT_BUFFER
-    }
-    if state.contains(ResourceStates::INDEX_BUFFER) {
-        out |= dx12::ResourceStates::INDEX_BUFFER
-    }
-    if state.contains(ResourceStates::INDIRECT_ARGUMENT) {
-        out |= dx12::ResourceStates::INDIRECT_ARGUMENT
-    }
-    if state.contains(ResourceStates::NON_PIXEL_SHADER_RESOURCE) {
-        out |= dx12::ResourceStates::NON_PIXEL_SHADER_RESOURCE
-    }
-    if state.contains(ResourceStates::PIXEL_SHADER_RESOURCE) {
-        out |= dx12::ResourceStates::PIXEL_SHADER_RESOURCE
-    }
-    if state.contains(ResourceStates::UNORDERED_ACCESS) {
-        out |= dx12::ResourceStates::UNORDERED_ACCESS
-    }
-    if state.contains(ResourceStates::RENDER_TARGET) {
-        out |= dx12::ResourceStates::RENDER_TARGET
-    }
-    if state.contains(ResourceStates::DEPTH_WRITE) {
-        out |= dx12::ResourceStates::DEPTH_WRITE
-    }
-    if state.contains(ResourceStates::DEPTH_READ) {
-        out |= dx12::ResourceStates::DEPTH_READ
-    }
-    if state.contains(ResourceStates::STREAM_OUT) {
-        out |= dx12::ResourceStates::STREAM_OUT
-    }
-    if state.contains(ResourceStates::COPY_DEST) {
-        out |= dx12::ResourceStates::COPY_DEST
-    }
-    if state.contains(ResourceStates::COPY_SOURCE) {
-        out |= dx12::ResourceStates::COPY_SOURCE
-    }
-    if state.contains(ResourceStates::PRESENT) {
-        out |= dx12::ResourceStates::PRESENT
-    }
-
-    out
-}
-
 pub fn texture_create_desc_to_dx12(
     desc: &TextureDesc,
-) -> Result<dx12::ResourceDesc, TextureCreateError> {
+) -> Result<D3D12_RESOURCE_DESC1, TextureCreateError> {
     let (dimension, depth_or_array_size) = match desc.dimension {
         TextureDimension::Texture1D => {
             if desc.array_size >= u16::MAX as _ {
                 return Err(TextureCreateError::InvalidArraySize(desc.array_size));
             }
-            (dx12::ResourceDimension::Texture1D, desc.array_size)
+            (D3D12_RESOURCE_DIMENSION_TEXTURE1D, desc.array_size)
         }
         TextureDimension::Texture2D => {
             if desc.array_size >= u16::MAX as _ {
                 return Err(TextureCreateError::InvalidArraySize(desc.array_size));
             }
-            (dx12::ResourceDimension::Texture2D, desc.array_size)
+            (D3D12_RESOURCE_DIMENSION_TEXTURE2D, desc.array_size)
         }
         TextureDimension::Texture3D => {
             if desc.depth >= u16::MAX as _ {
@@ -529,7 +484,7 @@ pub fn texture_create_desc_to_dx12(
             if desc.array_size >= 1 {
                 return Err(TextureCreateError::InvalidArraySize(desc.array_size));
             }
-            (dx12::ResourceDimension::Texture3D, desc.depth)
+            (D3D12_RESOURCE_DIMENSION_TEXTURE3D, desc.depth)
         }
     };
 
@@ -541,33 +496,34 @@ pub fn texture_create_desc_to_dx12(
         return Err(TextureCreateError::InvalidSampleCount(desc.sample_count));
     }
 
-    let mut flags = dx12::ResourceFlags::NONE;
+    let mut flags = D3D12_RESOURCE_FLAGS::default();
     if desc.is_render_target {
         if desc.format.is_depth_stencil() {
-            flags |= dx12::ResourceFlags::ALLOW_DEPTH_STENCIL;
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
         } else {
-            flags |= dx12::ResourceFlags::ALLOW_RENDER_TARGET;
+            flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
         }
     }
 
     if desc.allow_unordered_access {
-        flags |= dx12::ResourceFlags::ALLOW_UNORDERED_ACCESS;
+        flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
     }
 
-    let out = dx12::ResourceDesc {
-        dimension,
-        alignment: 0,
-        width: desc.width as u64,
-        height: desc.height,
-        depth_or_array_size: depth_or_array_size as u16,
-        mip_levels: desc.mip_levels as u16,
-        format: texture_format_to_dxgi(desc.format),
-        sample_desc: dxgi::SampleDesc {
-            count: desc.sample_count,
-            quality: desc.sample_quality,
+    let out = D3D12_RESOURCE_DESC1 {
+        Dimension: dimension,
+        Alignment: 0,
+        Width: desc.width as u64,
+        Height: desc.height,
+        DepthOrArraySize: depth_or_array_size as u16,
+        MipLevels: desc.mip_levels as u16,
+        Format: texture_format_to_dxgi(desc.format).into(),
+        SampleDesc: DXGI_SAMPLE_DESC {
+            Count: desc.sample_count,
+            Quality: desc.sample_quality,
         },
-        layout: dx12::TextureLayout::Unknown,
-        flags,
+        Layout: D3D12_TEXTURE_LAYOUT_UNKNOWN,
+        Flags: flags,
+        SamplerFeedbackMipRegion: Default::default(),
     };
     Ok(out)
 }

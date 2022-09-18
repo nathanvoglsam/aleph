@@ -34,9 +34,9 @@ use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
     cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
-    resource_state_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
-    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
-    texture_create_desc_to_dx12, texture_format_to_dxgi,
+    sampler_address_mode_to_dx12, sampler_filters_to_dx12, shader_visibility_to_dx12,
+    stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
+    texture_format_to_dxgi,
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
@@ -46,6 +46,13 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::Texture;
+use aleph_windows::Win32::Graphics::Direct3D12::{
+    ID3D12Resource, D3D12_BARRIER_LAYOUT, D3D12_CLEAR_VALUE, D3D12_HEAP_PROPERTIES,
+    D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_READBACK, D3D12_HEAP_TYPE_UPLOAD,
+    D3D12_RESOURCE_DESC1, D3D12_RESOURCE_DIMENSION_BUFFER,
+    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+};
+use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use crossbeam::queue::SegQueue;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
@@ -376,55 +383,57 @@ impl IDevice for Device {
     }
 
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
-        let mut resource_desc = dx12::ResourceDesc {
+        let mut resource_desc = D3D12_RESOURCE_DESC1 {
             // Fields that will be the same regardless of the requested buffer desc
-            dimension: dx12::ResourceDimension::Buffer,
-            layout: dx12::TextureLayout::RowMajor,
-            format: dxgi::Format::Unknown,
-            alignment: 0,
-            height: 1,
-            depth_or_array_size: 1,
-            mip_levels: 1,
-            sample_desc: dxgi::SampleDesc {
-                count: 1,
-                quality: 0,
+            Dimension: D3D12_RESOURCE_DIMENSION_BUFFER,
+            Alignment: 0,
+            Width: 0,
+            Height: 1,
+            DepthOrArraySize: 1,
+            MipLevels: 1,
+            Format: Default::default(),
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
             },
-
-            // Fields based on the description
-            width: 0,
-            flags: dx12::ResourceFlags::NONE,
+            Layout: D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
+            SamplerFeedbackMipRegion: Default::default(),
+            Flags: Default::default(),
         };
 
-        resource_desc.width = desc.size;
+        resource_desc.Width = desc.size;
 
         if desc.allow_unordered_access {
-            resource_desc.flags |= dx12::ResourceFlags::ALLOW_UNORDERED_ACCESS;
+            resource_desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
         }
 
-        let (heap_type, initial_state) = match desc.cpu_access {
-            CpuAccessMode::None => {
-                (dx12::HeapType::Default, dx12::ResourceStates::COMMON) // TODO: Figure this out
-            }
-            CpuAccessMode::Read => (dx12::HeapType::ReadBack, dx12::ResourceStates::COPY_DEST),
-            CpuAccessMode::Write => (dx12::HeapType::Upload, dx12::ResourceStates::GENERIC_READ),
+        let heap_type = match desc.cpu_access {
+            CpuAccessMode::None => D3D12_HEAP_TYPE_DEFAULT,
+            CpuAccessMode::Read => D3D12_HEAP_TYPE_READBACK,
+            CpuAccessMode::Write => D3D12_HEAP_TYPE_UPLOAD,
         };
 
-        let heap_properties = dx12::HeapProperties {
-            r#type: heap_type,
-            cpu_page_property: Default::default(),
-            memory_pool_preference: Default::default(),
-            creation_node_mask: 0,
-            visible_node_mask: 0,
+        let heap_properties = D3D12_HEAP_PROPERTIES {
+            Type: heap_type,
+            CPUPageProperty: Default::default(),
+            MemoryPoolPreference: Default::default(),
+            CreationNodeMask: 0,
+            VisibleNodeMask: 0,
         };
         let resource = unsafe {
             self.device
-                .create_committed_resource(
+                .as_raw()
+                .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
-                    dx12::HeapFlags::NONE,
+                    Default::default(),
                     &resource_desc,
-                    initial_state,
+                    D3D12_BARRIER_LAYOUT::UNDEFINED,
+                    core::ptr::null(),
                     None,
+                    0,
+                    std::ptr::null(),
                 )
+                .map(|v| std::mem::transmute::<_, dx12::Resource>(v))
                 .map_err(|v| anyhow!(v))?
         };
         let base_address = resource.get_gpu_virtual_address().unwrap();
@@ -442,24 +451,37 @@ impl IDevice for Device {
         &self,
         desc: &TextureDesc,
     ) -> Result<AnyArc<dyn ITexture>, TextureCreateError> {
-        let heap_properties = dx12::HeapProperties {
-            r#type: dx12::HeapType::Default,
-            ..Default::default()
+        let heap_properties = D3D12_HEAP_PROPERTIES {
+            Type: D3D12_HEAP_TYPE_DEFAULT,
+            CPUPageProperty: Default::default(),
+            MemoryPoolPreference: Default::default(),
+            CreationNodeMask: 0,
+            VisibleNodeMask: 0,
         };
-        let heap_flags = dx12::HeapFlags::NONE;
         let resource_desc = texture_create_desc_to_dx12(desc)?;
-        let initial_state = resource_state_to_dx12(desc.initial_state);
-        let optimized_clear_value = texture_create_clear_value_to_dx12(desc, resource_desc.format)?;
+        let optimized_clear_value =
+            texture_create_clear_value_to_dx12(desc, resource_desc.Format.try_into().unwrap())?;
 
         let resource = unsafe {
+            let optimized_clear_value = optimized_clear_value.map(D3D12_CLEAR_VALUE::from);
+            let optimized_clear_value_ref = match optimized_clear_value.as_ref() {
+                None => core::ptr::null(),
+                Some(v) => v as *const D3D12_CLEAR_VALUE,
+            };
+
             self.device
-                .create_committed_resource(
+                .as_raw()
+                .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
-                    heap_flags,
+                    Default::default(),
                     &resource_desc,
-                    initial_state,
-                    optimized_clear_value,
+                    D3D12_BARRIER_LAYOUT::UNDEFINED,
+                    optimized_clear_value_ref,
+                    None,
+                    0,
+                    std::ptr::null(), // TODO: We could use this maybe?
                 )
+                .map(|v| std::mem::transmute::<_, dx12::Resource>(v))
                 .map_err(|v| anyhow!(v))?
         };
 
@@ -468,7 +490,7 @@ impl IDevice for Device {
             device: self.this.upgrade().unwrap(),
             resource,
             desc: desc.clone(),
-            dxgi_format: resource_desc.format,
+            dxgi_format: resource_desc.Format.try_into().unwrap(),
             rtv_cache: RwLock::new(HashMap::new()),
             dsv_cache: RwLock::new(HashMap::new()),
         });
