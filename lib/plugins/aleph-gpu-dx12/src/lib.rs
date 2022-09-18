@@ -55,7 +55,6 @@ mod sampler;
 mod shader;
 mod surface;
 mod swap_chain;
-mod swap_texture;
 mod texture;
 
 pub use adapter::IAdapterExt;
@@ -70,7 +69,6 @@ pub use plugin::PluginGpuDX12;
 pub use shader::IShaderExt;
 pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
-pub use swap_texture::ISwapTextureExt;
 pub use texture::ITextureExt;
 
 mod plugin {

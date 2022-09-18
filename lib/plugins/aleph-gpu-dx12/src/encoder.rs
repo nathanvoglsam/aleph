@@ -34,11 +34,10 @@ use crate::internal::conv::{
     translate_rendering_color_attachment, translate_rendering_depth_stencil_attachment,
 };
 use crate::pipeline::GraphicsPipeline;
-use crate::swap_texture::SwapTexture;
-use crate::texture::Texture;
+use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
-use interfaces::any::{AnyArc, QueryInterface};
+use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, ColorClearValue, DepthStencilClearValue, GlobalBarrier,
     IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout,
@@ -63,7 +62,12 @@ impl<'a> Drop for Encoder<'a> {
 
 impl<'a> Encoder<'a> {
     #[inline]
-    unsafe fn clear_swap_texture(&mut self, concrete: &SwapTexture, value: &ColorClearValue) {
+    unsafe fn clear_swap_texture(
+        &mut self,
+        this: &AnyWeak<Texture>,
+        concrete: &SwapTexture,
+        value: &ColorClearValue,
+    ) {
         let buffer = match value {
             ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
             ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
@@ -75,7 +79,7 @@ impl<'a> Encoder<'a> {
             .tracker
             .images
             .push(AnyArc::map::<dyn ITexture, _>(
-                concrete.this.upgrade().unwrap(),
+                this.upgrade().unwrap(),
                 |v| v,
             ));
     }
@@ -83,7 +87,8 @@ impl<'a> Encoder<'a> {
     #[inline]
     unsafe fn clear_plain_texture(
         &mut self,
-        concrete: &Texture,
+        this: &AnyWeak<Texture>,
+        concrete: &PlainTexture,
         sub_resources: &TextureSubResourceSet,
         value: &ColorClearValue,
     ) {
@@ -133,7 +138,7 @@ impl<'a> Encoder<'a> {
             .tracker
             .images
             .push(AnyArc::map::<dyn ITexture, _>(
-                concrete.this.upgrade().unwrap(),
+                this.upgrade().unwrap(),
                 |v| v,
             ));
     }
@@ -141,7 +146,8 @@ impl<'a> Encoder<'a> {
     #[inline]
     unsafe fn clear_depth_image(
         &mut self,
-        concrete: &Texture,
+        this: &AnyWeak<Texture>,
+        concrete: &PlainTexture,
         sub_resources: &TextureSubResourceSet,
         value: &DepthStencilClearValue,
     ) {
@@ -190,7 +196,7 @@ impl<'a> Encoder<'a> {
             .tracker
             .images
             .push(AnyArc::map::<dyn ITexture, _>(
-                concrete.this.upgrade().unwrap(),
+                this.upgrade().unwrap(),
                 |v| v,
             ));
     }
@@ -413,9 +419,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &ColorClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_plain_texture(concrete, sub_resources, value);
-        } else if let Some(concrete) = texture.query_interface::<SwapTexture>() {
-            self.clear_swap_texture(concrete, value);
+            match &concrete.inner {
+                TextureInner::Plain(v) => {
+                    self.clear_plain_texture(&concrete.this, v, sub_resources, value);
+                }
+                TextureInner::Swap(v) => {
+                    self.clear_swap_texture(&concrete.this, v, value);
+                }
+            }
         } else {
             panic!("Unknown ITexture implementation");
         }
@@ -428,9 +439,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         value: &DepthStencilClearValue,
     ) {
         if let Some(concrete) = texture.query_interface::<Texture>() {
-            self.clear_depth_image(concrete, sub_resources, value);
-        } else if texture.query_interface::<SwapTexture>().is_some() {
-            aleph_log::debug!("Tried to clear swap chain image as a depth stencil texture");
+            match &concrete.inner {
+                TextureInner::Plain(v) => {
+                    self.clear_depth_image(&concrete.this, v, sub_resources, value);
+                }
+                TextureInner::Swap(_) => {
+                    aleph_log::debug!("Tried to clear swap chain image as a depth stencil texture");
+                }
+            }
         } else {
             panic!("Unknown ITexture implementation");
         }
@@ -569,15 +585,8 @@ impl<'a> IComputeEncoder for Encoder<'a> {
                 let resource = barrier
                     .texture
                     .query_interface::<Texture>()
-                    .map(|v| v.resource.as_raw())
-                    .unwrap_or_else(|| {
-                        barrier
-                            .texture
-                            .query_interface::<SwapTexture>()
-                            .expect("Unknown ITexture implementation")
-                            .resource
-                            .as_raw()
-                    });
+                    .map(|v| v.resource().as_raw())
+                    .expect("Unknown ITexture implementation");
 
                 // Vulkan initializes layout metadata automatically when transitioning from
                 // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise

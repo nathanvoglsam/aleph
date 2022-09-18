@@ -30,6 +30,7 @@
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::swap_chain::SwapChain;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
@@ -37,11 +38,117 @@ use interfaces::gpu::{
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 
-type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
+pub enum TextureInner {
+    Plain(PlainTexture),
+    Swap(SwapTexture),
+}
+
+impl TextureInner {
+    #[inline]
+    fn get_raw_handle(&self) -> dx12::Resource {
+        match self {
+            TextureInner::Plain(v) => v.resource.clone(),
+            TextureInner::Swap(v) => v.resource.clone(),
+        }
+    }
+
+    #[inline]
+    fn get_raw_format(&self) -> dxgi::Format {
+        match self {
+            TextureInner::Plain(v) => v.dxgi_format,
+            TextureInner::Swap(v) => texture_format_to_dxgi(v.desc.format),
+        }
+    }
+
+    #[inline]
+    fn set_name(&self, name: &str) {
+        match self {
+            TextureInner::Plain(v) => v.resource.set_name(name).unwrap(),
+            TextureInner::Swap(v) => v.resource.set_name(name).unwrap(),
+        }
+    }
+
+    #[inline]
+    fn desc(&self) -> &TextureDesc {
+        match self {
+            TextureInner::Plain(v) => &v.desc,
+            TextureInner::Swap(v) => &v.desc,
+        }
+    }
+}
 
 pub struct Texture {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) inner: TextureInner,
+}
+
+declare_interfaces!(Texture, [ITexture, ITextureExt]);
+
+impl Texture {
+    #[inline]
+    pub fn resource(&self) -> &dx12::Resource {
+        match &self.inner {
+            TextureInner::Plain(v) => &v.resource,
+            TextureInner::Swap(v) => &v.resource,
+        }
+    }
+}
+
+impl ITexture for Texture {
+    fn upgrade(&self) -> AnyArc<dyn ITexture> {
+        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
+    }
+
+    fn strong_count(&self) -> usize {
+        self.this.strong_count()
+    }
+
+    fn weak_count(&self) -> usize {
+        self.this.weak_count()
+    }
+
+    fn desc(&self) -> &TextureDesc {
+        self.inner.desc()
+    }
+}
+
+pub trait ITextureExt: ITexture {
+    fn get_raw_handle(&self) -> dx12::Resource;
+
+    fn get_raw_format(&self) -> dxgi::Format;
+
+    fn get_raw_rtv(&self) -> Option<dx12::CPUDescriptorHandle>;
+}
+
+impl ITextureExt for Texture {
+    fn get_raw_handle(&self) -> dx12::Resource {
+        self.inner.get_raw_handle()
+    }
+
+    fn get_raw_format(&self) -> dxgi::Format {
+        self.inner.get_raw_format()
+    }
+
+    fn get_raw_rtv(&self) -> Option<dx12::CPUDescriptorHandle> {
+        if let TextureInner::Swap(v) = &self.inner {
+            Some(v.view)
+        } else {
+            None
+        }
+    }
+}
+
+impl INamedObject for Texture {
+    fn set_name(&self, name: &str) {
+        self.inner.set_name(name)
+    }
+}
+
+type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
+
+pub struct PlainTexture {
     pub(crate) device: AnyArc<Device>,
     pub(crate) resource: dx12::Resource,
     pub(crate) desc: TextureDesc,
@@ -50,9 +157,7 @@ pub struct Texture {
     pub(crate) dsv_cache: RwLock<CacheViewCPU>,
 }
 
-declare_interfaces!(Texture, [ITexture, ITextureExt]);
-
-impl Texture {
+impl PlainTexture {
     #[inline]
     pub fn get_or_create_rtv_for_usage(
         &self,
@@ -275,7 +380,7 @@ impl Texture {
     }
 }
 
-impl Drop for Texture {
+impl Drop for PlainTexture {
     #[inline]
     fn drop(&mut self) {
         // Free all RTVs associated with this texture
@@ -286,42 +391,25 @@ impl Drop for Texture {
     }
 }
 
-impl ITexture for Texture {
-    fn upgrade(&self) -> AnyArc<dyn ITexture> {
-        AnyArc::map::<dyn ITexture, _>(self.this.upgrade().unwrap(), |v| v)
-    }
+pub struct SwapTexture {
+    pub(crate) swap_chain: AnyArc<SwapChain>,
+    pub(crate) resource: dx12::Resource,
+    pub(crate) view: dx12::CPUDescriptorHandle,
+    pub(crate) desc: TextureDesc,
+}
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn desc(&self) -> &TextureDesc {
-        &self.desc
+impl Drop for SwapTexture {
+    fn drop(&mut self) {
+        // TODO: This potentially violates the 'Send' / 'Sync' bits, need to figure this out
+        self.swap_chain
+            .images_in_flight
+            .fetch_sub(1, Ordering::Release);
     }
 }
 
-pub trait ITextureExt: ITexture {
-    fn get_raw_handle(&self) -> dx12::Resource;
+// SAFETY: The reference to the swap chain is never used, it is only present to extend the lifetime
+//         of the swap chain
+unsafe impl Send for SwapTexture {}
 
-    fn get_raw_format(&self) -> dxgi::Format;
-}
-
-impl ITextureExt for Texture {
-    fn get_raw_handle(&self) -> dx12::Resource {
-        self.resource.clone()
-    }
-
-    fn get_raw_format(&self) -> dxgi::Format {
-        self.dxgi_format
-    }
-}
-
-impl INamedObject for Texture {
-    fn set_name(&self, name: &str) {
-        self.resource.set_name(name).unwrap()
-    }
-}
+// SAFETY: See above
+unsafe impl Sync for SwapTexture {}

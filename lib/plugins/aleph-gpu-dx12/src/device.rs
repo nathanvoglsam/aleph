@@ -45,7 +45,7 @@ use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
-use crate::texture::Texture;
+use crate::texture::{PlainTexture, Texture, TextureInner};
 use aleph_windows::Win32::Graphics::Direct3D12::{
     ID3D12Resource, D3D12_BARRIER_LAYOUT, D3D12_CLEAR_VALUE, D3D12_HEAP_PROPERTIES,
     D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_READBACK, D3D12_HEAP_TYPE_UPLOAD,
@@ -487,12 +487,14 @@ impl IDevice for Device {
 
         let texture = AnyArc::new_cyclic(move |v| Texture {
             this: v.clone(),
-            device: self.this.upgrade().unwrap(),
-            resource,
-            desc: desc.clone(),
-            dxgi_format: resource_desc.Format.try_into().unwrap(),
-            rtv_cache: RwLock::new(HashMap::new()),
-            dsv_cache: RwLock::new(HashMap::new()),
+            inner: TextureInner::Plain(PlainTexture {
+                device: self.this.upgrade().unwrap(),
+                resource,
+                desc: desc.clone(),
+                dxgi_format: resource_desc.Format.try_into().unwrap(),
+                rtv_cache: RwLock::new(HashMap::new()),
+                dsv_cache: RwLock::new(HashMap::new()),
+            }),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }

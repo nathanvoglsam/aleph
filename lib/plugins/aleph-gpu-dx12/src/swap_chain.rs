@@ -30,7 +30,7 @@
 use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
 use crate::surface::Surface;
-use crate::swap_texture::SwapTexture;
+use crate::texture::{SwapTexture, Texture, TextureInner};
 use crossbeam::atomic::AtomicCell;
 use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -178,26 +178,28 @@ impl ISwapChain for SwapChain {
             }
 
             let index = self.swap_chain.get_current_back_buffer_index();
-            let image = AnyArc::new_cyclic(move |v| SwapTexture {
+            let image = AnyArc::new_cyclic(move |v| Texture {
                 this: v.clone(),
-                swap_chain: self.this.upgrade().unwrap(),
-                resource: inner.images[index as usize].0.clone(),
-                view: inner.images[index as usize].1,
-                desc: TextureDesc {
-                    width: inner.config.width,
-                    height: inner.config.height,
-                    depth: 1,
-                    format: inner.config.format,
-                    dimension: TextureDimension::Texture2D,
-                    clear_value: None,
-                    array_size: 1,
-                    mip_levels: 1,
-                    sample_count: 1,
-                    sample_quality: 0,
-                    allow_unordered_access: false,
-                    allow_cube_face: false,
-                    is_render_target: true,
-                },
+                inner: TextureInner::Swap(SwapTexture {
+                    swap_chain: self.this.upgrade().unwrap(),
+                    resource: inner.images[index as usize].0.clone(),
+                    view: inner.images[index as usize].1,
+                    desc: TextureDesc {
+                        width: inner.config.width,
+                        height: inner.config.height,
+                        depth: 1,
+                        format: inner.config.format,
+                        dimension: TextureDimension::Texture2D,
+                        clear_value: None,
+                        array_size: 1,
+                        mip_levels: 1,
+                        sample_count: 1,
+                        sample_quality: 0,
+                        allow_unordered_access: false,
+                        allow_cube_face: false,
+                        is_render_target: true,
+                    },
+                }),
             });
             let image = AnyArc::map::<dyn ITexture, _>(image, |v| v);
 
