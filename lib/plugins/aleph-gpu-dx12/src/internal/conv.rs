@@ -27,20 +27,16 @@
 // SOFTWARE.
 //
 
-use aleph_windows::Win32::Graphics::Direct3D12::{
-    D3D12_BARRIER_ACCESS, D3D12_BARRIER_LAYOUT, D3D12_BARRIER_SYNC, D3D12_RESOURCE_DESC1,
-    D3D12_RESOURCE_DIMENSION_TEXTURE1D, D3D12_RESOURCE_DIMENSION_TEXTURE2D,
-    D3D12_RESOURCE_DIMENSION_TEXTURE3D, D3D12_RESOURCE_FLAGS,
-    D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET,
-    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_TEXTURE_LAYOUT_UNKNOWN,
-};
-use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
+use aleph_windows::Win32::Graphics::Direct3D12::*;
+use aleph_windows::Win32::Graphics::Dxgi::Common::*;
 use dx12::dxgi;
 use interfaces::gpu::{
-    BarrierAccess, BarrierSync, BlendFactor, BlendOp, CompareOp, CullMode,
-    DescriptorShaderVisibility, Format, FrontFaceOrder, ImageLayout, OptimalClearValue,
-    PolygonMode, PrimitiveTopology, QueueType, SamplerAddressMode, SamplerBorderColor,
-    SamplerFilter, SamplerMipFilter, StencilOp, TextureCreateError, TextureDesc, TextureDimension,
+    AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BlendFactor, BlendOp,
+    ColorClearValue, CompareOp, CullMode, DepthStencilClearValue, DescriptorShaderVisibility,
+    Format, FrontFaceOrder, ImageLayout, OptimalClearValue, PolygonMode, PrimitiveTopology,
+    QueueType, RenderingColorAttachmentInfo, RenderingDepthStencilAttachmentInfo,
+    SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
+    TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -580,4 +576,121 @@ pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
     let g = ((v >> (8 * 2)) & 0xFF) as f32 / 255.0;
     let r = ((v >> (8 * 3)) & 0xFF) as f32 / 255.0;
     [r, g, b, a]
+}
+
+pub trait TranslateClearValue {
+    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE;
+}
+
+impl TranslateClearValue for ColorClearValue {
+    #[inline]
+    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
+        let values = match self {
+            ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
+            ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
+        };
+
+        D3D12_CLEAR_VALUE {
+            Format: format.into().unwrap_or_default(),
+            Anonymous: D3D12_CLEAR_VALUE_0 { Color: values },
+        }
+    }
+}
+
+impl TranslateClearValue for DepthStencilClearValue {
+    #[inline]
+    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
+        let depth_stencil = match self {
+            DepthStencilClearValue::DepthStencil(d, s) => D3D12_DEPTH_STENCIL_VALUE {
+                Depth: *d,
+                Stencil: *s,
+            },
+            DepthStencilClearValue::Depth(d) => D3D12_DEPTH_STENCIL_VALUE {
+                Depth: *d,
+                Stencil: 0,
+            },
+            DepthStencilClearValue::Stencil(s) => D3D12_DEPTH_STENCIL_VALUE {
+                Depth: 0.0,
+                Stencil: *s,
+            },
+        };
+        D3D12_CLEAR_VALUE {
+            Format: format.into().unwrap_or_default(),
+            Anonymous: D3D12_CLEAR_VALUE_0 {
+                DepthStencil: depth_stencil,
+            },
+        }
+    }
+}
+
+pub fn translate_beginning_access(
+    load_op: &AttachmentLoadOp<impl TranslateClearValue>,
+    format: impl Into<Option<DXGI_FORMAT>>,
+) -> D3D12_RENDER_PASS_BEGINNING_ACCESS {
+    match load_op {
+        AttachmentLoadOp::Load => D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_PRESERVE,
+            Anonymous: Default::default(),
+        },
+        AttachmentLoadOp::Clear(clear_value) => D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_CLEAR,
+            Anonymous: D3D12_RENDER_PASS_BEGINNING_ACCESS_0 {
+                Clear: D3D12_RENDER_PASS_BEGINNING_ACCESS_CLEAR_PARAMETERS {
+                    ClearValue: clear_value.translate_clear_value(format),
+                },
+            },
+        },
+        AttachmentLoadOp::DontCare => D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_DISCARD,
+            Anonymous: Default::default(),
+        },
+        AttachmentLoadOp::None => D3D12_RENDER_PASS_BEGINNING_ACCESS {
+            Type: D3D12_RENDER_PASS_BEGINNING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+    }
+}
+
+pub fn translate_ending_access(store_op: &AttachmentStoreOp) -> D3D12_RENDER_PASS_ENDING_ACCESS {
+    match store_op {
+        AttachmentStoreOp::Store => D3D12_RENDER_PASS_ENDING_ACCESS {
+            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_PRESERVE,
+            Anonymous: Default::default(),
+        },
+        AttachmentStoreOp::DontCare => D3D12_RENDER_PASS_ENDING_ACCESS {
+            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_DISCARD,
+            Anonymous: Default::default(),
+        },
+        AttachmentStoreOp::None => D3D12_RENDER_PASS_ENDING_ACCESS {
+            Type: D3D12_RENDER_PASS_ENDING_ACCESS_TYPE_NO_ACCESS,
+            Anonymous: Default::default(),
+        },
+    }
+}
+
+pub fn translate_rendering_color_attachment<F: Into<Option<DXGI_FORMAT>>>(
+    info: &RenderingColorAttachmentInfo,
+    descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    format: F,
+) -> D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+    D3D12_RENDER_PASS_RENDER_TARGET_DESC {
+        cpuDescriptor: descriptor,
+        BeginningAccess: translate_beginning_access(&info.load_op, format),
+        EndingAccess: translate_ending_access(&info.store_op),
+    }
+}
+
+pub fn translate_rendering_depth_stencil_attachment<F: Into<Option<DXGI_FORMAT>>>(
+    info: &RenderingDepthStencilAttachmentInfo,
+    descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
+    format: F,
+) -> D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+    let format = format.into();
+    D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
+        cpuDescriptor: descriptor,
+        DepthBeginningAccess: translate_beginning_access(&info.depth_load_op, format),
+        StencilBeginningAccess: translate_beginning_access(&info.stencil_load_op, format),
+        DepthEndingAccess: translate_ending_access(&info.depth_store_op),
+        StencilEndingAccess: translate_ending_access(&info.stencil_store_op),
+    }
 }
