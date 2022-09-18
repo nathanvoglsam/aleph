@@ -36,8 +36,8 @@ use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool,
-    IGeneralEncoder, ITexture, ImageLayout, ResourceStates, TextureBarrier, TextureDesc,
-    TextureDimension, TextureSubResourceSet,
+    IGeneralEncoder, ITexture, ImageLayout, TextureBarrier, TextureDesc, TextureDimension,
+    TextureSubResourceSet,
 };
 use std::ops::Deref;
 
@@ -157,6 +157,28 @@ impl PerFrameObjects {
                 .unwrap()
                 .get_raw_handle();
 
+            encoder.resource_barrier(
+                &[],
+                &[],
+                &[TextureBarrier {
+                    texture: self.font_staged.as_ref().unwrap().deref(),
+                    subresource_range: TextureSubResourceSet {
+                        base_mip_level: 0,
+                        num_mip_levels: 1,
+                        base_array_slice: 0,
+                        num_array_slices: 1,
+                    },
+                    before_sync: BarrierSync::ALL,
+                    after_sync: BarrierSync::COPY,
+                    before_access: BarrierAccess::NONE,
+                    after_access: BarrierAccess::COPY_WRITE,
+                    before_layout: ImageLayout::Undefined,
+                    after_layout: ImageLayout::CopyDst,
+                    split_barrier_mode: Default::default(),
+                    queue_transition_mode: Default::default(),
+                }],
+            );
+
             let dst = dx12::TextureCopyLocation::Subresource {
                 resource: Some(staged_resource.clone()),
                 subresource_index: 0,
@@ -201,7 +223,7 @@ impl PerFrameObjects {
                     split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
                 }],
-            )
+            );
         });
     }
 
@@ -213,7 +235,6 @@ impl PerFrameObjects {
                 height: dimensions.1,
                 format: Format::R8Unorm,
                 dimension: TextureDimension::Texture2D,
-                initial_state: ResourceStates::COPY_DEST,
                 array_size: 1,
                 mip_levels: 1,
                 sample_count: 1,
