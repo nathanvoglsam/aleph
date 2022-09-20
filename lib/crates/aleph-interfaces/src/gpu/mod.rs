@@ -2386,29 +2386,13 @@ pub struct TextureSubResourceSet {
 }
 
 /// Describes a global memory barrier
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct GlobalBarrier {
     pub before_sync: BarrierSync,
     pub after_sync: BarrierSync,
 
     pub before_access: BarrierAccess,
     pub after_access: BarrierAccess,
-
-    /// Enables describing split barriers, where one barrier begins a transition and another ends
-    /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_barrier_mode: SplitBarrierMode,
-}
-
-impl Debug for GlobalBarrier {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GlobalBarrier")
-            .field("before_sync", &self.before_sync)
-            .field("after_sync", &self.after_sync)
-            .field("before_access", &self.before_access)
-            .field("after_access", &self.after_access)
-            .field("split_barrier_mode", &self.split_barrier_mode)
-            .finish()
-    }
 }
 
 /// Describes a resource barrier that will apply to an [IBuffer] resource on a command queue
@@ -2430,10 +2414,6 @@ pub struct BufferBarrier<'a> {
     pub before_access: BarrierAccess,
     pub after_access: BarrierAccess,
 
-    /// Enables describing split barriers, where one barrier begins a transition and another ends
-    /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_barrier_mode: SplitBarrierMode,
-
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
     pub queue_transition_mode: QueueTransitionMode,
@@ -2447,7 +2427,6 @@ impl<'a> Debug for BufferBarrier<'a> {
             .field("after_sync", &self.after_sync)
             .field("before_access", &self.before_access)
             .field("after_access", &self.after_access)
-            .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
             .finish()
     }
@@ -2470,10 +2449,6 @@ pub struct TextureBarrier<'a> {
     pub before_layout: ImageLayout,
     pub after_layout: ImageLayout,
 
-    /// Enables describing split barriers, where one barrier begins a transition and another ends
-    /// the transition. This allows interleaving other rendering commands with state transitions.
-    pub split_barrier_mode: SplitBarrierMode,
-
     /// Enables describing a queue ownership transition. Ownership of resources must be explicitly
     /// passed from one queue to another to be used across multiple queues.
     pub queue_transition_mode: QueueTransitionMode,
@@ -2490,7 +2465,6 @@ impl<'a> Debug for TextureBarrier<'a> {
             .field("after_access", &self.after_access)
             .field("before_layout", &self.before_layout)
             .field("after_layout", &self.after_layout)
-            .field("split_barrier_mode", &self.split_barrier_mode)
             .field("queue_transition_mode", &self.queue_transition_mode)
             .finish()
     }
