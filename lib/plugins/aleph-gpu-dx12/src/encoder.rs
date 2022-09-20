@@ -35,6 +35,7 @@ use crate::internal::conv::{
 };
 use crate::pipeline::GraphicsPipeline;
 use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
+use crate::ITextureExt;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
@@ -455,19 +456,33 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
         for info in info.color_attachments {
+            let image = info
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+            let descriptor = match &image.inner {
+                TextureInner::Plain(_v) => todo!("Implement me"),
+                TextureInner::Swap(v) => v.view,
+            };
+            let format = image.get_raw_format();
             color_attachments.push(translate_rendering_color_attachment(
                 info,
-                Default::default(), // TODO: descriptor
-                None,               // TODO: format
+                descriptor,
+                Some(format),
             ));
         }
 
         let depth_stencil = info.depth_stencil_attachment.map(|info| {
-            translate_rendering_depth_stencil_attachment(
-                info,
-                Default::default(), // TODO: descriptor
-                None,               // TODO: format
-            )
+            let image = info
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+            let descriptor = match &image.inner {
+                TextureInner::Plain(_v) => D3D12_CPU_DESCRIPTOR_HANDLE::default(), // TODO: impl me
+                TextureInner::Swap(_v) => panic!("Swap images can't be used as depth/stencil"),
+            };
+            let format = image.get_raw_format();
+            translate_rendering_depth_stencil_attachment(info, descriptor, Some(format))
         });
 
         let depth_stencil_ref = depth_stencil

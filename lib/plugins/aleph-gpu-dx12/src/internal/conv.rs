@@ -579,19 +579,19 @@ pub fn decode_u32_color_to_float(v: u32) -> [f32; 4] {
 }
 
 pub trait TranslateClearValue {
-    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE;
+    fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE;
 }
 
 impl TranslateClearValue for ColorClearValue {
     #[inline]
-    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
+    fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
         let values = match self {
             ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
             ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
         };
 
         D3D12_CLEAR_VALUE {
-            Format: format.into().unwrap_or_default(),
+            Format: format.map(|v| v.into()).unwrap_or_default(),
             Anonymous: D3D12_CLEAR_VALUE_0 { Color: values },
         }
     }
@@ -599,7 +599,7 @@ impl TranslateClearValue for ColorClearValue {
 
 impl TranslateClearValue for DepthStencilClearValue {
     #[inline]
-    fn translate_clear_value(&self, format: impl Into<Option<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
+    fn translate_clear_value(&self, format: Option<impl Into<DXGI_FORMAT>>) -> D3D12_CLEAR_VALUE {
         let depth_stencil = match self {
             DepthStencilClearValue::DepthStencil(d, s) => D3D12_DEPTH_STENCIL_VALUE {
                 Depth: *d,
@@ -615,7 +615,7 @@ impl TranslateClearValue for DepthStencilClearValue {
             },
         };
         D3D12_CLEAR_VALUE {
-            Format: format.into().unwrap_or_default(),
+            Format: format.map(|v| v.into()).unwrap_or_default(),
             Anonymous: D3D12_CLEAR_VALUE_0 {
                 DepthStencil: depth_stencil,
             },
@@ -625,7 +625,7 @@ impl TranslateClearValue for DepthStencilClearValue {
 
 pub fn translate_beginning_access(
     load_op: &AttachmentLoadOp<impl TranslateClearValue>,
-    format: impl Into<Option<DXGI_FORMAT>>,
+    format: Option<impl Into<DXGI_FORMAT>>,
 ) -> D3D12_RENDER_PASS_BEGINNING_ACCESS {
     match load_op {
         AttachmentLoadOp::Load => D3D12_RENDER_PASS_BEGINNING_ACCESS {
@@ -668,26 +668,26 @@ pub fn translate_ending_access(store_op: &AttachmentStoreOp) -> D3D12_RENDER_PAS
     }
 }
 
-pub fn translate_rendering_color_attachment<F: Into<Option<DXGI_FORMAT>>>(
+pub fn translate_rendering_color_attachment(
     info: &RenderingColorAttachmentInfo,
-    descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    format: F,
+    descriptor: impl Into<D3D12_CPU_DESCRIPTOR_HANDLE>,
+    format: Option<impl Into<DXGI_FORMAT>>,
 ) -> D3D12_RENDER_PASS_RENDER_TARGET_DESC {
     D3D12_RENDER_PASS_RENDER_TARGET_DESC {
-        cpuDescriptor: descriptor,
+        cpuDescriptor: descriptor.into(),
         BeginningAccess: translate_beginning_access(&info.load_op, format),
         EndingAccess: translate_ending_access(&info.store_op),
     }
 }
 
-pub fn translate_rendering_depth_stencil_attachment<F: Into<Option<DXGI_FORMAT>>>(
+pub fn translate_rendering_depth_stencil_attachment(
     info: &RenderingDepthStencilAttachmentInfo,
-    descriptor: D3D12_CPU_DESCRIPTOR_HANDLE,
-    format: F,
+    descriptor: impl Into<D3D12_CPU_DESCRIPTOR_HANDLE>,
+    format: Option<impl Into<DXGI_FORMAT>>,
 ) -> D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-    let format = format.into();
+    let format = format.map(|v| v.into());
     D3D12_RENDER_PASS_DEPTH_STENCIL_DESC {
-        cpuDescriptor: descriptor,
+        cpuDescriptor: descriptor.into(),
         DepthBeginningAccess: translate_beginning_access(&info.depth_load_op, format),
         StencilBeginningAccess: translate_beginning_access(&info.stencil_load_op, format),
         DepthEndingAccess: translate_ending_access(&info.depth_store_op),
