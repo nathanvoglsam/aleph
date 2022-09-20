@@ -2493,22 +2493,46 @@ pub struct Viewport {
     pub max_depth: f32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct RenderingColorAttachmentInfo<'a> {
-    pub image_view: &'a (),
+    pub image: &'a dyn ITexture,
     pub image_layout: ImageLayout,
     pub load_op: AttachmentLoadOp<ColorClearValue>,
     pub store_op: AttachmentStoreOp,
 }
 
-#[derive(Clone, Debug)]
+impl<'a> Debug for RenderingColorAttachmentInfo<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RenderingColorAttachmentInfo")
+            .field("image", &"<ptr>")
+            .field("image_layout", &self.image_layout)
+            .field("load_op", &self.load_op)
+            .field("store_op", &self.store_op)
+            .finish()
+    }
+}
+
+#[derive(Clone)]
 pub struct RenderingDepthStencilAttachmentInfo<'a> {
-    pub image_view: &'a (),
+    pub image: &'a dyn ITexture,
     pub image_layout: ImageLayout,
     pub depth_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub depth_store_op: AttachmentStoreOp,
     pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub stencil_store_op: AttachmentStoreOp,
+}
+
+impl<'a> Debug for RenderingDepthStencilAttachmentInfo<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RenderingDepthStencilAttachmentInfo")
+            .field("image", &"<ptr>")
+            .field("image_layout", &self.image_layout)
+            .field("depth_load_op", &self.depth_load_op)
+            .field("depth_store_op", &self.depth_store_op)
+            .field("stencil_load_op", &self.stencil_load_op)
+            .field("stencil_store_op", &self.stencil_store_op)
+            .finish()
+    }
 }
 
 #[derive(Clone, Debug)]
