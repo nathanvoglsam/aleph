@@ -37,8 +37,9 @@ pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
 use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
-    BarrierAccess, BarrierSync, ColorClearValue, ICommandList, IGeneralEncoder, ITexture,
-    ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier,
+    AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BeginRenderingInfo,
+    ColorClearValue, ICommandList, IGeneralEncoder, ITexture, ImageLayout, IndexType,
+    InputAssemblyBufferBinding, Rect, RenderingColorAttachmentInfo, TextureBarrier,
     TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
@@ -87,7 +88,6 @@ impl EguiRenderer {
         &mut self,
         index: usize,
         texture: &dyn ITexture,
-        view: dx12::CPUDescriptorHandle,
         render_data: RenderData,
     ) -> Box<dyn ICommandList + '_> {
         // Begin recording commands into the command list
@@ -123,9 +123,6 @@ impl EguiRenderer {
             // Map the buffers for copying into them
             let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
 
-            // Begin the render pass and bind our resources
-            self.bind_resources(index, &command_list, encoder.deref_mut(), view);
-
             encoder.resource_barrier(
                 &[],
                 &[],
@@ -147,17 +144,25 @@ impl EguiRenderer {
                 }],
             );
 
-            // Clear the render target
-            encoder.clear_texture(
-                texture,
-                &Default::default(),
-                &ColorClearValue::Float {
-                    r: 0.0,
-                    g: 0.0,
-                    b: 0.0,
-                    a: 0.0,
+            encoder.begin_rendering(&BeginRenderingInfo {
+                render_area: Rect {
+                    x: 0,
+                    y: 0,
+                    w: 0, // TODO: fill out
+                    h: 0, // TODO: fill out
                 },
-            );
+                layer_count: 1,
+                view_mask: 0,
+                color_attachments: &[RenderingColorAttachmentInfo {
+                    image: texture,
+                    image_layout: ImageLayout::ColorAttachmentOptimal,
+                    load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
+                    store_op: AttachmentStoreOp::Store,
+                }],
+                depth_stencil_attachment: None,
+            });
+
+            self.bind_resources(index, &command_list, encoder.deref_mut());
 
             let mut vtx_base = 0;
             let mut idx_base = 0;
@@ -201,6 +206,8 @@ impl EguiRenderer {
                     idx_base += triangles.indices.len();
                 }
             }
+
+            encoder.end_rendering();
 
             encoder.resource_barrier(
                 &[],
@@ -255,7 +262,6 @@ impl EguiRenderer {
         index: usize,
         command_list: &dx12::GraphicsCommandList,
         encoder: &mut dyn IGeneralEncoder,
-        view: dx12::CPUDescriptorHandle,
     ) {
         encoder.bind_graphics_pipeline(self.global.graphics_pipeline.deref());
 
@@ -296,11 +302,6 @@ impl EguiRenderer {
                 offset: 0,
             },
         );
-
-        //
-        // Bind the render target
-        //
-        command_list.om_set_render_targets(Some(&[view]), None);
 
         //
         // Set the viewport state, we're going to be rendering to the whole frame

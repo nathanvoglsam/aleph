@@ -29,8 +29,8 @@
 
 use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
-use aleph_gpu_dx12::{IAdapterExt, IDeviceExt, ITextureExt};
-use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
+use aleph_gpu_dx12::{IAdapterExt, IDeviceExt};
+use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, Format, IContextProvider, IDevice, ISwapChain,
     PresentationMode, QueueType, SwapChainConfiguration,
@@ -182,15 +182,10 @@ impl IPlugin for PluginRender {
                 unsafe {
                     data.index = (data.index + 1) % 3;
                     let acquired_image = data.swap_chain.acquire_image().unwrap();
-                    let image_ext = acquired_image
-                        .image()
-                        .query_interface::<dyn ITextureExt>()
-                        .unwrap();
 
                     let command_list = data.renderer.record_frame(
                         data.index,
                         acquired_image.image(),
-                        image_ext.get_raw_rtv().unwrap(),
                         data.render_data.take(),
                     );
 
