@@ -143,7 +143,6 @@ impl EguiRenderer {
                     after_access: BarrierAccess::RENDER_TARGET_WRITE,
                     before_layout: ImageLayout::Undefined,
                     after_layout: ImageLayout::ColorAttachmentOptimal,
-                    split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
                 }],
             );
@@ -220,7 +219,6 @@ impl EguiRenderer {
                     after_access: BarrierAccess::NONE,
                     before_layout: ImageLayout::ColorAttachmentOptimal,
                     after_layout: ImageLayout::PresentSrc,
-                    split_barrier_mode: Default::default(),
                     queue_transition_mode: Default::default(),
                 }],
             );
