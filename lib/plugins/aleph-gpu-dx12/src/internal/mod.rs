@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use interfaces::gpu::{Format, TextureCopyAspect};
+
 pub mod command_list_tracker;
 pub mod conv;
 pub mod descriptor_allocator_cpu;
@@ -42,4 +44,23 @@ pub const fn calc_subresource_index(
     array_size: u32,
 ) -> u32 {
     mip_level + (array_layer * mip_levels) + (plane_slice * mip_levels * array_size)
+}
+
+pub const fn plane_layer_for_aspect(format: Format, aspect: TextureCopyAspect) -> Option<u32> {
+    match format {
+        Format::Depth32Float => match aspect {
+            TextureCopyAspect::Depth => Some(1),
+            _ => None,
+        },
+        Format::Depth24Stencil8 => match aspect {
+            TextureCopyAspect::Color => None,
+            TextureCopyAspect::Depth => Some(0),
+            TextureCopyAspect::Stencil => Some(1),
+        },
+        _ => match aspect {
+            TextureCopyAspect::Color => Some(0),
+            TextureCopyAspect::Depth => None,
+            TextureCopyAspect::Stencil => None,
+        },
+    }
 }

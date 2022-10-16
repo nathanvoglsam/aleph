@@ -30,11 +30,13 @@
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
 use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    Format, INamedObject, ITexture, TextureDesc, TextureDimension, TextureSubResourceSet,
+    Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
+    TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -47,7 +49,7 @@ pub enum TextureInner {
 
 impl TextureInner {
     #[inline]
-    fn get_raw_handle(&self) -> dx12::Resource {
+    pub fn get_raw_handle(&self) -> dx12::Resource {
         match self {
             TextureInner::Plain(v) => v.resource.clone(),
             TextureInner::Swap(v) => v.resource.clone(),
@@ -55,7 +57,7 @@ impl TextureInner {
     }
 
     #[inline]
-    fn get_raw_format(&self) -> dxgi::Format {
+    pub fn get_raw_format(&self) -> dxgi::Format {
         match self {
             TextureInner::Plain(v) => v.dxgi_format,
             TextureInner::Swap(v) => texture_format_to_dxgi(v.desc.format),
@@ -63,15 +65,14 @@ impl TextureInner {
     }
 
     #[inline]
-    fn set_name(&self, name: &str) {
+    pub fn set_name(&self, name: &str) {
         match self {
             TextureInner::Plain(v) => v.resource.set_name(name).unwrap(),
             TextureInner::Swap(v) => v.resource.set_name(name).unwrap(),
         }
     }
 
-    #[inline]
-    fn desc(&self) -> &TextureDesc {
+    pub const fn desc(&self) -> &TextureDesc {
         match self {
             TextureInner::Plain(v) => &v.desc,
             TextureInner::Swap(v) => &v.desc,
@@ -92,6 +93,31 @@ impl Texture {
         match &self.inner {
             TextureInner::Plain(v) => &v.resource,
             TextureInner::Swap(v) => &v.resource,
+        }
+    }
+
+    pub const fn plane_slice_for(&self, aspect: TextureCopyAspect) -> Option<u32> {
+        let desc = self.inner.desc();
+        plane_layer_for_aspect(desc.format, aspect)
+    }
+
+    pub const fn subresource_index_for(
+        &self,
+        mip_level: u32,
+        array_layer: u32,
+        aspect: TextureCopyAspect,
+    ) -> Option<u32> {
+        if let Some(plane_slice) = self.plane_slice_for(aspect) {
+            let desc = self.inner.desc();
+            Some(calc_subresource_index(
+                mip_level,
+                array_layer,
+                plane_slice,
+                desc.mip_levels,
+                desc.array_size,
+            ))
+        } else {
+            None
         }
     }
 }

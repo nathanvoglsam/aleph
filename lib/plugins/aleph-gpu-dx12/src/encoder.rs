@@ -40,10 +40,10 @@ use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
-    BeginRenderingInfo, BufferBarrier, ColorClearValue, DepthStencilClearValue, GlobalBarrier,
-    IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout,
-    IndexType, InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc,
-    TextureSubResourceSet, Viewport,
+    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion,
+    ColorClearValue, DepthStencilClearValue, GlobalBarrier, IBuffer, IComputeEncoder,
+    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
+    InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
 use std::ops::Deref;
 
@@ -488,6 +488,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let depth_stencil_ref = depth_stencil
             .as_ref()
             .map(|v| v as *const _)
+            .map(|_| unimplemented!("Depth stencil not implemented yet"))
             .unwrap_or(std::ptr::null());
 
         self.list.as_raw().BeginRenderPass(
@@ -660,4 +661,119 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 }
 
-impl<'a> ITransferEncoder for Encoder<'a> {}
+impl<'a> ITransferEncoder for Encoder<'a> {
+    unsafe fn copy_buffer_regions(
+        &mut self,
+        src: &dyn IBuffer,
+        dst: &dyn IBuffer,
+        regions: &[BufferCopyRegion],
+    ) {
+        let src = src
+            .query_interface::<Buffer>()
+            .expect("Unknown IBuffer implementation");
+        let dst = dst
+            .query_interface::<Buffer>()
+            .expect("Unknown IBuffer implementation");
+
+        for region in regions {
+            self.list.as_raw().CopyBufferRegion(
+                dst.resource.as_raw(),
+                region.dst_offset,
+                src.resource.as_raw(),
+                region.src_offset,
+                region.size,
+            );
+        }
+    }
+
+    unsafe fn copy_buffer_to_texture(
+        &mut self,
+        src: &dyn IBuffer,
+        dst: &dyn ITexture,
+        _dst_layout: ImageLayout,
+        regions: &[BufferToTextureCopyRegion],
+    ) {
+        let src = src
+            .query_interface::<Buffer>()
+            .expect("Unknown IBuffer implementation");
+        let dst = dst
+            .query_interface::<Texture>()
+            .expect("Unknown ITexture implementation");
+
+        let format = dst.inner.desc().format;
+        let bytes_per_element = format.bytes_per_element();
+        let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
+            pResource: Some(src.resource.as_raw().clone()),
+            Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
+            Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
+                    Offset: 0,
+                    Footprint: D3D12_SUBRESOURCE_FOOTPRINT {
+                        Format: dst.inner.get_raw_format().into(),
+                        Width: 0,
+                        Height: 0,
+                        Depth: 0,
+                        RowPitch: 0,
+                    },
+                },
+            },
+        };
+
+        let mut dst_location = D3D12_TEXTURE_COPY_LOCATION {
+            pResource: Some(dst.resource().as_raw().clone()),
+            Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
+            Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
+                SubresourceIndex: 0,
+            },
+        };
+
+        for region in regions {
+            // Vulkan can only copy starting at (0, 0, 0). The feature can't be trivially emulated
+            // so we don't expose a src offset.
+            //
+            // Thus 'left', 'top', 'front' will always be 0.
+            let src_box = D3D12_BOX {
+                left: 0,
+                top: 0,
+                front: 0,
+                right: region.dst.extent.width,
+                bottom: region.dst.extent.height,
+                back: region.dst.extent.depth,
+            };
+
+            let footprint = &mut src_location.Anonymous.PlacedFootprint;
+            footprint.Offset = region.src.offset;
+            footprint.Footprint.Width = region.src.width.get();
+            footprint.Footprint.Height = region.src.height.get();
+            footprint.Footprint.Depth = region.src.depth.get();
+            footprint.Footprint.RowPitch = region.src.width.get() * bytes_per_element;
+
+            debug_assert!(
+                footprint.Footprint.RowPitch % 256 == 0,
+                "RowPitch must be a multiple of 256"
+            );
+
+            let index = dst.subresource_index_for(
+                region.dst.mip_level,
+                region.dst.array_layer,
+                region.dst.aspect,
+            );
+            debug_assert!(
+                index.is_some(),
+                "Invalid format ({:#?}) and image aspect ({:#?}) combination",
+                format,
+                region.dst.aspect
+            );
+            dst_location.Anonymous.SubresourceIndex = index.unwrap_or(0);
+
+            self.list.as_raw().CopyTextureRegion(
+                &dst_location,
+                region.dst.origin.x,
+                region.dst.origin.y,
+                region.dst.origin.z,
+                &src_location,
+                &src_box,
+            );
+        }
+    }
+}
