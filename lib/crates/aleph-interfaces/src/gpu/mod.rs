@@ -1298,6 +1298,59 @@ impl Format {
                 | Self::Rgba16Unorm
         )
     }
+
+    /// Returns the number of bytes the format consumes per individual element.
+    ///
+    /// For standard formats this will return the number of bytes per texel, for block formats this
+    /// will return the number of bytes per block (block formats smallest 'element' is a single
+    /// block).
+    pub fn bytes_per_element(&self) -> u32 {
+        match self {
+            Format::R8Unorm => 1,
+            Format::R8Snorm => 1,
+            Format::R8Uint => 1,
+            Format::R8Sint => 1,
+            Format::R16Uint => 2,
+            Format::R16Sint => 2,
+            Format::R16Unorm => 2,
+            Format::R16Snorm => 2,
+            Format::R16Float => 2,
+            Format::Rg8Unorm => 2,
+            Format::Rg8Snorm => 2,
+            Format::Rg8Uint => 2,
+            Format::Rg8Sint => 2,
+            Format::R32Uint => 4,
+            Format::R32Sint => 4,
+            Format::R32Float => 4,
+            Format::Rg16Uint => 4,
+            Format::Rg16Sint => 4,
+            Format::Rg16Unorm => 4,
+            Format::Rg16Snorm => 4,
+            Format::Rg16Float => 4,
+            Format::Rgba8Unorm => 4,
+            Format::Rgba8UnormSrgb => 4,
+            Format::Rgba8Snorm => 4,
+            Format::Rgba8Uint => 4,
+            Format::Rgba8Sint => 4,
+            Format::Bgra8Unorm => 4,
+            Format::Bgra8UnormSrgb => 4,
+            Format::Rgb10a2Unorm => 4,
+            Format::Rg11b10Float => 4,
+            Format::Rg32Uint => 8,
+            Format::Rg32Sint => 8,
+            Format::Rg32Float => 8,
+            Format::Rgba16Uint => 8,
+            Format::Rgba16Sint => 8,
+            Format::Rgba16Unorm => 8,
+            Format::Rgba16Snorm => 8,
+            Format::Rgba16Float => 8,
+            Format::Rgba32Uint => 16,
+            Format::Rgba32Sint => 16,
+            Format::Rgba32Float => 16,
+            Format::Depth32Float => 4,
+            Format::Depth24Stencil8 => 4,
+        }
+    }
 }
 
 impl Display for Format {
