@@ -35,9 +35,10 @@ use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    BarrierAccess, BarrierSync, BufferDesc, CpuAccessMode, Format, IBuffer, ICommandPool,
-    IGeneralEncoder, ITexture, ImageLayout, TextureBarrier, TextureDesc, TextureDimension,
-    TextureSubResourceSet,
+    BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, CpuAccessMode, Extent3D,
+    Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture, ImageDataLayout, ImageLayout,
+    TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension,
+    TextureSubResourceSet, UOffset3D,
 };
 use std::ops::Deref;
 
@@ -148,14 +149,8 @@ impl PerFrameObjects {
         command_list: &dx12::GraphicsCommandList,
         encoder: &mut dyn IGeneralEncoder,
     ) {
-        command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |command_list| {
-            let staged_resource = self
-                .font_staged
-                .as_ref()
-                .unwrap()
-                .query_interface::<dyn ITextureExt>()
-                .unwrap()
-                .get_raw_handle();
+        command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |_| {
+            let staged_resource = self.font_staged.as_ref().unwrap();
 
             encoder.resource_barrier(
                 &[],
@@ -178,29 +173,29 @@ impl PerFrameObjects {
                 }],
             );
 
-            let dst = dx12::TextureCopyLocation::Subresource {
-                resource: Some(staged_resource.clone()),
-                subresource_index: 0,
+            let extent = Extent3D {
+                width: self.font_staged_size.0,
+                height: self.font_staged_size.1,
+                depth: 1,
             };
-            let src = dx12::TextureCopyLocation::Placed {
-                resource: Some(
-                    self.font_staging_buffer
-                        .query_interface::<dyn IBufferExt>()
-                        .unwrap()
-                        .get_raw_handle(),
-                ),
-                placed_footprint: dx12::PlacedSubresourceFootprint {
-                    offset: 0,
-                    footprint: dx12::SubresourceFootprint {
-                        format: dxgi::Format::R8Unorm,
-                        width: self.font_staged_size.0,
-                        height: self.font_staged_size.1,
-                        depth: 1,
-                        row_pitch: self.font_staged_size.0,
+            encoder.copy_buffer_to_texture(
+                self.font_staging_buffer.deref(),
+                staged_resource.deref(),
+                ImageLayout::CopyDst,
+                &[BufferToTextureCopyRegion {
+                    src: ImageDataLayout {
+                        offset: 0,
+                        extent: extent.clone(),
                     },
-                },
-            };
-            command_list.copy_texture_region(&dst, 0, 0, 0, &src, None);
+                    dst: TextureCopyInfo {
+                        mip_level: 0,
+                        array_layer: 0,
+                        aspect: TextureCopyAspect::Color,
+                        origin: UOffset3D::default(),
+                        extent,
+                    },
+                }],
+            );
 
             encoder.resource_barrier(
                 &[],
