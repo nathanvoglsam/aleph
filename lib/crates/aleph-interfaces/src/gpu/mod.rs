@@ -389,7 +389,22 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
-pub trait ITransferEncoder: Send {}
+pub trait ITransferEncoder: Send {
+    unsafe fn copy_buffer_regions(
+        &mut self,
+        src: &dyn IBuffer,
+        dst: &dyn IBuffer,
+        regions: &[BufferCopyRegion],
+    );
+
+    unsafe fn copy_buffer_to_texture(
+        &mut self,
+        src: &dyn IBuffer,
+        dst: &dyn ITexture,
+        dst_layout: ImageLayout,
+        regions: &[BufferToTextureCopyRegion],
+    );
+}
 
 //
 //
@@ -2717,6 +2732,77 @@ pub struct BeginRenderingInfo<'a> {
     pub view_mask: u32,
     pub color_attachments: &'a [RenderingColorAttachmentInfo<'a>],
     pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo<'a>>,
+}
+
+/// A simple description of a buffer -> buffer copy
+#[derive(Clone, Debug)]
+pub struct BufferCopyRegion {
+    /// Offset in bytes from the start of the source buffer to copy from
+    pub src_offset: u64,
+
+    /// Offset in bytes from the start of the destination buffer to start copying into
+    pub dst_offset: u64,
+
+    /// Number of bytes to copy from the source buffer into the destination buffer
+    pub size: u64,
+}
+
+/// A description of an image's data inside buffer memory
+#[derive(Clone, Debug)]
+pub struct ImageDataLayout {
+    /// Offset in bytes from the start of the buffer that the image data begins at
+    pub offset: u64,
+
+    /// The width of the image in texels. Minimum stride is 256 bytes, so
+    /// `<width> * <format bytes per texel>` must be a multiple of 256.
+    pub width: NonZeroU32,
+
+    /// The height of the image in texels.
+    pub height: NonZeroU32,
+
+    /// The depth of the image in texels.
+    pub depth: NonZeroU32,
+}
+
+/// A description of a region within a texture for a buffer -> texture copy operation
+#[derive(Clone, Debug)]
+pub struct TextureCopyInfo {
+    /// The mip layer to copy into
+    pub mip_level: u32,
+
+    /// The array layer to copy into
+    pub array_layer: u32,
+
+    /// The image aspect to copy into
+    pub aspect: TextureCopyAspect,
+
+    /// The origin of the region to copy into
+    pub origin: UOffset3D,
+
+    /// The extent of the region to copy into
+    pub extent: Extent3D,
+}
+
+/// An enumeration of all possible 'image aspects' for a texture copy
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum TextureCopyAspect {
+    Color,
+    Depth,
+    Stencil,
+}
+
+/// A description of a buffer to texture copy operation
+#[derive(Clone, Debug)]
+pub struct BufferToTextureCopyRegion {
+    /// A description of the source image in the source buffer.
+    ///
+    /// This is included here, instead of in [ITransferEncoder::copy_buffer_to_texture], so that
+    /// copies from multiple sources can be queued in a single command. Some backends (read: Vulkan)
+    /// can emit copies containing a list of source and destination regions as a single command.
+    pub src: ImageDataLayout,
+
+    /// The destination region inside the destination texture to copy the source data into.
+    pub dst: TextureCopyInfo,
 }
 
 //
