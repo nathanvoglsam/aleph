@@ -498,11 +498,18 @@ pub trait INamedObject {
 // _________________________________________________________________________________________________
 // General
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
 pub struct Rect {
+    /// Origin of the rectangle on the `x` axis
     pub x: u32,
+
+    /// Origin of the rectangle on the `y` axis
     pub y: u32,
+
+    /// Width of the rectangle
     pub w: u32,
+
+    /// Height of the rectangle
     pub h: u32,
 }
 
