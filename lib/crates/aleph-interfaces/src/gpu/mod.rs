@@ -2753,15 +2753,11 @@ pub struct ImageDataLayout {
     /// Offset in bytes from the start of the buffer that the image data begins at
     pub offset: u64,
 
-    /// The width of the image in texels. Minimum stride is 256 bytes, so
-    /// `<width> * <format bytes per texel>` must be a multiple of 256.
-    pub width: NonZeroU32,
-
-    /// The height of the image in texels.
-    pub height: NonZeroU32,
-
-    /// The depth of the image in texels.
-    pub depth: NonZeroU32,
+    /// The extents of the image data.
+    ///
+    /// Minimum stride is 256 bytes, so `<width> * <format bytes per texel>` must be a multiple of
+    /// 256.
+    pub extent: Extent3D,
 }
 
 /// A description of a region within a texture for a buffer -> texture copy operation
