@@ -260,6 +260,45 @@ pub trait IQueue: INamedObject + IAny + 'static {
     /// on the GPU timeline.
     ///
     unsafe fn present(&self, image: Box<dyn IAcquiredTexture>) -> Result<(), QueuePresentError>;
+
+    ///
+    /// Emits an instantaneous 'marker' on this queue, with the given message and message color.
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn set_marker(&mut self, color: Color, message: &str);
+
+    ///
+    /// Marks the beginning of a new event on this queue, with the given message and message color.
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn begin_event(&mut self, color: Color, message: &str);
+
+    ///
+    /// Marks the end of an event on this queue.
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn end_event(&mut self);
 }
 
 //
@@ -404,6 +443,47 @@ pub trait ITransferEncoder: Send {
         dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     );
+
+    ///
+    /// Emits an instantaneous 'marker' on this command list, with the given message and message
+    /// color.
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn set_marker(&mut self, color: Color, message: &str);
+
+    ///
+    /// Marks the beginning of a new event on this command list, with the given message and message
+    /// color.
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn begin_event(&mut self, color: Color, message: &str);
+
+    ///
+    /// Marks the end of an event on this command list
+    ///
+    /// This function isn't guaranteed to do anything. This function will be a no-op unless a debug
+    /// instance is created and the required backend facilities are present (i.e. Vulkan may not
+    /// always expose the `VK_EXT_debug_utils` extension).
+    ///
+    /// # Safety
+    ///
+    /// TODO investigate
+    ///
+    unsafe fn end_event(&mut self);
 }
 
 //
@@ -674,6 +754,51 @@ pub enum AttachmentStoreOp {
     /// [AttachmentStoreOp::DontCare], but will leave the attachment untouched rather than
     /// undefined.
     None,
+}
+
+/// An `ARGB` color value packed into a single u64. Bit layout: 0xAARRGGBB
+#[repr(transparent)]
+#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
+pub struct Color(pub u64);
+
+impl Color {
+    pub const RED: Self = Self(0xFFFF0000);
+    pub const GREEN: Self = Self(0xFF00FF00);
+    pub const BLUE: Self = Self(0xFF0000FF);
+    pub const YELLOW: Self = Self(0xFFFFFF00);
+    pub const MAGENTA: Self = Self(0xFFFF00FF);
+    pub const CYAN: Self = Self(0xFF00FFFF);
+    pub const WHITE: Self = Self(0xFFFFFFFF);
+    pub const BLACK: Self = Self(0xFF000000);
+}
+
+impl From<u64> for Color {
+    #[inline(always)]
+    fn from(v: u64) -> Self {
+        Self(v)
+    }
+}
+
+impl From<Color> for u64 {
+    #[inline(always)]
+    fn from(v: Color) -> Self {
+        v.0
+    }
+}
+
+impl Into<(f32, f32, f32, f32)> for Color {
+    #[inline(always)]
+    fn into(self) -> (f32, f32, f32, f32) {
+        #[inline(always)]
+        fn convert_channel(c: u64) -> f32 {
+            ((c & 0xFF) as f32) / 255.0
+        }
+        let a = convert_channel(self.0 >> 48);
+        let r = convert_channel(self.0 >> 32);
+        let g = convert_channel(self.0 >> 16);
+        let b = convert_channel(self.0);
+        (a, r, g, b)
+    }
 }
 
 //
