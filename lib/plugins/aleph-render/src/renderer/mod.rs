@@ -89,7 +89,7 @@ impl EguiRenderer {
         index: usize,
         texture: &dyn ITexture,
         render_data: RenderData,
-    ) -> Box<dyn ICommandList + '_> {
+    ) -> Box<dyn ICommandList> {
         // Begin recording commands into the command list
         let mut list = self.frames[index]
             .command_allocator
