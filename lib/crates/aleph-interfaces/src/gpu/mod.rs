@@ -513,6 +513,121 @@ pub struct Rect {
     pub h: u32,
 }
 
+impl Rect {
+    /// Returns the origin of the rectangle as `(x, y)`
+    #[inline]
+    pub fn origin(&self) -> (u32, u32) {
+        (self.x, self.y)
+    }
+
+    /// Returns the dimensions of the rectangle as `(w, h)`
+    #[inline]
+    pub fn dimensions(&self) -> (u32, u32) {
+        (self.w, self.h)
+    }
+
+    /// Returns the maximum point of the rectangle as `(x, y)` (origin + dimensions)
+    #[inline]
+    pub fn maximum(&self) -> (u32, u32) {
+        (self.x + self.w, self.y + self.h)
+    }
+}
+
+/// A three-component vector of [i32], conventionally used for specifying offsets.
+#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+pub struct Offset3D {
+    /// Offset along the `x` axis
+    pub x: i32,
+
+    /// Offset along the `y` axis
+    pub y: i32,
+
+    /// Offset along the `z` axis
+    pub z: i32,
+}
+
+impl Offset3D {
+    /// Construct a new [Offset3D] from the 3 provided coordinates
+    #[inline]
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Returns an offset equal to the maximum point of a box with origin `self` and the provided
+    /// extents.
+    ///
+    /// Produces a new [Offset3D] where each component is equal to the sum of the corresponding
+    /// components in `self` and `extent`.
+    #[inline]
+    pub fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
+        Self {
+            x: self.x + (extent.width as i32),
+            y: self.y + (extent.height as i32),
+            z: self.z + (extent.depth as i32),
+        }
+    }
+}
+
+/// An unsigned version of [Offset3D].
+#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+pub struct UOffset3D {
+    /// Extent along the `x` axis
+    pub x: u32,
+
+    /// Extent along the `y` axis
+    pub y: u32,
+
+    /// Extent along the `z` axis
+    pub z: u32,
+}
+
+impl UOffset3D {
+    /// Construct a new [UOffset3D] from the 3 provided coordinates
+    #[inline]
+    pub fn new(x: u32, y: u32, z: u32) -> Self {
+        Self { x, y, z }
+    }
+
+    /// Returns an offset equal to the maximum point of a box with origin `self` and the provided
+    /// extents.
+    ///
+    /// Produces a new [UOffset3D] where each component is equal to the sum of the corresponding
+    /// components in `self` and `extent`.
+    #[inline]
+    pub fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
+        Self {
+            x: self.x + extent.width,
+            y: self.y + extent.height,
+            z: self.z + extent.depth,
+        }
+    }
+}
+
+/// A three-component vector of [u32], canonically used for specifying extents.
+#[derive(Clone, Eq, PartialEq, Hash, Default, Debug)]
+pub struct Extent3D {
+    /// Extent along the `x` axis
+    pub width: u32,
+
+    /// Extent along the `y` axis
+    pub height: u32,
+
+    /// Extent along the `z` axis
+    pub depth: u32,
+}
+
+impl Extent3D {
+    /// Construct a new [Extent3D] from the 3 provided coordinates
+    #[inline]
+    pub fn new(width: u32, height: u32, depth: u32) -> Self {
+        Self {
+            width,
+            height,
+            depth,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum AttachmentLoadOp<ClearValue> {
     /// Specifies that the attachment will be loaded from the data in memory
