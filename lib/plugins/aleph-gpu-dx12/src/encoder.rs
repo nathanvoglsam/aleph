@@ -45,7 +45,7 @@ use interfaces::gpu::{
     IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
     InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
-use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list, Colour};
+use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
 
 pub struct Encoder<'a> {

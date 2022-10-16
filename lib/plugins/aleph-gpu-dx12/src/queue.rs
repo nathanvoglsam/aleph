@@ -35,11 +35,11 @@ use dx12::{AsWeakRef, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    Color, IAcquiredTexture, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
-    QueueSubmitError, QueueType,
+    Color, Extent3D, IAcquiredTexture, ICommandList, INamedObject, IQueue, ISwapChain,
+    QueuePresentError, QueueProperties, QueueSubmitError, QueueType,
 };
 use parking_lot::Mutex;
-use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue, Colour};
+use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct Queue {
@@ -125,6 +125,12 @@ impl IQueue for Queue {
 
     fn weak_count(&self) -> usize {
         self.this.weak_count()
+    }
+
+    fn queue_properties(&self) -> QueueProperties {
+        QueueProperties {
+            min_image_transfer_granularity: Extent3D::new(0, 0, 0),
+        }
     }
 
     unsafe fn submit_list(
