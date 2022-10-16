@@ -213,5 +213,5 @@ pub unsafe extern "C" fn archetype_filter_current(
 #[allow(clippy::missing_safety_doc)]
 pub unsafe extern "C" fn archetype_filter_destroy(query: NonNull<ArchetypeFilter>) {
     // Recreate and drop the box to call cleanup code
-    Box::from_raw(query.as_ptr());
+    drop(Box::from_raw(query.as_ptr()));
 }
