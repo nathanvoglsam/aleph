@@ -27,17 +27,16 @@
 // SOFTWARE.
 //
 
+use crate::dx12;
 use crate::dx12::dxgi;
-use crate::pix::RecordScopedEvent;
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
-use crate::{dx12, pix};
 use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
-    BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, CpuAccessMode, Extent3D,
-    Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture, ImageDataLayout, ImageLayout,
-    TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension,
+    BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
+    Extent3D, Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture, ImageDataLayout,
+    ImageLayout, TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension,
     TextureSubResourceSet, UOffset3D,
 };
 use std::ops::Deref;
@@ -144,80 +143,78 @@ impl PerFrameObjects {
         resource.unmap(0, None);
     }
 
-    pub unsafe fn record_texture_upload(
-        &mut self,
-        command_list: &dx12::GraphicsCommandList,
-        encoder: &mut dyn IGeneralEncoder,
-    ) {
-        command_list.scoped_event(pix::Colour::GREEN, "Egui Texture Upload", |_| {
-            let staged_resource = self.font_staged.as_ref().unwrap();
+    pub unsafe fn record_texture_upload(&mut self, encoder: &mut dyn IGeneralEncoder) {
+        encoder.begin_event(Color::GREEN, "Egui Texture Upload");
 
-            encoder.resource_barrier(
-                &[],
-                &[],
-                &[TextureBarrier {
-                    texture: self.font_staged.as_ref().unwrap().deref(),
-                    subresource_range: TextureSubResourceSet {
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
-                    before_sync: BarrierSync::ALL,
-                    after_sync: BarrierSync::COPY,
-                    before_access: BarrierAccess::NONE,
-                    after_access: BarrierAccess::COPY_WRITE,
-                    before_layout: ImageLayout::Undefined,
-                    after_layout: ImageLayout::CopyDst,
-                    queue_transition_mode: Default::default(),
-                }],
-            );
+        let staged_resource = self.font_staged.as_ref().unwrap();
 
-            let extent = Extent3D {
-                width: self.font_staged_size.0,
-                height: self.font_staged_size.1,
-                depth: 1,
-            };
-            encoder.copy_buffer_to_texture(
-                self.font_staging_buffer.deref(),
-                staged_resource.deref(),
-                ImageLayout::CopyDst,
-                &[BufferToTextureCopyRegion {
-                    src: ImageDataLayout {
-                        offset: 0,
-                        extent: extent.clone(),
-                    },
-                    dst: TextureCopyInfo {
-                        mip_level: 0,
-                        array_layer: 0,
-                        aspect: TextureCopyAspect::Color,
-                        origin: UOffset3D::default(),
-                        extent,
-                    },
-                }],
-            );
+        encoder.resource_barrier(
+            &[],
+            &[],
+            &[TextureBarrier {
+                texture: self.font_staged.as_ref().unwrap().deref(),
+                subresource_range: TextureSubResourceSet {
+                    base_mip_level: 0,
+                    num_mip_levels: 1,
+                    base_array_slice: 0,
+                    num_array_slices: 1,
+                },
+                before_sync: BarrierSync::ALL,
+                after_sync: BarrierSync::COPY,
+                before_access: BarrierAccess::NONE,
+                after_access: BarrierAccess::COPY_WRITE,
+                before_layout: ImageLayout::Undefined,
+                after_layout: ImageLayout::CopyDst,
+                queue_transition_mode: Default::default(),
+            }],
+        );
 
-            encoder.resource_barrier(
-                &[],
-                &[],
-                &[TextureBarrier {
-                    texture: self.font_staged.as_ref().unwrap().deref(),
-                    subresource_range: TextureSubResourceSet {
-                        base_mip_level: 0,
-                        num_mip_levels: 1,
-                        base_array_slice: 0,
-                        num_array_slices: 1,
-                    },
-                    before_sync: BarrierSync::COPY,
-                    after_sync: BarrierSync::ALL,
-                    before_access: BarrierAccess::COPY_WRITE,
-                    after_access: BarrierAccess::SHADER_SAMPLED_READ,
-                    before_layout: ImageLayout::CopyDst,
-                    after_layout: ImageLayout::ShaderReadOnlyOptimal,
-                    queue_transition_mode: Default::default(),
-                }],
-            );
-        });
+        let extent = Extent3D {
+            width: self.font_staged_size.0,
+            height: self.font_staged_size.1,
+            depth: 1,
+        };
+        encoder.copy_buffer_to_texture(
+            self.font_staging_buffer.deref(),
+            staged_resource.deref(),
+            ImageLayout::CopyDst,
+            &[BufferToTextureCopyRegion {
+                src: ImageDataLayout {
+                    offset: 0,
+                    extent: extent.clone(),
+                },
+                dst: TextureCopyInfo {
+                    mip_level: 0,
+                    array_layer: 0,
+                    aspect: TextureCopyAspect::Color,
+                    origin: UOffset3D::default(),
+                    extent,
+                },
+            }],
+        );
+
+        encoder.resource_barrier(
+            &[],
+            &[],
+            &[TextureBarrier {
+                texture: self.font_staged.as_ref().unwrap().deref(),
+                subresource_range: TextureSubResourceSet {
+                    base_mip_level: 0,
+                    num_mip_levels: 1,
+                    base_array_slice: 0,
+                    num_array_slices: 1,
+                },
+                before_sync: BarrierSync::COPY,
+                after_sync: BarrierSync::ALL,
+                before_access: BarrierAccess::COPY_WRITE,
+                after_access: BarrierAccess::SHADER_SAMPLED_READ,
+                before_layout: ImageLayout::CopyDst,
+                after_layout: ImageLayout::ShaderReadOnlyOptimal,
+                queue_transition_mode: Default::default(),
+            }],
+        );
+
+        encoder.end_event();
     }
 
     /// Allocates the font texture on GPU memory
@@ -226,6 +223,7 @@ impl PerFrameObjects {
             .create_texture(&TextureDesc {
                 width: dimensions.0,
                 height: dimensions.1,
+                depth: 1,
                 format: Format::R8Unorm,
                 dimension: TextureDimension::Texture2D,
                 array_size: 1,

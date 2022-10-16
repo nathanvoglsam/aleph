@@ -117,7 +117,7 @@ impl EguiRenderer {
             if self.frames[index].font_version != self.global.font_texture.version {
                 self.frames[index]
                     .update_texture_data(self.device.deref(), &self.global.font_texture);
-                self.frames[index].record_texture_upload(&command_list, encoder.deref_mut());
+                self.frames[index].record_texture_upload(encoder.deref_mut());
             }
 
             // Map the buffers for copying into them
