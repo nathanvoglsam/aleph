@@ -741,30 +741,41 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 back: region.dst.extent.depth,
             };
 
-            let footprint = &mut src_location.Anonymous.PlacedFootprint;
-            footprint.Offset = region.src.offset;
-            footprint.Footprint.Width = region.src.width.get();
-            footprint.Footprint.Height = region.src.height.get();
-            footprint.Footprint.Depth = region.src.depth.get();
-            footprint.Footprint.RowPitch = region.src.width.get() * bytes_per_element;
-
-            debug_assert!(
-                footprint.Footprint.RowPitch % 256 == 0,
-                "RowPitch must be a multiple of 256"
-            );
-
             let index = dst.subresource_index_for(
                 region.dst.mip_level,
                 region.dst.array_layer,
                 region.dst.aspect,
             );
+            dst_location.Anonymous.SubresourceIndex = index.unwrap_or(0);
+
+            // Translate the source layout description to D3D12's 'subresource footprint'
+            let footprint = &mut src_location.Anonymous.PlacedFootprint;
+            footprint.Offset = region.src.offset;
+            footprint.Footprint.Width = region.src.extent.width;
+            footprint.Footprint.Height = region.src.extent.height;
+            footprint.Footprint.Depth = region.src.extent.depth;
+            footprint.Footprint.RowPitch = region.src.extent.width * bytes_per_element;
+
+            // Debug checking for the buffer data layout
+            debug_assert!(region.src.extent.width > 0, "extent.width must be > 0");
+            debug_assert!(region.src.extent.height > 0, "extent.height must be > 0");
+            debug_assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
+            debug_assert!(
+                footprint.Footprint.RowPitch % 256 == 0,
+                "RowPitch must be a multiple of 256"
+            );
+
+            // Debug checking for the destination region
+            let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
+            debug_assert!(dst_maximum.x <= dst.desc().width, "Destination region must not exceed destination width");
+            debug_assert!(dst_maximum.y <= dst.desc().height, "Destination region must not exceed destination height");
+            debug_assert!(dst_maximum.z <= dst.desc().depth, "Destination region must not exceed destination depth");
             debug_assert!(
                 index.is_some(),
                 "Invalid format ({:#?}) and image aspect ({:#?}) combination",
                 format,
                 region.dst.aspect
             );
-            dst_location.Anonymous.SubresourceIndex = index.unwrap_or(0);
 
             self.list.as_raw().CopyTextureRegion(
                 &dst_location,
