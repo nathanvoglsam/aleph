@@ -230,6 +230,9 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
 pub trait IQueue: INamedObject + IAny + 'static {
     any_arc_trait_utils_decl!(IQueue);
 
+    /// Returns the set of per-queue properties associated with this queue.
+    fn queue_properties(&self) -> QueueProperties;
+
     ///
     /// # Safety
     ///
@@ -2559,6 +2562,30 @@ pub struct ComputePipelineDesc<'a> {
 //
 // _________________________________________________________________________________________________
 // Queue
+
+#[derive(Clone, Debug)]
+pub struct QueueProperties {
+    /// The minimum offset alignment and smallest extent supported for image transfer operations.
+    ///
+    /// This effects the supported offset and extents for image transfer operations. The values
+    /// (x, y, z) specify the minimum extent on the corresponding axis that is supported on the
+    /// associated queue. The (x, y, z) values also specify the alignment for the offset values on
+    /// the corresponding axis.
+    ///
+    /// Each extent axis must be a multiple of the corresponding value, unless the extent would copy
+    /// beyond the bounds of the image. In this case the extent can be clamped so the region doesn't
+    /// access outside of the image.
+    ///
+    /// The special case (0, 0, 0) value denotes that there is no granularity restriction and any
+    /// offset and extent can be used (other rules still withstanding).
+    ///
+    /// # Details
+    ///
+    /// This directly maps to the Vulkan `minImageTransferGranularity` queue property. D3D12 has
+    /// no such concept and so will always report (0, 0, 0). For more specific documentation see
+    /// the Vulkan documentation for `VkQueueFamilyProperties`.
+    pub min_image_transfer_granularity: Extent3D,
+}
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum QueueType {
