@@ -40,11 +40,12 @@ use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
-    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion,
+    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
     ColorClearValue, DepthStencilClearValue, GlobalBarrier, IBuffer, IComputeEncoder,
     IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
     InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
+use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list, Colour};
 use std::ops::Deref;
 
 pub struct Encoder<'a> {
@@ -795,5 +796,17 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 &src_box,
             );
         }
+    }
+
+    unsafe fn set_marker(&mut self, color: Color, message: &str) {
+        set_marker_on_list(self.list.as_raw(), color.0.into(), message);
+    }
+
+    unsafe fn begin_event(&mut self, color: Color, message: &str) {
+        begin_event_on_list(self.list.as_raw(), color.0.into(), message);
+    }
+
+    unsafe fn end_event(&mut self) {
+        end_event_on_list(self.list.as_raw());
     }
 }

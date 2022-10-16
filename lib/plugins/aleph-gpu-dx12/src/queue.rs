@@ -35,10 +35,11 @@ use dx12::{AsWeakRef, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    IAcquiredTexture, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
+    Color, IAcquiredTexture, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
     QueueSubmitError, QueueType,
 };
 use parking_lot::Mutex;
+use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue, Colour};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub struct Queue {
@@ -241,6 +242,18 @@ impl IQueue for Queue {
         };
 
         Ok(())
+    }
+
+    unsafe fn set_marker(&mut self, color: Color, message: &str) {
+        set_marker_on_queue(self.handle.as_raw(), color.0.into(), message);
+    }
+
+    unsafe fn begin_event(&mut self, color: Color, message: &str) {
+        begin_event_on_queue(self.handle.as_raw(), color.0.into(), message);
+    }
+
+    unsafe fn end_event(&mut self) {
+        end_event_on_queue(self.handle.as_raw());
     }
 }
 
