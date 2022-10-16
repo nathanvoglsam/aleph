@@ -610,20 +610,17 @@ pub struct Rect {
 
 impl Rect {
     /// Returns the origin of the rectangle as `(x, y)`
-    #[inline]
-    pub fn origin(&self) -> (u32, u32) {
+    pub const fn origin(&self) -> (u32, u32) {
         (self.x, self.y)
     }
 
     /// Returns the dimensions of the rectangle as `(w, h)`
-    #[inline]
-    pub fn dimensions(&self) -> (u32, u32) {
+    pub const fn dimensions(&self) -> (u32, u32) {
         (self.w, self.h)
     }
 
     /// Returns the maximum point of the rectangle as `(x, y)` (origin + dimensions)
-    #[inline]
-    pub fn maximum(&self) -> (u32, u32) {
+    pub const fn maximum(&self) -> (u32, u32) {
         (self.x + self.w, self.y + self.h)
     }
 }
@@ -643,8 +640,7 @@ pub struct Offset3D {
 
 impl Offset3D {
     /// Construct a new [Offset3D] from the 3 provided coordinates
-    #[inline]
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
+    pub const fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
     }
 
@@ -653,8 +649,7 @@ impl Offset3D {
     ///
     /// Produces a new [Offset3D] where each component is equal to the sum of the corresponding
     /// components in `self` and `extent`.
-    #[inline]
-    pub fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
+    pub const fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
         Self {
             x: self.x + (extent.width as i32),
             y: self.y + (extent.height as i32),
@@ -678,8 +673,7 @@ pub struct UOffset3D {
 
 impl UOffset3D {
     /// Construct a new [UOffset3D] from the 3 provided coordinates
-    #[inline]
-    pub fn new(x: u32, y: u32, z: u32) -> Self {
+    pub const fn new(x: u32, y: u32, z: u32) -> Self {
         Self { x, y, z }
     }
 
@@ -688,8 +682,7 @@ impl UOffset3D {
     ///
     /// Produces a new [UOffset3D] where each component is equal to the sum of the corresponding
     /// components in `self` and `extent`.
-    #[inline]
-    pub fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
+    pub const fn maximum_with_extent(&self, extent: &Extent3D) -> Self {
         Self {
             x: self.x + extent.width,
             y: self.y + extent.height,
@@ -713,8 +706,7 @@ pub struct Extent3D {
 
 impl Extent3D {
     /// Construct a new [Extent3D] from the 3 provided coordinates
-    #[inline]
-    pub fn new(width: u32, height: u32, depth: u32) -> Self {
+    pub const fn new(width: u32, height: u32, depth: u32) -> Self {
         Self {
             width,
             height,
