@@ -767,9 +767,18 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
             // Debug checking for the destination region
             let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
-            debug_assert!(dst_maximum.x <= dst.desc().width, "Destination region must not exceed destination width");
-            debug_assert!(dst_maximum.y <= dst.desc().height, "Destination region must not exceed destination height");
-            debug_assert!(dst_maximum.z <= dst.desc().depth, "Destination region must not exceed destination depth");
+            debug_assert!(
+                dst_maximum.x <= dst.desc().width,
+                "Destination region must not exceed destination width"
+            );
+            debug_assert!(
+                dst_maximum.y <= dst.desc().height,
+                "Destination region must not exceed destination height"
+            );
+            debug_assert!(
+                dst_maximum.z <= dst.desc().depth,
+                "Destination region must not exceed destination depth"
+            );
             debug_assert!(
                 index.is_some(),
                 "Invalid format ({:#?}) and image aspect ({:#?}) combination",
