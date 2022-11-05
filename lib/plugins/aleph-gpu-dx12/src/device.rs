@@ -443,6 +443,7 @@ impl IDevice for Device {
             resource,
             base_address,
             desc: desc.clone(),
+            debug_mapped_tracker: Default::default(),
         });
         Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
     }

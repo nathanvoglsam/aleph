@@ -29,13 +29,17 @@
 
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{BufferDesc, IBuffer, INamedObject};
+use interfaces::anyhow::anyhow;
+use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
+use std::ptr::NonNull;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct Buffer {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) resource: dx12::Resource,
     pub(crate) base_address: dx12::GPUDescriptorHandle,
     pub(crate) desc: BufferDesc,
+    pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
 declare_interfaces!(Buffer, [IBuffer, IBufferExt]);
@@ -55,6 +59,37 @@ impl IBuffer for Buffer {
 
     fn desc(&self) -> &BufferDesc {
         &self.desc
+    }
+
+    fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
+        // Debug check for tracking that the resource is unmapped when trying to map it
+        debug_assert!(self
+            .debug_mapped_tracker
+            .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+            .is_ok());
+
+        // TODO: should we expose 'read_range'?
+        let ptr = self.resource.map(0, None).map_err(|v| anyhow!(v))?;
+        ptr.ok_or(ResourceMapError::MappedNullPointer)
+    }
+
+    fn unmap(&self) {
+        // TODO: should we expose 'written_range'
+        self.resource.unmap(0, None);
+
+        // Debug check for tracking that the resource is mapped when trying to unmap it
+        debug_assert!(self
+            .debug_mapped_tracker
+            .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
+            .is_ok());
+    }
+
+    fn flush_range(&self, _offset: u64, _len: u64) {
+        // intentional no-op
+    }
+
+    fn invalidate_range(&self, _offset: u64, _len: u64) {
+        // intentional no-op
     }
 }
 
