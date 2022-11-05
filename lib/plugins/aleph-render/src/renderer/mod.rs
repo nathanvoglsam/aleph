@@ -31,7 +31,7 @@ mod frame;
 mod global;
 
 use crate::dx12;
-use aleph_gpu_dx12::{IBufferExt, ICommandListExt, IDeviceExt};
+use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
@@ -43,6 +43,7 @@ use interfaces::gpu::{
     TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
+use std::ptr::NonNull;
 
 pub struct EguiRenderer {
     frames: Vec<PerFrameObjects>,
@@ -121,7 +122,13 @@ impl EguiRenderer {
             }
 
             // Map the buffers for copying into them
-            let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = self.map_buffers(index);
+            let (v_ptr, v_ptr_end, i_ptr, i_ptr_end) = self.map_buffers(index);
+            let (mut v_ptr, v_ptr_end, mut i_ptr, i_ptr_end) = (
+                v_ptr.as_ptr(),
+                v_ptr_end.as_ptr(),
+                i_ptr.as_ptr(),
+                i_ptr_end.as_ptr(),
+            );
 
             encoder.resource_barrier(
                 &[],
@@ -316,52 +323,30 @@ impl EguiRenderer {
         }]);
     }
 
-    unsafe fn map_buffers(&self, index: usize) -> (*mut u8, *mut u8, *mut u8, *mut u8) {
-        //
-        // Map the vertex and index buffers
-        //
+    unsafe fn map_buffers(
+        &self,
+        index: usize,
+    ) -> (NonNull<u8>, NonNull<u8>, NonNull<u8>, NonNull<u8>) {
         let v_ptr = self.frames[index]
             .vtx_buffer
-            .query_interface::<dyn IBufferExt>()
-            .unwrap()
-            .get_raw_handle()
-            .map(0, Some(0..0))
-            .unwrap()
-            .unwrap()
-            .as_ptr();
-        let v_ptr_end = v_ptr.add(PerFrameObjects::vertex_buffer_size());
+            .map()
+            .expect("Failed to map vertex buffer");
+        let v_ptr_end = v_ptr.as_ptr().add(PerFrameObjects::vertex_buffer_size());
+        let v_ptr_end = NonNull::new(v_ptr_end).unwrap();
 
         let i_ptr = self.frames[index]
             .idx_buffer
-            .query_interface::<dyn IBufferExt>()
-            .unwrap()
-            .get_raw_handle()
-            .map(0, Some(0..0))
-            .unwrap()
-            .unwrap()
-            .as_ptr();
-        let i_ptr_end = i_ptr.add(PerFrameObjects::index_buffer_size());
+            .map()
+            .expect("Failed to map index buffer");
+        let i_ptr_end = i_ptr.as_ptr().add(PerFrameObjects::index_buffer_size());
+        let i_ptr_end = NonNull::new(i_ptr_end).unwrap();
 
         (v_ptr, v_ptr_end, i_ptr, i_ptr_end)
     }
 
     unsafe fn unmap_buffers(&self, index: usize) {
-        //
-        // Flush and unmap the vertex and index buffers
-        //
-        let vtx_buffer = &self.frames[index]
-            .vtx_buffer
-            .query_interface::<dyn IBufferExt>()
-            .unwrap()
-            .get_raw_handle();
-        let idx_buffer = &self.frames[index]
-            .idx_buffer
-            .query_interface::<dyn IBufferExt>()
-            .unwrap()
-            .get_raw_handle();
-
-        vtx_buffer.unmap(0, None);
-        idx_buffer.unmap(0, None);
+        self.frames[index].vtx_buffer.unmap();
+        self.frames[index].idx_buffer.unmap();
     }
 
     fn calculate_clip_rect(&self, job: &aleph_egui::ClippedPrimitive) -> Rect {
