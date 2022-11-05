@@ -2673,25 +2673,6 @@ impl Display for DepthStencilClearValue {
     }
 }
 
-/// Enum flags for barrier commands for specifying the split barrier behavior.
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub enum SplitBarrierMode {
-    /// A regular, non split barrier
-    None,
-
-    /// Flags the barrier as the begin half of a split barrier
-    Begin,
-
-    /// Flags the barrier as the end half of a split barrier
-    End,
-}
-
-impl Default for SplitBarrierMode {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
 /// Enum flags for barrier commands for specifying queue ownership transition behavior.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum QueueTransitionMode {
