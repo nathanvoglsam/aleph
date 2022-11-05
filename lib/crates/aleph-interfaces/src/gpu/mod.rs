@@ -37,6 +37,7 @@ use raw_window_handle::HasRawWindowHandle;
 use std::any::Any;
 use std::fmt::{Debug, Display, Formatter};
 use std::num::NonZeroU32;
+use std::ptr::NonNull;
 use thiserror::Error;
 
 //
@@ -340,6 +341,14 @@ pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IBuffer);
 
     fn desc(&self) -> &BufferDesc;
+
+    fn map(&self) -> Result<NonNull<u8>, ResourceMapError>;
+
+    fn unmap(&self);
+
+    fn flush_range(&self, offset: u64, len: u64);
+
+    fn invalidate_range(&self, offset: u64, len: u64);
 }
 
 pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
@@ -2694,6 +2703,7 @@ impl Default for QueueTransitionMode {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct TextureSubResourceSet {
+    // TODO: aspect mask / image planes
     pub base_mip_level: u32,
     pub num_mip_levels: u32,
     pub base_array_slice: u32,
@@ -3009,6 +3019,22 @@ pub enum SwapChainCreateError {
 pub enum RequestDeviceError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
+}
+
+//
+//
+// _________________________________________________________________________________________________
+// Resource
+
+/// Set of errors that can occur when mapping an [IBuffer]
+#[derive(Error, Debug)]
+#[non_exhaustive]
+pub enum ResourceMapError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+
+    #[error("The backend got a null pointer when attempting to map the buffer memory")]
+    MappedNullPointer,
 }
 
 //
