@@ -457,6 +457,10 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
 }
 
 pub trait IComputeEncoder: ITransferEncoder + Send {
+    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
+}
+
+pub trait ITransferEncoder: Send {
     unsafe fn resource_barrier(
         &mut self,
         memory_barriers: &[GlobalBarrier],
@@ -464,10 +468,6 @@ pub trait IComputeEncoder: ITransferEncoder + Send {
         texture_barriers: &[TextureBarrier],
     );
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
-}
-
-pub trait ITransferEncoder: Send {
     unsafe fn copy_buffer_regions(
         &mut self,
         src: &dyn IBuffer,
