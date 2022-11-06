@@ -533,6 +533,13 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
+    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
+        self.list
+            .dispatch(group_count_x, group_count_y, group_count_z);
+    }
+}
+
+impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
@@ -656,13 +663,6 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         );
     }
 
-    unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
-        self.list
-            .dispatch(group_count_x, group_count_y, group_count_z);
-    }
-}
-
-impl<'a> ITransferEncoder for Encoder<'a> {
     unsafe fn copy_buffer_regions(
         &mut self,
         src: &dyn IBuffer,
