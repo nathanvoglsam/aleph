@@ -340,20 +340,46 @@ pub trait ISwapChain: INamedObject + IAny + 'static {
 pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IBuffer);
 
+    /// Returns a [BufferDesc] that describes this [IBuffer]
     fn desc(&self) -> &BufferDesc;
 
+    /// Returns a host virtual address pointer to a region of a mappable buffer.
+    ///
+    /// [IBuffer::map] will map the entire buffer.
+    ///
+    /// Writes to buffer memory through a mapped pointer won't become available to the device until
+    /// after a submission to an [IQueue], or when signalling an event/fence to the GPU. The writes
+    /// will only be made available to the device commands when submitted, or when waiting for an
+    /// event/fence to be triggered from the CPU.
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError>;
 
+    /// Unmaps the buffers memory, releasing the associated address space range to be reused.
     fn unmap(&self);
 
+    /// Flushes any writes to mapped buffer memory for non `HOST_COHERENT` memory.
+    ///
+    /// Writes to non `HOST_COHERENT` memory will no be made available to the device until the
+    /// written range is flushed with this function.
+    ///
+    /// This should be combined with an event/fence for writes from the host to become available
+    ///
+    /// Mapped memory that is considered `HOST_COHERENT` does not need to be flushed.
     fn flush_range(&self, offset: u64, len: u64);
 
+    /// Invalidate the requested region inside the mapped buffer memory for non `HOST_COHERENT`
+    /// memory.
+    ///
+    /// Device writes to non `HOST_COHERENT` mapped memory will not be available to the host until
+    /// this function is called for the region to be read.
+    ///
+    /// Mapped memory that is considered `HOST_COHERENT` does not need to be invalidated.
     fn invalidate_range(&self, offset: u64, len: u64);
 }
 
 pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(ITexture);
 
+    /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> &TextureDesc;
 }
 
@@ -364,6 +390,7 @@ pub trait IAcquiredTexture: IAny + Send + 'static {
 pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(ISampler);
 
+    /// Returns a [SamplerDesc] that describes this [ISampler]
     fn desc(&self) -> &SamplerDesc;
 }
 
