@@ -31,9 +31,7 @@ use crate::adapter::Adapter;
 use crate::internal::feature_support::FeatureSupport;
 use crate::surface::Surface;
 use aleph_windows::Win32::Graphics::Direct3D::D3D_FEATURE_LEVEL_12_0;
-use aleph_windows::Win32::Graphics::Direct3D12::{
-    ID3D12Device4, D3D_ROOT_SIGNATURE_VERSION_1_1, D3D_SHADER_MODEL_6_0,
-};
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::dxgi;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{

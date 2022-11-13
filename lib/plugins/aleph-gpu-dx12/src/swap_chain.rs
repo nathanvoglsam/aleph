@@ -31,6 +31,7 @@ use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
 use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::atomic::AtomicCell;
 use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};

@@ -46,12 +46,7 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::{PlainTexture, Texture, TextureInner};
-use aleph_windows::Win32::Graphics::Direct3D12::{
-    ID3D12Resource, D3D12_BARRIER_LAYOUT, D3D12_CLEAR_VALUE, D3D12_HEAP_PROPERTIES,
-    D3D12_HEAP_TYPE_DEFAULT, D3D12_HEAP_TYPE_READBACK, D3D12_HEAP_TYPE_UPLOAD,
-    D3D12_RESOURCE_DESC1, D3D12_RESOURCE_DIMENSION_BUFFER,
-    D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_TEXTURE_LAYOUT_ROW_MAJOR,
-};
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use crossbeam::queue::SegQueue;
 use dx12::{dxgi, D3D12Object};
