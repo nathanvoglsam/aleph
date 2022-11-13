@@ -202,7 +202,7 @@ impl PlainTexture {
         };
         self.get_or_create_view_for_usage(
             &self.rtv_cache,
-            &self.device.rtv_heap,
+            &self.device.descriptor_heaps.cpu_rtv_heap(),
             format,
             sub_resources,
             false,
@@ -226,7 +226,7 @@ impl PlainTexture {
         };
         self.get_or_create_view_for_usage(
             &self.dsv_cache,
-            &self.device.dsv_heap,
+            &self.device.descriptor_heaps.cpu_dsv_heap(),
             format,
             sub_resources,
             false,
@@ -451,7 +451,7 @@ impl Drop for PlainTexture {
         // Free all RTVs associated with this texture
         let rtvs = self.rtv_cache.read();
         for (_, rtv) in rtvs.iter() {
-            self.device.rtv_heap.free(*rtv);
+            self.device.descriptor_heaps.cpu_rtv_heap().free(*rtv);
         }
     }
 }

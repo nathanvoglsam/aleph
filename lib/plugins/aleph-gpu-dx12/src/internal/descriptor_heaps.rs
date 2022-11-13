@@ -27,13 +27,14 @@
 // SOFTWARE.
 //
 
+use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap::DescriptorHeap;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 
 /// Internal struct that caches the descriptor increment sizes needed for allocating space in
 /// descriptor heaps.
 pub struct DescriptorHeaps {
-    cpu_heaps: [DescriptorHeap; 4],
+    cpu_heaps: [DescriptorAllocatorCPU; 4],
     view_heap: DescriptorHeap,
     sampler_heap: DescriptorHeap,
 }
@@ -43,30 +44,10 @@ impl DescriptorHeaps {
     pub fn new(device: &dx12::Device) -> aleph_windows::core::Result<Self> {
         // Construct the CPU side heaps for all 4 descriptor types
         let cpu_heaps = [
-            DescriptorHeap::new(
-                device.as_raw().into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-                1024 * 256,
-                false,
-            )?,
-            DescriptorHeap::new(
-                device.as_raw().into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
-                2048,
-                false,
-            )?,
-            DescriptorHeap::new(
-                device.as_raw().into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_RTV,
-                512,
-                false,
-            )?,
-            DescriptorHeap::new(
-                device.as_raw().into(),
-                D3D12_DESCRIPTOR_HEAP_TYPE_DSV,
-                512,
-                false,
-            )?,
+            DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
+            DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
+            DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
+            DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
         ];
 
         // Construct the two GPU visible heaps
@@ -95,35 +76,35 @@ impl DescriptorHeaps {
     /// [D3D12_DESCRIPTOR_HEAP_TYPE], where the value of the type enum is the index into the array
     /// for the heap for that type.
     #[allow(unused)]
-    pub const fn cpu_heaps(&self) -> &[DescriptorHeap; 4] {
+    pub const fn cpu_heaps(&self) -> &[DescriptorAllocatorCPU; 4] {
         &self.cpu_heaps
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].
     #[allow(unused)]
-    pub const fn cpu_view_heap(&self) -> &DescriptorHeap {
+    pub const fn cpu_view_heap(&self) -> &DescriptorAllocatorCPU {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER].
     #[allow(unused)]
-    pub const fn cpu_sampler_heap(&self) -> &DescriptorHeap {
+    pub const fn cpu_sampler_heap(&self) -> &DescriptorAllocatorCPU {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_RTV].
     #[allow(unused)]
-    pub const fn cpu_rtv_heap(&self) -> &DescriptorHeap {
+    pub const fn cpu_rtv_heap(&self) -> &DescriptorAllocatorCPU {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_RTV.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_DSV].
     #[allow(unused)]
-    pub const fn cpu_dsv_heap(&self) -> &DescriptorHeap {
+    pub const fn cpu_dsv_heap(&self) -> &DescriptorAllocatorCPU {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_DSV.0 as usize]
     }
 

@@ -38,9 +38,9 @@ use crate::internal::conv::{
     stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
     texture_format_to_dxgi,
 };
-use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
+use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -74,9 +74,7 @@ pub struct Device {
     pub(crate) device: dx12::Device,
     pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) descriptor_heap_info: DescriptorHeapInfo,
-    pub(crate) rtv_heap: DescriptorAllocatorCPU,
-    pub(crate) dsv_heap: DescriptorAllocatorCPU,
-    pub(crate) _sampler_heap: DescriptorAllocatorCPU,
+    pub(crate) descriptor_heaps: DescriptorHeaps,
     pub(crate) general_queue: Option<AnyArc<Queue>>,
     pub(crate) compute_queue: Option<AnyArc<Queue>>,
     pub(crate) transfer_queue: Option<AnyArc<Queue>>,
@@ -551,7 +549,7 @@ impl Device {
         let mut images = Vec::new();
         for i in 0..count {
             let buffer = swap_chain.get_buffer(i).map_err(|e| anyhow!(e))?;
-            let view = self.rtv_heap.allocate().unwrap();
+            let view = self.descriptor_heaps.cpu_rtv_heap().allocate().unwrap();
 
             let desc = D3D12_RENDER_TARGET_VIEW_DESC {
                 Format: format.into(),

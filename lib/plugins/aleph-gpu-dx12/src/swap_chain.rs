@@ -32,7 +32,6 @@ use crate::device::Device;
 use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::atomic::AtomicCell;
 use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -103,7 +102,7 @@ impl SwapChain {
             .images
             .drain(..)
             .map(|(_, view)| {
-                self.device.rtv_heap.free(view);
+                self.device.descriptor_heaps.cpu_rtv_heap().free(view);
                 queue.as_weak()
             })
             .collect();
@@ -226,7 +225,7 @@ impl Drop for SwapChain {
 
         let mut inner = self.inner.lock();
         for (_, view) in inner.images.drain(..) {
-            self.device.rtv_heap.free(view);
+            self.device.descriptor_heaps.cpu_rtv_heap().free(view);
         }
         assert_eq!(self.images_in_flight.load(Ordering::Relaxed), 0);
         assert!(!self.acquired.load(Ordering::Relaxed));
