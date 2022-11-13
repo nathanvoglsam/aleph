@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
+use crate::internal::descriptor_handles::{CPUDescriptorHandle, GPUDescriptorHandle};
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use parking_lot::Mutex;
+use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 pub struct DescriptorHeap {
@@ -161,24 +163,24 @@ impl DescriptorHeap {
         self.state.lock().release(id, count)
     }
 
-    /// Converts the given 'id' into the [D3D12_CPU_DESCRIPTOR_HANDLE] it represents
+    /// Converts the given 'id' into the [CPUDescriptorHandle] it represents
     #[allow(unused)]
-    pub const fn id_to_cpu_handle(&self, id: DescriptorID) -> D3D12_CPU_DESCRIPTOR_HANDLE {
+    pub fn id_to_cpu_handle(&self, id: DescriptorID) -> Option<CPUDescriptorHandle> {
         let size = self.descriptor_size as usize;
         let id = id.0 as usize;
         let base = self.start_cpu_handle.ptr;
         let ptr = base + (id * size);
-        D3D12_CPU_DESCRIPTOR_HANDLE { ptr }
+        NonZeroUsize::new(ptr).map(CPUDescriptorHandle)
     }
 
-    /// Converts the given 'id' into the [D3D12_GPU_DESCRIPTOR_HANDLE] it represents
+    /// Converts the given 'id' into the [GPUDescriptorHandle] it represents
     #[allow(unused)]
-    pub const fn id_to_gpu_handle(&self, id: DescriptorID) -> D3D12_GPU_DESCRIPTOR_HANDLE {
+    pub fn id_to_gpu_handle(&self, id: DescriptorID) -> Option<GPUDescriptorHandle> {
         let size = self.descriptor_size as u64;
         let id = id.0 as u64;
         let base = self.start_gpu_handle.ptr;
         let ptr = base + (id * size);
-        D3D12_GPU_DESCRIPTOR_HANDLE { ptr }
+        NonZeroU64::new(ptr).map(GPUDescriptorHandle)
     }
 
     /// Returns the [ID3D12DescriptorHeap] that this object encapsulates
