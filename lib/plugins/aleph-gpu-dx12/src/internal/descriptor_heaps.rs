@@ -90,6 +90,13 @@ impl DescriptorHeaps {
         Ok(out)
     }
 
+    /// Returns a reference to the cpu side [DescriptorHeap] list. The array is indexed by
+    /// [D3D12_DESCRIPTOR_HEAP_TYPE], where the value of the type enum is the index into the array
+    /// for the heap for that type.
+    pub const fn cpu_heaps(&self) -> &[DescriptorHeap; 4] {
+        &self.cpu_heaps
+    }
+
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].
     pub const fn cpu_view_heap(&self) -> &DescriptorHeap {
