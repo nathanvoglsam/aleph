@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use aleph_windows::Win32::Graphics::Direct3D12::*;
+
 /// Internal struct that caches the descriptor increment sizes needed for allocating space in
 /// descriptor heaps.
 pub struct DescriptorHeapInfo {
@@ -45,15 +47,22 @@ pub struct DescriptorHeapInfo {
 
 impl DescriptorHeapInfo {
     pub fn new(device: &dx12::Device) -> Self {
-        Self {
-            resource_inc: device
-                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav),
-            rtv_inc: device
-                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::RenderTargetView),
-            dsv_inc: device
-                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::DepthStencilView),
-            sampler_inc: device
-                .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::Sampler),
+        // Safety: there is no un-safety beyond FFI, the function is thread-safe
+        unsafe {
+            Self {
+                resource_inc: device
+                    .as_raw()
+                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
+                rtv_inc: device
+                    .as_raw()
+                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
+                dsv_inc: device
+                    .as_raw()
+                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
+                sampler_inc: device
+                    .as_raw()
+                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
+            }
         }
     }
 }
