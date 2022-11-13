@@ -29,6 +29,7 @@
 
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use parking_lot::Mutex;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 
 pub struct DescriptorHeap {
     /// The device the heap belongs to
@@ -199,39 +200,6 @@ impl DescriptorHeap {
     }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[repr(transparent)]
-pub struct DescriptorID(pub i32);
-
-impl DescriptorID {
-    /// Represents a 'null' [DescriptorID]
-    #[allow(unused)]
-    pub const NULL: Self = Self(-1);
-
-    /// Constructs a [DescriptorID] based on a slot in the 'flags' array and a bit offset inside the
-    /// flag slot.
-    ///
-    /// This is primarily used inside the [DescriptorHeap] utility, which uses a bitset to encoded
-    /// whether a descriptor is used or not. `slot` is the index into the bitset's [u32] array, and
-    /// `bit` is which bit index in `slot` is being referred to.
-    const fn from_slot_and_bit_offset(slot: u32, bit: i32) -> Self {
-        let base_id = (slot * 32) as i32;
-        Self(base_id + bit)
-    }
-
-    /// Checks if self encodes a null ID
-    #[allow(unused)]
-    pub const fn is_null(&self) -> bool {
-        self.0 < 0
-    }
-
-    /// Checks if self encodes a non-null ID
-    #[allow(unused)]
-    pub const fn is_valid(&self) -> bool {
-        !self.is_null()
-    }
-}
-
 /// The internal state of the [DescriptorHeap]. This is wrapped in a mutex by [DescriptorHeap] for
 /// parallel access.
 struct DescriptorHeapState {
@@ -370,5 +338,94 @@ impl DescriptorHeapState {
         }
 
         self.len -= count;
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[repr(transparent)]
+pub struct DescriptorID(pub i32);
+
+impl DescriptorID {
+    /// Represents a 'null' [DescriptorID]
+    #[allow(unused)]
+    pub const NULL: Self = Self(-1);
+
+    /// Constructs a [DescriptorID] based on a slot in the 'flags' array and a bit offset inside the
+    /// flag slot.
+    ///
+    /// This is primarily used inside the [DescriptorHeap] utility, which uses a bitset to encoded
+    /// whether a descriptor is used or not. `slot` is the index into the bitset's [u32] array, and
+    /// `bit` is which bit index in `slot` is being referred to.
+    const fn from_slot_and_bit_offset(slot: u32, bit: i32) -> Self {
+        let base_id = (slot * 32) as i32;
+        Self(base_id + bit)
+    }
+
+    /// Checks if self encodes a null ID
+    #[allow(unused)]
+    pub const fn is_null(&self) -> bool {
+        self.0 < 0
+    }
+
+    /// Checks if self encodes a non-null ID
+    #[allow(unused)]
+    pub const fn is_valid(&self) -> bool {
+        !self.is_null()
+    }
+}
+
+impl Add<i32> for DescriptorID {
+    type Output = Self;
+
+    fn add(self, rhs: i32) -> Self::Output {
+        Self(self.0.add(rhs))
+    }
+}
+
+impl AddAssign<i32> for DescriptorID {
+    fn add_assign(&mut self, rhs: i32) {
+        self.0.add_assign(rhs)
+    }
+}
+
+impl Sub<i32> for DescriptorID {
+    type Output = Self;
+
+    fn sub(self, rhs: i32) -> Self::Output {
+        Self(self.0.sub(rhs))
+    }
+}
+
+impl SubAssign<i32> for DescriptorID {
+    fn sub_assign(&mut self, rhs: i32) {
+        self.0.sub_assign(rhs)
+    }
+}
+
+impl Mul<i32> for DescriptorID {
+    type Output = Self;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Self(self.0.mul(rhs))
+    }
+}
+
+impl MulAssign<i32> for DescriptorID {
+    fn mul_assign(&mut self, rhs: i32) {
+        self.0.mul_assign(rhs)
+    }
+}
+
+impl Div<i32> for DescriptorID {
+    type Output = Self;
+
+    fn div(self, rhs: i32) -> Self::Output {
+        Self(self.0.sub(rhs))
+    }
+}
+
+impl DivAssign<i32> for DescriptorID {
+    fn div_assign(&mut self, rhs: i32) {
+        self.0.div_assign(rhs)
     }
 }
