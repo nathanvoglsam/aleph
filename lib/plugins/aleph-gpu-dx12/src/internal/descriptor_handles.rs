@@ -35,7 +35,7 @@ use std::num::{NonZeroU64, NonZeroUsize};
 /// optimizations.
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct CPUDescriptorHandle(NonZeroUsize);
+pub struct CPUDescriptorHandle(pub(crate) NonZeroUsize);
 
 #[allow(clippy::should_implement_trait)]
 impl CPUDescriptorHandle {
@@ -46,9 +46,8 @@ impl CPUDescriptorHandle {
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
-    #[inline]
-    pub fn add(self, offset: usize) -> Self {
-        Self(NonZeroUsize::new(self.0.get() + offset).unwrap())
+    pub const fn add(self, offset: usize) -> Self {
+        Self(self.0.saturating_add(offset))
     }
 
     #[inline]
@@ -58,13 +57,11 @@ impl CPUDescriptorHandle {
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
-    #[inline]
-    pub fn add_increments(self, offset: usize, increment: usize) -> Self {
-        Self(NonZeroUsize::new(self.0.get() + (offset * increment)).unwrap())
+    pub const fn add_increments(self, offset: usize, increment: usize) -> Self {
+        self.add(offset * increment)
     }
 
-    #[inline]
-    pub fn get_inner(&self) -> NonZeroUsize {
+    pub const fn get_inner(&self) -> NonZeroUsize {
         self.0
     }
 }
@@ -107,7 +104,7 @@ impl TryFrom<usize> for CPUDescriptorHandle {
 /// optimizations.
 #[repr(transparent)]
 #[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq, Debug, Hash)]
-pub struct GPUDescriptorHandle(NonZeroU64);
+pub struct GPUDescriptorHandle(pub(crate) NonZeroU64);
 
 #[allow(clippy::should_implement_trait)]
 impl GPUDescriptorHandle {
@@ -154,6 +151,23 @@ impl TryFrom<D3D12_GPU_DESCRIPTOR_HANDLE> for GPUDescriptorHandle {
     #[inline]
     fn try_from(value: D3D12_GPU_DESCRIPTOR_HANDLE) -> Result<Self, Self::Error> {
         let value = NonZeroU64::new(value.ptr).ok_or(())?;
+        Ok(Self(value))
+    }
+}
+
+impl From<NonZeroU64> for GPUDescriptorHandle {
+    #[inline]
+    fn from(v: NonZeroU64) -> Self {
+        Self(v)
+    }
+}
+
+impl TryFrom<u64> for GPUDescriptorHandle {
+    type Error = ();
+
+    #[inline]
+    fn try_from(value: u64) -> Result<Self, Self::Error> {
+        let value = NonZeroU64::new(value).ok_or(())?;
         Ok(Self(value))
     }
 }
