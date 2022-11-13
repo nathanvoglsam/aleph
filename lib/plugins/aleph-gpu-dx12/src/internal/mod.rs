@@ -32,6 +32,7 @@ use interfaces::gpu::{Format, TextureCopyAspect};
 pub mod command_list_tracker;
 pub mod conv;
 pub mod descriptor_allocator_cpu;
+pub mod descriptor_handles;
 pub mod descriptor_heap;
 pub mod descriptor_heap_info;
 pub mod descriptor_heaps;

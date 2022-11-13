@@ -29,6 +29,7 @@
 
 use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
+use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
 use aleph_windows::Win32::Graphics::Direct3D12::*;
@@ -59,7 +60,7 @@ declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub images: Vec<(dx12::Resource, dx12::CPUDescriptorHandle)>,
+    pub images: Vec<(dx12::Resource, CPUDescriptorHandle)>,
     pub dxgi_format: dxgi::Format,
     pub dxgi_view_format: dxgi::Format,
 }

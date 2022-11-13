@@ -30,6 +30,7 @@
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
@@ -146,7 +147,7 @@ pub trait ITextureExt: ITexture {
 
     fn get_raw_format(&self) -> dxgi::Format;
 
-    fn get_raw_rtv(&self) -> Option<dx12::CPUDescriptorHandle>;
+    fn get_raw_rtv(&self) -> Option<CPUDescriptorHandle>;
 }
 
 impl ITextureExt for Texture {
@@ -158,7 +159,7 @@ impl ITextureExt for Texture {
         self.inner.get_raw_format()
     }
 
-    fn get_raw_rtv(&self) -> Option<dx12::CPUDescriptorHandle> {
+    fn get_raw_rtv(&self) -> Option<CPUDescriptorHandle> {
         if let TextureInner::Swap(v) = &self.inner {
             Some(v.view)
         } else {
@@ -173,7 +174,7 @@ impl INamedObject for Texture {
     }
 }
 
-type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), dx12::CPUDescriptorHandle>;
+type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), CPUDescriptorHandle>;
 
 pub struct PlainTexture {
     pub(crate) device: AnyArc<Device>,
@@ -190,12 +191,14 @@ impl PlainTexture {
         &self,
         format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
-    ) -> Option<dx12::CPUDescriptorHandle> {
-        let init = |view, format, sub_resources| unsafe {
+    ) -> Option<CPUDescriptorHandle> {
+        let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
             let desc = self.make_rtv_desc_for_format_and_sub_resources(format, &sub_resources);
-            self.device
-                .device
-                .create_render_target_view(&self.resource, &desc, view);
+            self.device.device.as_raw().CreateRenderTargetView(
+                self.resource.as_raw(),
+                &desc,
+                view.into(),
+            );
         };
         self.get_or_create_view_for_usage(
             &self.rtv_cache,
@@ -212,12 +215,14 @@ impl PlainTexture {
         &self,
         format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
-    ) -> Option<dx12::CPUDescriptorHandle> {
-        let init = |view, format, sub_resources| unsafe {
+    ) -> Option<CPUDescriptorHandle> {
+        let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
             let desc = self.make_dsv_desc_for_format_and_sub_resources(format, &sub_resources);
-            self.device
-                .device
-                .create_depth_stencil_view(&self.resource, &desc, view);
+            self.device.device.as_raw().CreateDepthStencilView(
+                self.resource.as_raw(),
+                &desc,
+                view.into(),
+            );
         };
         self.get_or_create_view_for_usage(
             &self.dsv_cache,
@@ -237,8 +242,8 @@ impl PlainTexture {
         format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
         allow_multiple_mips: bool,
-        init: impl FnOnce(dx12::CPUDescriptorHandle, Format, TextureSubResourceSet),
-    ) -> Option<dx12::CPUDescriptorHandle> {
+        init: impl FnOnce(CPUDescriptorHandle, Format, TextureSubResourceSet),
+    ) -> Option<CPUDescriptorHandle> {
         // First see if we already have a compatible view
         //
         // We intentionally take a read lock optimistically as very likely the view is already in
@@ -283,126 +288,159 @@ impl PlainTexture {
         }
     }
 
-    #[inline]
     pub fn make_rtv_desc_for_format_and_sub_resources(
         &self,
         format: Format,
         sub_resources: &TextureSubResourceSet,
-    ) -> dx12::RenderTargetViewDesc {
+    ) -> D3D12_RENDER_TARGET_VIEW_DESC {
         let is_array = self.desc.array_size > 1;
         let is_ms = self.desc.sample_count > 1;
 
-        match (self.desc.dimension, is_array, is_ms) {
-            (TextureDimension::Texture1D, true, _) => dx12::RenderTargetViewDesc::Texture1DArray {
-                format: texture_format_to_dxgi(format),
-                texture_1d_array: dx12::Tex1DArrayRtv {
-                    mip_slice: sub_resources.base_mip_level,
-                    first_array_slice: sub_resources.base_array_slice,
-                    array_size: sub_resources.num_array_slices,
-                },
-            },
-            (TextureDimension::Texture1D, false, _) => dx12::RenderTargetViewDesc::Texture1D {
-                format: texture_format_to_dxgi(format),
-                texture_1d: dx12::Tex1DRtv {
-                    mip_slice: sub_resources.base_mip_level,
-                },
-            },
-            (TextureDimension::Texture2D, true, false) => {
-                dx12::RenderTargetViewDesc::Texture2DArray {
-                    format: texture_format_to_dxgi(format),
-                    texture_2d_array: dx12::Tex2DArrayRtv {
-                        mip_slice: sub_resources.base_mip_level,
-                        first_array_slice: sub_resources.base_array_slice,
-                        array_size: sub_resources.num_array_slices,
-                        plane_slice: 0,
+        let (view_dimension, anonymous) = match (self.desc.dimension, is_array, is_ms) {
+            (TextureDimension::Texture1D, true, _) => (
+                D3D12_RTV_DIMENSION_TEXTURE1DARRAY,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture1DArray: D3D12_TEX1D_ARRAY_RTV {
+                        MipSlice: sub_resources.base_mip_level,
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
                     },
-                }
-            }
-            (TextureDimension::Texture2D, false, false) => dx12::RenderTargetViewDesc::Texture2D {
-                format: texture_format_to_dxgi(format),
-                texture_2d: dx12::Tex2DRtv {
-                    mip_slice: sub_resources.base_mip_level,
-                    plane_slice: 0,
                 },
-            },
-            (TextureDimension::Texture2D, true, true) => {
-                dx12::RenderTargetViewDesc::Texture2DMSArray {
-                    format: texture_format_to_dxgi(format),
-                    texture_2dms_array: dx12::Tex2DMSArrayRtv {
-                        first_array_slice: sub_resources.base_array_slice,
-                        array_size: sub_resources.num_array_slices,
+            ),
+            (TextureDimension::Texture1D, false, _) => (
+                D3D12_RTV_DIMENSION_TEXTURE1D,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture1D: D3D12_TEX1D_RTV {
+                        MipSlice: sub_resources.base_mip_level,
                     },
-                }
-            }
-            (TextureDimension::Texture2D, false, true) => dx12::RenderTargetViewDesc::Texture2DMS {
-                format: texture_format_to_dxgi(format),
-                texture_2dms: dx12::Tex2DMSRtv { _unused: 0 },
-            },
-            (TextureDimension::Texture3D, _, _) => dx12::RenderTargetViewDesc::Texture3D {
-                format: texture_format_to_dxgi(format),
-                texture_3d: dx12::Tex3DRtv {
-                    mip_slice: sub_resources.base_mip_level,
-                    first_w_slice: sub_resources.base_array_slice,
-                    w_size: sub_resources.num_array_slices,
                 },
-            },
+            ),
+            (TextureDimension::Texture2D, true, false) => (
+                D3D12_RTV_DIMENSION_TEXTURE2DARRAY,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DArray: D3D12_TEX2D_ARRAY_RTV {
+                        MipSlice: sub_resources.base_mip_level,
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
+                        PlaneSlice: 0,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, false, false) => (
+                D3D12_RTV_DIMENSION_TEXTURE2D,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_RTV {
+                        MipSlice: sub_resources.base_mip_level,
+                        PlaneSlice: 0,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, true, true) => (
+                D3D12_RTV_DIMENSION_TEXTURE2DMSARRAY,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DMSArray: D3D12_TEX2DMS_ARRAY_RTV {
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, false, true) => (
+                D3D12_RTV_DIMENSION_TEXTURE2DMS,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2DMS: D3D12_TEX2DMS_RTV {
+                        UnusedField_NothingToDefine: 0,
+                    },
+                },
+            ),
+            (TextureDimension::Texture3D, _, _) => (
+                D3D12_RTV_DIMENSION_TEXTURE3D,
+                D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture3D: D3D12_TEX3D_RTV {
+                        MipSlice: sub_resources.base_mip_level,
+                        FirstWSlice: sub_resources.base_array_slice,
+                        WSize: sub_resources.num_array_slices,
+                    },
+                },
+            ),
+        };
+
+        D3D12_RENDER_TARGET_VIEW_DESC {
+            Format: texture_format_to_dxgi(format).into(),
+            ViewDimension: view_dimension,
+            Anonymous: anonymous,
         }
     }
 
-    #[inline]
     pub fn make_dsv_desc_for_format_and_sub_resources(
         &self,
         format: Format,
         sub_resources: &TextureSubResourceSet,
-    ) -> dx12::DepthStencilViewDesc {
+    ) -> D3D12_DEPTH_STENCIL_VIEW_DESC {
         let is_array = self.desc.array_size > 1;
         let is_ms = self.desc.sample_count > 1;
 
-        match (self.desc.dimension, is_array, is_ms) {
-            (TextureDimension::Texture1D, true, _) => dx12::DepthStencilViewDesc::Texture1DArray {
-                format: texture_format_to_dxgi(format),
-                texture_1d_array: dx12::Tex1DArrayDsv {
-                    mip_slice: sub_resources.base_mip_level,
-                    first_array_slice: sub_resources.base_array_slice,
-                    array_size: sub_resources.num_array_slices,
-                },
-            },
-            (TextureDimension::Texture1D, false, _) => dx12::DepthStencilViewDesc::Texture1D {
-                format: texture_format_to_dxgi(format),
-                texture_1d: dx12::Tex1DDsv {
-                    mip_slice: sub_resources.base_mip_level,
-                },
-            },
-            (TextureDimension::Texture2D, true, false) => {
-                dx12::DepthStencilViewDesc::Texture2DArray {
-                    format: texture_format_to_dxgi(format),
-                    texture_2d_array: dx12::Tex2DArrayDsv {
-                        mip_slice: sub_resources.base_mip_level,
-                        first_array_slice: sub_resources.base_array_slice,
-                        array_size: sub_resources.num_array_slices,
+        let (view_dimension, anonymous) = match (self.desc.dimension, is_array, is_ms) {
+            (TextureDimension::Texture1D, true, _) => (
+                D3D12_DSV_DIMENSION_TEXTURE1DARRAY,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture1DArray: D3D12_TEX1D_ARRAY_DSV {
+                        MipSlice: sub_resources.base_mip_level,
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
                     },
-                }
-            }
-            (TextureDimension::Texture2D, false, false) => dx12::DepthStencilViewDesc::Texture2D {
-                format: texture_format_to_dxgi(format),
-                texture_2d: dx12::Tex2DDsv {
-                    mip_slice: sub_resources.base_mip_level,
                 },
-            },
-            (TextureDimension::Texture2D, true, true) => {
-                dx12::DepthStencilViewDesc::Texture2DMSArray {
-                    format: texture_format_to_dxgi(format),
-                    texture_2dms_array: dx12::Tex2DMSArrayDsv {
-                        first_array_slice: sub_resources.base_array_slice,
-                        array_size: sub_resources.num_array_slices,
+            ),
+            (TextureDimension::Texture1D, false, _) => (
+                D3D12_DSV_DIMENSION_TEXTURE1D,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture1D: D3D12_TEX1D_DSV {
+                        MipSlice: sub_resources.base_mip_level,
                     },
-                }
-            }
-            (TextureDimension::Texture2D, false, true) => dx12::DepthStencilViewDesc::Texture2DMS {
-                format: texture_format_to_dxgi(format),
-                texture_2dms: dx12::Tex2DMSDsv { _unused: 0 },
-            },
+                },
+            ),
+            (TextureDimension::Texture2D, true, false) => (
+                D3D12_DSV_DIMENSION_TEXTURE2DARRAY,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture2DArray: D3D12_TEX2D_ARRAY_DSV {
+                        MipSlice: sub_resources.base_mip_level,
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, false, false) => (
+                D3D12_DSV_DIMENSION_TEXTURE2D,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_DSV {
+                        MipSlice: sub_resources.base_mip_level,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, true, true) => (
+                D3D12_DSV_DIMENSION_TEXTURE2DMSARRAY,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture2DMSArray: D3D12_TEX2DMS_ARRAY_DSV {
+                        FirstArraySlice: sub_resources.base_array_slice,
+                        ArraySize: sub_resources.num_array_slices,
+                    },
+                },
+            ),
+            (TextureDimension::Texture2D, false, true) => (
+                D3D12_DSV_DIMENSION_TEXTURE2DMS,
+                D3D12_DEPTH_STENCIL_VIEW_DESC_0 {
+                    Texture2DMS: D3D12_TEX2DMS_DSV {
+                        UnusedField_NothingToDefine: 0,
+                    },
+                },
+            ),
             (TextureDimension::Texture3D, _, _) => unreachable!(),
+        };
+
+        D3D12_DEPTH_STENCIL_VIEW_DESC {
+            Format: texture_format_to_dxgi(format).into(),
+            ViewDimension: view_dimension,
+            Flags: Default::default(),
+            Anonymous: anonymous,
         }
     }
 }
@@ -421,7 +459,7 @@ impl Drop for PlainTexture {
 pub struct SwapTexture {
     pub(crate) swap_chain: AnyArc<SwapChain>,
     pub(crate) resource: dx12::Resource,
-    pub(crate) view: dx12::CPUDescriptorHandle,
+    pub(crate) view: CPUDescriptorHandle,
     pub(crate) desc: TextureDesc,
 }
 

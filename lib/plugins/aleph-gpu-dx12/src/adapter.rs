@@ -33,6 +33,7 @@ use crate::internal::conv::queue_type_to_dx12;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::queue::Queue;
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use dx12::{dxgi, MessageSeverity};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
@@ -114,18 +115,9 @@ impl IAdapter for Adapter {
             _adapter: self.this.upgrade().unwrap(),
             debug_message_cookie,
             descriptor_heap_info: DescriptorHeapInfo::new(&device),
-            rtv_heap: DescriptorAllocatorCPU::new(
-                device.clone(),
-                dx12::DescriptorHeapType::RenderTargetView,
-            ),
-            dsv_heap: DescriptorAllocatorCPU::new(
-                device.clone(),
-                dx12::DescriptorHeapType::DepthStencilView,
-            ),
-            _sampler_heap: DescriptorAllocatorCPU::new(
-                device.clone(),
-                dx12::DescriptorHeapType::Sampler,
-            ),
+            rtv_heap: DescriptorAllocatorCPU::new(&device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
+            dsv_heap: DescriptorAllocatorCPU::new(&device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
+            _sampler_heap: DescriptorAllocatorCPU::new(&device, D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
             device,
             general_queue,
             compute_queue,

@@ -39,6 +39,7 @@ use crate::internal::conv::{
     texture_format_to_dxgi,
 };
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
+use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
@@ -546,20 +547,25 @@ impl Device {
         swap_chain: &dxgi::SwapChain,
         format: dxgi::Format,
         count: u32,
-    ) -> anyhow::Result<Vec<(dx12::Resource, dx12::CPUDescriptorHandle)>> {
+    ) -> anyhow::Result<Vec<(dx12::Resource, CPUDescriptorHandle)>> {
         let mut images = Vec::new();
         for i in 0..count {
             let buffer = swap_chain.get_buffer(i).map_err(|e| anyhow!(e))?;
             let view = self.rtv_heap.allocate().unwrap();
 
-            let desc = dx12::RenderTargetViewDesc::Texture2D {
-                format,
-                texture_2d: dx12::Tex2DRtv {
-                    mip_slice: 0,
-                    plane_slice: 0,
+            let desc = D3D12_RENDER_TARGET_VIEW_DESC {
+                Format: format.into(),
+                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
+                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
+                    Texture2D: D3D12_TEX2D_RTV {
+                        MipSlice: 0,
+                        PlaneSlice: 0,
+                    },
                 },
             };
-            self.device.create_render_target_view(&buffer, &desc, view);
+            self.device
+                .as_raw()
+                .CreateRenderTargetView(buffer.as_raw(), &desc, view.into());
 
             images.push((buffer, view));
         }

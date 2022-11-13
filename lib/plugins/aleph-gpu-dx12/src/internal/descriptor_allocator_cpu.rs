@@ -27,6 +27,8 @@
 // SOFTWARE.
 //
 
+use crate::internal::descriptor_handles::CPUDescriptorHandle;
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use std::num::NonZeroUsize;
@@ -34,16 +36,16 @@ use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
 pub struct DescriptorAllocatorCPU {
     /// Device handle so we can create new blocks on demand
-    device: dx12::Device,
+    device: ID3D12Device,
 
     /// A lock-free 'free list' that is used as a fast path for allocating new descriptors
-    free_list: SegQueue<dx12::CPUDescriptorHandle>,
+    free_list: SegQueue<CPUDescriptorHandle>,
 
     /// State for the bump allocation layer
     bump_state: BumpState,
 
     /// List of descriptor blocks
-    blocks: Mutex<Vec<dx12::DescriptorHeap>>,
+    blocks: Mutex<Vec<ID3D12DescriptorHeap>>,
 
     /// Metadata needed for creating new blocks
     heap_info: HeapInfo,
@@ -51,7 +53,8 @@ pub struct DescriptorAllocatorCPU {
 
 impl DescriptorAllocatorCPU {
     #[allow(unused)]
-    pub fn new(device: dx12::Device, heap_type: dx12::DescriptorHeapType) -> Self {
+    pub fn new(device: &dx12::Device, heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> Self {
+        let device: ID3D12Device = device.as_raw().clone().into();
         let heap_info = HeapInfo::new(&device, heap_type);
         Self {
             device,
@@ -67,7 +70,7 @@ impl DescriptorAllocatorCPU {
     }
 
     #[allow(unused)]
-    pub fn allocate(&self) -> Option<dx12::CPUDescriptorHandle> {
+    pub fn allocate(&self) -> Option<CPUDescriptorHandle> {
         // First we try to pop from the free list, which is lock free.
         if let Some(item) = self.free_list.pop() {
             Some(item)
@@ -77,12 +80,12 @@ impl DescriptorAllocatorCPU {
     }
 
     #[allow(unused)]
-    pub fn free(&self, slot: dx12::CPUDescriptorHandle) {
+    pub fn free(&self, slot: CPUDescriptorHandle) {
         // Free-ing a descriptor is as simple as adding it to the free list
         self.free_list.push(slot);
     }
 
-    fn bump_alloc(&self) -> Option<dx12::CPUDescriptorHandle> {
+    fn bump_alloc(&self) -> Option<CPUDescriptorHandle> {
         loop {
             // Load the current bump ptr
             let slot = self.bump_state.ptr.load(Ordering::Acquire);
@@ -144,7 +147,7 @@ impl DescriptorAllocatorCPU {
                     .compare_exchange_weak(slot, next, Ordering::Acquire, Ordering::Acquire)
                     .is_ok()
                 {
-                    return NonZeroUsize::new(slot).map(dx12::CPUDescriptorHandle::from);
+                    return NonZeroUsize::new(slot).map(CPUDescriptorHandle::from);
                 } else {
                     continue; // If we were racing and lost we have to try again
                 }
@@ -154,8 +157,8 @@ impl DescriptorAllocatorCPU {
 
     fn bump_alloc_new_block(
         &self,
-        blocks: &mut Vec<dx12::DescriptorHeap>,
-    ) -> Option<dx12::CPUDescriptorHandle> {
+        blocks: &mut Vec<ID3D12DescriptorHeap>,
+    ) -> Option<CPUDescriptorHandle> {
         // Set the bump ptr to usize::MAX to "lock" the bump allocator
         self.bump_state.ptr.store(usize::MAX, Ordering::Relaxed);
 
@@ -171,11 +174,12 @@ impl DescriptorAllocatorCPU {
 
         // Get the CPU handle for the start of the new block and calculate the new initial values
         // for the bump allocator
-        let new_base = new_block
-            .get_cpu_descriptor_handle_for_heap_start()
-            .unwrap()
-            .get_inner()
-            .get();
+        let new_base = unsafe {
+            // Get the handle for the heap start and assert it's not a null handle
+            let base = new_block.GetCPUDescriptorHandleForHeapStart();
+            let base = CPUDescriptorHandle::try_from(base).unwrap();
+            base.get_inner().get()
+        };
         let new_end = new_base + (new_block_size as usize * self.heap_info.increment_size as usize);
 
         // Very deliberately we write the end value while .ptr is still usize::MAX so no matter what
@@ -201,21 +205,25 @@ impl DescriptorAllocatorCPU {
         blocks.push(new_block);
 
         // Return our new descriptor handle
-        NonZeroUsize::new(new_base).map(dx12::CPUDescriptorHandle::from)
+        NonZeroUsize::new(new_base).map(CPUDescriptorHandle::from)
     }
 }
 
 impl DescriptorAllocatorCPU {
     fn new_block(
-        device: &dx12::Device,
+        device: &ID3D12Device,
         num_descriptors: u32,
-        heap_type: dx12::DescriptorHeapType,
-    ) -> dx12::DescriptorHeap {
-        let desc = dx12::DescriptorHeapDesc::builder()
-            .heap_type(heap_type)
-            .num_descriptors(num_descriptors)
-            .build();
-        device.create_descriptor_heap(&desc).unwrap()
+        heap_type: D3D12_DESCRIPTOR_HEAP_TYPE,
+    ) -> ID3D12DescriptorHeap {
+        unsafe {
+            let desc = D3D12_DESCRIPTOR_HEAP_DESC {
+                Type: heap_type,
+                NumDescriptors: num_descriptors,
+                Flags: Default::default(),
+                NodeMask: 0,
+            };
+            device.CreateDescriptorHeap(&desc).unwrap()
+        }
     }
 }
 
@@ -226,15 +234,18 @@ struct BumpState {
 }
 
 struct HeapInfo {
-    heap_type: dx12::DescriptorHeapType,
+    heap_type: D3D12_DESCRIPTOR_HEAP_TYPE,
     increment_size: u32,
 }
 
 impl HeapInfo {
-    pub fn new(device: &dx12::Device, heap_type: dx12::DescriptorHeapType) -> Self {
-        Self {
-            heap_type,
-            increment_size: device.get_descriptor_handle_increment_size(heap_type),
+    pub fn new(device: &ID3D12Device, heap_type: D3D12_DESCRIPTOR_HEAP_TYPE) -> Self {
+        // Safety: the function is thread safe, there is no safety issue
+        unsafe {
+            Self {
+                heap_type,
+                increment_size: device.GetDescriptorHandleIncrementSize(heap_type),
+            }
         }
     }
 }

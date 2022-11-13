@@ -76,7 +76,8 @@ impl<'a> Encoder<'a> {
         };
 
         self.list
-            .clear_render_target_view(concrete.view, &buffer, &[]);
+            .as_raw()
+            .ClearRenderTargetView(concrete.view.into(), buffer.as_ptr(), &[]);
         self.parent
             .tracker
             .images
@@ -124,7 +125,9 @@ impl<'a> Encoder<'a> {
                 let view = concrete.get_or_create_rtv_for_usage(None, &level_sub_resources);
 
                 if let Some(view) = view {
-                    self.list.clear_render_target_view(view, &buffer, &[]);
+                    self.list
+                        .as_raw()
+                        .ClearRenderTargetView(view.into(), buffer.as_ptr(), &[]);
                 } else {
                     aleph_log::debug!(
                         "Called IEncoder::clear_texture with TextureSubResourceSet::num_mip_levels = 0."
@@ -159,9 +162,11 @@ impl<'a> Encoder<'a> {
         }
 
         let (depth, stencil, clear_flags) = match value {
-            DepthStencilClearValue::DepthStencil(d, s) => (*d, *s, dx12::ClearFlags::all()),
-            DepthStencilClearValue::Depth(d) => (*d, 0, dx12::ClearFlags::DEPTH),
-            DepthStencilClearValue::Stencil(s) => (0.0, *s, dx12::ClearFlags::STENCIL),
+            DepthStencilClearValue::DepthStencil(d, s) => {
+                (*d, *s, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL)
+            }
+            DepthStencilClearValue::Depth(d) => (*d, 0, D3D12_CLEAR_FLAG_DEPTH),
+            DepthStencilClearValue::Stencil(s) => (0.0, *s, D3D12_CLEAR_FLAG_STENCIL),
         };
 
         let sub_resources = self.clamp_sub_resource_set_to_texture(&concrete.desc, sub_resources);
@@ -183,8 +188,13 @@ impl<'a> Encoder<'a> {
 
                 let view = concrete.get_or_create_dsv_for_usage(None, &level_sub_resources);
                 if let Some(view) = view {
-                    self.list
-                        .clear_depth_stencil_view(view, clear_flags, depth, stencil, &[]);
+                    self.list.as_raw().ClearDepthStencilView(
+                        view.into(),
+                        clear_flags,
+                        depth,
+                        stencil,
+                        &[],
+                    );
                 } else {
                     aleph_log::debug!(
                     "Called IEncoder::clear_depth_stencil_texture with TextureSubResourceSet::num_mip_levels = 0."
