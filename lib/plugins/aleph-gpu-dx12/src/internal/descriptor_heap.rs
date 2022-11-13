@@ -139,11 +139,13 @@ impl DescriptorHeap {
     }
 
     /// Release all descriptors in the heap, resetting it to the empty state
+    #[allow(unused)]
     pub fn reset(&self) {
         self.state.lock().reset();
     }
 
     /// Allocates a contiguous range of 'count'
+    #[allow(unused)]
     pub fn allocate(&self, count: u32) -> Option<DescriptorID> {
         if count == 0 {
             return None;
@@ -153,11 +155,13 @@ impl DescriptorHeap {
     }
 
     /// Release 'count' descriptors, starting from 'id'
+    #[allow(unused)]
     pub fn release(&self, id: DescriptorID, count: u32) {
         self.state.lock().release(id, count)
     }
 
     /// Converts the given 'id' into the [D3D12_CPU_DESCRIPTOR_HANDLE] it represents
+    #[allow(unused)]
     pub const fn id_to_cpu_handle(&self, id: DescriptorID) -> D3D12_CPU_DESCRIPTOR_HANDLE {
         let size = self.descriptor_size as usize;
         let id = id.0 as usize;
@@ -167,6 +171,7 @@ impl DescriptorHeap {
     }
 
     /// Converts the given 'id' into the [D3D12_GPU_DESCRIPTOR_HANDLE] it represents
+    #[allow(unused)]
     pub const fn id_to_gpu_handle(&self, id: DescriptorID) -> D3D12_GPU_DESCRIPTOR_HANDLE {
         let size = self.descriptor_size as u64;
         let id = id.0 as u64;
@@ -176,12 +181,20 @@ impl DescriptorHeap {
     }
 
     /// Returns the [ID3D12DescriptorHeap] that this object encapsulates
-    pub fn heap(&self) -> &ID3D12DescriptorHeap {
+    #[allow(unused)]
+    pub const fn heap(&self) -> &ID3D12DescriptorHeap {
         &self.heap
     }
 
+    /// Returns the [D3D12_DESCRIPTOR_HEAP_TYPE] that this heap stores descriptors for
+    #[allow(unused)]
+    pub fn heap_type(&self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
+        self.r#type
+    }
+
     /// Returns the [ID3D12Device] that this object wraps the heap for
-    pub fn device(&self) -> &ID3D12Device {
+    #[allow(unused)]
+    pub const fn device(&self) -> &ID3D12Device {
         &self.device
     }
 }
@@ -192,6 +205,7 @@ pub struct DescriptorID(pub i32);
 
 impl DescriptorID {
     /// Represents a 'null' [DescriptorID]
+    #[allow(unused)]
     pub const NULL: Self = Self(-1);
 
     /// Constructs a [DescriptorID] based on a slot in the 'flags' array and a bit offset inside the
@@ -200,17 +214,19 @@ impl DescriptorID {
     /// This is primarily used inside the [DescriptorHeap] utility, which uses a bitset to encoded
     /// whether a descriptor is used or not. `slot` is the index into the bitset's [u32] array, and
     /// `bit` is which bit index in `slot` is being referred to.
-    pub const fn from_slot_and_bit_offset(slot: u32, bit: i32) -> Self {
+    const fn from_slot_and_bit_offset(slot: u32, bit: i32) -> Self {
         let base_id = (slot * 32) as i32;
         Self(base_id + bit)
     }
 
     /// Checks if self encodes a null ID
+    #[allow(unused)]
     pub const fn is_null(&self) -> bool {
         self.0 < 0
     }
 
     /// Checks if self encodes a non-null ID
+    #[allow(unused)]
     pub const fn is_valid(&self) -> bool {
         !self.is_null()
     }
@@ -231,14 +247,14 @@ struct DescriptorHeapState {
 
 impl DescriptorHeapState {
     /// Release all descriptors in the heap, resetting it to the empty state
-    pub fn reset(&mut self) {
+    fn reset(&mut self) {
         // Zero out the 'flags' array, which marks all descriptors as free.
         self.flags.iter_mut().for_each(|v| *v = 0);
         self.len = 0;
     }
 
     /// Allocates a contiguous range of 'count'
-    pub fn allocate(&mut self, count: u32) -> Option<DescriptorID> {
+    fn allocate(&mut self, count: u32) -> Option<DescriptorID> {
         // Early exit if the caller asked for 0 descriptors
         if count == 0 {
             return None;
@@ -340,7 +356,7 @@ impl DescriptorHeapState {
     }
 
     /// Release 'count' descriptors, starting from 'id'
-    pub fn release(&mut self, id: DescriptorID, count: u32) {
+    fn release(&mut self, id: DescriptorID, count: u32) {
         if id.is_null() || count == 0 {
             return;
         }

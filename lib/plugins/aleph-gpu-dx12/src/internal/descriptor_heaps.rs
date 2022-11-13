@@ -39,6 +39,7 @@ pub struct DescriptorHeaps {
 }
 
 impl DescriptorHeaps {
+    #[allow(unused)]
     pub fn new(device: &dx12::Device) -> aleph_windows::core::Result<Self> {
         // Construct the CPU side heaps for all 4 descriptor types
         let cpu_heaps = [
@@ -93,42 +94,49 @@ impl DescriptorHeaps {
     /// Returns a reference to the cpu side [DescriptorHeap] list. The array is indexed by
     /// [D3D12_DESCRIPTOR_HEAP_TYPE], where the value of the type enum is the index into the array
     /// for the heap for that type.
+    #[allow(unused)]
     pub const fn cpu_heaps(&self) -> &[DescriptorHeap; 4] {
         &self.cpu_heaps
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].
+    #[allow(unused)]
     pub const fn cpu_view_heap(&self) -> &DescriptorHeap {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER].
+    #[allow(unused)]
     pub const fn cpu_sampler_heap(&self) -> &DescriptorHeap {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_RTV].
+    #[allow(unused)]
     pub const fn cpu_rtv_heap(&self) -> &DescriptorHeap {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_RTV.0 as usize]
     }
 
     /// Returns a reference to the cpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_DSV].
+    #[allow(unused)]
     pub const fn cpu_dsv_heap(&self) -> &DescriptorHeap {
         &self.cpu_heaps[D3D12_DESCRIPTOR_HEAP_TYPE_DSV.0 as usize]
     }
 
     /// Returns a reference to the gpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV].
+    #[allow(unused)]
     pub const fn gpu_view_heap(&self) -> &DescriptorHeap {
         &self.view_heap
     }
 
     /// Returns a reference to the gpu side [DescriptorHeap] for descriptors of type
     /// [D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER].
+    #[allow(unused)]
     pub const fn gpu_sampler_heap(&self) -> &DescriptorHeap {
         &self.sampler_heap
     }

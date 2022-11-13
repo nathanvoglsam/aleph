@@ -50,7 +50,7 @@ pub struct DescriptorAllocatorCPU {
 }
 
 impl DescriptorAllocatorCPU {
-    #[inline]
+    #[allow(unused)]
     pub fn new(device: dx12::Device, heap_type: dx12::DescriptorHeapType) -> Self {
         let heap_info = HeapInfo::new(&device, heap_type);
         Self {
@@ -66,7 +66,7 @@ impl DescriptorAllocatorCPU {
         }
     }
 
-    #[inline]
+    #[allow(unused)]
     pub fn allocate(&self) -> Option<dx12::CPUDescriptorHandle> {
         // First we try to pop from the free list, which is lock free.
         if let Some(item) = self.free_list.pop() {
@@ -76,13 +76,12 @@ impl DescriptorAllocatorCPU {
         }
     }
 
-    #[inline]
+    #[allow(unused)]
     pub fn free(&self, slot: dx12::CPUDescriptorHandle) {
         // Free-ing a descriptor is as simple as adding it to the free list
         self.free_list.push(slot);
     }
 
-    #[inline]
     fn bump_alloc(&self) -> Option<dx12::CPUDescriptorHandle> {
         loop {
             // Load the current bump ptr
@@ -153,7 +152,6 @@ impl DescriptorAllocatorCPU {
         }
     }
 
-    #[inline]
     fn bump_alloc_new_block(
         &self,
         blocks: &mut Vec<dx12::DescriptorHeap>,
