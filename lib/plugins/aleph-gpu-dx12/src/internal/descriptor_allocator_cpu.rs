@@ -28,7 +28,6 @@
 //
 
 use crossbeam::queue::SegQueue;
-use dx12::DescriptorHeap;
 use parking_lot::Mutex;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
@@ -157,7 +156,7 @@ impl DescriptorAllocatorCPU {
     #[inline]
     fn bump_alloc_new_block(
         &self,
-        blocks: &mut Vec<DescriptorHeap>,
+        blocks: &mut Vec<dx12::DescriptorHeap>,
     ) -> Option<dx12::CPUDescriptorHandle> {
         // Set the bump ptr to usize::MAX to "lock" the bump allocator
         self.bump_state.ptr.store(usize::MAX, Ordering::Relaxed);
