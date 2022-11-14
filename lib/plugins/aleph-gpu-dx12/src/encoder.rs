@@ -31,7 +31,8 @@ use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::internal::conv::{
     barrier_access_to_dx12, barrier_sync_to_dx12, decode_u32_color_to_float, image_layout_to_dx12,
-    translate_rendering_color_attachment, translate_rendering_depth_stencil_attachment,
+    translate_barrier_texture_aspect_to_plane_range, translate_rendering_color_attachment,
+    translate_rendering_depth_stencil_attachment,
 };
 use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PushConstantBlockInfo;
@@ -640,6 +641,11 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     D3D12_TEXTURE_BARRIER_FLAGS::empty()
                 };
 
+                let (first_plane, num_planes) = translate_barrier_texture_aspect_to_plane_range(
+                    barrier.subresource_range.aspect,
+                    texture_desc.format,
+                );
+
                 translated_texture_barriers.push(D3D12_TEXTURE_BARRIER {
                     SyncBefore: barrier_sync_to_dx12(barrier.before_sync),
                     SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
@@ -653,8 +659,8 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                         NumMipLevels: barrier.subresource_range.num_mip_levels,
                         FirstArraySlice: barrier.subresource_range.base_array_slice,
                         NumArraySlices: barrier.subresource_range.num_array_slices,
-                        FirstPlane: 0,
-                        NumPlanes: 1,
+                        FirstPlane: first_plane,
+                        NumPlanes: num_planes,
                     },
                     Flags,
                 });
@@ -807,23 +813,23 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 impl<'a> Encoder<'a> {
     fn validate_aspect_against_texture_format(format: Format, aspect: &TextureAspect) {
         if aspect.contains(TextureAspect::COLOR) {
-            if format.is_depth_stencil() {
-                panic!("Texture of format {} has no 'Color' aspect", format);
-            }
+            debug_assert!(
+                !format.is_depth_stencil(),
+                "Texture of format {} has no 'Color' aspect",
+                format
+            );
         } else if aspect.contains(TextureAspect::DEPTH_STENCIL) {
-            if !(format.is_depth() && format.is_stencil()) {
-                panic!(
-                    "Texture of format {} lacks both 'Depth' and 'Stencil' aspect",
-                    format
-                );
-            }
+            debug_assert!(
+                format.is_depth() && format.is_stencil(),
+                "Texture of format {} lacks both 'Depth' and 'Stencil' aspect",
+                format
+            );
         } else if aspect.intersects(TextureAspect::DEPTH_STENCIL) {
-            if !format.is_depth_stencil() {
-                panic!(
-                    "Texture of format {} has no 'Depth' or 'Stencil' aspect",
-                    format
-                );
-            }
+            debug_assert!(
+                format.is_depth_stencil(),
+                "Texture of format {} has no 'Depth' or 'Stencil' aspect",
+                format
+            );
         }
     }
 
@@ -884,6 +890,7 @@ impl<'a> Encoder<'a> {
         set: &TextureSubResourceSet,
     ) {
         Self::validate_aspect_against_texture_format(desc.format, &set.aspect);
+        debug_assert!(!set.aspect.is_empty(), "Specified an empty aspect mask");
         debug_assert!(
             desc.array_size < set.num_array_slices,
             "Specified access to more array slices than a texture has"
