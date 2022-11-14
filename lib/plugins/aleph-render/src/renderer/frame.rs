@@ -36,8 +36,8 @@ use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
     Extent3D, Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture, ImageDataLayout,
-    ImageLayout, TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension,
-    TextureSubResourceSet, UOffset3D,
+    ImageLayout, TextureAspect, TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc,
+    TextureDimension, TextureSubResourceSet, UOffset3D,
 };
 use std::ops::Deref;
 
@@ -154,6 +154,7 @@ impl PerFrameObjects {
             &[TextureBarrier {
                 texture: self.font_staged.as_ref().unwrap().deref(),
                 subresource_range: TextureSubResourceSet {
+                    aspect: TextureAspect::COLOR,
                     base_mip_level: 0,
                     num_mip_levels: 1,
                     base_array_slice: 0,
@@ -199,6 +200,7 @@ impl PerFrameObjects {
             &[TextureBarrier {
                 texture: self.font_staged.as_ref().unwrap().deref(),
                 subresource_range: TextureSubResourceSet {
+                    aspect: TextureAspect::COLOR,
                     base_mip_level: 0,
                     num_mip_levels: 1,
                     base_array_slice: 0,

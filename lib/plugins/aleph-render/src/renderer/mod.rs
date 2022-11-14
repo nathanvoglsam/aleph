@@ -39,7 +39,7 @@ use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
 use interfaces::gpu::{
     AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BeginRenderingInfo,
     ColorClearValue, ICommandList, IGeneralEncoder, ITexture, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, Rect, RenderingColorAttachmentInfo, TextureBarrier,
+    InputAssemblyBufferBinding, Rect, RenderingColorAttachmentInfo, TextureAspect, TextureBarrier,
     TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
@@ -136,6 +136,7 @@ impl EguiRenderer {
                 &[TextureBarrier {
                     texture,
                     subresource_range: TextureSubResourceSet {
+                        aspect: TextureAspect::COLOR,
                         base_mip_level: 0,
                         num_mip_levels: 1,
                         base_array_slice: 0,
@@ -222,6 +223,7 @@ impl EguiRenderer {
                 &[TextureBarrier {
                     texture,
                     subresource_range: TextureSubResourceSet {
+                        aspect: TextureAspect::COLOR,
                         base_mip_level: 0,
                         num_mip_levels: 1,
                         base_array_slice: 0,
