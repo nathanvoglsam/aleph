@@ -36,7 +36,7 @@ use interfaces::gpu::{
     Format, FrontFaceOrder, ImageLayout, OptimalClearValue, PolygonMode, PrimitiveTopology,
     QueueType, RenderingColorAttachmentInfo, RenderingDepthStencilAttachmentInfo,
     SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
-    TextureCreateError, TextureDesc, TextureDimension,
+    TextureAspect, TextureCreateError, TextureDesc, TextureDimension,
 };
 
 /// Internal function for converting texture format to DXGI_FORMAT
@@ -692,5 +692,32 @@ pub fn translate_rendering_depth_stencil_attachment(
         StencilBeginningAccess: translate_beginning_access(&info.stencil_load_op, format),
         DepthEndingAccess: translate_ending_access(&info.depth_store_op),
         StencilEndingAccess: translate_ending_access(&info.stencil_store_op),
+    }
+}
+
+/// Returns (FirstPlane, NumPlanes) for the given barrier texture aspect
+pub const fn translate_barrier_texture_aspect_to_plane_range(
+    aspect: TextureAspect,
+    _format: Format,
+) -> (u32, u32) {
+    if aspect.contains(TextureAspect::DEPTH_STENCIL) {
+        // Depth/stencil formats will always have depth as plane 0 and stencil as plane
+        // 1. We can emit (0, 2) when issuing a barrier for both aspects
+        // unconditionally.
+        (0, 2)
+    } else if aspect.contains(TextureAspect::DEPTH) {
+        // All depth formats we support have depth in plane 0, so we can always emit
+        // (0, 1) without checking the format
+        (0, 1)
+    } else if aspect.contains(TextureAspect::STENCIL) {
+        // We don't support any stencil-only formats, so stencil will always be plane 1.
+        // This means we can always assume (1, 1) for stencil only aspect\
+        (1, 1)
+    } else if aspect.contains(TextureAspect::COLOR) {
+        // All formats we support that have a color aspect have the color in plane zero.
+        // This means we can always assume color aspect to be (0, 1)
+        (0, 1)
+    } else {
+        (0, 0)
     }
 }
