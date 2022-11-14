@@ -1762,6 +1762,23 @@ impl Default for TextureDimension {
     }
 }
 
+bitflags! {
+    #[derive(Default)]
+    pub struct TextureAspect: u32 {
+        /// Bit that specifies the 'color' aspect of a texture
+        const COLOR = 0b00000001;
+
+        /// Bit that specifies the 'depth' aspect of a texture
+        const DEPTH = 0b00000010;
+
+        /// Bit that specifies the 'stencil' aspect of a texture
+        const STENCIL = 0b00000100;
+
+        /// A combination of the [TextureAspect::DEPTH] and [TextureAspect::STENCIL] flags
+        const DEPTH_STENCIL = Self::DEPTH.bits | Self::STENCIL.bits;
+    }
+}
+
 /// An enumeration of all possible input types for initializing a texture's optimal clear color
 /// value
 #[derive(Clone, Debug, PartialEq)]
@@ -2730,7 +2747,7 @@ impl Default for QueueTransitionMode {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 pub struct TextureSubResourceSet {
-    // TODO: aspect mask / image planes
+    pub aspect: TextureAspect,
     pub base_mip_level: u32,
     pub num_mip_levels: u32,
     pub base_array_slice: u32,
