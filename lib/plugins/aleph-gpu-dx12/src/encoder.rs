@@ -34,6 +34,7 @@ use crate::internal::conv::{
     translate_rendering_color_attachment, translate_rendering_depth_stencil_attachment,
 };
 use crate::pipeline::GraphicsPipeline;
+use crate::pipeline_layout::PushConstantBlockInfo;
 use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
 use crate::ITextureExt;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
@@ -41,9 +42,10 @@ use dx12::dxgi;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
-    ColorClearValue, DepthStencilClearValue, GlobalBarrier, IBuffer, IComputeEncoder,
+    ColorClearValue, DepthStencilClearValue, Format, GlobalBarrier, IBuffer, IComputeEncoder,
     IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, Rect, TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
+    InputAssemblyBufferBinding, Rect, TextureAspect, TextureBarrier, TextureDesc,
+    TextureSubResourceSet, Viewport,
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
@@ -410,15 +412,8 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         // the constant block index
         let block = &pipeline.pipeline_layout.push_constant_blocks[block_index];
 
-        debug_assert!(
-            data.len() % 4 == 0,
-            "Push Constant data must have len divisible by 4"
-        );
-
-        debug_assert!(
-            data.len() <= block.size as usize,
-            "Push Constant data larger than the specified block"
-        );
+        #[cfg(debug_assertions)]
+        Self::validate_push_constant_data_buffer(data, block);
 
         self.list
             .set_graphics_root_32bit_constants(block.root_parameter_index, data, 0);
@@ -768,34 +763,12 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             footprint.Footprint.RowPitch = region.src.extent.width * bytes_per_element;
 
             // Debug checking for the buffer data layout
-            debug_assert!(region.src.extent.width > 0, "extent.width must be > 0");
-            debug_assert!(region.src.extent.height > 0, "extent.height must be > 0");
-            debug_assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
-            debug_assert!(
-                footprint.Footprint.RowPitch % 256 == 0,
-                "RowPitch must be a multiple of 256"
-            );
+            #[cfg(debug_assertions)]
+            Self::validate_buffer_to_texture_copy_buffer_layout(region, footprint);
 
             // Debug checking for the destination region
-            let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
-            debug_assert!(
-                dst_maximum.x <= dst.desc().width,
-                "Destination region must not exceed destination width"
-            );
-            debug_assert!(
-                dst_maximum.y <= dst.desc().height,
-                "Destination region must not exceed destination height"
-            );
-            debug_assert!(
-                dst_maximum.z <= dst.desc().depth,
-                "Destination region must not exceed destination depth"
-            );
-            debug_assert!(
-                index.is_some(),
-                "Invalid format ({:#?}) and image aspect ({:#?}) combination",
-                format,
-                region.dst.aspect
-            );
+            #[cfg(debug_assertions)]
+            Self::validate_buffer_to_texture_copy_dest_region(dst, format, &region, index);
 
             self.list.as_raw().CopyTextureRegion(
                 &dst_location,
@@ -818,5 +791,90 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
     unsafe fn end_event(&mut self) {
         end_event_on_list(self.list.as_raw());
+    }
+}
+
+impl<'a> Encoder<'a> {
+    fn validate_buffer_to_texture_copy_buffer_layout(
+        region: &BufferToTextureCopyRegion,
+        footprint: &mut D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
+    ) {
+        debug_assert!(region.src.extent.width > 0, "extent.width must be > 0");
+        debug_assert!(region.src.extent.height > 0, "extent.height must be > 0");
+        debug_assert!(region.src.extent.depth > 0, "extent.depth must be > 0");
+        debug_assert!(
+            footprint.Footprint.RowPitch % 256 == 0,
+            "RowPitch must be a multiple of 256"
+        );
+    }
+
+    fn validate_buffer_to_texture_copy_dest_region(
+        dst: &Texture,
+        format: Format,
+        region: &&BufferToTextureCopyRegion,
+        index: Option<u32>,
+    ) {
+        let dst_maximum = region.dst.origin.maximum_with_extent(&region.dst.extent);
+        debug_assert!(
+            dst_maximum.x <= dst.desc().width,
+            "Destination region must not exceed destination width"
+        );
+        debug_assert!(
+            dst_maximum.y <= dst.desc().height,
+            "Destination region must not exceed destination height"
+        );
+        debug_assert!(
+            dst_maximum.z <= dst.desc().depth,
+            "Destination region must not exceed destination depth"
+        );
+        debug_assert!(
+            index.is_some(),
+            "Invalid format ({:#?}) and image aspect ({:#?}) combination",
+            format,
+            region.dst.aspect
+        );
+    }
+
+    fn validate_push_constant_data_buffer(data: &[u8], block: &PushConstantBlockInfo) {
+        debug_assert!(
+            data.len() % 4 == 0,
+            "Push Constant data must have len divisible by 4"
+        );
+
+        debug_assert!(
+            data.len() <= block.size as usize,
+            "Push Constant data larger than the specified block"
+        );
+    }
+
+    fn validate_sub_resource_range_against_texture(
+        desc: &TextureDesc,
+        set: &TextureSubResourceSet,
+    ) {
+        Self::validate_aspect_against_texture_format(desc.format, &set.aspect);
+        debug_assert!(
+            desc.array_size < set.num_array_slices,
+            "Specified access to more array slices than a texture has"
+        );
+        debug_assert!(
+            desc.mip_levels < set.num_mip_levels,
+            "Specified access to more mip levels than a texture has"
+        );
+        debug_assert!(
+            desc.array_size > set.base_array_slice,
+            "Specified access to texture array outside of array bounds"
+        );
+        debug_assert!(
+            desc.mip_levels > set.base_mip_level,
+            "Specified access to mip levels outside of mip level bounds"
+        );
+        debug_assert!(
+            desc.array_size > set.base_array_slice + set.num_array_slices,
+            "Specified access to texture array outside of array bounds"
+        );
+        debug_assert!(
+            desc.mip_levels > set.base_mip_level + set.num_mip_levels,
+            "Specified access to mip levels outside of mip level bounds"
+        );
     }
 }
