@@ -614,11 +614,18 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         if !texture_barriers.is_empty() {
             for barrier in texture_barriers {
                 // Grab the d3d12 resource handle from our texture impls
-                let resource = barrier
+                let texture = barrier
                     .texture
                     .query_interface::<Texture>()
-                    .map(|v| v.resource().as_raw())
                     .expect("Unknown ITexture implementation");
+                let texture_desc = texture.inner.desc();
+                let resource = texture.resource().as_raw();
+
+                #[cfg(debug_assertions)]
+                Self::validate_sub_resource_range_against_texture(
+                    &texture_desc,
+                    &barrier.subresource_range,
+                );
 
                 // Vulkan initializes layout metadata automatically when transitioning from
                 // undefined to a compressed layout. D3D12 requires a flag to force it, otherwise
@@ -798,6 +805,28 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 }
 
 impl<'a> Encoder<'a> {
+    fn validate_aspect_against_texture_format(format: Format, aspect: &TextureAspect) {
+        if aspect.contains(TextureAspect::COLOR) {
+            if format.is_depth_stencil() {
+                panic!("Texture of format {} has no 'Color' aspect", format);
+            }
+        } else if aspect.contains(TextureAspect::DEPTH_STENCIL) {
+            if !(format.is_depth() && format.is_stencil()) {
+                panic!(
+                    "Texture of format {} lacks both 'Depth' and 'Stencil' aspect",
+                    format
+                );
+            }
+        } else if aspect.intersects(TextureAspect::DEPTH_STENCIL) {
+            if !format.is_depth_stencil() {
+                panic!(
+                    "Texture of format {} has no 'Depth' or 'Stencil' aspect",
+                    format
+                );
+            }
+        }
+    }
+
     fn validate_buffer_to_texture_copy_buffer_layout(
         region: &BufferToTextureCopyRegion,
         footprint: &mut D3D12_PLACED_SUBRESOURCE_FOOTPRINT,
