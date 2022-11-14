@@ -892,11 +892,11 @@ impl<'a> Encoder<'a> {
         Self::validate_aspect_against_texture_format(desc.format, &set.aspect);
         debug_assert!(!set.aspect.is_empty(), "Specified an empty aspect mask");
         debug_assert!(
-            desc.array_size < set.num_array_slices,
+            desc.array_size >= set.num_array_slices,
             "Specified access to more array slices than a texture has"
         );
         debug_assert!(
-            desc.mip_levels < set.num_mip_levels,
+            desc.mip_levels >= set.num_mip_levels,
             "Specified access to more mip levels than a texture has"
         );
         debug_assert!(
@@ -908,11 +908,11 @@ impl<'a> Encoder<'a> {
             "Specified access to mip levels outside of mip level bounds"
         );
         debug_assert!(
-            desc.array_size > set.base_array_slice + set.num_array_slices,
+            desc.array_size >= set.base_array_slice + set.num_array_slices,
             "Specified access to texture array outside of array bounds"
         );
         debug_assert!(
-            desc.mip_levels > set.base_mip_level + set.num_mip_levels,
+            desc.mip_levels >= set.base_mip_level + set.num_mip_levels,
             "Specified access to mip levels outside of mip level bounds"
         );
     }
