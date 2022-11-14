@@ -118,6 +118,7 @@ impl<'a> Encoder<'a> {
             let end = begin + sub_resources.num_mip_levels;
             for level in begin..end {
                 let level_sub_resources = TextureSubResourceSet {
+                    aspect: Default::default(),
                     base_mip_level: level,
                     num_mip_levels: 1,
                     base_array_slice: sub_resources.base_array_slice,
@@ -182,6 +183,7 @@ impl<'a> Encoder<'a> {
             let end = begin + sub_resources.num_mip_levels;
             for level in begin..end {
                 let level_sub_resources = TextureSubResourceSet {
+                    aspect: Default::default(),
                     base_mip_level: level,
                     num_mip_levels: 1,
                     base_array_slice: sub_resources.base_array_slice,
@@ -275,6 +277,7 @@ impl<'a> Encoder<'a> {
         }
 
         TextureSubResourceSet {
+            aspect: sub_resources.aspect, // TODO: should we clamp this too?
             base_mip_level,
             num_mip_levels,
             base_array_slice,
