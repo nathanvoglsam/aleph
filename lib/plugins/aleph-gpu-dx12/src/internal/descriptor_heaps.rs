@@ -41,7 +41,7 @@ pub struct DescriptorHeaps {
 
 impl DescriptorHeaps {
     #[allow(unused)]
-    pub fn new(device: &dx12::Device) -> aleph_windows::core::Result<Self> {
+    pub fn new(device: &ID3D12Device) -> aleph_windows::core::Result<Self> {
         // Construct the CPU side heaps for all 4 descriptor types
         let cpu_heaps = [
             DescriptorAllocatorCPU::new(device, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
@@ -52,13 +52,13 @@ impl DescriptorHeaps {
 
         // Construct the two GPU visible heaps
         let view_heap = DescriptorHeap::new(
-            device.as_raw().into(),
+            device,
             D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
             D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1,
             true,
         )?;
         let sampler_heap = DescriptorHeap::new(
-            device.as_raw().into(),
+            device,
             D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
             D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE,
             true,

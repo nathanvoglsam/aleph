@@ -108,7 +108,8 @@ impl IAdapter for Adapter {
             None
         };
 
-        let descriptor_heaps = DescriptorHeaps::new(&device).map_err(|e| anyhow!(e))?;
+        let descriptor_heaps =
+            DescriptorHeaps::new(device.as_raw().into()).map_err(|e| anyhow!(e))?;
 
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {
