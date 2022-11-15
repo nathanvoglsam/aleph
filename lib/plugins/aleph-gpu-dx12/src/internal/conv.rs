@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use aleph_windows::Win32::Graphics::Direct3D::*;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use aleph_windows::Win32::Graphics::Dxgi::Common::*;
 use dx12::dxgi;
@@ -192,27 +193,27 @@ pub const fn compare_op_to_dx12(op: CompareOp) -> dx12::ComparisonFunc {
 
 pub const fn primitive_topology_to_dx12(
     primitive_topology: PrimitiveTopology,
-) -> (dx12::PrimitiveTopologyType, dx12::PrimitiveTopology) {
+) -> (dx12::PrimitiveTopologyType, D3D_PRIMITIVE_TOPOLOGY) {
     match primitive_topology {
         PrimitiveTopology::PointList => (
             dx12::PrimitiveTopologyType::Point,
-            dx12::PrimitiveTopology::PointList,
+            D3D_PRIMITIVE_TOPOLOGY_POINTLIST,
         ),
         PrimitiveTopology::LineList => (
             dx12::PrimitiveTopologyType::Line,
-            dx12::PrimitiveTopology::LineList,
+            D3D_PRIMITIVE_TOPOLOGY_LINELIST,
         ),
         PrimitiveTopology::LineStrip => (
             dx12::PrimitiveTopologyType::Line,
-            dx12::PrimitiveTopology::LineStrip,
+            D3D_PRIMITIVE_TOPOLOGY_LINESTRIP,
         ),
         PrimitiveTopology::TriangleList => (
             dx12::PrimitiveTopologyType::Triangle,
-            dx12::PrimitiveTopology::TriangleList,
+            D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
         ),
         PrimitiveTopology::TriangleStrip => (
             dx12::PrimitiveTopologyType::Triangle,
-            dx12::PrimitiveTopology::TriangleStrip,
+            D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
         ),
     }
 }

@@ -31,7 +31,8 @@ use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
 use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::in_flight_command_list::ReturnToPool;
-use dx12::D3D12Object;
+use aleph_windows::core::PCWSTR;
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use interfaces::any::{declare_interfaces, AnyArc, IAny};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -43,8 +44,8 @@ pub struct CommandList {
     pub(crate) pool: AnyArc<CommandPool>,
     pub(crate) tracker: CommandListTracker,
     pub(crate) list_type: QueueType,
-    pub(crate) allocator: dx12::CommandAllocator,
-    pub(crate) list: dx12::GraphicsCommandList,
+    pub(crate) allocator: ID3D12CommandAllocator,
+    pub(crate) list: ID3D12GraphicsCommandList7,
 }
 
 declare_interfaces!(CommandList, [ICommandList, ICommandListExt]);
@@ -60,7 +61,7 @@ impl ICommandList for CommandList {
             // the command allocator
             unsafe {
                 self.list
-                    .reset::<(), _>(&self.allocator, None)
+                    .Reset(&self.allocator, None)
                     .map_err(|v| anyhow!(v))?;
             }
 
@@ -112,24 +113,33 @@ impl ReturnToPool for CommandList {
 }
 
 pub trait ICommandListExt: IAny {
-    fn get_raw_allocator(&self) -> dx12::CommandAllocator;
+    fn get_raw_allocator(&self) -> ID3D12CommandAllocator;
 
-    fn get_raw_list(&self) -> dx12::GraphicsCommandList;
+    fn get_raw_list(&self) -> ID3D12GraphicsCommandList7;
 }
 
 impl ICommandListExt for CommandList {
-    fn get_raw_allocator(&self) -> dx12::CommandAllocator {
+    fn get_raw_allocator(&self) -> ID3D12CommandAllocator {
         self.allocator.clone()
     }
 
-    fn get_raw_list(&self) -> dx12::GraphicsCommandList {
+    fn get_raw_list(&self) -> ID3D12GraphicsCommandList7 {
         self.list.clone()
     }
 }
 
 impl INamedObject for CommandList {
     fn set_name(&self, name: &str) {
-        self.allocator.set_name(name).unwrap();
-        self.list.set_name(name).unwrap();
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.allocator.SetName(name).unwrap();
+        }
+
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.list.SetName(name).unwrap();
+        }
     }
 }

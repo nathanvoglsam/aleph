@@ -28,6 +28,7 @@
 //
 
 use crate::pipeline_layout::PipelineLayout;
+use aleph_windows::Win32::Graphics::Direct3D::*;
 use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
@@ -39,7 +40,7 @@ pub struct GraphicsPipeline {
 
     /// Vulkan bakes this into the pipeline, d3d12 doesn't. We have to behave like vulkan as vulkan
     /// can't do the reverse.
-    pub(crate) primitive_topology: dx12::PrimitiveTopology,
+    pub(crate) primitive_topology: D3D_PRIMITIVE_TOPOLOGY,
 
     /// Vulkan specifies these values in the pipeline, d3d12 doesn't. Again we need to behave like
     /// vulkan. D3D12 passes these values when the vertex buffers are bound, so we need to hold on

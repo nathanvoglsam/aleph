@@ -29,6 +29,7 @@
 
 use crate::command_list::CommandList;
 use crate::device::Device;
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
@@ -47,24 +48,28 @@ pub struct CommandPool {
 
 declare_interfaces!(CommandPool, [ICommandPool]);
 
-pub type CommandPoolFreeListItem = (dx12::CommandAllocator, dx12::GraphicsCommandList);
+pub type CommandPoolFreeListItem = (ID3D12CommandAllocator, ID3D12GraphicsCommandList7);
 
 impl CommandPool {
     fn new_list(
         &self,
-        list_type: dx12::CommandListType,
+        list_type: D3D12_COMMAND_LIST_TYPE,
     ) -> anyhow::Result<CommandPoolFreeListItem> {
-        let allocator = self
-            .device
-            .device
-            .create_command_allocator(list_type)
-            .map_err(|v| anyhow!(v))?;
+        let allocator = unsafe {
+            self.device
+                .device
+                .as_raw()
+                .CreateCommandAllocator(list_type)
+                .map_err(|v| anyhow!(v))?
+        };
 
-        let list = self
-            .device
-            .device
-            .create_graphics_command_list(list_type)
-            .map_err(|v| anyhow!(v))?;
+        let list = unsafe {
+            self.device
+                .device
+                .as_raw()
+                .CreateCommandList1(0, list_type, Default::default())
+                .map_err(|v| anyhow!(v))?
+        };
 
         Ok((allocator, list))
     }
@@ -90,11 +95,11 @@ impl ICommandPool for CommandPool {
     fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError> {
         let (allocator, list) = if let Some(v) = self.general_free_list.pop() {
             unsafe {
-                v.0.reset().map_err(|v| anyhow!(v))?;
+                v.0.Reset().map_err(|v| anyhow!(v))?;
                 v
             }
         } else {
-            self.new_list(dx12::CommandListType::Direct)?
+            self.new_list(D3D12_COMMAND_LIST_TYPE_DIRECT)?
         };
 
         let command_list = CommandList {

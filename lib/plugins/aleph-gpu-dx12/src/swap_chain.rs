@@ -29,9 +29,9 @@
 
 use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
-use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
+use crate::CPUDescriptorHandle;
 use crossbeam::atomic::AtomicCell;
 use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};

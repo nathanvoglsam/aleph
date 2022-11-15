@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::internal::descriptor_handles::CPUDescriptorHandle;
+use crate::CPUDescriptorHandle;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;

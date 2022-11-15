@@ -27,17 +27,19 @@
 // SOFTWARE.
 //
 
-use dx12::D3D12Object;
+use crate::GPUDescriptorHandle;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct Buffer {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) resource: dx12::Resource,
-    pub(crate) base_address: dx12::GPUDescriptorHandle,
+    pub(crate) resource: ID3D12Resource,
+    pub(crate) base_address: GPUDescriptorHandle,
     pub(crate) desc: BufferDesc,
     pub(crate) debug_mapped_tracker: AtomicBool,
 }
@@ -69,13 +71,20 @@ impl IBuffer for Buffer {
             .is_ok());
 
         // TODO: should we expose 'read_range'?
-        let ptr = self.resource.map(0, None).map_err(|v| anyhow!(v))?;
-        ptr.ok_or(ResourceMapError::MappedNullPointer)
+        unsafe {
+            let mut ptr = std::ptr::null_mut();
+            self.resource
+                .Map(0, std::ptr::null(), &mut ptr)
+                .map_err(|v| anyhow!(v))?;
+            NonNull::new(ptr as *mut u8).ok_or(ResourceMapError::MappedNullPointer)
+        }
     }
 
     fn unmap(&self) {
         // TODO: should we expose 'written_range'
-        self.resource.unmap(0, None);
+        unsafe {
+            self.resource.Unmap(0, std::ptr::null());
+        }
 
         // Debug check for tracking that the resource is mapped when trying to unmap it
         debug_assert!(self
@@ -94,17 +103,21 @@ impl IBuffer for Buffer {
 }
 
 pub trait IBufferExt: IBuffer {
-    fn get_raw_handle(&self) -> dx12::Resource;
+    fn get_raw_handle(&self) -> ID3D12Resource;
 }
 
 impl IBufferExt for Buffer {
-    fn get_raw_handle(&self) -> dx12::Resource {
+    fn get_raw_handle(&self) -> ID3D12Resource {
         self.resource.clone()
     }
 }
 
 impl INamedObject for Buffer {
     fn set_name(&self, name: &str) {
-        self.resource.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.resource.SetName(name).unwrap();
+        }
     }
 }

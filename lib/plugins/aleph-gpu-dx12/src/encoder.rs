@@ -38,8 +38,9 @@ use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PushConstantBlockInfo;
 use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
 use crate::ITextureExt;
+use aleph_windows::Win32::Foundation::RECT;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
-use dx12::dxgi;
+use aleph_windows::Win32::Graphics::Dxgi::Common::*;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
@@ -52,7 +53,7 @@ use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
 
 pub struct Encoder<'a> {
-    pub(crate) list: dx12::GraphicsCommandList,
+    pub(crate) list: ID3D12GraphicsCommandList7,
     pub(crate) parent: &'a mut CommandList,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
@@ -61,7 +62,7 @@ pub struct Encoder<'a> {
 impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
         // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
-        unsafe { self.list.close().unwrap() }
+        unsafe { self.list.Close().unwrap() }
     }
 }
 
@@ -79,7 +80,6 @@ impl<'a> Encoder<'a> {
         };
 
         self.list
-            .as_raw()
             .ClearRenderTargetView(concrete.view.into(), buffer.as_ptr(), &[]);
         self.parent
             .tracker
@@ -130,7 +130,6 @@ impl<'a> Encoder<'a> {
 
                 if let Some(view) = view {
                     self.list
-                        .as_raw()
                         .ClearRenderTargetView(view.into(), buffer.as_ptr(), &[]);
                 } else {
                     aleph_log::debug!(
@@ -193,13 +192,8 @@ impl<'a> Encoder<'a> {
 
                 let view = concrete.get_or_create_dsv_for_usage(None, &level_sub_resources);
                 if let Some(view) = view {
-                    self.list.as_raw().ClearDepthStencilView(
-                        view.into(),
-                        clear_flags,
-                        depth,
-                        stencil,
-                        &[],
-                    );
+                    self.list
+                        .ClearDepthStencilView(view.into(), clear_flags, depth, stencil, &[]);
                 } else {
                     aleph_log::debug!(
                     "Called IEncoder::clear_depth_stencil_texture with TextureSubResourceSet::num_mip_levels = 0."
@@ -291,17 +285,17 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
         if let Some(concrete) = pipeline.query_interface::<GraphicsPipeline>() {
             // Binds the pipeline
-            self.list.set_pipeline_state(&concrete.pipeline);
+            self.list.SetPipelineState(concrete.pipeline.as_raw());
 
             // A pipeline is inseparable from its' root signature so we need to bind it here too
             self.list
-                .set_graphics_root_signature(&concrete.pipeline_layout.root_signature);
+                .SetGraphicsRootSignature(concrete.pipeline_layout.root_signature.as_raw());
 
             // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
             // defers the full specification to this call below. Vulkan can't implement D3D12's
             // behavior so we have to be like vulkan here so we also set the primitive topology
             self.list
-                .ia_set_primitive_topology(concrete.primitive_topology);
+                .IASetPrimitiveTopology(concrete.primitive_topology);
 
             // Update the state for input binding strides. These get read when binding vertex
             // buffers to fill in the 'stride' field. Vulkan bakes these into the pipeline where
@@ -324,7 +318,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        let views: Vec<dx12::VertexBufferView> = bindings
+        let views: Vec<D3D12_VERTEX_BUFFER_VIEW> = bindings
             .iter()
             .enumerate()
             .map(|(i, v)| {
@@ -338,14 +332,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
                 let size_in_bytes = buffer.desc.size as u32;
 
-                dx12::VertexBufferView {
-                    buffer_location,
-                    size_in_bytes,
-                    stride_in_bytes: self.input_binding_strides[i + first_binding as usize],
+                D3D12_VERTEX_BUFFER_VIEW {
+                    BufferLocation: buffer_location.get_inner().get(),
+                    SizeInBytes: size_in_bytes,
+                    StrideInBytes: self.input_binding_strides[i + first_binding as usize],
                 }
             })
             .collect();
-        self.list.ia_set_vertex_buffers(first_binding, &views);
+        self.list.IASetVertexBuffers(first_binding, &views);
     }
 
     unsafe fn bind_index_buffer(
@@ -363,44 +357,44 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
         let size_in_bytes = buffer.desc.size as u32;
 
-        let view = dx12::IndexBufferView {
-            buffer_location,
-            size_in_bytes,
-            format: match index_type {
-                IndexType::U16 => dxgi::Format::R16Uint,
-                IndexType::U32 => dxgi::Format::R32Uint,
+        let view = D3D12_INDEX_BUFFER_VIEW {
+            BufferLocation: buffer_location.get_inner().get(),
+            SizeInBytes: size_in_bytes,
+            Format: match index_type {
+                IndexType::U16 => DXGI_FORMAT_R16_UINT,
+                IndexType::U32 => DXGI_FORMAT_R32_UINT,
             },
         };
-        self.list.ia_set_index_buffer(&view);
+        self.list.IASetIndexBuffer(&view);
     }
 
     unsafe fn set_viewports(&mut self, viewports: &[Viewport]) {
-        let viewports: Vec<dx12::Viewport> = viewports
+        let viewports: Vec<D3D12_VIEWPORT> = viewports
             .iter()
-            .map(|v| dx12::Viewport {
-                top_left_x: v.x,
-                top_left_y: v.y,
-                width: v.width,
-                height: v.height,
-                min_depth: v.min_depth,
-                max_depth: v.max_depth,
+            .map(|v| D3D12_VIEWPORT {
+                TopLeftX: v.x,
+                TopLeftY: v.x,
+                Width: v.width,
+                Height: v.height,
+                MinDepth: v.min_depth,
+                MaxDepth: v.max_depth,
             })
             .collect();
-        self.list.rs_set_viewports(&viewports);
+        self.list.RSSetViewports(&viewports);
     }
 
     unsafe fn set_scissor_rects(&mut self, rects: &[Rect]) {
         // TODO: bump allocator on self for temp allocations like this
-        let rects: Vec<dx12::Rect> = rects
+        let rects: Vec<RECT> = rects
             .iter()
-            .map(|v| dx12::Rect {
+            .map(|v| RECT {
                 left: v.x as i32,
                 top: v.y as i32,
                 right: (v.x + v.w) as i32,
                 bottom: (v.y + v.h) as i32,
             })
             .collect();
-        self.list.rs_set_scissor_rects(&rects);
+        self.list.RSSetScissorRects(&rects);
     }
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]) {
@@ -419,8 +413,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         #[cfg(debug_assertions)]
         Self::validate_push_constant_data_buffer(data, block);
 
-        self.list
-            .set_graphics_root_32bit_constants(block.root_parameter_index, data, 0);
+        let num32_bit_values_to_set = (data.len() / 4) as u32;
+        let p_src_data = data.as_ptr();
+        self.list.SetGraphicsRoot32BitConstants(
+            block.root_parameter_index,
+            num32_bit_values_to_set,
+            p_src_data as *const _,
+            0,
+        );
     }
 
     unsafe fn clear_texture(
@@ -501,7 +501,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             .map(|_| unimplemented!("Depth stencil not implemented yet"))
             .unwrap_or(std::ptr::null());
 
-        self.list.as_raw().BeginRenderPass(
+        self.list.BeginRenderPass(
             &color_attachments,
             depth_stencil_ref,
             D3D12_RENDER_PASS_FLAG_ALLOW_UAV_WRITES, // TODO: This *could* be suboptimal
@@ -509,7 +509,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn end_rendering(&mut self) {
-        self.list.as_raw().EndRenderPass();
+        self.list.EndRenderPass();
     }
 
     unsafe fn draw(
@@ -520,7 +520,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
     ) {
         self.list
-            .draw_instanced(vertex_count, instance_count, first_vertex, first_instance)
+            .DrawInstanced(vertex_count, instance_count, first_vertex, first_instance)
     }
 
     unsafe fn draw_indexed(
@@ -531,7 +531,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_instance: u32,
         vertex_offset: i32,
     ) {
-        self.list.draw_indexed_instanced(
+        self.list.DrawIndexedInstanced(
             index_count,
             instance_count,
             first_index,
@@ -544,7 +544,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 impl<'a> IComputeEncoder for Encoder<'a> {
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         self.list
-            .dispatch(group_count_x, group_count_y, group_count_z);
+            .Dispatch(group_count_x, group_count_y, group_count_z);
     }
 }
 
@@ -597,7 +597,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     SyncAfter: barrier_sync_to_dx12(barrier.after_sync),
                     AccessBefore: barrier_access_to_dx12(barrier.before_access),
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
-                    pResource: Some(resource.resource.as_raw().clone()),
+                    pResource: Some(resource.resource.clone()),
                     Offset: barrier.offset,
                     Size: barrier.size,
                 });
@@ -674,7 +674,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             });
         }
 
-        self.list.as_raw().Barrier(
+        self.list.Barrier(
             barrier_groups.len() as _,
             if barrier_groups.is_empty() {
                 std::ptr::null()
@@ -698,10 +698,10 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             .expect("Unknown IBuffer implementation");
 
         for region in regions {
-            self.list.as_raw().CopyBufferRegion(
-                dst.resource.as_raw(),
+            self.list.CopyBufferRegion(
+                &dst.resource,
                 region.dst_offset,
-                src.resource.as_raw(),
+                &src.resource,
                 region.src_offset,
                 region.size,
             );
@@ -725,7 +725,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         let format = dst.inner.desc().format;
         let bytes_per_element = format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(src.resource.as_raw().clone()),
+            pResource: Some(src.resource.clone()),
             Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
@@ -786,7 +786,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             #[cfg(debug_assertions)]
             Self::validate_buffer_to_texture_copy_dest_region(dst, format, &region, index);
 
-            self.list.as_raw().CopyTextureRegion(
+            self.list.CopyTextureRegion(
                 &dst_location,
                 region.dst.origin.x,
                 region.dst.origin.y,
@@ -798,15 +798,15 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        set_marker_on_list(self.list.as_raw(), color.0.into(), message);
+        set_marker_on_list(&self.list, color.0.into(), message);
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        begin_event_on_list(self.list.as_raw(), color.0.into(), message);
+        begin_event_on_list(&self.list, color.0.into(), message);
     }
 
     unsafe fn end_event(&mut self) {
-        end_event_on_list(self.list.as_raw());
+        end_event_on_list(&self.list);
     }
 }
 

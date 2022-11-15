@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use crate::internal::descriptor_handles::{CPUDescriptorHandle, GPUDescriptorHandle};
+use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use parking_lot::Mutex;
 use std::num::{NonZeroU64, NonZeroUsize};

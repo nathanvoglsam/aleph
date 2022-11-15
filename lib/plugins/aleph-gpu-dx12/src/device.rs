@@ -38,7 +38,6 @@ use crate::internal::conv::{
     stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
     texture_format_to_dxgi,
 };
-use crate::internal::descriptor_handles::CPUDescriptorHandle;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
@@ -47,6 +46,8 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::{PlainTexture, Texture, TextureInner};
+use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
+use aleph_windows::Win32::Graphics::Direct3D::*;
 use aleph_windows::Win32::Graphics::Direct3D12::*;
 use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use crossbeam::queue::SegQueue;
@@ -427,10 +428,10 @@ impl IDevice for Device {
                     0,
                     std::ptr::null(),
                 )
-                .map(|v| std::mem::transmute::<_, dx12::Resource>(v))
                 .map_err(|v| anyhow!(v))?
         };
-        let base_address = resource.get_gpu_virtual_address().unwrap();
+        let base_address =
+            unsafe { GPUDescriptorHandle::try_from(resource.GetGPUVirtualAddress()).unwrap() };
 
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
@@ -681,7 +682,7 @@ impl Device {
         mut builder: dx12::GraphicsPipelineStateStreamBuilder<'b>,
     ) -> (
         dx12::GraphicsPipelineStateStreamBuilder<'b>,
-        dx12::PrimitiveTopology,
+        D3D_PRIMITIVE_TOPOLOGY,
     ) {
         // Once again, we adopt a Vulkan model when handling primitive topology. DX12's pipeline
         // state object only takes a "primitive class" of point, line or triangle. Whether it's a

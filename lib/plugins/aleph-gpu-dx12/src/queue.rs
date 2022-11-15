@@ -30,8 +30,9 @@
 use crate::acquired_texture::AcquiredTexture;
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
+use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
-use dx12::{AsWeakRef, D3D12Object};
+use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -152,7 +153,8 @@ impl IQueue for Queue {
         let index = {
             let _lock = self.submit_lock.lock();
             self.handle
-                .execute_command_lists(&[command_list.list.as_weak()]);
+                .as_raw()
+                .ExecuteCommandLists(&[Some(command_list.list.clone().into())]);
 
             let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
             self.handle
@@ -193,10 +195,10 @@ impl IQueue for Queue {
         let index = {
             let _lock = self.submit_lock.lock();
 
-            let handles: Vec<dx12::GraphicsCommandList> =
-                lists.iter().map(|v| v.list.clone()).collect();
+            let handles: Vec<Option<ID3D12CommandList>> =
+                lists.iter().map(|v| Some(v.list.clone().into())).collect();
 
-            self.handle.execute_command_lists_strong(&handles);
+            self.handle.as_raw().ExecuteCommandLists(&handles);
 
             let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
             self.handle
