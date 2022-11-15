@@ -30,7 +30,7 @@
 mod frame;
 mod global;
 
-use crate::dx12;
+use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::*;
 use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
@@ -97,7 +97,7 @@ impl EguiRenderer {
             .create_command_list()
             .unwrap();
 
-        let command_list: dx12::GraphicsCommandList = list
+        let command_list: ID3D12GraphicsCommandList7 = list
             .deref()
             .query_interface::<dyn ICommandListExt>()
             .unwrap()
@@ -269,7 +269,7 @@ impl EguiRenderer {
     unsafe fn bind_resources(
         &self,
         index: usize,
-        command_list: &dx12::GraphicsCommandList,
+        command_list: &ID3D12GraphicsCommandList7,
         encoder: &mut dyn IGeneralEncoder,
     ) {
         encoder.bind_graphics_pipeline(self.global.graphics_pipeline.deref());
@@ -277,12 +277,13 @@ impl EguiRenderer {
         //
         // Bind the descriptor heap
         //
-        command_list.set_descriptor_heaps(&[self.global.srv_heap.clone()]);
+        let heaps = [Some(self.global.srv_heap.as_raw().clone())];
+        command_list.SetDescriptorHeaps(&heaps);
 
         //
         // Bind the texture
         //
-        command_list.set_graphics_root_descriptor_table(0, self.frames[index].font_gpu_srv);
+        command_list.SetGraphicsRootDescriptorTable(0, self.frames[index].font_gpu_srv.into());
 
         //
         // Push screen size via root constants

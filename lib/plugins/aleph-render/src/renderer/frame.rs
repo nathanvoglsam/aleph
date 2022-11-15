@@ -31,7 +31,7 @@ use crate::dx12;
 use crate::dx12::dxgi;
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
-use aleph_gpu_dx12::{IBufferExt, IDeviceExt, ITextureExt};
+use aleph_gpu_dx12::{IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
@@ -132,15 +132,13 @@ impl PerFrameObjects {
         self.font_staged_size = dimensions;
 
         // Map and write the texture data to our staging buffer
-        let resource = self
-            .font_staging_buffer
-            .query_interface::<dyn IBufferExt>()
+
+        self.font_staging_buffer
+            .map()
             .unwrap()
-            .get_raw_handle();
-        let ptr = resource.map(0, Some(0..0)).unwrap().unwrap();
-        ptr.as_ptr()
+            .as_ptr()
             .copy_from_nonoverlapping(texture.bytes.as_ptr(), texture.bytes.len());
-        resource.unmap(0, None);
+        self.font_staging_buffer.unmap();
     }
 
     pub unsafe fn record_texture_upload(&mut self, encoder: &mut dyn IGeneralEncoder) {
