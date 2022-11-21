@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
-use crate::dx12;
-use crate::dx12::dxgi;
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
-use aleph_gpu_dx12::{IDeviceExt, ITextureExt};
+use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::*;
+use aleph_gpu_dx12::windows::Win32::Graphics::Dxgi::Common::*;
+use aleph_gpu_dx12::{
+    CPUDescriptorHandle, ComponentMapping, GPUDescriptorHandle, IDeviceExt, ITextureExt,
+};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
@@ -52,8 +54,8 @@ pub struct PerFrameObjects {
 
     pub font_staged: Option<AnyArc<dyn ITexture>>,
     pub font_staged_size: (u32, u32),
-    pub font_cpu_srv: dx12::CPUDescriptorHandle,
-    pub font_gpu_srv: dx12::GPUDescriptorHandle,
+    pub font_cpu_srv: CPUDescriptorHandle,
+    pub font_gpu_srv: GPUDescriptorHandle,
 }
 
 impl PerFrameObjects {
@@ -80,19 +82,23 @@ impl PerFrameObjects {
 
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
-        let size = device
-            .get_raw_handle()
-            .get_descriptor_handle_increment_size(dx12::DescriptorHeapType::CbvSrvUav);
-        let font_cpu_srv = global
-            .srv_heap
-            .get_cpu_descriptor_handle_for_heap_start()
-            .unwrap()
-            .add(index * size as usize);
-        let font_gpu_srv = global
-            .srv_heap
-            .get_gpu_descriptor_handle_for_heap_start()
-            .unwrap()
-            .add(index as u64 * size as u64);
+        let size = unsafe {
+            device
+                .get_raw_handle()
+                .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
+        };
+        let font_cpu_srv = unsafe {
+            let raw = global.srv_heap.GetCPUDescriptorHandleForHeapStart();
+            CPUDescriptorHandle::try_from(raw)
+                .unwrap()
+                .add(index * size as usize)
+        };
+        let font_gpu_srv = unsafe {
+            let raw = global.srv_heap.GetGPUDescriptorHandleForHeapStart();
+            GPUDescriptorHandle::try_from(raw)
+                .unwrap()
+                .add(index as u64 * size as u64)
+        };
 
         let command_allocator = device.create_command_pool().unwrap();
         command_allocator.set_name("egui::CommandAllocator");
@@ -237,18 +243,21 @@ impl PerFrameObjects {
         self.font_staged = Some(image);
     }
 
-    unsafe fn update_srv(&self, device: &dx12::Device) {
-        let srv_desc = dx12::ShaderResourceViewDesc::Texture2D {
-            format: dxgi::Format::R8Unorm,
-            component_mapping: dx12::ComponentMapping::identity(),
-            texture_2d: dx12::Tex2DSrv {
-                most_detailed_mip: 0,
-                mip_levels: 1,
-                plane_slice: 0,
-                resource_min_lod_clamp: 0.0,
+    unsafe fn update_srv(&self, device: &ID3D12Device10) {
+        let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
+            Format: DXGI_FORMAT_R8_UNORM,
+            ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
+            Shader4ComponentMapping: ComponentMapping::identity().into(),
+            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                Texture2D: D3D12_TEX2D_SRV {
+                    MostDetailedMip: 0,
+                    MipLevels: 1,
+                    PlaneSlice: 0,
+                    ResourceMinLODClamp: 0.0,
+                },
             },
         };
-        device.create_shader_resource_view(
+        device.CreateShaderResourceView(
             &self
                 .font_staged
                 .as_ref()
@@ -257,7 +266,7 @@ impl PerFrameObjects {
                 .unwrap()
                 .get_raw_handle(),
             &srv_desc,
-            self.font_cpu_srv,
+            self.font_cpu_srv.into(),
         );
     }
 

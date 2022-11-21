@@ -34,8 +34,6 @@ extern crate aleph_interfaces as interfaces;
 extern crate aleph_log as log;
 extern crate cstr;
 
-pub(crate) use aleph_gpu_dx12::dx12;
-
 mod plugin;
 mod renderer;
 mod shaders;

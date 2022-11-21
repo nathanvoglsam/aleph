@@ -27,8 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::dx12;
-use crate::dx12::D3D12Object;
+use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::{
+    ID3D12DescriptorHeap, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+};
 use aleph_gpu_dx12::IDeviceExt;
 use egui::ImageData;
 use interfaces::any::AnyArc;
@@ -45,7 +47,7 @@ use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
-    pub srv_heap: dx12::DescriptorHeap,
+    pub srv_heap: ID3D12DescriptorHeap,
     pub sampler: AnyArc<dyn ISampler>,
     pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pub vertex_shader: AnyArc<dyn IShader>,
@@ -58,16 +60,19 @@ pub struct GlobalObjects {
 
 impl GlobalObjects {
     pub fn new(device: &dyn IDeviceExt, dimensions: (u32, u32)) -> Self {
-        let descriptor_heap_desc = dx12::DescriptorHeapDesc::builder()
-            .heap_type(dx12::DescriptorHeapType::CbvSrvUav)
-            .num_descriptors(3)
-            .flags(dx12::DescriptorHeapFlags::SHADER_VISIBLE)
-            .build();
-        let srv_heap = device
-            .get_raw_handle()
-            .create_descriptor_heap(&descriptor_heap_desc)
-            .unwrap();
-        srv_heap.set_name("egui::SRVHeap").unwrap();
+        let descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {
+            Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            NumDescriptors: 3,
+            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
+            NodeMask: 0,
+        };
+        let srv_heap = unsafe {
+            device
+                .get_raw_handle()
+                .CreateDescriptorHeap::<ID3D12DescriptorHeap>(&descriptor_heap_desc)
+                .unwrap()
+        };
+        // srv_heap.set_name("egui::SRVHeap").unwrap();
 
         let sampler = Self::create_sampler(device);
         let pipeline_layout = Self::create_root_signature(device, sampler.deref());

@@ -277,7 +277,7 @@ impl EguiRenderer {
         //
         // Bind the descriptor heap
         //
-        let heaps = [Some(self.global.srv_heap.as_raw().clone())];
+        let heaps = [Some(self.global.srv_heap.clone())];
         command_list.SetDescriptorHeaps(&heaps);
 
         //

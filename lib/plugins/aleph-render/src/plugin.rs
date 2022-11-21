@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::dx12::dxgi;
 use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::{IAdapterExt, IDeviceExt};
 use interfaces::any::{declare_interfaces, AnyArc};
@@ -115,11 +114,8 @@ impl IPlugin for PluginRender {
             surface: Some(surface.deref()),
             ..Default::default()
         };
-        let adapter = gpu_context
-            .request_adapter(&options)
-            .unwrap()
-            .query_interface::<dyn IAdapterExt>()
-            .unwrap();
+        let adapter = gpu_context.request_adapter(&options).unwrap();
+        let adapter = adapter.query_interface::<dyn IAdapterExt>().unwrap();
 
         // Create our device
         let device = adapter
@@ -132,7 +128,7 @@ impl IPlugin for PluginRender {
         let queue = device.get_queue(QueueType::General).unwrap();
 
         aleph_log::info!("");
-        Self::log_gpu_info(&adapter.get_raw_handle());
+        Self::log_gpu_info(adapter.deref());
         aleph_log::info!("");
 
         let drawable_size = window.drawable_size();
@@ -221,16 +217,14 @@ impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(adapter: &dxgi::Adapter) {
-        let info = adapter.get_adapter_desc().unwrap();
+    fn log_gpu_info(adapter: &dyn IAdapterExt) {
+        let info = adapter.description();
 
-        let gpu_vendor = info.vendor_id_string();
-        let gpu_name = info
-            .description_string()
-            .unwrap_or_else(|| "Unknown".to_string());
-        let dvmem = info.dedicated_video_memory / 1_000_000;
-        let dsmem = info.dedicated_system_memory / 1_000_000;
-        let ssmem = info.shared_system_memory / 1_000_000;
+        let gpu_vendor = info.vendor;
+        let gpu_name = info.name;
+        let dvmem = 0 /* info.DedicatedVideoMemory */ / 1_000_000;
+        let dsmem = 0 /* info.DedicatedSystemMemory */ / 1_000_000;
+        let ssmem = 0 /* info.SharedSystemMemory */ / 1_000_000;
 
         aleph_log::info!("=== GPU INFO ===");
         aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
