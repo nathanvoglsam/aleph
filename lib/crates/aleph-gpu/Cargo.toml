@@ -45,7 +45,6 @@ edition = "2021"
 azure-devops = { project = "nathanvoglsam420/Aleph", pipeline = "nathanvoglsam.aleph", build = "1" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-aleph-dx12 = { path = "../aleph-dx12", version = "0.1" }
 aleph-dx12-alloc = { path = "../aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../aleph-pix", version = "0.1" }
 

@@ -36,6 +36,12 @@ use std::ptr::NonNull;
 #[repr(transparent)]
 pub struct D3D12MAPool(pub(crate) NonNull<c_void>);
 
+impl D3D12MAPool {
+    pub fn as_ptr(&self) -> *const c_void {
+        self.0.as_ptr() as *const _
+    }
+}
+
 impl Drop for D3D12MAPool {
     fn drop(&mut self) {
         unsafe { D3D12MA_Pool_Release(self.0.as_ptr()) }

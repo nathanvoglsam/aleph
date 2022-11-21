@@ -55,6 +55,5 @@ utf16_lit = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 aleph-windows = { path = "../../crates/aleph-windows", version = "0.1" }
-aleph-dx12 = { path = "../../crates/aleph-dx12", version = "0.1" }
 aleph-dx12-alloc = { path = "../../crates/aleph-dx12-alloc", version = "0.1" }
 aleph-pix = { path = "../../crates/aleph-pix", version = "0.1" }

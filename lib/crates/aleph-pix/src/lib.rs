@@ -29,7 +29,6 @@
 
 #![cfg(target_os = "windows")]
 
-extern crate aleph_dx12 as dx12;
 extern crate aleph_pix_raw as pix_raw;
 extern crate aleph_windows as windows;
 
@@ -59,5 +58,7 @@ pub use crate::functions::set_marker_cstr;
 pub use crate::functions::set_marker_cstr_on_list;
 pub use crate::functions::set_marker_cstr_on_queue;
 
-pub use crate::scoped::RecordScopedEvent;
-pub use crate::scoped::ScopedEvent;
+pub use crate::scoped::scoped_for_list;
+pub use crate::scoped::scoped_for_list_cstr;
+pub use crate::scoped::scoped_for_queue;
+pub use crate::scoped::scoped_for_queue_cstr;

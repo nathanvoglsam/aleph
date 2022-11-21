@@ -29,110 +29,53 @@
 
 use super::functions::*;
 use crate::Colour;
-use dx12::{CommandQueue, GraphicsCommandList};
 use std::ffi::CStr;
+use windows::Win32::Graphics::Direct3D12::{ID3D12CommandQueue, ID3D12GraphicsCommandList};
 
-pub struct ScopedEvent();
-
-impl ScopedEvent {
-    pub fn new(colour: Colour, text: &str) -> Self {
-        unsafe {
-            begin_event(colour, text);
-        }
-        Self()
-    }
-
-    pub fn new_cstr(colour: Colour, text: &CStr) -> Self {
-        unsafe {
-            begin_event_cstr(colour, text);
-        }
-        Self()
-    }
-}
-
-impl Drop for ScopedEvent {
-    fn drop(&mut self) {
-        unsafe { end_event() }
-    }
-}
-
-pub trait RecordScopedEvent {
-    /// # Safety
-    /// Access to the the command lists and command queues through these functions are not
-    /// synchronized. It is the caller's job to uphold concurrent access requirements
-    unsafe fn scoped_event(&self, colour: crate::Colour, text: &str, f: impl FnOnce(&Self));
-
-    /// # Safety
-    /// Access to the the command lists and command queues through these functions are not
-    /// synchronized. It is the caller's job to uphold concurrent access requirements
-    unsafe fn scoped_event_cstr(
-        &self,
-        colour: crate::Colour,
-        text: &std::ffi::CStr,
-        f: impl FnOnce(&Self),
-    );
-}
-
-impl RecordScopedEvent for CommandQueue {
-    unsafe fn scoped_event(&self, colour: Colour, text: &str, f: impl FnOnce(&Self)) {
-        for_queue(self, colour, text, f)
-    }
-
-    unsafe fn scoped_event_cstr(&self, colour: Colour, text: &CStr, f: impl FnOnce(&Self)) {
-        for_queue_cstr(self, colour, text, f)
-    }
-}
-
-impl RecordScopedEvent for GraphicsCommandList {
-    unsafe fn scoped_event(&self, colour: Colour, text: &str, f: impl FnOnce(&Self)) {
-        for_list(self, colour, text, f)
-    }
-
-    unsafe fn scoped_event_cstr(&self, colour: Colour, text: &CStr, f: impl FnOnce(&Self)) {
-        for_list_cstr(self, colour, text, f)
-    }
-}
-
-pub unsafe fn for_queue(
-    queue: &CommandQueue,
+pub unsafe fn scoped_for_queue<'a, T: Into<&'a ID3D12CommandQueue>>(
+    queue: T,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&CommandQueue),
+    f: impl FnOnce(&'a ID3D12CommandQueue),
 ) {
-    begin_event_on_queue(queue.as_raw(), colour, text);
+    let queue = queue.into();
+    begin_event_on_queue(queue, colour, text);
     f(queue);
-    end_event_on_queue(queue.as_raw());
+    end_event_on_queue(queue);
 }
 
-pub unsafe fn for_queue_cstr(
-    queue: &CommandQueue,
+pub unsafe fn scoped_for_queue_cstr<'a, T: Into<&'a ID3D12CommandQueue>>(
+    queue: T,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&CommandQueue),
+    f: impl FnOnce(&'a ID3D12CommandQueue),
 ) {
-    begin_event_cstr_on_queue(queue.as_raw(), colour, text);
+    let queue = queue.into();
+    begin_event_cstr_on_queue(queue, colour, text);
     f(queue);
-    end_event_on_queue(queue.as_raw());
+    end_event_on_queue(queue);
 }
 
-pub unsafe fn for_list(
-    list: &GraphicsCommandList,
+pub unsafe fn scoped_for_list<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+    list: T,
     colour: Colour,
     text: &str,
-    f: impl FnOnce(&GraphicsCommandList),
+    f: impl FnOnce(&'a ID3D12GraphicsCommandList),
 ) {
-    begin_event_on_list(list.as_raw(), colour, text);
+    let list = list.into();
+    begin_event_on_list(list, colour, text);
     f(list);
-    end_event_on_list(list.as_raw());
+    end_event_on_list(list);
 }
 
-pub unsafe fn for_list_cstr(
-    list: &GraphicsCommandList,
+pub unsafe fn scoped_for_list_cstr<'a, T: Into<&'a ID3D12GraphicsCommandList>>(
+    list: T,
     colour: Colour,
     text: &CStr,
-    f: impl FnOnce(&GraphicsCommandList),
+    f: impl FnOnce(&'a ID3D12GraphicsCommandList),
 ) {
-    begin_event_cstr_on_list(list.as_raw(), colour, text);
+    let list = list.into();
+    begin_event_cstr_on_list(list, colour, text);
     f(list);
-    end_event_on_list(list.as_raw());
+    end_event_on_list(list);
 }
