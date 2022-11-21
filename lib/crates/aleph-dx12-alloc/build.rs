@@ -27,11 +27,11 @@
 // SOFTWARE.
 //
 
-use aleph_target_build::build::target_platform;
-use std::path::Path;
-
 #[cfg(target_os = "windows")]
 fn main() {
+    use aleph_target_build::build::target_platform;
+    use std::path::Path;
+
     let cpp_file = Path::new("../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
     let inc_dir = Path::new("../../../submodules/D3D12MemoryAllocator/src");
 
