@@ -32,7 +32,6 @@ use crate::internal::conv::texture_format_to_dxgi;
 use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
-use crate::CPUDescriptorHandle;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
     Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
@@ -42,6 +41,7 @@ use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use windows::core::PCWSTR;
+use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 

@@ -51,7 +51,6 @@ use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::{PlainTexture, Texture, TextureInner};
-use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow;
@@ -70,6 +69,7 @@ use interfaces::gpu::{
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use windows::core::{PCSTR, PCWSTR};
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;

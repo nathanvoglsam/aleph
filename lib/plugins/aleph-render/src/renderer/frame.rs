@@ -29,11 +29,12 @@
 
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
+use aleph_gpu_dx12::windows::utils::{
+    CPUDescriptorHandle, D3D12ComponentMapping, GPUDescriptorHandle,
+};
 use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::*;
 use aleph_gpu_dx12::windows::Win32::Graphics::Dxgi::Common::*;
-use aleph_gpu_dx12::{
-    CPUDescriptorHandle, ComponentMapping, GPUDescriptorHandle, IDeviceExt, ITextureExt,
-};
+use aleph_gpu_dx12::{IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
@@ -247,7 +248,7 @@ impl PerFrameObjects {
         let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
             Format: DXGI_FORMAT_R8_UNORM,
             ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-            Shader4ComponentMapping: ComponentMapping::identity().into(),
+            Shader4ComponentMapping: D3D12ComponentMapping::identity().into(),
             Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
                 Texture2D: D3D12_TEX2D_SRV {
                     MostDetailedMip: 0,

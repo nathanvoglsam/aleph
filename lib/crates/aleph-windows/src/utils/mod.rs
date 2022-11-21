@@ -27,18 +27,25 @@
 // SOFTWARE.
 //
 
+mod d3d12_component_mapping;
+mod descriptor_handles;
+
 use crate::core::PCSTR;
 use crate::core::PCWSTR;
-use crate::Win32::Foundation::{HANDLE, HINSTANCE};
-use crate::Win32::Graphics::Direct3D12::{D3D12_CACHED_PIPELINE_STATE, D3D12_SHADER_BYTECODE};
-use crate::Win32::System::LibraryLoader::{GetProcAddress, LoadLibraryW};
+use crate::Win32::Foundation::{GetLastError, HANDLE, HINSTANCE};
+use crate::Win32::Graphics::Direct3D12::*;
+use crate::Win32::System::LibraryLoader::*;
 use once_cell::sync::OnceCell;
 use std::ffi::CStr;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 use std::os::raw::c_char;
-use windows::Win32::Foundation::GetLastError;
+
+pub use d3d12_component_mapping::D3D12ComponentMapping;
+pub use d3d12_component_mapping::D3D12ComponentMappingValue;
+pub use descriptor_handles::CPUDescriptorHandle;
+pub use descriptor_handles::GPUDescriptorHandle;
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]

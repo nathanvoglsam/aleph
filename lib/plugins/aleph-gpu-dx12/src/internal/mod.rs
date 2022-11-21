@@ -31,13 +31,11 @@ use interfaces::gpu::{Format, TextureCopyAspect};
 
 pub mod adapter_description_decoder;
 pub mod command_list_tracker;
-pub mod component_mapping;
 pub mod conv;
 pub mod create_device;
 pub mod create_dxgi_factory;
 pub mod debug_interface;
 pub mod descriptor_allocator_cpu;
-pub mod descriptor_handles;
 pub mod descriptor_heap;
 pub mod descriptor_heap_info;
 pub mod descriptor_heaps;

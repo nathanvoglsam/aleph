@@ -31,7 +31,6 @@ use crate::acquired_texture::AcquiredTexture;
 use crate::device::Device;
 use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
-use crate::CPUDescriptorHandle;
 use crossbeam::atomic::AtomicCell;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
@@ -42,6 +41,7 @@ use parking_lot::Mutex;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use windows::core::IUnknown;
+use windows::utils::CPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;

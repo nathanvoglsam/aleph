@@ -31,9 +31,9 @@ use windows::Win32::Graphics::Direct3D12::*;
 
 /// A value to be used with the `ComponentMapping` constructors.
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
-pub struct ComponentMappingValue(u32);
+pub struct D3D12ComponentMappingValue(u32);
 
-impl ComponentMappingValue {
+impl D3D12ComponentMappingValue {
     /// Value for use with `ComponentMapping` constructors. Means that the component being mapped
     /// should read from the 0th component in the underlying texture.
     pub const FROM_0: Self = Self(0);
@@ -67,18 +67,17 @@ impl ComponentMappingValue {
 /// The `Default` implementation returns an identity mapping
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Hash)]
 #[repr(transparent)]
-pub struct ComponentMapping(u32);
+pub struct D3D12ComponentMapping(u32);
 
-impl ComponentMapping {
+impl D3D12ComponentMapping {
     ///
     /// A `const fn` constructor that applies the given mappings to each component
     ///
-    #[inline]
     pub const fn new(
-        component_0: ComponentMappingValue,
-        component_1: ComponentMappingValue,
-        component_2: ComponentMappingValue,
-        component_3: ComponentMappingValue,
+        component_0: D3D12ComponentMappingValue,
+        component_1: D3D12ComponentMappingValue,
+        component_2: D3D12ComponentMappingValue,
+        component_3: D3D12ComponentMappingValue,
     ) -> Self {
         let r = component_0.0 & D3D12_SHADER_COMPONENT_MAPPING_MASK;
         let r = r;
@@ -105,25 +104,25 @@ impl ComponentMapping {
     ///   - a -> a
     ///
     pub const fn identity() -> Self {
-        ComponentMapping::new(
-            ComponentMappingValue::FROM_0,
-            ComponentMappingValue::FROM_1,
-            ComponentMappingValue::FROM_2,
-            ComponentMappingValue::FROM_3,
+        Self::new(
+            D3D12ComponentMappingValue::FROM_0,
+            D3D12ComponentMappingValue::FROM_1,
+            D3D12ComponentMappingValue::FROM_2,
+            D3D12ComponentMappingValue::FROM_3,
         )
     }
 }
 
-impl Default for ComponentMapping {
+impl Default for D3D12ComponentMapping {
     #[inline]
     fn default() -> Self {
         Self::identity()
     }
 }
 
-impl From<ComponentMapping> for u32 {
+impl From<D3D12ComponentMapping> for u32 {
     #[inline]
-    fn from(v: ComponentMapping) -> Self {
+    fn from(v: D3D12ComponentMapping) -> Self {
         v.0
     }
 }

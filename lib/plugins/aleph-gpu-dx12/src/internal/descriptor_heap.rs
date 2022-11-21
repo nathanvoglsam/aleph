@@ -27,10 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
 use parking_lot::Mutex;
 use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct DescriptorHeap {
@@ -170,7 +170,7 @@ impl DescriptorHeap {
         let id = id.0 as usize;
         let base = self.start_cpu_handle.ptr;
         let ptr = base + (id * size);
-        NonZeroUsize::new(ptr).map(CPUDescriptorHandle)
+        NonZeroUsize::new(ptr).map(CPUDescriptorHandle::from)
     }
 
     /// Converts the given 'id' into the [GPUDescriptorHandle] it represents
@@ -180,7 +180,7 @@ impl DescriptorHeap {
         let id = id.0 as u64;
         let base = self.start_gpu_handle.ptr;
         let ptr = base + (id * size);
-        NonZeroU64::new(ptr).map(GPUDescriptorHandle)
+        NonZeroU64::new(ptr).map(GPUDescriptorHandle::from)
     }
 
     /// Returns the [ID3D12DescriptorHeap] that this object encapsulates
