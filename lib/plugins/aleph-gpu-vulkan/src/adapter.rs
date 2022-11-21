@@ -34,12 +34,13 @@ use erupt::vk;
 use erupt::vk1_0::PhysicalDevice;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
+use interfaces::gpu::{AdapterDescription, AdapterVendor, IAdapter, IDevice, RequestDeviceError};
 
 pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
+    pub(crate) vendor: AdapterVendor,
     pub(crate) physical_device: vk::PhysicalDevice,
 }
 
@@ -142,7 +143,10 @@ impl IAdapter for Adapter {
     }
 
     fn description(&self) -> AdapterDescription {
-        AdapterDescription { name: &self.name }
+        AdapterDescription {
+            name: &self.name,
+            vendor: self.vendor,
+        }
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {

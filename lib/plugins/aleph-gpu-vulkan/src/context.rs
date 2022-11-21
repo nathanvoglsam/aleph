@@ -34,8 +34,8 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
-    SurfaceCreateError,
+    AdapterPowerClass, AdapterRequestOptions, AdapterVendor, BackendAPI, IAdapter, IContext,
+    ISurface, SurfaceCreateError,
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use std::ffi::CStr;
@@ -56,13 +56,13 @@ impl Context {
         minor_version: u32,
         surface: Option<vk::SurfaceKHR>,
         power_class: AdapterPowerClass,
-    ) -> Option<(String, vk::PhysicalDevice)> {
+    ) -> Option<(String, AdapterVendor, vk::PhysicalDevice)> {
         let devices = unsafe {
             instance
                 .enumerate_physical_devices(None)
                 .expect("Failed to enumerate vulkan devices")
         };
-        let mut scores: Vec<(&str, vk::PhysicalDevice, i32)> = Vec::new();
+        let mut scores: Vec<(&str, AdapterVendor, vk::PhysicalDevice, i32)> = Vec::new();
 
         for physical_device in devices.iter().copied() {
             let (properties, features, extensions) = unsafe {
@@ -93,14 +93,23 @@ impl Context {
                         .to_str()
                         .unwrap()
                 };
-                scores.push((name, physical_device, score));
+                let vendor = match properties.vendor_id {
+                    0x1002 => AdapterVendor::AMD,
+                    0x1010 => AdapterVendor::ImaginationTechnology,
+                    0x10DE => AdapterVendor::NVIDIA,
+                    0x13B5 => AdapterVendor::ARM,
+                    0x5143 => AdapterVendor::Qualcomm,
+                    0x8086 => AdapterVendor::Intel,
+                    _ => AdapterVendor::Unknown,
+                };
+                scores.push((name, vendor, physical_device, score));
             }
         }
 
         scores
             .iter()
-            .max_by_key(|v| &v.1)
-            .map(|v| (v.0.to_owned(), v.1))
+            .max_by_key(|v| &v.3)
+            .map(|v| (v.0.to_owned(), v.1, v.2))
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -243,11 +252,12 @@ impl IContext for Context {
             surface,
             options.power_class,
         )
-        .map(|(name, physical_device)| {
+        .map(|(name, vendor, physical_device)| {
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
                 context: self.this.upgrade().unwrap(),
                 name,
+                vendor,
                 physical_device,
             });
             AnyArc::map::<dyn IAdapter, _>(adapter, |v| v)
