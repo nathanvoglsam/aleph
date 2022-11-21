@@ -36,8 +36,8 @@ use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::surface::Surface;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface,
-    SurfaceCreateError,
+    AdapterPowerClass, AdapterRequestOptions, AdapterVendor, BackendAPI, IAdapter, IContext,
+    ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
 use std::sync::atomic::AtomicBool;
@@ -234,11 +234,21 @@ impl IContext for Context {
                     .expect("Failed to get adapter description. Something very wrong")
             };
             let name = adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
+            let vendor = match desc.VendorId {
+                0x1002 => AdapterVendor::AMD,
+                0x1010 => AdapterVendor::ImaginationTechnology,
+                0x10DE => AdapterVendor::NVIDIA,
+                0x13B5 => AdapterVendor::ARM,
+                0x5143 => AdapterVendor::Qualcomm,
+                0x8086 => AdapterVendor::Intel,
+                _ => AdapterVendor::Unknown,
+            };
 
             let adapter = AnyArc::new_cyclic(move |v| Adapter {
                 this: v.clone(),
                 context: self.this.upgrade().unwrap(),
                 name,
+                vendor,
                 adapter,
             });
             Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))

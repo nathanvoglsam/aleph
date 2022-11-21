@@ -39,7 +39,9 @@ use crate::internal::register_message_callback::{
 use crate::queue::Queue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, QueueType, RequestDeviceError};
+use interfaces::gpu::{
+    AdapterDescription, AdapterVendor, IAdapter, IDevice, QueueType, RequestDeviceError,
+};
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -48,6 +50,7 @@ pub struct Adapter {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
+    pub(crate) vendor: AdapterVendor,
     pub(crate) adapter: IDXGIAdapter1,
 }
 
@@ -84,7 +87,10 @@ impl IAdapter for Adapter {
     }
 
     fn description(&self) -> AdapterDescription {
-        AdapterDescription { name: &self.name }
+        AdapterDescription {
+            name: &self.name,
+            vendor: self.vendor,
+        }
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
