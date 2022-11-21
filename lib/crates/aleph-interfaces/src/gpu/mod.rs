@@ -949,10 +949,40 @@ impl<'a> Debug for AdapterRequestOptions<'a> {
     }
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum AdapterVendor {
+    Unknown,
+    NVIDIA,
+    AMD,
+    Intel,
+    Apple,
+    ImaginationTechnology,
+    ARM,
+    Qualcomm,
+}
+
+impl Display for AdapterVendor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AdapterVendor::Unknown => f.write_str("Unknown"),
+            AdapterVendor::NVIDIA => f.write_str("NVIDIA"),
+            AdapterVendor::AMD => f.write_str("AMD"),
+            AdapterVendor::Intel => f.write_str("Intel"),
+            AdapterVendor::Apple => f.write_str("Apple"),
+            AdapterVendor::ImaginationTechnology => f.write_str("ImaginationTechnology"),
+            AdapterVendor::ARM => f.write_str("ARM"),
+            AdapterVendor::Qualcomm => f.write_str("Qualcomm"),
+        }
+    }
+}
+
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct AdapterDescription<'a> {
     /// The name of the adapter
     pub name: &'a str,
+
+    /// The adapter's vendor, if one could be identified
+    pub vendor: AdapterVendor,
 }
 
 //
