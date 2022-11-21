@@ -29,26 +29,29 @@
 
 #![cfg(target_os = "windows")]
 
-extern crate aleph_dx12 as dx12;
-extern crate aleph_dx12_alloc_raw as alloc_raw;
 extern crate aleph_windows as windows;
 
 mod allocation;
-mod allocation_desc;
 mod allocator;
-mod allocator_desc;
 mod pool;
-mod pool_desc;
+mod raw;
 
-pub use crate::allocation::Allocation;
-pub use crate::allocation_desc::AllocationDesc;
-pub use crate::allocation_desc::AllocationDescBuilder;
-pub use crate::allocator::Allocator;
-pub use crate::allocator_desc::AllocatorDesc;
-pub use crate::allocator_desc::AllocatorDescBuilder;
-pub use crate::pool::Pool;
-pub use crate::pool_desc::PoolDesc;
-pub use crate::pool_desc::PoolDescBuilder;
+pub use crate::allocation::D3D12MAAllocation;
+pub use crate::allocator::D3D12MAAllocator;
+pub use crate::pool::D3D12MAPool;
 
-pub type AllocationFlags = alloc_raw::D3D12MA_ALLOCATION_FLAGS;
-pub type AllocatorFlags = alloc_raw::D3D12MA_ALLOCATOR_FLAGS;
+pub use raw::D3D12MA_ALLOCATE_FN;
+pub use raw::D3D12MA_ALLOCATION_CALLBACKS;
+pub use raw::D3D12MA_ALLOCATION_DESC;
+pub use raw::D3D12MA_ALLOCATION_FLAGS;
+pub use raw::D3D12MA_ALLOCATOR_DESC;
+pub use raw::D3D12MA_ALLOCATOR_FLAGS;
+pub use raw::D3D12MA_BUDGET;
+pub use raw::D3D12MA_FREE_FN;
+pub use raw::D3D12MA_POOL_DESC;
+pub use raw::D3D12MA_STATS;
+pub use raw::D3D12MA_STAT_INFO;
+pub use raw::D3D12MA_VIRTUAL_ALLOCATION_DESC;
+pub use raw::D3D12MA_VIRTUAL_ALLOCATION_INFO;
+pub use raw::D3D12MA_VIRTUAL_BLOCK_DESC;
+pub use raw::HEAP_TYPE_COUNT;

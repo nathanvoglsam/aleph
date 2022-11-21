@@ -52,6 +52,9 @@ version = "0.1"
 path = "../aleph-windows"
 version = "0.1"
 
-[target.'cfg(target_os = "windows")'.dependencies.aleph-dx12-alloc-raw]
-path = "../aleph-dx12-alloc-raw"
-version = "0.1"
+[target.'cfg(target_os = "windows")'.build-dependencies.aleph-target-build]
+path = "../aleph-target-build"
+version = "2"
+
+[target.'cfg(target_os = "windows")'.build-dependencies.cc]
+version = "1"

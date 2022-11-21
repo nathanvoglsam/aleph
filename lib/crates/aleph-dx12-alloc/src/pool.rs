@@ -27,17 +27,17 @@
 // SOFTWARE.
 //
 
+#![allow(non_snake_case)]
+
+use crate::raw::D3D12MA_Pool_Release;
 use std::ffi::c_void;
 use std::ptr::NonNull;
-use std::sync::Arc;
-
-pub(crate) struct PoolInner(pub(crate) NonNull<c_void>);
-
-impl Drop for PoolInner {
-    fn drop(&mut self) {
-        unsafe { alloc_raw::D3D12MA_Pool_Release(self.0.as_ptr()) }
-    }
-}
 
 #[repr(transparent)]
-pub struct Pool(pub(crate) Arc<PoolInner>);
+pub struct D3D12MAPool(pub(crate) NonNull<c_void>);
+
+impl Drop for D3D12MAPool {
+    fn drop(&mut self) {
+        unsafe { D3D12MA_Pool_Release(self.0.as_ptr()) }
+    }
+}

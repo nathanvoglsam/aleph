@@ -27,10 +27,32 @@
 // SOFTWARE.
 //
 
-#![cfg(target_os = "windows")]
+use aleph_target_build::build::target_platform;
+use std::path::Path;
 
-extern crate aleph_windows as windows;
+#[cfg(target_os = "windows")]
+fn main() {
+    let cpp_file = Path::new("../../../submodules/D3D12MemoryAllocator/src/D3D12MemAlloc.cpp");
+    let inc_dir = Path::new("../../../submodules/D3D12MemoryAllocator/src");
 
-mod raw;
+    if target_platform().is_windows() && target_platform().is_gnu() {
+        cc::Build::new()
+            .cpp(true)
+            .file(cpp_file)
+            .file("thirdparty_shim/shim.cpp")
+            .flag("-fpermissive")
+            .flag("-w")
+            .include(inc_dir)
+            .compile("d3d12ma");
+    } else if target_platform().is_msvc() {
+        cc::Build::new()
+            .cpp(true)
+            .file(cpp_file)
+            .file("thirdparty_shim/shim.cpp")
+            .include(inc_dir)
+            .compile("d3d12ma");
+    }
+}
 
-pub use raw::*;
+#[cfg(not(target_os = "windows"))]
+fn main() {}

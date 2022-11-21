@@ -27,15 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::allocation::AllocationInner;
-use crate::pool::PoolInner;
-use crate::{Allocation, AllocationDesc, AllocatorDesc, AllocatorFlags, Pool, PoolDesc};
-use dx12::{ClearValue, ResourceDesc, ResourceStates};
+#![allow(non_snake_case)]
+
+use crate::raw::{
+    D3D12MA_Allocator_CreateAllocator, D3D12MA_Allocator_CreatePool,
+    D3D12MA_Allocator_CreateResource, D3D12MA_Allocator_Release,
+};
+use crate::{
+    D3D12MAAllocation, D3D12MAPool, D3D12MA_ALLOCATION_DESC, D3D12MA_ALLOCATOR_DESC,
+    D3D12MA_ALLOCATOR_FLAGS, D3D12MA_POOL_DESC,
+};
 use std::ffi::c_void;
-use std::mem::{align_of, size_of};
 use std::ptr::NonNull;
 use std::sync::Arc;
-use windows::Win32::Graphics::Direct3D12::{D3D12_CLEAR_VALUE, D3D12_RESOURCE_DESC};
+use windows::Win32::Graphics::Direct3D12::*;
 
 #[repr(transparent)]
 pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);
@@ -43,103 +48,80 @@ pub(crate) struct AllocatorInner(pub(crate) NonNull<c_void>);
 impl Drop for AllocatorInner {
     fn drop(&mut self) {
         unsafe {
-            alloc_raw::D3D12MA_Allocator_Release(self.0.as_ptr());
+            D3D12MA_Allocator_Release(self.0.as_ptr());
         }
     }
 }
 
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct Allocator(pub(crate) Arc<AllocatorInner>);
+pub struct D3D12MAAllocator(pub(crate) Arc<AllocatorInner>);
 
-impl Allocator {
-    pub fn new(allocator_desc: &AllocatorDesc) -> dx12::Result<Self> {
-        assert_eq!(
-            size_of::<AllocatorDesc>(),
-            size_of::<aleph_dx12_alloc_raw::D3D12MA_ALLOCATOR_DESC>()
-        );
-        assert_eq!(
-            align_of::<AllocatorDesc>(),
-            align_of::<aleph_dx12_alloc_raw::D3D12MA_ALLOCATOR_DESC>()
-        );
-
-        if allocator_desc.flags & AllocatorFlags::SINGLE_THREADED != AllocatorFlags::NONE {
+impl D3D12MAAllocator {
+    pub fn new(pAllocatorDesc: &D3D12MA_ALLOCATOR_DESC) -> windows::core::Result<Self> {
+        if pAllocatorDesc.Flags & D3D12MA_ALLOCATOR_FLAGS::SINGLE_THREADED
+            != D3D12MA_ALLOCATOR_FLAGS::NONE
+        {
             panic!("AllocatorFlags::SINGLE_THREADED not supported by rust bindings")
         }
 
         unsafe {
             let mut out = std::ptr::null_mut();
-            alloc_raw::D3D12MA_Allocator_CreateAllocator(
-                allocator_desc as *const AllocatorDesc as *const _,
-                &mut out,
-            )
-            .ok()
-            .map(|_| {
-                let out = AllocatorInner(NonNull::new(out).unwrap());
-                Allocator(Arc::new(out))
-            })
+            D3D12MA_Allocator_CreateAllocator(pAllocatorDesc, &mut out)
+                .ok()
+                .map(|_| {
+                    let out = AllocatorInner(NonNull::new(out).unwrap());
+                    D3D12MAAllocator(Arc::new(out))
+                })
         }
     }
 
-    pub fn create_resource(
+    pub fn CreateResource(
         &self,
-        alloc_desc: &AllocationDesc,
-        resource_desc: &ResourceDesc,
-        initial_resource_state: ResourceStates,
-        optimized_clear_value: Option<&ClearValue>,
-    ) -> dx12::Result<Allocation> {
+        pAllocDesc: &D3D12MA_ALLOCATION_DESC,
+        pResourceDesc: &D3D12_RESOURCE_DESC,
+        InitialResourceState: D3D12_RESOURCE_STATES,
+        pOptimizedClearValue: *const D3D12_CLEAR_VALUE,
+    ) -> windows::core::Result<D3D12MAAllocation> {
         unsafe {
-            let alloc_desc = alloc_desc.into();
-
             let mut allocation = std::ptr::null_mut();
 
-            if let Some(optimized_clear_value) = optimized_clear_value {
-                let optimized_clear_value: D3D12_CLEAR_VALUE = optimized_clear_value.clone().into();
-                alloc_raw::D3D12MA_Allocator_CreateResource(
+            if !pOptimizedClearValue.is_null() {
+                D3D12MA_Allocator_CreateResource(
                     self.0 .0.as_ptr(),
-                    &alloc_desc,
-                    resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
-                    initial_resource_state.into(),
-                    &optimized_clear_value as *const D3D12_CLEAR_VALUE as *const _,
+                    pAllocDesc,
+                    pResourceDesc,
+                    InitialResourceState,
+                    pOptimizedClearValue,
                     &mut allocation,
                     std::ptr::null(),
                     std::ptr::null_mut(),
                 )
                 .ok()
-                .map(|_| {
-                    let allocation = AllocationInner(NonNull::new(allocation).unwrap());
-                    Allocation(Arc::new(allocation))
-                })
+                .map(|_| D3D12MAAllocation(NonNull::new(allocation).unwrap()))
             } else {
-                alloc_raw::D3D12MA_Allocator_CreateResource(
+                D3D12MA_Allocator_CreateResource(
                     self.0 .0.as_ptr(),
-                    &alloc_desc,
-                    resource_desc as *const _ as *const D3D12_RESOURCE_DESC,
-                    initial_resource_state.into(),
+                    pAllocDesc,
+                    pResourceDesc,
+                    InitialResourceState,
                     std::ptr::null(),
                     &mut allocation,
                     std::ptr::null(),
                     std::ptr::null_mut(),
                 )
                 .ok()
-                .map(|_| {
-                    let allocation = AllocationInner(NonNull::new(allocation).unwrap());
-                    Allocation(Arc::new(allocation))
-                })
+                .map(|_| D3D12MAAllocation(NonNull::new(allocation).unwrap()))
             }
         }
     }
 
-    pub fn create_pool(&self, pool_desc: &PoolDesc) -> dx12::Result<Pool> {
+    pub fn CreatePool(&self, pPoolDesc: &D3D12MA_POOL_DESC) -> windows::core::Result<D3D12MAPool> {
         unsafe {
-            let pool_desc = pool_desc.clone().into();
             let mut pool = std::ptr::null_mut();
-            alloc_raw::D3D12MA_Allocator_CreatePool(self.0 .0.as_ptr(), &pool_desc, &mut pool)
+            D3D12MA_Allocator_CreatePool(self.0 .0.as_ptr(), pPoolDesc, &mut pool)
                 .ok()
-                .map(|_| {
-                    let pool = PoolInner(NonNull::new(pool).unwrap());
-                    Pool(Arc::new(pool))
-                })
+                .map(|_| D3D12MAPool(NonNull::new(pool).unwrap()))
         }
     }
 }

@@ -27,33 +27,36 @@
 // SOFTWARE.
 //
 
-use dx12::{Heap, Resource};
+#![allow(non_snake_case)]
+
+use crate::raw::{
+    D3D12MA_Allocation_GetHeap, D3D12MA_Allocation_GetResource, D3D12MA_Allocation_Release,
+};
 use std::ffi::c_void;
-use std::mem::transmute;
 use std::ptr::NonNull;
-use std::sync::Arc;
+use windows::Win32::Graphics::Direct3D12::*;
 
-pub(crate) struct AllocationInner(pub(crate) NonNull<c_void>);
+#[repr(transparent)]
+pub struct D3D12MAAllocation(pub(crate) NonNull<c_void>);
 
-impl Drop for AllocationInner {
-    fn drop(&mut self) {
-        unsafe {
-            alloc_raw::D3D12MA_Allocation_Release(self.0.as_ptr());
-        }
+impl D3D12MAAllocation {
+    pub fn as_ptr(&self) -> *const c_void {
+        self.0.as_ptr() as *const _
+    }
+
+    pub fn GetResource(&self) -> Option<ID3D12Resource> {
+        unsafe { D3D12MA_Allocation_GetResource(self.0.as_ptr()) }
+    }
+
+    pub fn GetHeap(&self) -> Option<ID3D12Heap> {
+        unsafe { D3D12MA_Allocation_GetHeap(self.0.as_ptr()) }
     }
 }
 
-#[repr(transparent)]
-pub struct Allocation(pub(crate) Arc<AllocationInner>);
-
-impl Allocation {
-    pub fn get_resource(&self) -> Option<Resource> {
+impl Drop for D3D12MAAllocation {
+    fn drop(&mut self) {
         unsafe {
-            alloc_raw::D3D12MA_Allocation_GetResource(self.0 .0.as_ptr()).map(|v| transmute(v))
+            D3D12MA_Allocation_Release(self.0.as_ptr());
         }
-    }
-
-    pub fn get_heap(&self) -> Option<Heap> {
-        unsafe { alloc_raw::D3D12MA_Allocation_GetHeap(self.0 .0.as_ptr()).map(|v| transmute(v)) }
     }
 }
