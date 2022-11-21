@@ -38,9 +38,6 @@ use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PushConstantBlockInfo;
 use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
 use crate::ITextureExt;
-use aleph_windows::Win32::Foundation::RECT;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
-use aleph_windows::Win32::Graphics::Dxgi::Common::*;
 use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
@@ -51,6 +48,9 @@ use interfaces::gpu::{
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
+use windows::Win32::Foundation::RECT;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Encoder<'a> {
     pub(crate) list: ID3D12GraphicsCommandList7,
@@ -285,11 +285,11 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
         if let Some(concrete) = pipeline.query_interface::<GraphicsPipeline>() {
             // Binds the pipeline
-            self.list.SetPipelineState(concrete.pipeline.as_raw());
+            self.list.SetPipelineState(&concrete.pipeline);
 
             // A pipeline is inseparable from its' root signature so we need to bind it here too
             self.list
-                .SetGraphicsRootSignature(concrete.pipeline_layout.root_signature.as_raw());
+                .SetGraphicsRootSignature(&concrete.pipeline_layout.root_signature);
 
             // Vulkan specifies the full primitive topology in the pipeline, unlike D3D12 which
             // defers the full specification to this call below. Vulkan can't implement D3D12's
@@ -620,7 +620,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     .query_interface::<Texture>()
                     .expect("Unknown ITexture implementation");
                 let texture_desc = texture.inner.desc();
-                let resource = texture.resource().as_raw();
+                let resource = texture.resource();
 
                 #[cfg(debug_assertions)]
                 Self::validate_sub_resource_range_against_texture(
@@ -742,7 +742,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         };
 
         let mut dst_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(dst.resource().as_raw().clone()),
+            pResource: Some(dst.resource().clone()),
             Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 SubresourceIndex: 0,

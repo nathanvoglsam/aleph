@@ -28,7 +28,8 @@
 //
 
 use crate::context::Context;
-use dx12::dxgi;
+use crate::internal::create_dxgi_factory::create_dxgi_factory;
+use crate::internal::debug_interface::DebugInterface;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
@@ -63,7 +64,7 @@ impl IContextProvider for ContextProvider {
         {
             Ok(_) => {
                 let dxgi_factory =
-                    dxgi::Factory::new(options.validation).map_err(|e| anyhow!(e))?;
+                    create_dxgi_factory(options.validation).map_err(|e| anyhow!(e))?;
 
                 let is_uwp = cfg!(target_vendor = "uwp");
                 let gpu_assisted = !is_uwp;
@@ -71,7 +72,7 @@ impl IContextProvider for ContextProvider {
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     this: v.clone(),
-                    debug: debug,
+                    debug,
                     factory: dxgi_factory,
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
@@ -83,10 +84,10 @@ impl IContextProvider for ContextProvider {
 
 declare_interfaces!(ContextProvider, [IContextProvider]);
 
-unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<dx12::Debug> {
+unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<DebugInterface> {
     if want_debug {
         log::trace!("D3D12 debug layers requested");
-        if let Ok(debug) = dx12::Debug::new() {
+        if let Ok(debug) = DebugInterface::new() {
             debug.enable_debug_layer();
             log::trace!("D3D12 debug layers enabled");
             if gpu_assisted {

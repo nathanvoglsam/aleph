@@ -28,14 +28,15 @@
 //
 
 use crate::device::Device;
-use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IPipelineLayout};
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct PipelineLayout {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) root_signature: dx12::RootSignature,
+    pub(crate) root_signature: ID3D12RootSignature,
     pub(crate) push_constant_blocks: Vec<PushConstantBlockInfo>,
 }
 
@@ -56,18 +57,22 @@ impl IPipelineLayout for PipelineLayout {
 }
 
 pub trait IPipelineLayoutExt: IPipelineLayout {
-    fn get_raw_handle(&self) -> dx12::RootSignature;
+    fn get_raw_handle(&self) -> ID3D12RootSignature;
 }
 
 impl IPipelineLayoutExt for PipelineLayout {
-    fn get_raw_handle(&self) -> dx12::RootSignature {
+    fn get_raw_handle(&self) -> ID3D12RootSignature {
         self.root_signature.clone()
     }
 }
 
 impl INamedObject for PipelineLayout {
     fn set_name(&self, name: &str) {
-        self.root_signature.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.root_signature.SetName(name).unwrap();
+        }
     }
 }
 

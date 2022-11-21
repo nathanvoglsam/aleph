@@ -33,8 +33,6 @@ use crate::internal::descriptor_allocator_cpu::DescriptorAllocatorCPU;
 use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
 use crate::CPUDescriptorHandle;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
-use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
     Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
@@ -43,6 +41,9 @@ use interfaces::gpu::{
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub enum TextureInner {
     Plain(PlainTexture),
@@ -51,7 +52,7 @@ pub enum TextureInner {
 
 impl TextureInner {
     #[inline]
-    pub fn get_raw_handle(&self) -> dx12::Resource {
+    pub fn get_raw_handle(&self) -> ID3D12Resource {
         match self {
             TextureInner::Plain(v) => v.resource.clone(),
             TextureInner::Swap(v) => v.resource.clone(),
@@ -59,7 +60,7 @@ impl TextureInner {
     }
 
     #[inline]
-    pub fn get_raw_format(&self) -> dxgi::Format {
+    pub fn get_raw_format(&self) -> DXGI_FORMAT {
         match self {
             TextureInner::Plain(v) => v.dxgi_format,
             TextureInner::Swap(v) => texture_format_to_dxgi(v.desc.format),
@@ -68,9 +69,14 @@ impl TextureInner {
 
     #[inline]
     pub fn set_name(&self, name: &str) {
-        match self {
-            TextureInner::Plain(v) => v.resource.set_name(name).unwrap(),
-            TextureInner::Swap(v) => v.resource.set_name(name).unwrap(),
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+
+            match self {
+                TextureInner::Plain(v) => v.resource.SetName(name).unwrap(),
+                TextureInner::Swap(v) => v.resource.SetName(name).unwrap(),
+            }
         }
     }
 
@@ -91,7 +97,7 @@ declare_interfaces!(Texture, [ITexture, ITextureExt]);
 
 impl Texture {
     #[inline]
-    pub fn resource(&self) -> &dx12::Resource {
+    pub fn resource(&self) -> &ID3D12Resource {
         match &self.inner {
             TextureInner::Plain(v) => &v.resource,
             TextureInner::Swap(v) => &v.resource,
@@ -143,19 +149,19 @@ impl ITexture for Texture {
 }
 
 pub trait ITextureExt: ITexture {
-    fn get_raw_handle(&self) -> dx12::Resource;
+    fn get_raw_handle(&self) -> ID3D12Resource;
 
-    fn get_raw_format(&self) -> dxgi::Format;
+    fn get_raw_format(&self) -> DXGI_FORMAT;
 
     fn get_raw_rtv(&self) -> Option<CPUDescriptorHandle>;
 }
 
 impl ITextureExt for Texture {
-    fn get_raw_handle(&self) -> dx12::Resource {
+    fn get_raw_handle(&self) -> ID3D12Resource {
         self.inner.get_raw_handle()
     }
 
-    fn get_raw_format(&self) -> dxgi::Format {
+    fn get_raw_format(&self) -> DXGI_FORMAT {
         self.inner.get_raw_format()
     }
 
@@ -178,9 +184,9 @@ type CacheViewCPU = HashMap<(Format, TextureSubResourceSet), CPUDescriptorHandle
 
 pub struct PlainTexture {
     pub(crate) device: AnyArc<Device>,
-    pub(crate) resource: dx12::Resource,
+    pub(crate) resource: ID3D12Resource,
     pub(crate) desc: TextureDesc,
-    pub(crate) dxgi_format: dxgi::Format,
+    pub(crate) dxgi_format: DXGI_FORMAT,
     pub(crate) rtv_cache: RwLock<CacheViewCPU>,
     pub(crate) dsv_cache: RwLock<CacheViewCPU>,
 }
@@ -194,11 +200,9 @@ impl PlainTexture {
     ) -> Option<CPUDescriptorHandle> {
         let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
             let desc = self.make_rtv_desc_for_format_and_sub_resources(format, &sub_resources);
-            self.device.device.as_raw().CreateRenderTargetView(
-                self.resource.as_raw(),
-                &desc,
-                view.into(),
-            );
+            self.device
+                .device
+                .CreateRenderTargetView(&self.resource, &desc, view.into());
         };
         self.get_or_create_view_for_usage(
             &self.rtv_cache,
@@ -218,11 +222,9 @@ impl PlainTexture {
     ) -> Option<CPUDescriptorHandle> {
         let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
             let desc = self.make_dsv_desc_for_format_and_sub_resources(format, &sub_resources);
-            self.device.device.as_raw().CreateDepthStencilView(
-                self.resource.as_raw(),
-                &desc,
-                view.into(),
-            );
+            self.device
+                .device
+                .CreateDepthStencilView(&self.resource, &desc, view.into());
         };
         self.get_or_create_view_for_usage(
             &self.dsv_cache,
@@ -458,7 +460,7 @@ impl Drop for PlainTexture {
 
 pub struct SwapTexture {
     pub(crate) swap_chain: AnyArc<SwapChain>,
-    pub(crate) resource: dx12::Resource,
+    pub(crate) resource: ID3D12Resource,
     pub(crate) view: CPUDescriptorHandle,
     pub(crate) desc: TextureDesc,
 }

@@ -30,9 +30,7 @@
 use crate::acquired_texture::AcquiredTexture;
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
-use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -42,13 +40,16 @@ use interfaces::gpu::{
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::sync::atomic::{AtomicU64, Ordering};
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Queue {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) queue_type: QueueType,
-    pub(crate) handle: dx12::CommandQueue,
+    pub(crate) handle: ID3D12CommandQueue,
     pub(crate) submit_lock: Mutex<()>,
-    pub(crate) fence: dx12::Fence,
+    pub(crate) fence: ID3D12Fence,
     pub(crate) last_submitted_index: AtomicU64,
     pub(crate) last_completed_index: AtomicU64,
     pub(crate) in_flight: SegQueue<InFlightCommandList<CommandList>>,
@@ -67,34 +68,38 @@ impl Queue {
 
     #[inline]
     pub(crate) fn new(
-        device: &dx12::Device,
+        device: &ID3D12Device,
         queue_type: QueueType,
-        handle: dx12::CommandQueue,
+        handle: ID3D12CommandQueue,
     ) -> AnyArc<Self> {
-        AnyArc::new_cyclic(|v| Self {
-            this: v.clone(),
-            queue_type,
-            handle,
-            submit_lock: Mutex::new(()),
-            fence: device.create_fence(0, dx12::FenceFlags::NONE).unwrap(),
-            last_submitted_index: Default::default(),
-            last_completed_index: Default::default(),
-            in_flight: Default::default(),
-        })
+        unsafe {
+            AnyArc::new_cyclic(|v| Self {
+                this: v.clone(),
+                queue_type,
+                handle,
+                submit_lock: Mutex::new(()),
+                fence: device.CreateFence(0, D3D12_FENCE_FLAG_NONE).unwrap(),
+                last_submitted_index: Default::default(),
+                last_completed_index: Default::default(),
+                in_flight: Default::default(),
+            })
+        }
     }
 
     pub(crate) fn wait_all_lists_completed(&self) {
-        while let Some(mut v) = self.in_flight.pop() {
-            self.fence.set_event_on_completion(v.index, None).unwrap();
-            self.last_completed_index.store(v.index, Ordering::Relaxed);
-            v.list.return_to_pool();
+        unsafe {
+            while let Some(mut v) = self.in_flight.pop() {
+                self.fence.SetEventOnCompletion(v.index, None).unwrap();
+                self.last_completed_index.store(v.index, Ordering::Relaxed);
+                v.list.return_to_pool();
+            }
         }
     }
 
     pub(crate) fn clear_completed_lists(&self) {
         // Grab the index of the most recently completed command list on this queue and update
         // the queue's value
-        let last_completed = self.fence.get_completed_value();
+        let last_completed = unsafe { self.fence.GetCompletedValue() };
         self.last_completed_index
             .store(last_completed, Ordering::Relaxed);
 
@@ -153,12 +158,11 @@ impl IQueue for Queue {
         let index = {
             let _lock = self.submit_lock.lock();
             self.handle
-                .as_raw()
                 .ExecuteCommandLists(&[Some(command_list.list.clone().into())]);
 
             let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
             self.handle
-                .signal(&self.fence, index)
+                .Signal(&self.fence, index)
                 .map_err(|v| anyhow!(v))?;
 
             index
@@ -198,11 +202,11 @@ impl IQueue for Queue {
             let handles: Vec<Option<ID3D12CommandList>> =
                 lists.iter().map(|v| Some(v.list.clone().into())).collect();
 
-            self.handle.as_raw().ExecuteCommandLists(&handles);
+            self.handle.ExecuteCommandLists(&handles);
 
             let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
             self.handle
-                .signal(&self.fence, index)
+                .Signal(&self.fence, index)
                 .map_err(|v| anyhow!(v))?;
 
             index
@@ -233,14 +237,21 @@ impl IQueue for Queue {
         let _index = {
             let _lock = self.submit_lock.lock();
 
+            let presentation_params = DXGI_PRESENT_PARAMETERS {
+                DirtyRectsCount: 0,
+                pDirtyRects: std::ptr::null_mut(),
+                pScrollRect: std::ptr::null_mut(),
+                pScrollOffset: std::ptr::null_mut(),
+            };
             image
                 .swap_chain
                 .swap_chain
-                .present(0, 0)
+                .Present1(0, 0, &presentation_params)
+                .ok()
                 .map_err(|v| anyhow!(v))?;
             let index = self.last_submitted_index.fetch_add(1, Ordering::Relaxed);
             self.handle
-                .signal(&self.fence, index)
+                .Signal(&self.fence, index)
                 .map_err(|v| anyhow!(v))?;
 
             // TODO: We need to track the lifetime of this operation and extend the swap image's
@@ -253,20 +264,24 @@ impl IQueue for Queue {
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        set_marker_on_queue(self.handle.as_raw(), color.0.into(), message);
+        set_marker_on_queue(&self.handle, color.0.into(), message);
     }
 
     unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        begin_event_on_queue(self.handle.as_raw(), color.0.into(), message);
+        begin_event_on_queue(&self.handle, color.0.into(), message);
     }
 
     unsafe fn end_event(&mut self) {
-        end_event_on_queue(self.handle.as_raw());
+        end_event_on_queue(&self.handle);
     }
 }
 
 impl INamedObject for Queue {
     fn set_name(&self, name: &str) {
-        self.handle.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.handle.SetName(name).unwrap();
+        }
     }
 }

@@ -30,13 +30,13 @@
 #![allow(non_snake_case)]
 #![allow(unused)]
 
-use aleph_windows::core::{Error, HRESULT};
-use aleph_windows::Win32::Foundation::E_INVALIDARG;
-use aleph_windows::Win32::Graphics::Direct3D::*;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
-use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
-use aleph_windows::Win32::Graphics::Dxgi::DXGI_ERROR_UNSUPPORTED;
 use std::mem::MaybeUninit;
+use windows::core::{Error, HRESULT};
+use windows::Win32::Foundation::E_INVALIDARG;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
+use windows::Win32::Graphics::Dxgi::DXGI_ERROR_UNSUPPORTED;
 
 #[derive(Debug)]
 pub struct FeatureSupport {
@@ -72,7 +72,7 @@ pub struct FeatureSupport {
 }
 
 impl FeatureSupport {
-    pub fn new(device: impl Into<ID3D12Device>) -> aleph_windows::core::Result<Self> {
+    pub fn new(device: impl Into<ID3D12Device>) -> windows::core::Result<Self> {
         let device = device.into();
         unsafe {
             let options = load_options_or_default(&device, D3D12_FEATURE_D3D12_OPTIONS)
@@ -296,7 +296,7 @@ impl FeatureSupport {
 
     unsafe fn query_highest_shader_module(
         device: &ID3D12Device,
-    ) -> aleph_windows::core::Result<D3D12_FEATURE_DATA_SHADER_MODEL> {
+    ) -> windows::core::Result<D3D12_FEATURE_DATA_SHADER_MODEL> {
         let models = [
             D3D_SHADER_MODEL_6_7,
             D3D_SHADER_MODEL_6_6,
@@ -340,7 +340,7 @@ impl FeatureSupport {
 
     unsafe fn query_highest_root_signature(
         device: &ID3D12Device,
-    ) -> aleph_windows::core::Result<D3D_ROOT_SIGNATURE_VERSION> {
+    ) -> windows::core::Result<D3D_ROOT_SIGNATURE_VERSION> {
         let signature_version = [
             D3D_ROOT_SIGNATURE_VERSION_1_1,
             D3D_ROOT_SIGNATURE_VERSION_1_0,
@@ -379,7 +379,7 @@ impl FeatureSupport {
 
     unsafe fn query_highest_feature_level(
         device: &ID3D12Device,
-    ) -> aleph_windows::core::Result<D3D_FEATURE_LEVEL> {
+    ) -> windows::core::Result<D3D_FEATURE_LEVEL> {
         let feature_levels = [
             D3D_FEATURE_LEVEL_12_2,
             D3D_FEATURE_LEVEL_12_1,
@@ -782,7 +782,7 @@ impl FeatureSupport {
 unsafe fn load_options_or_default<T>(
     device: &ID3D12Device,
     feature: D3D12_FEATURE,
-) -> aleph_windows::core::Result<T> {
+) -> windows::core::Result<T> {
     let mut data = MaybeUninit::<T>::uninit();
     let result: Result<(), _> = device.CheckFeatureSupport(
         feature,

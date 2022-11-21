@@ -27,38 +27,30 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use utf16_lit::utf16_null;
+use windows::core::Interface;
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::*;
 
-pub struct Sampler {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) desc: SamplerDesc,
-}
+pub static CREATE_FN: DynamicLoadCell<PFN_D3D12_CREATE_DEVICE> =
+    DynamicLoadCell::new(&utf16_null!("d3d12.dll"), "D3D12CreateDevice\0");
 
-declare_interfaces!(Sampler, [ISampler]);
+pub fn create_device<'a>(
+    adapter: impl Into<Option<&'a IDXGIAdapter1>>,
+    minimum_feature_level: D3D_FEATURE_LEVEL,
+) -> windows::core::Result<ID3D12Device10> {
+    unsafe {
+        let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
 
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self.this.upgrade().unwrap(), |v| v)
-    }
+        let adapter = adapter.into().map(|v| v.clone().into());
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
+        let mut device: Option<ID3D12Device10> = None;
 
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn desc(&self) -> &SamplerDesc {
-        &self.desc
-    }
-}
-
-impl INamedObject for Sampler {
-    fn set_name(&self, _name: &str) {
-        // No D3D12 object to name
+        let ptr = &mut device;
+        let ptr = ptr as *mut Option<ID3D12Device10>;
+        let ptr = ptr as *mut *mut ::std::ffi::c_void;
+        create_fn(adapter, minimum_feature_level, &ID3D12Device10::IID, ptr).and_some(device)
     }
 }

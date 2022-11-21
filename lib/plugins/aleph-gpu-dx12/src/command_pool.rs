@@ -29,7 +29,6 @@
 
 use crate::command_list::CommandList;
 use crate::device::Device;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow;
@@ -37,6 +36,7 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     CommandListCreateError, ICommandList, ICommandPool, INamedObject, QueueType,
 };
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandPool {
     pub(crate) this: AnyWeak<Self>,
@@ -58,7 +58,6 @@ impl CommandPool {
         let allocator = unsafe {
             self.device
                 .device
-                .as_raw()
                 .CreateCommandAllocator(list_type)
                 .map_err(|v| anyhow!(v))?
         };
@@ -66,7 +65,6 @@ impl CommandPool {
         let list = unsafe {
             self.device
                 .device
-                .as_raw()
                 .CreateCommandList1(0, list_type, Default::default())
                 .map_err(|v| anyhow!(v))?
         };

@@ -37,14 +37,15 @@
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{IDescriptorSetLayout, INamedObject};
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct DescriptorSetLayout {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
-    pub(crate) visibility: dx12::ShaderVisibility,
-    pub(crate) resource_table: Vec<dx12::DescriptorRange1>,
-    pub(crate) static_samplers: Vec<dx12::StaticSamplerDesc>,
-    pub(crate) sampler_table: Option<Vec<dx12::DescriptorRange1>>,
+    pub(crate) visibility: D3D12_SHADER_VISIBILITY,
+    pub(crate) resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
+    pub(crate) static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
+    pub(crate) sampler_table: Option<Vec<D3D12_DESCRIPTOR_RANGE1>>,
 }
 
 declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);

@@ -28,10 +28,10 @@
 //
 
 use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use parking_lot::Mutex;
 use std::num::{NonZeroU64, NonZeroUsize};
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct DescriptorHeap {
     /// The device the heap belongs to
@@ -63,7 +63,7 @@ impl DescriptorHeap {
         r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
         num_descriptors: u32,
         gpu_visible: bool,
-    ) -> aleph_windows::core::Result<Self> {
+    ) -> windows::core::Result<Self> {
         if num_descriptors == 0 {
             // A descriptor heap with 0 size makes no sense
             panic!("Creating a DescriptorHeap with num_descriptors = 0 is an error");

@@ -27,36 +27,46 @@
 // SOFTWARE.
 //
 
+use std::ops::Deref;
+use utf16_lit::utf16_null;
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 
-/// Internal struct that caches the descriptor increment sizes needed for allocating space in
-/// descriptor heaps.
-pub struct DescriptorHeapInfo {
-    /// Descriptor increment for shader resource views
-    pub resource_inc: u32,
+pub(crate) static CREATE_FN: DynamicLoadCell<PFN_D3D12_SERIALIZE_VERSIONED_ROOT_SIGNATURE> =
+    DynamicLoadCell::new(
+        &utf16_null!("d3d12.dll"),
+        "D3D12SerializeVersionedRootSignature\0",
+    );
 
-    /// Descriptor increment for unordered access views
-    pub rtv_inc: u32,
+#[repr(transparent)]
+pub struct RootSignatureBlob(pub(crate) ID3DBlob);
 
-    /// Descriptor increment for constant buffer views
-    pub dsv_inc: u32,
+impl RootSignatureBlob {
+    #[inline]
+    pub unsafe fn new(desc: &D3D12_VERSIONED_ROOT_SIGNATURE_DESC) -> windows::core::Result<Self> {
+        let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
+        let mut blob: Option<ID3DBlob> = None;
+        let mut err: Option<ID3DBlob> = None; // TODO: Find a sane way to expose this
+        create_fn(desc, &mut blob, &mut err)
+            .and_some(blob)
+            .map(RootSignatureBlob)
+    }
 
-    /// Descriptor increment for samplers
-    pub sampler_inc: u32,
+    pub fn as_slice(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts(
+                self.0.GetBufferPointer() as *const u8,
+                self.0.GetBufferSize(),
+            )
+        }
+    }
 }
 
-impl DescriptorHeapInfo {
-    pub fn new(device: &ID3D12Device) -> Self {
-        // Safety: there is no un-safety beyond FFI, the function is thread-safe
-        unsafe {
-            Self {
-                resource_inc: device
-                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV),
-                rtv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV),
-                dsv_inc: device.GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV),
-                sampler_inc: device
-                    .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER),
-            }
-        }
+impl Deref for RootSignatureBlob {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
     }
 }

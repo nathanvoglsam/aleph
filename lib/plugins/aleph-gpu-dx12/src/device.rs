@@ -40,6 +40,11 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
+use crate::internal::graphics_pipeline_state_stream::{
+    GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
+};
+use crate::internal::register_message_callback::device_unregister_message_callback;
+use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -47,11 +52,7 @@ use crate::sampler::Sampler;
 use crate::shader::Shader;
 use crate::texture::{PlainTexture, Texture, TextureInner};
 use crate::{CPUDescriptorHandle, GPUDescriptorHandle};
-use aleph_windows::Win32::Graphics::Direct3D::*;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
-use aleph_windows::Win32::Graphics::Dxgi::Common::DXGI_SAMPLE_DESC;
 use crossbeam::queue::SegQueue;
-use dx12::{dxgi, D3D12Object};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
@@ -68,11 +69,17 @@ use interfaces::gpu::{
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use windows::core::{PCSTR, PCWSTR};
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _adapter: AnyArc<Adapter>,
-    pub(crate) device: dx12::Device,
+    pub(crate) device: ID3D12Device10,
     pub(crate) debug_message_cookie: Option<u32>,
     pub(crate) descriptor_heap_info: DescriptorHeapInfo,
     pub(crate) descriptor_heaps: DescriptorHeaps,
@@ -131,7 +138,7 @@ impl IDevice for Device {
             .query_interface::<PipelineLayout>()
             .unwrap();
 
-        let builder = dx12::GraphicsPipelineStateStreamBuilder::new();
+        let builder = GraphicsPipelineStateStreamBuilder::new();
 
         // Add all shaders in the list to their corresponding slot
         let builder = Self::translate_shader_stage_list(desc.shader_stages, builder)?;
@@ -157,7 +164,7 @@ impl IDevice for Device {
         let builder = builder.sample_mask(u32::MAX); // TODO: Why?
 
         // Render target format translation is straight forward, just convert the formats and add
-        let rtv_formats: Vec<dxgi::Format> = desc
+        let rtv_formats: Vec<DXGI_FORMAT> = desc
             .render_target_formats
             .iter()
             .copied()
@@ -173,10 +180,16 @@ impl IDevice for Device {
 
         // Construct the D3D12 pipeline object
         let state_stream = builder.build();
-        let pipeline = self
-            .device
-            .create_graphics_pipeline_state(&state_stream)
-            .map_err(|v| anyhow!(v))?;
+        let state_stream_ref = D3D12_PIPELINE_STATE_STREAM_DESC {
+            SizeInBytes: std::mem::size_of_val(&state_stream),
+            pPipelineStateSubobjectStream: &state_stream as *const GraphicsPipelineStateStream
+                as *mut _,
+        };
+        let pipeline = unsafe {
+            self.device
+                .CreatePipelineState(&state_stream_ref)
+                .map_err(|v| anyhow!(v))?
+        };
 
         let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
             this: v.clone(),
@@ -204,17 +217,25 @@ impl IDevice for Device {
             .query_interface::<Shader>()
             .expect("Unknown IShader implementation");
 
-        let pipeline_desc = dx12::ComputePipelineStateDesc {
-            root_signature: pipeline_layout.root_signature.clone(),
-            shader: &module.data,
-            node_mask: 0,
-            cached_pso: None,
+        let pipeline_desc = D3D12_COMPUTE_PIPELINE_STATE_DESC {
+            pRootSignature: Some(pipeline_layout.root_signature.clone()),
+            CS: D3D12_SHADER_BYTECODE {
+                pShaderBytecode: module.data.as_ptr() as *const _,
+                BytecodeLength: module.data.len(),
+            },
+            NodeMask: 0,
+            CachedPSO: D3D12_CACHED_PIPELINE_STATE {
+                pCachedBlob: std::ptr::null(),
+                CachedBlobSizeInBytes: 0,
+            },
+            Flags: D3D12_PIPELINE_STATE_FLAGS::default(),
         };
 
-        let pipeline = self
-            .device
-            .create_compute_pipeline_state(&pipeline_desc)
-            .map_err(|v| anyhow!(v))?;
+        let pipeline = unsafe {
+            self.device
+                .CreateComputePipelineState(&pipeline_desc)
+                .map_err(|v| anyhow!(v))?
+        };
 
         let pipeline = AnyArc::new_cyclic(move |v| ComputePipeline {
             this: v.clone(),
@@ -301,14 +322,14 @@ impl IDevice for Device {
             // set index that it is being used for
             let mut table = layout.resource_table.clone();
             for binding in table.iter_mut() {
-                binding.register_space = i as u32;
+                binding.RegisterSpace = i as u32;
             }
             resource_tables.push((table, layout.visibility));
 
             // Extend our list of static samplers based on the provided list for this binding
             static_samplers.extend(layout.static_samplers.iter().map(|v| {
                 let mut out = v.clone();
-                out.register_space = i as u32;
+                out.RegisterSpace = i as u32;
                 out
             }));
         }
@@ -316,12 +337,19 @@ impl IDevice for Device {
         let mut parameters =
             Vec::with_capacity(desc.set_layouts.len() + desc.push_constant_blocks.len());
         for (ranges, visibility) in &resource_tables {
-            let param = dx12::RootParameter1::DescriptorTable {
-                visibility: visibility.clone(),
-                ranges: ranges.as_slice(),
+            let param = D3D12_ROOT_PARAMETER1 {
+                ParameterType: D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE,
+                Anonymous: D3D12_ROOT_PARAMETER1_0 {
+                    DescriptorTable: D3D12_ROOT_DESCRIPTOR_TABLE1 {
+                        NumDescriptorRanges: ranges.len() as _,
+                        pDescriptorRanges: ranges.as_ptr(),
+                    },
+                },
+                ShaderVisibility: visibility.clone().into(),
             };
             parameters.push(param);
         }
+
         // TODO: Putting root constants after all descriptors may have performance implications.
         //       D3D12 requires priority to lower root parameter indices so, (on AMD) having push
         //       constants after descriptors means the constants are more likely to spill into
@@ -332,13 +360,16 @@ impl IDevice for Device {
                 return Err(PipelineLayoutCreateError::InvalidPushConstantBlockSize);
             }
             let num32_bit_values = (block.size / 4) as u32;
-            let range = dx12::RootParameter1::Constants {
-                visibility: shader_visibility_to_dx12(block.visibility),
-                constants: dx12::RootConstants {
-                    shader_register: block.binding,
-                    register_space: 1024, // A reserved space for root/push constants
-                    num32_bit_values,
+            let range = D3D12_ROOT_PARAMETER1 {
+                ParameterType: D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS,
+                Anonymous: D3D12_ROOT_PARAMETER1_0 {
+                    Constants: D3D12_ROOT_CONSTANTS {
+                        ShaderRegister: block.binding,
+                        RegisterSpace: 1024, // A reserved space for root/push constants
+                        Num32BitValues: num32_bit_values,
+                    },
                 },
+                ShaderVisibility: shader_visibility_to_dx12(block.visibility),
             };
             push_constant_blocks.push(PushConstantBlockInfo {
                 size: num32_bit_values * 4,
@@ -352,16 +383,22 @@ impl IDevice for Device {
         // TODO: Investigate a better way for handling 'allow input assembler' flag as currently we
         //       just unconditionally enable it. Supposedly it can be a minor optimization on some
         //       hardware.
-        let desc = dx12::RootSignatureDesc1::builder()
-            .parameters(&parameters)
-            .static_samplers(&static_samplers)
-            .flags(dx12::RootSignatureFlags::ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT)
-            .build();
-        let desc = dx12::VersionedRootSignatureDesc::Desc1(desc);
         let root_signature = unsafe {
-            let blob = dx12::RootSignatureBlob::new(&desc).map_err(|v| anyhow!(v))?;
+            let desc = D3D12_VERSIONED_ROOT_SIGNATURE_DESC {
+                Version: D3D_ROOT_SIGNATURE_VERSION_1_1,
+                Anonymous: D3D12_VERSIONED_ROOT_SIGNATURE_DESC_0 {
+                    Desc_1_1: D3D12_ROOT_SIGNATURE_DESC1 {
+                        NumParameters: parameters.len() as _,
+                        pParameters: parameters.as_ptr(),
+                        NumStaticSamplers: static_samplers.len() as _,
+                        pStaticSamplers: static_samplers.as_ptr(),
+                        Flags: D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT,
+                    },
+                },
+            };
+            let blob = RootSignatureBlob::new(&desc).map_err(|v| anyhow!(v))?;
             self.device
-                .create_root_signature(&blob)
+                .CreateRootSignature::<ID3D12RootSignature>(0, &blob)
                 .map_err(|v| anyhow!(v))?
         };
 
@@ -417,7 +454,6 @@ impl IDevice for Device {
         };
         let resource = unsafe {
             self.device
-                .as_raw()
                 .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
                     Default::default(),
@@ -466,7 +502,6 @@ impl IDevice for Device {
             };
 
             self.device
-                .as_raw()
                 .CreateCommittedResource3::<_, ID3D12Resource>(
                     &heap_properties,
                     Default::default(),
@@ -477,7 +512,6 @@ impl IDevice for Device {
                     0,
                     std::ptr::null(), // TODO: We could use this maybe?
                 )
-                .map(|v| std::mem::transmute::<_, dx12::Resource>(v))
                 .map_err(|v| anyhow!(v))?
         };
 
@@ -543,17 +577,19 @@ impl IDevice for Device {
 impl Device {
     pub unsafe fn create_views_for_swap_images(
         &self,
-        swap_chain: &dxgi::SwapChain,
-        format: dxgi::Format,
+        swap_chain: &IDXGISwapChain4,
+        format: DXGI_FORMAT,
         count: u32,
-    ) -> anyhow::Result<Vec<(dx12::Resource, CPUDescriptorHandle)>> {
+    ) -> anyhow::Result<Vec<(ID3D12Resource, CPUDescriptorHandle)>> {
         let mut images = Vec::new();
         for i in 0..count {
-            let buffer = swap_chain.get_buffer(i).map_err(|e| anyhow!(e))?;
+            let buffer = swap_chain
+                .GetBuffer::<ID3D12Resource>(i)
+                .map_err(|e| anyhow!(e))?;
             let view = self.descriptor_heaps.cpu_rtv_heap().allocate().unwrap();
 
             let desc = D3D12_RENDER_TARGET_VIEW_DESC {
-                Format: format.into(),
+                Format: format,
                 ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
                 Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
                     Texture2D: D3D12_TEX2D_RTV {
@@ -563,8 +599,7 @@ impl Device {
                 },
             };
             self.device
-                .as_raw()
-                .CreateRenderTargetView(buffer.as_raw(), &desc, view.into());
+                .CreateRenderTargetView(&buffer, &desc, view.into());
 
             images.push((buffer, view));
         }
@@ -574,8 +609,8 @@ impl Device {
     /// Internal function for translating the list of [IShader] stages into the pipeline description
     fn translate_shader_stage_list<'a, 'b>(
         shader_stages: &'a [&'a dyn IShader],
-        mut builder: dx12::GraphicsPipelineStateStreamBuilder<'a>,
-    ) -> Result<dx12::GraphicsPipelineStateStreamBuilder<'a>, GraphicsPipelineCreateError> {
+        mut builder: GraphicsPipelineStateStreamBuilder<'a>,
+    ) -> Result<GraphicsPipelineStateStreamBuilder<'a>, GraphicsPipelineCreateError> {
         for shader in shader_stages {
             let shader = shader.query_interface::<Shader>().unwrap();
             builder = match shader.shader_type {
@@ -596,7 +631,7 @@ impl Device {
     /// description
     fn translate_vertex_input_state_desc(
         desc: &VertexInputStateDesc,
-    ) -> ([u32; 16], Vec<dx12::InputElementDesc<'static>>) {
+    ) -> ([u32; 16], Vec<D3D12_INPUT_ELEMENT_DESC>) {
         // Copy the input binding strides into a buffer the pipeline will hold on to so it can be
         // used in the command encoders. Vulkan bakes these in the pipeline, d3d12 gets the values
         // when the input bindings are bound
@@ -637,7 +672,7 @@ impl Device {
             // This requires some modification to existing shaders to be compatible but makes
             // mapping Vulkan easier. It is also much simpler, just an "index" compared to a string
             // identifier + index combo.
-            let semantic_name = cstr::cstr!("A").into();
+            let semantic_name = cstr::cstr!("A");
             let semantic_index = attribute.location;
 
             // Input slot directly translates to Vulkan's concept of a vertex attribute binding
@@ -657,18 +692,18 @@ impl Device {
             // We've fetched the binding and extract the values for input_slot_class and
             // instance_data_step_rate from the binding description.
             let (input_slot_class, instance_data_step_rate) = match binding.input_rate {
-                VertexInputRate::PerVertex => (dx12::InputClassification::PerVertex, 0),
-                VertexInputRate::PerInstance => (dx12::InputClassification::PerInstance, 1),
+                VertexInputRate::PerVertex => (D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0),
+                VertexInputRate::PerInstance => (D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1),
             };
 
-            input_layout.push(dx12::InputElementDesc {
-                semantic_name,
-                semantic_index,
-                format: texture_format_to_dxgi(attribute.format),
-                input_slot,
-                aligned_byte_offset,
-                input_slot_class,
-                instance_data_step_rate,
+            input_layout.push(D3D12_INPUT_ELEMENT_DESC {
+                SemanticName: PCSTR(semantic_name.as_ptr() as *const _),
+                SemanticIndex: semantic_index,
+                Format: texture_format_to_dxgi(attribute.format),
+                InputSlot: input_slot,
+                AlignedByteOffset: aligned_byte_offset,
+                InputSlotClass: input_slot_class,
+                InstanceDataStepRate: instance_data_step_rate,
             });
         }
 
@@ -679,9 +714,9 @@ impl Device {
     /// description
     fn translate_input_assembly_state_desc<'a, 'b>(
         desc: &'a GraphicsPipelineDesc,
-        mut builder: dx12::GraphicsPipelineStateStreamBuilder<'b>,
+        mut builder: GraphicsPipelineStateStreamBuilder<'b>,
     ) -> (
-        dx12::GraphicsPipelineStateStreamBuilder<'b>,
+        GraphicsPipelineStateStreamBuilder<'b>,
         D3D_PRIMITIVE_TOPOLOGY,
     ) {
         // Once again, we adopt a Vulkan model when handling primitive topology. DX12's pipeline
@@ -701,72 +736,72 @@ impl Device {
 
     /// Internal function for translating the [RasterizerStateDesc] field of a pipeline
     /// description
-    fn translate_rasterizer_state_desc(desc: &RasterizerStateDesc) -> dx12::RasterizerDesc {
+    fn translate_rasterizer_state_desc(desc: &RasterizerStateDesc) -> D3D12_RASTERIZER_DESC {
         let fill_mode = polygon_mode_to_dx12(desc.polygon_mode);
         let cull_mode = cull_mode_to_dx12(desc.cull_mode);
         let front_counter_clockwise = front_face_order_to_dx12(desc.front_face);
-        dx12::RasterizerDesc {
-            fill_mode,
-            cull_mode,
-            front_counter_clockwise,
-            depth_bias: 0,                         // TODO: translate
-            depth_bias_clamp: 0.0,                 // TODO: translate
-            slope_scaled_depth_bias: 0.0,          // TODO: translate
-            depth_clip_enable: dx12::Bool::TRUE,   // Vulkan has no option, so always true
-            multisample_enable: dx12::Bool::FALSE, // TODO: translate
-            antialiased_line_enable: dx12::Bool::FALSE,
-            forced_sample_count: 0,
-            conservative_raster: dx12::ConservativeRasterizationMode::Off,
+        D3D12_RASTERIZER_DESC {
+            FillMode: fill_mode,
+            CullMode: cull_mode,
+            FrontCounterClockwise: front_counter_clockwise,
+            DepthBias: 0,                         // TODO: translate
+            DepthBiasClamp: 0.0,                  // TODO: translate
+            SlopeScaledDepthBias: 0.0,            // TODO: translate
+            DepthClipEnable: BOOL::from(true),    // Vulkan has no option, so always true
+            MultisampleEnable: BOOL::from(false), // TODO: translate
+            AntialiasedLineEnable: BOOL::from(false),
+            ForcedSampleCount: 0,
+            ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
         }
     }
 
     /// Internal function for translating the [DepthStencilStateDesc] field of a pipeline
     /// description
-    fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> dx12::DepthStencilDesc {
+    fn translate_depth_stencil_desc(desc: &DepthStencilStateDesc) -> D3D12_DEPTH_STENCIL_DESC {
         /// Internal function for translating our [StencilOpState] into the D3D12 equivalent
-        fn translate_depth_stencil_op_desc(desc: &StencilOpState) -> dx12::DepthStencilOpDesc {
+        fn translate_depth_stencil_op_desc(desc: &StencilOpState) -> D3D12_DEPTH_STENCILOP_DESC {
             let stencil_fail_op = stencil_op_to_dx12(desc.fail_op);
             let stencil_depth_fail_op = stencil_op_to_dx12(desc.depth_fail_op);
             let stencil_pass_op = stencil_op_to_dx12(desc.pass_op);
             let stencil_func = compare_op_to_dx12(desc.compare_op);
-            dx12::DepthStencilOpDesc {
-                stencil_fail_op,
-                stencil_depth_fail_op,
-                stencil_pass_op,
-                stencil_func,
+            D3D12_DEPTH_STENCILOP_DESC {
+                StencilFailOp: stencil_fail_op,
+                StencilDepthFailOp: stencil_depth_fail_op,
+                StencilPassOp: stencil_pass_op,
+                StencilFunc: stencil_func,
             }
         }
 
-        let depth_enable = dx12::Bool::from(desc.depth_test);
+        let depth_enable = BOOL::from(desc.depth_test);
         let depth_write_mask = if desc.depth_write {
-            dx12::DepthWriteMask::All
+            D3D12_DEPTH_WRITE_MASK_ALL
         } else {
-            dx12::DepthWriteMask::Zero
+            D3D12_DEPTH_WRITE_MASK_ZERO
         };
         let depth_func = compare_op_to_dx12(desc.depth_compare_op);
-        let stencil_enable = dx12::Bool::from(desc.stencil_test);
+        let stencil_enable = BOOL::from(desc.stencil_test);
         let stencil_read_mask = desc.stencil_read_mask;
         let stencil_write_mask = desc.stencil_write_mask;
 
         let front_face = translate_depth_stencil_op_desc(&desc.stencil_front);
         let back_face = translate_depth_stencil_op_desc(&desc.stencil_back);
 
-        dx12::DepthStencilDesc {
-            depth_enable,
-            depth_write_mask,
-            depth_func,
-            stencil_enable,
-            stencil_read_mask,
-            stencil_write_mask,
-            front_face,
-            back_face,
+        D3D12_DEPTH_STENCIL_DESC {
+            DepthEnable: depth_enable,
+            DepthWriteMask: depth_write_mask,
+            DepthFunc: depth_func,
+            StencilEnable: stencil_enable,
+            StencilReadMask: stencil_read_mask,
+            StencilWriteMask: stencil_write_mask,
+            FrontFace: front_face,
+            BackFace: back_face,
         }
     }
 
-    fn translate_blend_state_desc(desc: &BlendStateDesc) -> dx12::BlendDesc {
+    fn translate_blend_state_desc(desc: &BlendStateDesc) -> D3D12_BLEND_DESC {
         // TODO: Figure out if alpha to coverage is possible to expose
-        let alpha_to_coverage_enable = dx12::Bool::FALSE;
-        let independent_blend_enable = dx12::Bool::TRUE;
+        let alpha_to_coverage_enable = BOOL::from(false);
+        let independent_blend_enable = BOOL::from(true);
 
         // TODO: Once we cast aleph-dx12 into the void we should replace this with a 'zeroed' struct
         //       for faster initialization. We can't zero this struct because our enum wrappers dont
@@ -775,21 +810,21 @@ impl Device {
         // will be read, where 'n' is the number of render targets in the pipeline desc, all other
         // items in the array will be ignored so they don't need to be in a well defined state.
         let mut render_targets = [
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
-            dx12::RenderTargetBlendDesc::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
+            D3D12_RENDER_TARGET_BLEND_DESC::default(),
         ];
 
         for (i, attachment) in desc.attachments.iter().enumerate() {
-            let blend_enable = dx12::Bool::from(attachment.blend_enabled);
+            let blend_enable = BOOL::from(attachment.blend_enabled);
 
-            let logic_op_enable = dx12::Bool::FALSE;
-            let logic_op = dx12::LogicOp::Clear;
+            let logic_op_enable = BOOL::from(false);
+            let logic_op = D3D12_LOGIC_OP::default();
 
             let src_blend = blend_factor_to_dx12(attachment.src_factor);
             let dest_blend = blend_factor_to_dx12(attachment.dst_factor);
@@ -799,34 +834,33 @@ impl Device {
             let dest_blend_alpha = blend_factor_to_dx12(attachment.alpha_dst_factor);
             let blend_op_alpha = blend_op_to_dx12(attachment.alpha_blend_op);
 
-            let render_target_write_mask =
-                dx12::ColorWriteEnable(attachment.color_write_mask.bits());
+            let render_target_write_mask = attachment.color_write_mask.bits();
 
-            render_targets[i] = dx12::RenderTargetBlendDesc {
-                blend_enable,
-                logic_op_enable,
-                src_blend,
-                dest_blend,
-                blend_op,
-                src_blend_alpha,
-                dest_blend_alpha,
-                blend_op_alpha,
-                logic_op,
-                render_target_write_mask,
+            render_targets[i] = D3D12_RENDER_TARGET_BLEND_DESC {
+                BlendEnable: blend_enable,
+                LogicOpEnable: logic_op_enable,
+                LogicOp: logic_op,
+                SrcBlend: src_blend,
+                DestBlend: dest_blend,
+                BlendOp: blend_op,
+                SrcBlendAlpha: src_blend_alpha,
+                DestBlendAlpha: dest_blend_alpha,
+                BlendOpAlpha: blend_op_alpha,
+                RenderTargetWriteMask: render_target_write_mask,
             };
         }
 
-        dx12::BlendDesc {
-            alpha_to_coverage_enable,
-            independent_blend_enable,
-            render_targets,
+        D3D12_BLEND_DESC {
+            AlphaToCoverageEnable: alpha_to_coverage_enable,
+            IndependentBlendEnable: independent_blend_enable,
+            RenderTarget: render_targets,
         }
     }
 
     fn build_resource_table_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
-    ) -> Vec<dx12::DescriptorRange1> {
+    ) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
         let mut offset = 0;
         let mut table = Vec::with_capacity(desc.items.len());
         for item in desc
@@ -860,31 +894,35 @@ impl Device {
                     | DescriptorType::RawBuffer
                     | DescriptorType::TypedBuffer,
                     false,
-                ) => dx12::DescriptorRangeType::SRV,
+                ) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
                 (
                     DescriptorType::Texture
                     | DescriptorType::StructuredBuffer
                     | DescriptorType::RawBuffer
                     | DescriptorType::TypedBuffer,
                     true,
-                ) => dx12::DescriptorRangeType::UAV,
-                (DescriptorType::ConstantBuffer, _) => dx12::DescriptorRangeType::CBV,
+                ) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+                (DescriptorType::ConstantBuffer, _) => D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
                 (DescriptorType::Sampler, _) => unreachable!(),
             };
+
             let num_descriptors = match item.binding_count {
                 None => 1,
                 Some(v) => v.get(),
             };
+
             let base_shader_register = item.binding_num;
-            let flags = dx12::DescriptorRangeFlags::DATA_VOLATILE
-                | dx12::DescriptorRangeFlags::DESCRIPTORS_VOLATILE;
-            let item = dx12::DescriptorRange1 {
-                range_type,
-                num_descriptors,
-                base_shader_register,
-                register_space: 0,
-                flags, // TODO: temp fix for existing renderer, remove in future
-                offset_in_descriptors_from_table_start: offset,
+
+            let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
+                | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
+
+            let item = D3D12_DESCRIPTOR_RANGE1 {
+                RangeType: range_type,
+                NumDescriptors: num_descriptors,
+                BaseShaderRegister: base_shader_register,
+                RegisterSpace: 0,
+                Flags: flags,
+                OffsetInDescriptorsFromTableStart: offset,
             };
             table.push(item);
             offset += self.descriptor_heap_info.resource_inc * num_descriptors;
@@ -896,7 +934,7 @@ impl Device {
         &self,
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<
-        (Vec<dx12::DescriptorRange1>, Vec<dx12::StaticSamplerDesc>),
+        (Vec<D3D12_DESCRIPTOR_RANGE1>, Vec<D3D12_STATIC_SAMPLER_DESC>),
         DescriptorSetLayoutCreateError,
     > {
         let mut offset = 0;
@@ -934,24 +972,24 @@ impl Device {
                         sampler.desc.compare_op.is_some(),
                         sampler.desc.enable_anisotropy,
                     );
-                    static_samplers.push(dx12::StaticSamplerDesc {
-                        filter,
-                        address_u: sampler_address_mode_to_dx12(sampler.desc.address_mode_u),
-                        address_v: sampler_address_mode_to_dx12(sampler.desc.address_mode_v),
-                        address_w: sampler_address_mode_to_dx12(sampler.desc.address_mode_w),
-                        mip_lod_bias: sampler.desc.lod_bias,
-                        max_anisotropy: sampler.desc.max_anisotropy as u32,
-                        comparison_func: sampler
+                    static_samplers.push(D3D12_STATIC_SAMPLER_DESC {
+                        Filter: filter,
+                        AddressU: sampler_address_mode_to_dx12(sampler.desc.address_mode_u),
+                        AddressV: sampler_address_mode_to_dx12(sampler.desc.address_mode_v),
+                        AddressW: sampler_address_mode_to_dx12(sampler.desc.address_mode_w),
+                        MipLODBias: sampler.desc.lod_bias,
+                        MaxAnisotropy: sampler.desc.max_anisotropy as u32,
+                        ComparisonFunc: sampler
                             .desc
                             .compare_op
                             .map(compare_op_to_dx12)
-                            .unwrap_or(dx12::ComparisonFunc::Always),
-                        border_color: border_color_to_dx12(sampler.desc.border_color),
-                        min_lod: sampler.desc.min_lod,
-                        max_lod: sampler.desc.max_lod,
-                        shader_register: item.binding_num,
-                        register_space: 0,
-                        shader_visibility: dx12::ShaderVisibility::All,
+                            .unwrap_or(D3D12_COMPARISON_FUNC_ALWAYS),
+                        BorderColor: border_color_to_dx12(sampler.desc.border_color),
+                        MinLOD: sampler.desc.min_lod,
+                        MaxLOD: sampler.desc.max_lod,
+                        ShaderRegister: item.binding_num,
+                        RegisterSpace: 0,
+                        ShaderVisibility: D3D12_SHADER_VISIBILITY_ALL,
                     });
                 }
             } else {
@@ -961,15 +999,15 @@ impl Device {
                     Some(v) => v.get(),
                 };
                 let base_shader_register = item.binding_num;
-                let flags = dx12::DescriptorRangeFlags::DATA_VOLATILE
-                    | dx12::DescriptorRangeFlags::DESCRIPTORS_VOLATILE;
-                let item = dx12::DescriptorRange1 {
-                    range_type: dx12::DescriptorRangeType::Sampler,
-                    num_descriptors,
-                    base_shader_register,
-                    register_space: 0,
-                    flags, // TODO: temp fix for existing renderer, remove in future
-                    offset_in_descriptors_from_table_start: offset,
+                let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
+                    | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
+                let item = D3D12_DESCRIPTOR_RANGE1 {
+                    RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
+                    NumDescriptors: num_descriptors,
+                    BaseShaderRegister: base_shader_register,
+                    RegisterSpace: 0,
+                    Flags: flags,
+                    OffsetInDescriptorsFromTableStart: offset,
                 };
                 sampler_table.push(item);
                 offset += self.descriptor_heap_info.sampler_inc * num_descriptors;
@@ -984,33 +1022,33 @@ impl Drop for Device {
         // SAFETY: This should be safe but I can't prove it
         unsafe {
             if let Some(cookie) = self.debug_message_cookie {
-                let _sink = self.device.unregister_message_callback(cookie);
+                let _sink = device_unregister_message_callback((&self.device).into(), cookie);
             }
         }
     }
 }
 
 pub trait IDeviceExt: IDevice {
-    fn get_raw_handle(&self) -> dx12::Device;
-    fn get_raw_general_queue(&self) -> Option<dx12::CommandQueue>;
-    fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue>;
-    fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue>;
+    fn get_raw_handle(&self) -> ID3D12Device10;
+    fn get_raw_general_queue(&self) -> Option<ID3D12CommandQueue>;
+    fn get_raw_compute_queue(&self) -> Option<ID3D12CommandQueue>;
+    fn get_raw_transfer_queue(&self) -> Option<ID3D12CommandQueue>;
 }
 
 impl IDeviceExt for Device {
-    fn get_raw_handle(&self) -> dx12::Device {
+    fn get_raw_handle(&self) -> ID3D12Device10 {
         self.device.clone()
     }
 
-    fn get_raw_general_queue(&self) -> Option<dx12::CommandQueue> {
+    fn get_raw_general_queue(&self) -> Option<ID3D12CommandQueue> {
         self.general_queue.as_ref().map(|v| v.handle.clone())
     }
 
-    fn get_raw_compute_queue(&self) -> Option<dx12::CommandQueue> {
+    fn get_raw_compute_queue(&self) -> Option<ID3D12CommandQueue> {
         self.compute_queue.as_ref().map(|v| v.handle.clone())
     }
 
-    fn get_raw_transfer_queue(&self) -> Option<dx12::CommandQueue> {
+    fn get_raw_transfer_queue(&self) -> Option<ID3D12CommandQueue> {
         self.transfer_queue.as_ref().map(|v| v.handle.clone())
     }
 }
@@ -1020,6 +1058,10 @@ unsafe impl Sync for Device {}
 
 impl INamedObject for Device {
     fn set_name(&self, name: &str) {
-        self.device.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.device.SetName(name).unwrap();
+        }
     }
 }

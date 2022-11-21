@@ -30,10 +30,9 @@
 use crate::context::Context;
 use crate::device::Device;
 use crate::internal::conv::texture_format_to_dxgi;
+use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::swap_chain::{SwapChain, SwapChainState};
 use crossbeam::atomic::AtomicCell;
-use dx12::dxgi;
-use dx12::dxgi::{Format, SwapChainFlags};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -43,11 +42,14 @@ use interfaces::gpu::{
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use parking_lot::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _context: AnyArc<Context>,
-    pub(crate) factory: dxgi::Factory,
+    pub(crate) factory: IDXGIFactory2,
     pub(crate) handle: RawWindowHandle,
     pub(crate) has_swap_chain: AtomicBool,
 }
@@ -64,33 +66,39 @@ impl Surface {
 
         // Translate our high level present mode into terms that make sense to d3d12
         let (buffer_count, flags) = match config.present_mode {
-            PresentationMode::Immediate => (2, SwapChainFlags::ALLOW_TEARING),
-            PresentationMode::Mailbox => (3, SwapChainFlags::NONE),
-            PresentationMode::Fifo => (2, SwapChainFlags::NONE),
+            PresentationMode::Immediate => (2, DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING),
+            PresentationMode::Mailbox => (3, DXGI_SWAP_CHAIN_FLAG::default()),
+            PresentationMode::Fifo => (2, DXGI_SWAP_CHAIN_FLAG::default()),
         };
 
         // Translate our format
         let view_format = texture_format_to_dxgi(config.format);
 
         // Vulkan allows SRGB formats for textures in memory, d3d12 does not and instead you alias
-        // a non SRGB texture of the same layout with an RTV with an SRG format.
+        // a non SRGB texture of the same layout with an RTV with an SRGB format.
         let in_memory_format = match view_format {
-            Format::R8G8B8A8UnormSRGB => Format::R8G8B8A8Unorm,
-            Format::B8G8R8A8UnormSRGB => Format::B8G8R8A8Unorm,
+            DXGI_FORMAT_R8G8B8A8_UNORM_SRGB => DXGI_FORMAT_R8G8B8A8_UNORM,
+            DXGI_FORMAT_B8G8R8A8_UNORM_SRGB => DXGI_FORMAT_B8G8R8A8_UNORM,
             format => format,
         };
 
         // Fill out our description
-        let desc = dxgi::SwapChainDesc1::builder()
-            .width(config.width)
-            .height(config.height)
-            .format(in_memory_format)
-            .usage_flags(dxgi::UsageFlags::BACK_BUFFER)
-            .usage_flags(dxgi::UsageFlags::RENDER_TARGET_OUTPUT)
-            .buffer_count(buffer_count)
-            .swap_effect(dxgi::SwapEffect::FlipDiscard)
-            .flags(flags)
-            .build();
+        let desc = DXGI_SWAP_CHAIN_DESC1 {
+            Width: config.width,
+            Height: config.height,
+            Format: in_memory_format,
+            Stereo: BOOL::from(false),
+            SampleDesc: DXGI_SAMPLE_DESC {
+                Count: 1,
+                Quality: 0,
+            },
+            BufferUsage: DXGI_USAGE_BACK_BUFFER | DXGI_USAGE_RENDER_TARGET_OUTPUT,
+            BufferCount: buffer_count,
+            Scaling: DXGI_SCALING_STRETCH,
+            SwapEffect: DXGI_SWAP_EFFECT_FLIP_DISCARD,
+            AlphaMode: DXGI_ALPHA_MODE_IGNORE,
+            Flags: flags.0 as u32,
+        };
 
         // Select a queue to attach the swap chain to. If the preferred queue is not supported we
         // fallback directly to the general queue.
@@ -137,13 +145,12 @@ impl Surface {
         };
 
         // Create the actual swap chain object
-        let swap_chain = self
-            .factory
-            .create_swap_chain(&queue, self, &desc)
-            .map_err(|e| anyhow!(e))?;
+        let swap_chain = unsafe {
+            dxgi_create_swap_chain(&self.factory, &queue, self, &desc).map_err(|e| anyhow!(e))?
+        };
 
         let images = unsafe {
-            device.create_views_for_swap_images(&swap_chain, view_format, desc.buffer_count)?
+            device.create_views_for_swap_images(&swap_chain, view_format, desc.BufferCount)?
         };
 
         let inner = SwapChainState {
@@ -212,11 +219,11 @@ unsafe impl HasRawWindowHandle for Surface {
 unsafe impl Send for Surface {}
 
 pub trait ISurfaceExt: ISurface {
-    fn get_raw_handle(&self) -> dxgi::Factory;
+    fn get_raw_handle(&self) -> IDXGIFactory2;
 }
 
 impl ISurfaceExt for Surface {
-    fn get_raw_handle(&self) -> dxgi::Factory {
+    fn get_raw_handle(&self) -> IDXGIFactory2 {
         self.factory.clone()
     }
 }

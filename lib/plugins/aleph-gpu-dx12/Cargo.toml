@@ -50,6 +50,7 @@ aleph-log = { path = "../../crates/aleph-log", version = "1" }
 cstr = "0.2"
 crossbeam = "0.8"
 parking_lot = "0.12"
+utf16_lit = "2"
 # once_cell = "1"
 
 [target.'cfg(target_os = "windows")'.dependencies]

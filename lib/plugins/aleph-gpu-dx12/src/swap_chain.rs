@@ -33,7 +33,6 @@ use crate::surface::Surface;
 use crate::texture::{SwapTexture, Texture, TextureInner};
 use crate::CPUDescriptorHandle;
 use crossbeam::atomic::AtomicCell;
-use dx12::{dxgi, AsWeakRef, WeakRef};
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
     AcquireImageError, IAcquiredTexture, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
@@ -42,12 +41,16 @@ use interfaces::gpu::{
 use parking_lot::Mutex;
 use std::ops::Deref;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use windows::core::IUnknown;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
 
 pub struct SwapChain {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
     pub(crate) surface: AnyArc<Surface>,
-    pub(crate) swap_chain: dxgi::SwapChain,
+    pub(crate) swap_chain: IDXGISwapChain4,
     pub(crate) queue_support: QueueType,
     pub(crate) inner: Mutex<SwapChainState>,
     pub(crate) queued_resize: AtomicCell<Option<Box<(u32, u32)>>>,
@@ -59,9 +62,9 @@ declare_interfaces!(SwapChain, [ISwapChain, ISwapChainExt]);
 
 pub struct SwapChainState {
     pub config: SwapChainConfiguration,
-    pub images: Vec<(dx12::Resource, CPUDescriptorHandle)>,
-    pub dxgi_format: dxgi::Format,
-    pub dxgi_view_format: dxgi::Format,
+    pub images: Vec<(ID3D12Resource, CPUDescriptorHandle)>,
+    pub dxgi_format: DXGI_FORMAT,
+    pub dxgi_view_format: DXGI_FORMAT,
 }
 
 impl SwapChain {
@@ -98,26 +101,24 @@ impl SwapChain {
         // hold the only remaining references to the swap chain images.
         //
         // This also handles creating the list of queues we pass to ResizeBuffers
-        let queues: Vec<WeakRef<dx12::CommandQueue>> = inner
+        let queues: Vec<ID3D12CommandQueue> = inner
             .images
             .drain(..)
             .map(|(_, view)| {
                 self.device.descriptor_heaps.cpu_rtv_heap().free(view);
-                queue.as_weak()
+                queue.clone() // TODO: We should find a way to avoid this
             })
             .collect();
 
-        self.swap_chain
-            .resize_buffers(
-                queues.len() as u32,
-                width,
-                height,
-                dxgi::Format::Unknown,
-                dxgi::SwapChainFlags::NONE,
-                None,
-                &queues,
-            )
-            .unwrap();
+        self.resize_buffers(
+            queues.len() as u32,
+            width,
+            height,
+            DXGI_FORMAT_UNKNOWN,
+            0,
+            &queues,
+        )
+        .unwrap();
 
         let images = self
             .device
@@ -133,6 +134,50 @@ impl SwapChain {
         inner.config.height = height;
 
         Ok(())
+    }
+
+    /// Wrapper for `IDXGISwapChain3::ResizeBuffers1`
+    #[allow(clippy::too_many_arguments)]
+    pub unsafe fn resize_buffers(
+        &self,
+        buffer_count: u32,
+        width: u32,
+        height: u32,
+        format: DXGI_FORMAT,
+        flags: u32,
+        queues: &[ID3D12CommandQueue],
+    ) -> windows::core::Result<()> {
+        // Input validation
+        debug_assert!(
+            queues.len() <= DXGI_MAX_SWAP_CHAIN_BUFFERS as usize,
+            "queues len must be <= 16"
+        );
+        debug_assert_eq!(
+            queues.len(),
+            buffer_count as usize,
+            "queues len must == buffer count if buffer count != 0"
+        );
+        debug_assert!(
+            buffer_count <= DXGI_MAX_SWAP_CHAIN_BUFFERS,
+            "can't have more than 16 swap chain buffers"
+        );
+
+        static NODE_MASKS: [u32; 16] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        let p_creation_node_mask = NODE_MASKS.as_ptr();
+
+        // Arg unpack
+        let pp_present_queue = queues.as_ptr() as *mut ID3D12CommandQueue;
+        let pp_present_queue = pp_present_queue as *mut Option<IUnknown>;
+
+        self.swap_chain.ResizeBuffers1(
+            buffer_count,
+            width,
+            height,
+            format.into(),
+            flags,
+            p_creation_node_mask,
+            pp_present_queue,
+        )
     }
 }
 
@@ -178,7 +223,7 @@ impl ISwapChain for SwapChain {
                 }
             }
 
-            let index = self.swap_chain.get_current_back_buffer_index();
+            let index = unsafe { self.swap_chain.GetCurrentBackBufferIndex() };
             let image = AnyArc::new_cyclic(move |v| Texture {
                 this: v.clone(),
                 inner: TextureInner::Swap(SwapTexture {
@@ -233,23 +278,23 @@ impl Drop for SwapChain {
 }
 
 pub trait ISwapChainExt: ISwapChain {
-    fn get_raw_handle(&self) -> dxgi::SwapChain;
+    fn get_raw_handle(&self) -> IDXGISwapChain4;
 
-    fn get_raw_in_memory_format(&self) -> dxgi::Format;
+    fn get_raw_in_memory_format(&self) -> DXGI_FORMAT;
 
-    fn get_raw_view_format(&self) -> dxgi::Format;
+    fn get_raw_view_format(&self) -> DXGI_FORMAT;
 }
 
 impl ISwapChainExt for SwapChain {
-    fn get_raw_handle(&self) -> dxgi::SwapChain {
+    fn get_raw_handle(&self) -> IDXGISwapChain4 {
         self.swap_chain.clone()
     }
 
-    fn get_raw_in_memory_format(&self) -> dxgi::Format {
+    fn get_raw_in_memory_format(&self) -> DXGI_FORMAT {
         self.inner.lock().dxgi_format
     }
 
-    fn get_raw_view_format(&self) -> dxgi::Format {
+    fn get_raw_view_format(&self) -> DXGI_FORMAT {
         self.inner.lock().dxgi_view_format
     }
 }

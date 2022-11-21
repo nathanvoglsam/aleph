@@ -27,38 +27,30 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use utf16_lit::utf16_null;
+use windows::core::{Interface, GUID};
+use windows::utils::DynamicLoadCell;
+use windows::Win32::Graphics::Dxgi::*;
 
-pub struct Sampler {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) desc: SamplerDesc,
-}
+type CreateFn =
+    extern "system" fn(u32, *const GUID, *mut *mut ::std::ffi::c_void) -> windows::core::HRESULT;
 
-declare_interfaces!(Sampler, [ISampler]);
+static CREATE_FN: DynamicLoadCell<CreateFn> =
+    DynamicLoadCell::new(&utf16_null!("dxgi.dll"), "CreateDXGIFactory2\0");
 
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self.this.upgrade().unwrap(), |v| v)
-    }
+#[inline]
+pub fn create_dxgi_factory(debug: bool) -> windows::core::Result<IDXGIFactory2> {
+    unsafe {
+        let create_fn = *CREATE_FN.get().expect("Failed to load dxgi.dll");
 
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
+        let flags = if debug { 0x1 } else { 0x0 };
 
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
+        let mut dxgi_factory: Option<IDXGIFactory2> = None;
 
-    fn desc(&self) -> &SamplerDesc {
-        &self.desc
-    }
-}
+        let ptr = &mut dxgi_factory;
+        let ptr = ptr as *mut Option<IDXGIFactory2>;
+        let ptr = ptr as *mut *mut ::std::ffi::c_void;
 
-impl INamedObject for Sampler {
-    fn set_name(&self, _name: &str) {
-        // No D3D12 object to name
+        create_fn(flags, &IDXGIFactory2::IID, ptr).and_some(dxgi_factory)
     }
 }

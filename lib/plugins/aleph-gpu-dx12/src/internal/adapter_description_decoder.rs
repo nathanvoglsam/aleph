@@ -27,38 +27,10 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
-use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use windows::Win32::Graphics::Dxgi::*;
 
-pub struct Sampler {
-    pub(crate) this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) desc: SamplerDesc,
-}
-
-declare_interfaces!(Sampler, [ISampler]);
-
-impl ISampler for Sampler {
-    fn upgrade(&self) -> AnyArc<dyn ISampler> {
-        AnyArc::map::<dyn ISampler, _>(self.this.upgrade().unwrap(), |v| v)
-    }
-
-    fn strong_count(&self) -> usize {
-        self.this.strong_count()
-    }
-
-    fn weak_count(&self) -> usize {
-        self.this.weak_count()
-    }
-
-    fn desc(&self) -> &SamplerDesc {
-        &self.desc
-    }
-}
-
-impl INamedObject for Sampler {
-    fn set_name(&self, _name: &str) {
-        // No D3D12 object to name
-    }
+#[inline]
+pub fn adapter_description_string(desc: &DXGI_ADAPTER_DESC1) -> Option<String> {
+    let sub_slice = desc.Description.split(|v| *v == 0).next()?;
+    String::from_utf16(sub_slice).ok()
 }

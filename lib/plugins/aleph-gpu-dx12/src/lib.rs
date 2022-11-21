@@ -29,7 +29,6 @@
 
 #![cfg(target_os = "windows")]
 
-pub extern crate aleph_dx12 as dx12;
 pub extern crate aleph_dx12_alloc as dx12_alloc;
 pub extern crate aleph_pix as pix;
 pub extern crate aleph_windows as windows;
@@ -63,6 +62,8 @@ pub use buffer::IBufferExt;
 pub use command_list::ICommandListExt;
 pub use context::IContextExt;
 pub use device::IDeviceExt;
+pub use internal::component_mapping::ComponentMapping;
+pub use internal::component_mapping::ComponentMappingValue;
 pub use internal::descriptor_handles::CPUDescriptorHandle;
 pub use internal::descriptor_handles::GPUDescriptorHandle;
 pub use pipeline::IComputePipelineExt;

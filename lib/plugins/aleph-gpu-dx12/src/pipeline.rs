@@ -28,15 +28,16 @@
 //
 
 use crate::pipeline_layout::PipelineLayout;
-use aleph_windows::Win32::Graphics::Direct3D::*;
-use dx12::D3D12Object;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct GraphicsPipeline {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: dx12::GraphicsPipelineState,
+    pub(crate) pipeline: ID3D12PipelineState,
 
     /// Vulkan bakes this into the pipeline, d3d12 doesn't. We have to behave like vulkan as vulkan
     /// can't do the reverse.
@@ -65,25 +66,29 @@ impl IGraphicsPipeline for GraphicsPipeline {
 }
 
 pub trait IGraphicsPipelineExt: IGraphicsPipeline {
-    fn get_raw_handle(&self) -> dx12::GraphicsPipelineState;
+    fn get_raw_handle(&self) -> ID3D12PipelineState;
 }
 
 impl IGraphicsPipelineExt for GraphicsPipeline {
-    fn get_raw_handle(&self) -> dx12::GraphicsPipelineState {
+    fn get_raw_handle(&self) -> ID3D12PipelineState {
         self.pipeline.clone()
     }
 }
 
 impl INamedObject for GraphicsPipeline {
     fn set_name(&self, name: &str) {
-        self.pipeline.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.pipeline.SetName(name).unwrap();
+        }
     }
 }
 
 pub struct ComputePipeline {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
-    pub(crate) pipeline: dx12::ComputePipelineState,
+    pub(crate) pipeline: ID3D12PipelineState,
 }
 
 declare_interfaces!(ComputePipeline, [IComputePipeline, IComputePipelineExt]);
@@ -103,17 +108,21 @@ impl IComputePipeline for ComputePipeline {
 }
 
 pub trait IComputePipelineExt: IComputePipeline {
-    fn get_raw_handle(&self) -> dx12::ComputePipelineState;
+    fn get_raw_handle(&self) -> ID3D12PipelineState;
 }
 
 impl IComputePipelineExt for ComputePipeline {
-    fn get_raw_handle(&self) -> dx12::ComputePipelineState {
+    fn get_raw_handle(&self) -> ID3D12PipelineState {
         self.pipeline.clone()
     }
 }
 
 impl INamedObject for ComputePipeline {
     fn set_name(&self, name: &str) {
-        self.pipeline.set_name(name).unwrap()
+        unsafe {
+            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+            let name = PCWSTR::from_raw(utf16.as_ptr());
+            self.pipeline.SetName(name).unwrap();
+        }
     }
 }

@@ -28,11 +28,11 @@
 //
 
 use crate::CPUDescriptorHandle;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use crossbeam::queue::SegQueue;
 use parking_lot::Mutex;
 use std::num::NonZeroUsize;
 use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct DescriptorAllocatorCPU {
     /// Device handle so we can create new blocks on demand

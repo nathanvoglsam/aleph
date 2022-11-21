@@ -27,10 +27,6 @@
 // SOFTWARE.
 //
 
-use aleph_windows::Win32::Graphics::Direct3D::*;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
-use aleph_windows::Win32::Graphics::Dxgi::Common::*;
-use dx12::dxgi;
 use interfaces::gpu::{
     AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BlendFactor, BlendOp,
     ColorClearValue, CompareOp, CullMode, DepthStencilClearValue, DescriptorShaderVisibility,
@@ -39,200 +35,204 @@ use interfaces::gpu::{
     SamplerAddressMode, SamplerBorderColor, SamplerFilter, SamplerMipFilter, StencilOp,
     TextureAspect, TextureCreateError, TextureDesc, TextureDimension,
 };
+use windows::Win32::Foundation::BOOL;
+use windows::Win32::Graphics::Direct3D::*;
+use windows::Win32::Graphics::Direct3D12::*;
+use windows::Win32::Graphics::Dxgi::Common::*;
 
 /// Internal function for converting texture format to DXGI_FORMAT
-pub const fn texture_format_to_dxgi(format: Format) -> dxgi::Format {
+pub const fn texture_format_to_dxgi(format: Format) -> DXGI_FORMAT {
     match format {
-        Format::R8Unorm => dxgi::Format::R8Unorm,
-        Format::R8Snorm => dxgi::Format::R8Snorm,
-        Format::R8Uint => dxgi::Format::R8Uint,
-        Format::R8Sint => dxgi::Format::R8Sint,
-        Format::R16Uint => dxgi::Format::R16Uint,
-        Format::R16Sint => dxgi::Format::R16Sint,
-        Format::R16Unorm => dxgi::Format::R16Unorm,
-        Format::R16Snorm => dxgi::Format::R16Snorm,
-        Format::R16Float => dxgi::Format::R16Float,
-        Format::Rg8Unorm => dxgi::Format::R8G8Unorm,
-        Format::Rg8Snorm => dxgi::Format::R8G8Snorm,
-        Format::Rg8Uint => dxgi::Format::R8G8Uint,
-        Format::Rg8Sint => dxgi::Format::R8G8Sint,
-        Format::R32Uint => dxgi::Format::R32Uint,
-        Format::R32Sint => dxgi::Format::R32Sint,
-        Format::R32Float => dxgi::Format::R32Float,
-        Format::Rg16Uint => dxgi::Format::R16G16Uint,
-        Format::Rg16Sint => dxgi::Format::R16G16Sint,
-        Format::Rg16Unorm => dxgi::Format::R16G16Unorm,
-        Format::Rg16Snorm => dxgi::Format::R16G16Snorm,
-        Format::Rg16Float => dxgi::Format::R16G16Float,
-        Format::Rgba8Unorm => dxgi::Format::R8G8B8A8Unorm,
-        Format::Rgba8UnormSrgb => dxgi::Format::R8G8B8A8UnormSRGB,
-        Format::Rgba8Snorm => dxgi::Format::R8G8B8A8Snorm,
-        Format::Rgba8Uint => dxgi::Format::R8G8B8A8Uint,
-        Format::Rgba8Sint => dxgi::Format::R8G8B8A8Sint,
-        Format::Bgra8Unorm => dxgi::Format::B8G8R8A8Unorm,
-        Format::Bgra8UnormSrgb => dxgi::Format::B8G8R8A8UnormSRGB,
-        Format::Rgb10a2Unorm => dxgi::Format::R10G10B10A2Unorm,
-        Format::Rg11b10Float => dxgi::Format::R11G11B10Float,
-        Format::Rg32Uint => dxgi::Format::R32G32B32Uint,
-        Format::Rg32Sint => dxgi::Format::R32G32B32Sint,
-        Format::Rg32Float => dxgi::Format::R32G32B32Float,
-        Format::Rgba16Uint => dxgi::Format::R16G16B16A16Uint,
-        Format::Rgba16Sint => dxgi::Format::R16G16B16A16Sint,
-        Format::Rgba16Unorm => dxgi::Format::R16G16B16A16Unorm,
-        Format::Rgba16Snorm => dxgi::Format::R16G16B16A16Snorm,
-        Format::Rgba16Float => dxgi::Format::R16G16B16A16Float,
-        Format::Rgba32Uint => dxgi::Format::R32G32B32A32Uint,
-        Format::Rgba32Sint => dxgi::Format::R32G32B32A32Sint,
-        Format::Rgba32Float => dxgi::Format::R32G32B32A32Float,
-        Format::Depth32Float => dxgi::Format::D32Float,
-        Format::Depth24Stencil8 => dxgi::Format::D24UnormS8Uint,
+        Format::R8Unorm => DXGI_FORMAT_R8_UNORM,
+        Format::R8Snorm => DXGI_FORMAT_R8_SNORM,
+        Format::R8Uint => DXGI_FORMAT_R8_UINT,
+        Format::R8Sint => DXGI_FORMAT_R8_SINT,
+        Format::R16Uint => DXGI_FORMAT_R16_UINT,
+        Format::R16Sint => DXGI_FORMAT_R16_SINT,
+        Format::R16Unorm => DXGI_FORMAT_R16_UNORM,
+        Format::R16Snorm => DXGI_FORMAT_R16_SNORM,
+        Format::R16Float => DXGI_FORMAT_R16_FLOAT,
+        Format::Rg8Unorm => DXGI_FORMAT_R8G8_UNORM,
+        Format::Rg8Snorm => DXGI_FORMAT_R8G8_SNORM,
+        Format::Rg8Uint => DXGI_FORMAT_R8G8_UINT,
+        Format::Rg8Sint => DXGI_FORMAT_R8G8_SINT,
+        Format::R32Uint => DXGI_FORMAT_R32_UINT,
+        Format::R32Sint => DXGI_FORMAT_R32_SINT,
+        Format::R32Float => DXGI_FORMAT_R32_FLOAT,
+        Format::Rg16Uint => DXGI_FORMAT_R16G16_UINT,
+        Format::Rg16Sint => DXGI_FORMAT_R16G16_SINT,
+        Format::Rg16Unorm => DXGI_FORMAT_R16G16_UNORM,
+        Format::Rg16Snorm => DXGI_FORMAT_R16G16_SNORM,
+        Format::Rg16Float => DXGI_FORMAT_R16G16_FLOAT,
+        Format::Rgba8Unorm => DXGI_FORMAT_R8G8B8A8_UNORM,
+        Format::Rgba8UnormSrgb => DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+        Format::Rgba8Snorm => DXGI_FORMAT_R8G8B8A8_SNORM,
+        Format::Rgba8Uint => DXGI_FORMAT_R8G8B8A8_UINT,
+        Format::Rgba8Sint => DXGI_FORMAT_R8G8B8A8_SINT,
+        Format::Bgra8Unorm => DXGI_FORMAT_B8G8R8A8_UNORM,
+        Format::Bgra8UnormSrgb => DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
+        Format::Rgb10a2Unorm => DXGI_FORMAT_R10G10B10A2_UNORM,
+        Format::Rg11b10Float => DXGI_FORMAT_R11G11B10_FLOAT,
+        Format::Rg32Uint => DXGI_FORMAT_R32G32B32_UINT,
+        Format::Rg32Sint => DXGI_FORMAT_R32G32B32_SINT,
+        Format::Rg32Float => DXGI_FORMAT_R32G32B32_FLOAT,
+        Format::Rgba16Uint => DXGI_FORMAT_R16G16B16A16_UINT,
+        Format::Rgba16Sint => DXGI_FORMAT_R16G16B16A16_SINT,
+        Format::Rgba16Unorm => DXGI_FORMAT_R16G16B16A16_UNORM,
+        Format::Rgba16Snorm => DXGI_FORMAT_R16G16B16A16_SNORM,
+        Format::Rgba16Float => DXGI_FORMAT_R16G16B16A16_FLOAT,
+        Format::Rgba32Uint => DXGI_FORMAT_R32G32B32A32_UINT,
+        Format::Rgba32Sint => DXGI_FORMAT_R32G32B32A32_SINT,
+        Format::Rgba32Float => DXGI_FORMAT_R32G32B32A32_FLOAT,
+        Format::Depth32Float => DXGI_FORMAT_D32_FLOAT,
+        Format::Depth24Stencil8 => DXGI_FORMAT_D24_UNORM_S8_UINT,
     }
 }
 
 pub const fn shader_visibility_to_dx12(
     visibility: DescriptorShaderVisibility,
-) -> dx12::ShaderVisibility {
+) -> D3D12_SHADER_VISIBILITY {
     // Visibility translates almost directly. 'Compute' maps to 'All' in d3d12 as 'Compute' is
     // the only stage active in a compute dispatch so d3d12 lacks a compute specifier.
     match visibility {
-        DescriptorShaderVisibility::All => dx12::ShaderVisibility::All,
-        DescriptorShaderVisibility::Compute => dx12::ShaderVisibility::All, // TODO: Verify
-        DescriptorShaderVisibility::Vertex => dx12::ShaderVisibility::Vertex,
-        DescriptorShaderVisibility::Hull => dx12::ShaderVisibility::Hull,
-        DescriptorShaderVisibility::Domain => dx12::ShaderVisibility::Domain,
-        DescriptorShaderVisibility::Geometry => dx12::ShaderVisibility::Geometry,
-        DescriptorShaderVisibility::Fragment => dx12::ShaderVisibility::Pixel,
-        DescriptorShaderVisibility::Amplification => dx12::ShaderVisibility::Amplification,
-        DescriptorShaderVisibility::Mesh => dx12::ShaderVisibility::Mesh,
+        DescriptorShaderVisibility::All => D3D12_SHADER_VISIBILITY_ALL,
+        DescriptorShaderVisibility::Compute => D3D12_SHADER_VISIBILITY_ALL, // TODO: Verify
+        DescriptorShaderVisibility::Vertex => D3D12_SHADER_VISIBILITY_VERTEX,
+        DescriptorShaderVisibility::Hull => D3D12_SHADER_VISIBILITY_HULL,
+        DescriptorShaderVisibility::Domain => D3D12_SHADER_VISIBILITY_DOMAIN,
+        DescriptorShaderVisibility::Geometry => D3D12_SHADER_VISIBILITY_GEOMETRY,
+        DescriptorShaderVisibility::Fragment => D3D12_SHADER_VISIBILITY_PIXEL,
+        DescriptorShaderVisibility::Amplification => D3D12_SHADER_VISIBILITY_AMPLIFICATION,
+        DescriptorShaderVisibility::Mesh => D3D12_SHADER_VISIBILITY_MESH,
     }
 }
 
-pub const fn border_color_to_dx12(color: SamplerBorderColor) -> dx12::StaticBorderColor {
+pub const fn border_color_to_dx12(color: SamplerBorderColor) -> D3D12_STATIC_BORDER_COLOR {
     match color {
-        SamplerBorderColor::BlackTransparent => dx12::StaticBorderColor::TransparentBlack,
-        SamplerBorderColor::BlackOpaque => dx12::StaticBorderColor::OpaqueBlack,
-        SamplerBorderColor::WhiteOpaque => dx12::StaticBorderColor::OpaqueWhite,
+        SamplerBorderColor::BlackTransparent => D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
+        SamplerBorderColor::BlackOpaque => D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
+        SamplerBorderColor::WhiteOpaque => D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
     }
 }
 
-pub const fn polygon_mode_to_dx12(polygon_mode: PolygonMode) -> dx12::FillMode {
+pub const fn polygon_mode_to_dx12(polygon_mode: PolygonMode) -> D3D12_FILL_MODE {
     match polygon_mode {
-        PolygonMode::Fill => dx12::FillMode::Solid,
-        PolygonMode::Line => dx12::FillMode::Wireframe,
+        PolygonMode::Fill => D3D12_FILL_MODE_SOLID,
+        PolygonMode::Line => D3D12_FILL_MODE_WIREFRAME,
     }
 }
 
-pub const fn cull_mode_to_dx12(cull_mode: CullMode) -> dx12::CullMode {
+pub const fn cull_mode_to_dx12(cull_mode: CullMode) -> D3D12_CULL_MODE {
     match cull_mode {
-        CullMode::None => dx12::CullMode::None,
-        CullMode::Back => dx12::CullMode::Back,
-        CullMode::Front => dx12::CullMode::Front,
+        CullMode::None => D3D12_CULL_MODE_NONE,
+        CullMode::Back => D3D12_CULL_MODE_BACK,
+        CullMode::Front => D3D12_CULL_MODE_FRONT,
     }
 }
 
-pub const fn front_face_order_to_dx12(front_face: FrontFaceOrder) -> dx12::Bool {
+pub const fn front_face_order_to_dx12(front_face: FrontFaceOrder) -> BOOL {
     match front_face {
-        FrontFaceOrder::CounterClockwise => dx12::Bool::TRUE,
-        FrontFaceOrder::Clockwise => dx12::Bool::FALSE,
+        FrontFaceOrder::CounterClockwise => BOOL(1),
+        FrontFaceOrder::Clockwise => BOOL(0),
     }
 }
 
-pub const fn blend_factor_to_dx12(factor: BlendFactor) -> dx12::Blend {
+pub const fn blend_factor_to_dx12(factor: BlendFactor) -> D3D12_BLEND {
     match factor {
-        BlendFactor::Zero => dx12::Blend::Zero,
-        BlendFactor::One => dx12::Blend::One,
-        BlendFactor::SrcColor => dx12::Blend::SrcColor,
-        BlendFactor::OneMinusSrcColor => dx12::Blend::SrcColorInv,
-        BlendFactor::DstColor => dx12::Blend::DestColor,
-        BlendFactor::OneMinusDstColor => dx12::Blend::DestColorInv,
-        BlendFactor::SrcAlpha => dx12::Blend::SrcAlpha,
-        BlendFactor::OneMinusSrcAlpha => dx12::Blend::SrcAlphaInv,
-        BlendFactor::DstAlpha => dx12::Blend::DestAlpha,
-        BlendFactor::OneMinusDstAlpha => dx12::Blend::DestAlphaInv,
-        BlendFactor::SrcAlphaSaturate => dx12::Blend::SrcAlphaSaturated,
-        BlendFactor::BlendFactor => dx12::Blend::BlendFactor,
-        BlendFactor::OneMinusBlendFactor => dx12::Blend::BlendFactorInv,
+        BlendFactor::Zero => D3D12_BLEND_ZERO,
+        BlendFactor::One => D3D12_BLEND_ONE,
+        BlendFactor::SrcColor => D3D12_BLEND_SRC_COLOR,
+        BlendFactor::OneMinusSrcColor => D3D12_BLEND_INV_SRC_COLOR,
+        BlendFactor::DstColor => D3D12_BLEND_DEST_COLOR,
+        BlendFactor::OneMinusDstColor => D3D12_BLEND_INV_DEST_COLOR,
+        BlendFactor::SrcAlpha => D3D12_BLEND_SRC_ALPHA,
+        BlendFactor::OneMinusSrcAlpha => D3D12_BLEND_INV_SRC_ALPHA,
+        BlendFactor::DstAlpha => D3D12_BLEND_DEST_ALPHA,
+        BlendFactor::OneMinusDstAlpha => D3D12_BLEND_INV_DEST_ALPHA,
+        BlendFactor::SrcAlphaSaturate => D3D12_BLEND_SRC_ALPHA_SAT,
+        BlendFactor::BlendFactor => D3D12_BLEND_BLEND_FACTOR,
+        BlendFactor::OneMinusBlendFactor => D3D12_BLEND_INV_BLEND_FACTOR,
     }
 }
 
-pub const fn blend_op_to_dx12(op: BlendOp) -> dx12::BlendOp {
+pub const fn blend_op_to_dx12(op: BlendOp) -> D3D12_BLEND_OP {
     match op {
-        BlendOp::Add => dx12::BlendOp::Add,
-        BlendOp::Subtract => dx12::BlendOp::Subtract,
-        BlendOp::ReverseSubtract => dx12::BlendOp::SubtractReverse,
-        BlendOp::Min => dx12::BlendOp::Min,
-        BlendOp::Max => dx12::BlendOp::Max,
+        BlendOp::Add => D3D12_BLEND_OP_ADD,
+        BlendOp::Subtract => D3D12_BLEND_OP_SUBTRACT,
+        BlendOp::ReverseSubtract => D3D12_BLEND_OP_REV_SUBTRACT,
+        BlendOp::Min => D3D12_BLEND_OP_MIN,
+        BlendOp::Max => D3D12_BLEND_OP_MAX,
     }
 }
 
-pub const fn stencil_op_to_dx12(op: StencilOp) -> dx12::StencilOp {
+pub const fn stencil_op_to_dx12(op: StencilOp) -> D3D12_STENCIL_OP {
     match op {
-        StencilOp::Keep => dx12::StencilOp::Keep,
-        StencilOp::Zero => dx12::StencilOp::Zero,
-        StencilOp::Replace => dx12::StencilOp::Replace,
-        StencilOp::IncrementClamp => dx12::StencilOp::IncrementSaturate,
-        StencilOp::DecrementClamp => dx12::StencilOp::DecrementSaturate,
-        StencilOp::Invert => dx12::StencilOp::Invert,
-        StencilOp::IncrementWrap => dx12::StencilOp::Increment,
-        StencilOp::DecrementWrap => dx12::StencilOp::Decrement,
+        StencilOp::Keep => D3D12_STENCIL_OP_KEEP,
+        StencilOp::Zero => D3D12_STENCIL_OP_ZERO,
+        StencilOp::Replace => D3D12_STENCIL_OP_REPLACE,
+        StencilOp::IncrementClamp => D3D12_STENCIL_OP_INCR_SAT,
+        StencilOp::DecrementClamp => D3D12_STENCIL_OP_DECR_SAT,
+        StencilOp::Invert => D3D12_STENCIL_OP_INVERT,
+        StencilOp::IncrementWrap => D3D12_STENCIL_OP_INCR,
+        StencilOp::DecrementWrap => D3D12_STENCIL_OP_DECR,
     }
 }
 
-pub const fn compare_op_to_dx12(op: CompareOp) -> dx12::ComparisonFunc {
+pub const fn compare_op_to_dx12(op: CompareOp) -> D3D12_COMPARISON_FUNC {
     match op {
-        CompareOp::Never => dx12::ComparisonFunc::Never,
-        CompareOp::Always => dx12::ComparisonFunc::Always,
-        CompareOp::Equal => dx12::ComparisonFunc::Equal,
-        CompareOp::NotEqual => dx12::ComparisonFunc::NotEqual,
-        CompareOp::Less => dx12::ComparisonFunc::Less,
-        CompareOp::LessEqual => dx12::ComparisonFunc::LessEqual,
-        CompareOp::Greater => dx12::ComparisonFunc::Greater,
-        CompareOp::GreaterOrEqual => dx12::ComparisonFunc::GreaterEqual,
+        CompareOp::Never => D3D12_COMPARISON_FUNC_NEVER,
+        CompareOp::Always => D3D12_COMPARISON_FUNC_ALWAYS,
+        CompareOp::Equal => D3D12_COMPARISON_FUNC_EQUAL,
+        CompareOp::NotEqual => D3D12_COMPARISON_FUNC_NOT_EQUAL,
+        CompareOp::Less => D3D12_COMPARISON_FUNC_LESS,
+        CompareOp::LessEqual => D3D12_COMPARISON_FUNC_LESS_EQUAL,
+        CompareOp::Greater => D3D12_COMPARISON_FUNC_GREATER,
+        CompareOp::GreaterOrEqual => D3D12_COMPARISON_FUNC_GREATER_EQUAL,
     }
 }
 
 pub const fn primitive_topology_to_dx12(
     primitive_topology: PrimitiveTopology,
-) -> (dx12::PrimitiveTopologyType, D3D_PRIMITIVE_TOPOLOGY) {
+) -> (D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D_PRIMITIVE_TOPOLOGY) {
     match primitive_topology {
         PrimitiveTopology::PointList => (
-            dx12::PrimitiveTopologyType::Point,
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT,
             D3D_PRIMITIVE_TOPOLOGY_POINTLIST,
         ),
         PrimitiveTopology::LineList => (
-            dx12::PrimitiveTopologyType::Line,
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
             D3D_PRIMITIVE_TOPOLOGY_LINELIST,
         ),
         PrimitiveTopology::LineStrip => (
-            dx12::PrimitiveTopologyType::Line,
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE,
             D3D_PRIMITIVE_TOPOLOGY_LINESTRIP,
         ),
         PrimitiveTopology::TriangleList => (
-            dx12::PrimitiveTopologyType::Triangle,
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
             D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,
         ),
         PrimitiveTopology::TriangleStrip => (
-            dx12::PrimitiveTopologyType::Triangle,
+            D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE,
             D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,
         ),
     }
 }
 
-pub const fn sampler_address_mode_to_dx12(mode: SamplerAddressMode) -> dx12::TextureAddressMode {
+pub const fn sampler_address_mode_to_dx12(mode: SamplerAddressMode) -> D3D12_TEXTURE_ADDRESS_MODE {
     match mode {
-        SamplerAddressMode::Wrap => dx12::TextureAddressMode::Wrap,
-        SamplerAddressMode::Mirror => dx12::TextureAddressMode::Mirror,
-        SamplerAddressMode::Clamp => dx12::TextureAddressMode::Clamp,
-        SamplerAddressMode::Border => dx12::TextureAddressMode::Border,
-        SamplerAddressMode::MirrorOnce => dx12::TextureAddressMode::MirrorOnce,
+        SamplerAddressMode::Wrap => D3D12_TEXTURE_ADDRESS_MODE_WRAP,
+        SamplerAddressMode::Mirror => D3D12_TEXTURE_ADDRESS_MODE_MIRROR,
+        SamplerAddressMode::Clamp => D3D12_TEXTURE_ADDRESS_MODE_CLAMP,
+        SamplerAddressMode::Border => D3D12_TEXTURE_ADDRESS_MODE_BORDER,
+        SamplerAddressMode::MirrorOnce => D3D12_TEXTURE_ADDRESS_MODE_MIRROR_ONCE,
     }
 }
 
-pub const fn queue_type_to_dx12(queue_type: QueueType) -> dx12::CommandListType {
+pub const fn queue_type_to_dx12(queue_type: QueueType) -> D3D12_COMMAND_LIST_TYPE {
     match queue_type {
-        QueueType::General => dx12::CommandListType::Direct,
-        QueueType::Compute => dx12::CommandListType::Compute,
-        QueueType::Transfer => dx12::CommandListType::Copy,
+        QueueType::General => D3D12_COMMAND_LIST_TYPE_DIRECT,
+        QueueType::Compute => D3D12_COMMAND_LIST_TYPE_COMPUTE,
+        QueueType::Transfer => D3D12_COMMAND_LIST_TYPE_COPY,
     }
 }
 
@@ -242,33 +242,48 @@ pub const fn sampler_filters_to_dx12(
     mip: SamplerMipFilter,
     comparison: bool,
     anisotropic: bool,
-) -> dx12::Filter {
+) -> D3D12_FILTER {
     type F = SamplerFilter;
     type MF = SamplerMipFilter;
-    type DF = dx12::Filter;
     match (anisotropic, comparison, min, mag, mip) {
-        (false, false, F::Nearest, F::Nearest, MF::Nearest) => DF::MinMagMipPoint,
-        (false, false, F::Nearest, F::Nearest, MF::Linear) => DF::MinMagPointMipLinear,
-        (false, false, F::Nearest, F::Linear, MF::Nearest) => DF::MinPointMagLinearMipPoint,
-        (false, false, F::Nearest, F::Linear, MF::Linear) => DF::MinPointMagMipLinear,
-        (false, false, F::Linear, F::Nearest, MF::Nearest) => DF::MinLinearMagMipPoint,
-        (false, false, F::Linear, F::Nearest, MF::Linear) => DF::MinLinearMagPointMipLinear,
-        (false, false, F::Linear, F::Linear, MF::Nearest) => DF::MinMagLinearMipPoint,
-        (false, false, F::Linear, F::Linear, MF::Linear) => DF::MinMagMipLinear,
-        (false, true, F::Nearest, F::Nearest, MF::Nearest) => DF::ComparisonMinMagMipPoint,
-        (false, true, F::Nearest, F::Nearest, MF::Linear) => DF::ComparisonMinMagPointMipLinear,
+        (false, false, F::Nearest, F::Nearest, MF::Nearest) => D3D12_FILTER_MIN_MAG_MIP_POINT,
+        (false, false, F::Nearest, F::Nearest, MF::Linear) => D3D12_FILTER_MIN_MAG_POINT_MIP_LINEAR,
+        (false, false, F::Nearest, F::Linear, MF::Nearest) => {
+            D3D12_FILTER_MIN_POINT_MAG_LINEAR_MIP_POINT
+        }
+        (false, false, F::Nearest, F::Linear, MF::Linear) => D3D12_FILTER_MIN_POINT_MAG_MIP_LINEAR,
+        (false, false, F::Linear, F::Nearest, MF::Nearest) => D3D12_FILTER_MIN_LINEAR_MAG_MIP_POINT,
+        (false, false, F::Linear, F::Nearest, MF::Linear) => {
+            D3D12_FILTER_MIN_LINEAR_MAG_POINT_MIP_LINEAR
+        }
+        (false, false, F::Linear, F::Linear, MF::Nearest) => D3D12_FILTER_MIN_MAG_LINEAR_MIP_POINT,
+        (false, false, F::Linear, F::Linear, MF::Linear) => D3D12_FILTER_MIN_MAG_MIP_LINEAR,
+        (false, true, F::Nearest, F::Nearest, MF::Nearest) => {
+            D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT
+        }
+        (false, true, F::Nearest, F::Nearest, MF::Linear) => {
+            D3D12_FILTER_COMPARISON_MIN_MAG_POINT_MIP_LINEAR
+        }
         (false, true, F::Nearest, F::Linear, MF::Nearest) => {
-            DF::ComparisonMinPointMagLinearMipPoint
+            D3D12_FILTER_COMPARISON_MIN_POINT_MAG_LINEAR_MIP_POINT
         }
-        (false, true, F::Nearest, F::Linear, MF::Linear) => DF::ComparisonMinPointMagMipLinear,
-        (false, true, F::Linear, F::Nearest, MF::Nearest) => DF::ComparisonMinLinearMagMipPoint,
+        (false, true, F::Nearest, F::Linear, MF::Linear) => {
+            D3D12_FILTER_COMPARISON_MIN_POINT_MAG_MIP_LINEAR
+        }
+        (false, true, F::Linear, F::Nearest, MF::Nearest) => {
+            D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_MIP_POINT
+        }
         (false, true, F::Linear, F::Nearest, MF::Linear) => {
-            DF::ComparisonMinLinearMagPointMipLinear
+            D3D12_FILTER_COMPARISON_MIN_LINEAR_MAG_POINT_MIP_LINEAR
         }
-        (false, true, F::Linear, F::Linear, MF::Nearest) => DF::ComparisonMinMagLinearMipPoint,
-        (false, true, F::Linear, F::Linear, MF::Linear) => DF::ComparisonMinMagMipLinear,
-        (true, false, _, _, _) => DF::Anisotropic,
-        (true, true, _, _, _) => DF::ComparisonAnisotropic,
+        (false, true, F::Linear, F::Linear, MF::Nearest) => {
+            D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT
+        }
+        (false, true, F::Linear, F::Linear, MF::Linear) => {
+            D3D12_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR
+        }
+        (true, false, _, _, _) => D3D12_FILTER_ANISOTROPIC,
+        (true, true, _, _, _) => D3D12_FILTER_COMPARISON_ANISOTROPIC,
     }
 }
 
@@ -527,16 +542,18 @@ pub fn texture_create_desc_to_dx12(
 
 pub fn texture_create_clear_value_to_dx12(
     desc: &TextureDesc,
-    format: dxgi::Format,
-) -> Result<Option<dx12::ClearValue>, TextureCreateError> {
+    format: DXGI_FORMAT,
+) -> Result<Option<D3D12_CLEAR_VALUE>, TextureCreateError> {
     let clear = if let Some(clear) = &desc.clear_value {
         let clear = clear.clone();
         match clear.clone() {
             OptimalClearValue::ColorF32 { r, g, b, a } => {
                 if !desc.format.is_depth_stencil() {
-                    Some(dx12::ClearValue::Color {
-                        format,
-                        color: [r, g, b, a],
+                    Some(D3D12_CLEAR_VALUE {
+                        Format: format,
+                        Anonymous: D3D12_CLEAR_VALUE_0 {
+                            Color: [r, g, b, a],
+                        },
                     })
                 } else {
                     return Err(TextureCreateError::InvalidOptimalClearValue(clear));
@@ -544,9 +561,11 @@ pub fn texture_create_clear_value_to_dx12(
             }
             OptimalClearValue::ColorInt(v) => {
                 if !desc.format.is_depth_stencil() {
-                    Some(dx12::ClearValue::Color {
-                        format,
-                        color: decode_u32_color_to_float(v),
+                    Some(D3D12_CLEAR_VALUE {
+                        Format: format,
+                        Anonymous: D3D12_CLEAR_VALUE_0 {
+                            Color: decode_u32_color_to_float(v),
+                        },
                     })
                 } else {
                     return Err(TextureCreateError::InvalidOptimalClearValue(clear));
@@ -554,9 +573,14 @@ pub fn texture_create_clear_value_to_dx12(
             }
             OptimalClearValue::DepthStencil(depth, stencil) => {
                 if desc.format.is_depth_stencil() {
-                    Some(dx12::ClearValue::Depth {
-                        format,
-                        depth_stencil: dx12::DepthStencilValue { depth, stencil },
+                    Some(D3D12_CLEAR_VALUE {
+                        Format: format,
+                        Anonymous: D3D12_CLEAR_VALUE_0 {
+                            DepthStencil: D3D12_DEPTH_STENCIL_VALUE {
+                                Depth: depth,
+                                Stencil: stencil,
+                            },
+                        },
                     })
                 } else {
                     return Err(TextureCreateError::InvalidOptimalClearValue(clear));

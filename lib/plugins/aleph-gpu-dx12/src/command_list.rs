@@ -31,14 +31,14 @@ use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
 use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::in_flight_command_list::ReturnToPool;
-use aleph_windows::core::PCWSTR;
-use aleph_windows::Win32::Graphics::Direct3D12::*;
 use interfaces::any::{declare_interfaces, AnyArc, IAny};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
     ITransferEncoder, QueueType,
 };
+use windows::core::PCWSTR;
+use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandList {
     pub(crate) pool: AnyArc<CommandPool>,
