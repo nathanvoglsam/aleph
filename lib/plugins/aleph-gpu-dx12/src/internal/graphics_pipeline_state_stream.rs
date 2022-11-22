@@ -219,92 +219,34 @@ impl<'a> GraphicsPipelineStateStreamBuilder<'a> {
         let input_layout = self.input_layout.unwrap();
 
         let packed = packed::Packed {
-            root_signature: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE,
-                self.root_signature,
-            ),
-            vertex_shader: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS,
-                blob_to_shader(self.vertex_shader.unwrap()),
-            ),
-            pixel_shader: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS,
-                blob_to_shader(self.pixel_shader.unwrap()),
-            ),
-            domain_shader: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DS,
-                optional_blob_to_shader(self.domain_shader),
-            ),
-            hull_shader: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_HS,
-                optional_blob_to_shader(self.hull_shader),
-            ),
-            geometry_shader: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_GS,
-                optional_blob_to_shader(self.geometry_shader),
-            ),
-            stream_output: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT,
-                self.stream_output,
-            ),
-            blend_state: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND,
-                self.blend_state,
-            ),
-            sample_mask: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK,
-                self.sample_mask,
-            ),
-            rasterizer_state: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER,
-                self.rasterizer_state,
-            ),
-            depth_stencil_state: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL,
-                self.depth_stencil_state,
-            ),
-            input_layout: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT,
-                D3D12_INPUT_LAYOUT_DESC {
-                    pInputElementDescs: input_layout.as_ptr() as *mut _,
-                    NumElements: input_layout.len() as _,
-                },
-            ),
-            strip_cut_value: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE,
-                self.strip_cut_value,
-            ),
-            primitive_topology_type: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY,
-                self.primitive_topology_type,
-            ),
-            render_targets: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS,
-                D3D12_RT_FORMAT_ARRAY {
-                    RTFormats: rt_formats,
-                    NumRenderTargets: self.rtv_formats.len() as _,
-                },
-            ),
-            dsv_format: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT,
-                self.dsv_format.into(),
-            ),
-            sample_desc: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC,
-                self.sample_desc,
-            ),
-            node_mask: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK,
-                self.node_mask,
-            ),
-            cached_pso: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO,
-                optional_blob_to_cached_pso(self.cached_pso),
-            ),
-            flags: PackedPipelineStateStreamObject::new(
-                D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS,
-                D3D12_PIPELINE_STATE_FLAG_NONE,
-            ),
+            root_signature: self.root_signature.into(),
+            vertex_shader: blob_to_shader(self.vertex_shader.unwrap()).into(),
+            pixel_shader: blob_to_shader(self.pixel_shader.unwrap()).into(),
+            domain_shader: optional_blob_to_shader(self.domain_shader).into(),
+            hull_shader: optional_blob_to_shader(self.hull_shader).into(),
+            geometry_shader: optional_blob_to_shader(self.geometry_shader).into(),
+            stream_output: self.stream_output.into(),
+            blend_state: self.blend_state.into(),
+            sample_mask: self.sample_mask.into(),
+            rasterizer_state: self.rasterizer_state.into(),
+            depth_stencil_state: self.depth_stencil_state.into(),
+            input_layout: D3D12_INPUT_LAYOUT_DESC {
+                pInputElementDescs: input_layout.as_ptr() as *mut _,
+                NumElements: input_layout.len() as _,
+            }
+            .into(),
+            strip_cut_value: self.strip_cut_value.into(),
+            primitive_topology_type: self.primitive_topology_type.into(),
+            render_targets: D3D12_RT_FORMAT_ARRAY {
+                RTFormats: rt_formats,
+                NumRenderTargets: self.rtv_formats.len() as _,
+            }
+            .into(),
+            dsv_format: self.dsv_format.into(),
+            sample_desc: self.sample_desc.into(),
+            node_mask: self.node_mask.into(),
+            cached_pso: optional_blob_to_cached_pso(self.cached_pso).into(),
+            flags: D3D12_PIPELINE_STATE_FLAG_NONE.into(),
         };
 
         GraphicsPipelineStateStream {
@@ -355,14 +297,14 @@ impl<'a> Deref for GraphicsPipelineStateStream<'a> {
 }
 
 #[repr(transparent)]
-pub(crate) struct PackedPipelineStateStreamObject<T>(AlignmentWrapper<Packed<T>>);
+pub(crate) struct PackedPipelineStateStreamObject<T, const I: i32>(AlignmentWrapper<Packed<T, I>>);
 
-impl<T> PackedPipelineStateStreamObject<T> {
+impl<T, const I: i32> From<T> for PackedPipelineStateStreamObject<T, I> {
     #[inline]
-    pub fn new(object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE, object: T) -> Self {
+    fn from(object: T) -> Self {
         let out = AlignmentWrapper {
             wrapped: ManuallyDrop::new(Packed {
-                object_type,
+                object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE(I),
                 object,
             }),
         };
@@ -371,7 +313,7 @@ impl<T> PackedPipelineStateStreamObject<T> {
 }
 
 #[repr(C)]
-struct Packed<T> {
+struct Packed<T, const I: i32> {
     pub object_type: D3D12_PIPELINE_STATE_SUBOBJECT_TYPE,
     pub object: T,
 }
@@ -391,36 +333,85 @@ impl<T> Drop for AlignmentWrapper<T> {
 
 mod packed {
     use super::PackedPipelineStateStreamObject;
-    use windows::Win32::Graphics::Direct3D12::{
-        ID3D12RootSignature, D3D12_BLEND_DESC, D3D12_CACHED_PIPELINE_STATE,
-        D3D12_DEPTH_STENCIL_DESC, D3D12_INDEX_BUFFER_STRIP_CUT_VALUE, D3D12_INPUT_LAYOUT_DESC,
-        D3D12_PIPELINE_STATE_FLAGS, D3D12_PRIMITIVE_TOPOLOGY_TYPE, D3D12_RASTERIZER_DESC,
-        D3D12_RT_FORMAT_ARRAY, D3D12_SHADER_BYTECODE, D3D12_STREAM_OUTPUT_DESC,
-    };
-    use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT, DXGI_SAMPLE_DESC};
+    use windows::Win32::Graphics::Direct3D12::*;
+    use windows::Win32::Graphics::Dxgi::Common::*;
 
-    pub(crate) type RootSignature = PackedPipelineStateStreamObject<Option<ID3D12RootSignature>>;
-    pub(crate) type VertexShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
-    pub(crate) type PixelShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
-    pub(crate) type DomainShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
-    pub(crate) type HullShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
-    pub(crate) type GeometryShader = PackedPipelineStateStreamObject<D3D12_SHADER_BYTECODE>;
-    pub(crate) type BlendState = PackedPipelineStateStreamObject<D3D12_BLEND_DESC>;
-    pub(crate) type SampleMask = PackedPipelineStateStreamObject<u32>;
-    pub(crate) type RasterizerState = PackedPipelineStateStreamObject<D3D12_RASTERIZER_DESC>;
-    pub(crate) type DepthStencilState = PackedPipelineStateStreamObject<D3D12_DEPTH_STENCIL_DESC>;
-    pub(crate) type PrimitiveTopologyType =
-        PackedPipelineStateStreamObject<D3D12_PRIMITIVE_TOPOLOGY_TYPE>;
-    pub(crate) type RenderTargets = PackedPipelineStateStreamObject<D3D12_RT_FORMAT_ARRAY>;
-    pub(crate) type DsvFormat = PackedPipelineStateStreamObject<DXGI_FORMAT>;
-    pub(crate) type SampleDesc = PackedPipelineStateStreamObject<DXGI_SAMPLE_DESC>;
-    pub(crate) type NodeMask = PackedPipelineStateStreamObject<u32>;
-    pub(crate) type CachedPso = PackedPipelineStateStreamObject<D3D12_CACHED_PIPELINE_STATE>;
-    pub(crate) type Flags = PackedPipelineStateStreamObject<D3D12_PIPELINE_STATE_FLAGS>;
-    pub(crate) type StreamOutput = PackedPipelineStateStreamObject<D3D12_STREAM_OUTPUT_DESC>;
-    pub(crate) type InputLayout = PackedPipelineStateStreamObject<D3D12_INPUT_LAYOUT_DESC>;
-    pub(crate) type StripCutValue =
-        PackedPipelineStateStreamObject<D3D12_INDEX_BUFFER_STRIP_CUT_VALUE>;
+    pub(crate) type RootSignature = PackedPipelineStateStreamObject<
+        Option<ID3D12RootSignature>,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE.0 },
+    >;
+    pub(crate) type VertexShader = PackedPipelineStateStreamObject<
+        D3D12_SHADER_BYTECODE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_VS.0 },
+    >;
+    pub(crate) type PixelShader = PackedPipelineStateStreamObject<
+        D3D12_SHADER_BYTECODE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PS.0 },
+    >;
+    pub(crate) type DomainShader = PackedPipelineStateStreamObject<
+        D3D12_SHADER_BYTECODE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DS.0 },
+    >;
+    pub(crate) type HullShader = PackedPipelineStateStreamObject<
+        D3D12_SHADER_BYTECODE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_HS.0 },
+    >;
+    pub(crate) type GeometryShader = PackedPipelineStateStreamObject<
+        D3D12_SHADER_BYTECODE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_GS.0 },
+    >;
+    pub(crate) type BlendState = PackedPipelineStateStreamObject<
+        D3D12_BLEND_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_BLEND.0 },
+    >;
+    pub(crate) type SampleMask =
+        PackedPipelineStateStreamObject<u32, { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_MASK.0 }>;
+    pub(crate) type RasterizerState = PackedPipelineStateStreamObject<
+        D3D12_RASTERIZER_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RASTERIZER.0 },
+    >;
+    pub(crate) type DepthStencilState = PackedPipelineStateStreamObject<
+        D3D12_DEPTH_STENCIL_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL.0 },
+    >;
+    pub(crate) type PrimitiveTopologyType = PackedPipelineStateStreamObject<
+        D3D12_PRIMITIVE_TOPOLOGY_TYPE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY.0 },
+    >;
+    pub(crate) type RenderTargets = PackedPipelineStateStreamObject<
+        D3D12_RT_FORMAT_ARRAY,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS.0 },
+    >;
+    pub(crate) type DsvFormat = PackedPipelineStateStreamObject<
+        DXGI_FORMAT,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT.0 },
+    >;
+    pub(crate) type SampleDesc = PackedPipelineStateStreamObject<
+        DXGI_SAMPLE_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_SAMPLE_DESC.0 },
+    >;
+    pub(crate) type NodeMask =
+        PackedPipelineStateStreamObject<u32, { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK.0 }>;
+    pub(crate) type CachedPso = PackedPipelineStateStreamObject<
+        D3D12_CACHED_PIPELINE_STATE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_CACHED_PSO.0 },
+    >;
+    pub(crate) type Flags = PackedPipelineStateStreamObject<
+        D3D12_PIPELINE_STATE_FLAGS,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS.0 },
+    >;
+    pub(crate) type StreamOutput = PackedPipelineStateStreamObject<
+        D3D12_STREAM_OUTPUT_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT.0 },
+    >;
+    pub(crate) type InputLayout = PackedPipelineStateStreamObject<
+        D3D12_INPUT_LAYOUT_DESC,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT.0 },
+    >;
+    pub(crate) type StripCutValue = PackedPipelineStateStreamObject<
+        D3D12_INDEX_BUFFER_STRIP_CUT_VALUE,
+        { D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE.0 },
+    >;
     #[repr(C)]
     pub(crate) struct Packed {
         pub root_signature: RootSignature,
