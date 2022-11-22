@@ -27,6 +27,9 @@
 // SOFTWARE.
 //
 
+#![allow(unused)]
+#![warn(unused_imports)]
+
 use std::ffi::c_void;
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;

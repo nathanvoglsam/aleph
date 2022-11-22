@@ -29,14 +29,15 @@
 
 #![allow(non_snake_case)]
 #![allow(unused)]
+#![warn(unused_imports)]
 
 use std::mem::MaybeUninit;
 use windows::core::{Error, HRESULT};
 use windows::Win32::Foundation::E_INVALIDARG;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
-use windows::Win32::Graphics::Dxgi::Common::DXGI_FORMAT;
-use windows::Win32::Graphics::Dxgi::DXGI_ERROR_UNSUPPORTED;
+use windows::Win32::Graphics::Dxgi::Common::*;
+use windows::Win32::Graphics::Dxgi::*;
 
 #[derive(Debug)]
 pub struct FeatureSupport {
