@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::internal::set_name::set_name;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
@@ -77,11 +78,7 @@ impl IGraphicsPipelineExt for GraphicsPipeline {
 
 impl INamedObject for GraphicsPipeline {
     fn set_name(&self, name: &str) {
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.pipeline.SetName(name).unwrap();
-        }
+        set_name(&self.pipeline, name).unwrap();
     }
 }
 
@@ -119,10 +116,6 @@ impl IComputePipelineExt for ComputePipeline {
 
 impl INamedObject for ComputePipeline {
     fn set_name(&self, name: &str) {
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.pipeline.SetName(name).unwrap();
-        }
+        set_name(&self.pipeline, name).unwrap();
     }
 }

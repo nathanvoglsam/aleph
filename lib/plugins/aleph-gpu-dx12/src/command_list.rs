@@ -31,6 +31,7 @@ use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
 use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::in_flight_command_list::ReturnToPool;
+use crate::internal::set_name::set_name;
 use interfaces::any::{declare_interfaces, AnyArc, IAny};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
@@ -130,16 +131,7 @@ impl ICommandListExt for CommandList {
 
 impl INamedObject for CommandList {
     fn set_name(&self, name: &str) {
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.allocator.SetName(name).unwrap();
-        }
-
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.list.SetName(name).unwrap();
-        }
+        set_name(&self.allocator, name).unwrap();
+        set_name(&self.list, name).unwrap();
     }
 }

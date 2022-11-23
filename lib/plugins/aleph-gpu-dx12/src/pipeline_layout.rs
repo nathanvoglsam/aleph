@@ -28,6 +28,7 @@
 //
 
 use crate::device::Device;
+use crate::internal::set_name::set_name;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IPipelineLayout};
 use windows::core::PCWSTR;
@@ -69,9 +70,7 @@ impl IPipelineLayoutExt for PipelineLayout {
 impl INamedObject for PipelineLayout {
     fn set_name(&self, name: &str) {
         unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.root_signature.SetName(name).unwrap();
+            set_name(&self.root_signature, name).unwrap();
         }
     }
 }

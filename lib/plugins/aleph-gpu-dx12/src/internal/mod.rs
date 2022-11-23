@@ -44,6 +44,7 @@ pub mod graphics_pipeline_state_stream;
 pub mod in_flight_command_list;
 pub mod register_message_callback;
 pub mod root_signature_blob;
+pub mod set_name;
 pub mod swap_chain_creation;
 
 pub const fn calc_subresource_index(

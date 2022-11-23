@@ -45,6 +45,7 @@ use crate::internal::graphics_pipeline_state_stream::{
 };
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
+use crate::internal::set_name::set_name;
 use crate::pipeline::{ComputePipeline, GraphicsPipeline};
 use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
@@ -1058,10 +1059,6 @@ unsafe impl Sync for Device {}
 
 impl INamedObject for Device {
     fn set_name(&self, name: &str) {
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.device.SetName(name).unwrap();
-        }
+        set_name(&self.device, name).unwrap();
     }
 }

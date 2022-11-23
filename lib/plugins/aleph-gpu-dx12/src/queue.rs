@@ -30,6 +30,7 @@
 use crate::acquired_texture::AcquiredTexture;
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
+use crate::internal::set_name::set_name;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
@@ -278,10 +279,6 @@ impl IQueue for Queue {
 
 impl INamedObject for Queue {
     fn set_name(&self, name: &str) {
-        unsafe {
-            let utf16: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
-            let name = PCWSTR::from_raw(utf16.as_ptr());
-            self.handle.SetName(name).unwrap();
-        }
+        set_name(&self.handle, name).unwrap();
     }
 }
