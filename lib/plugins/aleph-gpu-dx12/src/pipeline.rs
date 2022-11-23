@@ -31,7 +31,6 @@ use crate::internal::set_name::set_name;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
-use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 

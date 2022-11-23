@@ -33,7 +33,6 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
-use windows::core::PCWSTR;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Graphics::Direct3D12::*;
 

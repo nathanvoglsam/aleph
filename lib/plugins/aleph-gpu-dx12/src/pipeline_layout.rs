@@ -31,7 +31,6 @@ use crate::device::Device;
 use crate::internal::set_name::set_name;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IPipelineLayout};
-use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct PipelineLayout {
@@ -69,9 +68,7 @@ impl IPipelineLayoutExt for PipelineLayout {
 
 impl INamedObject for PipelineLayout {
     fn set_name(&self, name: &str) {
-        unsafe {
-            set_name(&self.root_signature, name).unwrap();
-        }
+        set_name(&self.root_signature, name).unwrap();
     }
 }
 

@@ -69,7 +69,7 @@ use interfaces::gpu::{
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
-use windows::core::{PCSTR, PCWSTR};
+use windows::core::PCSTR;
 use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;

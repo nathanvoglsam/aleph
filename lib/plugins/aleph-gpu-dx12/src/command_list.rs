@@ -38,7 +38,6 @@ use interfaces::gpu::{
     CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
     ITransferEncoder, QueueType,
 };
-use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandList {

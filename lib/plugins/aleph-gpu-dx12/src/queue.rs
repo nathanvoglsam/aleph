@@ -41,7 +41,6 @@ use interfaces::gpu::{
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
 use std::sync::atomic::{AtomicU64, Ordering};
-use windows::core::PCWSTR;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
 
