@@ -252,13 +252,6 @@ impl DeviceBuilder {
 
             //let _name = unsafe { CStr::from_ptr(props.device_name.as_ptr()).to_str().unwrap() };
 
-            // Prioritize NVIDIA or AMD as they'll almost always be the fastest GPU available
-            // TODO: Update this when Intel Xe is less of a mystery
-            let vendor = VendorID::from_raw(props.vendor_id);
-            if vendor == VendorID::AMD || vendor == VendorID::NVIDIA {
-                score.1 += 10000;
-            }
-
             // Get the name of the VK_KHR_surface extension as a rusty &str
             let khr_surface_name = erupt::extensions::khr_surface::KHR_SURFACE_EXTENSION_NAME;
             let khr_surface_name = unsafe { CStr::from_ptr(khr_surface_name) };
