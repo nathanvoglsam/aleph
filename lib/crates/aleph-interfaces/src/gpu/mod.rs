@@ -420,20 +420,6 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
 
     unsafe fn set_push_constant_block(&mut self, block_index: usize, data: &[u8]);
 
-    unsafe fn clear_texture(
-        &mut self,
-        texture: &dyn ITexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &ColorClearValue,
-    );
-
-    unsafe fn clear_depth_stencil_texture(
-        &mut self,
-        texture: &dyn ITexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &DepthStencilClearValue,
-    );
-
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo);
 
     unsafe fn end_rendering(&mut self);
