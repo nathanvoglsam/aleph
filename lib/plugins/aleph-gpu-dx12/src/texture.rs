@@ -198,7 +198,7 @@ impl PlainTexture {
         sub_resources: &TextureSubResourceSet,
     ) -> Option<CPUDescriptorHandle> {
         let init = |view: CPUDescriptorHandle, format, sub_resources| {
-            let desc = self.make_rtv_desc_for_format_and_sub_resources(format, &sub_resources);
+            let desc = self.make_rtv_desc_for_format_and_sub_resources(format, sub_resources);
             self.device
                 .device
                 .CreateRenderTargetView(&self.resource, &desc, view.into());
@@ -208,7 +208,6 @@ impl PlainTexture {
             &self.device.descriptor_heaps.cpu_rtv_heap(),
             format,
             sub_resources,
-            false,
             init,
         )
     }
@@ -219,7 +218,7 @@ impl PlainTexture {
         sub_resources: &TextureSubResourceSet,
     ) -> Option<CPUDescriptorHandle> {
         let init = |view: CPUDescriptorHandle, format, sub_resources| {
-            let desc = self.make_dsv_desc_for_format_and_sub_resources(format, &sub_resources);
+            let desc = self.make_dsv_desc_for_format_and_sub_resources(format, sub_resources);
             self.device
                 .device
                 .CreateDepthStencilView(&self.resource, &desc, view.into());
@@ -229,19 +228,17 @@ impl PlainTexture {
             &self.device.descriptor_heaps.cpu_dsv_heap(),
             format,
             sub_resources,
-            false,
             init,
         )
     }
 
-    pub fn get_or_create_view_for_usage(
+    pub fn get_or_create_view_for_usage<'a>(
         &self,
         cache: &RwLock<CacheViewCPU>,
         allocator: &DescriptorAllocatorCPU,
         format: Option<Format>,
-        sub_resources: &TextureSubResourceSet,
-        allow_multiple_mips: bool,
-        init: impl FnOnce(CPUDescriptorHandle, Format, TextureSubResourceSet),
+        sub_resources: &'a TextureSubResourceSet,
+        init: impl FnOnce(CPUDescriptorHandle, Format, &'a TextureSubResourceSet),
     ) -> Option<CPUDescriptorHandle> {
         // First see if we already have a compatible view
         //
@@ -249,16 +246,6 @@ impl PlainTexture {
         // the cache. If it isn't then we hit the slow path of initializing the view so we need to
         // take a write lock.
         let views = cache.read();
-
-        // Whether more than a single mip level is valid for this view
-        // TODO: Remove this, this is a validation issue which should only run with debug_assertions
-        let sub_resources = if !allow_multiple_mips && sub_resources.num_mip_levels > 1 {
-            let mut sub_resources = sub_resources.clone();
-            sub_resources.num_mip_levels = 1;
-            sub_resources
-        } else {
-            sub_resources.clone()
-        };
 
         // Zero mip levels would imply no image data so is also invalid
         if sub_resources.num_mip_levels < 1 {
