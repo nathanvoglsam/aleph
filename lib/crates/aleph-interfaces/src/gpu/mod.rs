@@ -2896,6 +2896,9 @@ pub struct Viewport {
 pub struct RenderingColorAttachmentInfo<'a> {
     pub image: &'a dyn ITexture,
     pub image_layout: ImageLayout,
+    pub mip_level: u32,
+    pub base_array_slice: u32,
+    pub num_array_slices: u32,
     pub load_op: AttachmentLoadOp<ColorClearValue>,
     pub store_op: AttachmentStoreOp,
 }
@@ -2915,6 +2918,9 @@ impl<'a> Debug for RenderingColorAttachmentInfo<'a> {
 pub struct RenderingDepthStencilAttachmentInfo<'a> {
     pub image: &'a dyn ITexture,
     pub image_layout: ImageLayout,
+    pub mip_level: u32,
+    pub base_array_slice: u32,
+    pub num_array_slices: u32,
     pub depth_load_op: AttachmentLoadOp<DepthStencilClearValue>,
     pub depth_store_op: AttachmentStoreOp,
     pub stencil_load_op: AttachmentLoadOp<DepthStencilClearValue>,
