@@ -81,13 +81,6 @@ impl<'a> Encoder<'a> {
 
         self.list
             .ClearRenderTargetView(concrete.view.into(), buffer.as_ptr(), &[]);
-        self.parent
-            .tracker
-            .images
-            .push(AnyArc::map::<dyn ITexture, _>(
-                this.upgrade().unwrap(),
-                |v| v,
-            ));
     }
 
     #[inline]
@@ -141,14 +134,6 @@ impl<'a> Encoder<'a> {
         } else {
             todo!()
         }
-
-        self.parent
-            .tracker
-            .images
-            .push(AnyArc::map::<dyn ITexture, _>(
-                this.upgrade().unwrap(),
-                |v| v,
-            ));
     }
 
     #[inline]
@@ -202,14 +187,6 @@ impl<'a> Encoder<'a> {
                 }
             }
         }
-
-        self.parent
-            .tracker
-            .images
-            .push(AnyArc::map::<dyn ITexture, _>(
-                this.upgrade().unwrap(),
-                |v| v,
-            ));
     }
 
     #[inline]

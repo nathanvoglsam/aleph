@@ -102,7 +102,6 @@ impl ICommandPool for CommandPool {
 
         let command_list = CommandList {
             pool: self.this.upgrade().unwrap(),
-            tracker: Default::default(),
             list_type: QueueType::General,
             allocator,
             list,

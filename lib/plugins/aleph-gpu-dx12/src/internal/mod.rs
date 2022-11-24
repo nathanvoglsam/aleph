@@ -30,7 +30,6 @@
 use interfaces::gpu::{Format, TextureCopyAspect};
 
 pub mod adapter_description_decoder;
-pub mod command_list_tracker;
 pub mod conv;
 pub mod create_device;
 pub mod create_dxgi_factory;

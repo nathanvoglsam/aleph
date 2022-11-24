@@ -29,7 +29,6 @@
 
 use crate::command_pool::CommandPool;
 use crate::encoder::Encoder;
-use crate::internal::command_list_tracker::CommandListTracker;
 use crate::internal::in_flight_command_list::ReturnToPool;
 use crate::internal::set_name::set_name;
 use interfaces::any::{declare_interfaces, AnyArc, IAny};
@@ -42,7 +41,6 @@ use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct CommandList {
     pub(crate) pool: AnyArc<CommandPool>,
-    pub(crate) tracker: CommandListTracker,
     pub(crate) list_type: QueueType,
     pub(crate) allocator: ID3D12CommandAllocator,
     pub(crate) list: ID3D12GraphicsCommandList7,
@@ -64,11 +62,6 @@ impl ICommandList for CommandList {
                     .Reset(&self.allocator, None)
                     .map_err(|v| anyhow!(v))?;
             }
-
-            // Clear the resource tracker data. The list can't be in flight when we do this so it's all
-            // good to do this here. If the tracker is tracking anything it's because of the command
-            // list having already been recorded
-            self.tracker.clear();
 
             let encoder = Encoder::<'a> {
                 list: self.list.clone(),
@@ -103,9 +96,6 @@ impl ICommandList for CommandList {
 
 impl ReturnToPool for CommandList {
     fn return_to_pool(&mut self) {
-        self.tracker.images.clear();
-        self.tracker.binding_sets.clear();
-        self.tracker.buffers.clear();
         self.pool
             .general_free_list
             .push((self.allocator.clone(), self.list.clone()))
