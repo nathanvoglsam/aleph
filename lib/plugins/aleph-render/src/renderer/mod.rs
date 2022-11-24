@@ -157,6 +157,9 @@ impl EguiRenderer {
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image: texture,
                     image_layout: ImageLayout::ColorAttachmentOptimal,
+                    mip_level: 0,
+                    base_array_slice: 0,
+                    num_array_slices: 1,
                     load_op: AttachmentLoadOp::Clear(ColorClearValue::Int(0)),
                     store_op: AttachmentStoreOp::Store,
                 }],
