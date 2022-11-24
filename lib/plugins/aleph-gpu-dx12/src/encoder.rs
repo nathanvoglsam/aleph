@@ -452,7 +452,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
             let descriptor = match &image.inner {
-                TextureInner::Plain(_v) => todo!("Implement me"),
+                TextureInner::Plain(v) => {
+                    v.get_or_create_rtv_for_usage(
+                        None,
+                        &TextureSubResourceSet {
+                            aspect: TextureAspect::empty(), // TODO: D3D12 doesn't handle plane slices for RTVs so this is meaningless
+                            base_mip_level: attachment.mip_level,
+                            num_mip_levels: 1,
+                            base_array_slice: attachment.base_array_slice,
+                            num_array_slices: attachment.num_array_slices,
+                        },
+                    )
+                    .unwrap()
+                }
                 TextureInner::Swap(v) => v.view,
             };
             let format = image.get_raw_format();
@@ -469,8 +481,22 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
             let descriptor = match &image.inner {
-                TextureInner::Plain(_v) => D3D12_CPU_DESCRIPTOR_HANDLE::default(), // TODO: impl me
-                TextureInner::Swap(_v) => panic!("Swap images can't be used as depth/stencil"),
+                TextureInner::Plain(v) => {
+                    v.get_or_create_dsv_for_usage(
+                        None,
+                        &TextureSubResourceSet {
+                            aspect: TextureAspect::empty(), // TODO: D3D12 can't create a view over only depth or stencil so this is meaningless
+                            base_mip_level: attachment.mip_level,
+                            num_mip_levels: 1,
+                            base_array_slice: attachment.base_array_slice,
+                            num_array_slices: attachment.num_array_slices,
+                        },
+                    )
+                    .unwrap()
+                }
+                TextureInner::Swap(_v) => {
+                    panic!("Swap images can't be used as depth/stencil attachments")
+                }
             };
             let format = image.get_raw_format();
             translate_rendering_depth_stencil_attachment(attachment, descriptor, Some(format))
@@ -479,7 +505,6 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         let depth_stencil_ref = depth_stencil
             .as_ref()
             .map(|v| v as *const _)
-            .map(|_| unimplemented!("Depth stencil not implemented yet"))
             .unwrap_or(std::ptr::null());
 
         self.list.BeginRenderPass(
@@ -872,6 +897,13 @@ impl<'a> Encoder<'a> {
     ) {
         Self::validate_aspect_against_texture_format(desc.format, &set.aspect);
         debug_assert!(!set.aspect.is_empty(), "Specified an empty aspect mask");
+        Self::validate_sub_resource_mips_and_slices_against_texture(desc, set);
+    }
+
+    fn validate_sub_resource_mips_and_slices_against_texture(
+        desc: &TextureDesc,
+        set: &TextureSubResourceSet,
+    ) {
         debug_assert!(
             desc.array_size >= set.num_array_slices,
             "Specified access to more array slices than a texture has"
@@ -913,6 +945,20 @@ impl<'a> Encoder<'a> {
                 image.desc().is_render_target,
                 "Used texture as render target when created with 'is_render_target = false'"
             );
+            debug_assert!(
+                !image.desc().format.is_depth_stencil(),
+                "Used depth/stencil texture as a color attachment",
+            );
+            Self::validate_sub_resource_mips_and_slices_against_texture(
+                image.desc(),
+                &TextureSubResourceSet {
+                    aspect: Default::default(),
+                    base_mip_level: v.mip_level,
+                    num_mip_levels: 1,
+                    base_array_slice: v.base_array_slice,
+                    num_array_slices: v.num_array_slices,
+                },
+            );
         });
 
         // Produce an iterator over all the (width,height) pairs for each color attachment
@@ -932,8 +978,8 @@ impl<'a> Encoder<'a> {
                 (a_width, a_height)
             });
 
-        if let Some(attachment) = info.depth_stencil_attachment {
-            let image = attachment
+        if let Some(v) = info.depth_stencil_attachment {
+            let image = v
                 .image
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
@@ -941,6 +987,22 @@ impl<'a> Encoder<'a> {
             debug_assert!(
                 image.desc().is_render_target,
                 "Used texture as depth/stencil target when created with 'is_render_target = false'"
+            );
+
+            debug_assert!(
+                image.desc().format.is_depth_stencil(),
+                "Used non depth/stencil texture as a depth/stencil attachment",
+            );
+
+            Self::validate_sub_resource_mips_and_slices_against_texture(
+                image.desc(),
+                &TextureSubResourceSet {
+                    aspect: Default::default(),
+                    base_mip_level: v.mip_level,
+                    num_mip_levels: 1,
+                    base_array_slice: v.base_array_slice,
+                    num_array_slices: v.num_array_slices,
+                },
             );
 
             // Check that the depth stencil dimensions match the color dimensions

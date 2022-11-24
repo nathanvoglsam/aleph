@@ -34,8 +34,8 @@ use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
-    TextureSubResourceSet,
+    Format, INamedObject, ITexture, TextureAspect, TextureCopyAspect, TextureDesc,
+    TextureDimension, TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
@@ -192,13 +192,12 @@ pub struct PlainTexture {
 }
 
 impl PlainTexture {
-    #[inline]
-    pub fn get_or_create_rtv_for_usage(
+    pub unsafe fn get_or_create_rtv_for_usage(
         &self,
         format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
     ) -> Option<CPUDescriptorHandle> {
-        let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
+        let init = |view: CPUDescriptorHandle, format, sub_resources| {
             let desc = self.make_rtv_desc_for_format_and_sub_resources(format, &sub_resources);
             self.device
                 .device
@@ -214,13 +213,12 @@ impl PlainTexture {
         )
     }
 
-    #[inline]
-    pub fn get_or_create_dsv_for_usage(
+    pub unsafe fn get_or_create_dsv_for_usage(
         &self,
         format: Option<Format>,
         sub_resources: &TextureSubResourceSet,
     ) -> Option<CPUDescriptorHandle> {
-        let init = |view: CPUDescriptorHandle, format, sub_resources| unsafe {
+        let init = |view: CPUDescriptorHandle, format, sub_resources| {
             let desc = self.make_dsv_desc_for_format_and_sub_resources(format, &sub_resources);
             self.device
                 .device
@@ -236,7 +234,6 @@ impl PlainTexture {
         )
     }
 
-    #[inline]
     pub fn get_or_create_view_for_usage(
         &self,
         cache: &RwLock<CacheViewCPU>,
@@ -254,6 +251,7 @@ impl PlainTexture {
         let views = cache.read();
 
         // Whether more than a single mip level is valid for this view
+        // TODO: Remove this, this is a validation issue which should only run with debug_assertions
         let sub_resources = if !allow_multiple_mips && sub_resources.num_mip_levels > 1 {
             let mut sub_resources = sub_resources.clone();
             sub_resources.num_mip_levels = 1;
