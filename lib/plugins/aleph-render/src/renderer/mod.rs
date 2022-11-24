@@ -153,14 +153,7 @@ impl EguiRenderer {
             );
 
             encoder.begin_rendering(&BeginRenderingInfo {
-                render_area: Rect {
-                    x: 0,
-                    y: 0,
-                    w: 0, // TODO: fill out
-                    h: 0, // TODO: fill out
-                },
                 layer_count: 1,
-                view_mask: 0,
                 color_attachments: &[RenderingColorAttachmentInfo {
                     image: texture,
                     image_layout: ImageLayout::ColorAttachmentOptimal,
