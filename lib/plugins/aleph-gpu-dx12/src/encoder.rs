@@ -442,8 +442,12 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {
         let mut color_attachments = Vec::with_capacity(info.color_attachments.len());
-        for info in info.color_attachments {
-            let image = info
+
+        #[cfg(debug_assertions)]
+        Self::validate_rendering_attachments(info);
+
+        for attachment in info.color_attachments {
+            let image = attachment
                 .image
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
@@ -453,14 +457,14 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             };
             let format = image.get_raw_format();
             color_attachments.push(translate_rendering_color_attachment(
-                info,
+                attachment,
                 descriptor,
                 Some(format),
             ));
         }
 
-        let depth_stencil = info.depth_stencil_attachment.map(|info| {
-            let image = info
+        let depth_stencil = info.depth_stencil_attachment.map(|attachment| {
+            let image = attachment
                 .image
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
@@ -469,7 +473,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 TextureInner::Swap(_v) => panic!("Swap images can't be used as depth/stencil"),
             };
             let format = image.get_raw_format();
-            translate_rendering_depth_stencil_attachment(info, descriptor, Some(format))
+            translate_rendering_depth_stencil_attachment(attachment, descriptor, Some(format))
         });
 
         let depth_stencil_ref = depth_stencil
@@ -892,5 +896,59 @@ impl<'a> Encoder<'a> {
             desc.mip_levels >= set.base_mip_level + set.num_mip_levels,
             "Specified access to mip levels outside of mip level bounds"
         );
+    }
+
+    fn validate_rendering_attachments(info: &BeginRenderingInfo) {
+        debug_assert!(
+            !info.color_attachments.is_empty() || info.depth_stencil_attachment.is_some(),
+            "Trying to begin rendering rendering without specifying any attachments"
+        );
+
+        info.color_attachments.iter().for_each(|v| {
+            let image = v
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+            debug_assert!(
+                image.desc().is_render_target,
+                "Used texture as render target when created with 'is_render_target = false'"
+            );
+        });
+
+        // Produce an iterator over all the (width,height) pairs for each color attachment
+        let attachment_sizes = info.color_attachments.iter().map(|v| {
+            let image = v
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+            (image.desc().width, image.desc().height)
+        });
+
+        // Reduce the sizes to a single item, asserting that they are all equal
+        let attachment_size =
+            attachment_sizes.reduce(|(a_width, a_height), (b_width, b_height)| {
+                debug_assert_eq!(a_width, b_width, "All attachment widths must be equal");
+                debug_assert_eq!(a_height, b_height, "All attachment heights must be equal");
+                (a_width, a_height)
+            });
+
+        if let Some(attachment) = info.depth_stencil_attachment {
+            let image = attachment
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+
+            debug_assert!(
+                image.desc().is_render_target,
+                "Used texture as depth/stencil target when created with 'is_render_target = false'"
+            );
+
+            // Check that the depth stencil dimensions match the color dimensions
+            if let Some((width, height)) = attachment_size {
+                let (d_width, d_height) = (image.desc().width, image.desc().height);
+                debug_assert_eq!(width, d_width, "All attachment widths must be equal");
+                debug_assert_eq!(height, d_height, "All attachment heights must be equal");
+            }
+        }
     }
 }
