@@ -2936,9 +2936,7 @@ impl<'a> Debug for RenderingDepthStencilAttachmentInfo<'a> {
 
 #[derive(Clone, Debug)]
 pub struct BeginRenderingInfo<'a> {
-    pub render_area: Rect,
     pub layer_count: u32,
-    pub view_mask: u32,
     pub color_attachments: &'a [RenderingColorAttachmentInfo<'a>],
     pub depth_stencil_attachment: Option<&'a RenderingDepthStencilAttachmentInfo<'a>>,
 }
