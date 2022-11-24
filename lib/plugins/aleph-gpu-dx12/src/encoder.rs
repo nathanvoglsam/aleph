@@ -30,21 +30,20 @@
 use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::internal::conv::{
-    barrier_access_to_dx12, barrier_sync_to_dx12, decode_u32_color_to_float, image_layout_to_dx12,
+    barrier_access_to_dx12, barrier_sync_to_dx12, image_layout_to_dx12,
     translate_barrier_texture_aspect_to_plane_range, translate_rendering_color_attachment,
     translate_rendering_depth_stencil_attachment,
 };
 use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PushConstantBlockInfo;
-use crate::texture::{PlainTexture, SwapTexture, Texture, TextureInner};
+use crate::texture::{Texture, TextureInner};
 use crate::ITextureExt;
-use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
+use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
-    ColorClearValue, DepthStencilClearValue, Format, GlobalBarrier, IBuffer, IComputeEncoder,
-    IGeneralEncoder, IGraphicsPipeline, ITexture, ITransferEncoder, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, Rect, TextureAspect, TextureBarrier, TextureDesc,
-    TextureSubResourceSet, Viewport,
+    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color, Format,
+    GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture,
+    ITransferEncoder, ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureAspect,
+    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
@@ -54,7 +53,7 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Encoder<'a> {
     pub(crate) list: ID3D12GraphicsCommandList7,
-    pub(crate) parent: &'a mut CommandList,
+    pub(crate) _parent: &'a mut CommandList,
     pub(crate) bound_graphics_pipeline: Option<AnyArc<GraphicsPipeline>>,
     pub(crate) input_binding_strides: [u32; 16],
 }
@@ -63,198 +62,6 @@ impl<'a> Drop for Encoder<'a> {
     fn drop(&mut self) {
         // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
         unsafe { self.list.Close().unwrap() }
-    }
-}
-
-impl<'a> Encoder<'a> {
-    #[inline]
-    unsafe fn clear_swap_texture(
-        &mut self,
-        this: &AnyWeak<Texture>,
-        concrete: &SwapTexture,
-        value: &ColorClearValue,
-    ) {
-        let buffer = match value {
-            ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
-            ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
-        };
-
-        self.list
-            .ClearRenderTargetView(concrete.view.into(), buffer.as_ptr(), &[]);
-    }
-
-    #[inline]
-    unsafe fn clear_plain_texture(
-        &mut self,
-        this: &AnyWeak<Texture>,
-        concrete: &PlainTexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &ColorClearValue,
-    ) {
-        if concrete.desc.format.is_depth_stencil() {
-            aleph_log::debug!("Tried to perform clear_color on a depth/stencil texture");
-            return;
-        }
-
-        let buffer = match value {
-            ColorClearValue::Float { r, g, b, a } => [*r, *g, *b, *a],
-            ColorClearValue::Int(v) => decode_u32_color_to_float(*v),
-        };
-
-        let sub_resources = self.clamp_sub_resource_set_to_texture(&concrete.desc, sub_resources);
-
-        // DX12 handles clearing textures differently between render targets and non render target
-        // textures.
-        if concrete.desc.is_render_target {
-            // DX12 can only clear a single mip level per call to ClearRenderTargetView, to clear
-            // all the requested layers we need to emit multiple calls to ClearRenderTargetView.
-            let begin = sub_resources.base_mip_level;
-            let end = begin + sub_resources.num_mip_levels;
-            for level in begin..end {
-                let level_sub_resources = TextureSubResourceSet {
-                    aspect: Default::default(),
-                    base_mip_level: level,
-                    num_mip_levels: 1,
-                    base_array_slice: sub_resources.base_array_slice,
-                    num_array_slices: sub_resources.base_mip_level,
-                };
-
-                let view = concrete.get_or_create_rtv_for_usage(None, &level_sub_resources);
-
-                if let Some(view) = view {
-                    self.list
-                        .ClearRenderTargetView(view.into(), buffer.as_ptr(), &[]);
-                } else {
-                    aleph_log::debug!(
-                        "Called IEncoder::clear_texture with TextureSubResourceSet::num_mip_levels = 0."
-                    );
-                    return;
-                }
-            }
-        } else {
-            todo!()
-        }
-    }
-
-    #[inline]
-    unsafe fn clear_depth_image(
-        &mut self,
-        this: &AnyWeak<Texture>,
-        concrete: &PlainTexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &DepthStencilClearValue,
-    ) {
-        if !concrete.desc.format.is_depth_stencil() {
-            aleph_log::debug!("Tried to perform clear_depth_stencil_texture on a color texture");
-            return;
-        }
-
-        let (depth, stencil, clear_flags) = match value {
-            DepthStencilClearValue::DepthStencil(d, s) => {
-                (*d, *s, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL)
-            }
-            DepthStencilClearValue::Depth(d) => (*d, 0, D3D12_CLEAR_FLAG_DEPTH),
-            DepthStencilClearValue::Stencil(s) => (0.0, *s, D3D12_CLEAR_FLAG_STENCIL),
-        };
-
-        let sub_resources = self.clamp_sub_resource_set_to_texture(&concrete.desc, sub_resources);
-
-        // DX12 handles clearing textures differently between render targets and non render target
-        // textures.
-        if concrete.desc.is_render_target {
-            // DX12 can only clear a single mip level per call to ClearRenderTargetView, to clear
-            // all the requested layers we need to emit multiple calls to ClearRenderTargetView.
-            let begin = sub_resources.base_mip_level;
-            let end = begin + sub_resources.num_mip_levels;
-            for level in begin..end {
-                let level_sub_resources = TextureSubResourceSet {
-                    aspect: Default::default(),
-                    base_mip_level: level,
-                    num_mip_levels: 1,
-                    base_array_slice: sub_resources.base_array_slice,
-                    num_array_slices: sub_resources.base_mip_level,
-                };
-
-                let view = concrete.get_or_create_dsv_for_usage(None, &level_sub_resources);
-                if let Some(view) = view {
-                    self.list
-                        .ClearDepthStencilView(view.into(), clear_flags, depth, stencil, &[]);
-                } else {
-                    aleph_log::debug!(
-                    "Called IEncoder::clear_depth_stencil_texture with TextureSubResourceSet::num_mip_levels = 0."
-                );
-                    return;
-                }
-            }
-        }
-    }
-
-    #[inline]
-    fn clamp_sub_resource_set_to_texture(
-        &self,
-        texture: &TextureDesc,
-        sub_resources: &TextureSubResourceSet,
-    ) -> TextureSubResourceSet {
-        #[inline(always)]
-        fn clamp_range(base: u32, len: u32, min: u32, max: u32) -> (u32, u32) {
-            let base_level = base.clamp(min, max);
-            let end_level = base_level + len;
-            let end_level_clamped = end_level.clamp(min, max);
-            let num_levels = (end_level_clamped + 1) - base_level;
-            (base_level, num_levels)
-        }
-
-        let min_mip_level = 0;
-        let max_mip_level = texture.mip_levels - 1;
-        let (base_mip_level, num_mip_levels) = clamp_range(
-            sub_resources.base_mip_level,
-            sub_resources.num_mip_levels,
-            min_mip_level,
-            max_mip_level,
-        );
-
-        let min_array_slice = 0;
-        let max_array_slice = texture.array_size - 1;
-        let (base_array_slice, num_array_slices) = clamp_range(
-            sub_resources.base_array_slice,
-            sub_resources.num_array_slices,
-            min_array_slice,
-            max_array_slice,
-        );
-
-        // Warn if the base mip level is out of bounds
-        if sub_resources.base_mip_level >= max_mip_level {
-            aleph_log::debug!("TextureSubResourceSet out of bounds: base_mip_level");
-        }
-
-        // Warn if the sub resource set is addressing the mip levels out of bounds unintentionally
-        //
-        // u32::MAX flags "use all mip levels"
-        let use_all_mips = texture.mip_levels == u32::MAX;
-        if (base_mip_level + num_mip_levels) > max_mip_level && !use_all_mips {
-            aleph_log::debug!("TextureSubResourceSet out of bounds: num_mip_levels")
-        }
-
-        // Warn if the base array slice is out of bounds
-        if sub_resources.base_array_slice >= max_array_slice {
-            aleph_log::debug!("TextureSubResourceSet out of bounds: base_array_slice");
-        }
-
-        // Warn if the sub resource set is addressing the array slices out of bounds unintentionally
-        //
-        // u32::MAX flags "use all array slices"
-        let use_all_slices = texture.array_size == u32::MAX;
-        if (base_array_slice + num_array_slices) > max_array_slice && !use_all_slices {
-            aleph_log::debug!("TextureSubResourceSet out of bounds: num_array_slices")
-        }
-
-        TextureSubResourceSet {
-            aspect: sub_resources.aspect, // TODO: should we clamp this too?
-            base_mip_level,
-            num_mip_levels,
-            base_array_slice,
-            num_array_slices,
-        }
     }
 }
 
@@ -398,46 +205,6 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
             p_src_data as *const _,
             0,
         );
-    }
-
-    unsafe fn clear_texture(
-        &mut self,
-        texture: &dyn ITexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &ColorClearValue,
-    ) {
-        if let Some(concrete) = texture.query_interface::<Texture>() {
-            match &concrete.inner {
-                TextureInner::Plain(v) => {
-                    self.clear_plain_texture(&concrete.this, v, sub_resources, value);
-                }
-                TextureInner::Swap(v) => {
-                    self.clear_swap_texture(&concrete.this, v, value);
-                }
-            }
-        } else {
-            panic!("Unknown ITexture implementation");
-        }
-    }
-
-    unsafe fn clear_depth_stencil_texture(
-        &mut self,
-        texture: &dyn ITexture,
-        sub_resources: &TextureSubResourceSet,
-        value: &DepthStencilClearValue,
-    ) {
-        if let Some(concrete) = texture.query_interface::<Texture>() {
-            match &concrete.inner {
-                TextureInner::Plain(v) => {
-                    self.clear_depth_image(&concrete.this, v, sub_resources, value);
-                }
-                TextureInner::Swap(_) => {
-                    aleph_log::debug!("Tried to clear swap chain image as a depth stencil texture");
-                }
-            }
-        } else {
-            panic!("Unknown ITexture implementation");
-        }
     }
 
     unsafe fn begin_rendering(&mut self, info: &BeginRenderingInfo) {

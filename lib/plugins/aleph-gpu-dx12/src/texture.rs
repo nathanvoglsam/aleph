@@ -34,8 +34,8 @@ use crate::internal::{calc_subresource_index, plane_layer_for_aspect};
 use crate::swap_chain::SwapChain;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{
-    Format, INamedObject, ITexture, TextureAspect, TextureCopyAspect, TextureDesc,
-    TextureDimension, TextureSubResourceSet,
+    Format, INamedObject, ITexture, TextureCopyAspect, TextureDesc, TextureDimension,
+    TextureSubResourceSet,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
