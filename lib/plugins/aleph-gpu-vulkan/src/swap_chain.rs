@@ -37,7 +37,7 @@ use erupt::vk;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    AcquireImageError, Format, IAcquiredTexture, IDevice, INamedObject, ISwapChain, QueueType,
+    AcquireImageError, Format, IDevice, INamedObject, ISwapChain, ITexture, QueueType,
     SwapChainConfiguration, SwapChainCreateError, TextureDesc, TextureDimension,
 };
 use std::sync::Mutex;
@@ -271,46 +271,44 @@ impl ISwapChain for SwapChain {
         }
     }
 
+    fn get_config(&self) -> SwapChainConfiguration {
+        todo!()
+    }
+
     fn queue_resize(&self, width: u32, height: u32) {
         let mut inner = self.inner.lock().unwrap();
         inner.queued_resize = Some((width, height));
     }
 
-    fn get_config(&self) -> SwapChainConfiguration {
-        todo!()
-    }
-
-    fn acquire_image(&self) -> Result<Box<dyn IAcquiredTexture>, AcquireImageError> {
+    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError> {
         let mut inner = self.inner.lock().unwrap();
 
         if let Some((width, height)) = inner.queued_resize.take() {
-            unsafe {
-                // TODO: Need to investigate how to correctly synchronize this. It should only
-                //       require handling when the old swap chain is destroyed as oldSwapChain is
-                //       specifically designed to allow already in flight frames to finish
-                self.device.wait_idle();
-                self.device.garbage_collect();
+            // TODO: Need to investigate how to correctly synchronize this. It should only
+            //       require handling when the old swap chain is destroyed as oldSwapChain is
+            //       specifically designed to allow already in flight frames to finish
+            self.device.wait_idle();
+            self.device.garbage_collect();
 
-                let width = if width == u32::MAX {
-                    inner.extent.width
-                } else {
-                    width
-                };
-                let height = if height == u32::MAX {
-                    inner.extent.height
-                } else {
-                    height
-                };
-                let config = SwapChainConfiguration {
-                    format: inner.format,
-                    width,
-                    height,
-                    present_mode: todo!(),
-                    preferred_queue: todo!(),
-                };
-                self.build(&mut inner, &config)
-                    .map_err(|_| AcquireImageError::SurfaceNotAvailable)?;
-            }
+            let width = if width == u32::MAX {
+                inner.extent.width
+            } else {
+                width
+            };
+            let height = if height == u32::MAX {
+                inner.extent.height
+            } else {
+                height
+            };
+            let config = SwapChainConfiguration {
+                format: inner.format,
+                width,
+                height,
+                present_mode: todo!(),
+                preferred_queue: todo!(),
+            };
+            self.build(&mut inner, &config)
+                .map_err(|_| AcquireImageError::SurfaceNotAvailable)?;
         }
 
         unsafe {
@@ -379,6 +377,10 @@ impl ISwapChain for SwapChain {
                 ))),
             }
         }
+    }
+
+    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>> {
+        todo!()
     }
 }
 
