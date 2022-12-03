@@ -53,7 +53,9 @@ pub struct PluginRender {
 
 impl PluginRender {
     pub fn new() -> Self {
-        Self { device: None }
+        Self {
+            device: None,
+        }
     }
 }
 
@@ -181,12 +183,12 @@ impl IPlugin for PluginRender {
 
                     let command_list = data.renderer.record_frame(
                         data.index,
-                        acquired_image.image(),
+                        acquired_image.deref(),
                         data.render_data.take(),
                     );
 
                     queue.submit_list(command_list).unwrap();
-                    queue.present(acquired_image).unwrap();
+                    queue.present(data.swap_chain.deref()).unwrap();
                 }
             },
         );
