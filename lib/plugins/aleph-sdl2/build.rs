@@ -126,7 +126,7 @@ fn main() {
             // path for this to work
             let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
             if target_platform.is_uwp() {
-                build.generator("Visual Studio 16 2019");
+                build.generator("Visual Studio 17 2022");
             } else {
                 build.generator("Ninja");
             }
