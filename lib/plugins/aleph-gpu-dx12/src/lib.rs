@@ -66,7 +66,6 @@ pub use pipeline::IGraphicsPipelineExt;
 pub use pipeline_layout::IPipelineLayoutExt;
 pub use plugin::PluginGpuDX12;
 pub use shader::IShaderExt;
-pub use surface::ISurfaceExt;
 pub use swap_chain::ISwapChainExt;
 pub use texture::ITextureExt;
 

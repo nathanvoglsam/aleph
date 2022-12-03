@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use crate::device::Device;
 use crate::internal::set_name::set_name;
 use crate::pipeline_layout::PipelineLayout;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
@@ -36,6 +37,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 
 pub struct GraphicsPipeline {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) pipeline_layout: AnyArc<PipelineLayout>,
     pub(crate) pipeline: ID3D12PipelineState,
 

@@ -327,7 +327,7 @@ union AlignmentWrapper<T> {
 impl<T> Drop for AlignmentWrapper<T> {
     #[inline]
     fn drop(&mut self) {
-        let _drop = unsafe { ManuallyDrop::take(&mut self.wrapped) };
+        unsafe { ManuallyDrop::drop(&mut self.wrapped) };
     }
 }
 

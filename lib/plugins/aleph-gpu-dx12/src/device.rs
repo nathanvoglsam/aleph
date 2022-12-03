@@ -30,6 +30,7 @@
 use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
+use crate::context::Context;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
@@ -77,6 +78,7 @@ use windows::Win32::Graphics::Dxgi::Common::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _context: AnyArc<Context>,
     pub(crate) _adapter: AnyArc<Adapter>,
     pub(crate) device: ID3D12Device10,
     pub(crate) debug_message_cookie: Option<u32>,
@@ -192,6 +194,7 @@ impl IDevice for Device {
 
         let pipeline = AnyArc::new_cyclic(move |v| GraphicsPipeline {
             this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
             pipeline,
             pipeline_layout,
             primitive_topology,
@@ -256,6 +259,7 @@ impl IDevice for Device {
 
             let shader = AnyArc::new_cyclic(move |v| Shader {
                 this: v.clone(),
+                _device: self.this.upgrade().unwrap(),
                 shader_type: options.shader_type,
                 data: data.to_vec(),
                 entry_point: options.entry_point.to_string(),
@@ -470,6 +474,7 @@ impl IDevice for Device {
 
         let buffer = AnyArc::new_cyclic(move |v| Buffer {
             this: v.clone(),
+            _device: self.this.upgrade().unwrap(),
             resource,
             base_address,
             desc: desc.clone(),

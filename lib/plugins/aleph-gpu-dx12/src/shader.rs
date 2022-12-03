@@ -27,11 +27,13 @@
 // SOFTWARE.
 //
 
+use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IShader, ShaderType};
 
 pub struct Shader {
     pub(crate) this: AnyWeak<Self>,
+    pub(crate) _device: AnyArc<Device>,
     pub(crate) shader_type: ShaderType,
     pub(crate) data: Vec<u8>,
     pub(crate) entry_point: String,

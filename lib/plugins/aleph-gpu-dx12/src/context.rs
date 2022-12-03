@@ -264,8 +264,7 @@ impl IContext for Context {
     ) -> Result<AnyArc<dyn ISurface>, SurfaceCreateError> {
         let surface = AnyArc::new_cyclic(move |v| Surface {
             this: v.clone(),
-            _context: self.this.upgrade().unwrap(),
-            factory: self.factory.clone(),
+            context: self.this.upgrade().unwrap(),
             handle: window.raw_window_handle(),
             has_swap_chain: AtomicBool::new(false),
         });

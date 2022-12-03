@@ -134,6 +134,7 @@ impl IAdapter for Adapter {
         // Bundle and return the device
         let device = AnyArc::new_cyclic(move |v| Device {
             this: v.clone(),
+            _context: self.context.clone(),
             _adapter: self.this.upgrade().unwrap(),
             debug_message_cookie,
             descriptor_heap_info: DescriptorHeapInfo::new((&device).into()),

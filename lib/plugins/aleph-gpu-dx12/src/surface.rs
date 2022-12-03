@@ -48,13 +48,12 @@ use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Surface {
     pub(crate) this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
-    pub(crate) factory: IDXGIFactory2,
+    pub(crate) context: AnyArc<Context>,
     pub(crate) handle: RawWindowHandle,
     pub(crate) has_swap_chain: AtomicBool,
 }
 
-declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
+declare_interfaces!(Surface, [ISurface]);
 
 impl Surface {
     unsafe fn inner_create_swap_chain(
@@ -146,7 +145,8 @@ impl Surface {
 
         // Create the actual swap chain object
         let swap_chain = unsafe {
-            dxgi_create_swap_chain(&self.factory, &queue, self, &desc).map_err(|e| anyhow!(e))?
+            dxgi_create_swap_chain(&self.context.factory, &queue, self, &desc)
+                .map_err(|e| anyhow!(e))?
         };
 
         let inner = SwapChainState {
@@ -222,13 +222,3 @@ unsafe impl HasRawWindowHandle for Surface {
 // SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
-
-pub trait ISurfaceExt: ISurface {
-    fn get_raw_handle(&self) -> IDXGIFactory2;
-}
-
-impl ISurfaceExt for Surface {
-    fn get_raw_handle(&self) -> IDXGIFactory2 {
-        self.factory.clone()
-    }
-}
