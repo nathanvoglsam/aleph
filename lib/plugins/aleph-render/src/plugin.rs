@@ -53,9 +53,7 @@ pub struct PluginRender {
 
 impl PluginRender {
     pub fn new() -> Self {
-        Self {
-            device: None,
-        }
+        Self { device: None }
     }
 }
 
