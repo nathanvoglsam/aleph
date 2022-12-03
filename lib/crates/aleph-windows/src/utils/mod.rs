@@ -32,7 +32,7 @@ mod descriptor_handles;
 
 use crate::core::PCSTR;
 use crate::core::PCWSTR;
-use crate::Win32::Foundation::{GetLastError, HANDLE, HINSTANCE};
+use crate::Win32::Foundation::*;
 use crate::Win32::Graphics::Direct3D12::*;
 use crate::Win32::System::LibraryLoader::*;
 use once_cell::sync::OnceCell;
@@ -156,23 +156,20 @@ impl<T: Sized> DynamicLoadCell<T> {
     /// of `T` is correct.
     ///
     #[inline]
-    pub unsafe fn get(&self) -> Option<&T> {
-        self.cell
-            .get_or_try_init(|| {
-                // Attempt to load the library
-                let h_module: HINSTANCE =
-                    LoadLibraryW(PCWSTR(self.lib_name.as_ptr())).map_err(|_| ())?;
+    pub unsafe fn get(&self) -> windows::core::Result<&T> {
+        self.cell.get_or_try_init(|| {
+            // Attempt to load the library
+            let h_module: HINSTANCE = LoadLibraryW(PCWSTR(self.lib_name.as_ptr()))?;
 
-                if h_module.0 == 0 {
-                    return Err(());
-                }
+            if h_module.0 == 0 {
+                return Err(windows::core::Error::from(E_NOINTERFACE));
+            }
 
-                // Attempt to find the function pointer we're after
-                GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
-                    .ok_or(())
-                    .map(|v| std::mem::transmute_copy::<_, T>(&v))
-            })
-            .ok()
+            // Attempt to find the function pointer we're after
+            GetProcAddress(h_module, PCSTR(self.fn_name.as_ptr()))
+                .ok_or(windows::core::Error::from(E_FAIL))
+                .map(|v| std::mem::transmute_copy::<_, T>(&v))
+        })
     }
 }
 
