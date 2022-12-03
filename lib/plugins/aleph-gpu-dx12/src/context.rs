@@ -51,6 +51,7 @@ use windows::Win32::Graphics::Dxgi::*;
 pub struct Context {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) debug: Option<DebugInterface>,
+    pub(crate) dxgi_debug: Option<IDXGIDebug>,
     pub(crate) factory: IDXGIFactory2,
 }
 
@@ -276,16 +277,34 @@ impl IContext for Context {
     }
 }
 
+impl Drop for Context {
+    fn drop(&mut self) {
+        if let Some(dxgi_debug) = &self.dxgi_debug {
+            unsafe {
+                dxgi_debug
+                    .ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL)
+                    .unwrap();
+            }
+        }
+    }
+}
+
 // SAFETY: Can't be auto marked because of the COM pointers. COM pointers are just Arc, which is
 // fine to send across thread boundaries
 unsafe impl Send for Context {}
 
 pub trait IContextExt: IContext {
     fn get_raw_handle(&self) -> &IDXGIFactory2;
+
+    fn get_dxgi_debug(&self) -> Option<&IDXGIDebug>;
 }
 
 impl IContextExt for Context {
     fn get_raw_handle(&self) -> &IDXGIFactory2 {
         &self.factory
+    }
+
+    fn get_dxgi_debug(&self) -> Option<&IDXGIDebug> {
+        self.dxgi_debug.as_ref()
     }
 }

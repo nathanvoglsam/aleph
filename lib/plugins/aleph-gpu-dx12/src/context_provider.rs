@@ -30,11 +30,13 @@
 use crate::context::Context;
 use crate::internal::create_dxgi_factory::create_dxgi_factory;
 use crate::internal::debug_interface::DebugInterface;
+use crate::internal::dxgi_debug_interface::dxgi_get_debug_interface;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
+use windows::Win32::Graphics::Dxgi::*;
 
 pub struct ContextProvider {
     /// Flags whether a context has already been created
@@ -69,10 +71,12 @@ impl IContextProvider for ContextProvider {
                 let is_uwp = cfg!(target_vendor = "uwp");
                 let gpu_assisted = !is_uwp;
                 let debug = unsafe { setup_debug_layer(options.validation, gpu_assisted) };
+                let dxgi_debug = unsafe { setup_dxgi_debug_interface(options.debug) };
 
                 let context = AnyArc::new_cyclic(move |v| Context {
                     this: v.clone(),
                     debug,
+                    dxgi_debug,
                     factory: dxgi_factory,
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
@@ -101,6 +105,24 @@ unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<Debu
             Some(debug)
         } else {
             None
+        }
+    } else {
+        None
+    }
+}
+
+unsafe fn setup_dxgi_debug_interface(debug: bool) -> Option<IDXGIDebug> {
+    if debug {
+        log::trace!("DXGI debug interface requested");
+        match dxgi_get_debug_interface() {
+            Ok(v) => {
+                log::trace!("DXGI debug interface loaded");
+                Some(v)
+            }
+            Err(e) => {
+                log::trace!("DXGI debug interface not loaded: {:#?}", e);
+                None
+            }
         }
     } else {
         None

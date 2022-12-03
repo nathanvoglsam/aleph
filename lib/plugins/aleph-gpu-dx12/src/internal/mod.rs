@@ -38,6 +38,7 @@ pub mod descriptor_allocator_cpu;
 pub mod descriptor_heap;
 pub mod descriptor_heap_info;
 pub mod descriptor_heaps;
+pub mod dxgi_debug_interface;
 pub mod feature_support;
 pub mod graphics_pipeline_state_stream;
 pub mod in_flight_command_list;
