@@ -114,7 +114,7 @@ unsafe fn setup_debug_layer(want_debug: bool, gpu_assisted: bool) -> Option<Debu
 unsafe fn setup_dxgi_debug_interface(debug: bool) -> Option<IDXGIDebug> {
     if debug {
         log::trace!("DXGI debug interface requested");
-        match dxgi_get_debug_interface() {
+        match dxgi_get_debug_interface(true) {
             Ok(v) => {
                 log::trace!("DXGI debug interface loaded");
                 Some(v)

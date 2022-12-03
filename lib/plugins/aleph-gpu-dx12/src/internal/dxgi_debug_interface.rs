@@ -50,6 +50,24 @@ pub use self::uwp::dxgi_get_debug_interface;
 #[cfg(not(target_os = "windows"))]
 pub use self::unimplemented::dxgi_get_debug_interface;
 
+#[cfg(target_os = "windows")]
+mod windows {
+    use libc::atexit;
+    use windows::Win32::Graphics::Dxgi::*;
+
+    extern "C" fn exit_callback() {
+        unsafe {
+            if let Ok(debug) = super::dxgi_get_debug_interface::<IDXGIDebug>(false) {
+                let _sink = debug.ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+            }
+        }
+    }
+
+    pub unsafe fn register_on_exit_callback() {
+        let _sink = atexit(exit_callback);
+    }
+}
+
 #[cfg(all(target_os = "windows", not(target_vendor = "uwp")))]
 mod pc {
     use utf16_lit::utf16_null;
@@ -67,7 +85,13 @@ mod pc {
     pub static CREATE_FN: DynamicLoadCell<PFN_DXGI_GET_DEBUG_INTERFACE> =
         DynamicLoadCell::new(&utf16_null!("DXGIDebug.dll"), "DXGIGetDebugInterface\0");
 
-    pub unsafe fn dxgi_get_debug_interface<T: Interface>() -> windows::core::Result<T> {
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
+        enable_exit_callback: bool,
+    ) -> windows::core::Result<T> {
+        if enable_exit_callback {
+            super::windows::register_on_exit_callback();
+        }
+
         let create_fn = CREATE_FN.get()?;
         let create_fn = create_fn
             .as_ref()
@@ -83,7 +107,13 @@ mod uwp {
     use windows::core::Interface;
     use windows::Win32::Graphics::Dxgi::*;
 
-    pub unsafe fn dxgi_get_debug_interface<T: Interface>() -> windows::core::Result<T> {
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
+        enable_exit_callback: bool,
+    ) -> windows::core::Result<T> {
+        if enable_exit_callback {
+            super::windows::register_on_exit_callback();
+        }
+
         DXGIGetDebugInterface1(0)
     }
 }
@@ -92,7 +122,9 @@ mod uwp {
 mod unimplemented {
     use windows::core::Interface;
 
-    pub unsafe fn dxgi_get_debug_interface<T: Interface>() -> windows::core::Result<T> {
+    pub unsafe fn dxgi_get_debug_interface<T: Interface>(
+        _enable_exit_callback: bool,
+    ) -> windows::core::Result<T> {
         unimplemented!("Unsupported on non windows platforms")
     }
 }

@@ -28,7 +28,7 @@
 //
 
 use utf16_lit::utf16_null;
-use windows::core::Interface;
+use windows::core::{IUnknown, Interface};
 use windows::utils::DynamicLoadCell;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -44,7 +44,10 @@ pub fn create_device<'a>(
     unsafe {
         let create_fn = CREATE_FN.get().expect("Failed to load d3d12.dll").unwrap();
 
-        let adapter = adapter.into().map(|v| v.clone().into());
+        // create_fn won't decrement the reference counter if we clone the adapter (which
+        // increments the counter). To work around this we use transmute_copy to make a copy without
+        // incrementing the reference count. Otherwise we leak a reference to the adapter
+        let adapter: Option<IUnknown> = adapter.into().map(|v| std::mem::transmute_copy(v));
 
         let mut device: Option<ID3D12Device10> = None;
 
