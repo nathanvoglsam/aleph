@@ -257,13 +257,17 @@ pub trait IQueue: INamedObject + IAny + 'static {
     ) -> Result<(), QueueSubmitError>;
 
     ///
+    /// Enqueues a 'present' operation onto the queue for the given [ISwapChain].
+    ///
+    /// The image to be presented is the most recently acquired image from the swap chain.
+    ///
     /// # Safety
     ///
     /// It is the caller's responsibility to ensure that the image that is being presented will be
     /// in the required resource state for presentation by the time this operation will be executed
     /// on the GPU timeline.
     ///
-    unsafe fn present(&self, image: Box<dyn IAcquiredTexture>) -> Result<(), QueuePresentError>;
+    unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError>;
 
     ///
     /// Emits an instantaneous 'marker' on this queue, with the given message and message color.
@@ -316,10 +320,6 @@ pub trait ISwapChain: INamedObject + IAny + 'static {
     /// Returns whether support operations are supported on the given queue.
     fn present_supported_on_queue(&self, queue: QueueType) -> bool;
 
-    /// Force a resize of the swap chain. Will block until the swap chain is no longer in use before
-    /// performing the resize operation.
-    fn queue_resize(&self, width: u32, height: u32);
-
     /// Returns a [SwapChainConfiguration] that describes the state of the swap chain at the time
     /// of the function being called.
     ///
@@ -328,8 +328,17 @@ pub trait ISwapChain: INamedObject + IAny + 'static {
     /// [ISwapChain::acquire_image] call returns.
     fn get_config(&self) -> SwapChainConfiguration;
 
+    /// Force a resize of the swap chain. Will block until the swap chain is no longer in use before
+    /// performing the resize operation.
+    fn queue_resize(&self, width: u32, height: u32);
+
     /// Acquire an image from the swap chain for use with rendering
-    fn acquire_image(&self) -> Result<Box<dyn IAcquiredTexture>, AcquireImageError>;
+    ///
+    /// TODO: Safety docs (must drop all acquired images and ensure they aren't in use on the GPU
+    unsafe fn acquire_image(&self) -> Result<AnyArc<dyn ITexture>, AcquireImageError>;
+
+    /// Returns the current active swap chain image
+    fn get_current_image(&self) -> Option<AnyArc<dyn ITexture>>;
 }
 
 //
@@ -381,10 +390,6 @@ pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
 
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> &TextureDesc;
-}
-
-pub trait IAcquiredTexture: IAny + Send + 'static {
-    fn image(&self) -> &dyn ITexture;
 }
 
 pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
