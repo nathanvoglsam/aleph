@@ -51,10 +51,9 @@ use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::queue::Queue;
 use crate::sampler::Sampler;
 use crate::shader::Shader;
-use crate::texture::{PlainTexture, Texture, TextureInner};
+use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
-use interfaces::anyhow;
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
@@ -70,12 +69,11 @@ use interfaces::gpu::{
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use windows::core::PCSTR;
-use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
+use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
-use windows::Win32::Graphics::Dxgi::*;
 
 pub struct Device {
     pub(crate) this: AnyWeak<Self>,
@@ -518,14 +516,12 @@ impl IDevice for Device {
 
         let texture = AnyArc::new_cyclic(move |v| Texture {
             this: v.clone(),
-            inner: TextureInner::Plain(PlainTexture {
-                device: self.this.upgrade().unwrap(),
-                resource,
-                desc: desc.clone(),
-                dxgi_format: resource_desc.Format.try_into().unwrap(),
-                rtv_cache: RwLock::new(HashMap::new()),
-                dsv_cache: RwLock::new(HashMap::new()),
-            }),
+            device: self.this.upgrade().unwrap(),
+            resource,
+            desc: desc.clone(),
+            dxgi_format: resource_desc.Format,
+            rtv_cache: RwLock::new(HashMap::new()),
+            dsv_cache: RwLock::new(HashMap::new()),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
@@ -576,37 +572,6 @@ impl IDevice for Device {
 }
 
 impl Device {
-    pub unsafe fn create_views_for_swap_images(
-        &self,
-        swap_chain: &IDXGISwapChain4,
-        format: DXGI_FORMAT,
-        count: u32,
-    ) -> anyhow::Result<Vec<(ID3D12Resource, CPUDescriptorHandle)>> {
-        let mut images = Vec::new();
-        for i in 0..count {
-            let buffer = swap_chain
-                .GetBuffer::<ID3D12Resource>(i)
-                .map_err(|e| anyhow!(e))?;
-            let view = self.descriptor_heaps.cpu_rtv_heap().allocate().unwrap();
-
-            let desc = D3D12_RENDER_TARGET_VIEW_DESC {
-                Format: format,
-                ViewDimension: D3D12_RTV_DIMENSION_TEXTURE2D,
-                Anonymous: D3D12_RENDER_TARGET_VIEW_DESC_0 {
-                    Texture2D: D3D12_TEX2D_RTV {
-                        MipSlice: 0,
-                        PlaneSlice: 0,
-                    },
-                },
-            };
-            self.device
-                .CreateRenderTargetView(&buffer, &desc, view.into());
-
-            images.push((buffer, view));
-        }
-        Ok(images)
-    }
-
     /// Internal function for translating the list of [IShader] stages into the pipeline description
     fn translate_shader_stage_list<'a, 'b>(
         shader_stages: &'a [&'a dyn IShader],

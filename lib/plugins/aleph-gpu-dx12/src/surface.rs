@@ -41,7 +41,7 @@ use interfaces::gpu::{
 };
 use interfaces::platform::{HasRawWindowHandle, RawWindowHandle};
 use parking_lot::Mutex;
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Dxgi::Common::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -57,7 +57,7 @@ pub struct Surface {
 declare_interfaces!(Surface, [ISurface, ISurfaceExt]);
 
 impl Surface {
-    fn inner_create_swap_chain(
+    unsafe fn inner_create_swap_chain(
         &self,
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
@@ -149,13 +149,10 @@ impl Surface {
             dxgi_create_swap_chain(&self.factory, &queue, self, &desc).map_err(|e| anyhow!(e))?
         };
 
-        let images = unsafe {
-            device.create_views_for_swap_images(&swap_chain, view_format, desc.BufferCount)?
-        };
-
         let inner = SwapChainState {
             config: config.clone(),
-            images,
+            current: -1,
+            textures: Vec::with_capacity(desc.BufferCount as usize),
             dxgi_format: in_memory_format,
             dxgi_view_format: view_format,
         };
@@ -167,9 +164,15 @@ impl Surface {
             queue_support: queue_type,
             inner: Mutex::new(inner),
             queued_resize: AtomicCell::new(None),
-            acquired: AtomicBool::new(false),
-            images_in_flight: AtomicU32::new(0),
         });
+
+        {
+            let mut state = swap_chain.inner.lock();
+            swap_chain
+                .recreate_swap_images(&mut state, desc.BufferCount)
+                .map_err(|e| anyhow!(e))?;
+        }
+
         Ok(AnyArc::map::<dyn ISwapChain, _>(swap_chain, |v| v))
     }
 }
@@ -197,12 +200,14 @@ impl ISurface for Surface {
             return Err(SwapChainCreateError::SurfaceAlreadyOwned);
         }
 
-        match self.inner_create_swap_chain(device, config) {
-            v @ Ok(_) => v,
-            v @ Err(_) => {
-                // Release the surface if we failed to actually create the swap chain
-                debug_assert!(self.has_swap_chain.swap(false, Ordering::SeqCst));
-                v
+        unsafe {
+            match self.inner_create_swap_chain(device, config) {
+                v @ Ok(_) => v,
+                v @ Err(_) => {
+                    // Release the surface if we failed to actually create the swap chain
+                    debug_assert!(self.has_swap_chain.swap(false, Ordering::SeqCst));
+                    v
+                }
             }
         }
     }

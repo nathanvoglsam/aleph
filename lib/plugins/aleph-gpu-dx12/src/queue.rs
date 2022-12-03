@@ -27,16 +27,16 @@
 // SOFTWARE.
 //
 
-use crate::acquired_texture::AcquiredTexture;
 use crate::command_list::CommandList;
 use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool};
 use crate::internal::set_name::set_name;
+use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterfaceBox};
+use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface, QueryInterfaceBox};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
-    Color, Extent3D, IAcquiredTexture, ICommandList, INamedObject, IQueue, ISwapChain,
-    QueuePresentError, QueueProperties, QueueSubmitError, QueueType,
+    Color, Extent3D, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
+    QueueProperties, QueueSubmitError, QueueType,
 };
 use parking_lot::Mutex;
 use pix::{begin_event_on_queue, end_event_on_queue, set_marker_on_queue};
@@ -219,15 +219,17 @@ impl IQueue for Queue {
         Ok(())
     }
 
-    unsafe fn present(&self, image: Box<dyn IAcquiredTexture>) -> Result<(), QueuePresentError> {
-        let image = image.query_interface::<AcquiredTexture>().ok().unwrap();
+    unsafe fn present(&self, swap_chain: &dyn ISwapChain) -> Result<(), QueuePresentError> {
+        let swap_chain = swap_chain
+            .query_interface::<SwapChain>()
+            .expect("Unknown ISwapChain implementation");
 
-        if !image
-            .swap_chain
-            .present_supported_on_queue(QueueType::General)
-        {
+        // Checks if the queue supports present operations. While this could use a debug_assert
+        // instead like other validation code, the cost of this check compared to the cost of the
+        // present call is tiny.
+        if !swap_chain.present_supported_on_queue(self.queue_type) {
             return Err(QueuePresentError::QueuePresentationNotSupported(
-                QueueType::General,
+                self.queue_type,
             ));
         }
 
@@ -243,8 +245,7 @@ impl IQueue for Queue {
                 pScrollRect: std::ptr::null_mut(),
                 pScrollOffset: std::ptr::null_mut(),
             };
-            image
-                .swap_chain
+            swap_chain
                 .swap_chain
                 .Present1(0, 0, &presentation_params)
                 .ok()
@@ -253,9 +254,6 @@ impl IQueue for Queue {
             self.handle
                 .Signal(&self.fence, index)
                 .map_err(|v| anyhow!(v))?;
-
-            // TODO: We need to track the lifetime of this operation and extend the swap image's
-            //       lifetime until the present operation is complete.
 
             index
         };

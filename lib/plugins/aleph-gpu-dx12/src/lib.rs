@@ -37,7 +37,6 @@ extern crate aleph_interfaces as interfaces;
 extern crate aleph_log as log;
 extern crate cstr;
 
-mod acquired_texture;
 mod adapter;
 mod buffer;
 mod command_list;

@@ -36,8 +36,7 @@ use crate::internal::conv::{
 };
 use crate::pipeline::GraphicsPipeline;
 use crate::pipeline_layout::PushConstantBlockInfo;
-use crate::texture::{Texture, TextureInner};
-use crate::ITextureExt;
+use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color, Format,
@@ -218,23 +217,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 .image
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
-            let descriptor = match &image.inner {
-                TextureInner::Plain(v) => {
-                    v.get_or_create_rtv_for_usage(
-                        None,
-                        &TextureSubResourceSet {
-                            aspect: TextureAspect::empty(), // TODO: D3D12 doesn't handle plane slices for RTVs so this is meaningless
-                            base_mip_level: attachment.mip_level,
-                            num_mip_levels: 1,
-                            base_array_slice: attachment.base_array_slice,
-                            num_array_slices: attachment.num_array_slices,
-                        },
-                    )
-                    .unwrap()
-                }
-                TextureInner::Swap(v) => v.view,
-            };
-            let format = image.get_raw_format();
+            let descriptor = image
+                .get_or_create_rtv_for_usage(
+                    None,
+                    &TextureSubResourceSet {
+                        aspect: TextureAspect::empty(), // TODO: D3D12 doesn't handle plane slices for RTVs so this is meaningless
+                        base_mip_level: attachment.mip_level,
+                        num_mip_levels: 1,
+                        base_array_slice: attachment.base_array_slice,
+                        num_array_slices: attachment.num_array_slices,
+                    },
+                )
+                .unwrap();
+            let format = image.dxgi_format;
             color_attachments.push(translate_rendering_color_attachment(
                 attachment,
                 descriptor,
@@ -247,25 +242,19 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
                 .image
                 .query_interface::<Texture>()
                 .expect("Unknown ITexture implementation");
-            let descriptor = match &image.inner {
-                TextureInner::Plain(v) => {
-                    v.get_or_create_dsv_for_usage(
-                        None,
-                        &TextureSubResourceSet {
-                            aspect: TextureAspect::empty(), // TODO: D3D12 can't create a view over only depth or stencil so this is meaningless
-                            base_mip_level: attachment.mip_level,
-                            num_mip_levels: 1,
-                            base_array_slice: attachment.base_array_slice,
-                            num_array_slices: attachment.num_array_slices,
-                        },
-                    )
-                    .unwrap()
-                }
-                TextureInner::Swap(_v) => {
-                    panic!("Swap images can't be used as depth/stencil attachments")
-                }
-            };
-            let format = image.get_raw_format();
+            let descriptor = image
+                .get_or_create_dsv_for_usage(
+                    None,
+                    &TextureSubResourceSet {
+                        aspect: TextureAspect::empty(), // TODO: D3D12 can't create a view over only depth or stencil so this is meaningless
+                        base_mip_level: attachment.mip_level,
+                        num_mip_levels: 1,
+                        base_array_slice: attachment.base_array_slice,
+                        num_array_slices: attachment.num_array_slices,
+                    },
+                )
+                .unwrap();
+            let format = image.dxgi_format;
             translate_rendering_depth_stencil_attachment(attachment, descriptor, Some(format))
         });
 
@@ -392,12 +381,10 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     .texture
                     .query_interface::<Texture>()
                     .expect("Unknown ITexture implementation");
-                let texture_desc = texture.inner.desc();
-                let resource = texture.resource();
 
                 #[cfg(debug_assertions)]
                 Self::validate_sub_resource_range_against_texture(
-                    &texture_desc,
+                    &texture.desc,
                     &barrier.subresource_range,
                 );
 
@@ -416,7 +403,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
                 let (first_plane, num_planes) = translate_barrier_texture_aspect_to_plane_range(
                     barrier.subresource_range.aspect,
-                    texture_desc.format,
+                    texture.desc.format,
                 );
 
                 translated_texture_barriers.push(D3D12_TEXTURE_BARRIER {
@@ -426,7 +413,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                     AccessAfter: barrier_access_to_dx12(barrier.after_access),
                     LayoutBefore: image_layout_to_dx12(barrier.before_layout),
                     LayoutAfter: image_layout_to_dx12(barrier.after_layout),
-                    pResource: Some(resource.clone()),
+                    pResource: Some(texture.resource.clone()),
                     Subresources: D3D12_BARRIER_SUBRESOURCE_RANGE {
                         IndexOrFirstMipLevel: barrier.subresource_range.base_mip_level,
                         NumMipLevels: barrier.subresource_range.num_mip_levels,
@@ -495,8 +482,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
             .query_interface::<Texture>()
             .expect("Unknown ITexture implementation");
 
-        let format = dst.inner.desc().format;
-        let bytes_per_element = format.bytes_per_element();
+        let bytes_per_element = dst.desc.format.bytes_per_element();
         let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
             pResource: Some(src.resource.clone()),
             Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
@@ -504,7 +490,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
                 PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
                     Offset: 0,
                     Footprint: D3D12_SUBRESOURCE_FOOTPRINT {
-                        Format: dst.inner.get_raw_format().into(),
+                        Format: dst.dxgi_format,
                         Width: 0,
                         Height: 0,
                         Depth: 0,
@@ -515,7 +501,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         };
 
         let mut dst_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(dst.resource().clone()),
+            pResource: Some(dst.resource.clone()),
             Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
             Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
                 SubresourceIndex: 0,
@@ -557,7 +543,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
 
             // Debug checking for the destination region
             #[cfg(debug_assertions)]
-            Self::validate_buffer_to_texture_copy_dest_region(dst, format, &region, index);
+            Self::validate_buffer_to_texture_copy_dest_region(dst, dst.desc.format, &region, index);
 
             self.list.CopyTextureRegion(
                 &dst_location,
