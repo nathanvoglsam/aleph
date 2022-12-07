@@ -28,10 +28,10 @@
 //
 
 use crate::renderer::EguiRenderer;
-use aleph_gpu_dx12::{IAdapterExt, IDeviceExt};
+use aleph_gpu_dx12::IDeviceExt;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::gpu::{
-    AdapterRequestOptions, ContextOptions, Format, IContextProvider, IDevice, ISwapChain,
+    AdapterRequestOptions, ContextOptions, Format, IAdapter, IContextProvider, IDevice, ISwapChain,
     PresentationMode, QueueType, SwapChainConfiguration,
 };
 use interfaces::platform::*;
@@ -114,8 +114,9 @@ impl IPlugin for PluginRender {
             surface: Some(surface.deref()),
             ..Default::default()
         };
-        let adapter = gpu_context.request_adapter(&options).unwrap();
-        let adapter = adapter.query_interface::<dyn IAdapterExt>().unwrap();
+        let adapter = gpu_context
+            .request_adapter(&options)
+            .expect("Find suitable adapter");
 
         // Create our device
         let device = adapter
@@ -217,7 +218,7 @@ impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(adapter: &dyn IAdapterExt) {
+    fn log_gpu_info(adapter: &dyn IAdapter) {
         let info = adapter.description();
 
         let gpu_vendor = info.vendor;
