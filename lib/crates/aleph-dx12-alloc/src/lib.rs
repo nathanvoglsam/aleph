@@ -35,10 +35,12 @@ mod allocation;
 mod allocator;
 mod pool;
 mod raw;
+mod virtual_block;
 
 pub use crate::allocation::D3D12MAAllocation;
 pub use crate::allocator::D3D12MAAllocator;
 pub use crate::pool::D3D12MAPool;
+pub use crate::virtual_block::D3D12MAVirtualBlock;
 
 pub use raw::D3D12MA_ALLOCATE_FN;
 pub use raw::D3D12MA_ALLOCATION_CALLBACKS;
