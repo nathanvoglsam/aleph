@@ -168,19 +168,24 @@ impl Drop for PluginRegistry {
         };
 
         self.exit_order.iter().cloned().for_each(|v| {
-            let plugin = &mut plugins[v];
+            // If we panic in the plugin setup phase we can end up calling 'drop' on PluginRegistry
+            // when not all of the plugins are actually stored in the plugins array yet.
+            //
+            // If we don't manually handle the OOB case then we'll trigger a double panic, which
+            // prevents properly unwinding and adds noise to the output.
+            if let Some(plugin) = plugins.get_mut(v) {
+                // Log that we're exiting the plugin
+                let description = plugin.get_description();
+                log::info!(
+                    "Un-initializing Plugin [{} - {}.{}.{}]",
+                    description.name,
+                    description.major_version,
+                    description.minor_version,
+                    description.patch_version
+                );
 
-            // Log that we're exiting the plugin
-            let description = plugin.get_description();
-            log::info!(
-                "Un-initializing Plugin [{} - {}.{}.{}]",
-                description.name,
-                description.major_version,
-                description.minor_version,
-                description.patch_version
-            );
-
-            plugin.on_exit(&accessor);
+                plugin.on_exit(&accessor);
+            }
         });
 
         self.plugins = plugins;
