@@ -59,16 +59,17 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
     ComputePipelineCreateError, ComputePipelineDesc, CpuAccessMode, DepthStencilStateDesc,
-    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, DescriptorType,
-    GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool, IComputePipeline,
-    IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue,
-    ISampler, IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, QueueType,
-    RasterizerStateDesc, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, ShaderType, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
-    VertexInputStateDesc,
+    DescriptorSetLayoutBinding, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
+    DescriptorType, GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool,
+    IComputePipeline, IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject,
+    IPipelineLayout, IQueue, ISampler, IShader, ITexture, PipelineLayoutCreateError,
+    PipelineLayoutDesc, QueueType, RasterizerStateDesc, SamplerCreateError, SamplerDesc,
+    ShaderBinary, ShaderCreateError, ShaderOptions, ShaderType, StencilOpState, TextureCreateError,
+    TextureDesc, VertexInputRate, VertexInputStateDesc,
 };
 use parking_lot::RwLock;
 use std::collections::HashMap;
+use std::num::NonZeroU32;
 use windows::core::PCSTR;
 use windows::utils::GPUDescriptorHandle;
 use windows::Win32::Foundation::BOOL;
@@ -278,6 +279,9 @@ impl IDevice for Device {
 
         // TODO: Currently we always create a descriptor table. In the future we could use some
         //       optimization heuristics to detect when a root descriptor is better.
+
+        #[cfg(debug_assertions)]
+        Self::validate_descriptor_set_layout(desc);
 
         // First we produce a descriptor table for the non-sampler descriptors. Samplers have to go
         // in their own descriptor heap and so we can't emit a single descriptor table for the
@@ -988,6 +992,52 @@ impl Device {
             }
         }
         Ok((sampler_table, static_samplers))
+    }
+
+    pub fn validate_descriptor_set_layout(desc: &DescriptorSetLayoutDesc) {
+        for binding in desc.items.iter() {
+            if binding.binding_count.is_some() {
+                unimplemented!("Currently descriptor arrays are unimplemented");
+            }
+
+            if matches!(
+                binding.binding_type,
+                DescriptorType::ConstantBuffer | DescriptorType::Sampler
+            ) {
+                debug_assert!(
+                    !binding.allow_writes,
+                    "DescriptorType ConstantBuffer or Sampler can't allow writes"
+                )
+            }
+        }
+
+        fn calculate_binding_range(v: &DescriptorSetLayoutBinding) -> (u32, u32) {
+            let start = v.binding_num;
+            let num = v.binding_count.map(NonZeroU32::get).unwrap_or(1);
+            let end = start + num;
+            (start, end)
+        }
+
+        desc.items.iter().enumerate().for_each(|(outer_i, outer)| {
+            let (outer_start, outer_end) = calculate_binding_range(outer);
+
+            desc.items.iter().enumerate().for_each(|(inner_i, inner)| {
+                // Skip over outer_i so we don't check if the outer range intersects with itself
+                if outer_i == inner_i {
+                    return;
+                }
+
+                let (inner_start, inner_end) = calculate_binding_range(inner);
+
+                let starts_inside_outer = inner_start >= outer_start && inner_start <= outer_end;
+                let ends_inside_outer = inner_end >= outer_start && inner_end <= outer_end;
+
+                debug_assert!(
+                    !starts_inside_outer || !ends_inside_outer,
+                    "It is invalid for two descriptor binding ranges to intersect"
+                );
+            })
+        });
     }
 }
 
