@@ -774,22 +774,25 @@ impl Device {
         let alpha_to_coverage_enable = BOOL::from(false);
         let independent_blend_enable = BOOL::from(true);
 
-        // TODO: Once we cast aleph-dx12 into the void we should replace this with a 'zeroed' struct
-        //       for faster initialization. We can't zero this struct because our enum wrappers dont
-        //       allow for zero as a valid value, so zeroing this causes immediate UB.
         // Use our default attachment to initialize the array dx12 needs. Only the first 'n' values
         // will be read, where 'n' is the number of render targets in the pipeline desc, all other
         // items in the array will be ignored so they don't need to be in a well defined state.
-        let mut render_targets = [
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-            D3D12_RENDER_TARGET_BLEND_DESC::default(),
-        ];
+        //
+        // Safety: Using mem::zeroed is safe here as all zeroes is a valid bit pattern for the C
+        // structs. D3D12_RENDER_TARGET_BLEND_DESC::default() is implemented as mem::zeroed, but
+        // isn't tagged with #[inline] so I suspect won't be inlined across the crate bounds.
+        let mut render_targets = unsafe {
+            [
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+                core::mem::zeroed(),
+            ]
+        };
 
         for (i, attachment) in desc.attachments.iter().enumerate() {
             let blend_enable = BOOL::from(attachment.blend_enabled);
