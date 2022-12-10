@@ -2036,17 +2036,22 @@ pub struct ShaderOptions<'a> {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum DescriptorType {
-    Texture,
-    TypedBuffer,
-    StructuredBuffer,
-    RawBuffer,
-    ConstantBuffer,
     Sampler,
+    SampledImage,
+    StorageImage,
+    UniformTexelBuffer,
+    StorageTexelBuffer,
+    UniformBuffer,
+    StorageBuffer,
+    StructuredBuffer,
+    InputAttachment,
+    // TODO: Can we do something with VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK?
+    // TODO: VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR
 }
 
 impl Default for DescriptorType {
     fn default() -> Self {
-        Self::Texture
+        Self::Sampler
     }
 }
 
