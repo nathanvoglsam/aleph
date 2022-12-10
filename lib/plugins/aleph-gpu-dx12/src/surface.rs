@@ -145,7 +145,7 @@ impl Surface {
 
         // Create the actual swap chain object
         let swap_chain = unsafe {
-            dxgi_create_swap_chain(&self.context.factory, &queue, self, &desc)
+            dxgi_create_swap_chain(self.context.factory.as_ref().unwrap(), &queue, self, &desc)
                 .map_err(|e| anyhow!(e))?
         };
 

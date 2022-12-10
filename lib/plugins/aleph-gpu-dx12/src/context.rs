@@ -52,7 +52,7 @@ pub struct Context {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) debug: Option<DebugInterface>,
     pub(crate) dxgi_debug: Option<IDXGIDebug>,
-    pub(crate) factory: IDXGIFactory2,
+    pub(crate) factory: Option<IDXGIFactory2>,
 }
 
 declare_interfaces!(Context, [IContext, IContextExt]);
@@ -95,7 +95,7 @@ impl Context {
             Flags: 0,
         };
         unsafe {
-            dxgi_create_swap_chain(&self.factory, &queue, &surface, &desc).ok()?;
+            dxgi_create_swap_chain(self.factory.as_ref().unwrap(), &queue, &surface, &desc).ok()?;
         }
 
         Some(())
@@ -161,8 +161,8 @@ impl Context {
     ) -> Option<IDXGIAdapter1> {
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
-            let factory_2: &IDXGIFactory2 = &self.factory;
-            let factory_6: Option<IDXGIFactory6> = self.factory.cast::<IDXGIFactory6>().ok();
+            let factory_2: &IDXGIFactory2 = self.factory.as_ref().unwrap();
+            let factory_6: Option<IDXGIFactory6> = factory_2.cast::<IDXGIFactory6>().ok();
 
             // Loop over all the available adapters
             let mut i = 0;
@@ -278,6 +278,8 @@ impl IContext for Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
+        self.debug = None;
+        self.factory = None;
         if let Some(dxgi_debug) = &self.dxgi_debug {
             unsafe {
                 dxgi_debug
@@ -300,7 +302,7 @@ pub trait IContextExt: IContext {
 
 impl IContextExt for Context {
     fn get_raw_handle(&self) -> &IDXGIFactory2 {
-        &self.factory
+        self.factory.as_ref().unwrap()
     }
 
     fn get_dxgi_debug(&self) -> Option<&IDXGIDebug> {

@@ -77,7 +77,7 @@ impl IContextProvider for ContextProvider {
                     this: v.clone(),
                     debug,
                     dxgi_debug,
-                    factory: dxgi_factory,
+                    factory: Some(dxgi_factory),
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
             }
