@@ -859,29 +859,46 @@ impl Device {
                 //
                 unimplemented!("Currently descriptor arrays are unimplemented");
             }
-            // The concrete descriptor type depends on the resource class and potential write access
-            //
-            // - Anything that can be written to will be accessed via an unordered access view.
-            // - Constant buffers have a dedicated view type (constant buffer view).
-            // - Textures and other buffer types are shader resource views.
-            // - Samplers get filtered out so don't matter for this conversion.
+
             let range_type = match (item.binding_type, item.allow_writes) {
-                (
-                    DescriptorType::Texture
-                    | DescriptorType::StructuredBuffer
-                    | DescriptorType::RawBuffer
-                    | DescriptorType::TypedBuffer,
-                    false,
-                ) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-                (
-                    DescriptorType::Texture
-                    | DescriptorType::StructuredBuffer
-                    | DescriptorType::RawBuffer
-                    | DescriptorType::TypedBuffer,
-                    true,
-                ) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
-                (DescriptorType::ConstantBuffer, _) => D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+                // Samplers can't happen here because we filter them out in the iterator
                 (DescriptorType::Sampler, _) => unreachable!(),
+
+                // SampledImage can never be written, StorageImage is SRV when no writes are allowed
+                (DescriptorType::SampledImage, _) | (DescriptorType::StorageImage, false) => {
+                    D3D12_DESCRIPTOR_RANGE_TYPE_SRV
+                }
+
+                // StorageImage with writes is a UAV
+                (DescriptorType::StorageImage, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+
+                // Read-only TexelBuffer always an SRV as D3D12 doesn't have a 'uniform' version
+                (DescriptorType::UniformTexelBuffer, _)
+                | (DescriptorType::StorageTexelBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+
+                // Write-able StorageTexelBuffer is a UAV
+                (DescriptorType::StorageTexelBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+
+                // As expected, UniformBuffer maps directly to CBV
+                (DescriptorType::UniformBuffer, _) => D3D12_DESCRIPTOR_RANGE_TYPE_CBV,
+
+                // Read-only non-uniform is SRV
+                (DescriptorType::StorageBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+
+                // Write-able non-uniform is UAV
+                (DescriptorType::StorageBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+
+                // Read-only StorageStructuredBuffer is a UAV
+                (DescriptorType::StructuredBuffer, false) => D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+
+                // Write-able StorageStructuredBuffer is a UAV
+                (DescriptorType::StructuredBuffer, true) => D3D12_DESCRIPTOR_RANGE_TYPE_UAV,
+
+                // In the future an InputAttachment will map roughly to sampled or storage image.
+                // We should be able to emulate input attachments with plain texture accesses.
+                (DescriptorType::InputAttachment, _) => {
+                    unimplemented!("Currently we haven't implemented subpass emulation")
+                }
             };
 
             let num_descriptors = match item.binding_count {
@@ -1002,7 +1019,10 @@ impl Device {
 
             if matches!(
                 binding.binding_type,
-                DescriptorType::ConstantBuffer | DescriptorType::Sampler
+                DescriptorType::UniformBuffer
+                    | DescriptorType::UniformTexelBuffer
+                    | DescriptorType::Sampler
+                    | DescriptorType::InputAttachment
             ) {
                 debug_assert!(
                     !binding.allow_writes,
