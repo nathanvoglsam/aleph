@@ -143,7 +143,7 @@ impl GlobalObjects {
             items: &[
                 DescriptorSetLayoutBinding {
                     binding_num: 0,
-                    binding_type: DescriptorType::Texture,
+                    binding_type: DescriptorType::SampledImage,
                     binding_count: None,
                     ..Default::default()
                 },
