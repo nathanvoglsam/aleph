@@ -198,6 +198,12 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError>;
 
+    fn create_descriptor_pool(
+        &self,
+        layout: &dyn IDescriptorSetLayout,
+        num_sets: u32,
+    ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError>;
+
     fn create_pipeline_layout(
         &self,
         desc: &PipelineLayoutDesc,
@@ -218,6 +224,39 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError>;
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>>;
+
+    /// Perform the given list of descriptor updates.
+    ///
+    /// # Safety
+    ///
+    /// Accesses to the descriptor sets referenced via [DescriptorSetHandle] are not synchronized.
+    /// A descriptor write requires mutable (exclusive) access to the individual set. It is unsafe
+    /// to call this function on the same [DescriptorSetHandle] from multiple threads without
+    /// external synchronization.
+    ///
+    /// It is unsafe to try and write to a [DescriptorSetHandle] after it has been freed.
+    ///
+    /// Underneath, descriptor sets are just memory typically.
+    ///
+    /// # Warning
+    ///
+    /// Some implementations may re-use handles, where allocating a new set may return a previously
+    /// freed set using the same handle. The implication is that use-after free will not cause
+    /// immediate UB or validation errors on the platform API in some cases due to implementation
+    /// detail. Instead you will observe 'spooky action at a distance' where two systems think they
+    /// own the set, when instead they're sharing one, and they clobber each other's descriptors or
+    /// have synchronization issues if they're being shared across threads.
+    ///
+    /// The take-away here is to be very careful with descriptor sets, buggy usage will be very hard
+    /// to debug. Test with as many implementations as you can, especially Vulkan. Most of our
+    /// descriptor API is based on Vulkan as it's the 'lowest common denominator', and can be
+    /// implemented as thin wrappers to Vulkan. This is useful, being a thin wrapper to Vulkan means
+    /// Vulkan's validation layers will also validate our own API if we mirror their semantics as
+    /// close as we can.
+    ///
+    /// D3D12 will be very permissive to errors as D3D12's descriptor model is much less
+    /// restrictive.
+    unsafe fn update_descriptor_sets(&self, writes: &[()]);
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
@@ -551,21 +590,97 @@ pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // Descriptors
 
+#[repr(transparent)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+pub struct DescriptorSetHandle(NonNull<()>);
+
+impl DescriptorSetHandle {
+    /// Unsafe utility function for constructing a new [DescriptorSetHandle] from a raw pointer.
+    ///
+    /// # Warning
+    ///
+    /// This technically doesn't cause immediate UB, the implementation is safe, but doing this
+    /// outside of an RHI implementation is almost certainly incorrect. This function is marked as
+    /// unsafe to discourage using it. There should be zero need to call this unless you're
+    /// constructing handles from internal RHI types.
+    ///
+    /// This function exists to avoid using *actual* unsafe via [core::mem::transmute] to allow
+    /// RHI implementations to construct this otherwise opaque type safely.
+    pub unsafe fn from_raw(v: NonNull<()>) -> Self {
+        DescriptorSetHandle(v)
+    }
+}
+
+impl Into<NonNull<()>> for DescriptorSetHandle {
+    fn into(self) -> NonNull<()> {
+        self.0
+    }
+}
+
+unsafe impl Send for DescriptorSetHandle {}
+
 pub trait IDescriptorPool: INamedObject + Send + IAny + Any + 'static {
-    fn allocate(
+    /// Allocates a new individual descriptor set from the pool.
+    ///
+    /// May fail if the pool's backing memory has been exhausted.
+    ///
+    /// # Warning
+    ///
+    /// The descriptor sets returned by a pool will by default contain invalid descriptors. That is,
+    /// assume they contain uninitialized memory. It is required to update the set with fresh
+    /// descriptors before use.
+    ///
+    /// Vulkan requires this behavior for valid API usage. Other implementations may re-use
+    /// previously freed descriptor sets without zeroing out their contents meaning you may reuse
+    /// stale descriptors.
+    fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError>;
+
+    /// Allocates `num_sets` descriptors from the pool. Some implementations may be able to
+    /// implement this more efficiently than naively calling [IDescriptorPool::allocate_set] in a
+    /// loop.
+    ///
+    /// # Warning
+    ///
+    /// See [IDescriptorPool::allocate_set] for some pitfalls and warnings to check for.
+    fn allocate_sets(
         &mut self,
-        layouts: &[&dyn IDescriptorSetLayout],
-    ) -> Result<Vec<Box<dyn IDescriptorSet>>, ()>;
-    unsafe fn free(&mut self, sets: &[&dyn IDescriptorSet]);
+        num_sets: usize,
+    ) -> Result<Vec<DescriptorSetHandle>, DescriptorPoolAllocateError> {
+        let mut sets = Vec::with_capacity(num_sets);
+        for _ in 0..num_sets {
+            sets.push(self.allocate_set()?);
+        }
+        Ok(sets)
+    }
+
+    /// Will free the given descriptor sets, allowing them and their memory to be reused.
+    ///
+    /// # Safety
+    ///
+    /// [DescriptorSetHandle] is semantically a pointer. This function will take ownership of the
+    /// set, so it is unsafe to call this function and then use the [DescriptorSetHandle] again.
+    /// That would be an immediate use after free.
+    ///
+    /// This also means double-freeing is unsafe.
+    unsafe fn free(&mut self, sets: &[DescriptorSetHandle]);
+
+    /// Will free all the descriptor sets allocated from the pool, resetting it to an empty state
+    /// where it can allocate sets again. Even after an OOM error.
+    ///
+    /// # Safety
+    ///
+    /// The safety requirements are similar to [IDescriptorPool::free]. This will implicitly take
+    /// ownership of all [DescriptorSetHandle]s allocated from the pool and free them. It is the
+    /// responsibility of the caller to ensure that all handles are never re-used after they are
+    /// freed.
+    ///
+    /// This function requires extra care as it will affect every set in the pool instead of only
+    /// the individual sets requested like in 'free'.
     unsafe fn reset(&mut self);
 }
 
 pub trait IDescriptorSetLayout: INamedObject + Send + Sync + IAny + Any + 'static {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
-}
-
-pub trait IDescriptorSet: INamedObject + Send + IAny + Any + 'static {
-    any_arc_trait_utils_decl!(IDescriptorSet);
 }
 
 //
@@ -3214,6 +3329,24 @@ pub enum ShaderCreateError {
 pub enum DescriptorSetLayoutCreateError {
     #[error("An internal backend error has occurred '{0}'")]
     Platform(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub enum DescriptorPoolCreateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+
+    #[error("There is not enough descriptor memory to create a pool with the requested capacity")]
+    OutOfMemory,
+}
+
+#[derive(Error, Debug)]
+pub enum DescriptorPoolAllocateError {
+    #[error("An internal backend error has occurred '{0}'")]
+    Platform(#[from] anyhow::Error),
+
+    #[error("The descriptor pool's backing memory has been exhausted")]
+    OutOfMemory,
 }
 
 //
