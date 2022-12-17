@@ -989,6 +989,25 @@ pub struct ContextOptions {
 // _________________________________________________________________________________________________
 // Adapter
 
+/// The set of preferences that can be requested for the type of adapter to select.
+#[derive(Copy, Clone, Debug)]
+pub enum AdapterTypePreference {
+    /// Instructs the context to prefer a hardware adapter if one is available. This option means
+    /// that a hardware adapter will always be selected over a software adapter unconditionally.
+    Hardware,
+
+    /// Instructs the context to prefer a software adapter if one is available. This option means
+    /// that a software adapter will always be selected over a hardware adapter unconditionally.
+    Software,
+}
+
+impl Default for AdapterTypePreference {
+    #[inline(always)]
+    fn default() -> Self {
+        Self::Hardware
+    }
+}
+
 /// The set of adapter power classes. Primarily used as part of requesting an adapter from the
 /// [IContext].
 #[derive(Copy, Clone, Debug)]
@@ -1008,6 +1027,7 @@ pub enum AdapterPowerClass {
 }
 
 impl Default for AdapterPowerClass {
+    #[inline(always)]
     fn default() -> Self {
         Self::LowPower
     }
@@ -1031,6 +1051,19 @@ pub struct AdapterRequestOptions<'a> {
     /// e.g. If a system only has a single dedicated GPU and the preferred power class is low-power
     /// then the context will still yield the dedicated GPU.
     pub power_class: AdapterPowerClass,
+
+    /// What type of device is preferred when selecting an adapter.
+    pub type_preference: AdapterTypePreference,
+
+    /// Whether to allow the implementation to select a software adapter in any capacity. This
+    /// option can be used to force the context to never select software adapters, unlike
+    /// 'type_preference' which is a soft request to prefer one over the other.
+    pub allow_software_adapters: bool,
+
+    /// Whether to allow the implementation to select a hardware adapter in any capacity. This
+    /// option can be used to force the context to never select hardware adapters, unlike
+    /// 'type_preference' which is a soft request to prefer one over the other.
+    pub deny_hardware_adapters: bool,
 }
 
 impl<'a> Default for AdapterRequestOptions<'a> {
@@ -1042,6 +1075,15 @@ impl<'a> Default for AdapterRequestOptions<'a> {
 
             // 99.9999% users will ask for the HighPower adapter so we default to that.
             power_class: AdapterPowerClass::HighPower,
+
+            // Again, 99.9999% of users will ask for a hardware adapter so we default to that.
+            type_preference: AdapterTypePreference::Hardware,
+
+            // Again, 99.9999% of users will want a hard fail with no hardware adapter
+            allow_software_adapters: false,
+
+            // Again, 99.9999% of users will want hardware adapters
+            deny_hardware_adapters: false,
         }
     }
 }
