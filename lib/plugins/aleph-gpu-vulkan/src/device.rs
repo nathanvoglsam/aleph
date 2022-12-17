@@ -39,12 +39,13 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BufferCreateError, BufferDesc, CommandPoolCreateError,
     CompareOp, ComputePipelineCreateError, ComputePipelineDesc, CullMode,
-    DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc, FrontFaceOrder,
-    GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool, IComputePipeline,
-    IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue,
-    ISampler, IShader, ITexture, PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode,
-    PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError,
-    ShaderOptions, StencilOp, StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
+    DescriptorPoolCreateError, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
+    FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool,
+    IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice, IGraphicsPipeline,
+    INamedObject, IPipelineLayout, IQueue, ISampler, IShader, ITexture, PipelineLayoutCreateError,
+    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc,
+    ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp, StencilOpState, TextureCreateError,
+    TextureDesc, VertexInputRate,
 };
 use std::ffi::CString;
 
@@ -357,9 +358,17 @@ impl IDevice for Device {
         todo!()
     }
 
+    fn create_descriptor_pool(
+        &self,
+        _layout: &dyn IDescriptorSetLayout,
+        _capacity: u32,
+    ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
+        todo!()
+    }
+
     fn create_pipeline_layout(
         &self,
-        desc: &PipelineLayoutDesc,
+        _desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
         todo!()
     }
@@ -386,7 +395,11 @@ impl IDevice for Device {
         todo!()
     }
 
-    fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
+    fn get_queue(&self, _queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
+        todo!()
+    }
+
+    unsafe fn update_descriptor_sets(&self, _writes: &[()]) {
         todo!()
     }
 
