@@ -36,8 +36,8 @@ use crate::internal::swap_chain_creation::dxgi_create_swap_chain;
 use crate::surface::Surface;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
-    AdapterPowerClass, AdapterRequestOptions, AdapterVendor, BackendAPI, IAdapter, IContext,
-    ISurface, SurfaceCreateError,
+    AdapterPowerClass, AdapterRequestOptions, AdapterTypePreference, AdapterVendor, BackendAPI,
+    IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
 use std::sync::atomic::AtomicBool;
@@ -154,11 +154,21 @@ impl Context {
         true
     }
 
-    fn select_hardware_adapter(
+    fn select_adapter(
         &self,
-        gpu_preference: DXGI_GPU_PREFERENCE,
+        options: &AdapterRequestOptions,
         mut filter: impl FnMut(&IDXGIAdapter1) -> bool,
     ) -> Option<IDXGIAdapter1> {
+        let power_preference = match options.power_class {
+            AdapterPowerClass::LowPower => DXGI_GPU_PREFERENCE_MINIMUM_POWER,
+            AdapterPowerClass::HighPower => DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
+        };
+        let deny_software_adapters = !options.allow_software_adapters;
+        let deny_hardware_adapters = options.deny_hardware_adapters;
+
+        let mut selected_hardware_adapter = None;
+        let mut selected_software_adapter = None;
+
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
             let factory_2: &IDXGIFactory2 = self.factory.as_ref().unwrap();
@@ -169,7 +179,7 @@ impl Context {
             loop {
                 // Use the newest available interface to enumerate the adapter
                 let adapter = if let Some(factory_6) = factory_6.as_ref() {
-                    factory_6.EnumAdapterByGpuPreference::<IDXGIAdapter1>(i, gpu_preference)
+                    factory_6.EnumAdapterByGpuPreference::<IDXGIAdapter1>(i, power_preference)
                 } else {
                     factory_2.EnumAdapters1(i)
                 };
@@ -180,14 +190,34 @@ impl Context {
                     // Get the adapter description so we can decide if we want to use it or not
                     let desc = adapter.GetDesc1().unwrap();
 
-                    // We want to skip software adapters as they're going to be *very* slow
-                    if (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0 {
+                    // Check the flag to determine if this adapter is a software adapter
+                    let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0;
+                    let is_hardware_adapter = !is_software_adapter;
+
+                    let software_already_selected = selected_software_adapter.is_some();
+                    let hardware_already_selected = selected_hardware_adapter.is_some();
+
+                    // Determine whether an adapter with the same type (hardware/software) has
+                    // already been selected
+                    let already_selected = (is_software_adapter && software_already_selected)
+                        || (is_hardware_adapter && hardware_already_selected);
+
+                    // Skip if we deny the adapter based on it's adapter type
+                    let deny_adapter = (deny_software_adapters && is_software_adapter)
+                        || (deny_hardware_adapters && is_hardware_adapter);
+
+                    // Skip by advancing the counter and starting the loop again
+                    if deny_adapter || already_selected {
                         i += 1;
                         continue;
                     }
 
                     if filter(&adapter) {
-                        return Some(adapter);
+                        if is_software_adapter {
+                            selected_software_adapter = Some(adapter)
+                        } else {
+                            selected_hardware_adapter = Some(adapter);
+                        }
                     }
                 } else {
                     break;
@@ -196,7 +226,15 @@ impl Context {
                 i += 1;
             }
 
-            None
+            // Which adapter we pick depends on the user's preference.
+            match options.type_preference {
+                AdapterTypePreference::Hardware => {
+                    selected_hardware_adapter.or(selected_software_adapter)
+                }
+                AdapterTypePreference::Software => {
+                    selected_software_adapter.or(selected_hardware_adapter)
+                }
+            }
         }
     }
 }
@@ -215,13 +253,11 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        let power_preference = match options.power_class {
-            AdapterPowerClass::LowPower => DXGI_GPU_PREFERENCE_MINIMUM_POWER,
-            AdapterPowerClass::HighPower => DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE,
-        };
-        if let Some(adapter) = self.select_hardware_adapter(power_preference, |candidate| {
+        let selected_adapter = self.select_adapter(options, |candidate| {
             self.adapter_meets_requirements(options, candidate)
-        }) {
+        });
+
+        if let Some(adapter) = selected_adapter {
             let device = create_device(&adapter, D3D_FEATURE_LEVEL_11_0).ok()?;
 
             if let Some(surface) = options.surface {
