@@ -950,6 +950,15 @@ pub enum BackendAPI {
     D3D12,
 }
 
+impl Display for BackendAPI {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BackendAPI::Vulkan => f.write_str("Vulkan"),
+            BackendAPI::D3D12 => f.write_str("D3D12"),
+        }
+    }
+}
+
 /// Options provided when a context is created
 #[derive(Clone, Default, Hash, PartialEq, Eq, Debug)]
 pub struct ContextOptions {
