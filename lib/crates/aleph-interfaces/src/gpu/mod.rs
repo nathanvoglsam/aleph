@@ -2123,7 +2123,7 @@ pub struct SamplerDesc {
     pub min_lod: f32,
     pub max_lod: f32,
     pub enable_anisotropy: bool,
-    pub max_anisotropy: f32,
+    pub max_anisotropy: u32,
     pub compare_op: Option<CompareOp>,
     pub border_color: SamplerBorderColor,
 }
@@ -2141,7 +2141,7 @@ impl Default for SamplerDesc {
             min_lod: 0.0,
             max_lod: 1000.0,
             enable_anisotropy: false,
-            max_anisotropy: 0.0,
+            max_anisotropy: 0,
             compare_op: Default::default(),
             border_color: Default::default(),
         }
