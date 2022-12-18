@@ -558,6 +558,8 @@ impl IDevice for Device {
             dxgi_format: resource_desc.Format,
             rtv_cache: RwLock::new(HashMap::new()),
             dsv_cache: RwLock::new(HashMap::new()),
+            srv_cache: RwLock::new(HashMap::new()),
+            uav_cache: RwLock::new(HashMap::new()),
         });
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }

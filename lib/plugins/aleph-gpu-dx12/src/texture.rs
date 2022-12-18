@@ -53,6 +53,8 @@ pub struct Texture {
     pub(crate) dxgi_format: DXGI_FORMAT,
     pub(crate) rtv_cache: RwLock<CacheViewCPU>,
     pub(crate) dsv_cache: RwLock<CacheViewCPU>,
+    pub(crate) srv_cache: RwLock<CacheViewCPU>,
+    pub(crate) uav_cache: RwLock<CacheViewCPU>,
 }
 
 declare_interfaces!(Texture, [ITexture, ITextureExt]);

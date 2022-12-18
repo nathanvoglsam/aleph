@@ -99,6 +99,8 @@ impl SwapChain {
                 dxgi_format,
                 rtv_cache: RwLock::new(HashMap::new()),
                 dsv_cache: RwLock::new(HashMap::new()),
+                srv_cache: RwLock::new(HashMap::new()),
+                uav_cache: RwLock::new(HashMap::new()),
             });
 
             state.textures.push(texture);
