@@ -2435,7 +2435,7 @@ pub struct TexelBufferDescriptorWrite<'a> {
 
     /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
     /// from offset to the end of the buffer.
-    pub len: u64,
+    pub len: u32,
 
     /// Whether the buffer can be written to through this descriptor.
     pub writable: bool,
