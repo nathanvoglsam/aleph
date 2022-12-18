@@ -40,12 +40,12 @@ use interfaces::gpu::{
     BackendAPI, BlendFactor, BlendOp, BufferCreateError, BufferDesc, CommandPoolCreateError,
     CompareOp, ComputePipelineCreateError, ComputePipelineDesc, CullMode,
     DescriptorPoolCreateError, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
-    FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool,
-    IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice, IGraphicsPipeline,
-    INamedObject, IPipelineLayout, IQueue, ISampler, IShader, ITexture, PipelineLayoutCreateError,
-    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueueType, SamplerCreateError, SamplerDesc,
-    ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp, StencilOpState, TextureCreateError,
-    TextureDesc, VertexInputRate,
+    DescriptorWriteDesc, FrontFaceOrder, GraphicsPipelineCreateError, GraphicsPipelineDesc,
+    IBuffer, ICommandPool, IComputePipeline, IDescriptorPool, IDescriptorSetLayout, IDevice,
+    IGraphicsPipeline, INamedObject, IPipelineLayout, IQueue, ISampler, IShader, ITexture,
+    PipelineLayoutCreateError, PipelineLayoutDesc, PolygonMode, PrimitiveTopology, QueueType,
+    SamplerCreateError, SamplerDesc, ShaderBinary, ShaderCreateError, ShaderOptions, StencilOp,
+    StencilOpState, TextureCreateError, TextureDesc, VertexInputRate,
 };
 use std::ffi::CString;
 
@@ -399,7 +399,7 @@ impl IDevice for Device {
         todo!()
     }
 
-    unsafe fn update_descriptor_sets(&self, _writes: &[()]) {
+    unsafe fn update_descriptor_sets(&self, _writes: &[DescriptorWriteDesc]) {
         todo!()
     }
 
