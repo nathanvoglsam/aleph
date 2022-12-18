@@ -29,7 +29,7 @@
 
 use crate::renderer::EguiRenderer;
 use aleph_gpu_dx12::IDeviceExt;
-use interfaces::any::{declare_interfaces, AnyArc};
+use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, Format, IAdapter, IContextProvider, IDevice, ISwapChain,
     PresentationMode, QueueType, SwapChainConfiguration,
@@ -129,7 +129,10 @@ impl IPlugin for PluginRender {
         let queue = device.get_queue(QueueType::General).unwrap();
 
         aleph_log::info!("");
-        Self::log_gpu_info(adapter.deref());
+        Self::log_gpu_info(
+            device.deref().query_interface::<dyn IDevice>().unwrap(),
+            adapter.deref(),
+        );
         aleph_log::info!("");
 
         let drawable_size = window.drawable_size();
@@ -218,7 +221,7 @@ impl PluginRender {
     ///
     /// Internal function for logging info about the CPU that is being used
     ///
-    fn log_gpu_info(adapter: &dyn IAdapter) {
+    fn log_gpu_info(device: &dyn IDevice, adapter: &dyn IAdapter) {
         let info = adapter.description();
 
         let gpu_vendor = info.vendor;
@@ -230,6 +233,7 @@ impl PluginRender {
         aleph_log::info!("=== GPU INFO ===");
         aleph_log::info!("GPU Vendor    : {}", gpu_vendor);
         aleph_log::info!("GPU Name      : {}", gpu_name);
-        aleph_log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem)
+        aleph_log::info!("Memory        : {}MB | {}MB | {}MB", dvmem, dsmem, ssmem);
+        aleph_log::info!("Backend:      : {}", device.get_backend_api());
     }
 }
