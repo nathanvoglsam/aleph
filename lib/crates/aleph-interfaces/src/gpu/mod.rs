@@ -236,8 +236,6 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     ///
     /// It is unsafe to try and write to a [DescriptorSetHandle] after it has been freed.
     ///
-    /// Underneath, descriptor sets are just memory typically.
-    ///
     /// # Warning
     ///
     /// Some implementations may re-use handles, where allocating a new set may return a previously
@@ -256,7 +254,7 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
     ///
     /// D3D12 will be very permissive to errors as D3D12's descriptor model is much less
     /// restrictive.
-    unsafe fn update_descriptor_sets(&self, writes: &[()]);
+    unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]);
 
     /// Returns the API used by the underlying backend implementation.
     fn get_backend_api(&self) -> BackendAPI;
@@ -2285,6 +2283,162 @@ pub struct DescriptorSetLayoutDesc<'a> {
 
     /// A list of all bindings that are a part of this descriptor set layout
     pub items: &'a [DescriptorSetLayoutBinding<'a>],
+}
+
+/// A description of a descriptor write. Specifies the target descriptor set, binding index and
+/// array element. Then specifies the type of, number of, and target of the descriptors to write.
+#[derive(Clone)]
+pub struct DescriptorWriteDesc<'a> {
+    /// The descriptor set that will be the target of this write operation.
+    pub set: DescriptorSetHandle,
+
+    /// The descriptor binding index that will be the target of the write operation.
+    pub binding: u32,
+
+    /// The array element in the binding to write. Ignored for non-array bindings.
+    pub array_element: u32,
+
+    /// The type of descriptor writing. This must match the descriptor type described in the set
+    /// layout, and determines the expected variant of [DescriptorWrites] in `writes`.
+    pub descriptor_type: DescriptorType,
+
+    /// The list of descriptor writes to perform. The variant to use depends on `descriptor_type`.
+    pub writes: DescriptorWrites<'a>,
+}
+
+/// The set of descriptor write types.
+///
+/// Each descriptor type needs different pieces of information in order to construct or write the
+/// descriptors into the device-visible set memory. Each variant of this enum covers some of the
+/// types in [DescriptorType].
+#[derive(Clone)]
+pub enum DescriptorWrites<'a> {
+    /// Variant expected for writing
+    /// - [DescriptorType::Sampler]
+    Sampler(&'a [SamplerDescriptorWrite<'a>]),
+
+    /// Variant expected for writing
+    /// - [DescriptorType::SampledImage]
+    /// - [DescriptorType::StorageImage]
+    Image(&'a [ImageDescriptorWrite<'a>]),
+
+    /// Variant expected for writing
+    /// - [DescriptorType::UniformBuffer]
+    /// - [DescriptorType::StorageBuffer]
+    Buffer(&'a [BufferDescriptorWrite<'a>]),
+
+    /// Variant expected for writing
+    /// - [DescriptorType::StructuredBuffer]
+    StructuredBuffer(&'a [StructuredBufferDescriptorWrite<'a>]),
+
+    /// Variant expected for writing
+    /// - [DescriptorType::UniformTexelBuffer]
+    /// - [DescriptorType::StorageTexelBuffer]
+    TexelBuffer(&'a [TexelBufferDescriptorWrite<'a>]),
+
+    /// Variant expected for writing
+    /// - [DescriptorType::InputAttachment]
+    InputAttachment(&'a [ImageDescriptorWrite<'a>]),
+}
+
+impl<'a> DescriptorWrites<'a> {
+    /// Returns true if the array stored on the active variant of `self` is empty, that is: when
+    /// `self.len() == 0`.
+    pub const fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns the number of array elements are contained in the array stored on the active variant
+    /// of `self`.
+    pub const fn len(&self) -> usize {
+        match self {
+            DescriptorWrites::Sampler(v) => v.len(),
+            DescriptorWrites::Image(v) => v.len(),
+            DescriptorWrites::Buffer(v) => v.len(),
+            DescriptorWrites::StructuredBuffer(v) => v.len(),
+            DescriptorWrites::TexelBuffer(v) => v.len(),
+            DescriptorWrites::InputAttachment(v) => v.len(),
+        }
+    }
+}
+
+/// Describes the parameters of a descriptor to write when writing into a sampler binding.
+#[derive(Clone)]
+pub struct SamplerDescriptorWrite<'a> {
+    /// The sampler target.
+    pub sampler: &'a dyn ISampler,
+}
+
+/// Describes the parameters of a descriptor to write when writing into a texture binding.
+#[derive(Clone)]
+pub struct ImageDescriptorWrite<'a> {
+    /// The image target.
+    pub image: &'a dyn ITexture,
+
+    /// Whether the image can be written to through this descriptor.
+    pub writable: bool,
+}
+
+/// Describes the parameters of a descriptor to write when writing into a simple buffer like
+/// binding.
+#[derive(Clone)]
+pub struct BufferDescriptorWrite<'a> {
+    /// The buffer target
+    pub buffer: &'a dyn IBuffer,
+
+    /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
+    /// uses addressing that is relative to this starting offset.
+    pub offset: u64,
+
+    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
+    /// from offset to the end of the buffer.
+    pub len: u32,
+
+    /// Whether the buffer can be written to through this descriptor.
+    pub writable: bool,
+}
+
+/// Describes the parameters of a descriptor to write when writing into a structured buffer like
+/// binding.
+#[derive(Clone)]
+pub struct StructuredBufferDescriptorWrite<'a> {
+    /// The buffer target
+    pub buffer: &'a dyn IBuffer,
+
+    /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
+    /// uses addressing that is relative to this starting offset.
+    pub offset: u64,
+
+    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
+    /// from offset to the end of the buffer.
+    pub len: u32,
+
+    /// The stride/size of an individual structure in the structured buffer, in bytes
+    pub structure_byte_stride: u32,
+
+    /// Whether the buffer can be written to through this descriptor.
+    pub writable: bool,
+}
+
+/// Describes the parameters of a descriptor to write when writing into a texel buffer binding.
+#[derive(Clone)]
+pub struct TexelBufferDescriptorWrite<'a> {
+    /// The buffer target
+    pub buffer: &'a dyn IBuffer,
+
+    /// The texel format the buffer should be interpreted as.
+    pub format: Format,
+
+    /// The offset in bytes from the start of buffer. Access to buffer memory via this descriptor
+    /// uses addressing that is relative to this starting offset.
+    pub offset: u64,
+
+    /// The size in bytes that is used for this descriptor update, or VK_WHOLE_SIZE to use the range
+    /// from offset to the end of the buffer.
+    pub len: u64,
+
+    /// Whether the buffer can be written to through this descriptor.
+    pub writable: bool,
 }
 
 //
