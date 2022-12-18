@@ -183,6 +183,12 @@ impl DescriptorHeap {
         NonZeroU64::new(ptr).map(GPUDescriptorHandle::from)
     }
 
+    /// Returns the descriptor increment of the descriptor type this heap allocates
+    #[allow(unused)]
+    pub const fn descriptor_increment(&self) -> u32 {
+        self.descriptor_increment
+    }
+
     /// Returns the [ID3D12DescriptorHeap] that this object encapsulates
     #[allow(unused)]
     pub const fn heap(&self) -> &ID3D12DescriptorHeap {
