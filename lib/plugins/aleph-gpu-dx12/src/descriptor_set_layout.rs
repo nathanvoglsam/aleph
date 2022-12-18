@@ -44,8 +44,10 @@ pub struct DescriptorSetLayout {
     pub(crate) _device: AnyArc<Device>,
     pub(crate) visibility: D3D12_SHADER_VISIBILITY,
     pub(crate) resource_table: Vec<D3D12_DESCRIPTOR_RANGE1>,
-    pub(crate) static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
+    pub(crate) resource_num: u32,
     pub(crate) sampler_table: Option<Vec<D3D12_DESCRIPTOR_RANGE1>>,
+    pub(crate) sampler_num: u32,
+    pub(crate) static_samplers: Vec<D3D12_STATIC_SAMPLER_DESC>,
 }
 
 declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);

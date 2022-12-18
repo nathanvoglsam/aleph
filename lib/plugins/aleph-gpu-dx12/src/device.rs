@@ -308,6 +308,8 @@ impl IDevice for Device {
         // Any non-immutable samplers require a second descriptor table.
         let resource_table = self.build_resource_table_layout(desc);
         let (sampler_table, static_samplers) = self.build_sampler_table_layout(desc)?;
+        let resource_num = Self::calculate_descriptor_num(&resource_table);
+        let sampler_num = Self::calculate_descriptor_num(&sampler_table);
 
         // Convert an empty sampler table into none to better encode the meaning in the type
         let sampler_table = if sampler_table.is_empty() {
@@ -321,8 +323,10 @@ impl IDevice for Device {
             _device: self.this.upgrade().unwrap(),
             visibility,
             resource_table,
-            static_samplers,
+            resource_num,
             sampler_table,
+            sampler_num,
+            static_samplers,
         });
         Ok(AnyArc::map::<dyn IDescriptorSetLayout, _>(
             descriptor_set_layout,
@@ -1118,6 +1122,20 @@ impl Device {
             }
         }
         Ok((sampler_table, static_samplers))
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    /// Calculate the number of descriptors by finding the highest offset from the base of
+    /// the table that any of the ranges requires.
+    fn calculate_descriptor_num(ranges: &[D3D12_DESCRIPTOR_RANGE1]) -> u32 {
+        let mut highest_offset = 0;
+        for table in ranges {
+            highest_offset =
+                highest_offset.max(table.OffsetInDescriptorsFromTableStart + table.NumDescriptors);
+        }
+        highest_offset
     }
 
     // ========================================================================================== //
