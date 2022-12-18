@@ -30,11 +30,13 @@
 use crate::device::Device;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
+use windows::utils::CPUDescriptorHandle;
 
 pub struct Sampler {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) desc: SamplerDesc,
+    pub(crate) sampler_handle: CPUDescriptorHandle,
 }
 
 declare_interfaces!(Sampler, [ISampler]);
@@ -54,6 +56,15 @@ impl ISampler for Sampler {
 
     fn desc(&self) -> &SamplerDesc {
         &self.desc
+    }
+}
+
+impl Drop for Sampler {
+    fn drop(&mut self) {
+        self._device
+            .descriptor_heaps
+            .cpu_sampler_heap()
+            .free(self.sampler_handle);
     }
 }
 

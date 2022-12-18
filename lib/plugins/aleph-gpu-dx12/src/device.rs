@@ -582,10 +582,40 @@ impl IDevice for Device {
         &self,
         desc: &SamplerDesc,
     ) -> Result<AnyArc<dyn ISampler>, SamplerCreateError> {
+        let sampler_handle = self.descriptor_heaps.cpu_sampler_heap().allocate().unwrap();
+
+        // TODO: we probably need to validate the sampler description to keep this API safe.
+
+        unsafe {
+            let desc = D3D12_SAMPLER_DESC {
+                Filter: sampler_filters_to_dx12(
+                    desc.min_filter,
+                    desc.mag_filter,
+                    desc.mip_filter,
+                    desc.compare_op.is_some(),
+                    desc.enable_anisotropy,
+                ),
+                AddressU: sampler_address_mode_to_dx12(desc.address_mode_u),
+                AddressV: sampler_address_mode_to_dx12(desc.address_mode_v),
+                AddressW: sampler_address_mode_to_dx12(desc.address_mode_w),
+                MipLODBias: desc.lod_bias,
+                MaxAnisotropy: desc.max_anisotropy,
+                ComparisonFunc: desc
+                    .compare_op
+                    .map(compare_op_to_dx12)
+                    .unwrap_or(D3D12_COMPARISON_FUNC_ALWAYS),
+                BorderColor: border_color_to_dx12(desc.border_color),
+                MinLOD: desc.min_lod,
+                MaxLOD: desc.max_lod,
+            };
+            self.device.CreateSampler(&desc, sampler_handle.into());
+        }
+
         let sampler = AnyArc::new_cyclic(move |v| Sampler {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
             desc: desc.clone(),
+            sampler_handle,
         });
         Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
     }
