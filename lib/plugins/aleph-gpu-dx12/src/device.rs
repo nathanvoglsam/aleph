@@ -1042,7 +1042,7 @@ impl Device {
                         AddressV: sampler_address_mode_to_dx12(sampler.desc.address_mode_v),
                         AddressW: sampler_address_mode_to_dx12(sampler.desc.address_mode_w),
                         MipLODBias: sampler.desc.lod_bias,
-                        MaxAnisotropy: sampler.desc.max_anisotropy as u32,
+                        MaxAnisotropy: sampler.desc.max_anisotropy,
                         ComparisonFunc: sampler
                             .desc
                             .compare_op
