@@ -2375,6 +2375,12 @@ pub struct ImageDescriptorWrite<'a> {
     /// The image target.
     pub image: &'a dyn ITexture,
 
+    /// The format that the texture will be viewed as through this descriptor
+    pub format: Format,
+
+    /// The set of sub resources that will be accessed through this descriptor
+    pub sub_resources: TextureSubResourceSet,
+
     /// Whether the image can be written to through this descriptor.
     pub writable: bool,
 }
