@@ -44,7 +44,7 @@ pub struct DescriptorHeap {
     r#type: D3D12_DESCRIPTOR_HEAP_TYPE,
 
     /// The increment size for the descriptor type this heap stores
-    descriptor_size: u32,
+    descriptor_increment: u32,
 
     /// The descriptor handle for the start of the heap on the CPU
     start_cpu_handle: D3D12_CPU_DESCRIPTOR_HANDLE,
@@ -129,7 +129,7 @@ impl DescriptorHeap {
             device: device.clone(),
             heap,
             r#type,
-            descriptor_size,
+            descriptor_increment: descriptor_size,
             start_cpu_handle,
             start_gpu_handle,
             state: Mutex::new(DescriptorHeapState {
@@ -147,26 +147,26 @@ impl DescriptorHeap {
         self.state.lock().reset();
     }
 
-    /// Allocates a contiguous range of 'count'
+    /// Allocates a contiguous range of 'num_descriptors'
     #[allow(unused)]
-    pub fn allocate(&self, count: u32) -> Option<DescriptorID> {
-        if count == 0 {
+    pub fn allocate(&self, num_descriptors: u32) -> Option<DescriptorID> {
+        if num_descriptors == 0 {
             return None;
         }
 
-        self.state.lock().allocate(count)
+        self.state.lock().allocate(num_descriptors)
     }
 
-    /// Release 'count' descriptors, starting from 'id'
+    /// Release 'num_descriptors' descriptors, starting from 'id'
     #[allow(unused)]
-    pub fn release(&self, id: DescriptorID, count: u32) {
-        self.state.lock().release(id, count)
+    pub fn release(&self, id: DescriptorID, num_descriptors: u32) {
+        self.state.lock().release(id, num_descriptors)
     }
 
     /// Converts the given 'id' into the [CPUDescriptorHandle] it represents
     #[allow(unused)]
     pub fn id_to_cpu_handle(&self, id: DescriptorID) -> Option<CPUDescriptorHandle> {
-        let size = self.descriptor_size as usize;
+        let size = self.descriptor_increment as usize;
         let id = id.0 as usize;
         let base = self.start_cpu_handle.ptr;
         let ptr = base + (id * size);
@@ -176,7 +176,7 @@ impl DescriptorHeap {
     /// Converts the given 'id' into the [GPUDescriptorHandle] it represents
     #[allow(unused)]
     pub fn id_to_gpu_handle(&self, id: DescriptorID) -> Option<GPUDescriptorHandle> {
-        let size = self.descriptor_size as u64;
+        let size = self.descriptor_increment as u64;
         let id = id.0 as u64;
         let base = self.start_gpu_handle.ptr;
         let ptr = base + (id * size);
@@ -191,7 +191,7 @@ impl DescriptorHeap {
 
     /// Returns the [D3D12_DESCRIPTOR_HEAP_TYPE] that this heap stores descriptors for
     #[allow(unused)]
-    pub fn heap_type(&self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
+    pub const fn heap_type(&self) -> D3D12_DESCRIPTOR_HEAP_TYPE {
         self.r#type
     }
 
@@ -223,10 +223,10 @@ impl DescriptorHeapState {
         self.len = 0;
     }
 
-    /// Allocates a contiguous range of 'count'
-    fn allocate(&mut self, count: u32) -> Option<DescriptorID> {
+    /// Allocates a contiguous range of 'num_descriptors'
+    fn allocate(&mut self, num_descriptors: u32) -> Option<DescriptorID> {
         // Early exit if the caller asked for 0 descriptors
-        if count == 0 {
+        if num_descriptors == 0 {
             return None;
         }
 
@@ -296,7 +296,7 @@ impl DescriptorHeapState {
 
                     // If we've found enough descriptors we can exit. The allocator is left in a
                     // correct state during the allocation process
-                    if found_count == count {
+                    if found_count == num_descriptors {
                         return Some(first_result);
                     }
                 } else if found_count > 0 {
@@ -325,21 +325,21 @@ impl DescriptorHeapState {
         return Some(first_result);
     }
 
-    /// Release 'count' descriptors, starting from 'id'
-    fn release(&mut self, id: DescriptorID, count: u32) {
-        if id.is_null() || count == 0 {
+    /// Release 'num_descriptors' descriptors, starting from 'id'
+    fn release(&mut self, id: DescriptorID, num_descriptors: u32) {
+        if id.is_null() || num_descriptors == 0 {
             return;
         }
 
         let start = id.0 as u32;
-        let end = start + (count as u32);
+        let end = start + (num_descriptors as u32);
         for i in start..end {
             let flag_i = i / 32;
             let mask = !(1u32 << (i % 32));
             self.flags[flag_i as usize] &= mask;
         }
 
-        self.len -= count;
+        self.len -= num_descriptors;
     }
 }
 
