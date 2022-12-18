@@ -607,7 +607,7 @@ impl IDevice for Device {
                 ComparisonFunc: desc
                     .compare_op
                     .map(compare_op_to_dx12)
-                    .unwrap_or(D3D12_COMPARISON_FUNC_ALWAYS),
+                    .unwrap_or(D3D12_COMPARISON_FUNC(0)),
                 BorderColor: border_color_to_dx12(desc.border_color),
                 MinLOD: desc.min_lod,
                 MaxLOD: desc.max_lod,
@@ -1091,7 +1091,7 @@ impl Device {
                             .desc
                             .compare_op
                             .map(compare_op_to_dx12)
-                            .unwrap_or(D3D12_COMPARISON_FUNC_ALWAYS),
+                            .unwrap_or(D3D12_COMPARISON_FUNC(0)),
                         BorderColor: border_color_to_dx12_static(sampler.desc.border_color),
                         MinLOD: sampler.desc.min_lod,
                         MaxLOD: sampler.desc.max_lod,
