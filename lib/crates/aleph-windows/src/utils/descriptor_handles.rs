@@ -39,28 +39,31 @@ pub struct CPUDescriptorHandle(pub(crate) NonZeroUsize);
 
 #[allow(clippy::should_implement_trait)]
 impl CPUDescriptorHandle {
-    #[inline]
+    #[inline(always)]
     pub fn offset(self, offset: isize) -> Self {
         let ptr = self.0.get() as isize;
         let ptr = ptr + offset;
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
+    #[inline(always)]
     pub const fn add(self, offset: usize) -> Self {
         Self(self.0.saturating_add(offset))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn offset_increments(self, offset: isize, increment: usize) -> Self {
         let ptr = self.0.get() as isize;
         let ptr = ptr + (offset * increment as isize);
         Self(NonZeroUsize::new(ptr as usize).unwrap())
     }
 
+    #[inline(always)]
     pub const fn add_increments(self, offset: usize, increment: usize) -> Self {
         self.add(offset * increment)
     }
 
+    #[inline(always)]
     pub const fn get_inner(&self) -> NonZeroUsize {
         self.0
     }
@@ -108,32 +111,32 @@ pub struct GPUDescriptorHandle(pub(crate) NonZeroU64);
 
 #[allow(clippy::should_implement_trait)]
 impl GPUDescriptorHandle {
-    #[inline]
+    #[inline(always)]
     pub fn offset(self, offset: i64) -> Self {
         let ptr = self.0.get() as i64;
         let ptr = ptr + offset;
         Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
-    #[inline]
-    pub fn add(self, offset: u64) -> Self {
-        Self(NonZeroU64::new(self.0.get() + offset).unwrap())
+    #[inline(always)]
+    pub const fn add(self, offset: u64) -> Self {
+        Self(self.0.saturating_add(offset))
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn offset_increments(self, offset: i64, increment: u64) -> Self {
         let ptr = self.0.get() as i64;
         let ptr = ptr + (offset * increment as i64);
         Self(NonZeroU64::new(ptr as u64).unwrap())
     }
 
-    #[inline]
-    pub fn add_increments(self, offset: u64, increment: u64) -> Self {
-        Self(NonZeroU64::new(self.0.get() + (offset * increment)).unwrap())
+    #[inline(always)]
+    pub const fn add_increments(self, offset: u64, increment: u64) -> Self {
+        self.add(offset * increment)
     }
 
-    #[inline]
-    pub fn get_inner(&self) -> NonZeroU64 {
+    #[inline(always)]
+    pub const fn get_inner(&self) -> NonZeroU64 {
         self.0
     }
 }
