@@ -93,17 +93,29 @@ pub struct Device {
 declare_interfaces!(Device, [IDevice, IDeviceExt]);
 
 impl IDevice for Device {
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn upgrade(&self) -> AnyArc<dyn IDevice> {
         AnyArc::map::<dyn IDevice, _>(self.this.upgrade().unwrap(), |v| v)
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn strong_count(&self) -> usize {
         self.this.strong_count()
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn weak_count(&self) -> usize {
         self.this.weak_count()
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn garbage_collect(&self) {
         if let Some(queue) = &self.general_queue {
@@ -117,6 +129,9 @@ impl IDevice for Device {
         }
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn wait_idle(&self) {
         if let Some(queue) = &self.general_queue {
             queue.wait_all_lists_completed();
@@ -128,6 +143,9 @@ impl IDevice for Device {
             queue.wait_all_lists_completed();
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn create_graphics_pipeline(
         &self,
@@ -204,6 +222,9 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_compute_pipeline(
         &self,
         desc: &ComputePipelineDesc,
@@ -248,6 +269,9 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_shader(
         &self,
         options: &ShaderOptions,
@@ -270,6 +294,9 @@ impl IDevice for Device {
             Err(ShaderCreateError::UnsupportedShaderFormat)
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn create_descriptor_set_layout(
         &self,
@@ -311,6 +338,9 @@ impl IDevice for Device {
             |v| v,
         ))
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn create_pipeline_layout(
         &self,
@@ -421,6 +451,9 @@ impl IDevice for Device {
         ))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_buffer(&self, desc: &BufferDesc) -> Result<AnyArc<dyn IBuffer>, BufferCreateError> {
         let mut resource_desc = D3D12_RESOURCE_DESC1 {
             // Fields that will be the same regardless of the requested buffer desc
@@ -487,6 +520,9 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn IBuffer, _>(buffer, |v| v))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_texture(
         &self,
         desc: &TextureDesc,
@@ -535,6 +571,9 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn ITexture, _>(texture, |v| v))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_sampler(
         &self,
         desc: &SamplerDesc,
@@ -547,6 +586,9 @@ impl IDevice for Device {
         Ok(AnyArc::map::<dyn ISampler, _>(sampler, |v| v))
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn create_command_pool(&self) -> Result<AnyArc<dyn ICommandPool>, CommandPoolCreateError> {
         let pool = AnyArc::new_cyclic(move |v| CommandPool {
             this: v.clone(),
@@ -557,6 +599,9 @@ impl IDevice for Device {
         });
         Ok(AnyArc::map::<dyn ICommandPool, _>(pool, |v| v))
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
         match queue_type {
@@ -574,6 +619,9 @@ impl IDevice for Device {
                 .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn get_backend_api(&self) -> BackendAPI {
         BackendAPI::D3D12
@@ -601,6 +649,9 @@ impl Device {
         }
         Ok(builder)
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     /// Internal function for translating the [VertexInputStateDesc] field of a pipeline
     /// description
@@ -685,6 +736,9 @@ impl Device {
         (input_binding_strides, input_layout)
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     /// Internal function for translating the [InputAssemblyStateDesc] field of a pipeline
     /// description
     fn translate_input_assembly_state_desc<'a, 'b>(
@@ -709,6 +763,9 @@ impl Device {
         (builder, topo)
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     /// Internal function for translating the [RasterizerStateDesc] field of a pipeline
     /// description
     fn translate_rasterizer_state_desc(desc: &RasterizerStateDesc) -> D3D12_RASTERIZER_DESC {
@@ -729,6 +786,9 @@ impl Device {
             ConservativeRaster: D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF,
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     /// Internal function for translating the [DepthStencilStateDesc] field of a pipeline
     /// description
@@ -772,6 +832,9 @@ impl Device {
             BackFace: back_face,
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn translate_blend_state_desc(desc: &BlendStateDesc) -> D3D12_BLEND_DESC {
         // TODO: Figure out if alpha to coverage is possible to expose
@@ -834,6 +897,9 @@ impl Device {
             RenderTarget: render_targets,
         }
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     fn build_resource_table_layout(
         &self,
@@ -925,6 +991,9 @@ impl Device {
         table
     }
 
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     fn build_sampler_table_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
@@ -1010,6 +1079,9 @@ impl Device {
         }
         Ok((sampler_table, static_samplers))
     }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
 
     pub fn validate_descriptor_set_layout(desc: &DescriptorSetLayoutDesc) {
         for binding in desc.items.iter() {
