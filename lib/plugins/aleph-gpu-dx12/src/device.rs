@@ -33,11 +33,11 @@ use crate::command_pool::CommandPool;
 use crate::context::Context;
 use crate::descriptor_set_layout::DescriptorSetLayout;
 use crate::internal::conv::{
-    blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, compare_op_to_dx12,
-    cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12, primitive_topology_to_dx12,
-    sampler_address_mode_to_dx12, sampler_filters_to_dx12, shader_visibility_to_dx12,
-    stencil_op_to_dx12, texture_create_clear_value_to_dx12, texture_create_desc_to_dx12,
-    texture_format_to_dxgi,
+    blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, border_color_to_dx12_static,
+    compare_op_to_dx12, cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
+    primitive_topology_to_dx12, sampler_address_mode_to_dx12, sampler_filters_to_dx12,
+    shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
+    texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
@@ -56,22 +56,13 @@ use crate::texture::Texture;
 use crossbeam::queue::SegQueue;
 use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
-use interfaces::gpu::{
-    BackendAPI, BlendStateDesc, BufferCreateError, BufferDesc, CommandPoolCreateError,
-    ComputePipelineCreateError, ComputePipelineDesc, CpuAccessMode, DepthStencilStateDesc,
-    DescriptorSetLayoutBinding, DescriptorSetLayoutCreateError, DescriptorSetLayoutDesc,
-    DescriptorType, GraphicsPipelineCreateError, GraphicsPipelineDesc, IBuffer, ICommandPool,
-    IComputePipeline, IDescriptorSetLayout, IDevice, IGraphicsPipeline, INamedObject,
-    IPipelineLayout, IQueue, ISampler, IShader, ITexture, PipelineLayoutCreateError,
-    PipelineLayoutDesc, QueueType, RasterizerStateDesc, SamplerCreateError, SamplerDesc,
-    ShaderBinary, ShaderCreateError, ShaderOptions, ShaderType, StencilOpState, TextureCreateError,
-    TextureDesc, VertexInputRate, VertexInputStateDesc,
-};
+use interfaces::gpu::*;
 use parking_lot::RwLock;
 use std::collections::HashMap;
 use std::num::NonZeroU32;
+use std::ops::Deref;
 use windows::core::PCSTR;
-use windows::utils::GPUDescriptorHandle;
+use windows::utils::{CPUDescriptorHandle, GPUDescriptorHandle};
 use windows::Win32::Foundation::BOOL;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
@@ -1048,7 +1039,7 @@ impl Device {
                             .compare_op
                             .map(compare_op_to_dx12)
                             .unwrap_or(D3D12_COMPARISON_FUNC_ALWAYS),
-                        BorderColor: border_color_to_dx12(sampler.desc.border_color),
+                        BorderColor: border_color_to_dx12_static(sampler.desc.border_color),
                         MinLOD: sampler.desc.min_lod,
                         MaxLOD: sampler.desc.max_lod,
                         ShaderRegister: item.binding_num,

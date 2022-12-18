@@ -107,11 +107,23 @@ pub const fn shader_visibility_to_dx12(
     }
 }
 
-pub const fn border_color_to_dx12(color: SamplerBorderColor) -> D3D12_STATIC_BORDER_COLOR {
+pub const fn border_color_to_dx12_static(color: SamplerBorderColor) -> D3D12_STATIC_BORDER_COLOR {
     match color {
         SamplerBorderColor::BlackTransparent => D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK,
         SamplerBorderColor::BlackOpaque => D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK,
         SamplerBorderColor::WhiteOpaque => D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE,
+    }
+}
+
+pub const fn border_color_to_dx12(color: SamplerBorderColor) -> [f32; 4] {
+    const BLACK_TRANSPARENT: [f32; 4] = [0.0, 0.0, 0.0, 0.0];
+    const BLACK_OPAQUE: [f32; 4] = [0.0, 0.0, 0.0, 1.0];
+    const WHITE_OPAQUE: [f32; 4] = [1.0, 1.0, 1.0, 1.0];
+
+    match color {
+        SamplerBorderColor::BlackTransparent => BLACK_TRANSPARENT,
+        SamplerBorderColor::BlackOpaque => BLACK_OPAQUE,
+        SamplerBorderColor::WhiteOpaque => WHITE_OPAQUE,
     }
 }
 
