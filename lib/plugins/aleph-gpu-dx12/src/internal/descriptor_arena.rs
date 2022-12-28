@@ -68,7 +68,7 @@ impl DescriptorArena {
         num_sets: u32,
         num_descriptors_per_set: u32,
     ) -> Result<Option<Self>, DescriptorPoolCreateError> {
-        if num_sets == 0 {
+        if num_sets * num_descriptors_per_set == 0 {
             return Ok(None);
         }
 
