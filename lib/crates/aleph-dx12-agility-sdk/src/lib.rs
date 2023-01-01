@@ -54,12 +54,20 @@ use zip::ZipArchive;
 /// - `x86_64-uwp-windows-msvc`
 /// - `i686-pc-windows-msvc`
 /// - `i686-uwp-windows-msvc`
+/// - `x86_64-pc-windows-gnu`
+/// - `x86_64-uwp-windows-gnu`
+/// - `i686-pc-windows-gnu`
+/// - `i686-uwp-windows-gnu`
 ///
 /// This function will do nothing on non windows platforms.
 ///
 pub fn link_agility_symbol_def() {
-    if target_platform().is_msvc() {
-        println!("cargo:rustc-link-arg=/DEF:{}", def_location().display());
+    if target_platform().is_windows() {
+        if target_platform().is_msvc() {
+            println!("cargo:rustc-link-arg=/DEF:{}", def_location().display());
+        } else {
+            println!("cargo:rustc-link-arg={}", def_location().display());
+        }
     }
 }
 
