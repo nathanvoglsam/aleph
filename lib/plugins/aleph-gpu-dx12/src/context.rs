@@ -107,18 +107,22 @@ impl Context {
         let feature_support = FeatureSupport::new(device).ok()?;
 
         if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_0.0 {
+            aleph_log::trace!("Adapter doesn't support Feature Level 12_0");
             return None;
         }
 
         if !feature_support.EnhancedBarriersSupported() {
+            aleph_log::trace!("Adapter doesn't support Enhanced Barriers");
             return None;
         }
 
         if feature_support.HighestShaderModel().0 < D3D_SHADER_MODEL_6_0.0 {
+            aleph_log::trace!("Adapter doesn't support Shader Model 6.0");
             return None;
         }
 
         if feature_support.HighestRootSignatureVersion().0 < D3D_ROOT_SIGNATURE_VERSION_1_1.0 {
+            aleph_log::trace!("Adapter doesn't support Root Signature 1.1");
             return None;
         }
 
@@ -134,6 +138,7 @@ impl Context {
         let device = if let Some(device) = device {
             device
         } else {
+            aleph_log::trace!("Adapter Doesn't Provide ID3D12Device10");
             return false;
         };
 
@@ -143,6 +148,7 @@ impl Context {
                 .check_surface_compatibility((&device).into(), surface)
                 .is_none()
             {
+                aleph_log::trace!("Adapter Can't Use Requested Surface");
                 return false;
             }
         }
@@ -190,6 +196,22 @@ impl Context {
                     // Get the adapter description so we can decide if we want to use it or not
                     let desc = adapter.GetDesc1().unwrap();
 
+                    let name =
+                        adapter_description_string(&desc).unwrap_or_else(|| "Unknown".to_string());
+                    let vendor = match desc.VendorId {
+                        0x1002 => AdapterVendor::AMD,
+                        0x1010 => AdapterVendor::ImaginationTechnology,
+                        0x10DE => AdapterVendor::NVIDIA,
+                        0x13B5 => AdapterVendor::ARM,
+                        0x5143 => AdapterVendor::Qualcomm,
+                        0x8086 => AdapterVendor::Intel,
+                        _ => AdapterVendor::Unknown,
+                    };
+                    aleph_log::trace!("=====================");
+                    aleph_log::trace!("Considering Adapter: ");
+                    aleph_log::trace!("Vendor : {}", vendor);
+                    aleph_log::trace!("Name   : {}", name);
+
                     // Check the flag to determine if this adapter is a software adapter
                     let is_software_adapter = (desc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE.0) != 0;
                     let is_hardware_adapter = !is_software_adapter;
@@ -208,6 +230,7 @@ impl Context {
 
                     // Skip by advancing the counter and starting the loop again
                     if deny_adapter || already_selected {
+                        aleph_log::trace!("Adapter rejected by adapter type criteria");
                         i += 1;
                         continue;
                     }
@@ -218,6 +241,8 @@ impl Context {
                         } else {
                             selected_hardware_adapter = Some(adapter);
                         }
+                    } else {
+                        aleph_log::trace!("Adapter rejected for missing required capabilities");
                     }
                 } else {
                     break;
