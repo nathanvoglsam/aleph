@@ -91,7 +91,14 @@ impl DebugConsole {
     /// console.eval("add(40, 2)");
     /// console.eval("sub(44, 2)");
     /// ```
-    pub fn register_fn<A, R, S, F: rhai::RegisterNativeFunction<A, R, S>>(
+    pub fn register_fn<
+        A: 'static,
+        const N: usize,
+        const C: bool,
+        R: rhai::Variant + Clone,
+        const L: bool,
+        F: rhai::RegisterNativeFunction<A, N, C, R, L>,
+    >(
         &self,
         name: impl AsRef<str> + Into<rhai::Identifier>,
         func: F,
