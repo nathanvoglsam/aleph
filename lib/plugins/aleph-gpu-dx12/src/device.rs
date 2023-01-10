@@ -31,7 +31,9 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
 use crate::context::Context;
-use crate::descriptor_set_layout::DescriptorSetLayout;
+use crate::descriptor_set_layout::{
+    DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
+};
 use crate::internal::conv::{
     blend_factor_to_dx12, blend_op_to_dx12, border_color_to_dx12, border_color_to_dx12_static,
     compare_op_to_dx12, cull_mode_to_dx12, front_face_order_to_dx12, polygon_mode_to_dx12,
@@ -293,21 +295,23 @@ impl IDevice for Device {
         &self,
         desc: &DescriptorSetLayoutDesc,
     ) -> Result<AnyArc<dyn IDescriptorSetLayout>, DescriptorSetLayoutCreateError> {
-        let visibility = shader_visibility_to_dx12(desc.visibility);
-
         // TODO: Currently we always create a descriptor table. In the future we could use some
         //       optimization heuristics to detect when a root descriptor is better.
 
         #[cfg(debug_assertions)]
         Self::validate_descriptor_set_layout(desc);
 
+        let visibility = shader_visibility_to_dx12(desc.visibility);
+
         // First we produce a descriptor table for the non-sampler descriptors. Samplers have to go
         // in their own descriptor heap and so we can't emit a single descriptor table for the
         // layout.
         //
         // Any non-immutable samplers require a second descriptor table.
-        let resource_table = self.build_resource_table_layout(desc);
-        let (sampler_table, static_samplers) = self.build_sampler_table_layout(desc)?;
+        let mut binding_info = HashMap::with_capacity(desc.items.len());
+        let resource_table = self.build_resource_table_layout(desc, &mut binding_info);
+        let (sampler_table, static_samplers) =
+            self.build_sampler_table_layout(desc, &mut binding_info)?;
         let resource_num = Self::calculate_descriptor_num(&resource_table);
         let sampler_num = Self::calculate_descriptor_num(&sampler_table);
 
@@ -321,6 +325,7 @@ impl IDevice for Device {
         let descriptor_set_layout = AnyArc::new_cyclic(move |v| DescriptorSetLayout {
             this: v.clone(),
             _device: self.this.upgrade().unwrap(),
+            binding_info,
             visibility,
             resource_table,
             resource_num,
@@ -948,6 +953,7 @@ impl Device {
     fn build_resource_table_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
+        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
     ) -> Vec<D3D12_DESCRIPTOR_RANGE1> {
         let mut offset = 0;
         let mut table = Vec::with_capacity(desc.items.len());
@@ -1021,6 +1027,16 @@ impl Device {
             let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
                 | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
 
+            let info = DescriptorBindingInfo {
+                r#type: item.binding_type,
+                is_static_sampler: item.static_samplers.is_some(),
+                layout: DescriptorBindingLayout {
+                    base: base_shader_register,
+                    num_descriptors,
+                },
+            };
+            binding_info.insert(item.binding_num, info);
+
             let item = D3D12_DESCRIPTOR_RANGE1 {
                 RangeType: range_type,
                 NumDescriptors: num_descriptors,
@@ -1041,6 +1057,7 @@ impl Device {
     fn build_sampler_table_layout(
         &self,
         desc: &DescriptorSetLayoutDesc,
+        binding_info: &mut HashMap<u32, DescriptorBindingInfo>,
     ) -> Result<
         (Vec<D3D12_DESCRIPTOR_RANGE1>, Vec<D3D12_STATIC_SAMPLER_DESC>),
         DescriptorSetLayoutCreateError,
@@ -1109,6 +1126,17 @@ impl Device {
                 let base_shader_register = item.binding_num;
                 let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
                     | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
+
+                let info = DescriptorBindingInfo {
+                    r#type: item.binding_type,
+                    is_static_sampler: item.static_samplers.is_some(),
+                    layout: DescriptorBindingLayout {
+                        base: base_shader_register,
+                        num_descriptors,
+                    },
+                };
+                binding_info.insert(item.binding_num, info);
+
                 let item = D3D12_DESCRIPTOR_RANGE1 {
                     RangeType: D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER,
                     NumDescriptors: num_descriptors,
