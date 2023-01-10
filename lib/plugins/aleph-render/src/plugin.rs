@@ -112,6 +112,7 @@ impl IPlugin for PluginRender {
         // Get an adapter compatible with the requested surface
         let options = AdapterRequestOptions {
             surface: Some(surface.deref()),
+            allow_software_adapters: true,
             ..Default::default()
         };
         let adapter = gpu_context
