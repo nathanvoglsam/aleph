@@ -43,6 +43,7 @@ mod command_list;
 mod command_pool;
 mod context;
 mod context_provider;
+mod descriptor_pool;
 mod descriptor_set_layout;
 mod device;
 mod encoder;
