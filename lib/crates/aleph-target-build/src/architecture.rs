@@ -38,34 +38,6 @@ pub enum Architecture {
 }
 
 impl Architecture {
-    pub fn print_host_cargo_cfg(self) {
-        match self {
-            Architecture::X8664 => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_x86_64");
-            }
-            Architecture::AARCH64 => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_aarch64");
-            }
-            Architecture::Unknown => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_HOST_is_unknown");
-            }
-        }
-    }
-
-    pub fn print_target_cargo_cfg(self) {
-        match self {
-            Architecture::X8664 => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_x86_64");
-            }
-            Architecture::AARCH64 => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_aarch64");
-            }
-            Architecture::Unknown => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_ARCH_TARGET_is_unknown");
-            }
-        }
-    }
-
     pub const fn name(self) -> &'static str {
         match self {
             Architecture::X8664 => "x86_64",

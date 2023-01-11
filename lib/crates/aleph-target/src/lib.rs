@@ -42,84 +42,65 @@ pub use aleph_target::get_platform_from;
 pub mod build {
 
     ///
-    /// Returns the host platform
+    /// Returns the host platform. Always returns [aleph_target::Platform::Unknown]
+    ///
+    /// # Warning
+    ///
+    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
+    /// crate.
     ///
     #[inline]
     pub const fn host_platform() -> aleph_target::Platform {
-        if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_windows) {
-            if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_universal_windows) {
-                if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
-                    aleph_target::Platform::UniversalWindowsMSVC
-                } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
-                    aleph_target::Platform::UniversalWindowsGNU
-                } else {
-                    aleph_target::Platform::Unknown
-                }
-            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_msvc) {
-                aleph_target::Platform::WindowsMSVC
-            } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_gnu) {
-                aleph_target::Platform::WindowsGNU
-            } else {
-                aleph_target::Platform::Unknown
-            }
-        } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_android) {
-            aleph_target::Platform::Android
-        } else if cfg!(ALEPH_BUILD_PLATFORM_HOST_is_linux) {
-            aleph_target::Platform::Linux
-        } else {
-            aleph_target::Platform::Unknown
-        }
+        aleph_target::Platform::Unknown
     }
 
     ///
-    /// Returns the host architecture
+    /// Returns the host architecture. Always returns [aleph_target::Architecture::Unknown]
+    ///
+    /// # Warning
+    ///
+    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
+    /// crate.
     ///
     pub const fn host_architecture() -> aleph_target::Architecture {
-        if cfg!(ALEPH_BUILD_ARCH_HOST_is_x86_64) {
-            aleph_target::Architecture::X8664
-        } else if cfg!(ALEPH_BUILD_ARCH_HOST_is_aarch64) {
-            aleph_target::Architecture::AARCH64
-        } else {
-            aleph_target::Architecture::Unknown
-        }
+        aleph_target::Architecture::Unknown
     }
 
     ///
-    /// Returns the host build type
+    /// Returns the host build type.  Always returns [aleph_target::BuildType::Unknown]
+    ///
+    /// # Warning
+    ///
+    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
+    /// crate.
     ///
     pub const fn host_build_type() -> aleph_target::BuildType {
-        if cfg!(ALEPH_BUILD_PROFILE_HOST_is_release) {
-            aleph_target::BuildType::Release
-        } else if cfg!(ALEPH_BUILD_PROFILE_HOST_is_debug) {
-            aleph_target::BuildType::Debug
-        } else {
-            aleph_target::BuildType::Unknown
-        }
+        aleph_target::BuildType::Unknown
     }
 
     ///
     /// Returns the target platform
     ///
     pub const fn target_platform() -> aleph_target::Platform {
-        if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_windows) {
-            if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_universal_windows) {
-                if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+        if cfg!(target_os = "windows") {
+            if cfg!(target_vendor = "uwp") {
+                if cfg!(target_env = "msvc") {
                     aleph_target::Platform::UniversalWindowsMSVC
-                } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+                } else if cfg!(target_env = "gnu") {
                     aleph_target::Platform::UniversalWindowsGNU
                 } else {
                     aleph_target::Platform::Unknown
                 }
-            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_msvc) {
+            } else if cfg!(target_env = "msvc") {
                 aleph_target::Platform::WindowsMSVC
-            } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_gnu) {
+            } else if cfg!(target_env = "gnu") {
                 aleph_target::Platform::WindowsGNU
             } else {
                 aleph_target::Platform::Unknown
             }
-        } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_android) {
+        } else if cfg!(target_os = "android") {
             aleph_target::Platform::Android
-        } else if cfg!(ALEPH_BUILD_PLATFORM_TARGET_is_linux) {
+        } else if cfg!(target_os = "linux") {
             aleph_target::Platform::Linux
         } else {
             aleph_target::Platform::Unknown
@@ -130,9 +111,9 @@ pub mod build {
     /// Returns the target architecture
     ///
     pub const fn target_architecture() -> aleph_target::Architecture {
-        if cfg!(ALEPH_BUILD_ARCH_TARGET_is_x86_64) {
+        if cfg!(target_arch = "x86_64") {
             aleph_target::Architecture::X8664
-        } else if cfg!(ALEPH_BUILD_ARCH_TARGET_is_aarch64) {
+        } else if cfg!(target_arch = "aarch64") {
             aleph_target::Architecture::AARCH64
         } else {
             aleph_target::Architecture::Unknown
@@ -143,9 +124,9 @@ pub mod build {
     /// Returns the target build type
     ///
     pub const fn target_build_type() -> aleph_target::BuildType {
-        if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_release) {
+        if cfg!(target_profile = "release") {
             aleph_target::BuildType::Release
-        } else if cfg!(ALEPH_BUILD_PROFILE_TARGET_is_debug) {
+        } else if cfg!(target_profile = "debug") {
             aleph_target::BuildType::Debug
         } else {
             aleph_target::BuildType::Unknown

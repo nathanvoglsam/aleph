@@ -30,7 +30,7 @@
 ///
 /// Enumeration of all supported build types
 ///
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum BuildType {
     Release,
     Debug,
@@ -38,32 +38,10 @@ pub enum BuildType {
 }
 
 impl BuildType {
-    pub fn print_host_cargo_cfg(self) {
-        match self {
-            BuildType::Release => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_release");
-            }
-            BuildType::Debug => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_debug");
-            }
-            BuildType::Unknown => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_HOST_is_unknown");
-            }
-        }
-    }
-
+    /// Utility function that will output the build-script configuration to stdout that is used for
+    /// detecting the build type in the 'crate' side of the library.
     pub fn print_target_cargo_cfg(self) {
-        match self {
-            BuildType::Release => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_release");
-            }
-            BuildType::Debug => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_debug");
-            }
-            BuildType::Unknown => {
-                println!("cargo:rustc-cfg=ALEPH_BUILD_PROFILE_TARGET_is_unknown");
-            }
-        }
+        println!("cargo:rustc-cfg=target_profile=\"{}\"", self.name());
     }
 
     ///
@@ -81,30 +59,32 @@ impl BuildType {
         match self {
             BuildType::Release => "Release",
             BuildType::Debug => "Debug",
-            BuildType::Unknown => "unknown",
+            BuildType::Unknown => "Unknown",
         }
     }
 
-    pub const fn is_release(self) -> bool {
-        matches!(self, BuildType::Release)
+    pub const fn is_optimized(self) -> bool {
+        match self {
+            BuildType::Release | BuildType::Unknown => {
+                true
+            }
+            BuildType::Debug => false,
+        }
     }
 
-    pub const fn is_debug(self) -> bool {
-        matches!(self, BuildType::Debug)
-    }
-
-    pub const fn is_unknown(self) -> bool {
-        matches!(self, BuildType::Unknown)
+    pub const fn has_debug_symbols(self) -> bool {
+        match self {
+            BuildType::Debug => true,
+            BuildType::Release | BuildType::Unknown => false,
+        }
     }
 }
 
 #[inline]
 pub fn get_build_type_from(profile: &str) -> BuildType {
-    if profile == "release" {
-        BuildType::Release
-    } else if profile == "debug" {
-        BuildType::Debug
-    } else {
-        BuildType::Unknown
+    match profile {
+        "release" => BuildType::Release,
+        "debug" => BuildType::Debug,
+        _ => BuildType::Unknown,
     }
 }
