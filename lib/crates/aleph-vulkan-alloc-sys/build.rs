@@ -34,8 +34,8 @@ extern crate aleph_target_build as target;
 use bindgen;
 
 use std::path::Path;
-use target::build::target_architecture;
 use target::build::target_platform;
+use target::build::{target_architecture, target_build_type};
 use target::Architecture;
 
 #[cfg(feature = "generate_bindings")]
@@ -85,8 +85,9 @@ fn build_lib() {
         build.define("FEATURE_VMA_DEBUG_DETECT_CORRUPTION", "1");
     }
 
-    // Force to compile for release, we'll never need to debug this
-    if target_platform().is_msvc() {
+    if target_build_type().has_debug_symbols() {
+        build.profile("RelWithDebInfo");
+    } else {
         build.profile("Release");
     }
 
@@ -120,7 +121,11 @@ fn build_lib() {
         }
     }
 
-    build.generator("Ninja");
+    if target_platform().is_msvc() {
+        build.generator("Visual Studio 17 2022");
+    } else {
+        build.generator("Ninja");
+    }
 
     let output_dir = build.build();
 
