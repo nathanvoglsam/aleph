@@ -122,10 +122,8 @@ fn main() {
             // source for android builds so we may as well build for windows as well rather than
             // try to bundle binaries
 
-            // Perform the cmake build with the ninja generator, ninja will need to be in the system
-            // path for this to work
             let mut build = cmake::Config::new("../../../submodules/SDL-mirror");
-            if target_platform.is_uwp() {
+            if target_platform.is_msvc() {
                 build.generator("Visual Studio 17 2022");
             } else {
                 build.generator("Ninja");
@@ -133,6 +131,7 @@ fn main() {
 
             // Don't compile the SDL2 static library
             build.define("SDL_STATIC", "OFF");
+            build.define("DIRECTX", "OFF");
 
             // When compiling for MSVC we need to include vcruntime as some symbols are missing
             // if we don't link in this lib
@@ -147,7 +146,7 @@ fn main() {
                 build.define("SDL_SENSOR", "FALSE");
             }
 
-            if target::build::target_build_type().is_debug() {
+            if target::build::target_build_type().has_debug_symbols() {
                 build.profile("RelWithDebInfo");
                 build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
             } else {
@@ -178,13 +177,10 @@ fn main() {
 
             // Copy the SDL2 pdb
             if target::build::target_platform().is_msvc()
-                && target::build::target_build_type().is_debug()
+                && target::build::target_build_type().has_debug_symbols()
             {
-                let source = if target::build::target_platform().is_uwp() {
-                    bld_dir.join("RelWithDebInfo").join("SDL2.pdb")
-                } else {
-                    bld_dir.join("SDL2.pdb")
-                };
+                let source = bld_dir.join("RelWithDebInfo").join("SDL2.pdb");
+
                 compile::copy_file_to_artifacts_dir(&source)
                     .expect("Failed to copy SDL2 pdb to artifacts dir");
                 compile::copy_file_to_target_dir(&source)
@@ -195,14 +191,11 @@ fn main() {
             // We can't compile SDL2 for this platform as it requires msvc
             panic!("Unsupported platform")
         }
-        Platform::Linux | Platform::Unknown => {
+        Platform::Linux => {
             // Nothing has to be done on linux as the most sane choice is to use the system provided
             // SDL2 lest we wake the horrible demons of distributing your own libraries on linux.
             // If it's in the distro repository, get it from there as it will probably play much
             // nicer than compiling our own.
-            //
-            // We also do nothing on platform unknown as there's nothing to do and it will panic
-            // at an earlier stage anyway
         }
         Platform::Android => {
             // On android we need to compile with ndk-build so it will play nicely with all the
@@ -217,6 +210,9 @@ fn main() {
             lib_dir.push("local");
             lib_dir.push(target::build::target_architecture().ndk_name());
             println!("cargo:rustc-link-search=all={}", lib_dir.display());
+        }
+        Platform::Unknown => {
+            // Do nothing on 'unknown' as a safe default.
         }
     }
 }
