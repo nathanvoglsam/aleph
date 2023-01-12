@@ -174,12 +174,16 @@ impl Engine {
         let arch = aleph_target::build::target_architecture().name();
         let os = aleph_target::build::target_platform().pretty_name();
         let build = aleph_target::build::target_build_type().pretty_name();
+        let optimized = aleph_target::build::target_build_config().is_optimized();
+        let debug = aleph_target::build::target_build_config().is_debug();
         aleph_log::info!("=== Engine Info ===");
-        aleph_log::info!("Name    : {}", engine_name);
-        aleph_log::info!("Version : {}", engine_version);
-        aleph_log::info!("Arch    : {}", arch);
-        aleph_log::info!("OS      : {}", os);
-        aleph_log::info!("Build   : {}", build);
+        aleph_log::info!("Name       : {}", engine_name);
+        aleph_log::info!("Version    : {}", engine_version);
+        aleph_log::info!("Arch       : {}", arch);
+        aleph_log::info!("OS         : {}", os);
+        aleph_log::info!("Build Type : {}", build);
+        aleph_log::info!("Optimized  : {}", optimized);
+        aleph_log::info!("Debug      : {}", debug);
     }
 
     ///
