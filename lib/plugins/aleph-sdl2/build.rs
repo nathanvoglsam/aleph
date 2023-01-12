@@ -185,7 +185,7 @@ fn main() {
                 .expect("Failed to copy SDL2 dll/so to target dir");
 
             // Copy the SDL2 pdb
-            if target::build::target_platform().is_msvc() {
+            if target::build::target_platform().is_msvc() && debug {
                 let build_profile = match (optimized, debug) {
                     (true, true) => "RelWithDebInfo",
                     (false, true) => "Debug",
