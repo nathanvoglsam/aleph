@@ -146,11 +146,20 @@ fn main() {
                 build.define("SDL_SENSOR", "FALSE");
             }
 
-            if target::build::target_build_type().has_debug_symbols() {
-                build.profile("RelWithDebInfo");
-                build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
-            } else {
-                build.profile("Release");
+            let optimized = target::build::target_build_config().is_optimized();
+            let debug = target::build::target_build_config().is_debug();
+            match (optimized, debug) {
+                (true, true) => {
+                    build.profile("RelWithDebInfo");
+                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+                }
+                (false, true) => {
+                    build.profile("Debug");
+                    build.define("SDL_CMAKE_DEBUG_POSTFIX", "");
+                }
+                (_, false) => {
+                    build.profile("Release");
+                }
             }
 
             let out_dir = build.build();
@@ -176,10 +185,13 @@ fn main() {
                 .expect("Failed to copy SDL2 dll/so to target dir");
 
             // Copy the SDL2 pdb
-            if target::build::target_platform().is_msvc()
-                && target::build::target_build_type().has_debug_symbols()
-            {
-                let source = bld_dir.join("RelWithDebInfo").join("SDL2.pdb");
+            if target::build::target_platform().is_msvc() {
+                let build_profile = match (optimized, debug) {
+                    (true, true) => "RelWithDebInfo",
+                    (false, true) => "Debug",
+                    (_, false) => "Release",
+                };
+                let source = bld_dir.join(build_profile).join("SDL2.pdb");
 
                 compile::copy_file_to_artifacts_dir(&source)
                     .expect("Failed to copy SDL2 pdb to artifacts dir");
