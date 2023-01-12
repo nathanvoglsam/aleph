@@ -58,14 +58,6 @@ pub struct DescriptorPool {
 declare_interfaces!(DescriptorPool, [IDescriptorPool]);
 
 impl DescriptorPool {
-    fn try_from_free_list(&mut self) -> Option<DescriptorSetHandle> {
-        if let Some(handle) = self.free_list.pop() {
-            Some(handle)
-        } else {
-            None
-        }
-    }
-
     /// Checks if there is space to allocate a new set in the descriptor pool.
     ///
     /// # Warning
@@ -216,7 +208,7 @@ impl DescriptorPool {
 impl IDescriptorPool for DescriptorPool {
     fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         // First try and grab something from the free list
-        if let Some(handle) = self.try_from_free_list() {
+        if let Some(handle) = self.free_list.pop() {
             return Ok(handle);
         }
 
