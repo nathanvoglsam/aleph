@@ -30,5 +30,6 @@
 extern crate aleph_target_build as target;
 
 fn main() {
+    target::build::target_build_config().print_target_cargo_cfg();
     target::build::target_build_type().print_target_cargo_cfg();
 }

@@ -60,19 +60,103 @@
 #![deny(bare_trait_objects)]
 
 mod architecture;
+mod build_config;
 mod build_type;
 mod platform;
 mod triple;
 
-pub mod build;
+pub mod build {
+    use crate::{
+        get_architecture_from, get_platform_from, Architecture, BuildConfig, BuildType, Platform,
+    };
+    use std::env;
 
-pub use triple::recreate_triple;
+    ///
+    /// Returns the host platform (operating system)
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    #[inline]
+    pub fn host_platform() -> Platform {
+        get_platform_from(&env::var("HOST").unwrap())
+    }
 
-pub use platform::get_platform_from;
-pub use platform::Platform;
+    ///
+    /// Returns the host architecture
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    #[inline]
+    pub fn host_architecture() -> Architecture {
+        get_architecture_from(&env::var("HOST").unwrap())
+    }
+
+    ///
+    /// Returns the target platform (operating system)
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    #[inline]
+    pub fn target_platform() -> Platform {
+        get_platform_from(&env::var("TARGET").unwrap())
+    }
+
+    ///
+    /// Returns the target architecture
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    #[inline]
+    pub fn target_architecture() -> Architecture {
+        get_architecture_from(&env::var("TARGET").unwrap())
+    }
+
+    ///
+    /// Returns the target build profile
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    #[inline]
+    pub fn target_build_type() -> BuildType {
+        match env::var("ALEPH_BUILD_TYPE")
+            .unwrap_or("Development".to_string())
+            .as_str()
+        {
+            "Development" => BuildType::Development,
+            "Retail" => BuildType::Retail,
+            _ => BuildType::Development,
+        }
+    }
+
+    ///
+    /// Returns the target build config
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    pub fn target_build_config() -> BuildConfig {
+        BuildConfig {
+            debug: env::var("DEBUG").unwrap() == "true",
+            optimized: env::var("OPT_LEVEL").unwrap() != "0",
+        }
+    }
+}
 
 pub use architecture::get_architecture_from;
 pub use architecture::Architecture;
-
-pub use build_type::get_build_type_from;
+pub use build_config::BuildConfig;
 pub use build_type::BuildType;
+pub use platform::get_platform_from;
+pub use platform::Platform;
+pub use triple::recreate_triple;

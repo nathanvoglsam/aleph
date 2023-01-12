@@ -36,11 +36,9 @@ pub use aleph_target::BuildType;
 pub use aleph_target::Platform;
 
 pub use aleph_target::get_architecture_from;
-pub use aleph_target::get_build_type_from;
 pub use aleph_target::get_platform_from;
 
 pub mod build {
-
     ///
     /// Returns the host platform. Always returns [aleph_target::Platform::Unknown]
     ///
@@ -64,18 +62,6 @@ pub mod build {
     ///
     pub const fn host_architecture() -> aleph_target::Architecture {
         aleph_target::Architecture::Unknown
-    }
-
-    ///
-    /// Returns the host build type.  Always returns [aleph_target::BuildType::Unknown]
-    ///
-    /// # Warning
-    ///
-    /// Doesn't actually work. Simply present so the API matches the 'build-script' version of the
-    /// crate.
-    ///
-    pub const fn host_build_type() -> aleph_target::BuildType {
-        aleph_target::BuildType::Unknown
     }
 
     ///
@@ -124,12 +110,21 @@ pub mod build {
     /// Returns the target build type
     ///
     pub const fn target_build_type() -> aleph_target::BuildType {
-        if cfg!(target_profile = "release") {
-            aleph_target::BuildType::Release
-        } else if cfg!(target_profile = "debug") {
-            aleph_target::BuildType::Debug
+        if cfg!(aleph_target_build_type = "retail") {
+            aleph_target::BuildType::Retail
         } else {
-            aleph_target::BuildType::Unknown
+            aleph_target::BuildType::Development
         }
+    }
+
+    ///
+    /// Returns the target build config
+    ///
+    /// # Warning
+    ///
+    /// Only works in a build script
+    ///
+    pub fn target_build_config() -> aleph_target::BuildConfig {
+        aleph_target::BuildConfig::new(cfg!(aleph_target_debug), cfg!(aleph_target_optimized))
     }
 }

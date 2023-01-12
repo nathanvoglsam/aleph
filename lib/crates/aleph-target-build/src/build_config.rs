@@ -31,43 +31,33 @@
 /// Enumeration of all supported build profiles
 ///
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum BuildType {
-    Development,
-    Retail,
+pub struct BuildConfig {
+    pub(crate) debug: bool,
+    pub(crate) optimized: bool,
 }
 
-impl BuildType {
-    pub const fn get_as_target() -> BuildType {
-        if cfg!(aleph_target_build_type = "retail") {
-            BuildType::Retail
-        } else {
-            BuildType::Development
-        }
+impl BuildConfig {
+    /// Constructs a new [BuildConfig] from the given parameters
+    pub const fn new(debug: bool, optimized: bool) -> BuildConfig {
+        BuildConfig { debug, optimized }
     }
 
     /// Utility function that will output the build-script configuration to stdout that is used for
     /// detecting the build type in the 'crate' side of the library.
     pub fn print_target_cargo_cfg(self) {
-        println!(
-            "cargo:rustc-cfg=aleph_target_build_type=\"{}\"",
-            self.name()
-        );
-    }
-
-    ///
-    /// Get the build type name
-    ///
-    pub const fn name(self) -> &'static str {
-        match self {
-            BuildType::Development => "development",
-            BuildType::Retail => "retail",
+        if self.debug {
+            println!("cargo:rustc-cfg=aleph_target_debug");
+        }
+        if self.optimized {
+            println!("cargo:rustc-cfg=aleph_target_optimized");
         }
     }
 
-    pub const fn pretty_name(self) -> &'static str {
-        match self {
-            BuildType::Development => "Development",
-            BuildType::Retail => "Retail",
-        }
+    pub const fn is_debug(self) -> bool {
+        self.debug
+    }
+
+    pub const fn is_optimized(self) -> bool {
+        self.optimized
     }
 }
