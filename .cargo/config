@@ -29,3 +29,11 @@ ar = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\l
 rustflags = ["-C", "link-args=-fuse-ld=gold"]
 linker = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\aarch64-linux-android24-clang.cmd"
 ar = "C:\\Users\\Nathan\\AppData\\Local\\Android\\Sdk\\ndk-bundle\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\aarch64-linux-android-ar"
+
+[profile.retail]
+inherits = "release"
+lto = true
+codegen-units = 1
+incremental = false
+panic = "abort"
+strip = true
