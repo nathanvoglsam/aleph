@@ -52,9 +52,3 @@ cstr = "0.2"
 once_cell = "1"
 ultraviolet = { version = "0.9", features = ["f64"] }
 bytemuck = "1"
-
-[target.'cfg(not(target_vendor = "uwp"))'.dependencies]
-aleph-gpu-vulkan = { path = "../../plugins/aleph-gpu-vulkan", version = "0.1" }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-aleph-gpu-dx12 = { path = "../../plugins/aleph-gpu-dx12", version = "0.1" }

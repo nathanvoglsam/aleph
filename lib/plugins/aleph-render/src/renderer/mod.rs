@@ -30,17 +30,15 @@
 mod frame;
 mod global;
 
-use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::*;
-use aleph_gpu_dx12::{ICommandListExt, IDeviceExt};
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-use interfaces::any::{AnyArc, QueryInterface, QueryInterfaceBox};
+use interfaces::any::{AnyArc, QueryInterfaceBox};
 use interfaces::gpu::{
     AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BeginRenderingInfo,
-    ColorClearValue, ICommandList, IGeneralEncoder, ITexture, ImageLayout, IndexType,
-    InputAssemblyBufferBinding, Rect, RenderingColorAttachmentInfo, TextureAspect, TextureBarrier,
-    TextureSubResourceSet, Viewport,
+    ColorClearValue, ICommandList, IDevice, IGeneralEncoder, ITexture, ImageLayout, IndexType,
+    InputAssemblyBufferBinding, PipelineBindPoint, Rect, RenderingColorAttachmentInfo,
+    TextureAspect, TextureBarrier, TextureSubResourceSet, Viewport,
 };
 use std::ops::{Deref, DerefMut};
 use std::ptr::NonNull;
@@ -50,14 +48,14 @@ pub struct EguiRenderer {
     global: GlobalObjects,
 
     /// Rendering device
-    device: AnyArc<dyn IDeviceExt>,
+    device: AnyArc<dyn IDevice>,
 
     ///
     pixels_per_point: f32,
 }
 
 impl EguiRenderer {
-    pub fn new(device: AnyArc<dyn IDeviceExt>, dimensions: (u32, u32)) -> Self {
+    pub fn new(device: AnyArc<dyn IDevice>, dimensions: (u32, u32)) -> Self {
         aleph_log::trace!("Initializing Egui Renderer");
 
         let global = GlobalObjects::new(device.deref(), dimensions);
@@ -96,12 +94,6 @@ impl EguiRenderer {
             .command_allocator
             .create_command_list()
             .unwrap();
-
-        let command_list: ID3D12GraphicsCommandList7 = list
-            .deref()
-            .query_interface::<dyn ICommandListExt>()
-            .unwrap()
-            .get_raw_list();
 
         {
             let mut encoder = list.begin_general().unwrap();
@@ -166,7 +158,7 @@ impl EguiRenderer {
                 depth_stencil_attachment: None,
             });
 
-            self.bind_resources(index, &command_list, encoder.deref_mut());
+            self.bind_resources(index, encoder.deref_mut());
 
             let mut vtx_base = 0;
             let mut idx_base = 0;
@@ -262,24 +254,15 @@ impl EguiRenderer {
         }
     }
 
-    unsafe fn bind_resources(
-        &self,
-        index: usize,
-        command_list: &ID3D12GraphicsCommandList7,
-        encoder: &mut dyn IGeneralEncoder,
-    ) {
+    unsafe fn bind_resources(&self, index: usize, encoder: &mut dyn IGeneralEncoder) {
         encoder.bind_graphics_pipeline(self.global.graphics_pipeline.deref());
 
-        //
-        // Bind the descriptor heap
-        //
-        let heaps = [Some(self.global.srv_heap.clone())];
-        command_list.SetDescriptorHeaps(&heaps);
-
-        //
-        // Bind the texture
-        //
-        command_list.SetGraphicsRootDescriptorTable(0, self.frames[index].font_gpu_srv.into());
+        encoder.bind_descriptor_sets(
+            self.global.pipeline_layout.deref(),
+            PipelineBindPoint::Graphics,
+            0,
+            &[self.frames[index].descriptor_set.clone()],
+        );
 
         //
         // Push screen size via root constants

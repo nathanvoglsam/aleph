@@ -29,18 +29,13 @@
 
 use crate::renderer::global::FontTexture;
 use crate::renderer::GlobalObjects;
-use aleph_gpu_dx12::windows::utils::{
-    CPUDescriptorHandle, D3D12ComponentMapping, GPUDescriptorHandle,
-};
-use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::*;
-use aleph_gpu_dx12::windows::Win32::Graphics::Dxgi::Common::*;
-use aleph_gpu_dx12::{IDeviceExt, ITextureExt};
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
-    Extent3D, Format, IBuffer, ICommandPool, IGeneralEncoder, ITexture, ImageDataLayout,
-    ImageLayout, TextureAspect, TextureBarrier, TextureCopyAspect, TextureCopyInfo, TextureDesc,
-    TextureDimension, TextureSubResourceSet, UOffset3D,
+    DescriptorSetHandle, DescriptorType, DescriptorWriteDesc, DescriptorWrites, Extent3D, Format,
+    IBuffer, ICommandPool, IDescriptorPool, IDevice, IGeneralEncoder, ITexture, ImageDataLayout,
+    ImageDescriptorWrite, ImageLayout, TextureAspect, TextureBarrier, TextureCopyAspect,
+    TextureCopyInfo, TextureDesc, TextureDimension, TextureSubResourceSet, UOffset3D,
 };
 use std::ops::Deref;
 
@@ -55,12 +50,13 @@ pub struct PerFrameObjects {
 
     pub font_staged: Option<AnyArc<dyn ITexture>>,
     pub font_staged_size: (u32, u32),
-    pub font_cpu_srv: CPUDescriptorHandle,
-    pub font_gpu_srv: GPUDescriptorHandle,
+
+    pub descriptor_pool: Box<dyn IDescriptorPool>,
+    pub descriptor_set: DescriptorSetHandle,
 }
 
 impl PerFrameObjects {
-    pub fn new(device: &dyn IDeviceExt, global: &GlobalObjects, index: usize) -> Self {
+    pub fn new(device: &dyn IDevice, global: &GlobalObjects, index: usize) -> Self {
         let vtx_buffer = {
             let desc = BufferDesc {
                 size: Self::vertex_buffer_size() as _,
@@ -83,26 +79,13 @@ impl PerFrameObjects {
 
         let font_staging_buffer = Self::create_font_staging_allocation(device, (4096, 4096));
 
-        let size = unsafe {
-            device
-                .get_raw_handle()
-                .GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV)
-        };
-        let font_cpu_srv = unsafe {
-            let raw = global.srv_heap.GetCPUDescriptorHandleForHeapStart();
-            CPUDescriptorHandle::try_from(raw)
-                .unwrap()
-                .add(index * size as usize)
-        };
-        let font_gpu_srv = unsafe {
-            let raw = global.srv_heap.GetGPUDescriptorHandleForHeapStart();
-            GPUDescriptorHandle::try_from(raw)
-                .unwrap()
-                .add(index as u64 * size as u64)
-        };
-
         let command_allocator = device.create_command_pool().unwrap();
         command_allocator.set_name("egui::CommandAllocator");
+
+        let mut descriptor_pool = device
+            .create_descriptor_pool(global.descriptor_set_layout.deref(), 2)
+            .unwrap();
+        let descriptor_set = descriptor_pool.allocate_set().unwrap();
 
         Self {
             vtx_buffer,
@@ -112,12 +95,12 @@ impl PerFrameObjects {
             font_staging_buffer,
             font_staged: None,
             font_staged_size: (0, 0),
-            font_cpu_srv,
-            font_gpu_srv,
+            descriptor_pool,
+            descriptor_set,
         }
     }
 
-    pub unsafe fn update_texture_data(&mut self, device: &dyn IDeviceExt, texture: &FontTexture) {
+    pub unsafe fn update_texture_data(&mut self, device: &dyn IDevice, texture: &FontTexture) {
         // Check the data is correct
         assert_eq!(texture.bytes.len(), texture.width * texture.height);
 
@@ -132,7 +115,7 @@ impl PerFrameObjects {
         self.create_staged_resources(device, dimensions);
 
         // Update the srv to point at the newly created image
-        self.update_srv(&device.get_raw_handle());
+        self.update_srv(device.deref());
 
         // Update the metadata for determining when to re-upload the texture
         self.font_version = texture.version;
@@ -225,7 +208,7 @@ impl PerFrameObjects {
     }
 
     /// Allocates the font texture on GPU memory
-    fn create_staged_resources(&mut self, device: &dyn IDeviceExt, dimensions: (u32, u32)) {
+    fn create_staged_resources(&mut self, device: &dyn IDevice, dimensions: (u32, u32)) {
         let image = device
             .create_texture(&TextureDesc {
                 width: dimensions.0,
@@ -244,35 +227,29 @@ impl PerFrameObjects {
         self.font_staged = Some(image);
     }
 
-    unsafe fn update_srv(&self, device: &ID3D12Device10) {
-        let srv_desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
-            Format: DXGI_FORMAT_R8_UNORM,
-            ViewDimension: D3D12_SRV_DIMENSION_TEXTURE2D,
-            Shader4ComponentMapping: D3D12ComponentMapping::identity().into(),
-            Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
-                Texture2D: D3D12_TEX2D_SRV {
-                    MostDetailedMip: 0,
-                    MipLevels: 1,
-                    PlaneSlice: 0,
-                    ResourceMinLODClamp: 0.0,
+    unsafe fn update_srv(&mut self, device: &dyn IDevice) {
+        device.update_descriptor_sets(&[DescriptorWriteDesc {
+            set: self.descriptor_set.clone(),
+            binding: 0,
+            array_element: 0,
+            descriptor_type: DescriptorType::SampledImage,
+            writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
+                image: self.font_staged.as_ref().unwrap().deref(),
+                format: Format::R8Unorm,
+                sub_resources: TextureSubResourceSet {
+                    aspect: TextureAspect::COLOR,
+                    base_mip_level: 0,
+                    num_mip_levels: 1,
+                    base_array_slice: 0,
+                    num_array_slices: 1,
                 },
-            },
-        };
-        device.CreateShaderResourceView(
-            &self
-                .font_staged
-                .as_ref()
-                .unwrap()
-                .query_interface::<dyn ITextureExt>()
-                .unwrap()
-                .get_raw_handle(),
-            &srv_desc,
-            self.font_cpu_srv.into(),
-        );
+                writable: false,
+            }]),
+        }]);
     }
 
     fn create_font_staging_allocation(
-        device: &dyn IDeviceExt,
+        device: &dyn IDevice,
         dimensions: (u32, u32),
     ) -> AnyArc<dyn IBuffer> {
         device

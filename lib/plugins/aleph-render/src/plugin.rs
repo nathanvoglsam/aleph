@@ -28,7 +28,6 @@
 //
 
 use crate::renderer::EguiRenderer;
-use aleph_gpu_dx12::IDeviceExt;
 use interfaces::any::{declare_interfaces, AnyArc, QueryInterface};
 use interfaces::gpu::{
     AdapterRequestOptions, ContextOptions, Format, IAdapter, IContextProvider, IDevice, ISwapChain,
@@ -48,7 +47,7 @@ struct Data {
 }
 
 pub struct PluginRender {
-    device: Option<AnyArc<dyn IDeviceExt>>,
+    device: Option<AnyArc<dyn IDevice>>,
 }
 
 impl PluginRender {
@@ -120,11 +119,7 @@ impl IPlugin for PluginRender {
             .expect("Find suitable adapter");
 
         // Create our device
-        let device = adapter
-            .request_device()
-            .unwrap()
-            .query_interface::<dyn IDeviceExt>()
-            .unwrap();
+        let device = adapter.request_device().unwrap();
         self.device = Some(device.clone());
 
         let queue = device.get_queue(QueueType::General).unwrap();

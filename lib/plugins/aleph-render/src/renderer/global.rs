@@ -27,28 +27,24 @@
 // SOFTWARE.
 //
 
-use aleph_gpu_dx12::windows::Win32::Graphics::Direct3D12::{
-    ID3D12DescriptorHeap, D3D12_DESCRIPTOR_HEAP_DESC, D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-    D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-};
-use aleph_gpu_dx12::IDeviceExt;
 use egui::ImageData;
 use interfaces::any::AnyArc;
 use interfaces::gpu::{
     AttachmentBlendState, BlendFactor, BlendOp, BlendStateDesc, ColorComponentFlags, CullMode,
     DepthStencilStateDesc, DescriptorSetLayoutBinding, DescriptorSetLayoutDesc,
     DescriptorShaderVisibility, DescriptorType, Format, FrontFaceOrder, GraphicsPipelineDesc,
-    IGraphicsPipeline, IPipelineLayout, ISampler, IShader, InputAssemblyStateDesc,
-    PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantBlock, RasterizerStateDesc,
-    SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter, ShaderOptions, ShaderType,
-    VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate, VertexInputStateDesc,
+    IDescriptorSetLayout, IDevice, IGraphicsPipeline, IPipelineLayout, ISampler, IShader,
+    InputAssemblyStateDesc, PipelineLayoutDesc, PolygonMode, PrimitiveTopology, PushConstantBlock,
+    RasterizerStateDesc, SamplerAddressMode, SamplerDesc, SamplerFilter, SamplerMipFilter,
+    ShaderOptions, ShaderType, VertexInputAttributeDesc, VertexInputBindingDesc, VertexInputRate,
+    VertexInputStateDesc,
 };
 use std::ops::Deref;
 
 /// Wraps d3d12 objects that don't ever need to be recreated
 pub struct GlobalObjects {
-    pub srv_heap: ID3D12DescriptorHeap,
     pub sampler: AnyArc<dyn ISampler>,
+    pub descriptor_set_layout: AnyArc<dyn IDescriptorSetLayout>,
     pub pipeline_layout: AnyArc<dyn IPipelineLayout>,
     pub vertex_shader: AnyArc<dyn IShader>,
     pub fragment_shader: AnyArc<dyn IShader>,
@@ -59,23 +55,10 @@ pub struct GlobalObjects {
 }
 
 impl GlobalObjects {
-    pub fn new(device: &dyn IDeviceExt, dimensions: (u32, u32)) -> Self {
-        let descriptor_heap_desc = D3D12_DESCRIPTOR_HEAP_DESC {
-            Type: D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
-            NumDescriptors: 3,
-            Flags: D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE,
-            NodeMask: 0,
-        };
-        let srv_heap = unsafe {
-            device
-                .get_raw_handle()
-                .CreateDescriptorHeap::<ID3D12DescriptorHeap>(&descriptor_heap_desc)
-                .unwrap()
-        };
-        // srv_heap.set_name("egui::SRVHeap").unwrap();
-
+    pub fn new(device: &dyn IDevice, dimensions: (u32, u32)) -> Self {
         let sampler = Self::create_sampler(device);
-        let pipeline_layout = Self::create_root_signature(device, sampler.deref());
+        let descriptor_set_layout = Self::create_descriptor_set_layout(device, sampler.deref());
+        let pipeline_layout = Self::create_root_signature(device, descriptor_set_layout.deref());
         pipeline_layout.set_name("egui::RootSignature");
 
         let vertex_shader = device
@@ -103,8 +86,8 @@ impl GlobalObjects {
         graphics_pipeline.set_name("egui::GraphicsPipelineState");
 
         Self {
-            srv_heap,
             sampler,
+            descriptor_set_layout,
             pipeline_layout,
             vertex_shader,
             fragment_shader,
@@ -120,7 +103,7 @@ impl GlobalObjects {
         }
     }
 
-    pub fn create_sampler(device: &dyn IDeviceExt) -> AnyArc<dyn ISampler> {
+    pub fn create_sampler(device: &dyn IDevice) -> AnyArc<dyn ISampler> {
         let desc = SamplerDesc {
             min_filter: SamplerFilter::Linear,
             mag_filter: SamplerFilter::Linear,
@@ -133,10 +116,10 @@ impl GlobalObjects {
         device.create_sampler(&desc).unwrap()
     }
 
-    pub fn create_root_signature(
-        device: &dyn IDeviceExt,
+    pub fn create_descriptor_set_layout(
+        device: &dyn IDevice,
         sampler: &dyn ISampler,
-    ) -> AnyArc<dyn IPipelineLayout> {
+    ) -> AnyArc<dyn IDescriptorSetLayout> {
         let samplers = [sampler];
         let descriptor_set_layout_desc = DescriptorSetLayoutDesc {
             visibility: DescriptorShaderVisibility::All,
@@ -156,11 +139,17 @@ impl GlobalObjects {
                 },
             ],
         };
-        let descriptor_set_layout = device
+        device
             .create_descriptor_set_layout(&descriptor_set_layout_desc)
-            .unwrap();
+            .unwrap()
+    }
+
+    pub fn create_root_signature(
+        device: &dyn IDevice,
+        descriptor_set_layout: &dyn IDescriptorSetLayout,
+    ) -> AnyArc<dyn IPipelineLayout> {
         let pipeline_layout_desc = PipelineLayoutDesc {
-            set_layouts: &[descriptor_set_layout.deref()],
+            set_layouts: &[descriptor_set_layout],
             push_constant_blocks: &[PushConstantBlock {
                 binding: 0,
                 visibility: DescriptorShaderVisibility::All,
@@ -173,7 +162,7 @@ impl GlobalObjects {
     }
 
     pub fn create_pipeline_state(
-        device: &dyn IDeviceExt,
+        device: &dyn IDevice,
         pipeline_layout: &dyn IPipelineLayout,
         vertex_shader: &dyn IShader,
         pixel_shader: &dyn IShader,
