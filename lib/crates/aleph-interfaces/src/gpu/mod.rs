@@ -485,6 +485,14 @@ pub trait IGeneralEncoder: IComputeEncoder + Send {
 }
 
 pub trait IComputeEncoder: ITransferEncoder + Send {
+    unsafe fn bind_descriptor_sets(
+        &mut self,
+        pipeline_layout: &dyn IPipelineLayout,
+        bind_point: PipelineBindPoint,
+        first_set: u32,
+        sets: &[DescriptorSetHandle],
+    );
+
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32);
 }
 
@@ -3334,6 +3342,12 @@ pub struct BufferToTextureCopyRegion {
 
     /// The destination region inside the destination texture to copy the source data into.
     pub dst: TextureCopyInfo,
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum PipelineBindPoint {
+    Compute,
+    Graphics,
 }
 
 //
