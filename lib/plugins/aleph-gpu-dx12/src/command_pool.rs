@@ -41,6 +41,7 @@ use windows::Win32::Graphics::Direct3D12::*;
 pub struct CommandPool {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) device: AnyArc<Device>,
+    pub(crate) descriptor_heaps: [Option<ID3D12DescriptorHeap>; 2],
     pub(crate) general_free_list: SegQueue<CommandPoolFreeListItem>,
     pub(crate) _compute_free_list: SegQueue<CommandPoolFreeListItem>,
     pub(crate) _transfer_free_list: SegQueue<CommandPoolFreeListItem>,

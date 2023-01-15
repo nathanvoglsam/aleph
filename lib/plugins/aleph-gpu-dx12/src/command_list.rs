@@ -61,6 +61,8 @@ impl ICommandList for CommandList {
                 self.list
                     .Reset(&self.allocator, None)
                     .map_err(|v| anyhow!(v))?;
+
+                self.list.SetDescriptorHeaps(&self.pool.descriptor_heaps);
             }
 
             let encoder = Encoder::<'a> {

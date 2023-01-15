@@ -636,6 +636,10 @@ impl IDevice for Device {
         let pool = AnyArc::new_cyclic(move |v| CommandPool {
             this: v.clone(),
             device: self.this.upgrade().unwrap(),
+            descriptor_heaps: [
+                Some(self.descriptor_heaps.gpu_view_heap().heap().clone()),
+                Some(self.descriptor_heaps.gpu_sampler_heap().heap().clone()),
+            ],
             general_free_list: SegQueue::new(),
             _compute_free_list: SegQueue::new(),
             _transfer_free_list: SegQueue::new(),
