@@ -291,6 +291,13 @@ impl<T: IAny + ?Sized> Deref for AnyArc<T> {
     }
 }
 
+impl<T: IAny + ?Sized> AsRef<T> for AnyArc<T> {
+    #[inline]
+    fn as_ref(&self) -> &T {
+        self.0.as_ref()
+    }
+}
+
 #[repr(transparent)]
 pub struct AnyWeak<T: IAny + ?Sized>(Weak<T>);
 
