@@ -34,8 +34,9 @@ use interfaces::gpu::{
     BarrierAccess, BarrierSync, BufferDesc, BufferToTextureCopyRegion, Color, CpuAccessMode,
     DescriptorSetHandle, DescriptorType, DescriptorWriteDesc, DescriptorWrites, Extent3D, Format,
     IBuffer, ICommandPool, IDescriptorPool, IDevice, IGeneralEncoder, ITexture, ImageDataLayout,
-    ImageDescriptorWrite, ImageLayout, TextureAspect, TextureBarrier, TextureCopyAspect,
-    TextureCopyInfo, TextureDesc, TextureDimension, TextureSubResourceSet, UOffset3D,
+    ImageDescriptorWrite, ImageLayout, ImageViewType, TextureAspect, TextureBarrier,
+    TextureCopyAspect, TextureCopyInfo, TextureDesc, TextureDimension, TextureSubResourceSet,
+    UOffset3D,
 };
 use std::ops::Deref;
 
@@ -236,6 +237,7 @@ impl PerFrameObjects {
             writes: DescriptorWrites::Image(&[ImageDescriptorWrite {
                 image: self.font_staged.as_ref().unwrap().deref(),
                 format: Format::R8Unorm,
+                view_type: ImageViewType::Tex2D,
                 sub_resources: TextureSubResourceSet {
                     aspect: TextureAspect::COLOR,
                     base_mip_level: 0,
