@@ -2377,6 +2377,17 @@ pub struct SamplerDescriptorWrite<'a> {
     pub sampler: &'a dyn ISampler,
 }
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+pub enum ImageViewType {
+    Tex1D,
+    Tex2D,
+    Tex3D,
+    TexCube,
+    TexArray1D,
+    TexArray2D,
+    TexCubeArray,
+}
+
 /// Describes the parameters of a descriptor to write when writing into a texture binding.
 #[derive(Clone)]
 pub struct ImageDescriptorWrite<'a> {
@@ -2385,6 +2396,9 @@ pub struct ImageDescriptorWrite<'a> {
 
     /// The format that the texture will be viewed as through this descriptor
     pub format: Format,
+
+    /// The type of view of the given image to create.
+    pub view_type: ImageViewType,
 
     /// The set of sub resources that will be accessed through this descriptor
     pub sub_resources: TextureSubResourceSet,
