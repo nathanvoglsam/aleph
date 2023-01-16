@@ -39,10 +39,11 @@ use crate::pipeline_layout::PushConstantBlockInfo;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
-    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color, Format,
-    GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder, IGraphicsPipeline, ITexture,
-    ITransferEncoder, ImageLayout, IndexType, InputAssemblyBufferBinding, Rect, TextureAspect,
-    TextureBarrier, TextureDesc, TextureSubResourceSet, Viewport,
+    BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
+    DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
+    IGraphicsPipeline, IPipelineLayout, ITexture, ITransferEncoder, ImageLayout, IndexType,
+    InputAssemblyBufferBinding, PipelineBindPoint, Rect, TextureAspect, TextureBarrier,
+    TextureDesc, TextureSubResourceSet, Viewport,
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
@@ -304,6 +305,16 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 }
 
 impl<'a> IComputeEncoder for Encoder<'a> {
+    unsafe fn bind_descriptor_sets(
+        &mut self,
+        _pipeline_layout: &dyn IPipelineLayout,
+        bind_point: PipelineBindPoint,
+        first_set: u32,
+        sets: &[DescriptorSetHandle],
+    ) {
+        todo!();
+    }
+
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {
         self.list
             .Dispatch(group_count_x, group_count_y, group_count_z);
