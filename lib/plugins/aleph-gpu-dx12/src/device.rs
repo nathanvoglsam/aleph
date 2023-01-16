@@ -31,6 +31,7 @@ use crate::adapter::Adapter;
 use crate::buffer::Buffer;
 use crate::command_pool::CommandPool;
 use crate::context::Context;
+use crate::descriptor_pool::DescriptorPool;
 use crate::descriptor_set_layout::{
     DescriptorBindingInfo, DescriptorBindingLayout, DescriptorSetLayout,
 };
@@ -41,11 +42,14 @@ use crate::internal::conv::{
     shader_visibility_to_dx12, stencil_op_to_dx12, texture_create_clear_value_to_dx12,
     texture_create_desc_to_dx12, texture_format_to_dxgi,
 };
+use crate::internal::descriptor_arena::DescriptorArena;
 use crate::internal::descriptor_heap_info::DescriptorHeapInfo;
 use crate::internal::descriptor_heaps::DescriptorHeaps;
+use crate::internal::descriptor_set::DescriptorSet;
 use crate::internal::graphics_pipeline_state_stream::{
     GraphicsPipelineStateStream, GraphicsPipelineStateStreamBuilder,
 };
+use crate::internal::plane_layer_for_aspect_flag;
 use crate::internal::register_message_callback::device_unregister_message_callback;
 use crate::internal::root_signature_blob::RootSignatureBlob;
 use crate::internal::set_name::set_name;
@@ -347,7 +351,33 @@ impl IDevice for Device {
         layout: &dyn IDescriptorSetLayout,
         num_sets: u32,
     ) -> Result<Box<dyn IDescriptorPool>, DescriptorPoolCreateError> {
-        todo!()
+        let layout = layout
+            .upgrade()
+            .query_interface::<DescriptorSetLayout>()
+            .expect("Unknown IDescriptorSetLayout implementation");
+
+        let resource_arena = DescriptorArena::new(
+            self.descriptor_heaps.gpu_view_heap(),
+            num_sets,
+            layout.resource_num,
+        )?;
+
+        let sampler_arena = DescriptorArena::new(
+            self.descriptor_heaps.gpu_sampler_heap(),
+            num_sets,
+            layout.sampler_num,
+        )?;
+
+        let pool = Box::new(DescriptorPool {
+            _device: self.this.upgrade().unwrap(),
+            _layout: layout,
+            resource_arena,
+            sampler_arena,
+            set_objects: Vec::with_capacity(num_sets as usize),
+            free_list: Vec::with_capacity(128),
+        });
+
+        Ok(pool)
     }
 
     // ========================================================================================== //
@@ -357,6 +387,8 @@ impl IDevice for Device {
         &self,
         desc: &PipelineLayoutDesc,
     ) -> Result<AnyArc<dyn IPipelineLayout>, PipelineLayoutCreateError> {
+        // TODO: implement validation for create_pipeline_layout
+
         // Bundle up all the table layouts after we patch them for use in this layout as we need to
         // extend the lifetime for the call to create the root signature
         let mut resource_tables = Vec::with_capacity(desc.set_layouts.len());
@@ -671,6 +703,9 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
+        for set_write in writes {
+            self.update_descriptor_set(set_write);
+        }
     }
 
     // ========================================================================================== //
@@ -1159,6 +1194,559 @@ impl Device {
     // ========================================================================================== //
     // ========================================================================================== //
 
+    unsafe fn update_descriptor_set(&self, set_write: &DescriptorWriteDesc) {
+        #[cfg(debug_assertions)]
+        Self::validate_descriptor_write(set_write);
+
+        let set = DescriptorSet::ref_from_handle(&set_write.set);
+        let set_layout = set._layout.deref();
+        let binding_layout = set_layout.get_binding_layout(set_write.binding).unwrap();
+
+        match set_write.writes {
+            DescriptorWrites::Sampler(writes) => {
+                self.update_sampler_descriptors(set_write, set, &binding_layout, writes)
+            }
+            DescriptorWrites::Image(writes) => {
+                self.update_image_descriptors(set_write, set, binding_layout, writes)
+            }
+            DescriptorWrites::Buffer(writes) => {
+                self.update_buffer_descriptors(set_write, set, binding_layout, writes)
+            }
+            DescriptorWrites::StructuredBuffer(writes) => {
+                self.update_structured_buffer_descriptors(set_write, set, binding_layout, writes)
+            }
+            DescriptorWrites::TexelBuffer(writes) => {
+                self.update_texel_buffer_descriptors(set_write, set, binding_layout, writes)
+            }
+            _ => unimplemented!(),
+        };
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_sampler_descriptors(
+        &self,
+        set_write: &DescriptorWriteDesc,
+        set: &DescriptorSet,
+        binding_layout: &DescriptorBindingLayout,
+        writes: &[SamplerDescriptorWrite],
+    ) {
+        for (i, v) in writes.iter().enumerate() {
+            // TODO: validate against this
+            let dst = if cfg!(debug_assertions) {
+                set.sampler_handle_cpu.unwrap()
+            } else {
+                set.sampler_handle_cpu.unwrap_unchecked()
+            };
+
+            let sampler = v
+                .sampler
+                .query_interface::<Sampler>()
+                .expect("Unknown ISampler implementation");
+
+            let src = sampler.sampler_handle;
+
+            let dst = Self::calculate_dst_handle(
+                dst,
+                self.descriptor_heap_info.sampler_inc,
+                binding_layout.base,
+                set_write.array_element,
+                i,
+            );
+
+            self.device.CopyDescriptorsSimple(
+                1,
+                dst.into(),
+                src.into(),
+                D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER,
+            );
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_image_descriptors(
+        &self,
+        set_write: &DescriptorWriteDesc,
+        set: &DescriptorSet,
+        binding_layout: DescriptorBindingLayout,
+        writes: &[ImageDescriptorWrite],
+    ) {
+        for (i, v) in writes.iter().enumerate() {
+            // TODO: validate against this
+            let dst = if cfg!(debug_assertions) {
+                set.resource_handle_cpu.unwrap()
+            } else {
+                set.resource_handle_cpu.unwrap_unchecked()
+            };
+
+            let image = v
+                .image
+                .query_interface::<Texture>()
+                .expect("Unknown ITexture implementation");
+
+            let cache = if v.writable {
+                // &image.uav_cache
+                todo!()
+            } else {
+                &image.srv_cache
+            };
+
+            let src = image.get_or_create_view_for_usage(
+                cache,
+                self.descriptor_heaps.cpu_view_heap(),
+                Some(v.format),
+                &v.sub_resources,
+                |handle, format, subresource_set| {
+                    let dimension = match v.view_type {
+                        ImageViewType::Tex1D => D3D12_SRV_DIMENSION_TEXTURE1D,
+                        ImageViewType::Tex2D => D3D12_SRV_DIMENSION_TEXTURE2D,
+                        ImageViewType::Tex3D => D3D12_SRV_DIMENSION_TEXTURE3D,
+                        ImageViewType::TexCube => D3D12_SRV_DIMENSION_TEXTURECUBE,
+                        ImageViewType::TexArray1D => D3D12_SRV_DIMENSION_TEXTURE1DARRAY,
+                        ImageViewType::TexArray2D => D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
+                        ImageViewType::TexCubeArray => D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
+                    };
+                    let anon = match v.view_type {
+                        ImageViewType::Tex1D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture1D: D3D12_TEX1D_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::Tex2D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture2D: D3D12_TEX2D_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                PlaneSlice: plane_layer_for_aspect_flag(
+                                    format,
+                                    subresource_set.aspect,
+                                )
+                                .unwrap(),
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::Tex3D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture3D: D3D12_TEX3D_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::TexCube => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            TextureCube: D3D12_TEXCUBE_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::TexArray1D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture1DArray: D3D12_TEX1D_ARRAY_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                FirstArraySlice: v.sub_resources.base_array_slice,
+                                ArraySize: v.sub_resources.num_array_slices,
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::TexArray2D => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            Texture2DArray: D3D12_TEX2D_ARRAY_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                FirstArraySlice: v.sub_resources.base_array_slice,
+                                ArraySize: v.sub_resources.num_array_slices,
+                                PlaneSlice: plane_layer_for_aspect_flag(
+                                    format,
+                                    v.sub_resources.aspect,
+                                )
+                                .unwrap(),
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                        ImageViewType::TexCubeArray => D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                            TextureCubeArray: D3D12_TEXCUBE_ARRAY_SRV {
+                                MostDetailedMip: v.sub_resources.base_mip_level,
+                                MipLevels: v.sub_resources.num_mip_levels,
+                                First2DArrayFace: todo!(),
+                                NumCubes: todo!(),
+                                ResourceMinLODClamp: 0.0,
+                            },
+                        },
+                    };
+
+                    let desc = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                        Format: texture_format_to_dxgi(format),
+                        ViewDimension: dimension,
+                        Shader4ComponentMapping: D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+                        Anonymous: anon,
+                    };
+
+                    self.device
+                        .CreateShaderResourceView(&image.resource, &desc, handle.into())
+                },
+            );
+            let src = if let Some(v) = src {
+                v
+            } else {
+                continue;
+            };
+
+            let dst = Self::calculate_dst_handle(
+                dst,
+                self.descriptor_heap_info.resource_inc,
+                binding_layout.base,
+                set_write.array_element,
+                i,
+            );
+
+            self.device.CopyDescriptorsSimple(
+                1,
+                dst.into(),
+                src.into(),
+                D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV,
+            );
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_buffer_descriptors(
+        &self,
+        set_write: &DescriptorWriteDesc,
+        set: &DescriptorSet,
+        binding_layout: DescriptorBindingLayout,
+        writes: &[BufferDescriptorWrite],
+    ) {
+        for (i, v) in writes.iter().enumerate() {
+            // TODO: validate against this
+            let dst = if cfg!(debug_assertions) {
+                set.resource_handle_cpu.unwrap()
+            } else {
+                set.resource_handle_cpu.unwrap_unchecked()
+            };
+
+            let buffer = v
+                .buffer
+                .query_interface::<Buffer>()
+                .expect("Unknown IBuffer implementation");
+
+            let dst = Self::calculate_dst_handle(
+                dst,
+                self.descriptor_heap_info.resource_inc,
+                binding_layout.base,
+                set_write.array_element,
+                i,
+            );
+
+            match set_write.descriptor_type {
+                DescriptorType::UniformBuffer => {
+                    self.update_uniform_buffer_descriptor(v, buffer, dst);
+                }
+                DescriptorType::StorageBuffer => {
+                    self.update_storage_buffer_descriptor(v, buffer, dst);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_structured_buffer_descriptors(
+        &self,
+        set_write: &DescriptorWriteDesc,
+        set: &DescriptorSet,
+        binding_layout: DescriptorBindingLayout,
+        writes: &[StructuredBufferDescriptorWrite],
+    ) {
+        for (i, v) in writes.iter().enumerate() {
+            // TODO: validate against this
+            let dst = if cfg!(debug_assertions) {
+                set.resource_handle_cpu.unwrap()
+            } else {
+                set.resource_handle_cpu.unwrap_unchecked()
+            };
+
+            let buffer = v
+                .buffer
+                .query_interface::<Buffer>()
+                .expect("Unknown IBuffer implementation");
+
+            let dst = Self::calculate_dst_handle(
+                dst,
+                self.descriptor_heap_info.resource_inc,
+                binding_layout.base,
+                set_write.array_element,
+                i,
+            );
+
+            match set_write.descriptor_type {
+                DescriptorType::StructuredBuffer => {
+                    self.update_structured_buffer_descriptor(v, buffer, dst);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_texel_buffer_descriptors(
+        &self,
+        set_write: &DescriptorWriteDesc,
+        set: &DescriptorSet,
+        binding_layout: DescriptorBindingLayout,
+        writes: &[TexelBufferDescriptorWrite],
+    ) {
+        for (i, v) in writes.iter().enumerate() {
+            // TODO: validate against this
+            let dst = if cfg!(debug_assertions) {
+                set.resource_handle_cpu.unwrap()
+            } else {
+                set.resource_handle_cpu.unwrap_unchecked()
+            };
+
+            let buffer = v
+                .buffer
+                .query_interface::<Buffer>()
+                .expect("Unknown IBuffer implementation");
+
+            let dst = Self::calculate_dst_handle(
+                dst,
+                self.descriptor_heap_info.resource_inc,
+                binding_layout.base,
+                set_write.array_element,
+                i,
+            );
+
+            match set_write.descriptor_type {
+                DescriptorType::UniformTexelBuffer => {
+                    self.update_texel_buffer_descriptor(v, buffer, dst);
+                }
+                DescriptorType::StorageTexelBuffer => {
+                    self.update_texel_buffer_descriptor(v, buffer, dst);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_uniform_buffer_descriptor(
+        &self,
+        write: &BufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        // Calculates the 'BufferLocation' value, as D3D12 takes a raw virtual address to
+        // the start of the CBV, rather than a ID3D12Resource + offset.
+        let location = buffer.base_address.add(write.offset).get_inner().get();
+
+        let view = D3D12_CONSTANT_BUFFER_VIEW_DESC {
+            BufferLocation: location,
+            SizeInBytes: write.len,
+        };
+        self.device.CreateConstantBufferView(&view, dst.into());
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_storage_buffer_descriptor(
+        &self,
+        write: &BufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        if write.writable {
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: Default::default(),
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: 0,
+                        NumElements: 0,
+                        StructureByteStride: 0,
+                        CounterOffsetInBytes: 0,
+                        Flags: D3D12_BUFFER_UAV_FLAG_RAW,
+                    },
+                },
+            };
+            self.device
+                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+        } else {
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: DXGI_FORMAT_R32_TYPELESS,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: 0,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: 0,
+                        NumElements: 0,
+                        StructureByteStride: 0,
+                        Flags: D3D12_BUFFER_SRV_FLAG_RAW,
+                    },
+                },
+            };
+            self.device
+                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_structured_buffer_descriptor(
+        &self,
+        write: &StructuredBufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        let first_element = write.offset / write.structure_byte_stride as u64;
+        let num_elements = write.len / write.structure_byte_stride;
+        if write.writable {
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: DXGI_FORMAT_UNKNOWN,
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: write.structure_byte_stride,
+                        CounterOffsetInBytes: 0,
+                        Flags: Default::default(),
+                    },
+                },
+            };
+            self.device
+                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+        } else {
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: DXGI_FORMAT_UNKNOWN,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: 0,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: write.structure_byte_stride,
+                        Flags: Default::default(),
+                    },
+                },
+            };
+            self.device
+                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    unsafe fn update_texel_buffer_descriptor(
+        &self,
+        write: &TexelBufferDescriptorWrite,
+        buffer: &Buffer,
+        dst: CPUDescriptorHandle,
+    ) {
+        let format = texture_format_to_dxgi(write.format);
+        let bytes_per_element = write.format.bytes_per_element();
+        let first_element = write.offset / bytes_per_element as u64;
+        let num_elements = write.len / bytes_per_element;
+        if write.writable {
+            let view = D3D12_UNORDERED_ACCESS_VIEW_DESC {
+                Format: format,
+                ViewDimension: D3D12_UAV_DIMENSION_BUFFER,
+                Anonymous: D3D12_UNORDERED_ACCESS_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_UAV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: 0,
+                        CounterOffsetInBytes: 0,
+                        Flags: Default::default(),
+                    },
+                },
+            };
+            self.device
+                .CreateUnorderedAccessView(&buffer.resource, None, &view, dst.into());
+        } else {
+            let view = D3D12_SHADER_RESOURCE_VIEW_DESC {
+                Format: format,
+                ViewDimension: D3D12_SRV_DIMENSION_BUFFER,
+                Shader4ComponentMapping: 0,
+                Anonymous: D3D12_SHADER_RESOURCE_VIEW_DESC_0 {
+                    Buffer: D3D12_BUFFER_SRV {
+                        FirstElement: first_element,
+                        NumElements: num_elements,
+                        StructureByteStride: 0,
+                        Flags: Default::default(),
+                    },
+                },
+            };
+            self.device
+                .CreateShaderResourceView(&buffer.resource, &view, dst.into());
+        }
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    /// Calculates the destination descriptor handle based on the given increment size and a set of
+    /// descriptor offsets.
+    ///
+    /// This function is intended to be used to calculate [CPUDescriptorHandle] values for writing
+    /// descriptors into descriptor sets. The expected usage pattern can be described as:
+    ///
+    /// - I have the address of a descriptor set 'handle'
+    /// - I want the address of the beginning of some binding that starts 'binding_base' descriptors
+    ///   after 'handle'
+    /// - Assuming I'm working with an array binding, I want the address of the 'array_base'th
+    ///   element in that array. This could be thought of taking a sub-slice of the larger array
+    ///   binding.
+    /// - Assuming I want to index the sub-slice I just got the beginning of, I want the 'i'th
+    ///   element in the sub-array. This could be thought of as indexing the sub-array.
+    ///
+    /// All of this assumes a common descriptor increment 'increment'.
+    ///
+    /// # Arguments
+    ///
+    /// - 'handle': The descriptor handle for the beginning of the descriptor set we're offsetting
+    ///   into.
+    /// - 'increment': The descriptor increment for the descriptor type we're working with.
+    /// - 'set_base': The offset in descriptors from 'handle' the target binding begins at.
+    /// - 'array_base': The offset in descriptors from the combined 'handle + binding' where the
+    ///   target base array element beings.
+    /// - 'i': The offset in descriptors from the combined 'handle + binding + array_base' where the
+    ///   target array element begins.
+    const fn calculate_dst_handle(
+        handle: CPUDescriptorHandle,
+        increment: u32,
+        binding_base: u32,
+        array_base_element: u32,
+        i: usize,
+    ) -> CPUDescriptorHandle {
+        // The offset from the start of the descriptor set where the target binding begins
+        let binding_base_offset = binding_base as usize * increment as usize;
+
+        // The offset from the start of the binding where the target array element begins
+        let binding_array_offset = array_base_element as usize * increment as usize;
+
+        // The offset from the start of the array where the target write element begins
+        let binding_element_offset = i * increment as usize;
+
+        handle.add(binding_base_offset + binding_array_offset + binding_element_offset)
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
     /// Calculate the number of descriptors by finding the highest offset from the base of
     /// the table that any of the ranges requires.
     fn calculate_descriptor_num(ranges: &[D3D12_DESCRIPTOR_RANGE1]) -> u32 {
@@ -1220,6 +1808,119 @@ impl Device {
                 );
             })
         });
+    }
+
+    // ========================================================================================== //
+    // ========================================================================================== //
+
+    /// # Safety
+    ///
+    /// This function does not check if the pointer inside [DescriptorWriteDesc].set is valid, as
+    /// it is unknowable in isolation. It is the caller's responsibility to ensure the descriptor
+    /// set being written to is still live and valid, and the caller's responsibility to synchronize
+    /// access.
+    pub unsafe fn validate_descriptor_write(write: &DescriptorWriteDesc) {
+        let set = DescriptorSet::ref_from_handle(&write.set);
+        let layout = set._layout.deref();
+
+        // Checks if the binding is actually present in the descriptor set.
+        let info = if let Some(info) = layout.get_binding_info(write.binding) {
+            info
+        } else {
+            panic!(
+                "Trying to write to a descriptor binding '{}' not present in the set",
+                write.binding
+            )
+        };
+
+        // Check if the caller is trying to write into a static sampler binding, which is
+        // categorically invalid.
+        debug_assert_eq!(
+            info.is_static_sampler, false,
+            "Writing a descriptor into a static sampler binding is invalid."
+        );
+
+        // Check if the user is requesting to write the correct descriptor type. That is, the
+        // 'descriptor_type' in the write description must match the type declared in the descriptor
+        // set layout.
+        let expected_binding_type = info.r#type;
+        let actual_binding_type = write.descriptor_type;
+        debug_assert_eq!(
+            expected_binding_type, actual_binding_type,
+            "It is invalid to write the incorrect descriptor type into a binding."
+        );
+
+        // Check if the user is trying to write more than 1 descriptor into a non-array binding.
+        let binding_layout = info.layout;
+        let is_array_binding = binding_layout.num_descriptors > 1; // TODO: this might not be correct
+        let num_writes = write.writes.len();
+        debug_assert!(
+            !is_array_binding && num_writes <= 1,
+            "It is invalid to write more than 1 descriptor into a non-array binding."
+        );
+
+        // Check if the user is trying to write outside of an array binding's range.
+        let write_start = write.array_element as usize;
+        let write_end = write_start + write.writes.len();
+        let binding_start = 0;
+        let binding_end = binding_layout.num_descriptors as usize;
+        debug_assert!(
+            write_start >= binding_start && write_start < binding_end,
+            "It is invalid to write outside of an array binding's bounds."
+        );
+        debug_assert!(
+            write_end > binding_start && write_end <= binding_end,
+            "It is invalid to write outside of an array binding's bounds."
+        );
+
+        // Check that the declared descriptor type matches the DescriptorWrites variant provided.
+        match write.descriptor_type {
+            DescriptorType::Sampler => debug_assert!(
+                matches!(write.writes, DescriptorWrites::Sampler(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::SampledImage => debug_assert!(
+                matches!(write.writes, DescriptorWrites::Image(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::StorageImage => debug_assert!(
+                matches!(write.writes, DescriptorWrites::Image(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::UniformTexelBuffer => debug_assert!(
+                matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::StorageTexelBuffer => debug_assert!(
+                matches!(write.writes, DescriptorWrites::TexelBuffer(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::UniformBuffer => debug_assert!(
+                matches!(write.writes, DescriptorWrites::Buffer(_)),
+                "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::StorageBuffer => debug_assert!(
+                matches!(write.writes, DescriptorWrites::Buffer(_)),
+                "Invalid DescriptorWrites type' for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::StructuredBuffer => debug_assert!(
+                matches!(write.writes, DescriptorWrites::StructuredBuffer(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+            DescriptorType::InputAttachment => debug_assert!(
+                matches!(write.writes, DescriptorWrites::InputAttachment(_)),
+                "Invalid DescriptorWrites type for descriptor type '{:#?}'",
+                write.descriptor_type
+            ),
+        }
     }
 }
 

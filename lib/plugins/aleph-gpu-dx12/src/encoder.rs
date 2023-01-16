@@ -34,8 +34,9 @@ use crate::internal::conv::{
     translate_barrier_texture_aspect_to_plane_range, translate_rendering_color_attachment,
     translate_rendering_depth_stencil_attachment,
 };
+use crate::internal::descriptor_set::DescriptorSet;
 use crate::pipeline::GraphicsPipeline;
-use crate::pipeline_layout::PushConstantBlockInfo;
+use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
@@ -47,6 +48,7 @@ use interfaces::gpu::{
 };
 use pix::{begin_event_on_list, end_event_on_list, set_marker_on_list};
 use std::ops::Deref;
+use std::ptr::NonNull;
 use windows::Win32::Foundation::RECT;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::Common::*;
@@ -312,7 +314,48 @@ impl<'a> IComputeEncoder for Encoder<'a> {
         first_set: u32,
         sets: &[DescriptorSetHandle],
     ) {
-        todo!();
+        pub unsafe fn set_compute(
+            encoder: &Encoder,
+            rootparameterindex: u32,
+            basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
+        ) {
+            encoder
+                .list
+                .SetComputeRootDescriptorTable(rootparameterindex, basedescriptor)
+        }
+        pub unsafe fn set_graphics(
+            encoder: &Encoder,
+            rootparameterindex: u32,
+            basedescriptor: D3D12_GPU_DESCRIPTOR_HANDLE,
+        ) {
+            encoder
+                .list
+                .SetGraphicsRootDescriptorTable(rootparameterindex, basedescriptor)
+        }
+
+        // let pipeline_layout = _pipeline_layout.query_interface::<PipelineLayout>()
+        //     .expect("Unknown IPipelineLayout implementation");
+
+        let bind_fn = match bind_point {
+            PipelineBindPoint::Compute => set_compute,
+            PipelineBindPoint::Graphics => set_graphics,
+        };
+
+        sets.iter()
+            .enumerate()
+            .map(|(i, v)| {
+                let v: NonNull<()> = v.clone().into();
+                let v: NonNull<DescriptorSet> = v.cast();
+
+                // Safety: No checks, all up to the caller to ensure this is safe
+                (i as u32, v.as_ref())
+            })
+            .for_each(|(i, v)| {
+                if let Some(handle) = v.resource_handle_gpu {
+                    // TODO: I'm not sure if mapping directly to table index is correct
+                    bind_fn(self, first_set + i, handle.into());
+                }
+            });
     }
 
     unsafe fn dispatch(&mut self, group_count_x: u32, group_count_y: u32, group_count_z: u32) {

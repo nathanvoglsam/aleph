@@ -27,7 +27,7 @@
 // SOFTWARE.
 //
 
-use interfaces::gpu::{Format, TextureCopyAspect};
+use interfaces::gpu::{Format, TextureAspect, TextureCopyAspect};
 
 pub mod adapter_description_decoder;
 pub mod conv;
@@ -75,5 +75,33 @@ pub const fn plane_layer_for_aspect(format: Format, aspect: TextureCopyAspect) -
             TextureCopyAspect::Depth => None,
             TextureCopyAspect::Stencil => None,
         },
+    }
+}
+
+pub const fn plane_layer_for_aspect_flag(format: Format, aspect: TextureAspect) -> Option<u32> {
+    match format {
+        Format::Depth32Float => {
+            if aspect.contains(TextureAspect::DEPTH) {
+                Some(1)
+            } else {
+                None
+            }
+        }
+        Format::Depth24Stencil8 => {
+            if aspect.contains(TextureAspect::DEPTH) {
+                Some(0)
+            } else if aspect.contains(TextureAspect::STENCIL) {
+                Some(1)
+            } else {
+                None
+            }
+        }
+        _ => {
+            if aspect.contains(TextureAspect::COLOR) {
+                Some(0)
+            } else {
+                None
+            }
+        }
     }
 }
