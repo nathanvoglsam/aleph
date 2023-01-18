@@ -1063,9 +1063,6 @@ impl Device {
 
             let base_shader_register = item.binding_num;
 
-            let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
-                | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
-
             let info = DescriptorBindingInfo {
                 r#type: item.binding_type,
                 is_static_sampler: item.static_samplers.is_some(),
@@ -1081,7 +1078,7 @@ impl Device {
                 NumDescriptors: num_descriptors,
                 BaseShaderRegister: base_shader_register,
                 RegisterSpace: 0,
-                Flags: flags,
+                Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
                 OffsetInDescriptorsFromTableStart: offset,
             };
             table.push(item);
@@ -1163,8 +1160,6 @@ impl Device {
                     Some(v) => v.get(),
                 };
                 let base_shader_register = item.binding_num;
-                let flags = D3D12_DESCRIPTOR_RANGE_FLAG_DATA_VOLATILE
-                    | D3D12_DESCRIPTOR_RANGE_FLAG_DESCRIPTORS_VOLATILE; // TODO: temp fix for existing renderer, remove in future
 
                 let info = DescriptorBindingInfo {
                     r#type: item.binding_type,
@@ -1181,7 +1176,7 @@ impl Device {
                     NumDescriptors: num_descriptors,
                     BaseShaderRegister: base_shader_register,
                     RegisterSpace: 0,
-                    Flags: flags,
+                    Flags: D3D12_DESCRIPTOR_RANGE_FLAG_NONE,
                     OffsetInDescriptorsFromTableStart: offset,
                 };
                 sampler_table.push(item);
