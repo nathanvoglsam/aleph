@@ -104,7 +104,7 @@ pub trait IContextProvider: IAny + 'static {
 
 /// Represents the underlying API context. Handles creating surfaces from window handles, and
 /// retrieving.
-pub trait IContext: IAny + 'static {
+pub trait IContext: IAny + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IContext);
 
     /// Create an adapter that suitably meets the requested requirements and preferences specified
@@ -133,7 +133,7 @@ pub trait IContext: IAny + 'static {
 /// surface. As such [ISurface] is not created by an [IDevice], rather it is created by the
 /// [IContext]. An [IDevice] will be selected and created based on its compatibility with an
 /// [ISurface].
-pub trait ISurface: IAny + 'static {
+pub trait ISurface: IAny + Send + Sync + 'static {
     any_arc_trait_utils_decl!(ISurface);
 
     fn create_swap_chain(
@@ -149,7 +149,7 @@ pub trait ISurface: IAny + 'static {
 // Adapter
 
 /// Represents some GPU device installed in the system. An adapter is used to create an [IDevice].
-pub trait IAdapter: IAny + 'static {
+pub trait IAdapter: IAny + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IAdapter);
 
     /// Returns the [AdapterDescription] that provides information about this specific adapter.
@@ -164,7 +164,7 @@ pub trait IAdapter: IAny + 'static {
 // _________________________________________________________________________________________________
 // Device
 
-pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IDevice: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IDevice);
 
     /// Triggers a non blocking garbage collection cycle. This must be called for resources used in
@@ -265,7 +265,7 @@ pub trait IDevice: INamedObject + Send + Sync + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // Queue
 
-pub trait IQueue: INamedObject + IAny + 'static {
+pub trait IQueue: IAny + INamedObject + 'static {
     any_arc_trait_utils_decl!(IQueue);
 
     /// Returns the set of per-queue properties associated with this queue.
@@ -351,7 +351,7 @@ pub trait IQueue: INamedObject + IAny + 'static {
 // _________________________________________________________________________________________________
 // SwapChain
 
-pub trait ISwapChain: INamedObject + IAny + 'static {
+pub trait ISwapChain: IAny + INamedObject + 'static {
     any_arc_trait_utils_decl!(ISwapChain);
 
     /// Returns whether support operations are supported on the given queue.
@@ -383,7 +383,7 @@ pub trait ISwapChain: INamedObject + IAny + 'static {
 // _________________________________________________________________________________________________
 // Resources
 
-pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IBuffer: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IBuffer);
 
     /// Returns a [BufferDesc] that describes this [IBuffer]
@@ -422,14 +422,14 @@ pub trait IBuffer: INamedObject + Send + Sync + IAny + Any + 'static {
     fn invalidate_range(&self, offset: u64, len: u64);
 }
 
-pub trait ITexture: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait ITexture: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(ITexture);
 
     /// Returns a [TextureDesc] that describes this [ITexture]
     fn desc(&self) -> &TextureDesc;
 }
 
-pub trait ISampler: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait ISampler: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(ISampler);
 
     /// Returns a [SamplerDesc] that describes this [ISampler]
@@ -585,7 +585,7 @@ pub trait ICommandList: INamedObject + Send + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // CommandPool
 
-pub trait ICommandPool: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait ICommandPool: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(ICommandPool);
 
     fn create_command_list(&self) -> Result<Box<dyn ICommandList>, CommandListCreateError>;
@@ -685,7 +685,7 @@ pub trait IDescriptorPool: INamedObject + Send + IAny + Any + 'static {
     unsafe fn reset(&mut self);
 }
 
-pub trait IDescriptorSetLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IDescriptorSetLayout: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IDescriptorSetLayout);
 }
 
@@ -694,15 +694,15 @@ pub trait IDescriptorSetLayout: INamedObject + Send + Sync + IAny + Any + 'stati
 // _________________________________________________________________________________________________
 // Pipeline Objects
 
-pub trait IPipelineLayout: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IPipelineLayout: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IPipelineLayout);
 }
 
-pub trait IGraphicsPipeline: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IGraphicsPipeline: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IGraphicsPipeline);
 }
 
-pub trait IComputePipeline: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IComputePipeline: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IComputePipeline);
 }
 
@@ -711,7 +711,7 @@ pub trait IComputePipeline: INamedObject + Send + Sync + IAny + Any + 'static {
 // _________________________________________________________________________________________________
 // Shader
 
-pub trait IShader: INamedObject + Send + Sync + IAny + Any + 'static {
+pub trait IShader: IAny + INamedObject + Send + Sync + 'static {
     any_arc_trait_utils_decl!(IShader);
 
     fn shader_type(&self) -> ShaderType;
