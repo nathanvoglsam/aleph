@@ -40,6 +40,7 @@ use interfaces::gpu::{
     IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
+use parking_lot::Mutex;
 use std::sync::atomic::AtomicBool;
 use windows::core::Interface;
 use windows::Win32::Foundation::BOOL;
@@ -51,9 +52,12 @@ use windows::Win32::Graphics::Dxgi::*;
 pub struct Context {
     pub(crate) this: AnyWeak<Self>,
     pub(crate) debug: Option<DebugInterface>,
-    pub(crate) dxgi_debug: Option<IDXGIDebug>,
-    pub(crate) factory: Option<IDXGIFactory2>,
+    pub(crate) dxgi_debug: Option<Mutex<IDXGIDebug>>,
+    pub(crate) factory: Option<Mutex<IDXGIFactory2>>,
 }
+
+unsafe impl Send for Context {}
+unsafe impl Sync for Context {}
 
 declare_interfaces!(Context, [IContext, IContextExt]);
 
@@ -63,7 +67,11 @@ impl Context {
     ///
     /// There's no other way to check if the surface can be used on the device so we just eat some
     /// overhead at init time to do this.
-    fn check_surface_compatibility(&self, device: &ID3D12Device, surface: &Surface) -> Option<()> {
+    fn check_surface_compatibility(
+        factory: &IDXGIFactory2,
+        device: &ID3D12Device,
+        surface: &Surface,
+    ) -> Option<()> {
         // Create a direct queue so we can create a swapchain
         let desc = D3D12_COMMAND_QUEUE_DESC {
             Type: D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -95,7 +103,7 @@ impl Context {
             Flags: 0,
         };
         unsafe {
-            dxgi_create_swap_chain(self.factory.as_ref().unwrap(), &queue, &surface, &desc).ok()?;
+            dxgi_create_swap_chain(factory, &queue, &surface, &desc).ok()?;
         }
 
         Some(())
@@ -103,7 +111,7 @@ impl Context {
 
     /// Checks if the adapter supports all the minimum required features. This requires a full
     /// device initialization because of D3D12's API.
-    fn check_mandatory_features(&self, device: ID3D12Device) -> Option<()> {
+    fn check_mandatory_features(device: ID3D12Device) -> Option<()> {
         let feature_support = FeatureSupport::new(device).ok()?;
 
         if feature_support.MaxSupportedFeatureLevel().0 < D3D_FEATURE_LEVEL_12_0.0 {
@@ -130,8 +138,8 @@ impl Context {
     }
 
     fn adapter_meets_requirements(
-        &self,
         options: &AdapterRequestOptions,
+        factory: &IDXGIFactory2,
         candidate: &IDXGIAdapter1,
     ) -> bool {
         let device = create_device(candidate, D3D_FEATURE_LEVEL_11_0).ok();
@@ -144,16 +152,13 @@ impl Context {
 
         if let Some(surface) = options.surface {
             let surface = surface.query_interface::<Surface>().unwrap();
-            if self
-                .check_surface_compatibility((&device).into(), surface)
-                .is_none()
-            {
+            if Self::check_surface_compatibility(factory, (&device).into(), surface).is_none() {
                 aleph_log::trace!("Adapter Can't Use Requested Surface");
                 return false;
             }
         }
 
-        if self.check_mandatory_features(device.into()).is_none() {
+        if Self::check_mandatory_features(device.into()).is_none() {
             return false;
         }
 
@@ -163,6 +168,7 @@ impl Context {
     fn select_adapter(
         &self,
         options: &AdapterRequestOptions,
+        factory: &IDXGIFactory2,
         mut filter: impl FnMut(&IDXGIAdapter1) -> bool,
     ) -> Option<IDXGIAdapter1> {
         let power_preference = match options.power_class {
@@ -177,7 +183,7 @@ impl Context {
 
         unsafe {
             // If possible we can explicitly ask for a "high performance" device.
-            let factory_2: &IDXGIFactory2 = self.factory.as_ref().unwrap();
+            let factory_2: &IDXGIFactory2 = factory;
             let factory_6: Option<IDXGIFactory6> = factory_2.cast::<IDXGIFactory6>().ok();
 
             // Loop over all the available adapters
@@ -278,8 +284,9 @@ impl IContext for Context {
     }
 
     fn request_adapter(&self, options: &AdapterRequestOptions) -> Option<AnyArc<dyn IAdapter>> {
-        let selected_adapter = self.select_adapter(options, |candidate| {
-            self.adapter_meets_requirements(options, candidate)
+        let factory = self.factory.as_ref().unwrap().lock();
+        let selected_adapter = self.select_adapter(options, &factory, |candidate| {
+            Self::adapter_meets_requirements(options, &factory, candidate)
         });
 
         if let Some(adapter) = selected_adapter {
@@ -287,7 +294,7 @@ impl IContext for Context {
 
             if let Some(surface) = options.surface {
                 let surface = surface.query_interface::<Surface>().unwrap();
-                self.check_surface_compatibility(&device.into(), surface)?;
+                Self::check_surface_compatibility(&factory, &device.into(), surface)?;
             }
 
             let desc = unsafe {
@@ -311,7 +318,7 @@ impl IContext for Context {
                 context: self.this.upgrade().unwrap(),
                 name,
                 vendor,
-                adapter,
+                adapter: Mutex::new(adapter),
             });
             Some(AnyArc::map::<dyn IAdapter, _>(adapter, |v| v))
         } else {
@@ -341,7 +348,8 @@ impl Drop for Context {
     fn drop(&mut self) {
         self.debug = None;
         self.factory = None;
-        if let Some(dxgi_debug) = &self.dxgi_debug {
+        if let Some(dxgi_debug) = &mut self.dxgi_debug {
+            let dxgi_debug = dxgi_debug.get_mut();
             unsafe {
                 dxgi_debug
                     .ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL)
@@ -351,22 +359,18 @@ impl Drop for Context {
     }
 }
 
-// SAFETY: Can't be auto marked because of the COM pointers. COM pointers are just Arc, which is
-// fine to send across thread boundaries
-unsafe impl Send for Context {}
-
 pub trait IContextExt: IContext {
-    fn get_raw_handle(&self) -> &IDXGIFactory2;
+    fn get_raw_handle(&self) -> IDXGIFactory2;
 
-    fn get_dxgi_debug(&self) -> Option<&IDXGIDebug>;
+    fn get_dxgi_debug(&self) -> Option<IDXGIDebug>;
 }
 
 impl IContextExt for Context {
-    fn get_raw_handle(&self) -> &IDXGIFactory2 {
-        self.factory.as_ref().unwrap()
+    fn get_raw_handle(&self) -> IDXGIFactory2 {
+        self.factory.as_ref().unwrap().lock().clone()
     }
 
-    fn get_dxgi_debug(&self) -> Option<&IDXGIDebug> {
-        self.dxgi_debug.as_ref()
+    fn get_dxgi_debug(&self) -> Option<IDXGIDebug> {
+        self.dxgi_debug.as_ref().map(|v| v.lock().clone())
     }
 }

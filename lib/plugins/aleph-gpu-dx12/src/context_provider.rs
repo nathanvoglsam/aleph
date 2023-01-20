@@ -34,6 +34,7 @@ use crate::internal::dxgi_debug_interface::dxgi_get_debug_interface;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{ContextCreateError, ContextOptions, IContext, IContextProvider};
+use parking_lot::Mutex;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicBool, Ordering};
 use windows::Win32::Graphics::Dxgi::*;
@@ -76,8 +77,8 @@ impl IContextProvider for ContextProvider {
                 let context = AnyArc::new_cyclic(move |v| Context {
                     this: v.clone(),
                     debug,
-                    dxgi_debug,
-                    factory: Some(dxgi_factory),
+                    dxgi_debug: dxgi_debug.map(Mutex::new),
+                    factory: Some(Mutex::new(dxgi_factory)),
                 });
                 Ok(AnyArc::map::<dyn IContext, _>(context, |v| v))
             }

@@ -42,6 +42,8 @@ use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     AdapterDescription, AdapterVendor, IAdapter, IDevice, QueueType, RequestDeviceError,
 };
+use parking_lot::Mutex;
+use std::ops::Deref;
 use windows::Win32::Graphics::Direct3D::*;
 use windows::Win32::Graphics::Direct3D12::*;
 use windows::Win32::Graphics::Dxgi::*;
@@ -51,8 +53,15 @@ pub struct Adapter {
     pub(crate) context: AnyArc<Context>,
     pub(crate) name: String,
     pub(crate) vendor: AdapterVendor,
-    pub(crate) adapter: IDXGIAdapter1,
+    pub(crate) adapter: Mutex<IDXGIAdapter1>,
 }
+
+/// # Safety
+///
+/// This is safe as `IDXGIAdapter1` can be sent across threads, making it 'send'. All access is
+/// through a mutex, making it 'sync'.
+unsafe impl Send for Adapter {}
+unsafe impl Sync for Adapter {}
 
 declare_interfaces!(Adapter, [IAdapter, IAdapterExt]);
 
@@ -94,9 +103,11 @@ impl IAdapter for Adapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+        let adapter = self.adapter.lock();
+
         // Create the actual d3d12 device
         let device =
-            create_device(&self.adapter, D3D_FEATURE_LEVEL_11_0).map_err(|e| anyhow!(e))?;
+            create_device(adapter.deref(), D3D_FEATURE_LEVEL_11_0).map_err(|e| anyhow!(e))?;
 
         // Load our 3 queues
         let general_queue = Adapter::create_queue((&device).into(), QueueType::General);
@@ -154,6 +165,6 @@ pub trait IAdapterExt: IAdapter {
 
 impl IAdapterExt for Adapter {
     fn get_raw_handle(&self) -> IDXGIAdapter1 {
-        self.adapter.clone()
+        self.adapter.lock().clone()
     }
 }

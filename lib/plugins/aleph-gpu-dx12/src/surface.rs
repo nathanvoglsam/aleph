@@ -145,8 +145,8 @@ impl Surface {
 
         // Create the actual swap chain object
         let swap_chain = unsafe {
-            dxgi_create_swap_chain(self.context.factory.as_ref().unwrap(), &queue, self, &desc)
-                .map_err(|e| anyhow!(e))?
+            let factory = self.context.factory.as_ref().unwrap().lock();
+            dxgi_create_swap_chain(&factory, &queue, self, &desc).map_err(|e| anyhow!(e))?
         };
 
         let inner = SwapChainState {
@@ -222,3 +222,4 @@ unsafe impl HasRawWindowHandle for Surface {
 // SAFETY: RawWindowHandle is an opaque handle and can the only purpose is for some other object to
 //         consume it. The consumer constrains thread sharing so this is safe.
 unsafe impl Send for Surface {}
+unsafe impl Sync for Surface {}

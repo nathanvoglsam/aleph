@@ -32,7 +32,7 @@ use crate::internal::in_flight_command_list::{InFlightCommandList, ReturnToPool}
 use crate::internal::set_name::set_name;
 use crate::swap_chain::SwapChain;
 use crossbeam::queue::SegQueue;
-use interfaces::any::{declare_interfaces, AnyArc, AnyWeak, QueryInterface, QueryInterfaceBox};
+use interfaces::any::{box_downcast, declare_interfaces, AnyArc, AnyWeak, QueryInterface};
 use interfaces::anyhow::anyhow;
 use interfaces::gpu::{
     Color, Extent3D, ICommandList, INamedObject, IQueue, ISwapChain, QueuePresentError,
@@ -143,8 +143,7 @@ impl IQueue for Queue {
         &self,
         command_list: Box<dyn ICommandList>,
     ) -> Result<(), QueueSubmitError> {
-        let command_list: Box<CommandList> =
-            command_list.query_interface::<CommandList>().ok().unwrap();
+        let command_list: Box<CommandList> = box_downcast(command_list).ok().unwrap();
 
         // Check that the queue supports submitting the provided command list type
         let (queue_type, list_type) = (self.queue_type, command_list.list_type);
@@ -182,7 +181,7 @@ impl IQueue for Queue {
     ) -> Result<(), QueueSubmitError> {
         // Perform the actual submit operation
         let lists: Vec<Box<CommandList>> = command_lists
-            .map(|v| v.query_interface::<CommandList>().ok().unwrap())
+            .map(|v| box_downcast(v).ok().unwrap())
             .collect();
 
         // Check that the queue supports submitting the provided command list type
