@@ -31,8 +31,7 @@ use crate::device::Device;
 use crate::surface::Surface;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{
-    AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType,
-    SwapChainConfiguration,
+    AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, SwapChainConfiguration,
 };
 
 pub struct SwapChain {

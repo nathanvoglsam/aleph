@@ -29,9 +29,11 @@
 
 use crate::adapter::Adapter;
 use crate::context::Context;
+use crate::internal::descriptor_set::DescriptorSet;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::*;
 use std::num::NonZeroU32;
+use std::ops::Deref;
 
 pub struct Device {
     pub(crate) _this: AnyWeak<Self>,
@@ -178,14 +180,16 @@ impl IDevice for Device {
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        self.inner.get_queue()
+        self.inner.get_queue(queue_type)
     }
 
     // ========================================================================================== //
     // ========================================================================================== //
 
     unsafe fn update_descriptor_sets(&self, writes: &[DescriptorWriteDesc]) {
-        writes.iter().for_each(Self::validate_descriptor_write);
+        writes
+            .iter()
+            .for_each(|v| Self::validate_descriptor_write(v));
         self.inner.update_descriptor_sets(writes)
     }
 

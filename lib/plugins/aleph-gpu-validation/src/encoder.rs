@@ -27,7 +27,6 @@
 // SOFTWARE.
 //
 
-use crate::buffer::Buffer;
 use crate::command_list::CommandList;
 use crate::texture::Texture;
 use interfaces::any::QueryInterface;
@@ -41,13 +40,7 @@ use interfaces::gpu::{
 
 pub struct Encoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
-}
-
-impl<'a> Drop for Encoder<'a> {
-    fn drop(&mut self) {
-        // TODO: Consider an API that forces manually closing so we can avoid the unwrap here
-        unsafe { self.list.Close().unwrap() }
-    }
+    pub(crate) inner: Box<dyn IGeneralEncoder>,
 }
 
 impl<'a> IGeneralEncoder for Encoder<'a> {
@@ -60,7 +53,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
         first_binding: u32,
         bindings: &[InputAssemblyBufferBinding],
     ) {
-        self.inner.bind_graphics_pipeline(first_binding, bindings)
+        self.inner.bind_vertex_buffers(first_binding, bindings)
     }
 
     unsafe fn bind_index_buffer(
@@ -90,7 +83,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 
     unsafe fn end_rendering(&mut self) {
-        self.list.EndRenderPass();
+        self.inner.end_rendering();
     }
 
     unsafe fn draw(
@@ -125,7 +118,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
 impl<'a> IComputeEncoder for Encoder<'a> {
     unsafe fn bind_descriptor_sets(
         &mut self,
-        _pipeline_layout: &dyn IPipelineLayout,
+        pipeline_layout: &dyn IPipelineLayout,
         bind_point: PipelineBindPoint,
         first_set: u32,
         sets: &[DescriptorSetHandle],
@@ -170,80 +163,10 @@ impl<'a> ITransferEncoder for Encoder<'a> {
         &mut self,
         src: &dyn IBuffer,
         dst: &dyn ITexture,
-        _dst_layout: ImageLayout,
+        dst_layout: ImageLayout,
         regions: &[BufferToTextureCopyRegion],
     ) {
-        let src = src
-            .query_interface::<Buffer>()
-            .expect("Unknown IBuffer implementation");
-        let dst = dst
-            .query_interface::<Texture>()
-            .expect("Unknown ITexture implementation");
-
-        let bytes_per_element = dst.desc.format.bytes_per_element();
-        let mut src_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(src.resource.clone()),
-            Type: D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT,
-            Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                PlacedFootprint: D3D12_PLACED_SUBRESOURCE_FOOTPRINT {
-                    Offset: 0,
-                    Footprint: D3D12_SUBRESOURCE_FOOTPRINT {
-                        Format: dst.dxgi_format,
-                        Width: 0,
-                        Height: 0,
-                        Depth: 0,
-                        RowPitch: 0,
-                    },
-                },
-            },
-        };
-
-        let mut dst_location = D3D12_TEXTURE_COPY_LOCATION {
-            pResource: Some(dst.resource.clone()),
-            Type: D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX,
-            Anonymous: D3D12_TEXTURE_COPY_LOCATION_0 {
-                SubresourceIndex: 0,
-            },
-        };
-
-        for region in regions {
-            // Vulkan can only copy starting at (0, 0, 0). The feature can't be trivially emulated
-            // so we don't expose a src offset.
-            //
-            // Thus 'left', 'top', 'front' will always be 0.
-            let src_box = D3D12_BOX {
-                left: 0,
-                top: 0,
-                front: 0,
-                right: region.dst.extent.width,
-                bottom: region.dst.extent.height,
-                back: region.dst.extent.depth,
-            };
-
-            let index = dst.subresource_index_for(
-                region.dst.mip_level,
-                region.dst.array_layer,
-                region.dst.aspect,
-            );
-            dst_location.Anonymous.SubresourceIndex = index.unwrap_or(0);
-
-            // Translate the source layout description to D3D12's 'subresource footprint'
-            let footprint = &mut src_location.Anonymous.PlacedFootprint;
-            footprint.Offset = region.src.offset;
-            footprint.Footprint.Width = region.src.extent.width;
-            footprint.Footprint.Height = region.src.extent.height;
-            footprint.Footprint.Depth = region.src.extent.depth;
-            footprint.Footprint.RowPitch = region.src.extent.width * bytes_per_element;
-
-            self.list.CopyTextureRegion(
-                &dst_location,
-                region.dst.origin.x,
-                region.dst.origin.y,
-                region.dst.origin.z,
-                &src_location,
-                &src_box,
-            );
-        }
+        self.inner.copy_buffer_to_texture(src, dst, dst_layout, regions);
     }
 
     unsafe fn set_marker(&mut self, color: Color, message: &str) {
