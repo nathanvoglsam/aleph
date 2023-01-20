@@ -27,6 +27,7 @@
 // SOFTWARE.
 //
 
+use core::any::Any;
 use core::any::TypeId;
 use core::marker::PhantomData;
 use core::mem::size_of;
@@ -58,7 +59,7 @@ pub struct TraitObject<'a> {
 /// You should not have to implement this trait directly. Instead use the `declare_interfaces!`
 /// macro provided by this crate.
 ///
-pub trait IAny: 'static {
+pub trait IAny: Any + 'static {
     ///
     /// The `query_interface` function that should only be accessed through the `AnyRef` wrapper.
     ///
@@ -99,32 +100,31 @@ impl<T: IAny + ?Sized> QueryInterface for T {
     }
 }
 
-pub trait QueryInterfaceBox: Sized {
-    /// Generic wrapper function over the bare implementation of `__query_interface` that makes
-    /// using it safe and simple.
-    fn query_interface<Into: IAny + ?Sized>(self) -> Result<Box<Into>, Self>;
+#[inline]
+fn is_type_equal<A: IAny + ?Sized, B: IAny + Sized>(v: &A) -> bool {
+    let into_id = TypeId::of::<B>();
+    let self_id = v.type_id();
+    into_id == self_id
 }
 
-impl<T: IAny + ?Sized> QueryInterfaceBox for Box<T> {
-    fn query_interface<Into: IAny + ?Sized>(self) -> Result<Box<Into>, Self> {
-        // Assert that trait object is the size of two pointers. Compiles to nothing
-        assert_eq!(size_of::<TraitObject>(), size_of::<usize>() * 2);
-
-        // Assert that the null pointer NonNull is correctly triggering size optimization. Compiles
-        // to nothing
-        assert_eq!(size_of::<Option<TraitObject>>(), size_of::<TraitObject>());
-
-        unsafe {
-            if let Some(obj) = self.__query_interface(TypeId::of::<Into>()) {
-                let any_box = (&obj as *const TraitObject as *const Box<Into>).read();
-
-                // Forget the original box so we don't double free
-                std::mem::forget(self);
-
-                Ok(any_box)
-            } else {
-                Err(self)
-            }
+#[inline]
+pub fn box_downcast<From: IAny + ?Sized, Into: IAny + Sized>(
+    v: Box<From>,
+) -> Result<Box<Into>, Box<From>> {
+    unsafe {
+        if is_type_equal::<From, Into>(v.as_ref()) {
+            Ok(box_downcast_unchecked(v))
+        } else {
+            Err(v)
         }
     }
+}
+
+#[inline]
+pub unsafe fn box_downcast_unchecked<From: IAny + ?Sized, Into: IAny + Sized>(
+    v: Box<From>,
+) -> Box<Into> {
+    debug_assert!(is_type_equal::<From, Into>(v.as_ref()));
+    let ptr = Box::into_raw(v);
+    Box::from_raw(ptr as *mut Into)
 }

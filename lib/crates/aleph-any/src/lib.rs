@@ -73,9 +73,10 @@ mod any_arc;
 #[cfg(test)]
 mod tests;
 
+pub use any::box_downcast;
+pub use any::box_downcast_unchecked;
 pub use any::IAny;
 pub use any::QueryInterface;
-pub use any::QueryInterfaceBox;
 pub use any::TraitObject;
 pub use any_arc::AnyArc;
 pub use any_arc::AnyWeak;
