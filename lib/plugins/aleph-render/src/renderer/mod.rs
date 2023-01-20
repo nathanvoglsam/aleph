@@ -33,7 +33,7 @@ mod global;
 use egui::RenderData;
 pub(crate) use frame::PerFrameObjects;
 pub(crate) use global::GlobalObjects;
-use interfaces::any::{AnyArc, QueryInterfaceBox};
+use interfaces::any::AnyArc;
 use interfaces::gpu::{
     AttachmentLoadOp, AttachmentStoreOp, BarrierAccess, BarrierSync, BeginRenderingInfo,
     ColorClearValue, ICommandList, IDevice, IGeneralEncoder, ITexture, ImageLayout, IndexType,
@@ -231,7 +231,7 @@ impl EguiRenderer {
             self.unmap_buffers(index);
         }
 
-        list.query_interface().ok().unwrap()
+        list
     }
 
     unsafe fn record_job_commands(
