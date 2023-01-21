@@ -115,7 +115,14 @@ impl IDevice for ValidationDevice {
         &self,
         options: &ShaderOptions,
     ) -> Result<AnyArc<dyn IShader>, ShaderCreateError> {
-        self.inner.create_shader(options)
+        let inner = self.inner.create_shader(options)?;
+        let shader = AnyArc::new_cyclic(move |v| ValidationShader {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            inner,
+            shader_type: options.shader_type,
+        });
+        Ok(AnyArc::map::<dyn IShader, _>(shader, |v| v))
     }
 
     // ========================================================================================== //
