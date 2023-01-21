@@ -36,7 +36,7 @@ use crate::internal::conv::{
 };
 use crate::internal::descriptor_set::DescriptorSet;
 use crate::pipeline::GraphicsPipeline;
-use crate::pipeline_layout::{PipelineLayout, PushConstantBlockInfo};
+use crate::pipeline_layout::PushConstantBlockInfo;
 use crate::texture::Texture;
 use interfaces::any::{AnyArc, QueryInterface};
 use interfaces::gpu::{
