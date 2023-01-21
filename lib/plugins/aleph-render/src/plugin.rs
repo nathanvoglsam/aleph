@@ -139,10 +139,7 @@ impl IPlugin for PluginRender {
             present_mode: PresentationMode::Mailbox,
             preferred_queue: QueueType::General,
         };
-        let device_handle = device.query_interface::<dyn IDevice>().unwrap();
-        let swap_chain = surface
-            .create_swap_chain(device_handle.deref(), &config)
-            .unwrap();
+        let swap_chain = surface.create_swap_chain(device.deref(), &config).unwrap();
 
         assert!(swap_chain.present_supported_on_queue(QueueType::General));
 
