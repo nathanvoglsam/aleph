@@ -27,20 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IShader, ShaderType};
 
-pub struct Shader {
+pub struct ValidationShader {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IShader>,
     pub(crate) shader_type: ShaderType,
 }
 
-crate::validation_declare_interfaces!(Shader, [IShader]);
+crate::validation_declare_interfaces!(ValidationShader, [IShader]);
 
-impl IShader for Shader {
+impl IShader for ValidationShader {
     fn upgrade(&self) -> AnyArc<dyn IShader> {
         AnyArc::map::<dyn IShader, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -62,8 +62,8 @@ impl IShader for Shader {
     }
 }
 
-impl INamedObject for Shader {
+impl INamedObject for ValidationShader {
     fn set_name(&self, name: &str) {
-        self.set_name(name)
+        self.inner.set_name(name)
     }
 }

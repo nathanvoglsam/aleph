@@ -49,16 +49,16 @@ mod surface;
 mod swap_chain;
 mod texture;
 
-pub use buffer::Buffer;
-pub use command_list::CommandList;
-pub use context::Context;
-pub use device::Device;
-pub use pipeline::ComputePipeline;
-pub use pipeline::GraphicsPipeline;
-pub use pipeline_layout::PipelineLayout;
-pub use shader::Shader;
-pub use swap_chain::SwapChain;
-pub use texture::Texture;
+pub use buffer::ValidationBuffer;
+pub use command_list::ValidationCommandList;
+pub use context::ValidationContext;
+pub use device::ValidationDevice;
+pub use pipeline::ValidationComputePipeline;
+pub use pipeline::ValidationGraphicsPipeline;
+pub use pipeline_layout::ValidationPipelineLayout;
+pub use shader::ValidationShader;
+pub use swap_chain::ValidationSwapChain;
+pub use texture::ValidationTexture;
 
 /// This is a manually unrolled form of [interfaces::any::declare_interfaces] that just punts to
 /// the 'inner' field. We need to keep the validation object invisible. Users of the API may query

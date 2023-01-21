@@ -27,21 +27,21 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::pipeline_layout::PipelineLayout;
+use crate::device::ValidationDevice;
+use crate::pipeline_layout::ValidationPipelineLayout;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{IComputePipeline, IGraphicsPipeline, INamedObject};
 
-pub struct GraphicsPipeline {
+pub struct ValidationGraphicsPipeline {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _pipeline_layout: AnyArc<ValidationPipelineLayout>,
     pub(crate) inner: AnyArc<dyn IGraphicsPipeline>,
 }
 
-crate::validation_declare_interfaces!(GraphicsPipeline, [IGraphicsPipeline]);
+crate::validation_declare_interfaces!(ValidationGraphicsPipeline, [IGraphicsPipeline]);
 
-impl IGraphicsPipeline for GraphicsPipeline {
+impl IGraphicsPipeline for ValidationGraphicsPipeline {
     fn upgrade(&self) -> AnyArc<dyn IGraphicsPipeline> {
         AnyArc::map::<dyn IGraphicsPipeline, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -55,22 +55,22 @@ impl IGraphicsPipeline for GraphicsPipeline {
     }
 }
 
-impl INamedObject for GraphicsPipeline {
+impl INamedObject for ValidationGraphicsPipeline {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }
 }
 
-pub struct ComputePipeline {
+pub struct ValidationComputePipeline {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _pipeline_layout: AnyArc<PipelineLayout>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _pipeline_layout: AnyArc<ValidationPipelineLayout>,
     pub(crate) inner: AnyArc<dyn IComputePipeline>,
 }
 
-crate::validation_declare_interfaces!(ComputePipeline, [IComputePipeline]);
+crate::validation_declare_interfaces!(ValidationComputePipeline, [IComputePipeline]);
 
-impl IComputePipeline for ComputePipeline {
+impl IComputePipeline for ValidationComputePipeline {
     fn upgrade(&self) -> AnyArc<dyn IComputePipeline> {
         AnyArc::map::<dyn IComputePipeline, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -84,7 +84,7 @@ impl IComputePipeline for ComputePipeline {
     }
 }
 
-impl INamedObject for ComputePipeline {
+impl INamedObject for ValidationComputePipeline {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

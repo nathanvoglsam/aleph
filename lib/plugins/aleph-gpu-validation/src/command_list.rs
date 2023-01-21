@@ -27,24 +27,25 @@
 // SOFTWARE.
 //
 
-use crate::command_pool::CommandPool;
+use crate::command_pool::ValidationCommandPool;
+use crate::encoder::ValidationEncoder;
 use interfaces::any::{declare_interfaces, AnyArc};
 use interfaces::gpu::{
     CommandListBeginError, ICommandList, IComputeEncoder, IGeneralEncoder, INamedObject,
     ITransferEncoder, QueueType,
 };
 
-pub struct CommandList {
-    pub(crate) _pool: AnyArc<CommandPool>,
+pub struct ValidationCommandList {
+    pub(crate) _pool: AnyArc<ValidationCommandPool>,
     pub(crate) inner: Box<dyn ICommandList>,
     pub(crate) list_type: QueueType,
 }
 
-declare_interfaces!(CommandList, [ICommandList]);
+declare_interfaces!(ValidationCommandList, [ICommandList]);
 
-unsafe impl Send for CommandList {}
+unsafe impl Send for ValidationCommandList {}
 
-impl ICommandList for CommandList {
+impl ICommandList for ValidationCommandList {
     fn begin_general<'a>(
         &'a mut self,
     ) -> Result<Box<dyn IGeneralEncoder + 'a>, CommandListBeginError> {
@@ -64,7 +65,7 @@ impl ICommandList for CommandList {
     }
 }
 
-impl INamedObject for CommandList {
+impl INamedObject for ValidationCommandList {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

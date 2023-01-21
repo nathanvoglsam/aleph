@@ -27,24 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
-use crate::device::Device;
+use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
+use crate::device::ValidationDevice;
 use crate::internal::descriptor_set::DescriptorSet;
 use interfaces::any::AnyArc;
 use interfaces::gpu::*;
 use std::ptr::NonNull;
 
-pub struct DescriptorPool {
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _layout: AnyArc<DescriptorSetLayout>,
+pub struct ValidationDescriptorPool {
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _layout: AnyArc<ValidationDescriptorSetLayout>,
     pub(crate) inner: Box<dyn IDescriptorPool>,
     pub(crate) set_objects: Vec<DescriptorSet>,
     pub(crate) free_list: Vec<DescriptorSetHandle>,
 }
 
-crate::validation_declare_interfaces!(DescriptorPool, [IDescriptorPool]);
+crate::validation_declare_interfaces!(ValidationDescriptorPool, [IDescriptorPool]);
 
-impl DescriptorPool {
+impl ValidationDescriptorPool {
     fn validate_set_handle(&self, set: &DescriptorSetHandle) {
         // Validate that a DescriptorSetHandle contains a correctly aligned pointer. This may help
         // catch when someone is passing in bad handles
@@ -92,7 +92,7 @@ impl DescriptorPool {
     }
 }
 
-impl IDescriptorPool for DescriptorPool {
+impl IDescriptorPool for ValidationDescriptorPool {
     fn allocate_set(&mut self) -> Result<DescriptorSetHandle, DescriptorPoolAllocateError> {
         self.inner.allocate_set()
     }
@@ -116,7 +116,7 @@ impl IDescriptorPool for DescriptorPool {
     }
 }
 
-impl INamedObject for DescriptorPool {
+impl INamedObject for ValidationDescriptorPool {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

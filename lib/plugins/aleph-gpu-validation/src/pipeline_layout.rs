@@ -27,19 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, IPipelineLayout};
 
-pub struct PipelineLayout {
+pub struct ValidationPipelineLayout {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IPipelineLayout>,
 }
 
-crate::validation_declare_interfaces!(PipelineLayout, [IPipelineLayout]);
+crate::validation_declare_interfaces!(ValidationPipelineLayout, [IPipelineLayout]);
 
-impl IPipelineLayout for PipelineLayout {
+impl IPipelineLayout for ValidationPipelineLayout {
     fn upgrade(&self) -> AnyArc<dyn IPipelineLayout> {
         AnyArc::map::<dyn IPipelineLayout, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -53,7 +53,7 @@ impl IPipelineLayout for PipelineLayout {
     }
 }
 
-impl INamedObject for PipelineLayout {
+impl INamedObject for ValidationPipelineLayout {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

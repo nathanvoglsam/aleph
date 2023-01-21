@@ -28,19 +28,21 @@
 //
 
 use interfaces::any::{AnyArc, AnyWeak};
+use crate::adapter::ValidationAdapter;
+use crate::surface::ValidationSurface;
 use interfaces::gpu::{
     AdapterRequestOptions, BackendAPI, IAdapter, IContext, ISurface, SurfaceCreateError,
 };
 use interfaces::platform::HasRawWindowHandle;
 
-pub struct Context {
+pub struct ValidationContext {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) inner: AnyArc<dyn IContext>,
 }
 
-crate::validation_declare_interfaces!(Context, [IContext]);
+crate::validation_declare_interfaces!(ValidationContext, [IContext]);
 
-impl IContext for Context {
+impl IContext for ValidationContext {
     fn upgrade(&self) -> AnyArc<dyn IContext> {
         AnyArc::map::<dyn IContext, _>(self._this.upgrade().unwrap(), |v| v)
     }

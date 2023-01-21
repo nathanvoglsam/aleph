@@ -27,19 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{IDescriptorSetLayout, INamedObject};
 
-pub struct DescriptorSetLayout {
+pub struct ValidationDescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) _device: AnyArc<Device>,
     pub(crate) inner: AnyArc<dyn IDescriptorSetLayout>,
 }
 
-crate::validation_declare_interfaces!(DescriptorSetLayout, [IDescriptorSetLayout]);
+crate::validation_declare_interfaces!(ValidationDescriptorSetLayout, [IDescriptorSetLayout]);
 
-impl IDescriptorSetLayout for DescriptorSetLayout {
+impl IDescriptorSetLayout for ValidationDescriptorSetLayout {
     fn upgrade(&self) -> AnyArc<dyn IDescriptorSetLayout> {
         AnyArc::map::<dyn IDescriptorSetLayout, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -53,7 +53,7 @@ impl IDescriptorSetLayout for DescriptorSetLayout {
     }
 }
 
-impl INamedObject for DescriptorSetLayout {
+impl INamedObject for ValidationDescriptorSetLayout {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

@@ -27,14 +27,14 @@
 // SOFTWARE.
 //
 
-use crate::descriptor_set_layout::DescriptorSetLayout;
+use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
 use interfaces::any::AnyArc;
 use interfaces::gpu::DescriptorSetHandle;
 use std::ptr::NonNull;
 
 pub struct DescriptorSet {
     /// The descriptor set layout of this set
-    pub _layout: AnyArc<DescriptorSetLayout>,
+    pub _layout: AnyArc<ValidationDescriptorSetLayout>,
 
     /// The inner handle
     pub inner: DescriptorSetHandle,

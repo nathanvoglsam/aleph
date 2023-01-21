@@ -27,19 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, ITexture, TextureDesc};
 
-pub struct Texture {
+pub struct ValidationTexture {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn ITexture>,
 }
 
-crate::validation_declare_interfaces!(Texture, [ITexture]);
+crate::validation_declare_interfaces!(ValidationTexture, [ITexture]);
 
-impl ITexture for Texture {
+impl ITexture for ValidationTexture {
     fn upgrade(&self) -> AnyArc<dyn ITexture> {
         AnyArc::map::<dyn ITexture, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -57,7 +57,7 @@ impl ITexture for Texture {
     }
 }
 
-impl INamedObject for Texture {
+impl INamedObject for ValidationTexture {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

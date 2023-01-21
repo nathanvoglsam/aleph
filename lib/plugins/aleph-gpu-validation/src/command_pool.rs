@@ -27,19 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
+use crate::ValidationCommandList;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{CommandListCreateError, ICommandList, ICommandPool, INamedObject};
 
-pub struct CommandPool {
+pub struct ValidationCommandPool {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn ICommandPool>,
 }
 
-crate::validation_declare_interfaces!(CommandPool, [ICommandPool]);
+crate::validation_declare_interfaces!(ValidationCommandPool, [ICommandPool]);
 
-impl ICommandPool for CommandPool {
+impl ICommandPool for ValidationCommandPool {
     fn upgrade(&self) -> AnyArc<dyn ICommandPool> {
         AnyArc::map::<dyn ICommandPool, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -57,7 +58,7 @@ impl ICommandPool for CommandPool {
     }
 }
 
-impl INamedObject for CommandPool {
+impl INamedObject for ValidationCommandPool {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

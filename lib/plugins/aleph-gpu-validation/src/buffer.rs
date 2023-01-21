@@ -27,22 +27,22 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{BufferDesc, IBuffer, INamedObject, ResourceMapError};
 use std::ptr::NonNull;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-pub struct Buffer {
+pub struct ValidationBuffer {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IBuffer>,
     pub(crate) debug_mapped_tracker: AtomicBool,
 }
 
-crate::validation_declare_interfaces!(Buffer, [IBuffer]);
+crate::validation_declare_interfaces!(ValidationBuffer, [IBuffer]);
 
-impl IBuffer for Buffer {
+impl IBuffer for ValidationBuffer {
     fn upgrade(&self) -> AnyArc<dyn IBuffer> {
         AnyArc::map::<dyn IBuffer, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -88,7 +88,7 @@ impl IBuffer for Buffer {
     }
 }
 
-impl INamedObject for Buffer {
+impl INamedObject for ValidationBuffer {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

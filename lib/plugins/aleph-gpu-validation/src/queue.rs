@@ -33,15 +33,15 @@ use interfaces::gpu::{
     QueueSubmitError, QueueType,
 };
 
-pub struct Queue {
+pub struct ValidationQueue {
     pub(crate) _this: AnyWeak<Self>,
     pub(crate) inner: AnyArc<dyn IQueue>,
     pub(crate) queue_type: QueueType,
 }
 
-crate::validation_declare_interfaces!(Queue, [IQueue]);
+crate::validation_declare_interfaces!(ValidationQueue, [IQueue]);
 
-impl IQueue for Queue {
+impl IQueue for ValidationQueue {
     fn upgrade(&self) -> AnyArc<dyn IQueue> {
         AnyArc::map::<dyn IQueue, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -76,20 +76,23 @@ impl IQueue for Queue {
         self.inner.present(swap_chain)
     }
 
-    unsafe fn set_marker(&mut self, color: Color, message: &str) {
-        self.inner.set_marker(color, message);
+    unsafe fn set_marker(&mut self, _color: Color, _message: &str) {
+        unimplemented!();
+        // self.inner.set_marker(color, message);
     }
 
-    unsafe fn begin_event(&mut self, color: Color, message: &str) {
-        self.inner.begin_event(color, message);
+    unsafe fn begin_event(&mut self, _color: Color, _message: &str) {
+        unimplemented!();
+        // self.inner.begin_event(color, message);
     }
 
     unsafe fn end_event(&mut self) {
-        self.inner.end_event();
+        unimplemented!();
+        // self.inner.end_event();
     }
 }
 
-impl INamedObject for Queue {
+impl INamedObject for ValidationQueue {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

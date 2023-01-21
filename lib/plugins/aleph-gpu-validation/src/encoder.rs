@@ -27,9 +27,9 @@
 // SOFTWARE.
 //
 
-use crate::command_list::CommandList;
-use crate::texture::Texture;
 use interfaces::any::QueryInterface;
+use crate::texture::ValidationTexture;
+use crate::ValidationGraphicsPipeline;
 use interfaces::gpu::{
     BeginRenderingInfo, BufferBarrier, BufferCopyRegion, BufferToTextureCopyRegion, Color,
     DescriptorSetHandle, Format, GlobalBarrier, IBuffer, IComputeEncoder, IGeneralEncoder,
@@ -38,12 +38,12 @@ use interfaces::gpu::{
     TextureDesc, TextureSubResourceSet, Viewport,
 };
 
-pub struct Encoder<'a> {
+pub struct ValidationEncoder<'a> {
     pub(crate) _parent: &'a mut CommandList,
     pub(crate) inner: Box<dyn IGeneralEncoder>,
 }
 
-impl<'a> IGeneralEncoder for Encoder<'a> {
+impl<'a> IGeneralEncoder for ValidationEncoder<'a> {
     unsafe fn bind_graphics_pipeline(&mut self, pipeline: &dyn IGraphicsPipeline) {
         self.inner.bind_graphics_pipeline(pipeline)
     }
@@ -115,7 +115,7 @@ impl<'a> IGeneralEncoder for Encoder<'a> {
     }
 }
 
-impl<'a> IComputeEncoder for Encoder<'a> {
+impl<'a> IComputeEncoder for ValidationEncoder<'a> {
     unsafe fn bind_descriptor_sets(
         &mut self,
         pipeline_layout: &dyn IPipelineLayout,
@@ -133,7 +133,7 @@ impl<'a> IComputeEncoder for Encoder<'a> {
     }
 }
 
-impl<'a> ITransferEncoder for Encoder<'a> {
+impl<'a> ITransferEncoder for ValidationEncoder<'a> {
     unsafe fn resource_barrier(
         &mut self,
         global_barriers: &[GlobalBarrier],
@@ -182,7 +182,7 @@ impl<'a> ITransferEncoder for Encoder<'a> {
     }
 }
 
-impl<'a> Encoder<'a> {
+impl<'a> ValidationEncoder<'a> {
     fn validate_aspect_against_texture_format(format: Format, aspect: &TextureAspect) {
         if aspect.contains(TextureAspect::COLOR) {
             debug_assert!(
@@ -219,7 +219,7 @@ impl<'a> Encoder<'a> {
     }
 
     fn validate_buffer_to_texture_copy_dest_region(
-        dst: &Texture,
+        dst: &ValidationTexture,
         format: Format,
         region: &&BufferToTextureCopyRegion,
         index: Option<u32>,
@@ -305,7 +305,7 @@ impl<'a> Encoder<'a> {
         info.color_attachments.iter().for_each(|v| {
             let image = v
                 .image
-                .query_interface::<Texture>()
+                .query_interface::<ValidationTexture>()
                 .expect("Unknown ITexture implementation");
             debug_assert!(
                 image.desc().is_render_target,
@@ -331,7 +331,7 @@ impl<'a> Encoder<'a> {
         let attachment_sizes = info.color_attachments.iter().map(|v| {
             let image = v
                 .image
-                .query_interface::<Texture>()
+                .query_interface::<ValidationTexture>()
                 .expect("Unknown ITexture implementation");
             (image.desc().width, image.desc().height)
         });
@@ -347,7 +347,7 @@ impl<'a> Encoder<'a> {
         if let Some(v) = info.depth_stencil_attachment {
             let image = v
                 .image
-                .query_interface::<Texture>()
+                .query_interface::<ValidationTexture>()
                 .expect("Unknown ITexture implementation");
 
             debug_assert!(

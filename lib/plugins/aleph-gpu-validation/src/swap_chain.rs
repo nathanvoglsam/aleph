@@ -27,24 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
-use crate::surface::Surface;
+use crate::device::ValidationDevice;
+use crate::surface::ValidationSurface;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{
     AcquireImageError, INamedObject, ISwapChain, ITexture, QueueType, SwapChainConfiguration,
 };
 
-pub struct SwapChain {
+pub struct ValidationSwapChain {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
-    pub(crate) _surface: AnyArc<Surface>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
+    pub(crate) _surface: AnyArc<ValidationSurface>,
     pub(crate) inner: AnyArc<dyn ISwapChain>,
     pub(crate) queue_support: QueueType,
 }
 
-crate::validation_declare_interfaces!(SwapChain, [ISwapChain]);
+crate::validation_declare_interfaces!(ValidationSwapChain, [ISwapChain]);
 
-impl ISwapChain for SwapChain {
+impl ISwapChain for ValidationSwapChain {
     fn upgrade(&self) -> AnyArc<dyn ISwapChain> {
         AnyArc::map::<dyn ISwapChain, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -78,7 +78,7 @@ impl ISwapChain for SwapChain {
     }
 }
 
-impl INamedObject for SwapChain {
+impl INamedObject for ValidationSwapChain {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }

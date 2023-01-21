@@ -27,23 +27,24 @@
 // SOFTWARE.
 //
 
-use crate::context::Context;
 use interfaces::any::{AnyArc, AnyWeak};
+use crate::context::ValidationContext;
+use crate::ValidationDevice;
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
 };
 use std::sync::atomic::AtomicBool;
 
-pub struct Surface {
+pub struct ValidationSurface {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
+    pub(crate) _context: AnyArc<ValidationContext>,
     pub(crate) inner: AnyArc<dyn ISurface>,
     pub(crate) has_swap_chain: AtomicBool,
 }
 
-crate::validation_declare_interfaces!(Surface, [ISurface]);
+crate::validation_declare_interfaces!(ValidationSurface, [ISurface]);
 
-impl ISurface for Surface {
+impl ISurface for ValidationSurface {
     fn upgrade(&self) -> AnyArc<dyn ISurface> {
         AnyArc::map::<dyn ISurface, _>(self._this.upgrade().unwrap(), |v| v)
     }

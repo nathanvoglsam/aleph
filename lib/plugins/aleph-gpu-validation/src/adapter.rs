@@ -27,19 +27,20 @@
 // SOFTWARE.
 //
 
-use crate::context::Context;
+use crate::context::ValidationContext;
+use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
 
-pub struct Adapter {
+pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
+    pub(crate) _context: AnyArc<ValidationContext>,
     pub(crate) inner: AnyArc<dyn IAdapter>,
 }
 
-crate::validation_declare_interfaces!(Adapter, [IAdapter]);
+crate::validation_declare_interfaces!(ValidationAdapter, [IAdapter]);
 
-impl IAdapter for Adapter {
+impl IAdapter for ValidationAdapter {
     fn upgrade(&self) -> AnyArc<dyn IAdapter> {
         AnyArc::map::<dyn IAdapter, _>(self._this.upgrade().unwrap(), |v| v)
     }

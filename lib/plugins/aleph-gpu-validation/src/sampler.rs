@@ -27,19 +27,19 @@
 // SOFTWARE.
 //
 
-use crate::device::Device;
+use crate::device::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
 use interfaces::gpu::{INamedObject, ISampler, SamplerDesc};
 
-pub struct Sampler {
+pub struct ValidationSampler {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn ISampler>,
 }
 
-crate::validation_declare_interfaces!(Sampler, [ISampler]);
+crate::validation_declare_interfaces!(ValidationSampler, [ISampler]);
 
-impl ISampler for Sampler {
+impl ISampler for ValidationSampler {
     fn upgrade(&self) -> AnyArc<dyn ISampler> {
         AnyArc::map::<dyn ISampler, _>(self._this.upgrade().unwrap(), |v| v)
     }
@@ -57,7 +57,7 @@ impl ISampler for Sampler {
     }
 }
 
-impl INamedObject for Sampler {
+impl INamedObject for ValidationSampler {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }
