@@ -33,7 +33,7 @@ use interfaces::gpu::{IDescriptorSetLayout, INamedObject};
 
 pub struct ValidationDescriptorSetLayout {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _device: AnyArc<Device>,
+    pub(crate) _device: AnyArc<ValidationDevice>,
     pub(crate) inner: AnyArc<dyn IDescriptorSetLayout>,
 }
 
