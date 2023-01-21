@@ -61,7 +61,7 @@ impl IBuffer for ValidationBuffer {
 
     fn map(&self) -> Result<NonNull<u8>, ResourceMapError> {
         // Debug check for tracking that the resource is unmapped when trying to map it
-        debug_assert!(self
+        assert!(self
             .debug_mapped_tracker
             .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
             .is_ok());
@@ -71,7 +71,7 @@ impl IBuffer for ValidationBuffer {
 
     fn unmap(&self) {
         // Debug check for tracking that the resource is mapped when trying to unmap it
-        debug_assert!(self
+        assert!(self
             .debug_mapped_tracker
             .compare_exchange(true, false, Ordering::Relaxed, Ordering::Relaxed)
             .is_ok());
