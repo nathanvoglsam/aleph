@@ -57,7 +57,7 @@ pub struct PerFrameObjects {
 }
 
 impl PerFrameObjects {
-    pub fn new(device: &dyn IDevice, global: &GlobalObjects, index: usize) -> Self {
+    pub fn new(device: &dyn IDevice, global: &GlobalObjects) -> Self {
         let vtx_buffer = {
             let desc = BufferDesc {
                 size: Self::vertex_buffer_size() as _,

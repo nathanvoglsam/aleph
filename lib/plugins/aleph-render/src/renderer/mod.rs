@@ -62,7 +62,7 @@ impl EguiRenderer {
 
         let frames = (0..3)
             .into_iter()
-            .map(|index| PerFrameObjects::new(device.deref(), &global, index))
+            .map(|_| PerFrameObjects::new(device.deref(), &global))
             .collect();
 
         Self {
