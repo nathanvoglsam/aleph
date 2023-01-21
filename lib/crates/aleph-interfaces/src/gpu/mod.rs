@@ -265,7 +265,7 @@ pub trait IDevice: IAny + INamedObject + Send + Sync + 'static {
 // _________________________________________________________________________________________________
 // Queue
 
-pub trait IQueue: IAny + INamedObject + 'static {
+pub trait IQueue: IAny + Send + Sync + INamedObject + 'static {
     any_arc_trait_utils_decl!(IQueue);
 
     /// Returns the set of per-queue properties associated with this queue.
