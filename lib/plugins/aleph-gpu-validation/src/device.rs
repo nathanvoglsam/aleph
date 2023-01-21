@@ -33,6 +33,7 @@ use crate::context::ValidationContext;
 use crate::descriptor_pool::ValidationDescriptorPool;
 use crate::descriptor_set_layout::{DescriptorBindingInfo, ValidationDescriptorSetLayout};
 use crate::internal::descriptor_set::DescriptorSet;
+use crate::queue::ValidationQueue;
 use crate::sampler::ValidationSampler;
 use crate::{
     ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
@@ -52,6 +53,9 @@ pub struct ValidationDevice {
     pub(crate) _adapter: AnyArc<ValidationAdapter>,
     pub(crate) inner: AnyArc<dyn IDevice>,
     pub(crate) pool_counter: AtomicU64,
+    pub(crate) general_queue: Option<AnyArc<ValidationQueue>>,
+    pub(crate) compute_queue: Option<AnyArc<ValidationQueue>>,
+    pub(crate) transfer_queue: Option<AnyArc<ValidationQueue>>,
 }
 
 crate::validation_declare_interfaces!(ValidationDevice, [IDevice]);
@@ -319,7 +323,20 @@ impl IDevice for ValidationDevice {
     // ========================================================================================== //
 
     fn get_queue(&self, queue_type: QueueType) -> Option<AnyArc<dyn IQueue>> {
-        self.inner.get_queue(queue_type)
+        match queue_type {
+            QueueType::General => self
+                .general_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Compute => self
+                .compute_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+            QueueType::Transfer => self
+                .transfer_queue
+                .clone()
+                .map(|v| AnyArc::map::<dyn IQueue, _>(v, |v| v)),
+        }
     }
 
     // ========================================================================================== //

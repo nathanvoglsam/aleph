@@ -30,7 +30,8 @@
 use crate::context::ValidationContext;
 use crate::ValidationDevice;
 use interfaces::any::{AnyArc, AnyWeak};
-use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, RequestDeviceError};
+use interfaces::gpu::{AdapterDescription, IAdapter, IDevice, QueueType, RequestDeviceError};
+use crate::queue::ValidationQueue;
 
 pub struct ValidationAdapter {
     pub(crate) _this: AnyWeak<Self>,
@@ -58,13 +59,31 @@ impl IAdapter for ValidationAdapter {
     }
 
     fn request_device(&self) -> Result<AnyArc<dyn IDevice>, RequestDeviceError> {
+        fn query_queue(inner: &dyn IDevice, queue_type: QueueType) -> Option<AnyArc<ValidationQueue>> {
+            inner.get_queue(queue_type).map(|q| {
+                AnyArc::new_cyclic(move |v| ValidationQueue {
+                    _this: v.clone(),
+                    inner: q,
+                    queue_type,
+                })
+            })
+        }
+
         let inner = self.inner.request_device()?;
+
+        let general_queue = query_queue(inner.as_ref(), QueueType::General);
+        let compute_queue = query_queue(inner.as_ref(), QueueType::Compute);
+        let transfer_queue = query_queue(inner.as_ref(), QueueType::Transfer);
+
         let device = AnyArc::new_cyclic(move |v| ValidationDevice {
             _this: v.clone(),
             _adapter: self._this.upgrade().unwrap(),
             _context: self._context._this.upgrade().unwrap(),
             inner,
             pool_counter: Default::default(),
+            general_queue,
+            compute_queue,
+            transfer_queue,
         });
         Ok(AnyArc::map::<dyn IDevice, _>(device, |v| v))
     }
