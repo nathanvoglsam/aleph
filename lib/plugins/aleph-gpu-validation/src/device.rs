@@ -99,7 +99,43 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &GraphicsPipelineDesc,
     ) -> Result<AnyArc<dyn IGraphicsPipeline>, GraphicsPipelineCreateError> {
-        self.inner.create_graphics_pipeline(desc)
+        let shader_stages: Vec<&dyn IShader> = desc
+            .shader_stages
+            .iter()
+            .copied()
+            .map(|v| {
+                v.query_interface::<ValidationShader>()
+                    .expect("Unknown IShader implementation")
+                    .inner
+                    .as_ref()
+            })
+            .collect();
+
+        let pipeline_layout = desc
+            .pipeline_layout
+            .query_interface::<ValidationPipelineLayout>()
+            .expect("Unknown IGraphicsPipeline implementation");
+
+        let new_desc = GraphicsPipelineDesc {
+            shader_stages: &shader_stages,
+            pipeline_layout: pipeline_layout.inner.as_ref(),
+            vertex_layout: &desc.vertex_layout,
+            input_assembly_state: &desc.input_assembly_state,
+            rasterizer_state: &desc.rasterizer_state,
+            depth_stencil_state: &desc.depth_stencil_state,
+            blend_state: &desc.blend_state,
+            render_target_formats: &desc.render_target_formats,
+            depth_stencil_format: desc.depth_stencil_format,
+        };
+
+        let inner = self.inner.create_graphics_pipeline(&new_desc)?;
+        let pipeline = AnyArc::new_cyclic(move |v| ValidationGraphicsPipeline {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn IGraphicsPipeline, _>(pipeline, |v| v))
     }
 
     // ========================================================================================== //
@@ -109,7 +145,29 @@ impl IDevice for ValidationDevice {
         &self,
         desc: &ComputePipelineDesc,
     ) -> Result<AnyArc<dyn IComputePipeline>, ComputePipelineCreateError> {
-        self.inner.create_compute_pipeline(desc)
+        let shader_module = desc
+            .shader_module
+            .query_interface::<ValidationShader>()
+            .expect("Unknown IShader implementation");
+
+        let pipeline_layout = desc
+            .pipeline_layout
+            .query_interface::<ValidationPipelineLayout>()
+            .expect("Unknown IGraphicsPipeline implementation");
+
+        let new_desc = ComputePipelineDesc {
+            shader_module: shader_module.inner.as_ref(),
+            pipeline_layout: pipeline_layout.inner.as_ref(),
+        };
+
+        let inner = self.inner.create_compute_pipeline(&new_desc)?;
+        let pipeline = AnyArc::new_cyclic(move |v| ValidationComputePipeline {
+            _this: v.clone(),
+            _device: self._this.upgrade().unwrap(),
+            _pipeline_layout: pipeline_layout._this.upgrade().unwrap(),
+            inner,
+        });
+        Ok(AnyArc::map::<dyn IComputePipeline, _>(pipeline, |v| v))
     }
 
     // ========================================================================================== //

@@ -80,10 +80,12 @@ impl IBuffer for ValidationBuffer {
     }
 
     fn flush_range(&self, offset: u64, len: u64) {
+        // TODO: validate offset and len are in bounds
         self.inner.flush_range(offset, len);
     }
 
     fn invalidate_range(&self, offset: u64, len: u64) {
+        // TODO: validate offset and len are in bounds
         self.inner.invalidate_range(offset, len);
     }
 }
