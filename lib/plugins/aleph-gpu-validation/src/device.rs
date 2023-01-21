@@ -303,8 +303,7 @@ impl ValidationDevice {
         );
 
         // Check if the user is trying to write more than 1 descriptor into a non-array binding.
-        let binding_layout = info.layout;
-        let is_array_binding = binding_layout.num_descriptors > 1; // TODO: this might not be correct
+        let is_array_binding = info.descriptor_count.is_some();
         let num_writes = write.writes.len();
         debug_assert!(
             !is_array_binding && num_writes <= 1,
@@ -315,7 +314,7 @@ impl ValidationDevice {
         let write_start = write.array_element as usize;
         let write_end = write_start + write.writes.len();
         let binding_start = 0;
-        let binding_end = binding_layout.num_descriptors as usize;
+        let binding_end = info.descriptor_count.map(NonZeroU32::get).unwrap_or(1) as usize;
         debug_assert!(
             write_start >= binding_start && write_start < binding_end,
             "It is invalid to write outside of an array binding's bounds."
