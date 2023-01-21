@@ -27,13 +27,13 @@
 // SOFTWARE.
 //
 
-use interfaces::any::{AnyArc, AnyWeak};
 use crate::context::ValidationContext;
 use crate::ValidationDevice;
+use interfaces::any::{AnyArc, AnyWeak, QueryInterface};
 use interfaces::gpu::{
     IDevice, ISurface, ISwapChain, SwapChainConfiguration, SwapChainCreateError,
 };
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct ValidationSurface {
     pub(crate) _this: AnyWeak<Self>,
@@ -62,6 +62,24 @@ impl ISurface for ValidationSurface {
         device: &dyn IDevice,
         config: &SwapChainConfiguration,
     ) -> Result<AnyArc<dyn ISwapChain>, SwapChainCreateError> {
-        self.inner.create_swap_chain(device, config)
+        let device = device
+            .query_interface::<ValidationDevice>()
+            .expect("Unknown IDevice implementation")
+            .inner
+            .as_ref();
+
+        // Check if the surface is currently taken with an existing swap chain
+        if self.has_swap_chain.swap(true, Ordering::Relaxed) {
+            return Err(SwapChainCreateError::SurfaceAlreadyOwned);
+        }
+
+        match self.inner.create_swap_chain(device, config) {
+            v @ Ok(_) => v,
+            v @ Err(_) => {
+                // Release the surface if we failed to actually create the swap chain
+                assert!(self.has_swap_chain.swap(false, Ordering::Relaxed));
+                v
+            }
+        }
     }
 }
