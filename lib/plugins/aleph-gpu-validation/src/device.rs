@@ -353,7 +353,24 @@ impl IDevice for ValidationDevice {
         writes
             .iter()
             .for_each(|v| Self::validate_descriptor_write(v));
-        self.inner.update_descriptor_sets(writes)
+
+        let writes: Vec<DescriptorWriteDesc> = writes
+            .iter()
+            .map(|v| {
+                let mut v = v.clone();
+
+                // Unwrap and validate to get the inner DescriptorSetHandle
+                DescriptorSet::validate(&v.set, None);
+                let inner: NonNull<()> = v.set.clone().into();
+                let inner: NonNull<DescriptorSet> = inner.cast();
+                let inner = inner.as_ref();
+                v.set = inner.inner.clone();
+
+                v
+            })
+            .collect();
+
+        self.inner.update_descriptor_sets(&writes)
     }
 
     // ========================================================================================== //
