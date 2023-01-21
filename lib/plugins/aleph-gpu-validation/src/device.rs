@@ -27,24 +27,32 @@
 // SOFTWARE.
 //
 
-use crate::adapter::Adapter;
-use crate::context::Context;
+use crate::adapter::ValidationAdapter;
+use crate::command_pool::ValidationCommandPool;
+use crate::context::ValidationContext;
+use crate::descriptor_pool::ValidationDescriptorPool;
+use crate::descriptor_set_layout::ValidationDescriptorSetLayout;
 use crate::internal::descriptor_set::DescriptorSet;
 use interfaces::any::{AnyArc, AnyWeak};
+use crate::sampler::ValidationSampler;
+use crate::{
+    ValidationBuffer, ValidationComputePipeline, ValidationGraphicsPipeline,
+    ValidationPipelineLayout, ValidationShader, ValidationTexture,
+};
 use interfaces::gpu::*;
 use std::num::NonZeroU32;
 use std::ops::Deref;
 
-pub struct Device {
+pub struct ValidationDevice {
     pub(crate) _this: AnyWeak<Self>,
-    pub(crate) _context: AnyArc<Context>,
-    pub(crate) _adapter: AnyArc<Adapter>,
+    pub(crate) _context: AnyArc<ValidationContext>,
+    pub(crate) _adapter: AnyArc<ValidationAdapter>,
     pub(crate) inner: AnyArc<dyn IDevice>,
 }
 
-crate::validation_declare_interfaces!(Device, [IDevice]);
+crate::validation_declare_interfaces!(ValidationDevice, [IDevice]);
 
-impl IDevice for Device {
+impl IDevice for ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
@@ -201,7 +209,7 @@ impl IDevice for Device {
     }
 }
 
-impl Device {
+impl ValidationDevice {
     // ========================================================================================== //
     // ========================================================================================== //
 
@@ -368,7 +376,7 @@ impl Device {
     }
 }
 
-impl INamedObject for Device {
+impl INamedObject for ValidationDevice {
     fn set_name(&self, name: &str) {
         self.inner.set_name(name)
     }
